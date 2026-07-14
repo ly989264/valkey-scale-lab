@@ -93,18 +93,18 @@
   "missing_metric_count": 0,
   "missing_metrics": [],
   "node_count": 0,
-  "phase_id": "P09_ANALYSIS_REPORTING",
+  "capability_id": "analysis_reporting",
   "reason": "resource preflight not run in fixture path; real gate must provide external evidence or blocked artifact",
   "run_id": "system-metrics-50",
   "sample_count": 0,
   "sample_errors": [],
   "scale": 50,
-  "scenario_name": "fixture",
+  "scenario_name": "analysis_reporting",
   "schema_version": "v1",
   "source_refs": {
     "metrics_timeseries": "metrics_timeseries.jsonl",
     "system_metrics_timeseries": "system_metrics_timeseries.jsonl"
   },
-  "stage_id": "P09_ANALYSIS_REPORTING",
+
   "status": "BLOCKED_WITH_REASON"
 }

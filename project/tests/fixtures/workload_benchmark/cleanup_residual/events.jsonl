@@ -1,1 +1,1 @@
-{"event_id":"evt-cleanup","event_type":"workload_cleanup_residual","message":"cleanup residual detected after workload worker stopped","phase_id":"M1-S05","run_id":"fixture-cleanup","schema_version":"v1"}
+{"event_id":"evt-cleanup","event_type":"workload_cleanup_residual","message":"cleanup residual detected after workload worker stopped","capability_id":"workload","run_id":"fixture-cleanup","schema_version":"v1"}

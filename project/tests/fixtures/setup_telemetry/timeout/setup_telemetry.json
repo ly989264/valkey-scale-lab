@@ -104,7 +104,7 @@
       "nodehost_start_ms": 40.0
     }
   ],
-  "phase_id": "M1-S02",
+  "capability_id": "setup_telemetry",
   "producer": {
     "name": "test",
     "version": "v1"
@@ -116,7 +116,8 @@
     100,
     200
   ],
-  "scenario": "timeout_cluster_setup",
+  "scenario": "cluster_lifecycle",
+  "profile_id": "fixture",
   "schema_version": "v1",
   "slowest_nodes_topN": [
     {

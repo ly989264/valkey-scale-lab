@@ -35,7 +35,7 @@ def test_canonical_definition_is_schema_backed_typed_and_immutable() -> None:
     assert definition.lifecycle_steps[-1].terminal is True
     assert definition.lifecycle_steps[-1].always_run is True
     assert all(not step.terminal for step in definition.lifecycle_steps[:-1])
-    assert definition.schema_version == "gate-scenario-v2"
+    assert definition.schema_version == "gate-scenario-v3"
     assert definition.definition_id == "local_full_flow"
     assert definition.scale_policy.min_nodes == 30
     assert definition.scale_policy.max_nodes == 2000
@@ -83,7 +83,7 @@ def test_semantic_validator_rejects_unsafe_or_noncanonical_content(
 
 def test_loader_rejects_duplicate_json_object_keys(tmp_path) -> None:
     path = tmp_path / "duplicate.json"
-    path.write_text('{"schema_version":"gate-scenario-v2","schema_version":"v3"}', encoding="utf-8")
+    path.write_text('{"schema_version":"gate-scenario-v3","schema_version":"v3"}', encoding="utf-8")
     with pytest.raises(ScenarioDefinitionError, match="duplicate JSON object keys"):
         load_scenario_definition(path)
 
@@ -99,7 +99,7 @@ def test_validator_rejects_incompatible_known_artifact_transform() -> None:
 
 
 def test_handler_and_transform_registries_are_closed_and_executable() -> None:
-    assert HANDLER_REGISTRY["legacy.cleanup"] == "lifecycle"
+    assert HANDLER_REGISTRY["product.cleanup"] == "lifecycle"
     assert "arbitrary" not in HANDLER_REGISTRY
     assert set(TRANSFORM_REGISTRY) == {
         "run_state_to_metadata",

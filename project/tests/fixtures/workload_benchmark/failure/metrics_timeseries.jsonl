@@ -1,1 +1,1 @@
-{"metric_name":"error_ops","metric_unit":"count","metric_value":5,"phase_id":"M1-S05","run_id":"fixture-failure","schema_version":"v1","source_id":"uniform:event","source_type":"workload"}
+{"metric_name":"error_ops","metric_unit":"count","metric_value":5,"capability_id":"workload","run_id":"fixture-failure","schema_version":"v1","source_id":"uniform:event","source_type":"workload"}

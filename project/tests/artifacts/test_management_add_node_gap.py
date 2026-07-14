@@ -15,35 +15,35 @@ def test_strict_add_replica_executes_a_live_management_mutation(monkeypatch) -> 
         "primary_count": 1,
         "replica_count": 1,
     }
-    monkeypatch.setattr(docker_runtime, "_p17_cluster_health", lambda _nodes: dict(health))
-    monkeypatch.setattr(docker_runtime, "_p17_topology_snapshot", lambda *args, **kwargs: {"snapshot_id": "snapshot"})
-    monkeypatch.setattr(docker_runtime, "_p30_slot_balance", lambda _nodes: {"status": "PASS"})
-    monkeypatch.setattr(docker_runtime, "_p17_wait_clean_cluster", lambda _nodes, timeout: None)
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", lambda _nodes: dict(health))
+    monkeypatch.setattr(docker_runtime, "_management_topology_snapshot", lambda *args, **kwargs: {"snapshot_id": "snapshot"})
+    monkeypatch.setattr(docker_runtime, "_management_matrix_slot_balance", lambda _nodes: {"status": "PASS"})
+    monkeypatch.setattr(docker_runtime, "_management_wait_clean_cluster", lambda _nodes, timeout: None)
 
     command_log: list[dict] = []
     delegated_operations: list[str] = []
 
-    def fake_remove_and_restore(telemetry, phase, run_id, operation_name, operation_id, nodes, commands):
+    def fake_remove_and_restore(telemetry, capability_id, run_id, operation_name, operation_id, nodes, commands):
         delegated_operations.append(operation_name)
         commands.append({"operation_id": operation_id, "command_id": "live-add", "status": "PASS"})
         return {"operation_status": "PASS", "missing_fields": []}
 
-    monkeypatch.setattr(docker_runtime, "_p30_remove_and_restore_row", fake_remove_and_restore)
+    monkeypatch.setattr(docker_runtime, "_management_matrix_remove_and_restore_row", fake_remove_and_restore)
     telemetry = TelemetryRun(
-        phase_id="P30_MANAGEMENT_MATRIX_50_REAL",
-        scenario_name="strict_management_matrix_50",
+        capability_id="management_matrix",
+        scenario_name="management_matrix",
         run_id="gap-review",
         coverage_id="50.management.add_replica",
         scale=2,
         node_count=2,
     )
-    result, _ = docker_runtime._p30_execute_operation(
+    result, _ = docker_runtime._management_matrix_execute_operation(
         telemetry=telemetry,
-        phase="P30_MANAGEMENT_MATRIX_50_REAL",
+        capability_id="management_matrix",
         run_id="gap-review",
-        scenario="strict_management_matrix_50",
+        scenario="management_matrix",
         operation_name="add_replica",
-        operation_id="p30-add_replica-2",
+        operation_id="management_matrix-add_replica-2",
         nodes=nodes,
         command_log=command_log,
     )

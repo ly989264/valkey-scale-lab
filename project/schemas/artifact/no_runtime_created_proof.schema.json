@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "status",
     "execution_mode",
     "runtime_resources_created",
@@ -15,7 +15,7 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "no_runtime_created_proof"},
-    "phase_id": {"type": "string", "minLength": 1},
+    "capability_id": {"type": "string", "minLength": 1},
     "status": {"type": "string", "const": "PASS"},
     "execution_mode": {"type": "string", "const": "dry_run"},
     "runtime_resources_created": {"type": "boolean", "const": false},

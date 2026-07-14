@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any
 
 
-STAGE_ID = "L05_REPORTING_V2_FOR_AUDIT_RESULTS"
-RUN_ID = "L05_REPORTING_V2_FOR_AUDIT_RESULTS-report-v1"
+CAPABILITY_ID = "audit_reporting"
+RUN_ID = "audit-report-v1"
 CREATED_AT = "2026-06-30T00:00:00Z"
 RENDERED_SUFFIXES = {".html", ".csv", ".svg", ".md"}
 STATUS_COLORS = {
@@ -249,7 +249,7 @@ def write_coverage_heatmap(path: Path, coverage: dict[str, Any]) -> Path:
     return path
 
 
-def write_scale_ladder_svg(path: Path, scale_report: dict[str, Any], p13_audit: dict[str, Any]) -> Path:
+def write_scale_ladder_svg(path: Path, scale_report: dict[str, Any], scale_build_metrics: dict[str, Any]) -> Path:
     rungs = sorted(scale_report.get("rungs", []), key=lambda item: item.get("node_count", 0))
     width = 720
     height = 260
@@ -258,7 +258,7 @@ def write_scale_ladder_svg(path: Path, scale_report: dict[str, Any], p13_audit: 
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
         '<text x="20" y="30" font-size="18" font-weight="700">Scale Ladder</text>',
-        '<text x="20" y="54" font-size="12">P13 real rungs and P14 opt-in boundary from JSON artifacts</text>',
+        '<text x="20" y="54" font-size="12">Canonical real rungs and the SCALE_PLANNING opt-in boundary from JSON artifacts</text>',
     ]
     y = 92
     for rung in rungs:
@@ -272,14 +272,14 @@ def write_scale_ladder_svg(path: Path, scale_report: dict[str, Any], p13_audit: 
         )
         parts.append(f'<text x="{130 + bar_w}" y="{y + 18}" font-size="12">PASS real Valkey</text>')
         y += 48
-    p14 = p13_audit.get("p14_boundary", {})
+    scale_planning = scale_build_metrics.get("scale_planning_boundary", {})
     parts.append('<text x="20" y="214" font-size="13">1000 planned nodes</text>')
     parts.append(
         '<rect class="scale-rung" x="120" y="196" width="420" height="24" fill="#7f56d9" '
-        f'data-node-count="1000" data-status="{escape(p14.get("status", "SKIPPED_WITH_REASON"))}" '
+        f'data-node-count="1000" data-status="{escape(scale_planning.get("status", "SKIPPED_WITH_REASON"))}" '
         'data-real-valkey="false" data-dry-run-only="true"/>'
     )
-    parts.append('<text x="550" y="214" font-size="12">P14 opt-in dry-run only</text>')
+    parts.append('<text x="550" y="214" font-size="12">SCALE_PLANNING opt-in dry-run only</text>')
     parts.append("</svg>")
     path.write_text("\n".join(parts) + "\n", encoding="utf-8")
     return path
@@ -311,8 +311,8 @@ def write_timing_waterfall_svg(path: Path, timings: list[dict[str, Any]]) -> Pat
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="20" y="30" font-size="18" font-weight="700">P13 Timing Waterfall</text>',
-        '<text x="20" y="54" font-size="12">Timing values rendered from p13_timing_breakdown JSON artifacts</text>',
+        '<text x="20" y="30" font-size="18" font-weight="700">Setup Timing Waterfall</text>',
+        '<text x="20" y="54" font-size="12">Timing values rendered from setup_timing_breakdown JSON artifacts</text>',
     ]
     y = 88
     for timing in sorted(timings, key=lambda item: item.get("node_count", 0)):
@@ -349,10 +349,9 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
     audit = sources["audit_report"]
     catalog = sources["metric_catalog"]
     coverage = sources["coverage_matrix"]
-    p13 = sources["p13_p14_scale_audit"]
-    cml15 = sources.get("cml15_lifecycle_matrix_report", {})
+    scale_build_metrics = sources["scale_build_metrics"]
+    management_matrix = sources.get("management_matrix", {})
     small_real = sources.get("small_real_parity_audit", {})
-    scale_build = sources.get("scale_build_metrics", {})
     fault_failover = sources.get("fault_failover_scale", {})
     stability_soak = sources.get("stability_soak_metrics", {})
     provenance = sources.get("provenance_graph", {})
@@ -363,26 +362,15 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
         for record in sources["source_records"]
     )
     report_links = "\n".join(f'<li><a href="{escape(html_link(out_dir, report))}">{escape(report.name)}</a> <code>{escape(str(report.suffix or ""))}</code></li>' for report in reports)
-    cml15_report_paths = [Path(path_text) for path_text in sources.get("cml15_report_paths", [])]
-    cml15_links = "\n".join(
-        f'<li><a href="{escape(html_link(out_dir, report_path))}">{escape(report_path.parent.parent.name)} / {escape(report_path.name)}</a></li>'
-        for report_path in cml15_report_paths
-    )
-    cml15_rows = "\n".join(
+    management_rows = "\n".join(
         "<tr>"
-        f"<td><code>{escape(entry.get('stage_id'))}</code></td>"
-        f"<td>{escape(entry.get('status'))}</td>"
-        f"<td>{escape(', '.join(entry.get('target_operations', [])))}</td>"
-        f"<td>{escape(entry.get('nodes_observed'))}</td>"
-        f"<td>{escape(entry.get('cluster_state'))}</td>"
-        f"<td>{escape(entry.get('slots_assigned'))}</td>"
-        f"<td>{escape(entry.get('slots_fail'))}</td>"
-        f"<td><code>{escape(entry.get('operation_durations'))}</code></td>"
+        f"<td><code>{escape(entry.get('operation_name'))}</code></td>"
+        f"<td>{escape(entry.get('operation_status'))}</td>"
+        f"<td>{escape(entry.get('node_count'))}</td>"
+        f"<td>{escape(entry.get('command_count'))}</td>"
         "</tr>"
-        for entry in cml15.get("capabilities", [])
+        for entry in management_matrix.get("operations", [])
     )
-    cml15_chart = next((p for p in cml15_report_paths if p.name == "lifecycle_timeline.svg" and "CML15E" in p.as_posix()), None)
-    cml15_chart_html = f'<img src="{escape(html_link(out_dir, cml15_chart))}" alt="CML15 lifecycle matrix chart">' if cml15_chart else "<p>CML15 chart missing.</p>"
     document = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -400,25 +388,22 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
   <h1>Valkey Scale Lab Audit Report</h1>
   <p>Root commit SHA: <code>{escape(root_commit_sha)}</code></p>
   <p>Status: <code>{escape(audit.get("status"))}</code>. Metrics: <code>{escape(catalog.get("summary", {}).get("metric_count"))}</code>. Coverage cells: <code>{escape(coverage.get("summary", {}).get("entry_count"))}</code>.</p>
-  <p>P13 real rungs: <code>{escape(p13.get("summary", {}).get("p13_real_evidence_count"))}</code>. P14 opt-in dry-run: <code>{escape(p13.get("summary", {}).get("p14_dry_run_only"))}</code>.</p>
+  <p>Scale ladder real rungs: <code>{escape(scale_build_metrics.get("summary", {}).get("real_valkey_rung_count"))}</code>. SCALE_PLANNING opt-in dry-run: <code>{escape(scale_build_metrics.get("scale_planning_boundary", {}).get("dry_run_only"))}</code>.</p>
   <p>Small-real parity surfaces: <code>{escape(small_real.get("summary", {}).get("surface_count", "MISSING"))}</code>. Missing metrics: <code>{escape(small_real.get("summary", {}).get("missing_count", "MISSING"))}</code>. Skipped metrics: <code>{escape(small_real.get("summary", {}).get("skipped_count", "MISSING"))}</code>.</p>
-  <p>Scale build rungs: <code>{escape(scale_build.get("summary", {}).get("canonical_node_counts", "MISSING"))}</code>. Measured build metrics: <code>{escape(scale_build.get("summary", {}).get("measured_metric_count", "MISSING"))}</code>. Missing build metrics: <code>{escape(scale_build.get("summary", {}).get("missing_metric_count", "MISSING"))}</code>.</p>
+  <p>Scale build rungs: <code>{escape(scale_build_metrics.get("summary", {}).get("canonical_node_counts", "MISSING"))}</code>. Measured build metrics: <code>{escape(scale_build_metrics.get("summary", {}).get("measured_metric_count", "MISSING"))}</code>. Missing build metrics: <code>{escape(scale_build_metrics.get("summary", {}).get("missing_metric_count", "MISSING"))}</code>.</p>
   <p>Fault/failover rungs: <code>{escape(fault_failover.get("summary", {}).get("canonical_node_counts", "MISSING"))}</code>. Real rungs: <code>{escape(fault_failover.get("summary", {}).get("real_valkey_rung_count", "MISSING"))}</code>. Missing metrics: <code>{escape(fault_failover.get("summary", {}).get("missing_metric_count", "MISSING"))}</code>.</p>
   <p>Stability soak profiles: <code>{escape(stability_soak.get("summary", {}).get("required_node_counts", "MISSING"))}</code>. Measured profiles: <code>{escape(stability_soak.get("summary", {}).get("measured_profile_count", "MISSING"))}</code>. Resource-aware profiles: <code>{escape(stability_soak.get("summary", {}).get("resource_aware_profile_count", "MISSING"))}</code>.</p>
-  <p>CML15 lifecycle capabilities: <code>{escape(len(cml15.get("capabilities", [])))}</code>. Validated scale: <code>{escape(cml15.get("scale_nodes_validated", "MISSING"))}</code>. Status: <code>{escape(cml15.get("status", "MISSING"))}</code>.</p>
+  <p>Management matrix operations: <code>{escape(len(management_matrix.get("operations", [])))}</code>. Status: <code>{escape(management_matrix.get("status", "MISSING"))}</code>.</p>
   <h2>Rendered Views</h2>
   <ul>{report_links}</ul>
-  <h2>CML15 Lifecycle Matrix</h2>
-  <table><thead><tr><th>Stage</th><th>Status</th><th>Operations</th><th>Nodes</th><th>Cluster</th><th>Slots</th><th>Slot Fail</th><th>Durations</th></tr></thead><tbody>{cml15_rows}</tbody></table>
-  <h3>CML15 Reports</h3>
-  <ul>{cml15_links}</ul>
-  {cml15_chart_html}
+  <h2>Management Matrix</h2>
+  <table><thead><tr><th>Operation</th><th>Status</th><th>Nodes</th><th>Commands</th></tr></thead><tbody>{management_rows}</tbody></table>
   <h2>Source Artifacts</h2>
   <table><thead><tr><th>Path</th><th>Type</th><th>Status</th><th>SHA256</th></tr></thead><tbody>{source_rows}</tbody></table>
   <h2>Visualizations</h2>
   <img src="coverage_heatmap.svg" alt="Coverage heatmap">
   <img src="scale_ladder.svg" alt="Scale ladder">
-  <img src="p13_timing_waterfall.svg" alt="P13 timing waterfall">
+  <img src="setup_timing_waterfall.svg" alt="Setup timing waterfall">
 </body>
 </html>
 """
@@ -431,47 +416,22 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
     out_dir = out_dir if out_dir.is_absolute() else root / out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    cml15_stage_ids = [
-        "CML15A_ADD_NODE_REMOVE_NODE_30",
-        "CML15B_RESHARD_SLOTS_30",
-        "CML15C_REBALANCE_SLOTS_30",
-        "CML15D_ROLLING_RESTART_ONE_PRIMARY_30",
-        "CML15E_LIFECYCLE_MATRIX_REPORT_30",
-    ]
-    cml15_root = root / "artifacts" / "capability_matrix_loop"
     source_paths = {
         "audit_report": input_dir / "audit_report.json",
         "provenance_graph": input_dir / "provenance_graph.json",
         "metric_catalog": input_dir / "metric_catalog.json",
         "coverage_matrix": input_dir / "coverage_matrix.json",
-        "p13_p14_scale_audit": input_dir / "p13_p14_scale_audit.json",
         "small_real_parity_audit": input_dir / "small_real_parity_audit.json",
         "scale_build_metrics": input_dir / "scale_build_metrics.json",
         "fault_failover_scale": input_dir / "fault_failover_scale.json",
         "stability_soak_metrics": input_dir / "stability_soak_metrics.json",
-        "scale_ladder_report": root / "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
-        "p13_timing_50": root / "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
-        "p13_timing_100": root / "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
-        "cml15_lifecycle_matrix_report": cml15_root / "CML15E_LIFECYCLE_MATRIX_REPORT_30" / "samples" / "lifecycle_matrix_report_30.json",
+        "scale_ladder_report": root / "artifacts/captures/scale_ladder/scale_ladder_report.json",
+        "setup_timing_50": root / "artifacts/captures/scale_ladder/setup_timing_breakdown_exact-50.json",
+        "setup_timing_100": root / "artifacts/captures/scale_ladder/setup_timing_breakdown_exact-100.json",
+        "management_matrix": root / "artifacts/captures/management_matrix/management_ops_matrix.json",
     }
-    for stage_id in cml15_stage_ids:
-        source_paths[f"cml15_{stage_id}_analysis_summary"] = cml15_root / stage_id / "analysis_summary.json"
-        if stage_id != "CML15E_LIFECYCLE_MATRIX_REPORT_30":
-            source_paths[f"cml15_{stage_id}_lifecycle_evidence"] = cml15_root / stage_id / "samples" / "lifecycle_evidence_30.json"
     payloads = {name: load_json(path) for name, path in source_paths.items()}
     validate_metric_sources(payloads["metric_catalog"])
-    cml15_report_paths: list[Path] = []
-    for stage_id in cml15_stage_ids:
-        reports_dir = cml15_root / stage_id / "reports"
-        cml15_report_paths.extend(
-            [
-                reports_dir / "index.html",
-                reports_dir / "report.md",
-                reports_dir / "lifecycle_summary.csv",
-                reports_dir / "lifecycle_timeline.svg",
-                reports_dir / "report_index.json",
-            ]
-        )
 
     provenance_out = out_dir / "provenance_graph.json"
     if source_paths["provenance_graph"].resolve() != provenance_out.resolve():
@@ -481,11 +441,9 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
         write_coverage_csv(out_dir / "coverage_matrix.csv", payloads["coverage_matrix"]),
         write_missing_metrics_csv(out_dir / "missing_metrics.csv", payloads["metric_catalog"]),
         write_coverage_heatmap(out_dir / "coverage_heatmap.svg", payloads["coverage_matrix"]),
-        write_scale_ladder_svg(out_dir / "scale_ladder.svg", payloads["scale_ladder_report"], payloads["p13_p14_scale_audit"]),
-        write_timing_waterfall_svg(out_dir / "p13_timing_waterfall.svg", [payloads["p13_timing_50"], payloads["p13_timing_100"]]),
+        write_scale_ladder_svg(out_dir / "scale_ladder.svg", payloads["scale_ladder_report"], payloads["scale_build_metrics"]),
+        write_timing_waterfall_svg(out_dir / "setup_timing_waterfall.svg", [payloads["setup_timing_50"], payloads["setup_timing_100"]]),
     ]
-    reports.extend(cml15_report_paths)
-    payloads["cml15_report_paths"] = [str(path) for path in cml15_report_paths]
     reports.append(write_index_html(out_dir / "index.html", {**payloads, "source_records": []}, reports))
 
     source_records = [source_record(root, path, payloads[name]) for name, path in source_paths.items()]
@@ -502,8 +460,8 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
     }
     index = {
         "schema_version": "v1",
-        "artifact_type": "loop_report_index",
-        "stage_id": STAGE_ID,
+        "artifact_type": "audit_report_index",
+        "capability_id": CAPABILITY_ID,
         "run_id": RUN_ID,
         "created_at": CREATED_AT,
         "producer": {"name": "scripts/render_audit_report.py", "version": "v1"},
@@ -521,7 +479,7 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Render loop-engineering audit report views")
+    parser = argparse.ArgumentParser(description="Render product audit report views")
     parser.add_argument("--root", default=".")
     parser.add_argument("--input-dir", required=True)
     parser.add_argument("--out-dir", required=True)

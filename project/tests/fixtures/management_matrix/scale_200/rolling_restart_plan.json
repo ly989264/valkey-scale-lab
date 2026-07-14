@@ -2111,14 +2111,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "operation_id": "management-matrix-10-rolling_restart_replica_first",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 100
         },
-        "run_id": "m1-s04-scale_200",
+        "run_id": "management-matrix-scale_200",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -2622,9 +2622,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-10-rolling_restart_replica_first-after"
+        "snapshot_id": "management-matrix-10-rolling_restart_replica_first-after"
       },
-      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-after",
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-10-rolling_restart_replica_first-after",
       "artifact_type": "management_operation_result",
       "before_topology_snapshot": {
         "artifact_type": "management_topology_snapshot",
@@ -4735,14 +4735,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "operation_id": "management-matrix-10-rolling_restart_replica_first",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 100
         },
-        "run_id": "m1-s04-scale_200",
+        "run_id": "management-matrix-scale_200",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -5246,9 +5246,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-10-rolling_restart_replica_first-before"
+        "snapshot_id": "management-matrix-10-rolling_restart_replica_first-before"
       },
-      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-before",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-10-rolling_restart_replica_first-before",
       "bytes_migrated": {
         "field": "bytes_migrated",
         "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
@@ -5293,7 +5293,7 @@
       "missing_fields": [],
       "node_count": 200,
       "operation_duration_ms": 110.0,
-      "operation_id": "m1-s04-10-rolling_restart_replica_first",
+      "operation_id": "management-matrix-10-rolling_restart_replica_first",
       "operation_name": "rolling_restart_replica_first",
       "operation_status": "PASS",
       "per_node_rejoin_ms": [
@@ -5320,7 +5320,7 @@
           "value_ms": 31.0
         }
       ],
-      "phase_id": "M1-S04",
+      "capability_id": "management_matrix",
       "prepare_ms": 3.0,
       "restart_count": 1,
       "retry_count": 0,
@@ -5330,9 +5330,9 @@
       },
       "rolling_restart_plan_ref": "rolling_restart_plan.json",
       "rolling_restart_results_ref": "rolling_restart_results.jsonl",
-      "run_id": "m1-s04-scale_200",
+      "run_id": "management-matrix-scale_200",
       "scale": 200,
-      "scenario": "scale_200",
+      "scenario": "management_matrix",
       "schema_version": "v1",
       "slot_balance_after": {
         "imbalance": 1,
@@ -5365,9 +5365,9 @@
         "cleanup_report.json"
       ],
       "started_at_unix_ms": 1760000010000,
-      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
-      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-after",
-      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-before",
+      "status_reason": "Fixture operation carries the full management_matrix evidence contract.",
+      "topology_after_ref": "management_topology_snapshots.jsonl#management-matrix-10-rolling_restart_replica_first-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#management-matrix-10-rolling_restart_replica_first-before",
       "topology_diff": {
         "changed_nodes": [],
         "fail_pfail_handshake_delta": {
@@ -5389,11 +5389,11 @@
         },
         "status": "PASS"
       },
-      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-10-rolling_restart_replica_first",
+      "topology_diff_ref": "management_topology_diffs.jsonl#management-matrix-10-rolling_restart_replica_first",
       "topology_ref": "management_topology_snapshots.jsonl",
       "wall_ms": 110.0,
-      "workload_impact_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first",
-      "workload_window_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first"
+      "workload_impact_ref": "management_workload_impact.json#management-matrix-10-rolling_restart_replica_first",
+      "workload_window_ref": "management_workload_impact.json#management-matrix-10-rolling_restart_replica_first"
     },
     {
       "after_topology_snapshot": {
@@ -7505,14 +7505,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "operation_id": "management-matrix-11-rolling_restart_primary_safe",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 100
         },
-        "run_id": "m1-s04-scale_200",
+        "run_id": "management-matrix-scale_200",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -8016,9 +8016,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-11-rolling_restart_primary_safe-after"
+        "snapshot_id": "management-matrix-11-rolling_restart_primary_safe-after"
       },
-      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-after",
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-11-rolling_restart_primary_safe-after",
       "artifact_type": "management_operation_result",
       "before_topology_snapshot": {
         "artifact_type": "management_topology_snapshot",
@@ -10129,14 +10129,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "operation_id": "management-matrix-11-rolling_restart_primary_safe",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 100
         },
-        "run_id": "m1-s04-scale_200",
+        "run_id": "management-matrix-scale_200",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -10640,9 +10640,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-11-rolling_restart_primary_safe-before"
+        "snapshot_id": "management-matrix-11-rolling_restart_primary_safe-before"
       },
-      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-before",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-11-rolling_restart_primary_safe-before",
       "bytes_migrated": {
         "field": "bytes_migrated",
         "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
@@ -10687,7 +10687,7 @@
       "missing_fields": [],
       "node_count": 200,
       "operation_duration_ms": 117.0,
-      "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+      "operation_id": "management-matrix-11-rolling_restart_primary_safe",
       "operation_name": "rolling_restart_primary_safe",
       "operation_status": "PASS",
       "per_node_rejoin_ms": [
@@ -10714,7 +10714,7 @@
           "value_ms": 31.0
         }
       ],
-      "phase_id": "M1-S04",
+      "capability_id": "management_matrix",
       "prepare_ms": 3.0,
       "restart_count": 1,
       "retry_count": 0,
@@ -10724,9 +10724,9 @@
       },
       "rolling_restart_plan_ref": "rolling_restart_plan.json",
       "rolling_restart_results_ref": "rolling_restart_results.jsonl",
-      "run_id": "m1-s04-scale_200",
+      "run_id": "management-matrix-scale_200",
       "scale": 200,
-      "scenario": "scale_200",
+      "scenario": "management_matrix",
       "schema_version": "v1",
       "slot_balance_after": {
         "imbalance": 1,
@@ -10759,9 +10759,9 @@
         "cleanup_report.json"
       ],
       "started_at_unix_ms": 1760000011000,
-      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
-      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-after",
-      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-before",
+      "status_reason": "Fixture operation carries the full management_matrix evidence contract.",
+      "topology_after_ref": "management_topology_snapshots.jsonl#management-matrix-11-rolling_restart_primary_safe-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#management-matrix-11-rolling_restart_primary_safe-before",
       "topology_diff": {
         "changed_nodes": [],
         "fail_pfail_handshake_delta": {
@@ -10783,15 +10783,15 @@
         },
         "status": "PASS"
       },
-      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-11-rolling_restart_primary_safe",
+      "topology_diff_ref": "management_topology_diffs.jsonl#management-matrix-11-rolling_restart_primary_safe",
       "topology_ref": "management_topology_snapshots.jsonl",
       "wall_ms": 117.0,
-      "workload_impact_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe",
-      "workload_window_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe"
+      "workload_impact_ref": "management_workload_impact.json#management-matrix-11-rolling_restart_primary_safe",
+      "workload_window_ref": "management_workload_impact.json#management-matrix-11-rolling_restart_primary_safe"
     }
   ],
-  "phase_id": "M1-S04",
-  "run_id": "m1-s04-scale_200",
+  "capability_id": "management_matrix",
+  "run_id": "management-matrix-scale_200",
   "schema_version": "v1",
   "status": "PASS"
 }

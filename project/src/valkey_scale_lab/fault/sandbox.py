@@ -27,8 +27,8 @@ def _run_docker_audited(args: list[str], **kwargs: Any) -> Any:
 def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: str | Path, out_path: str | Path) -> dict[str, Any]:
     state = _load_json(state_path)
     spec = _load_json(fault_json)
-    phase = state.get("phase_id", "P07_FAULT_INJECTION_SANDBOX")
-    run_id = state.get("runtime", {}).get("run_id", f"{phase}-fault-sandbox")
+    capability_id = state.get("capability_id", "fault_matrix")
+    run_id = state.get("runtime", {}).get("run_id", f"{capability_id}-fault-sandbox")
     target = _find_target(state, target_logical_id)
     fault_id = str(spec.get("fault_id") or "fault-sandbox-smoke")
     fault_type = str(spec.get("type") or spec.get("fault_type") or "unknown")
@@ -45,7 +45,7 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
         "implementation_path": _implementation_path_for_fault(fault_type, spec),
         "target_logical_id": target_logical_id,
         "target": target,
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "fault_parameters": _fault_parameters(spec),
         "started_at": "2026-06-28T00:00:00Z",
@@ -65,7 +65,7 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
         nodehost_container = target.get("nodehost_container_name")
         pid = target.get("pid")
         if nodehost_container and pid:
-            _require_owned_container(str(nodehost_container), phase=str(phase), run_id=str(run_id))
+            _require_owned_container(str(nodehost_container), capability_id=str(capability_id), run_id=str(run_id))
             try:
                 pid_text = str(int(pid))
             except (TypeError, ValueError) as exc:
@@ -86,7 +86,7 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
             container_name = target.get("container_name")
             if not container_name:
                 raise FaultError("node_stop requires target container_name or nodehost_container_name/pid in state")
-            _require_owned_container(str(container_name), phase=str(phase), run_id=str(run_id))
+            _require_owned_container(str(container_name), capability_id=str(capability_id), run_id=str(run_id))
             result = _run_docker_audited(
                 ["stop", "-t", "5", str(container_name)],
                 timeout=30,
@@ -118,7 +118,7 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
     report = {
         "schema_version": "v1",
         "artifact_type": "fault_apply",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -132,11 +132,11 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
         "safety_checks": record["safety_checks"],
     }
     _write_json(out_path, report)
-    _write_fault_report(Path(out_path).parent / "fault_report.json", phase, run_id, [record], "PASS")
+    _write_fault_report(Path(out_path).parent / "fault_report.json", capability_id, run_id, [record], "PASS")
     return report
 
 
-def _require_owned_container(container: str, *, phase: str, run_id: str) -> None:
+def _require_owned_container(container: str, *, capability_id: str, run_id: str) -> None:
     result = _run_docker_audited(
         ["inspect", "-f", "{{json .Config.Labels}}", container],
         timeout=30,
@@ -153,17 +153,17 @@ def _require_owned_container(container: str, *, phase: str, run_id: str) -> None
         raise FaultError(f"cannot verify ownership labels for container {container}: invalid Docker inspect output") from exc
     expected = {
         f"{LABEL_PREFIX}.project": PROJECT,
-        f"{LABEL_PREFIX}.phase": phase,
+        f"{LABEL_PREFIX}.capability_id": capability_id,
         f"{LABEL_PREFIX}.run_id": run_id,
     }
     if not isinstance(labels, dict) or any(labels.get(key) != value for key, value in expected.items()):
-        raise FaultError(f"container {container} is not an owned runtime resource for phase {phase} and run {run_id}")
+        raise FaultError(f"container {container} is not an owned runtime resource for capability_id {capability_id} and run {run_id}")
 
 
 def clear_fault(*, state_path: str | Path, fault_id: str, out_path: str | Path) -> dict[str, Any]:
     state = _load_json(state_path)
-    phase = state.get("phase_id", "P07_FAULT_INJECTION_SANDBOX")
-    run_id = state.get("runtime", {}).get("run_id", f"{phase}-fault-sandbox")
+    capability_id = state.get("capability_id", "fault_matrix")
+    run_id = state.get("runtime", {}).get("run_id", f"{capability_id}-fault-sandbox")
     fault_state = _fault_state_path(state_path, fault_id)
     existing = _load_json(fault_state) if fault_state.exists() else {}
     clear_impact = _clear_observed_impact(existing)
@@ -180,7 +180,7 @@ def clear_fault(*, state_path: str | Path, fault_id: str, out_path: str | Path) 
     report = {
         "schema_version": "v1",
         "artifact_type": "fault_clear",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -195,7 +195,7 @@ def clear_fault(*, state_path: str | Path, fault_id: str, out_path: str | Path) 
         },
     }
     _write_json(out_path, report)
-    _write_fault_report(Path(out_path).parent / "fault_report.json", phase, run_id, [cleared], "PASS")
+    _write_fault_report(Path(out_path).parent / "fault_report.json", capability_id, run_id, [cleared], "PASS")
     return report
 
 
@@ -280,11 +280,11 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
 
 
 def _require_fault_state_owned_container(existing: dict[str, Any], container: str) -> None:
-    phase = existing.get("phase_id")
+    capability_id = existing.get("capability_id")
     run_id = existing.get("run_id")
-    if not phase or not run_id:
-        raise FaultError("node_stop clear requires phase_id and run_id ownership in fault state")
-    _require_owned_container(container, phase=str(phase), run_id=str(run_id))
+    if not capability_id or not run_id:
+        raise FaultError("node_stop clear requires capability_id and run_id ownership in fault state")
+    _require_owned_container(container, capability_id=str(capability_id), run_id=str(run_id))
 
 
 def _wait_for_process_restart(target: dict[str, Any], nodehost: str, *, timeout_seconds: float = 20.0, stable_seconds: float = 0.0) -> int:
@@ -322,24 +322,24 @@ def _wait_for_process_restart(target: dict[str, Any], nodehost: str, *, timeout_
 
 
 def _process_restart_timeout_seconds(existing: dict[str, Any]) -> float:
-    if existing.get("phase_id") == "P35_FAULT_FAILOVER_MATRIX_200_REAL":
+    if existing.get("profile_id") == "exact-200":
         return 90.0
     return 20.0
 
 
 def _process_restart_stable_seconds(existing: dict[str, Any]) -> float:
-    if existing.get("phase_id") == "P35_FAULT_FAILOVER_MATRIX_200_REAL":
+    if existing.get("profile_id") == "exact-200":
         return 2.0
     return 0.0
 
 
 def _process_restart_attempts(existing: dict[str, Any]) -> int:
-    if existing.get("phase_id") == "P35_FAULT_FAILOVER_MATRIX_200_REAL":
+    if existing.get("profile_id") == "exact-200":
         return 2
     return 1
 
 
-def _write_fault_report(path: Path, phase: str, run_id: str, faults: list[dict[str, Any]], status: str) -> None:
+def _write_fault_report(path: Path, capability_id: str, run_id: str, faults: list[dict[str, Any]], status: str) -> None:
     normalized_faults = []
     for fault in faults:
         normalized_faults.append(
@@ -363,7 +363,7 @@ def _write_fault_report(path: Path, phase: str, run_id: str, faults: list[dict[s
         {
             "schema_version": "v1",
             "artifact_type": "fault_report",
-            "phase_id": phase,
+            "capability_id": capability_id,
             "run_id": run_id,
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},

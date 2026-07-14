@@ -30,8 +30,8 @@ def test_stability_artifacts_encode_bounded_soak_and_baseline(tmp_path: Path, mo
 
     docker_runtime.write_stability_artifacts(
         tmp_path,
-        "P11_STABILITY_SOAK",
-        "stability_soak_smoke",
+        "stability",
+        "stability",
         "run",
         {"workload": {}},
         nodes,

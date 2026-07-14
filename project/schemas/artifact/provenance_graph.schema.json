@@ -13,8 +13,8 @@
     "scope",
     "summary",
     "report_view_policy",
-    "p14_boundary",
-    "phase_coverage",
+    "scale_planning_boundary",
+    "capability_coverage",
     "nodes",
     "edges",
     "findings"
@@ -37,11 +37,11 @@
     "manifest_sha256": {"type": "string", "minLength": 1},
     "scope": {
       "type": "object",
-      "required": ["target_phase_ids", "automatic_phase_ids", "optional_phase_ids"],
+      "required": ["target_capability_ids", "automatic_capability_ids", "optional_capability_ids"],
       "properties": {
-        "target_phase_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "automatic_phase_ids": {"type": "array", "items": {"type": "string"}},
-        "optional_phase_ids": {"type": "array", "items": {"type": "string"}}
+        "target_capability_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "automatic_capability_ids": {"type": "array", "items": {"type": "string"}},
+        "optional_capability_ids": {"type": "array", "items": {"type": "string"}}
       },
       "additionalProperties": true
     },
@@ -78,11 +78,11 @@
       },
       "additionalProperties": true
     },
-    "p14_boundary": {
+    "scale_planning_boundary": {
       "type": "object",
-      "required": ["phase_id", "automatic", "status", "real_valkey_coverage", "reason"],
+      "required": ["capability_id", "automatic", "status", "real_valkey_coverage", "reason"],
       "properties": {
-        "phase_id": {"type": "string"},
+        "capability_id": {"type": "string"},
         "automatic": {"type": "boolean"},
         "status": {"type": "string", "enum": ["SKIPPED_WITH_REASON", "PASS", "FAIL"]},
         "real_valkey_coverage": {"type": "boolean"},
@@ -90,14 +90,14 @@
       },
       "additionalProperties": true
     },
-    "phase_coverage": {
+    "capability_coverage": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["phase_id", "status", "required_paths", "covered_paths", "finding_ids"],
+        "required": ["capability_id", "status", "required_paths", "covered_paths", "finding_ids"],
         "properties": {
-          "phase_id": {"type": "string"},
+          "capability_id": {"type": "string"},
           "status": {"type": "string", "enum": ["PASS", "FAIL", "SKIPPED_WITH_REASON"]},
           "required_paths": {"type": "array", "items": {"type": "string"}},
           "covered_paths": {"type": "array", "items": {"type": "string"}},
@@ -119,7 +119,7 @@
           "artifact_role",
           "source_of_truth",
           "artifact_type",
-          "phase_id",
+          "capability_id",
           "run_id",
           "producer",
           "status",
@@ -139,7 +139,7 @@
           "artifact_role": {"type": "string", "minLength": 1},
           "source_of_truth": {"type": "boolean"},
           "artifact_type": {"type": ["string", "null"]},
-          "phase_id": {"type": ["string", "null"]},
+          "capability_id": {"type": ["string", "null"]},
           "run_id": {"type": ["string", "null"]},
           "producer": {"type": ["object", "null"]},
           "status": {"type": ["string", "null"]},
@@ -148,10 +148,10 @@
           "schema_valid": {"type": ["boolean", "null"]},
           "metadata_status": {
             "type": "object",
-            "required": ["artifact_type", "phase_id", "run_id", "producer", "status", "schema"],
+            "required": ["artifact_type", "capability_id", "run_id", "producer", "status", "schema"],
             "properties": {
               "artifact_type": {"$ref": "#/$defs/metadataStatus"},
-              "phase_id": {"$ref": "#/$defs/metadataStatus"},
+              "capability_id": {"$ref": "#/$defs/metadataStatus"},
               "run_id": {"$ref": "#/$defs/metadataStatus"},
               "producer": {"$ref": "#/$defs/metadataStatus"},
               "status": {"$ref": "#/$defs/metadataStatus"},
@@ -206,7 +206,7 @@
           "severity": {"type": "string", "enum": ["low", "medium", "high"]},
           "category": {"type": "string", "minLength": 1},
           "blocking": {"type": "boolean"},
-          "phase_id": {"type": "string"},
+          "capability_id": {"type": "string"},
           "path": {"type": "string"},
           "description": {"type": "string", "minLength": 1},
           "evidence": {"type": "array", "items": {"type": "string"}}

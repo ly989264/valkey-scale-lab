@@ -50,7 +50,7 @@ def test_excessive_io_threads_degrades_with_reason() -> None:
 
 def test_resource_preflight_records_64mb_memory_and_blocks_when_insufficient(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
+    monkeypatch.setattr(resource, "_cleanup_state_check", lambda capability_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
     monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
     monkeypatch.setattr(resource, "_host_available_memory_mb", lambda: 1000)
 
@@ -66,7 +66,7 @@ def test_resource_preflight_records_64mb_memory_and_blocks_when_insufficient(tmp
 
 def test_process_config_omits_io_threads_for_one_and_writes_two_with_maxmemory() -> None:
     base_node = {
-        "run_id": "P42-test",
+        "run_id": "SERVER_PROFILE-test",
         "logical_id": "shard-0000-primary",
         "client_port": 7000,
         "cluster_bus_port": 17000,

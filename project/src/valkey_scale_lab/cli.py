@@ -11,20 +11,22 @@ from valkey_scale_lab import cli_compat
 from valkey_scale_lab.analysis import AnalysisError, WorkloadImpactError, build_workload_impact_analysis, create_analysis_summary
 from valkey_scale_lab.artifacts import build_run_metadata, create_run_context, write_run_manifest, write_run_metadata
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
+from valkey_scale_lab.compat import resolve_capability_alias, resolve_phase_alias
+from valkey_scale_lab.execution import PROFILES, ExecutionSelectionError, resolve_profile
 from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.gates.real import product_tree_digest, run_exact_gate
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
-from valkey_scale_lab.report import FinalReportError, ReportError, build_final_goal_loop_report, render_report
+from valkey_scale_lab.report import FinalReportError, ReportError, render_report
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import CommandRecorder, command_recorder_context
-from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
+from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, execute_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, build_setup_telemetry_artifact, write_setup_telemetry_artifact
 from valkey_scale_lab.scenarios import ScenarioDefinitionError, load_scenario_definition
 
 
 UNIMPLEMENTED = (
     "This command is reserved by the valkey-scale-lab contract but is not "
-    "implemented in P00_REPO_CONTRACT."
+    "implemented in repository_contract."
 )
 
 
@@ -62,24 +64,62 @@ def _gate_scenario(args: argparse.Namespace) -> int:
     state: dict[str, object] = {}
     exit_code = 0
     error: str | None = None
-    run_id = f"phase-{args.phase}-{args.scenario}"
-    recorder = CommandRecorder(phase_id=args.phase, run_id=run_id, scenario=args.scenario, artifacts_dir=args.artifacts_dir)
+    legacy_alias = bool(args.legacy_alias_id)
+    try:
+        alias = (
+            resolve_phase_alias(args.legacy_alias_id, args.scenario)
+            if legacy_alias
+            else None
+        )
+        profile = None if legacy_alias else resolve_profile(
+            args.profile,
+            requested_nodes=args.nodes or PROFILES[args.profile].requested_nodes,
+        )
+    except (ExecutionSelectionError, ValueError) as exc:
+        print(f"ERROR: gate scenario: {exc}", file=sys.stderr)
+        return 1
+    scenario_id = alias.scenario_id if alias else args.scenario
+    capability_id = alias.capability_id if alias else scenario_id
+    state = {
+        "capability_id": capability_id,
+        "scenario_id": scenario_id,
+        "backend_id": alias.backend_id if alias else args.backend,
+        "profile_id": alias.profile_id if alias else profile.profile_id,
+    }
+    run_id = args.run_id or f"run-{capability_id}-{scenario_id}"
+    if legacy_alias and not args.config:
+        print("ERROR: gate scenario: compatibility aliases require --config", file=sys.stderr)
+        return 2
+    config_path = args.config if args.config else profile.config_template
+    recorder = CommandRecorder(capability_id=capability_id, run_id=run_id, scenario=scenario_id, artifacts_dir=args.artifacts_dir)
     try:
         with command_recorder_context(recorder):
-            state = cli_compat.create_scenario(
-                phase=args.phase,
-                scenario=args.scenario,
-                config_path=args.config,
-                artifacts_dir=args.artifacts_dir,
-                state_out=args.state_out,
-                setup_timeline=setup_timeline,
-                global_config_path=args.global_config,
-                cli_overrides=_nodehost_cli_overrides(args),
-        )
+            common = {
+                "config_path": config_path,
+                "artifacts_dir": args.artifacts_dir,
+                "state_out": args.state_out,
+                "setup_timeline": setup_timeline,
+                "global_config_path": args.global_config,
+                "cli_overrides": _nodehost_cli_overrides(args),
+            }
+            if legacy_alias:
+                state = cli_compat.create_scenario(
+                    alias_id=args.legacy_alias_id,
+                    scenario=args.scenario,
+                    **common,
+                )
+            else:
+                state = cli_compat.execute_scenario(
+                    scenario_id=scenario_id,
+                    backend_id=args.backend,
+                    profile_id=profile.profile_id,
+                    requested_nodes=profile.requested_nodes,
+                    **common,
+                )
         run_id = str(state.get("cluster_id") or run_id)
         recorder.run_id = run_id
         _attach_command_audit_refs(state, args.artifacts_dir)
-    except DockerRuntimeError as exc:
+    except (DockerRuntimeError, ExecutionSelectionError, ValueError) as exc:
         print(f"ERROR: gate scenario: {exc}", file=sys.stderr)
         exit_code = 1
         error = str(exc)
@@ -98,7 +138,6 @@ def _finalize_setup_timeline(
     error: str | None,
 ) -> None:
     artifacts_dir = Path(args.artifacts_dir)
-    timeline_path = artifacts_dir / f"setup_timeline_{args.scenario}.json"
     state_path = Path(args.state_out)
     state_obj = dict(state)
     if state_path.exists():
@@ -109,12 +148,17 @@ def _finalize_setup_timeline(
         except (OSError, json.JSONDecodeError):
             pass
     runtime = state_obj.setdefault("runtime", {})
-    emit_legacy_setup_timeline = args.phase == "P13_SCALE_LADDER_50_100"
+    capability_id = str(state_obj.get("capability_id") or args.scenario)
+    scenario_id = str(
+        state_obj.get("scenario_id") or state_obj.get("scenario") or args.scenario
+    )
+    timeline_path = artifacts_dir / f"setup_timeline_{scenario_id}.json"
+    emit_setup_timeline = True
     if isinstance(runtime, dict):
-        if emit_legacy_setup_timeline:
+        if emit_setup_timeline:
             runtime["setup_timeline_path"] = timeline_path.as_posix()
         timings = runtime.get("timings")
-        if emit_legacy_setup_timeline and isinstance(timings, list):
+        if emit_setup_timeline and isinstance(timings, list):
             for entry in timings:
                 if isinstance(entry, dict) and entry.get("name") == "nodehost_start":
                     details = entry.setdefault("details", {})
@@ -132,26 +176,33 @@ def _finalize_setup_timeline(
     with setup_timeline.span("setup_return", "setup_lifecycle", {"exit_code": exit_code, "error": error or ""}):
         pass
     node_count = len(state_obj.get("nodes", [])) if isinstance(state_obj.get("nodes"), list) else 0
-    run_id = str(state_obj.get("cluster_id") or f"phase-{args.phase}-{args.scenario}")
-    if emit_legacy_setup_timeline:
+    run_id = str(state_obj.get("cluster_id") or f"run-{capability_id}-{scenario_id}")
+    profile_id = str(
+        runtime.get("profile_id", args.profile)
+        if isinstance(runtime, dict)
+        else args.profile
+    )
+    if emit_setup_timeline:
         setup_timeline.write_artifact(
             timeline_path,
-            phase_id=args.phase,
+            capability_id=capability_id,
             run_id=run_id,
-            scenario=args.scenario,
+            scenario=scenario_id,
+            profile_id=profile_id,
             node_count=node_count,
             status="PASS" if exit_code == 0 else "FAIL",
             extra={
                 "setup_command_wall_source": {
                     "status": "MISSING",
-                    "reason": "outer wrapper attaches setup_command_wall_seconds during P13O validation",
+                    "reason": "outer wrapper attaches setup_command_wall_seconds during setup timing validation",
                 }
             },
         )
     telemetry = build_setup_telemetry_artifact(
-        phase_id=args.phase,
+        capability_id=capability_id,
         run_id=run_id,
-        scenario=args.scenario,
+        scenario=scenario_id,
+        profile_id=profile_id,
         status="PASS" if exit_code == 0 else "FAIL",
         node_count=node_count,
         segments=setup_timeline.segments,
@@ -196,10 +247,15 @@ def _load_json_if_present(path: str | Path) -> dict[str, object]:
 def _gate_cleanup(args: argparse.Namespace) -> int:
     try:
         state = _load_json_if_present(args.state)
-        phase_id = str(state.get("phase_id", "P03_LOCAL_DOCKER_VALKEY")) if isinstance(state, dict) else "P03_LOCAL_DOCKER_VALKEY"
-        scenario = str(state.get("scenario", "cleanup")) if isinstance(state, dict) else "cleanup"
-        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"phase-{phase_id}-{scenario}") if isinstance(state, dict) else f"phase-{phase_id}-{scenario}"
-        recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=args.artifacts_dir, append=True)
+        capability_id = str(state.get("capability_id", "cluster_lifecycle")) if isinstance(state, dict) else "cluster_lifecycle"
+        scenario = str(
+            state.get("scenario_id")
+            or state.get("scenario")
+            or state.get("capability_id")
+            or "cluster_lifecycle"
+        ) if isinstance(state, dict) else "cluster_lifecycle"
+        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"run-{capability_id}-{scenario}") if isinstance(state, dict) else f"run-{capability_id}-{scenario}"
+        recorder = CommandRecorder(capability_id=capability_id, run_id=run_id, scenario=scenario, artifacts_dir=args.artifacts_dir, append=True)
         with command_recorder_context(recorder):
             report = cli_compat.cleanup_scenario(state_path=args.state, artifacts_dir=args.artifacts_dir, out_path=args.out)
         summary = recorder.close(status="PASS" if report.get("status") == "PASS" else "FAIL")
@@ -224,9 +280,15 @@ def _refresh_setup_telemetry_cleanup(args: argparse.Namespace, cleanup_report: d
     except (OSError, json.JSONDecodeError):
         return
     refreshed = build_setup_telemetry_artifact(
-        phase_id=str(telemetry.get("phase_id", state.get("phase_id", "MISSING"))),
+        capability_id=str(telemetry.get("capability_id", state.get("capability_id", "MISSING"))),
         run_id=str(telemetry.get("run_id", state.get("cluster_id", "MISSING"))),
         scenario=str(telemetry.get("scenario", state.get("scenario", "MISSING"))),
+        profile_id=str(
+            telemetry.get(
+                "profile_id",
+                state.get("runtime", {}).get("profile_id", "MISSING"),
+            )
+        ),
         status=str(telemetry.get("status", cleanup_report.get("status", "MISSING"))),
         node_count=int(telemetry.get("node_count", len(state.get("nodes", []))) or 0),
         runtime_timings=state.get("runtime", {}).get("timings", []) if isinstance(state.get("runtime"), dict) else [],
@@ -249,10 +311,10 @@ def _refresh_setup_telemetry_cleanup(args: argparse.Namespace, cleanup_report: d
 def _fault_apply(args: argparse.Namespace) -> int:
     try:
         state = _load_json_if_present(args.state)
-        phase_id = str(state.get("phase_id", "P07_FAULT_INJECTION_SANDBOX")) if isinstance(state, dict) else "P07_FAULT_INJECTION_SANDBOX"
+        capability_id = str(state.get("capability_id", "fault_matrix")) if isinstance(state, dict) else "fault_matrix"
         scenario = str(state.get("scenario", "fault_apply")) if isinstance(state, dict) else "fault_apply"
-        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{phase_id}-fault") if isinstance(state, dict) else f"{phase_id}-fault"
-        recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
+        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{capability_id}-fault") if isinstance(state, dict) else f"{capability_id}-fault"
+        recorder = CommandRecorder(capability_id=capability_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
         with command_recorder_context(recorder):
             cli_compat.apply_fault(
                 state_path=args.state,
@@ -270,10 +332,10 @@ def _fault_apply(args: argparse.Namespace) -> int:
 def _fault_clear(args: argparse.Namespace) -> int:
     try:
         state = _load_json_if_present(args.state)
-        phase_id = str(state.get("phase_id", "P07_FAULT_INJECTION_SANDBOX")) if isinstance(state, dict) else "P07_FAULT_INJECTION_SANDBOX"
+        capability_id = str(state.get("capability_id", "fault_matrix")) if isinstance(state, dict) else "fault_matrix"
         scenario = str(state.get("scenario", "fault_clear")) if isinstance(state, dict) else "fault_clear"
-        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{phase_id}-fault") if isinstance(state, dict) else f"{phase_id}-fault"
-        recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
+        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{capability_id}-fault") if isinstance(state, dict) else f"{capability_id}-fault"
+        recorder = CommandRecorder(capability_id=capability_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
         with command_recorder_context(recorder):
             cli_compat.clear_fault(state_path=args.state, fault_id=args.fault_id, out_path=args.out)
         recorder.close()
@@ -285,17 +347,22 @@ def _fault_clear(args: argparse.Namespace) -> int:
 
 def _analyze(args: argparse.Namespace) -> int:
     try:
+        capability_id = (
+            resolve_capability_alias(args.legacy_capability_alias)
+            if args.legacy_capability_alias
+            else args.capability_id
+        )
         if args.kind == "workload-impact":
             if not args.out_dir:
                 print("ERROR: analyze: --out-dir is required for workload-impact analysis", file=sys.stderr)
                 return 2
-            cli_compat.build_workload_impact_analysis(args.input, args.out_dir, phase_id=args.phase)
+            cli_compat.build_workload_impact_analysis(args.input, args.out_dir, capability_id=capability_id)
         else:
             if not args.out:
                 print("ERROR: analyze: --out is required for summary analysis", file=sys.stderr)
                 return 2
             cli_compat.create_analysis_summary(args.input, args.out)
-    except (AnalysisError, WorkloadImpactError) as exc:
+    except (AnalysisError, WorkloadImpactError, ValueError) as exc:
         print(f"ERROR: analyze: {exc}", file=sys.stderr)
         return 1
     return 0
@@ -303,17 +370,22 @@ def _analyze(args: argparse.Namespace) -> int:
 
 def _report(args: argparse.Namespace) -> int:
     try:
-        if args.kind == "final-goal-loop":
+        capability_id = (
+            resolve_capability_alias(args.legacy_capability_alias)
+            if args.legacy_capability_alias
+            else args.capability_id
+        )
+        if args.kind == "final-report":
             if not args.input:
-                print("ERROR: report: --input is required for final-goal-loop reports", file=sys.stderr)
+                print("ERROR: report: --input is required for final reports", file=sys.stderr)
                 return 2
-            cli_compat.build_final_goal_loop_report(args.input, args.out_dir, phase_id=args.phase)
+            cli_compat.build_final_report(args.input, args.out_dir, capability_id=capability_id)
         else:
             if not args.analysis or not args.index_out:
                 print("ERROR: report: --analysis and --index-out are required for summary reports", file=sys.stderr)
                 return 2
             cli_compat.render_report(args.analysis, args.out_dir, args.index_out)
-    except (FinalReportError, ReportError) as exc:
+    except (FinalReportError, ReportError, ValueError) as exc:
         print(f"ERROR: report: {exc}", file=sys.stderr)
         return 1
     return 0
@@ -321,11 +393,18 @@ def _report(args: argparse.Namespace) -> int:
 
 def _resource_preflight(args: argparse.Namespace) -> int:
     try:
+        capability_id = (
+            resolve_capability_alias(args.legacy_capability_alias)
+            if args.legacy_capability_alias
+            else args.capability_id
+        )
         kwargs: dict[str, object] = {
             "dry_run": args.dry_run,
-            "phase_id": args.phase,
+            "capability_id": capability_id,
             "scenario": args.scenario,
         }
+        if args.profile is not None:
+            kwargs["profile_id"] = args.profile
         if args.global_config is not None:
             kwargs["global_config_path"] = args.global_config
         cli_overrides = _nodehost_cli_overrides(args)
@@ -336,7 +415,7 @@ def _resource_preflight(args: argparse.Namespace) -> int:
             args.out,
             **kwargs,
         )
-    except ResourcePreflightError as exc:
+    except (ResourcePreflightError, ValueError) as exc:
         print(f"ERROR: resource preflight: {exc}", file=sys.stderr)
         return 1
     return 0 if report["can_run"] else 1
@@ -368,6 +447,8 @@ def _gate_execute(args: argparse.Namespace) -> int:
             ownership_id=args.ownership_id,
             provenance_id=args.provenance_id,
             product_digest=args.product_digest or product_tree_digest(),
+            backend_id=args.backend,
+            profile_id=args.profile,
             prior_admission_digest=args.prior_admission_digest,
             operator_opt_in=args.operator_opt_in,
             cost_acknowledged=args.cost_acknowledged,
@@ -445,8 +526,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = ContractParser(
         prog="python3 -m valkey_scale_lab.cli",
         description=(
-            "Valkey scale lab CLI. P00 exposes the command contract; later "
-            "phases implement runtime behavior."
+            "Valkey scale lab CLI with explicit scenario, backend, and profile axes."
         ),
     )
     parser.add_argument("--version", action="version", version=f"valkey-scale-lab {__version__}")
@@ -474,9 +554,13 @@ def build_parser() -> argparse.ArgumentParser:
     gate = sub.add_parser("gate", help="Run gate lifecycle scenarios.")
     gate_sub = gate.add_subparsers(dest="gate_command", metavar="<gate-command>")
     scenario = gate_sub.add_parser("scenario", help="Create a scenario and write state.")
-    scenario.add_argument("--phase", required=True)
-    scenario.add_argument("--scenario", required=True)
-    scenario.add_argument("--config", required=True)
+    scenario.add_argument("--scenario", default="local_full_flow")
+    scenario.add_argument("--backend", choices=["fake", "docker_container", "docker_process"], default="docker_process")
+    scenario.add_argument("--profile", choices=sorted(PROFILES), default="exact-50")
+    scenario.add_argument("--nodes", type=int)
+    scenario.add_argument("--config")
+    scenario.add_argument("--run-id")
+    scenario.add_argument("--phase", dest="legacy_alias_id", help=argparse.SUPPRESS)
     scenario.add_argument("--artifacts-dir", required=True)
     scenario.add_argument("--state-out", required=True)
     _add_nodehost_overrides(scenario)
@@ -493,6 +577,8 @@ def build_parser() -> argparse.ArgumentParser:
     execute.add_argument("--definition", required=True)
     execute.add_argument("--nodes", required=True, type=int)
     execute.add_argument("--config", required=True)
+    execute.add_argument("--backend", choices=["docker_process"], default="docker_process")
+    execute.add_argument("--profile", choices=["exact-50", "exact-100", "exact-200"])
     execute.add_argument("--run-id", required=True)
     execute.add_argument("--ownership-id", required=True)
     execute.add_argument("--provenance-id", required=True)
@@ -524,16 +610,18 @@ def build_parser() -> argparse.ArgumentParser:
     analyze.add_argument("--input", required=True, help="Input artifact directory to analyze.")
     analyze.add_argument("--out")
     analyze.add_argument("--out-dir")
-    analyze.add_argument("--phase", default="P25_FAULT_WORKLOAD_IMPACT_ANALYSIS")
+    analyze.add_argument("--capability-id", default="fault_workload_impact")
+    analyze.add_argument("--phase", dest="legacy_capability_alias", help=argparse.SUPPRESS)
     analyze.set_defaults(func=_analyze)
 
     report = sub.add_parser("report", help="Render reports from artifacts.")
-    report.add_argument("--kind", choices=["summary", "final-goal-loop"], default="summary")
+    report.add_argument("--kind", choices=["summary", "final-report"], default="summary")
     report.add_argument("--analysis", help="Path to analysis_summary.json.")
-    report.add_argument("--input", help="Input artifact phase directory for final-goal-loop reports.")
+    report.add_argument("--input", help="Input artifact capture directory for final reports.")
     report.add_argument("--out-dir", required=True, help="Directory for rendered reports.")
     report.add_argument("--index-out", help="Path for report_index.json.")
-    report.add_argument("--phase", default="P26_FINAL_REPORT_REGRESSION")
+    report.add_argument("--capability-id", default="final_report")
+    report.add_argument("--phase", dest="legacy_capability_alias", help=argparse.SUPPRESS)
     report.set_defaults(func=_report)
 
     resource = sub.add_parser("resource", help="Resource checks for scale rungs.")
@@ -542,8 +630,10 @@ def build_parser() -> argparse.ArgumentParser:
     preflight.add_argument("--config", required=True)
     preflight.add_argument("--out", required=True)
     preflight.add_argument("--dry-run", action="store_true")
-    preflight.add_argument("--phase")
+    preflight.add_argument("--capability-id")
+    preflight.add_argument("--phase", dest="legacy_capability_alias", help=argparse.SUPPRESS)
     preflight.add_argument("--scenario")
+    preflight.add_argument("--profile", choices=sorted(PROFILES))
     _add_nodehost_overrides(preflight)
     preflight.set_defaults(func=_resource_preflight)
     _add_unimplemented(resource, "resource")

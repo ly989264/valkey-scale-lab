@@ -74,6 +74,8 @@ class GateRequest:
     requested_nodes: int
     artifact_root: Path
     fault_scope: OwnedFaultScope
+    backend_id: str = "docker_process"
+    profile_id: Optional[str] = None
     operator_opt_in: bool = False
     cost_acknowledged: bool = False
     configuration: Mapping[str, Any] = dataclasses.field(
@@ -99,6 +101,9 @@ class GateRequest:
             raise ValueError("fault scope run_id must match request run_id")
         if self.fault_scope.ownership_id != self.ownership_id:
             raise ValueError("fault scope ownership_id must match request ownership_id")
+        _require_identifier("backend_id", self.backend_id)
+        if self.profile_id is not None:
+            _require_identifier("profile_id", self.profile_id)
         if not isinstance(self.operator_opt_in, bool):
             raise TypeError("operator_opt_in must be a boolean")
         if not isinstance(self.cost_acknowledged, bool):
@@ -123,8 +128,8 @@ class ExecutionContext:
     definition_digest: str
     plan_digest: str
     fault_scope: OwnedFaultScope
-    runtime_phase: Optional[str]
-    runtime_scenario: Optional[str]
+    backend_id: str
+    profile_id: str
     config_template: Optional[str]
     configuration: Mapping[str, Any]
     metadata: Mapping[str, Any]
@@ -137,6 +142,8 @@ class ExecutionContext:
             raise ValueError("fault scope run_id must match context run_id")
         if self.fault_scope.ownership_id != self.ownership_id:
             raise ValueError("fault scope ownership_id must match context ownership_id")
+        _require_identifier("backend_id", self.backend_id)
+        _require_identifier("profile_id", self.profile_id)
         if isinstance(self.requested_nodes, bool) or not isinstance(
             self.requested_nodes, int
         ):

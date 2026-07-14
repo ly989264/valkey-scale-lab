@@ -22,7 +22,7 @@ def test_command_log_fixtures_validate_schema() -> None:
 
 
 def test_command_recorder_writes_log_and_summary(tmp_path: Path) -> None:
-    recorder = CommandRecorder(phase_id="M1-S03", run_id="unit-command-recorder", scenario="unit", artifacts_dir=tmp_path / "artifacts", log_dir=tmp_path / "logs")
+    recorder = CommandRecorder(capability_id="command_audit", run_id="unit-command-recorder", scenario="unit", artifacts_dir=tmp_path / "artifacts", log_dir=tmp_path / "logs")
     recorder.record_result(
         operation_id="cluster_setup",
         step_id="cluster_probe",

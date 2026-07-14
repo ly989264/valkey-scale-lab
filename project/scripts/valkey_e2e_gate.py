@@ -16,8 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 from valkey_probe_lib import endpoints_from_state, execute_cluster_command, load_state, probe_endpoint, wait_for_cluster_ok  # noqa: E402
+from valkey_scale_lab.execution import PROFILES  # noqa: E402
 
-P13_TIMING_NAMES = [
+SETUP_TIMING_NAMES = [
     "nodehost_start",
     "process_config_prepare",
     "process_start",
@@ -41,7 +42,7 @@ P13_TIMING_NAMES = [
     "artifact_write",
 ]
 
-P13_ACCOUNTING_NAMES = [
+SETUP_ACCOUNTING_NAMES = [
     "setup_command_wall",
     "setup_stdout_write",
     "setup_stderr_write",
@@ -80,7 +81,7 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def refresh_p29_telemetry_report_hashes(artifact_dir: Path) -> None:
+def refresh_telemetry_report_hashes(artifact_dir: Path) -> None:
     report_path = artifact_dir / "telemetry_completeness_report.json"
     if not report_path.exists():
         return
@@ -234,7 +235,7 @@ def accounting_summary(timings: dict[str, dict[str, Any]], total_gate_seconds: f
     accounted = 0.0
     missing: list[str] = []
     summary: dict[str, Any] = {"total_gate_seconds": round(total_gate_seconds, 6)}
-    for name in P13_ACCOUNTING_NAMES:
+    for name in SETUP_ACCOUNTING_NAMES:
         key = f"{name}_seconds"
         value = timing_duration(timings, name)
         summary[key] = value
@@ -264,11 +265,12 @@ def accounting_summary(timings: dict[str, dict[str, Any]], total_gate_seconds: f
     return summary
 
 
-def write_p13_timing_breakdown(
+def write_setup_timing_breakdown(
     path: Path,
     *,
-    phase: str,
+    capability_id: str,
     scenario: str,
+    profile_id: str,
     run_id: str,
     node_count: int,
     runtime_entries: list[dict[str, Any]],
@@ -285,15 +287,16 @@ def write_p13_timing_breakdown(
     accounting = accounting_summary(timings, total_gate_seconds)
     artifact = {
         "schema_version": "v1",
-        "artifact_type": "p13_timing_breakdown",
-        "phase_id": phase,
+        "artifact_type": "setup_timing_breakdown",
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario": scenario,
+        "profile_id": profile_id,
         "created_at": utc_now(),
         "producer": {"name": "scripts/valkey_e2e_gate.py", "version": "v1"},
         "status": status,
         "node_count": node_count,
-        "timings": timing_entries(timings, P13_TIMING_NAMES),
+        "timings": timing_entries(timings, SETUP_TIMING_NAMES),
         "wrapper_probe_details": {
             "representative_probe_duration_seconds": timing_duration(wait_timing, "representative_probe"),
             "final_full_probe_duration_seconds": final_full_probe_duration,
@@ -325,11 +328,11 @@ def write_p13_timing_breakdown(
         accounting_timings,
         "artifact_write",
         artifact_write_started,
-        details={"path": str(path), "artifact": "p13_timing_breakdown"},
+        details={"path": str(path), "artifact": "setup_timing_breakdown"},
     )
     timings = merge_timing_entries(runtime_entries, list(wrapper_timings.values()), list(accounting_timings.values()))
     accounting = accounting_summary(timings, round(max(time.monotonic() - gate_started_monotonic, 0.0), 6))
-    artifact["timings"] = timing_entries(timings, P13_TIMING_NAMES)
+    artifact["timings"] = timing_entries(timings, SETUP_TIMING_NAMES)
     artifact["accounting"] = accounting
     artifact["summary"].update(accounting)
     write_json(path, artifact)
@@ -363,7 +366,7 @@ def node_processes_from_state(state: dict[str, Any]) -> list[dict[str, Any]]:
     return [{key: node.get(key, "MISSING") for key in keys} for node in state.get("nodes", [])]
 
 
-def cleanup(phase: str, state_path: Path, artifact_dir: Path, timeout: int) -> tuple[str, Path, str, str, int]:
+def cleanup(capability_id: str, state_path: Path, artifact_dir: Path, timeout: int) -> tuple[str, Path, str, str, int]:
     cleanup_path = artifact_dir / "cleanup_report.json"
     cmd = [
         sys.executable, "-m", "valkey_scale_lab.cli", "gate", "cleanup",
@@ -378,8 +381,8 @@ def cleanup(phase: str, state_path: Path, artifact_dir: Path, timeout: int) -> t
             write_json(cleanup_path, {
                 "schema_version": "v1",
                 "artifact_type": "cleanup_report",
-                "phase_id": phase,
-                "run_id": f"phase-{phase}",
+                "capability_id": capability_id,
+                "run_id": f"capability_id-{capability_id}",
                 "created_at": utc_now(),
                 "producer": {"name": "valkey-scale-lab", "version": "unknown"},
                 "status": "FAIL",
@@ -391,8 +394,8 @@ def cleanup(phase: str, state_path: Path, artifact_dir: Path, timeout: int) -> t
         write_json(cleanup_path, {
             "schema_version": "v1",
             "artifact_type": "cleanup_report",
-            "phase_id": phase,
-            "run_id": f"phase-{phase}",
+            "capability_id": capability_id,
+            "run_id": f"capability_id-{capability_id}",
             "created_at": utc_now(),
             "producer": {"name": "valkey-scale-lab", "version": "unknown"},
             "status": "FAIL",
@@ -404,9 +407,11 @@ def cleanup(phase: str, state_path: Path, artifact_dir: Path, timeout: int) -> t
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Independent real Valkey e2e gate wrapper")
-    parser.add_argument("--phase", required=True)
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--config", required=True)
     parser.add_argument("--scenario", required=True)
+    parser.add_argument("--backend", choices=["docker_container", "docker_process"], default="docker_process")
+    parser.add_argument("--profile", choices=sorted(PROFILES))
     parser.add_argument("--out", required=True)
     parser.add_argument("--min-nodes", type=int, default=1)
     parser.add_argument("--expected-version-prefix", default="9.1.")
@@ -416,19 +421,28 @@ def main() -> int:
     parser.add_argument("--probe-timeout", type=float, default=2.0)
     parser.add_argument("--wait-cluster-timeout", type=float, default=90.0)
     args = parser.parse_args()
+    profile_id = args.profile or f"exact-{args.min_nodes}"
+    profile = PROFILES.get(profile_id)
+    if profile is None or profile.requested_nodes != args.min_nodes:
+        parser.error(
+            f"profile {profile_id!r} must preserve --min-nodes exactly ({args.min_nodes})"
+        )
     gate_started_monotonic = time.monotonic()
 
     out = Path(args.out)
     artifact_dir = out.parent
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    state_path = artifact_dir / f"state_{args.scenario}.json"
-    setup_stdout = artifact_dir / f"{args.scenario}_setup.stdout.log"
-    setup_stderr = artifact_dir / f"{args.scenario}_setup.stderr.log"
+    state_path = artifact_dir / f"state_{args.scenario}_{profile_id}.json"
+    setup_stdout = artifact_dir / f"{args.scenario}_{profile_id}_setup.stdout.log"
+    setup_stderr = artifact_dir / f"{args.scenario}_{profile_id}_setup.stderr.log"
 
     setup_cmd = [
         sys.executable, "-m", "valkey_scale_lab.cli", "gate", "scenario",
-        "--phase", args.phase,
+        "--capability-id", args.capability_id,
         "--scenario", args.scenario,
+        "--backend", args.backend,
+        "--profile", profile_id,
+        "--nodes", str(profile.requested_nodes),
         "--config", args.config,
         "--artifacts-dir", str(artifact_dir),
         "--state-out", str(state_path),
@@ -466,7 +480,7 @@ def main() -> int:
                 state_load_started = time.monotonic()
                 state = load_state(state_path)
                 record_timing(accounting_timings, "state_load", state_load_started, details={"path": str(state_path)})
-                if args.phase in {"P30_MANAGEMENT_MATRIX_50_REAL", "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG", "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"}:
+                if args.capability_id in {"management_matrix", "server_profile", "cluster_timeout"}:
                     run_state_path = artifact_dir / "run_state.json"
                     if not run_state_path.exists():
                         write_json(
@@ -474,10 +488,10 @@ def main() -> int:
                             {
                                 "schema_version": "v1",
                                 "artifact_type": "strict_run_state",
-                                "phase_id": args.phase,
-                                "stage_id": args.phase,
+                                "capability_id": args.capability_id,
+
                                 "scenario_name": args.scenario,
-                                "run_id": state.get("runtime", {}).get("run_id", f"phase-{args.phase}-{args.scenario}"),
+                                "run_id": state.get("runtime", {}).get("run_id", f"capability_id-{args.capability_id}-{args.scenario}"),
                                 "status": "PASS",
                                 "node_count": len(state.get("nodes", [])),
                                 "runtime": state.get("runtime", {}),
@@ -536,7 +550,7 @@ def main() -> int:
             if bad_versions:
                 errors.append(f"observed Valkey versions do not match {args.expected_version_prefix}: {bad_versions}")
             if args.require_data_path:
-                key = f"{{vslab-probe}}:{args.phase}:{int(time.time())}"
+                key = f"{{vslab-probe}}:{args.capability_id}:{int(time.time())}"
                 value = f"value-{args.scenario}"
                 data_path_started = time.monotonic()
                 data_path_status = "FAIL"
@@ -576,7 +590,7 @@ def main() -> int:
         if state_path.exists():
             cleanup_command_started = time.monotonic()
             cleanup_status, cleanup_path, cleanup_stdout, cleanup_stderr, cleanup_exit = cleanup(
-                args.phase, state_path, artifact_dir, args.cleanup_timeout
+                args.capability_id, state_path, artifact_dir, args.cleanup_timeout
             )
             record_timing(
                 accounting_timings,
@@ -604,8 +618,8 @@ def main() -> int:
             write_json(cleanup_path, {
                 "schema_version": "v1",
                 "artifact_type": "cleanup_report",
-                "phase_id": args.phase,
-                "run_id": f"phase-{args.phase}",
+                "capability_id": args.capability_id,
+                "run_id": f"capability_id-{args.capability_id}",
                 "created_at": utc_now(),
                 "producer": {"name": "valkey-scale-lab", "version": "unknown"},
                 "status": "FAIL",
@@ -634,13 +648,14 @@ def main() -> int:
         )
 
     status = "PASS" if not errors else "FAIL"
-    if args.phase == "P13_SCALE_LADDER_50_100":
-        timing_breakdown_path = artifact_dir / f"p13_timing_breakdown_{args.scenario}.json"
-        timing_breakdown_artifact = write_p13_timing_breakdown(
+    if args.capability_id == "scale_ladder":
+        timing_breakdown_path = artifact_dir / f"setup_timing_breakdown_{profile_id}.json"
+        timing_breakdown_artifact = write_setup_timing_breakdown(
             timing_breakdown_path,
-            phase=args.phase,
+            capability_id=args.capability_id,
             scenario=args.scenario,
-            run_id=f"phase-{args.phase}-{args.scenario}",
+            profile_id=profile_id,
+            run_id=f"capability_id-{args.capability_id}-{args.scenario}-{profile_id}",
             node_count=len(state.get("nodes", [])),
             runtime_entries=list(state.get("runtime", {}).get("timings", [])),
             wrapper_timings=wrapper_timings,
@@ -652,8 +667,8 @@ def main() -> int:
     evidence = {
         "schema_version": "v1",
         "artifact_type": "valkey_e2e_evidence",
-        "phase_id": args.phase,
-        "run_id": f"phase-{args.phase}-{args.scenario}",
+        "capability_id": args.capability_id,
+        "run_id": f"capability_id-{args.capability_id}-{args.scenario}-{profile_id}",
         "created_at": utc_now(),
         "producer": {"name": "scripts/valkey_e2e_gate.py", "version": "v1"},
         "status": status,
@@ -667,6 +682,8 @@ def main() -> int:
         "data_path_result": data_path_result,
         "valkey_versions": sorted(set(valkey_versions)),
         "scenario": args.scenario,
+        "backend_id": args.backend,
+        "profile_id": profile_id,
         "started_at": started,
         "finished_at": utc_now(),
         "setup": {
@@ -688,7 +705,7 @@ def main() -> int:
         "timing_breakdown_path": str(timing_breakdown_path) if timing_breakdown_path is not None else "SKIPPED_WITH_REASON",
         "timing_breakdown": timing_breakdown_artifact.get("summary") if timing_breakdown_artifact else {
             "status": "SKIPPED_WITH_REASON",
-            "reason": "P13 timing breakdown is only emitted for P13 scale gates",
+            "reason": "Startup timing breakdown is only emitted for scale_ladder executions.",
         },
         "cleanup": {
             "status": cleanup_status,
@@ -698,12 +715,12 @@ def main() -> int:
     }
     evidence = encode_missing_nulls(evidence)
     write_json(out, evidence)
-    if args.phase == "P36_FULL_FLOW_E2E_50_100_200_REAL":
-        from valkey_scale_lab.runtime.docker_runtime import refresh_p36_full_flow_aggregate  # noqa: PLC0415
+    if args.capability_id == "local_full_flow":
+        from valkey_scale_lab.runtime.docker_runtime import refresh_full_flow_aggregate  # noqa: PLC0415
 
-        refresh_p36_full_flow_aggregate(artifact_dir.parent)
-    if args.phase == "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING":
-        refresh_p29_telemetry_report_hashes(artifact_dir)
+        refresh_full_flow_aggregate(artifact_dir.parent)
+    if args.capability_id == "telemetry":
+        refresh_telemetry_report_hashes(artifact_dir)
     if errors:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)

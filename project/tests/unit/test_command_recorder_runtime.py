@@ -12,7 +12,7 @@ def test_run_docker_records_command_with_context(monkeypatch, tmp_path: Path) ->
         return subprocess.CompletedProcess(argv, 0, "ok\n", "")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    recorder = CommandRecorder(phase_id="M1-S03", run_id="unit-runtime", scenario="unit", artifacts_dir=tmp_path / "artifacts", log_dir=tmp_path / "logs")
+    recorder = CommandRecorder(capability_id="command_audit", run_id="unit-runtime", scenario="unit", artifacts_dir=tmp_path / "artifacts", log_dir=tmp_path / "logs")
     with command_recorder_context(recorder):
         result = run_docker(["ps"], timeout=5, check=True)
     summary = recorder.close()

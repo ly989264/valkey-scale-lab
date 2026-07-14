@@ -11,10 +11,10 @@
     "audit_scope",
     "manifest_summary",
     "summary",
-    "phase_results",
+    "capability_results",
     "artifact_results",
     "gate_results",
-    "p14_boundary",
+    "scale_planning_boundary",
     "findings"
   ],
   "properties": {
@@ -33,10 +33,10 @@
     "status": {"type": "string", "enum": ["PASS", "FAIL", "PARTIAL"]},
     "audit_scope": {
       "type": "object",
-      "required": ["automatic_phase_ids", "optional_phase_ids", "required_artifact_count"],
+      "required": ["automatic_capability_ids", "optional_capability_ids", "required_artifact_count"],
       "properties": {
-        "automatic_phase_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "optional_phase_ids": {"type": "array", "items": {"type": "string"}},
+        "automatic_capability_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "optional_capability_ids": {"type": "array", "items": {"type": "string"}},
         "required_artifact_count": {"type": "integer", "minimum": 0}
       },
       "additionalProperties": true
@@ -54,7 +54,7 @@
     "summary": {
       "type": "object",
       "required": [
-        "phase_count",
+        "capability_count",
         "artifact_count",
         "gate_result_count",
         "blocking_findings_count",
@@ -62,7 +62,7 @@
         "real_evidence_count"
       ],
       "properties": {
-        "phase_count": {"type": "integer", "minimum": 0},
+        "capability_count": {"type": "integer", "minimum": 0},
         "artifact_count": {"type": "integer", "minimum": 0},
         "gate_result_count": {"type": "integer", "minimum": 0},
         "blocking_findings_count": {"type": "integer", "minimum": 0},
@@ -71,13 +71,13 @@
       },
       "additionalProperties": true
     },
-    "phase_results": {
+    "capability_results": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "required": [
-          "phase_id",
+          "capability_id",
           "automatic",
           "status",
           "required_artifacts_checked",
@@ -88,7 +88,7 @@
           "finding_ids"
         ],
         "properties": {
-          "phase_id": {"type": "string", "minLength": 1},
+          "capability_id": {"type": "string", "minLength": 1},
           "automatic": {"type": "boolean"},
           "status": {"type": "string", "enum": ["PASS", "FAIL", "SKIPPED_WITH_REASON"]},
           "required_artifacts_checked": {"type": "integer", "minimum": 0},
@@ -106,7 +106,7 @@
       "items": {
         "type": "object",
         "required": [
-          "phase_id",
+          "capability_id",
           "path",
           "required",
           "exists",
@@ -121,7 +121,7 @@
           "finding_ids"
         ],
         "properties": {
-          "phase_id": {"type": "string"},
+          "capability_id": {"type": "string"},
           "path": {"type": "string"},
           "required": {"type": "boolean"},
           "exists": {"type": "boolean"},
@@ -142,9 +142,9 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["phase_id", "path", "exists", "schema_valid", "status", "finding_ids"],
+        "required": ["capability_id", "path", "exists", "schema_valid", "status", "finding_ids"],
         "properties": {
-          "phase_id": {"type": "string"},
+          "capability_id": {"type": "string"},
           "path": {"type": "string"},
           "exists": {"type": "boolean"},
           "schema_valid": {"type": "boolean"},
@@ -154,10 +154,10 @@
         "additionalProperties": true
       }
     },
-    "p14_boundary": {
+    "scale_planning_boundary": {
       "type": "object",
       "required": [
-        "phase_id",
+        "capability_id",
         "automatic",
         "opt_in_required",
         "dry_run_only",
@@ -168,7 +168,7 @@
         "reason"
       ],
       "properties": {
-        "phase_id": {"type": "string", "const": "P14_SCALE_1000_OPTIN_DRYRUN"},
+        "capability_id": {"type": "string", "const": "scale_planning"},
         "automatic": {"type": "boolean"},
         "opt_in_required": {"type": "boolean"},
         "dry_run_only": {"type": "boolean"},
@@ -202,7 +202,7 @@
             "enum": ["current", "historical", "dry_run_boundary", "informational"]
           },
           "blocking": {"type": "boolean"},
-          "phase_id": {"type": "string"},
+          "capability_id": {"type": "string"},
           "path": {"type": "string"},
           "description": {"type": "string", "minLength": 1},
           "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}}

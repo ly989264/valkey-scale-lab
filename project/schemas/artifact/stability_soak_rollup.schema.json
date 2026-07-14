@@ -10,7 +10,7 @@
     "status",
     "summary",
     "profiles",
-    "p14_boundary",
+    "scale_planning_boundary",
     "findings"
   ],
   "properties": {
@@ -47,7 +47,7 @@
         "required": [
           "schema_version",
           "artifact_type",
-          "phase_id",
+          "capability_id",
           "run_id",
           "created_at",
           "producer",
@@ -87,11 +87,11 @@
         "additionalProperties": true
       }
     },
-    "p14_boundary": {
+    "scale_planning_boundary": {
       "type": "object",
-      "required": ["phase_id", "status", "real_valkey_coverage", "dry_run_only"],
+      "required": ["capability_id", "status", "real_valkey_coverage", "dry_run_only"],
       "properties": {
-        "phase_id": {"type": "string", "const": "P14_SCALE_1000_OPTIN_DRYRUN"},
+        "capability_id": {"type": "string", "const": "scale_planning"},
         "status": {"type": "string", "enum": ["SKIPPED_WITH_REASON"]},
         "real_valkey_coverage": {"type": "boolean", "const": false},
         "dry_run_only": {"type": "boolean", "const": true}

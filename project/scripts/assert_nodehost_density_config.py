@@ -25,7 +25,7 @@ CONFIGS = [
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", required=True)
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--global-config", default="config/valkey_scale_lab_global.yaml")
     args = parser.parse_args()
     errors: list[str] = []
@@ -51,7 +51,11 @@ def main() -> int:
             errors.append(f"{config_path}: merge order not recorded")
         try:
             if config_path.endswith("scale_200.yaml"):
-                plan = build_cluster_plan(config, bounded_exception_phase="P32_MANAGEMENT_MATRIX_200_REAL", bounded_exception_scenario="strict_management_matrix_200")
+                plan = build_cluster_plan(
+                    config,
+                    capability_id="management_matrix",
+                    scenario="management_matrix",
+                )
             else:
                 plan = build_cluster_plan(config, force_dry_run=bool(runtime.get("dry_run")))
         except Exception as exc:
@@ -65,12 +69,12 @@ def main() -> int:
         counts = density.get("logical_nodes_per_nodehost", {})
         if any(int(value) > int(density.get("max_logical_nodes_per_nodehost", 0)) for value in counts.values()):
             errors.append(f"{config_path}: logical node count exceeds density max")
-    phase_dir = ROOT / "artifacts" / "phases" / args.phase
-    if phase_dir.exists():
-        for name in ["phase_summary.json", "nodehost_density_plan.json", "resource_preflight.json", "cluster_plan.json", "run_state.json"]:
-            path = phase_dir / name
+    capture_dir = ROOT / "artifacts" / "capabilities" / args.capability_id
+    if capture_dir.exists():
+        for name in ["run_summary.json", "nodehost_density_plan.json", "resource_preflight.json", "cluster_plan.json", "run_state.json"]:
+            path = capture_dir / name
             if not path.exists():
-                errors.append(f"P41 artifact missing: {name}")
+                errors.append(f"NODEHOST_DENSITY artifact missing: {name}")
             else:
                 try:
                     json.loads(path.read_text(encoding="utf-8"))
@@ -80,7 +84,7 @@ def main() -> int:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)
         return 1
-    print(f"PASS nodehost density config phase={args.phase}")
+    print(f"PASS nodehost density config capability_id={args.capability_id}")
     return 0
 
 

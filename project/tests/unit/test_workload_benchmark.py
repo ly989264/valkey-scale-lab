@@ -20,7 +20,7 @@ def test_invalid_ratio_rejected() -> None:
 
 
 def test_benchmark_runner_emits_metrics_and_windows_for_every_profile() -> None:
-    telemetry = TelemetryRun(phase_id="M1-S05", scenario_name="unit", run_id="unit-run")
+    telemetry = TelemetryRun(capability_id="workload", scenario_name="unit", run_id="unit-run")
 
     def command(*args: object, timeout: int = 10) -> str:
         return "OK" if args and args[0] == "SET" else "value"
@@ -47,7 +47,7 @@ def test_benchmark_runner_emits_metrics_and_windows_for_every_profile() -> None:
 
 
 def test_benchmark_runner_classifies_failure_counts() -> None:
-    telemetry = TelemetryRun(phase_id="M1-S05", scenario_name="unit", run_id="unit-run-failure")
+    telemetry = TelemetryRun(capability_id="workload", scenario_name="unit", run_id="unit-run-failure")
 
     def command(*args: object, timeout: int = 10) -> str:
         raise RuntimeError("MOVED 1234 127.0.0.1:7000")

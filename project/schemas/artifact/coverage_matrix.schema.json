@@ -12,7 +12,7 @@
     "layers",
     "surfaces",
     "entries",
-    "p14_boundary",
+    "scale_planning_boundary",
     "findings"
   ],
   "properties": {
@@ -52,7 +52,7 @@
       "minItems": 6,
       "maxItems": 6,
       "uniqueItems": true,
-      "items": {"type": "string", "enum": ["fake", "small-real", "30", "50", "100", "1000-dry-run"]}
+      "items": {"type": "string", "enum": ["fake", "small-real", "30", "50", "100", "200", "1000-dry-run"]}
     },
     "surfaces": {
       "type": "array",
@@ -79,7 +79,7 @@
           "reason"
         ],
         "properties": {
-          "layer": {"type": "string", "enum": ["fake", "small-real", "30", "50", "100", "1000-dry-run"]},
+          "layer": {"type": "string", "enum": ["fake", "small-real", "30", "50", "100", "200", "1000-dry-run"]},
           "surface": {"type": "string", "enum": ["cluster_build", "management", "workload", "observability", "fault", "failover", "stability", "cleanup", "scale", "report_visualization"]},
           "status": {"type": "string", "enum": ["COVERED", "MISSING", "SKIPPED_WITH_REASON"]},
           "evidence_class": {"type": "string", "enum": ["fake", "real_valkey", "dry_run_planner", "source_artifact", "report_view", "none"]},
@@ -94,11 +94,11 @@
         "additionalProperties": true
       }
     },
-    "p14_boundary": {
+    "scale_planning_boundary": {
       "type": "object",
-      "required": ["phase_id", "status", "real_valkey_coverage", "reason"],
+      "required": ["capability_id", "status", "real_valkey_coverage", "reason"],
       "properties": {
-        "phase_id": {"type": "string"},
+        "capability_id": {"type": "string"},
         "status": {"type": "string", "enum": ["SKIPPED_WITH_REASON", "PASS", "FAIL"]},
         "real_valkey_coverage": {"type": "boolean"},
         "dry_run_only": {"type": "boolean"},

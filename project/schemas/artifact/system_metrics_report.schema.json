@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "scenario_name",
     "status",
@@ -20,8 +20,7 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "system_metrics_report"},
-    "phase_id": {"type": "string", "minLength": 1},
-    "stage_id": {"type": "string", "minLength": 1},
+    "capability_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
     "scenario_name": {"type": "string", "minLength": 1},
     "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED_WITH_REASON", "SKIPPED_WITH_REASON"]},

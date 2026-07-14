@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "created_at",
     "producer",
@@ -22,9 +22,9 @@
       "type": "string",
       "const": "management_ops_report"
     },
-    "phase_id": {
+    "capability_id": {
       "type": "string",
-      "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"
+      "pattern": "^[a-z][a-z0-9_]*$"
     },
     "run_id": {
       "type": "string",

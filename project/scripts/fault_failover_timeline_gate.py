@@ -40,13 +40,13 @@ from fault_failover_gate import (  # noqa: E402
     workload_target_for_logical,
 )
 
-PHASE = "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
-P45_PHASE = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
+CAPABILITY = "failover_timeline"
+CLEAN_GATE_DIAGNOSTICS_CAPABILITY = "clean_gate_diagnostics"
 REQUIRED_REAL_SCALES = [30, 50, 100, 200]
 SMOKE_SCALE = 10
 
 
-def find_p44_primary_with_replica(probes: list[dict[str, Any]], state_nodes: list[dict[str, Any]]) -> tuple[str, str, str] | None:
+def find_failover_timeline_primary_with_replica(probes: list[dict[str, Any]], state_nodes: list[dict[str, Any]]) -> tuple[str, str, str] | None:
     logical_to_id = {
         str(probe["logical_id"]): str(probe["myself_node_id"])
         for probe in probes
@@ -108,9 +108,9 @@ def load_json_if_exists(path: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="P44 real failover RTO timeline observer gate")
-    parser.add_argument("--phase", default=PHASE)
-    parser.add_argument("--artifact-dir", default=f"artifacts/phases/{PHASE}")
+    parser = argparse.ArgumentParser(description="FAILOVER_TIMELINE real failover RTO timeline observer gate")
+    parser.add_argument("--capability-id", default=CAPABILITY)
+    parser.add_argument("--artifact-dir", default=f"artifacts/captures/{CAPABILITY}")
     parser.add_argument("--scales", default="10,30,50,100,200")
     parser.add_argument("--samples-per-scale", type=int, default=1)
     parser.add_argument("--probe-interval-ms", type=int)
@@ -126,7 +126,7 @@ def main() -> int:
         artifact_dir = ROOT / artifact_dir
     artifact_dir.mkdir(parents=True, exist_ok=True)
     scales = [int(item) for item in args.scales.split(",") if item]
-    required = REQUIRED_REAL_SCALES if args.phase == P45_PHASE else [scale for scale in REQUIRED_REAL_SCALES if scale in scales]
+    required = REQUIRED_REAL_SCALES if args.capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else [scale for scale in REQUIRED_REAL_SCALES if scale in scales]
     errors: list[str] = []
     samples: list[dict[str, Any]] = []
     observer_rows: list[dict[str, Any]] = []
@@ -137,7 +137,7 @@ def main() -> int:
     cleanup_reports: list[dict[str, Any]] = []
 
     for scale in scales:
-        ok, preflight_path, reason = run_resource_preflight(args.phase, scale, artifact_dir)
+        ok, preflight_path, reason = run_resource_preflight(args.capability_id, scale, artifact_dir)
         if not ok:
             errors.append(f"resource preflight failed for scale {scale}: {reason}; see {rel(preflight_path)}")
             continue
@@ -156,23 +156,23 @@ def main() -> int:
     observed = {sample.get("node_count") for sample in samples if sample.get("status") == "PASS" and sample.get("real_valkey") is True}
     missing = sorted(set(required) - observed)
     if missing:
-        errors.append(f"missing required real {args.phase} scales {missing}")
+        errors.append(f"missing required real {args.capability_id} scales {missing}")
     write_jsonl(artifact_dir / "failover_timeline_samples.jsonl", samples)
     write_jsonl(artifact_dir / "observer_samples.jsonl", observer_rows)
     write_jsonl(artifact_dir / "client_recovery_samples.jsonl", client_rows)
-    if args.phase == P45_PHASE:
+    if args.capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY:
         write_jsonl(artifact_dir / "clean_gate_probe_rounds.jsonl", clean_rounds)
     write_jsonl(artifact_dir / "events.jsonl", events)
     write_jsonl(artifact_dir / "metrics_timeseries.jsonl", metrics)
-    write_common_artifacts(args.phase, artifact_dir, samples, client_rows, cleanup_reports, errors, clean_rounds=clean_rounds)
-    write_gt_200_projection(args.phase, artifact_dir, errors)
+    write_common_artifacts(args.capability_id, artifact_dir, samples, client_rows, cleanup_reports, errors, clean_rounds=clean_rounds)
+    write_gt_200_projection(args.capability_id, artifact_dir, errors)
     if errors:
-        write_blocked(args.phase, errors)
+        write_blocked(args.capability_id, errors)
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    clear_blocked(args.phase)
-    print(f"PASS {args.phase} failover timeline artifacts at {artifact_dir}")
+    clear_blocked(args.capability_id)
+    print(f"PASS {args.capability_id} failover timeline artifacts at {artifact_dir}")
     return 0
 
 
@@ -180,13 +180,13 @@ def config_for_scale(scale: int) -> Path:
     return ROOT / "templates" / "configs" / f"scale_{scale}.yaml"
 
 
-def scenario_for_phase(phase: str, scale: int, index: int) -> str:
-    if phase == P45_PHASE:
-        return f"p45_scale_{scale}_layered_sample_{index:02d}"
-    return f"p44_scale_{scale}_timeline_sample_{index:02d}"
+def scenario_for_capability(capability_id: str) -> str:
+    if capability_id not in {CAPABILITY, CLEAN_GATE_DIAGNOSTICS_CAPABILITY}:
+        raise ValueError(f"unsupported failover timeline capability {capability_id!r}")
+    return capability_id
 
 
-def run_resource_preflight(phase: str, scale: int, artifact_dir: Path) -> tuple[bool, Path, str]:
+def run_resource_preflight(capability_id: str, scale: int, artifact_dir: Path) -> tuple[bool, Path, str]:
     out = artifact_dir / f"resource_preflight_{scale}.json"
     proc = run_cmd(
         [
@@ -199,10 +199,12 @@ def run_resource_preflight(phase: str, scale: int, artifact_dir: Path) -> tuple[
             str(config_for_scale(scale)),
             "--out",
             str(out),
-            "--phase",
-            phase,
+            "--capability-id",
+            capability_id,
             "--scenario",
-            scenario_for_phase(phase, scale, 1),
+            scenario_for_capability(capability_id),
+            "--profile",
+            f"exact-{scale}",
         ],
         timeout=240,
     )
@@ -212,10 +214,10 @@ def run_resource_preflight(phase: str, scale: int, artifact_dir: Path) -> tuple[
         {
             "schema_version": "v1",
             "artifact_type": "resource_preflight",
-            "phase_id": phase,
+            "capability_id": capability_id,
             "status": "PASS" if ok else "FAIL",
             "node_count": scale,
-            "p44_exact_scale_required": True,
+            "failover_timeline_exact_scale_required": True,
             "dry_run": False,
         }
     )
@@ -225,12 +227,12 @@ def run_resource_preflight(phase: str, scale: int, artifact_dir: Path) -> tuple[
 
 
 def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, index: int) -> dict[str, Any]:
-    sample_id = f"scale-{scale}-{'layered' if args.phase == P45_PHASE else 'timeline'}-sample-{index:02d}"
-    scenario = scenario_for_phase(args.phase, scale, index)
-    sample_dir = artifact_dir / ("_p45_samples" if args.phase == P45_PHASE else "_p44_samples") / sample_id
+    sample_id = f"scale-{scale}-{'layered' if args.capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else 'timeline'}-sample-{index:02d}"
+    scenario = scenario_for_capability(args.capability_id)
+    sample_dir = artifact_dir / ("_clean_gate_diagnostics_samples" if args.capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else "_failover_timeline_samples") / sample_id
     sample_dir.mkdir(parents=True, exist_ok=True)
     state_path = sample_dir / "state_failover.json"
-    run_id = f"{args.phase}-{sample_id}-real"
+    run_id = f"{args.capability_id}-{sample_id}-real"
     errors: list[str] = []
     observer_samples: list[dict[str, Any]] = []
     client_samples: list[dict[str, Any]] = []
@@ -238,7 +240,7 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
     cleanup_report: dict[str, Any] = {"status": "MISSING", "resources_remaining": [{"reason": "cleanup did not run"}]}
-    timeline_sample = _missing_timeline_sample(args.phase, run_id, scenario, sample_id, scale)
+    timeline_sample = _missing_timeline_sample(args.capability_id, run_id, scenario, sample_id, scale)
     state: dict[str, Any] = {}
 
     try:
@@ -249,10 +251,14 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
                 "valkey_scale_lab.cli",
                 "gate",
                 "scenario",
-                "--phase",
-                args.phase,
                 "--scenario",
                 scenario,
+                "--backend",
+                "docker_process",
+                "--profile",
+                f"exact-{scale}",
+                "--nodes",
+                str(scale),
                 "--config",
                 str(config_for_scale(scale)),
                 "--artifacts-dir",
@@ -286,19 +292,19 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
         observer_endpoints = [ObserverEndpoint.from_node(node) for node in state.get("nodes", [])]
         ok, before = wait_for_stable_cluster_ok(endpoints, scale, timeout_seconds=max(180, scale * 2), interval=1)
         if not ok:
-            raise RuntimeError("cluster not OK before P44 failover")
-        selection = find_p44_primary_with_replica(before, state.get("nodes", []))
+            raise RuntimeError("cluster not OK before FAILOVER_TIMELINE failover")
+        selection = find_failover_timeline_primary_with_replica(before, state.get("nodes", []))
         if not selection:
-            raise RuntimeError("no primary with replica available for P44 failover")
+            raise RuntimeError("no primary with replica available for FAILOVER_TIMELINE failover")
         selected_logical, old_primary_id, expected_replica_id = selection
         valkey_versions = sorted({str(probe.get("version")) for probe in before if probe.get("status") == "PASS" and probe.get("version")})
         if not valkey_versions or any(not version.startswith("9.1.") for version in valkey_versions):
-            raise RuntimeError(f"P44 requires Valkey 9.1.x evidence, observed={valkey_versions}")
+            raise RuntimeError(f"FAILOVER_TIMELINE requires Valkey 9.1.x evidence, observed={valkey_versions}")
         workload_target = workload_target_for_logical(endpoints, before, selected_logical)
         if not workload_target:
             raise RuntimeError("no failed-primary slot workload target")
         observer = FailoverTimelineObserver(
-            phase_id=args.phase,
+            capability_id=args.capability_id,
             run_id=run_id,
             scenario_name=scenario,
             sample_id=sample_id,
@@ -312,7 +318,7 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
             max_observer_endpoints=max_observer_endpoints,
         )
         fault_spec = {
-            "fault_id": f"p44-primary-stop-{sample_id}",
+            "fault_id": f"failover_timeline-primary-stop-{sample_id}",
             "type": "node_stop",
             "scope": "owned_container_or_process",
             "forbid_host_network_mutation": True,
@@ -349,7 +355,7 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
         deadline = time.monotonic() + args.wait_after_fault
         first_client_success_at_ms: int | None = None
         while time.monotonic() < deadline:
-            client_row = run_client_probe(args.phase, run_id, scenario, sample_id, endpoints, workload_target, fault_apply_at_ms)
+            client_row = run_client_probe(args.capability_id, run_id, scenario, sample_id, endpoints, workload_target, fault_apply_at_ms)
             accumulator.record(client_row)
             client_samples.append(client_row)
             summary = accumulator.summary()
@@ -383,9 +389,9 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
             scale,
             timeout_seconds=max(180, scale * 2),
             interval=2,
-            diagnostic_rounds=clean_gate_rounds if args.phase == P45_PHASE else None,
+            diagnostic_rounds=clean_gate_rounds if args.capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else None,
             round_context={
-                "phase_id": args.phase,
+                "capability_id": args.capability_id,
                 "run_id": run_id,
                 "scenario_name": scenario,
                 "sample_id": sample_id,
@@ -399,7 +405,7 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
         client_summary = accumulator.summary()
         row = {
             "schema_version": "v1",
-            "phase_id": args.phase,
+            "capability_id": args.capability_id,
             "run_id": run_id,
             "scenario_name": scenario,
             "sample_id": sample_id,
@@ -452,7 +458,7 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
             "level_1_source": "observer",
             "level_2_source": "client_probe",
             "level_3_source": "clean_gate",
-            "clean_gate_probe_rounds_ref": f"clean_gate_probe_rounds.jsonl#{sample_id}" if args.phase == P45_PHASE else "MISSING",
+            "clean_gate_probe_rounds_ref": f"clean_gate_probe_rounds.jsonl#{sample_id}" if args.capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else "MISSING",
             "state_ref": rel(state_path),
             "cleanup_ref": rel(sample_dir / "cleanup_report.json"),
         }
@@ -480,7 +486,7 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
         if "observer" in locals():
             observer.stop()
         if state_path.exists():
-            cleanup_status, cleanup_path = project_cleanup(args.phase, state_path, sample_dir, sample_dir / "cleanup_report.json")
+            cleanup_status, cleanup_path = project_cleanup(args.capability_id, state_path, sample_dir, sample_dir / "cleanup_report.json")
             cleanup_report = load_json_if_exists(cleanup_path)
             if cleanup_status != "PASS":
                 errors.append(f"{sample_id}: cleanup failed")
@@ -501,7 +507,7 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
 
 
 def run_client_probe(
-    phase: str,
+    capability_id: str,
     run_id: str,
     scenario: str,
     sample_id: str,
@@ -510,7 +516,7 @@ def run_client_probe(
     fault_apply_at_ms: int,
 ) -> dict[str, Any]:
     ts = unix_ms()
-    key = f"{target['slot_key']}:{'p45' if phase == P45_PHASE else 'p44'}:{sample_id}:{ts}"
+    key = f"{target['slot_key']}:{'clean_gate_diagnostics' if capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else 'failover_timeline'}:{sample_id}:{ts}"
     value = f"value-{ts}"
     status = "FAIL"
     set_status = "FAIL"
@@ -535,7 +541,7 @@ def run_client_probe(
         timeout = "timeout" in error.lower() or "timed out" in error.lower()
     return {
         "schema_version": "v1",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario_name": scenario,
         "sample_id": sample_id,
@@ -606,7 +612,7 @@ def event_rows(sample: dict[str, Any]) -> list[dict[str, Any]]:
                 "schema_version": "v1",
                 "artifact_type": "event",
                 "run_id": sample["run_id"],
-                "phase_id": sample["phase_id"],
+                "capability_id": sample["capability_id"],
                 "timestamp": iso_from_ms(timestamp),
                 "scenario_name": sample["scenario_name"],
                 "sample_id": sample["sample_id"],
@@ -618,8 +624,8 @@ def event_rows(sample: dict[str, Any]) -> list[dict[str, Any]]:
                 "subject_type": "failover_timeline",
                 "subject_id": sample.get("target_primary_logical_id", "MISSING"),
                 "operation_id": "",
-                "fault_id": f"{'p45' if sample['phase_id'] == P45_PHASE else 'p44'}-primary-stop-{sample['sample_id']}",
-                "message": f"{sample['phase_id']} {event_type} for {sample['sample_id']}",
+                "fault_id": f"{'clean_gate_diagnostics' if sample['capability_id'] == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else 'failover_timeline'}-primary-stop-{sample['sample_id']}",
+                "message": f"{sample['capability_id']} {event_type} for {sample['sample_id']}",
                 "metadata": {"node_count": sample.get("node_count"), "field": field},
             }
         )
@@ -642,9 +648,9 @@ def metric_rows(sample: dict[str, Any]) -> list[dict[str, Any]]:
                 "schema_version": "v1",
                 "artifact_type": "metric_sample",
                 "run_id": sample["run_id"],
-                "phase_id": sample["phase_id"],
+                "capability_id": sample["capability_id"],
                 "timestamp": iso_from_ms(sample.get("clean_snapshot_passed_at_ms", "MISSING")),
-                "source": "p45_layered_failover_timeline" if sample["phase_id"] == P45_PHASE else "p44_failover_timeline",
+                "source": "clean_gate_diagnostics_layered_failover_timeline" if sample["capability_id"] == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else "failover_timeline_failover_timeline",
                 "metrics": {metric: value},
                 "scenario_name": sample["scenario_name"],
                 "sample_id": sample["sample_id"],
@@ -656,14 +662,14 @@ def metric_rows(sample: dict[str, Any]) -> list[dict[str, Any]]:
                 "metric_value": value,
                 "metric_unit": "ms",
                 "labels": {"node_count": sample.get("node_count"), "scale": sample.get("scale")},
-                "missing_reason": "" if isinstance(value, (int, float)) else f"{metric} not observed by P44 timeline",
+                "missing_reason": "" if isinstance(value, (int, float)) else f"{metric} not observed by FAILOVER_TIMELINE timeline",
             }
         )
     return rows
 
 
 def write_common_artifacts(
-    phase: str,
+    capability_id: str,
     base: Path,
     samples: list[dict[str, Any]],
     client_rows: list[dict[str, Any]],
@@ -673,77 +679,77 @@ def write_common_artifacts(
     clean_rounds: list[dict[str, Any]] | None = None,
 ) -> None:
     status = "PASS" if not errors and samples and all(sample.get("status") == "PASS" for sample in samples) else "FAIL"
-    p45 = phase == P45_PHASE
-    summary_name = "layered_recovery_summary.json" if p45 else "failover_rto_summary.json"
+    clean_gate_diagnostics = capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY
+    summary_name = "layered_recovery_summary.json" if clean_gate_diagnostics else "failover_rto_summary.json"
     refs = [rel(base / name) for name in ["failover_timeline_samples.jsonl", "observer_samples.jsonl", "client_recovery_samples.jsonl", summary_name]]
-    if p45:
+    if clean_gate_diagnostics:
         refs.extend(rel(base / name) for name in ["clean_gate_diagnostics.json", "clean_gate_probe_rounds.jsonl", "recovery_endpoint_summary.json"])
     pass_samples = [sample for sample in samples if sample.get("status") == "PASS"]
     first_sample = pass_samples[0] if pass_samples else {}
     summary = build_rto_summary(
         samples,
-        phase_id=phase,
-        run_id=f"{phase}-summary",
+        capability_id=capability_id,
+        run_id=f"{capability_id}-summary",
         timeout_config_ms=int(first_sample.get("timeout_config_ms", 30000) or 30000),
         server_profile=str(first_sample.get("server_profile", "MISSING")),
         nodehost_strategy=str(first_sample.get("nodehost_strategy", "MISSING")),
         scale="10,30,50,100,200",
     )
     summary["status"] = status
-    if p45:
+    if clean_gate_diagnostics:
         write_json(base / "failover_rto_summary.json", summary)
-        write_json(base / "clean_gate_diagnostics.json", build_clean_gate_diagnostics(samples, clean_rounds or [], phase_id=phase, run_id=f"{phase}-clean-gate-diagnostics"))
-        layered = build_layered_recovery_summary(samples, phase_id=phase, run_id=f"{phase}-layered-recovery-summary")
+        write_json(base / "clean_gate_diagnostics.json", build_clean_gate_diagnostics(samples, clean_rounds or [], capability_id=capability_id, run_id=f"{capability_id}-clean-gate-diagnostics"))
+        layered = build_layered_recovery_summary(samples, capability_id=capability_id, run_id=f"{capability_id}-layered-recovery-summary")
         layered["status"] = status
         write_json(base / "layered_recovery_summary.json", layered)
-        endpoint_summary = build_recovery_endpoint_summary(samples, phase_id=phase, run_id=f"{phase}-recovery-endpoint-summary")
+        endpoint_summary = build_recovery_endpoint_summary(samples, capability_id=capability_id, run_id=f"{capability_id}-recovery-endpoint-summary")
         endpoint_summary["status"] = status
         write_json(base / "recovery_endpoint_summary.json", endpoint_summary)
     else:
         write_json(base / "failover_rto_summary.json", summary)
     write_json(
-        base / "phase_summary.json",
+        base / "run_summary.json",
         base_artifact(
-            phase,
-            "phase_summary",
+            capability_id,
+            "run_summary",
             status,
-            summary="P45 clean-gate layered diagnostics" if p45 else "P44 failover RTO timeline observability",
+            summary="CLEAN_GATE_DIAGNOSTICS clean-gate layered diagnostics" if clean_gate_diagnostics else "FAILOVER_TIMELINE failover RTO timeline observability",
             required_artifacts=refs,
-            missing_metrics=[] if status == "PASS" else [{"metric": "p44_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}],
+            missing_metrics=[] if status == "PASS" else [{"metric": "failover_timeline_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}],
             risks=[],
         ),
     )
     write_json(
         base / "quant_summary.json",
         base_artifact(
-            phase,
+            capability_id,
             "quant_summary",
             status,
-            summary="P45 layered recovery metrics derived from observer, client probe, and clean-gate artifacts." if p45 else "P44 RTO metrics derived only from failover_timeline_samples.jsonl.",
+            summary="CLEAN_GATE_DIAGNOSTICS layered recovery metrics derived from observer, client probe, and clean-gate artifacts." if clean_gate_diagnostics else "FAILOVER_TIMELINE RTO metrics derived only from failover_timeline_samples.jsonl.",
             artifact_refs=refs,
             source_artifacts=refs,
-            missing_data=[] if status == "PASS" else [{"field": "p44_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}],
+            missing_data=[] if status == "PASS" else [{"field": "failover_timeline_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}],
             runtime_claims={"real_valkey_claimed": status == "PASS", "management_runtime_claimed": False, "fault_runtime_claimed": True},
         ),
     )
-    write_json(base / "analysis_summary.json", base_artifact(phase, "analysis_summary", status, source_artifacts=refs, findings=[], missing_metrics=[] if status == "PASS" else [{"metric": "p45_layered_coverage" if p45 else "p44_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}]))
-    write_json(base / "report_index.json", base_artifact(phase, "report_index", status, source_artifacts=refs, reports=[]))
-    write_json(base / "cleanup_report.json", merge_cleanup_reports(phase, cleanup_reports))
-    write_json(base / "workload_windows.json", workload_windows_artifact(phase, samples, client_rows, status))
-    write_json(base / "valkey_e2e_evidence.json", evidence_artifact(phase, samples, status, errors))
+    write_json(base / "analysis_summary.json", base_artifact(capability_id, "analysis_summary", status, source_artifacts=refs, findings=[], missing_metrics=[] if status == "PASS" else [{"metric": "clean_gate_diagnostics_layered_coverage" if clean_gate_diagnostics else "failover_timeline_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}]))
+    write_json(base / "report_index.json", base_artifact(capability_id, "report_index", status, source_artifacts=refs, reports=[]))
+    write_json(base / "cleanup_report.json", merge_cleanup_reports(capability_id, cleanup_reports))
+    write_json(base / "workload_windows.json", workload_windows_artifact(capability_id, samples, client_rows, status))
+    write_json(base / "valkey_e2e_evidence.json", evidence_artifact(capability_id, samples, status, errors))
 
 
-def write_gt_200_projection(phase: str, base: Path, errors: list[str]) -> None:
+def write_gt_200_projection(capability_id: str, base: Path, errors: list[str]) -> None:
     try:
         projection = create_plan_file(ROOT / "templates/configs/scale_1000_dryrun_optin.yaml", base / "dry_run_gt_200_projection.json", dry_run=True)
         projection.update(
             {
-                "phase_id": phase,
-                "stage_id": phase,
+                "capability_id": capability_id,
+
                 "dry_run": True,
                 "real_valkey": False,
                 "runtime_resources_created": False,
-                "projection_only_reason": f"Greater-than-200 {phase} coverage is dry-run projection only.",
+                "projection_only_reason": f"Greater-than-200 {capability_id} coverage is dry-run projection only.",
             }
         )
         write_json(base / "dry_run_gt_200_projection.json", projection)
@@ -751,15 +757,15 @@ def write_gt_200_projection(phase: str, base: Path, errors: list[str]) -> None:
         errors.append(f"greater-than-200 dry-run projection failed: {exc}")
 
 
-def evidence_artifact(phase: str, samples: list[dict[str, Any]], status: str, errors: list[str]) -> dict[str, Any]:
+def evidence_artifact(capability_id: str, samples: list[dict[str, Any]], status: str, errors: list[str]) -> dict[str, Any]:
     scales = sorted({sample.get("node_count") for sample in samples if sample.get("status") == "PASS" and sample.get("real_valkey") is True})
     versions = sorted({version for sample in samples for version in sample.get("valkey_versions", []) if version})
     probes = [probe for sample in samples for probe in sample.get("evidence_probes", []) if probe.get("status") == "PASS"]
     return base_artifact(
-        phase,
+        capability_id,
         "valkey_e2e_evidence",
         status,
-        scenario="p44_failover_timeline",
+        scenario=capability_id,
         real_valkey=True,
         valkey_version_prefix_required="9.1.",
         probe_result="PASS" if status == "PASS" else "FAIL",
@@ -776,7 +782,7 @@ def evidence_artifact(phase: str, samples: list[dict[str, Any]], status: str, er
 
 
 def workload_windows_artifact(
-    phase: str,
+    capability_id: str,
     samples: list[dict[str, Any]],
     client_rows: list[dict[str, Any]],
     status: str,
@@ -809,7 +815,7 @@ def workload_windows_artifact(
                     "metrics": _client_window_metrics(sample, window_rows, start_ms, end_ms),
                 }
             )
-    return base_artifact(phase, "workload_windows", status, windows=windows)
+    return base_artifact(capability_id, "workload_windows", status, windows=windows)
 
 
 def _client_rows_in_window(rows: list[dict[str, Any]], start_ms: Any, end_ms: Any) -> list[dict[str, Any]]:
@@ -888,14 +894,14 @@ def _client_window_metrics(sample: dict[str, Any], rows: list[dict[str, Any]], s
     return metrics
 
 
-def merge_cleanup_reports(phase: str, reports: list[dict[str, Any]]) -> dict[str, Any]:
+def merge_cleanup_reports(capability_id: str, reports: list[dict[str, Any]]) -> dict[str, Any]:
     remaining = []
     actions = []
     for report in reports:
         remaining.extend(report.get("resources_remaining", []) if isinstance(report, dict) else [])
         actions.extend(report.get("cleanup_actions", []) if isinstance(report, dict) else [])
     return base_artifact(
-        phase,
+        capability_id,
         "cleanup_report",
         "PASS" if reports and not remaining and all(report.get("status") == "PASS" for report in reports) else "FAIL",
         resources_remaining=remaining,
@@ -904,12 +910,12 @@ def merge_cleanup_reports(phase: str, reports: list[dict[str, Any]]) -> dict[str
     )
 
 
-def base_artifact(phase: str, artifact_type: str, status: str, **extra: Any) -> dict[str, Any]:
+def base_artifact(capability_id: str, artifact_type: str, status: str, **extra: Any) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "artifact_type": artifact_type,
-        "phase_id": phase,
-        "run_id": f"{phase}-{artifact_type}",
+        "capability_id": capability_id,
+        "run_id": f"{capability_id}-{artifact_type}",
         "created_at": utc_now(),
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": status,
@@ -917,10 +923,10 @@ def base_artifact(phase: str, artifact_type: str, status: str, **extra: Any) -> 
     }
 
 
-def _missing_timeline_sample(phase: str, run_id: str, scenario: str, sample_id: str, scale: int) -> dict[str, Any]:
+def _missing_timeline_sample(capability_id: str, run_id: str, scenario: str, sample_id: str, scale: int) -> dict[str, Any]:
     row = {
         "schema_version": "v1",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario_name": scenario,
         "sample_id": sample_id,
@@ -936,8 +942,8 @@ def _missing_timeline_sample(phase: str, run_id: str, scenario: str, sample_id: 
         "client_recovery_samples_ref": f"client_recovery_samples.jsonl#{sample_id}",
         "level_1_source": "observer",
         "level_2_source": "client_probe",
-        "level_3_source": "clean_gate" if phase == P45_PHASE else "MISSING",
-        "clean_gate_probe_rounds_ref": f"clean_gate_probe_rounds.jsonl#{sample_id}" if phase == P45_PHASE else "MISSING",
+        "level_3_source": "clean_gate" if capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else "MISSING",
+        "clean_gate_probe_rounds_ref": f"clean_gate_probe_rounds.jsonl#{sample_id}" if capability_id == CLEAN_GATE_DIAGNOSTICS_CAPABILITY else "MISSING",
     }
     for field in [
         "fault_apply_at_ms",
@@ -960,15 +966,15 @@ def _missing_timeline_sample(phase: str, run_id: str, scenario: str, sample_id: 
     return row
 
 
-def write_blocked(phase: str, errors: list[str]) -> None:
-    path = ROOT / "artifacts" / "goal_loop" / phase / "BLOCKED.md"
+def write_blocked(capability_id: str, errors: list[str]) -> None:
+    path = ROOT / "artifacts" / "captures" / capability_id / "BLOCKED.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "\n".join(
             [
-                f"# BLOCKED - {phase}",
+                f"# BLOCKED - {capability_id}",
                 "",
-                f"{phase} cannot pass without real Valkey failover timeline observer evidence for 30/50/100/200.",
+                f"{capability_id} cannot pass without real Valkey failover timeline observer evidence for 30/50/100/200.",
                 "",
                 "Blocking reasons:",
                 *[f"- {error}" for error in errors],
@@ -981,8 +987,8 @@ def write_blocked(phase: str, errors: list[str]) -> None:
     )
 
 
-def clear_blocked(phase: str) -> None:
-    path = ROOT / "artifacts" / "goal_loop" / phase / "BLOCKED.md"
+def clear_blocked(capability_id: str) -> None:
+    path = ROOT / "artifacts" / "captures" / capability_id / "BLOCKED.md"
     if path.exists():
         path.unlink()
 

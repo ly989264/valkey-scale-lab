@@ -23,13 +23,13 @@ def test_process_clear_waits_for_pid_and_ping(tmp_path: Path, monkeypatch: pytes
         "pid_file": "/tmp/node-0/valkey.pid",
         "client_port": 7800,
     }
-    _write_json(state_path, {"phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL", "runtime": {"run_id": "run-1"}, "nodes": [target]})
+    _write_json(state_path, {"capability_id": "fault_matrix", "runtime": {"run_id": "run-1"}, "nodes": [target]})
     _write_json(
         tmp_path / f"fault_state_{fault_id}.json",
         {
             "fault_id": fault_id,
             "fault_type": "node_stop",
-            "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+            "capability_id": "fault_matrix",
             "run_id": "run-1",
             "target_logical_id": "node-0",
             "target": target,
@@ -48,7 +48,7 @@ def test_process_clear_waits_for_pid_and_ping(tmp_path: Path, monkeypatch: pytes
                 stdout=json.dumps(
                     {
                         "org.valkey-scale-lab.project": "valkey-scale-lab",
-                        "org.valkey-scale-lab.phase": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+                        "org.valkey-scale-lab.capability_id": "fault_matrix",
                         "org.valkey-scale-lab.run_id": "run-1",
                     }
                 ),
@@ -81,13 +81,13 @@ def test_process_clear_fails_if_restart_never_pings(tmp_path: Path, monkeypatch:
         "pid_file": "/tmp/node-0/valkey.pid",
         "client_port": 7800,
     }
-    _write_json(state_path, {"phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL", "runtime": {"run_id": "run-1"}, "nodes": [target]})
+    _write_json(state_path, {"capability_id": "fault_matrix", "runtime": {"run_id": "run-1"}, "nodes": [target]})
     _write_json(
         tmp_path / f"fault_state_{fault_id}.json",
         {
             "fault_id": fault_id,
             "fault_type": "node_stop",
-            "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+            "capability_id": "fault_matrix",
             "run_id": "run-1",
             "target_logical_id": "node-0",
             "target": target,
@@ -103,7 +103,7 @@ def test_process_clear_fails_if_restart_never_pings(tmp_path: Path, monkeypatch:
                 stdout=json.dumps(
                     {
                         "org.valkey-scale-lab.project": "valkey-scale-lab",
-                        "org.valkey-scale-lab.phase": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+                        "org.valkey-scale-lab.capability_id": "fault_matrix",
                         "org.valkey-scale-lab.run_id": "run-1",
                     }
                 ),
@@ -126,10 +126,10 @@ def test_process_clear_fails_if_restart_never_pings(tmp_path: Path, monkeypatch:
         sandbox.clear_fault(state_path=state_path, fault_id=fault_id, out_path=tmp_path / "clear.json")
 
 
-def test_p35_process_clear_uses_longer_restart_readiness_timeout() -> None:
-    assert sandbox._process_restart_timeout_seconds({"phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL"}) == 90.0
-    assert sandbox._process_restart_timeout_seconds({"phase_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL"}) == 20.0
-    assert sandbox._process_restart_stable_seconds({"phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL"}) == 2.0
-    assert sandbox._process_restart_stable_seconds({"phase_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL"}) == 0.0
-    assert sandbox._process_restart_attempts({"phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL"}) == 2
-    assert sandbox._process_restart_attempts({"phase_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL"}) == 1
+def test_fault_matrix_200_process_clear_uses_longer_restart_readiness_timeout() -> None:
+    assert sandbox._process_restart_timeout_seconds({"profile_id": "exact-200"}) == 90.0
+    assert sandbox._process_restart_timeout_seconds({"profile_id": "exact-100"}) == 20.0
+    assert sandbox._process_restart_stable_seconds({"profile_id": "exact-200"}) == 2.0
+    assert sandbox._process_restart_stable_seconds({"profile_id": "exact-100"}) == 0.0
+    assert sandbox._process_restart_attempts({"profile_id": "exact-200"}) == 2
+    assert sandbox._process_restart_attempts({"profile_id": "exact-100"}) == 1

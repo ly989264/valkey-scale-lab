@@ -325,7 +325,7 @@ def run_suite(
             ["--prior-admission-digest", parameters["prior_admission_digest"]]
         )
     environment = dict(os.environ)
-    environment.pop("PYTHONPATH", None)
+    environment["PYTHONPATH"] = str(PROJECT_ROOT / "src")
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
     with tempfile.TemporaryDirectory(prefix="vslab-verification-") as temporary:

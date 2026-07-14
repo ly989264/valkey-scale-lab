@@ -9,16 +9,17 @@ from valkey_scale_lab import __version__
 from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout, cluster_timeout_node_fields
 from valkey_scale_lab.config.validation import (
     REQUIRED_1000_ENV_VALUE,
-    is_p37_200_plus_dry_run_profile,
+    is_scale_projection_profile,
     load_effective_config,
     normalize_config,
     validate_semantics,
 )
+from valkey_scale_lab.execution import exact_200_selection_allowed
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields
 
-PHASE_ID = "P02_PLANNER"
-RUN_ID = "P02_PLANNER-local-20260628"
+CAPABILITY_ID = "cluster_planning"
+RUN_ID = "cluster_planning-local-20260628"
 CREATED_AT = "2026-06-28T00:00:00Z"
 
 
@@ -53,8 +54,8 @@ def build_cluster_plan(
     config_path: Path | None = None,
     force_dry_run: bool = False,
     *,
-    bounded_exception_phase: str | None = None,
-    bounded_exception_scenario: str | None = None,
+    capability_id: str | None = None,
+    scenario: str | None = None,
 ) -> dict[str, Any]:
     cluster = config["cluster"]
     network = config["network"]
@@ -70,13 +71,13 @@ def build_cluster_plan(
     host_ids = [host["host_id"] for host in hosts]
     dry_run = bool(force_dry_run or runtime.get("dry_run"))
     opt_in_1000 = bool(safety.get("allow_1000_nodes") and scale_profile.get("opt_in_1000"))
-    p37_200_plus_dry_run = is_p37_200_plus_dry_run_profile(config)
-    exact_200_bounded_exception = _is_p32_exact_200_bounded_exception(
+    scale_projection_200_plus = is_scale_projection_profile(config)
+    exact_200_bounded_exception = _is_exact_200_bounded_exception(
         config,
         node_count=node_count,
         dry_run=dry_run,
-        phase=bounded_exception_phase,
-        scenario=bounded_exception_scenario,
+        capability_id=capability_id,
+        scenario=scenario,
     )
 
     if network.get("virtual_az_mode") == "single" and replicas_per_shard > 0:
@@ -137,7 +138,7 @@ def build_cluster_plan(
         "default_node_cap": int(safety["default_max_nodes"]),
         "dry_run": dry_run,
         "opt_in_1000": opt_in_1000,
-        "p37_200_plus_dry_run": p37_200_plus_dry_run,
+        "scale_projection_200_plus": scale_projection_200_plus,
         "above_200_dry_run_only": node_count > 200,
         "exact_200_bounded_exception": exact_200_bounded_exception,
         "no_execution": dry_run,
@@ -156,13 +157,13 @@ def build_cluster_plan(
         "required_1000_env_value": REQUIRED_1000_ENV_VALUE if opt_in_1000 else None,
     }
     if exact_200_bounded_exception:
-        constraints["bounded_exception_phase"] = bounded_exception_phase
-        constraints["bounded_exception_scenario"] = bounded_exception_scenario
+        constraints["selected_capability_id"] = capability_id
+        constraints["selected_scenario_id"] = scenario
     if node_count > 200 and not dry_run:
         raise PlannerError("plans above 200 nodes must be dry-run only")
-    if node_count > 200 and dry_run and not p37_200_plus_dry_run and not opt_in_1000:
-        raise PlannerError("above-200 dry-run plans require explicit P37 dry-run markers")
-    if node_count > int(safety["default_max_nodes"]) and not opt_in_1000 and not exact_200_bounded_exception and not p37_200_plus_dry_run:
+    if node_count > 200 and dry_run and not scale_projection_200_plus and not opt_in_1000:
+        raise PlannerError("above-200 dry-run plans require explicit scale-projection markers")
+    if node_count > int(safety["default_max_nodes"]) and not opt_in_1000 and not exact_200_bounded_exception and not scale_projection_200_plus:
         raise PlannerError("node count exceeds default cap without 1000 opt-in")
     if node_count >= 1000 and not dry_run:
         raise PlannerError("1000-node plans must be dry-run only")
@@ -183,7 +184,7 @@ def build_cluster_plan(
     return {
         "schema_version": "v1",
         "artifact_type": "cluster_plan",
-        "phase_id": PHASE_ID,
+        "capability_id": CAPABILITY_ID,
         "run_id": RUN_ID,
         "created_at": CREATED_AT,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -227,66 +228,59 @@ def build_cluster_plan(
     }
 
 
-def _is_p32_exact_200_bounded_exception(
+def _is_exact_200_bounded_exception(
     config: dict[str, Any],
     *,
     node_count: int,
     dry_run: bool,
-    phase: str | None,
+    capability_id: str | None,
     scenario: str | None,
 ) -> bool:
     scale_profile = config.get("scale_profile", {})
     safety = config.get("safety", {})
     runtime = config.get("runtime", {})
-    allowed_exact_200 = {
-        ("P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200"),
-        ("P36_FULL_FLOW_E2E_50_100_200_REAL", "strict_full_flow_200"),
-    }
     return (
-        (phase, scenario) in allowed_exact_200
+        capability_id is not None
+        and scenario is not None
+        and exact_200_selection_allowed(capability_id=capability_id, scenario_id=scenario)
         and node_count == 200
         and config.get("profile_name") == "scale_200"
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
         and runtime.get("dry_run") is False
         and dry_run is False
-        and scale_profile.get("bounded_exception_phase") in {
-            "P21_FAILOVER_LATENCY_CURVE_200",
-            "P32_MANAGEMENT_MATRIX_200_REAL",
-            "P36_FULL_FLOW_E2E_50_100_200_REAL",
-        }
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
     )
 
 
-def write_phase_summary(path: str | Path) -> None:
+def write_run_summary(path: str | Path) -> None:
     summary = {
         "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": PHASE_ID,
+        "artifact_type": "run_summary",
+        "capability_id": CAPABILITY_ID,
         "run_id": RUN_ID,
         "created_at": CREATED_AT,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
-        "summary": "P02 implemented deterministic cluster planning with AZ-aware primary/replica placement, port/name/directory collision checks, host assignment, and opt-in dry-run handling for 1000-node plans.",
+        "summary": "CLUSTER_PLANNING implemented deterministic cluster planning with AZ-aware primary/replica placement, port/name/directory collision checks, host assignment, and opt-in dry-run handling for 1000-node plans.",
         "required_artifacts": [
-            "artifacts/phases/P02_PLANNER/phase_summary.json",
-            "artifacts/phases/P02_PLANNER/cluster_plan.json",
-            "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json",
+            "artifacts/captures/cluster_planning/run_summary.json",
+            "artifacts/captures/cluster_planning/cluster_plan.json",
+            "artifacts/captures/cluster_planning/scale_1000_dryrun_plan.json",
         ],
         "missing_metrics": [
             {
                 "metric": "real_valkey_e2e_evidence",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P02_PLANNER is a fake-only planning phase; real Valkey evidence begins at P03.",
+                "reason": "cluster_planning is a fake-only planning capability_id; real Valkey evidence begins at CLUSTER_LIFECYCLE.",
                 "impact": "Planner artifacts make no live runtime claim.",
             }
         ],
         "risks": [
             {
-                "risk": "Host capacity checks are conservative structural checks in P02 and will need real resource probing before runtime phases.",
+                "risk": "Host capacity checks are conservative structural checks in CLUSTER_PLANNING and will need real resource probing before runtime capabilities.",
                 "severity": "low",
-                "required_before_next_phase": False,
+                "required_before_next_capability": False,
             }
         ],
     }

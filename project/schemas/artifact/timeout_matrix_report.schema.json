@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Timeout Matrix Report",
   "type": "object",
-  "required": ["schema_version", "artifact_type", "phase_id", "status", "rows"],
+  "required": ["schema_version", "artifact_type", "capability_id", "status", "rows"],
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "timeout_matrix_report"},
-    "phase_id": {"type": "string"},
+    "capability_id": {"type": "string"},
     "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED", "NOT_RUN_WITH_REASON"]},
     "configured_matrix_ms": {
       "type": "array",

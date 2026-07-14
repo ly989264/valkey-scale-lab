@@ -8,7 +8,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PHASE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
+CAPABILITY = "server_profile"
 
 
 def write_json(path: Path, obj: dict[str, Any]) -> None:
@@ -30,7 +30,7 @@ def profile(node_count: int = 10, io_threads: int = 1) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "artifact_type": "effective_server_profile",
-        "phase_id": PHASE,
+        "capability_id": CAPABILITY,
         "status": "PASS",
         "server_profile": "one_b_dev",
         "requested_io_threads": io_threads,
@@ -52,7 +52,7 @@ def profile(node_count: int = 10, io_threads: int = 1) -> dict[str, Any]:
     }
 
 
-def make_phase_artifacts(base: Path, *, node_count: int = 10, io_threads: int = 1, include_io_line: bool = False) -> None:
+def make_capability_artifacts(base: Path, *, node_count: int = 10, io_threads: int = 1, include_io_line: bool = False) -> None:
     prof = profile(node_count=node_count, io_threads=io_threads)
     write_json(base / "effective_server_profile.json", prof)
     write_json(base / "config_validation_report.json", {**prof, "artifact_type": "config_validation_report", "server_profile": prof, "valid": True})
@@ -159,7 +159,7 @@ def evidence(path: Path, node_count: int, io_threads: int, nodes: list[dict[str,
     return {
         "schema_version": "v1",
         "artifact_type": "valkey_e2e_evidence",
-        "phase_id": PHASE,
+        "capability_id": CAPABILITY,
         "status": "PASS",
         "probe_result": "PASS",
         "real_valkey": True,
@@ -174,26 +174,26 @@ def evidence(path: Path, node_count: int, io_threads: int, nodes: list[dict[str,
 
 
 def test_io_thread_memory_assertion_rejects_missing_io_threads_line(tmp_path: Path) -> None:
-    base = tmp_path / "phase"
-    make_phase_artifacts(base, node_count=2, io_threads=2, include_io_line=False)
+    base = tmp_path / "capability_id"
+    make_capability_artifacts(base, node_count=2, io_threads=2, include_io_line=False)
 
-    proc = run_script("assert_io_thread_memory_evidence.py", "--phase", PHASE, "--artifact-dir", str(base))
+    proc = run_script("assert_io_thread_memory_evidence.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base))
 
     assert proc.returncode != 0
     assert "missing io-threads 2" in proc.stderr
 
 
 def test_io_thread_memory_assertion_accepts_io_threads_one_without_config_line(tmp_path: Path) -> None:
-    base = tmp_path / "phase"
-    make_phase_artifacts(base, node_count=2, io_threads=1, include_io_line=False)
+    base = tmp_path / "capability_id"
+    make_capability_artifacts(base, node_count=2, io_threads=1, include_io_line=False)
 
-    proc = run_script("assert_io_thread_memory_evidence.py", "--phase", PHASE, "--artifact-dir", str(base))
+    proc = run_script("assert_io_thread_memory_evidence.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base))
 
     assert proc.returncode == 0, proc.stderr
 
 
 def test_partial_coverage_assertion_rejects_missing_real_scales(tmp_path: Path) -> None:
-    base = tmp_path / "phase"
+    base = tmp_path / "capability_id"
     write_json(
         base / "coverage_ledger.json",
         {
@@ -202,14 +202,14 @@ def test_partial_coverage_assertion_rejects_missing_real_scales(tmp_path: Path) 
         },
     )
 
-    proc = run_script("assert_no_server_profile_partial_coverage.py", "--phase", PHASE, "--artifact-dir", str(base))
+    proc = run_script("assert_no_server_profile_partial_coverage.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base))
 
     assert proc.returncode != 0
     assert "missing server profile coverage rows" in proc.stderr
 
 
 def test_partial_coverage_assertion_accepts_real_and_dry_run_rows(tmp_path: Path) -> None:
-    base = tmp_path / "phase"
+    base = tmp_path / "capability_id"
     rows = [{"coverage_id": "fake_schema_unit", "status": "PASS", "execution_mode": "unit_schema", "artifact_refs": ["tests/unit/test_server_profile_assertions.py"]}]
     for coverage_id, count, name in [
         ("smoke_10", 10, "valkey_e2e_evidence.json"),
@@ -237,7 +237,7 @@ def test_partial_coverage_assertion_accepts_real_and_dry_run_rows(tmp_path: Path
     rows.append({"coverage_id": "dry_run_gt_200", "status": "DRY_RUN_PASS", "execution_mode": "dry_run_projection", "artifact_refs": [str(base / "dry_run_gt_200_projection.json")]})
     write_json(base / "coverage_ledger.json", {"artifact_type": "coverage_ledger", "rows": rows})
 
-    proc = run_script("assert_no_server_profile_partial_coverage.py", "--phase", PHASE, "--artifact-dir", str(base))
+    proc = run_script("assert_no_server_profile_partial_coverage.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base))
 
     assert proc.returncode == 0, proc.stderr
 
@@ -259,17 +259,17 @@ cluster:
 """,
         encoding="utf-8",
     )
-    scenario = tmp_path / "scale_10.yaml"
-    scenario.write_text((ROOT / "templates/configs/scale_10.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    scenario_config = tmp_path / "scale_10.yaml"
+    scenario_config.write_text((ROOT / "templates/configs/scale_10.yaml").read_text(encoding="utf-8"), encoding="utf-8")
 
     proc = run_script(
         "assert_server_profile_config.py",
-        "--phase",
-        PHASE,
+        "--capability-id",
+        CAPABILITY,
         "--global-config",
         str(global_config),
         "--config",
-        str(scenario),
+        str(scenario_config),
         "--artifact-dir",
         str(tmp_path / "missing_artifacts_ok"),
     )

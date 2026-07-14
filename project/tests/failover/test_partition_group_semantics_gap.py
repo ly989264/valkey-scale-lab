@@ -49,9 +49,9 @@ def test_minority_and_majority_partitions_inject_distinct_group_faults(monkeypat
     monkeypatch.setattr(gate, "workload_target_for_logical", lambda *_args: None)
     monkeypatch.setattr(gate, "workload_window", lambda *_args: {"status": "MEASURED"})
 
-    profile = SimpleNamespace(label_lower="p33")
+    profile = SimpleNamespace(label_lower="fault_matrix_exact_50")
     for row_name in ("minority_partition", "majority_partition"):
-        gate.p33_proxy_window(row_name, endpoints, [], "node-0", "run", profile)
+        gate.fault_matrix_proxy_window(row_name, endpoints, [], "node-0", "run", profile)
 
     assert constructed[0] != constructed[1], (
         "minority_partition and majority_partition must isolate distinct Valkey node groups; "

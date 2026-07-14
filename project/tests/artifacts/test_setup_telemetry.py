@@ -20,9 +20,10 @@ def test_setup_telemetry_schema_writer_and_gate_shape(tmp_path: Path) -> None:
     with timeline.span("port_preflight_check", "preflight"):
         pass
     telemetry = build_setup_telemetry_artifact(
-        phase_id="P13_SCALE_LADDER_50_100",
+        capability_id="scale_ladder",
         run_id="test-run",
-        scenario="scale_50",
+        scenario="scale_ladder",
+        profile_id="exact-50",
         status="PASS",
         node_count=2,
         segments=timeline.segments,
@@ -50,7 +51,7 @@ def test_setup_telemetry_schema_writer_and_gate_shape(tmp_path: Path) -> None:
 def test_setup_telemetry_propagates_to_analysis_and_chinese_report(tmp_path: Path) -> None:
     source = tmp_path / "source"
     source.mkdir()
-    _write(source / "phase_summary.json", {"phase_id": "P03_LOCAL_DOCKER_VALKEY", "run_id": "run", "status": "PASS", "missing_metrics": []})
+    _write(source / "run_summary.json", {"capability_id": "cluster_lifecycle", "run_id": "run", "status": "PASS", "missing_metrics": []})
     _write(source / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": True, "valkey_versions": ["9.1.0"], "nodes_observed": 2, "cluster_state_observed": "ok"})
     _write(source / "failover_report.json", {"status": "PASS", "failovers": [], "summary": {}})
     _write(source / "cleanup_report.json", {"status": "PASS", "resources_remaining": []})
@@ -60,10 +61,10 @@ def test_setup_telemetry_propagates_to_analysis_and_chinese_report(tmp_path: Pat
     analysis = create_analysis_summary(source, tmp_path / "analysis_summary.json")
     index = render_report(tmp_path / "analysis_summary.json", tmp_path / "report", tmp_path / "report_index.json")
 
-    assert analysis["setup_aggregates"]["phase_duration_ranking"]
+    assert analysis["setup_aggregates"]["stage_duration_ranking"]
     assert analysis["setup_telemetry"]["metrics"]["config_parse_ms"] == 1.0
     report_names = {Path(item["path"]).name for item in index["reports"]}
-    assert {"setup_phase_durations.csv", "setup_slowest_nodes.csv", "setup_waterfall.svg"}.issubset(report_names)
+    assert {"setup_lifecycle_durations.csv", "setup_slowest_nodes.csv", "setup_waterfall.svg"}.issubset(report_names)
     assert "集群拉起瀑布图" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
 
 

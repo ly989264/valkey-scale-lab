@@ -9,7 +9,6 @@ from typing import Any, Mapping
 from .contracts import (
     AdmissionSpec,
     ArtifactSpec,
-    LegacyProfileBinding,
     LifecycleStep,
     ReportSurface,
     ScalePolicy,
@@ -141,15 +140,6 @@ def _parse_definition(document: Mapping[str, Any]) -> ScenarioDefinition:
             "above_200_requires_cost_acknowledgement"
         ],
     )
-    legacy_profiles = tuple(
-        LegacyProfileBinding(
-            requested_nodes=row["requested_nodes"],
-            runtime_phase=row["runtime_phase"],
-            runtime_scenario=row["runtime_scenario"],
-            config_template=row["config_template"],
-        )
-        for row in document["legacy_profiles"]
-    )
     return ScenarioDefinition(
         schema_version=document["schema_version"],
         definition_id=document["definition_id"],
@@ -161,8 +151,7 @@ def _parse_definition(document: Mapping[str, Any]) -> ScenarioDefinition:
         artifacts=tuple(artifacts),
         report_surfaces=tuple(ReportSurface(id=item) for item in document["report_surfaces"]),
         scale_policy=scale_policy,
-        legacy_profiles=legacy_profiles,
-        legacy_projection_steps=tuple(document["legacy_projection_steps"]),
+        execution_steps=tuple(document["execution_steps"]),
         digest=definition_digest(document),
     )
 
@@ -179,5 +168,5 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return value
 
 
-LOCAL_FULL_FLOW_DEFINITION_DIGEST = "02660b42dce250ccf8b64ea244d6673e3450eeceb45cba9568b46c9f4ee51921"
+LOCAL_FULL_FLOW_DEFINITION_DIGEST = "37ae6483a7226dbfd549d05b5a028dc075eb1684182129467937cd896e7d4c76"
 CANONICAL_DEFINITION_DIGEST = LOCAL_FULL_FLOW_DEFINITION_DIGEST

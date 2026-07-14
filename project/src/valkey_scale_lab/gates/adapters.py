@@ -10,7 +10,7 @@ from valkey_scale_lab.scenarios import ArtifactSpec, ReportSurface, ScenarioSpec
 from valkey_scale_lab.scenarios.contracts import freeze_json
 from valkey_scale_lab.runtime.docker_runtime import (
     cleanup_scenario,
-    create_scenario,
+    execute_scenario,
 )
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
@@ -25,8 +25,8 @@ from .contracts import (
 
 # These aliases are intentionally direct references. The adapter delegates to the
 # established runtime instead of copying any Valkey or Docker lifecycle behavior.
-LEGACY_CREATE_SCENARIO = create_scenario
-LEGACY_CLEANUP_SCENARIO = cleanup_scenario
+PRODUCT_EXECUTE_SCENARIO = execute_scenario
+PRODUCT_CLEANUP_SCENARIO = cleanup_scenario
 
 
 class GateAdapterError(RuntimeError):
@@ -46,22 +46,22 @@ class AdapterOwnershipError(GateAdapterError):
 
 
 @dataclass(frozen=True)
-class LegacyRuntimeEntrypoints:
-    create: Callable[..., dict[str, Any]] = LEGACY_CREATE_SCENARIO
-    cleanup: Callable[..., dict[str, Any]] = LEGACY_CLEANUP_SCENARIO
+class ProductRuntimeEntrypoints:
+    execute: Callable[..., dict[str, Any]] = PRODUCT_EXECUTE_SCENARIO
+    cleanup: Callable[..., dict[str, Any]] = PRODUCT_CLEANUP_SCENARIO
     preflight: Optional[Callable[..., dict[str, Any]]] = None
     live_probe: Optional[Callable[..., dict[str, Any]]] = None
 
 
 @dataclass(frozen=True)
-class LegacyRuntimePaths:
+class ProductRuntimePaths:
     artifact_root: Path
     runtime_dir: Path
     state_path: Path
     cleanup_path: Path
 
     @classmethod
-    def under(cls, artifact_root: Union[str, Path]) -> "LegacyRuntimePaths":
+    def under(cls, artifact_root: Union[str, Path]) -> "ProductRuntimePaths":
         root = Path(artifact_root).resolve()
         runtime_dir = _confined(root, root / "runtime", allow_root=False)
         return cls(
@@ -77,8 +77,8 @@ class LegacyRuntimePaths:
 
 
 @dataclass(frozen=True)
-class LegacyExecutionSnapshot:
-    """Read-only observations retained by a completed legacy projection."""
+class ProductExecutionSnapshot:
+    """Read-only observations retained by a completed product execution."""
 
     run_id: str
     ownership_id: str
@@ -91,10 +91,10 @@ class LegacyExecutionSnapshot:
 
 
 @dataclass
-class _LegacyRun:
+class _ProductRun:
     ownership_id: str
     provenance_id: str
-    paths: LegacyRuntimePaths
+    paths: ProductRuntimePaths
     setup_timeline: SetupTimeline = field(default_factory=SetupTimeline)
     state: Optional[dict[str, Any]] = None
     preflight_result: Optional[dict[str, Any]] = None
@@ -121,8 +121,8 @@ def _confined(root: Path, candidate: Path, *, allow_root: bool) -> Path:
 def _load_owned_state(
     path: Path,
     *,
-    phase: str,
-    scenario: str,
+    capability_id: str,
+    scenario_id: str,
     expected_run_id: Optional[str] = None,
 ) -> dict[str, Any]:
     try:
@@ -139,9 +139,12 @@ def _load_owned_state(
         raise AdapterOwnershipError(
             "cleanup requires runtime ownership with an explicit run_id"
         )
-    if value.get("phase_id") != phase or value.get("scenario") != scenario:
+    if (
+        value.get("capability_id") != capability_id
+        or value.get("scenario_id") != scenario_id
+    ):
         raise AdapterOwnershipError(
-            "runtime ownership state does not match the configured phase/scenario"
+            "runtime ownership state does not match the configured capability/scenario"
         )
     if expected_run_id is not None and run_id != expected_run_id:
         raise AdapterOwnershipError(
@@ -166,27 +169,27 @@ def _optional_mapping(value: Any, *, field_name: str) -> Optional[dict[str, Any]
     return dict(value)
 
 
-class LegacyGateAdapter:
-    """Project the monolithic P36 runtime through the narrow Gate protocols.
+class ProductGateAdapter:
+    """Expose the single product runtime through the narrow Gate protocols.
 
-    ``create_scenario`` remains the single owner of Valkey, workload,
+    ``execute_scenario`` remains the single owner of Valkey, workload,
     management, fault, analysis, and report behavior. The other methods record
     the canonical orchestration boundary and expose only paths produced by that
     call; they do not recreate or relabel the underlying observations.
     """
 
-    _PROJECTION_MODE = "legacy_monolith_projection"
+    _PROJECTION_MODE = "unified_product_runtime"
 
     def __init__(
         self,
-        entrypoints: Optional[LegacyRuntimeEntrypoints] = None,
+        entrypoints: Optional[ProductRuntimeEntrypoints] = None,
     ) -> None:
-        self.entrypoints = entrypoints or LegacyRuntimeEntrypoints()
-        self._runs: dict[str, _LegacyRun] = {}
+        self.entrypoints = entrypoints or ProductRuntimeEntrypoints()
+        self._runs: dict[str, _ProductRun] = {}
         self._lock = threading.Lock()
 
     def resource_preflight(self, context: ExecutionContext) -> StepResult:
-        phase, scenario, config_template = self._require_profile(context)
+        capability_id, scenario_id, config_template = self._execution_parameters(context)
         record = self._record(context)
         path = record.paths.runtime_dir / "resource_preflight.json"
         if self.entrypoints.preflight is not None:
@@ -198,8 +201,10 @@ class LegacyGateAdapter:
                     {"node_count": context.requested_nodes},
                 ):
                     report = self.entrypoints.preflight(
-                        phase=phase,
-                        scenario=scenario,
+                        capability_id=capability_id,
+                        scenario_id=scenario_id,
+                        backend_id=context.backend_id,
+                        profile_id=context.profile_id,
                         config_path=config_template,
                         out_path=path,
                         requested_nodes=context.requested_nodes,
@@ -280,7 +285,7 @@ class LegacyGateAdapter:
             artifact_paths=(path,) if path.exists() else (),
             details={
                 "adapter_mode": self._PROJECTION_MODE,
-                "delegated_entrypoint": "create_scenario",
+                "delegated_entrypoint": "execute_scenario",
                 "delegated_to": "runtime_start",
                 "projected_artifact_names": ("resource_preflight.json",),
                 "admission_evidence": False,
@@ -288,7 +293,7 @@ class LegacyGateAdapter:
         )
 
     def runtime_start(self, context: ExecutionContext) -> StepResult:
-        phase, scenario, config_template = self._require_profile(context)
+        capability_id, scenario_id, config_template = self._execution_parameters(context)
         record = self._record(context)
         with self._lock:
             if record.runtime_started:
@@ -302,8 +307,11 @@ class LegacyGateAdapter:
             record.runtime_started = True
         record.paths.runtime_dir.mkdir(parents=True, exist_ok=True)
         kwargs: dict[str, Any] = {
-            "phase": phase,
-            "scenario": scenario,
+            "capability_id": capability_id,
+            "scenario_id": scenario_id,
+            "backend_id": context.backend_id,
+            "profile_id": context.profile_id,
+            "requested_nodes": context.requested_nodes,
             "config_path": config_template,
             "artifacts_dir": record.paths.runtime_dir,
             "state_out": record.paths.state_path,
@@ -321,30 +329,33 @@ class LegacyGateAdapter:
         if cli_overrides is not None:
             kwargs["cli_overrides"] = cli_overrides
 
-        state = self.entrypoints.create(**kwargs)
+        state = self.entrypoints.execute(**kwargs)
         if not isinstance(state, dict):
-            raise GateAdapterError("legacy create_scenario must return a state object")
+            raise GateAdapterError("execute_scenario must return a state object")
         nodes = state.get("nodes")
         if not isinstance(nodes, list) or len(nodes) != context.requested_nodes:
             observed = len(nodes) if isinstance(nodes, list) else "MISSING"
             raise GateAdapterError(
-                "legacy runtime did not preserve the exact requested node count: "
+                "product runtime did not preserve the exact requested node count: "
                 f"requested={context.requested_nodes}, observed={observed}"
             )
         runtime = state.get("runtime")
         runtime_run_id = runtime.get("run_id") if isinstance(runtime, dict) else None
         if not isinstance(runtime_run_id, str) or not runtime_run_id:
             raise AdapterOwnershipError(
-                "legacy runtime state requires an explicit runtime.run_id"
+                "product runtime state requires an explicit runtime.run_id"
             )
-        if state.get("phase_id") != phase or state.get("scenario") != scenario:
+        if (
+            state.get("capability_id") != capability_id
+            or state.get("scenario_id") != scenario_id
+        ):
             raise AdapterOwnershipError(
-                "legacy runtime returned cross-profile ownership state"
+                "product runtime returned cross-execution ownership state"
             )
         persisted = _load_owned_state(
             record.paths.state_path,
-            phase=phase,
-            scenario=scenario,
+            capability_id=capability_id,
+            scenario_id=scenario_id,
             expected_run_id=runtime_run_id,
         )
         persisted_nodes = persisted.get("nodes")
@@ -353,7 +364,7 @@ class LegacyGateAdapter:
             or len(persisted_nodes) != context.requested_nodes
         ):
             raise GateAdapterError(
-                "persisted legacy state did not preserve the exact requested node count"
+                "persisted product state did not preserve the exact requested node count"
             )
         record.state = state
         return StepResult.passed(
@@ -362,7 +373,7 @@ class LegacyGateAdapter:
             artifact_paths=(record.paths.state_path,),
             details={
                 "adapter_mode": self._PROJECTION_MODE,
-                "delegated_entrypoint": "create_scenario",
+                "delegated_entrypoint": "execute_scenario",
                 "runtime_run_id": runtime_run_id,
                 "requested_nodes": context.requested_nodes,
                 "observed_nodes": len(nodes),
@@ -375,7 +386,7 @@ class LegacyGateAdapter:
             context,
             "cluster_form",
             (
-                f"cluster_snapshots_{context.runtime_scenario}.json",
+                f"cluster_snapshots_{context.definition_id}.json",
                 "run_state.json",
             ),
         )
@@ -470,10 +481,10 @@ class LegacyGateAdapter:
             requested_nodes=context.requested_nodes,
         )
         if not isinstance(probe, dict):
-            raise GateAdapterError("legacy live probe must return an observation object")
+            raise GateAdapterError("live probe must return an observation object")
         if probe.get("observed_nodes") != context.requested_nodes:
             raise GateAdapterError(
-                "legacy live probe did not preserve the exact requested node count: "
+                "live probe did not preserve the exact requested node count: "
                 f"requested={context.requested_nodes}, observed={probe.get('observed_nodes')}"
             )
         record.live_probe_result = dict(probe)
@@ -544,7 +555,7 @@ class LegacyGateAdapter:
                 details={
                     "adapter_mode": self._PROJECTION_MODE,
                     "cleanup_delegated": False,
-                    "reason": "no owned legacy runtime was started",
+                    "reason": "no owned product runtime was started",
                     "admission_evidence": False,
                 },
             )
@@ -561,12 +572,12 @@ class LegacyGateAdapter:
                 details={
                     "adapter_mode": self._PROJECTION_MODE,
                     "cleanup_delegated": False,
-                    "reason": "no owned legacy runtime state exists",
+                    "reason": "no owned product runtime state exists",
                     "admission_evidence": False,
                 },
             )
 
-        phase, scenario, _ = self._require_profile(context)
+        capability_id, scenario_id, _ = self._execution_parameters(context)
         runtime_run_id: Optional[str] = None
         if isinstance(record.state, dict):
             runtime = record.state.get("runtime")
@@ -574,8 +585,8 @@ class LegacyGateAdapter:
                 runtime_run_id = runtime["run_id"]
         _load_owned_state(
             record.paths.state_path,
-            phase=phase,
-            scenario=scenario,
+            capability_id=capability_id,
+            scenario_id=scenario_id,
             expected_run_id=runtime_run_id,
         )
         with record.setup_timeline.span(
@@ -589,20 +600,20 @@ class LegacyGateAdapter:
                 out_path=record.paths.cleanup_path,
             )
         if not isinstance(result, dict):
-            raise GateAdapterError("legacy cleanup_scenario must return a report object")
+            raise GateAdapterError("cleanup_scenario must return a report object")
         record.cleanup_result = result
         details = {
             "adapter_mode": self._PROJECTION_MODE,
             "delegated_entrypoint": "cleanup_scenario",
             "cleanup_delegated": True,
-            "legacy_cleanup_status": result.get("status", "MISSING"),
+            "cleanup_status": result.get("status", "MISSING"),
             "admission_evidence": False,
         }
         if result.get("status") != "PASS":
             return StepResult.failed(
                 context,
                 "cleanup",
-                "legacy cleanup did not PASS",
+                "cleanup did not PASS",
                 details=details,
             )
         artifact_paths = (
@@ -637,15 +648,15 @@ class LegacyGateAdapter:
             artifact_paths=tuple(path for path in paths if path.exists()),
             details={
                 "adapter_mode": self._PROJECTION_MODE,
-                "delegated_entrypoint": "create_scenario",
+                "delegated_entrypoint": "execute_scenario",
                 "projected_artifact_names": artifact_names,
                 "admission_evidence": False,
                 **details,
             },
         )
 
-    def _record(self, context: ExecutionContext) -> _LegacyRun:
-        paths = LegacyRuntimePaths.under(context.artifact_root)
+    def _record(self, context: ExecutionContext) -> _ProductRun:
+        paths = ProductRuntimePaths.under(context.artifact_root)
         with self._lock:
             existing = self._runs.get(context.run_id)
             if existing is not None:
@@ -658,7 +669,7 @@ class LegacyGateAdapter:
                         f"run_id {context.run_id!r} is already bound to another owner"
                     )
                 return existing
-            record = _LegacyRun(
+            record = _ProductRun(
                 ownership_id=context.ownership_id,
                 provenance_id=context.provenance_id,
                 paths=paths,
@@ -666,7 +677,7 @@ class LegacyGateAdapter:
             self._runs[context.run_id] = record
             return record
 
-    def _get_record(self, context: ExecutionContext) -> Optional[_LegacyRun]:
+    def _get_record(self, context: ExecutionContext) -> Optional[_ProductRun]:
         with self._lock:
             record = self._runs.get(context.run_id)
             if record is None:
@@ -680,11 +691,11 @@ class LegacyGateAdapter:
                 )
             return record
 
-    def _require_started(self, context: ExecutionContext) -> _LegacyRun:
+    def _require_started(self, context: ExecutionContext) -> _ProductRun:
         record = self._get_record(context)
         if record is None or not record.runtime_started or record.state is None:
             raise GateAdapterError(
-                f"legacy runtime has not started for run_id {context.run_id!r}"
+                f"product runtime has not started for run_id {context.run_id!r}"
             )
         return record
 
@@ -694,7 +705,7 @@ class LegacyGateAdapter:
         run_id: str,
         ownership_id: str,
         provenance_id: str,
-    ) -> LegacyExecutionSnapshot:
+    ) -> ProductExecutionSnapshot:
         """Return immutable execution observations without exposing adapter state."""
 
         with self._lock:
@@ -708,7 +719,7 @@ class LegacyGateAdapter:
                 raise AdapterOwnershipError(
                     f"run_id {run_id!r} is owned by another execution"
                 )
-            return LegacyExecutionSnapshot(
+            return ProductExecutionSnapshot(
                 run_id=run_id,
                 ownership_id=ownership_id,
                 provenance_id=provenance_id,
@@ -745,31 +756,27 @@ class LegacyGateAdapter:
         )
 
     @staticmethod
-    def _require_profile(
+    def _execution_parameters(
         context: ExecutionContext,
     ) -> tuple[str, str, str]:
-        if (
-            not context.runtime_phase
-            or not context.runtime_scenario
-            or not context.config_template
-        ):
+        if not context.config_template:
             raise GateAdapterError(
-                "compiled Gate plan has no compatible legacy runtime profile; "
+                "compiled Gate plan has no executable profile; "
                 "the adapter will not silently downscale"
             )
         return (
-            context.runtime_phase,
-            context.runtime_scenario,
+            context.definition_id,
+            context.definition_id,
             context.config_template,
         )
 
 
-def build_legacy_adapter_bundle(
-    entrypoints: Optional[LegacyRuntimeEntrypoints] = None,
+def build_product_adapter_bundle(
+    entrypoints: Optional[ProductRuntimeEntrypoints] = None,
 ) -> AdapterBundle:
-    adapter = LegacyGateAdapter(entrypoints=entrypoints)
+    adapter = ProductGateAdapter(entrypoints=entrypoints)
     return adapter.adapter_bundle()
 
 
 # Compatibility spelling for callers that think in terms of the whole bundle.
-build_legacy_adapters = build_legacy_adapter_bundle
+build_product_adapters = build_product_adapter_bundle

@@ -47,7 +47,7 @@ def test_assign_hosts_round_robins_loopback_inventory() -> None:
 
 def test_local_orchestrator_wraps_start_and_collects_host_identity(tmp_path: Path) -> None:
     config = {"hosts": [{"host_id": "local", "ip": "127.0.0.1", "docker_endpoint": "local", "labels": ["worker"]}]}
-    orch = LocalOrchestrator(config=config, phase="P10_MULTI_HOST_ORCHESTRATION", scenario="orchestrated_localhost", run_id="run")
+    orch = LocalOrchestrator(config=config, capability_id="orchestration", scenario="orchestration", run_id="run")
     node = {"logical_id": "shard-0000-primary", "host_id": "local", "az_id": "az-local", "role": "primary", "client_port": 7000}
     orch.prepare()
     container_id = orch.start_node(node, lambda _: "container-1")

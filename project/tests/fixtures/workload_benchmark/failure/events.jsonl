@@ -1,1 +1,1 @@
-{"event_id":"evt-fail-start","event_type":"workload_window_started","message":"fixture failure","phase_id":"M1-S05","run_id":"fixture-failure","schema_version":"v1"}
+{"event_id":"evt-fail-start","event_type":"workload_window_started","message":"fixture failure","capability_id":"workload","run_id":"fixture-failure","schema_version":"v1"}

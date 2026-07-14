@@ -14,11 +14,11 @@ REAL_ROWS = {"smoke_10": 10, "real_30": 30, "real_50": 50, "real_100": 100, "rea
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", required=True)
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     args = parser.parse_args()
 
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     errors: list[str] = []
     ledger = _load_json(base / "coverage_ledger.json", errors, "coverage_ledger")
     rows = ledger.get("rows", []) if ledger else []
@@ -39,7 +39,7 @@ def main() -> int:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)
         return 1
-    print(f"PASS no server profile partial coverage phase={args.phase}")
+    print(f"PASS no server profile partial coverage capability_id={args.capability_id}")
     return 0
 
 

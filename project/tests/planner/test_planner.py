@@ -81,80 +81,80 @@ def test_1000_node_plan_is_opt_in_dry_run(tmp_path: Path) -> None:
     assert all(node["dry_run"] is True for node in plan["nodes"])
 
 
-def test_p37_250_node_plan_is_dry_run_only(tmp_path: Path) -> None:
-    config = tmp_path / "scale_250_p37.yaml"
-    config.write_text(p37_config_text(250, dry_run=True), encoding="utf-8")
+def test_scale_projection_250_node_plan_is_dry_run_only(tmp_path: Path) -> None:
+    config = tmp_path / "scale_250_scale_projection.yaml"
+    config.write_text(scale_projection_config_text(250, dry_run=True), encoding="utf-8")
 
     plan = create_plan_file(config, tmp_path / "scale_250.json", dry_run=True)
 
     assert plan["node_count"] == 250
     assert plan["runtime"]["dry_run"] is True
-    assert plan["constraints"]["p37_200_plus_dry_run"] is True
+    assert plan["constraints"]["scale_projection_200_plus"] is True
     assert plan["constraints"]["above_200_dry_run_only"] is True
     assert plan["constraints"]["no_execution"] is True
     assert all(node["dry_run"] is True for node in plan["nodes"])
 
 
-def test_p37_planner_rejects_real_above_200(tmp_path: Path) -> None:
+def test_scale_projection_planner_rejects_real_above_200(tmp_path: Path) -> None:
     config = tmp_path / "scale_250_real.yaml"
-    config.write_text(p37_config_text(250, dry_run=False), encoding="utf-8")
+    config.write_text(scale_projection_config_text(250, dry_run=False), encoding="utf-8")
 
     with pytest.raises(PlannerError, match="REAL_EXECUTION_ABOVE_200_FORBIDDEN"):
         create_plan_file(config, tmp_path / "scale_250_real.json")
 
 
-def test_p32_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None:
+def test_management_matrix_200_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None:
     config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
 
     plan = build_cluster_plan(
         config,
         config_path=Path("templates/configs/scale_200.yaml"),
-        bounded_exception_phase="P32_MANAGEMENT_MATRIX_200_REAL",
-        bounded_exception_scenario="strict_management_matrix_200",
+        capability_id="management_matrix",
+        scenario="management_matrix",
     )
 
     assert plan["node_count"] == 200
     assert plan["constraints"]["default_node_cap"] == 100
     assert plan["constraints"]["opt_in_1000"] is False
     assert plan["constraints"]["exact_200_bounded_exception"] is True
-    assert plan["constraints"]["bounded_exception_phase"] == "P32_MANAGEMENT_MATRIX_200_REAL"
-    assert plan["constraints"]["bounded_exception_scenario"] == "strict_management_matrix_200"
+    assert plan["constraints"]["selected_capability_id"] == "management_matrix"
+    assert plan["constraints"]["selected_scenario_id"] == "management_matrix"
     assert plan["runtime"]["dry_run"] is False
     assert plan["nodehost_density"]["actual_nodehost_count"] == 8
 
 
-def test_p36_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None:
+def test_local_full_flow_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None:
     config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
 
     plan = build_cluster_plan(
         config,
         config_path=Path("templates/configs/scale_200.yaml"),
-        bounded_exception_phase="P36_FULL_FLOW_E2E_50_100_200_REAL",
-        bounded_exception_scenario="strict_full_flow_200",
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
     )
 
     assert plan["node_count"] == 200
     assert plan["constraints"]["default_node_cap"] == 100
     assert plan["constraints"]["opt_in_1000"] is False
     assert plan["constraints"]["exact_200_bounded_exception"] is True
-    assert plan["constraints"]["bounded_exception_phase"] == "P36_FULL_FLOW_E2E_50_100_200_REAL"
-    assert plan["constraints"]["bounded_exception_scenario"] == "strict_full_flow_200"
+    assert plan["constraints"]["selected_capability_id"] == "local_full_flow"
+    assert plan["constraints"]["selected_scenario_id"] == "local_full_flow"
     assert plan["runtime"]["dry_run"] is False
 
 
-def test_p32_exact_200_plan_rejects_wrong_scenario() -> None:
+def test_management_matrix_200_exact_200_plan_rejects_wrong_scenario() -> None:
     config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
 
     with pytest.raises(PlannerError, match="node count exceeds default cap"):
         build_cluster_plan(
             config,
             config_path=Path("templates/configs/scale_200.yaml"),
-            bounded_exception_phase="P32_MANAGEMENT_MATRIX_200_REAL",
-            bounded_exception_scenario="strict_management_matrix_199",
+            capability_id="management_matrix",
+            scenario="management_matrix_typo",
         )
 
 
-def test_p32_bounded_exception_rejects_non_200_node_count() -> None:
+def test_management_matrix_200_bounded_exception_rejects_non_200_node_count() -> None:
     config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
     config["cluster"]["shards"] = 99
 
@@ -162,8 +162,8 @@ def test_p32_bounded_exception_rejects_non_200_node_count() -> None:
         build_cluster_plan(
             config,
             config_path=Path("templates/configs/scale_200.yaml"),
-            bounded_exception_phase="P32_MANAGEMENT_MATRIX_200_REAL",
-            bounded_exception_scenario="strict_management_matrix_200",
+            capability_id="management_matrix",
+            scenario="management_matrix",
         )
 
 
@@ -205,10 +205,10 @@ def test_numeric_host_capacity_can_pass(tmp_path: Path) -> None:
     assert plan["constraints"]["host_capacity"][0]["status"] == "PASS"
 
 
-def p37_config_text(target: int, *, dry_run: bool) -> str:
+def scale_projection_config_text(target: int, *, dry_run: bool) -> str:
     return f"""
 schema_version: v1
-profile_name: scale_{target}_p37_dry_run
+profile_name: scale_{target}_scale_projection
 safety:
   default_max_nodes: 100
   allow_1000_nodes: false
@@ -240,7 +240,7 @@ cluster:
   node_memory_limit_mb: 32
 scale_profile:
   dry_run_only: true
-  p37_dry_run_target: true
+  scale_projection_target: true
   target_nodes: {target}
   execution_mode: dry_run
 workload:

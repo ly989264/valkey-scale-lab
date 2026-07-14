@@ -77,14 +77,14 @@ class CommandRecorder:
     def __init__(
         self,
         *,
-        phase_id: str,
+        capability_id: str,
         run_id: str,
         scenario: str,
         artifacts_dir: str | Path,
         log_dir: str | Path | None = None,
         append: bool = False,
     ) -> None:
-        self.phase_id = phase_id
+        self.capability_id = capability_id
         self.run_id = run_id
         self.scenario = scenario
         self.artifacts_dir = Path(artifacts_dir)
@@ -191,7 +191,7 @@ class CommandRecorder:
         row = {
             "schema_version": "v1",
             "artifact_type": COMMAND_LOG_ARTIFACT_TYPE,
-            "phase_id": self.phase_id,
+            "capability_id": self.capability_id,
             "run_id": self.run_id,
             "scenario": self.scenario,
             "sequence": sequence,
@@ -260,7 +260,7 @@ class CommandRecorder:
             elif self.command_log_path.exists() and self.command_log_path.stat().st_size == 0:
                 self.command_log_path.unlink()
         summary = build_command_audit_summary(
-            phase_id=self.phase_id,
+            capability_id=self.capability_id,
             run_id=self.run_id,
             scenario=self.scenario,
             command_log_path=self.command_log_path,
@@ -284,7 +284,7 @@ class CommandRecorder:
 
 def build_command_audit_summary(
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     scenario: str,
     command_log_path: str | Path,
@@ -305,7 +305,7 @@ def build_command_audit_summary(
     return {
         "schema_version": "v1",
         "artifact_type": COMMAND_AUDIT_SUMMARY_ARTIFACT_TYPE,
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario": scenario,
         "status": summary_status,

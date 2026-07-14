@@ -249,17 +249,17 @@
     }
   ],
   "node_count": 200,
-  "phase_id": "P09_ANALYSIS_REPORTING",
+  "capability_id": "analysis_reporting",
   "run_id": "system-metrics-200",
   "sample_count": 400,
   "sample_errors": [],
   "scale": 200,
-  "scenario_name": "fixture",
+  "scenario_name": "analysis_reporting",
   "schema_version": "v1",
   "source_refs": {
     "metrics_timeseries": "metrics_timeseries.jsonl",
     "system_metrics_timeseries": "system_metrics_timeseries.jsonl"
   },
-  "stage_id": "P09_ANALYSIS_REPORTING",
+
   "status": "PASS"
 }

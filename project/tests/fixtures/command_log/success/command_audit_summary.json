@@ -47,11 +47,11 @@
     }
   ],
   "pass_count": 5,
-  "phase_id": "M1-S03",
+  "capability_id": "command_audit",
   "retry_commands": [],
   "retry_count": 0,
   "run_id": "fixture-command-success",
-  "scenario": "fixture",
+  "scenario": "cluster_lifecycle",
   "schema_version": "v1",
   "slowest_commands_topN": [
     {

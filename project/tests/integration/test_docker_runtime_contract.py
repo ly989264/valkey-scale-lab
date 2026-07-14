@@ -10,9 +10,9 @@ from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
 
-def test_p03_node_specs_are_deterministic() -> None:
+def test_cluster_lifecycle_node_specs_are_deterministic() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/single_mac_6node.yaml"))
-    nodes = docker_runtime._node_specs(config, "P03_LOCAL_DOCKER_VALKEY", "cluster_smoke")
+    nodes = docker_runtime._node_specs(config, "cluster_lifecycle", "cluster_lifecycle")
     assert [node["logical_id"] for node in nodes] == [
         "shard-0000-primary",
         "shard-0001-primary",
@@ -23,30 +23,30 @@ def test_p03_node_specs_are_deterministic() -> None:
     ]
     assert [node["client_port"] for node in nodes] == [7000, 7001, 7002, 7003, 7004, 7005]
     assert len({node["container_name"] for node in nodes}) == 6
-    assert "p03-local-docker-valkey-cluster-smoke" in nodes[0]["container_name"]
+    assert "cluster-lifecycle-cluster-lifecycle" in nodes[0]["container_name"]
     assert {node["host_id"] for node in nodes} == {"local"}
 
 
-def test_p10_node_specs_preserve_multi_host_placement() -> None:
+def test_orchestration_node_specs_preserve_multi_host_placement() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/single_mac_6node.yaml"))
     config["hosts"] = [
         {"host_id": "local-a", "ip": "127.0.0.1", "docker_endpoint": "local", "labels": ["worker"]},
         {"host_id": "local-b", "ip": "127.0.0.1", "docker_endpoint": "local", "labels": ["worker"]},
     ]
-    nodes = docker_runtime._node_specs(config, "P10_MULTI_HOST_ORCHESTRATION", "orchestrated_localhost")
+    nodes = docker_runtime._node_specs(config, "orchestration", "orchestration")
     assert [node["host_id"] for node in nodes] == ["local-a", "local-b", "local-a", "local-b", "local-a", "local-b"]
 
 
-def test_p13_node_specs_use_global_cluster_node_timeout() -> None:
+def test_setup_node_specs_use_global_cluster_node_timeout() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_50.yaml"))
-    nodes = docker_runtime._node_specs(config, "P13_SCALE_LADDER_50_100", "scale_50")
+    nodes = docker_runtime._node_specs(config, "scale_ladder", "scale_50")
     assert {node["effective_cluster_node_timeout_ms"] for node in nodes} == {30000}
     assert {node["cluster_node_timeout_source"] for node in nodes} == {"global"}
 
 
-def test_p13_node_specs_preserve_replica_topology() -> None:
+def test_setup_node_specs_preserve_replica_topology() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_50.yaml"))
-    nodes = docker_runtime._node_specs(config, "P13_SCALE_LADDER_50_100", "scale_50")
+    nodes = docker_runtime._node_specs(config, "scale_ladder", "scale_50")
 
     assert len(nodes) == 50
     assert len([node for node in nodes if node["role"] == "primary"]) == 25
@@ -55,180 +55,29 @@ def test_p13_node_specs_preserve_replica_topology() -> None:
     assert nodes[25]["logical_id"] == "shard-0000-replica-00"
 
 
-def test_p13_defaults_to_docker_process_runtime() -> None:
-    assert docker_runtime._uses_docker_process_runtime("P12_SCALE_LADDER_10_30", "scale_10") is True
-    assert docker_runtime._uses_docker_process_runtime("P12_SCALE_LADDER_10_30", "scale_30") is True
-    assert docker_runtime._uses_docker_process_runtime("P13_SCALE_LADDER_50_100", "scale_50") is True
-    assert docker_runtime._uses_docker_process_runtime("P13_SCALE_LADDER_50_100", "scale_100") is True
-    assert docker_runtime._uses_docker_process_runtime("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01") is True
-    assert docker_runtime._uses_docker_process_runtime("P11_STABILITY_SOAK", "stability_soak_smoke") is False
+@pytest.mark.parametrize("node_count", [50, 100, 200])
+def test_exact_runtime_scale_comes_only_from_profile(node_count: int) -> None:
+    profile = docker_runtime._runtime_scale_profile(node_count)
+
+    assert profile is not None
+    assert profile.profile_id == f"exact-{node_count}"
+    assert profile.requested_nodes == node_count
+    assert not hasattr(profile, "scenario_id")
+    assert not hasattr(profile, "capability_id")
 
 
-def test_p16_quant_telemetry_is_six_node_only() -> None:
-    assert docker_runtime._scenario_node_count_allowed(
-        "P16_QUANT_TELEMETRY_UNIFICATION",
-        "goal_loop_quant_telemetry",
-        6,
-    ) is True
-    assert docker_runtime._scenario_node_count_allowed(
-        "P16_QUANT_TELEMETRY_UNIFICATION",
-        "goal_loop_quant_telemetry",
-        10,
-    ) is False
-
-
-def test_p29_strict_telemetry_small_real_is_six_node_only() -> None:
-    assert docker_runtime._scenario_node_count_allowed(
-        "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
-        "strict_telemetry_small_real",
-        6,
-    ) is True
-    assert docker_runtime._scenario_node_count_allowed(
-        "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
-        "strict_telemetry_small_real",
-        50,
-    ) is False
-    assert docker_runtime._uses_docker_process_runtime(
-        "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
-        "strict_telemetry_small_real",
-    ) is False
-
-
-def test_p30_strict_management_matrix_is_exact_50_process_runtime() -> None:
-    assert docker_runtime._scenario_node_count_allowed(
-        "P30_MANAGEMENT_MATRIX_50_REAL",
-        "strict_management_matrix_50",
-        50,
-    ) is True
-    assert docker_runtime._scenario_node_count_allowed(
-        "P30_MANAGEMENT_MATRIX_50_REAL",
-        "strict_management_matrix_50",
-        49,
-    ) is False
-    assert docker_runtime._scenario_node_count_allowed(
-        "P30_MANAGEMENT_MATRIX_50_REAL",
-        "strict_management_matrix_50",
-        100,
-    ) is False
-    assert docker_runtime._uses_docker_process_runtime(
-        "P30_MANAGEMENT_MATRIX_50_REAL",
-        "strict_management_matrix_50",
-    ) is True
-
-
-def test_p31_strict_management_matrix_is_exact_100_process_runtime() -> None:
-    assert docker_runtime._scenario_node_count_allowed(
-        "P31_MANAGEMENT_MATRIX_100_REAL",
-        "strict_management_matrix_100",
-        100,
-    ) is True
-    for rejected in [99, 50, 101]:
-        assert docker_runtime._scenario_node_count_allowed(
-            "P31_MANAGEMENT_MATRIX_100_REAL",
-            "strict_management_matrix_100",
-            rejected,
-        ) is False
-    assert docker_runtime._uses_docker_process_runtime(
-        "P31_MANAGEMENT_MATRIX_100_REAL",
-        "strict_management_matrix_100",
-    ) is True
-
-
-def test_p32_strict_management_matrix_is_exact_200_process_runtime() -> None:
-    assert docker_runtime._scenario_node_count_allowed(
-        "P32_MANAGEMENT_MATRIX_200_REAL",
-        "strict_management_matrix_200",
+def test_profile_rejects_unregistered_exact_size_without_changing_scenario() -> None:
+    assert docker_runtime._runtime_scale_profile(199) is None
+    assert docker_runtime._full_flow_profile(
+        "local_full_flow",
+        "local_full_flow",
         200,
-    ) is True
-    for rejected in [100, 199, 201]:
-        assert docker_runtime._scenario_node_count_allowed(
-            "P32_MANAGEMENT_MATRIX_200_REAL",
-            "strict_management_matrix_200",
-            rejected,
-        ) is False
-    assert docker_runtime._uses_docker_process_runtime(
-        "P32_MANAGEMENT_MATRIX_200_REAL",
-        "strict_management_matrix_200",
-    ) is True
+    ).profile_id == "exact-200"
 
 
-def test_p34_strict_fault_matrix_is_exact_100_process_runtime() -> None:
-    assert docker_runtime._p33_fault_matrix_node_count(
-        "P33_FAULT_FAILOVER_MATRIX_50_REAL",
-        "strict_fault_matrix_50",
-    ) == 50
-    assert docker_runtime._strict_fault_matrix_node_count(
-        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
-        "strict_fault_matrix_100",
-    ) == 100
-    assert docker_runtime._scenario_node_count_allowed(
-        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
-        "strict_fault_matrix_100",
-        100,
-    ) is True
-    for rejected in [50, 99, 101, 200]:
-        assert docker_runtime._scenario_node_count_allowed(
-            "P34_FAULT_FAILOVER_MATRIX_100_REAL",
-            "strict_fault_matrix_100",
-            rejected,
-        ) is False
-    assert docker_runtime._uses_docker_process_runtime(
-        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
-        "strict_fault_matrix_100",
-    ) is True
-
-
-def test_p35_strict_fault_matrix_is_exact_200_process_runtime() -> None:
-    assert docker_runtime._strict_fault_matrix_node_count(
-        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
-        "strict_fault_matrix_200",
-    ) == 200
-    assert docker_runtime._scenario_node_count_allowed(
-        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
-        "strict_fault_matrix_200",
-        200,
-    ) is True
-    for rejected in [100, 199, 201]:
-        assert docker_runtime._scenario_node_count_allowed(
-            "P35_FAULT_FAILOVER_MATRIX_200_REAL",
-            "strict_fault_matrix_200",
-            rejected,
-        ) is False
-    assert docker_runtime._scenario_node_count_allowed(
-        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
-        "strict_fault_matrix_199",
-        200,
-    ) is False
-    assert docker_runtime._uses_docker_process_runtime(
-        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
-        "strict_fault_matrix_200",
-    ) is True
-    assert docker_runtime._uses_docker_process_runtime(
-        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
-        "strict_fault_matrix_199",
-    ) is False
-    assert docker_runtime._uses_docker_process_runtime(
-        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
-        "strict_fault_matrix_200",
-    ) is False
-
-
-def test_p36_strict_full_flow_is_exact_scale_process_runtime() -> None:
-    for scale in [50, 100, 200]:
-        phase = "P36_FULL_FLOW_E2E_50_100_200_REAL"
-        scenario = f"strict_full_flow_{scale}"
-        assert docker_runtime._strict_full_flow_node_count(phase, scenario) == scale
-        assert docker_runtime._scenario_node_count_allowed(phase, scenario, scale) is True
-        assert docker_runtime._uses_docker_process_runtime(phase, scenario) is True
-        for rejected in {49, 99, 100, 199, 200, 201} - {scale}:
-            assert docker_runtime._scenario_node_count_allowed(phase, scenario, rejected) is False
-    assert docker_runtime._strict_full_flow_node_count("P36_FULL_FLOW_E2E_50_100_200_REAL", "strict_full_flow_199") is None
-    assert docker_runtime._uses_docker_process_runtime("P36_FULL_FLOW_E2E_50_100_200_REAL", "strict_full_flow_199") is False
-
-
-def test_p32_node_specs_use_global_cluster_node_timeout() -> None:
+def test_management_matrix_200_node_specs_use_global_cluster_node_timeout() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
-    nodes = docker_runtime._node_specs(config, "P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200")
+    nodes = docker_runtime._node_specs(config, "management_matrix", "management_matrix")
 
     assert len(nodes) == 200
     assert {node["effective_cluster_node_timeout_ms"] for node in nodes} == {30000}
@@ -237,22 +86,22 @@ def test_p32_node_specs_use_global_cluster_node_timeout() -> None:
 
 def test_process_nodehosts_use_global_density_for_100_and_200() -> None:
     config100 = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_100.yaml"))
-    nodes100 = docker_runtime._node_specs(config100, "P13_SCALE_LADDER_50_100", "scale_100", "density-100")
-    nodehosts100 = docker_runtime._process_nodehosts(config100, nodes100, "P13_SCALE_LADDER_50_100", "scale_100", "density-100")
+    nodes100 = docker_runtime._node_specs(config100, "scale_ladder", "scale_100", "density-100")
+    nodehosts100 = docker_runtime._process_nodehosts(config100, nodes100, "scale_ladder", "scale_100", "density-100")
     assert len(nodehosts100) == 4
     assert max(nodehost["logical_node_count"] for nodehost in nodehosts100) == 25
 
     config200 = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
-    nodes200 = docker_runtime._node_specs(config200, "P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200", "density-200")
-    nodehosts200 = docker_runtime._process_nodehosts(config200, nodes200, "P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200", "density-200")
+    nodes200 = docker_runtime._node_specs(config200, "management_matrix", "management_matrix", "density-200")
+    nodehosts200 = docker_runtime._process_nodehosts(config200, nodes200, "management_matrix", "management_matrix", "density-200")
     assert len(nodehosts200) == 8
     assert max(nodehost["logical_node_count"] for nodehost in nodehosts200) == 25
 
 
 def test_process_nodehosts_preserve_single_az_fault_domains() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/single_mac_6node.yaml"))
-    nodes = docker_runtime._node_specs(config, "P03_LOCAL_DOCKER_VALKEY", "cluster_smoke", "density-smoke")
-    nodehosts = docker_runtime._process_nodehosts(config, nodes, "P03_LOCAL_DOCKER_VALKEY", "cluster_smoke", "density-smoke")
+    nodes = docker_runtime._node_specs(config, "cluster_lifecycle", "cluster_lifecycle", "density-smoke")
+    nodehosts = docker_runtime._process_nodehosts(config, nodes, "cluster_lifecycle", "cluster_lifecycle", "density-smoke")
     by_shard: dict[str, set[str]] = {}
     for node in nodes:
         by_shard.setdefault(node["shard_id"], set()).add(node["nodehost_id"])
@@ -261,135 +110,89 @@ def test_process_nodehosts_preserve_single_az_fault_domains() -> None:
     assert all(len(nodehost_ids) == 2 for nodehost_ids in by_shard.values())
 
 
-def test_p32_cluster_plan_writer_allows_only_exact_stage_exception(tmp_path: Path) -> None:
+def test_management_matrix_200_cluster_plan_writer_allows_only_exact_profile_exception(tmp_path: Path) -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
     out = tmp_path / "cluster_plan.json"
 
-    docker_runtime._write_p30_cluster_plan(
+    docker_runtime._write_management_matrix_cluster_plan(
         out,
         config,
-        "P32_MANAGEMENT_MATRIX_200_REAL",
-        "strict_management_matrix_200",
-        "p32-test-run",
+        "management_matrix",
+        "management_matrix",
+        "management_matrix_200-test-run",
     )
 
     plan = docker_runtime.json.loads(out.read_text(encoding="utf-8"))
-    assert plan["phase_id"] == "P32_MANAGEMENT_MATRIX_200_REAL"
-    assert plan["scenario_name"] == "strict_management_matrix_200"
+    assert plan["capability_id"] == "management_matrix"
+    assert plan["scenario_name"] == "management_matrix"
     assert plan["node_count"] == 200
     assert plan["constraints"]["default_node_cap"] == 100
     assert plan["constraints"]["opt_in_1000"] is False
     assert plan["constraints"]["exact_200_bounded_exception"] is True
 
 
-def test_p25_smoke_runtime_is_six_node_only_and_not_process_runtime() -> None:
-    assert docker_runtime._scenario_node_count_allowed(
-        "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
-        "fault_workload_impact_analysis",
-        6,
-    ) is True
-    assert docker_runtime._scenario_node_count_allowed(
-        "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
-        "fault_workload_impact_analysis",
-        10,
-    ) is False
-    assert docker_runtime._uses_docker_process_runtime(
-        "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
-        "fault_workload_impact_analysis",
-    ) is False
+def test_full_flow_50_cluster_plan_writer_uses_the_registered_scale_profile(tmp_path: Path) -> None:
+    config = docker_runtime.normalize_config(
+        docker_runtime.parse_config_file("templates/configs/scale_50.yaml")
+    )
+    out = tmp_path / "cluster_plan.json"
+
+    docker_runtime._write_management_matrix_cluster_plan(
+        out,
+        config,
+        "local_full_flow",
+        "local_full_flow",
+        "local-full-flow-50-test-run",
+    )
+
+    plan = docker_runtime.json.loads(out.read_text(encoding="utf-8"))
+    assert plan["capability_id"] == "local_full_flow"
+    assert plan["scenario_name"] == "local_full_flow"
+    assert plan["node_count"] == 50
 
 
-def test_p21_runtime_allows_only_exact_200_sample_scenarios() -> None:
-    assert docker_runtime._p21_scale_sample_node_count("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01") == 200
-    assert docker_runtime._scenario_node_count_allowed("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01", 200) is True
-    assert docker_runtime._scenario_node_count_allowed("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01", 100) is False
-    assert docker_runtime._scenario_node_count_allowed("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01", 201) is False
-    assert docker_runtime._uses_docker_process_runtime("P22_FAULT_REPLICA_HOST_AZ_STOP", "scale_200_sample_01") is False
-    assert docker_runtime._scenario_node_count_allowed("P22_FAULT_REPLICA_HOST_AZ_STOP", "scale_200_sample_01", 200) is False
-
-
-def test_p22_runtime_admits_only_bounded_fault_matrix_scenarios() -> None:
-    for node_count in [6, 10, 30, 50, 100]:
-        scenario = f"p22_fault_matrix_{node_count}"
-        assert docker_runtime._p22_fault_matrix_node_count("P22_FAULT_REPLICA_HOST_AZ_STOP", scenario) == node_count
-        assert docker_runtime._scenario_node_count_allowed("P22_FAULT_REPLICA_HOST_AZ_STOP", scenario, node_count) is True
-        assert docker_runtime._uses_docker_process_runtime("P22_FAULT_REPLICA_HOST_AZ_STOP", scenario) is True
-    assert docker_runtime._p22_fault_matrix_node_count("P22_FAULT_REPLICA_HOST_AZ_STOP", "p22_fault_matrix_200") is None
-    assert docker_runtime._scenario_node_count_allowed("P22_FAULT_REPLICA_HOST_AZ_STOP", "p22_fault_matrix_200", 200) is False
-    assert docker_runtime._uses_docker_process_runtime("P22_FAULT_REPLICA_HOST_AZ_STOP", "p22_fault_matrix_200") is False
-
-
-def test_p23_runtime_admits_only_bounded_network_fault_matrix_scenarios() -> None:
-    for node_count in [6, 10, 30, 50, 100]:
-        scenario = f"p23_fault_matrix_{node_count}"
-        assert docker_runtime._p23_fault_matrix_node_count("P23_FAULT_NETWORK_DELAY_LOSS_FLAP", scenario) == node_count
-        assert docker_runtime._scenario_node_count_allowed("P23_FAULT_NETWORK_DELAY_LOSS_FLAP", scenario, node_count) is True
-        assert docker_runtime._uses_docker_process_runtime("P23_FAULT_NETWORK_DELAY_LOSS_FLAP", scenario) is True
-    assert docker_runtime._p23_fault_matrix_node_count("P23_FAULT_NETWORK_DELAY_LOSS_FLAP", "p23_fault_matrix_200") is None
-    assert docker_runtime._scenario_node_count_allowed("P23_FAULT_NETWORK_DELAY_LOSS_FLAP", "p23_fault_matrix_200", 200) is False
-    assert docker_runtime._uses_docker_process_runtime("P23_FAULT_NETWORK_DELAY_LOSS_FLAP", "p23_fault_matrix_200") is False
-
-
-def test_p24_runtime_admits_only_bounded_partition_matrix_scenarios() -> None:
-    for node_count in [6, 10, 30, 50, 100]:
-        scenario = f"p24_partition_matrix_{node_count}"
-        assert docker_runtime._p24_fault_matrix_node_count("P24_PARTITION_SPLIT_BRAIN_MATRIX", scenario) == node_count
-        assert docker_runtime._scenario_node_count_allowed("P24_PARTITION_SPLIT_BRAIN_MATRIX", scenario, node_count) is True
-        assert docker_runtime._uses_docker_process_runtime("P24_PARTITION_SPLIT_BRAIN_MATRIX", scenario) is True
-    assert docker_runtime._p24_fault_matrix_node_count("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_200") is None
-    assert docker_runtime._scenario_node_count_allowed("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_200", 200) is False
-    assert docker_runtime._uses_docker_process_runtime("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_200") is False
-    assert docker_runtime._p24_fault_matrix_node_count("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_1000") is None
-    assert docker_runtime._scenario_node_count_allowed("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_1000", 1000) is False
-
-
-def test_p21_runtime_semantic_exception_is_narrow() -> None:
+@pytest.mark.parametrize(
+    "capability_id",
+    [
+        "failover_latency_curve",
+        "management_matrix",
+        "fault_matrix",
+        "local_full_flow",
+        "failover_timeline",
+        "clean_gate_diagnostics",
+    ],
+)
+def test_exact_200_runtime_semantic_exception_is_profile_and_scenario_bound(
+    capability_id: str,
+) -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
 
-    assert docker_runtime._runtime_semantic_errors(config, phase="P21_FAILOVER_LATENCY_CURVE_200", scenario="scale_200_sample_01") == []
-    assert docker_runtime._runtime_semantic_errors(config, phase="P32_MANAGEMENT_MATRIX_200_REAL", scenario="strict_management_matrix_200") == []
-    assert docker_runtime._runtime_semantic_errors(config, phase="P35_FAULT_FAILOVER_MATRIX_200_REAL", scenario="strict_fault_matrix_200") == []
-    assert docker_runtime._runtime_semantic_errors(config, phase="P36_FULL_FLOW_E2E_50_100_200_REAL", scenario="strict_full_flow_200") == []
-    assert docker_runtime._runtime_semantic_errors(config, phase="P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY", scenario="p44_scale_200_timeline_sample_01") == []
-    assert docker_runtime._runtime_semantic_errors(config, phase="P45_CLEAN_GATE_LAYERED_DIAGNOSTICS", scenario="p45_scale_200_layered_sample_01") == []
+    assert docker_runtime._runtime_semantic_errors(
+        config,
+        capability_id=capability_id,
+        scenario=capability_id,
+        profile_id="exact-200",
+    ) == []
     assert any(
         error["code"] == "NODE_CAP_EXCEEDED"
-        for error in docker_runtime._runtime_semantic_errors(config, phase="P22_FAULT_REPLICA_HOST_AZ_STOP", scenario="scale_200_sample_01")
-    )
-    assert any(
-        error["code"] == "NODE_CAP_EXCEEDED"
-        for error in docker_runtime._runtime_semantic_errors(config, phase="P32_MANAGEMENT_MATRIX_200_REAL", scenario="strict_management_matrix_199")
-    )
-    assert any(
-        error["code"] == "NODE_CAP_EXCEEDED"
-        for error in docker_runtime._runtime_semantic_errors(config, phase="P35_FAULT_FAILOVER_MATRIX_200_REAL", scenario="strict_fault_matrix_199")
-    )
-    assert any(
-        error["code"] == "NODE_CAP_EXCEEDED"
-        for error in docker_runtime._runtime_semantic_errors(config, phase="P36_FULL_FLOW_E2E_50_100_200_REAL", scenario="strict_full_flow_199")
+        for error in docker_runtime._runtime_semantic_errors(
+            config,
+            capability_id=capability_id,
+            scenario=f"{capability_id}_other",
+            profile_id="exact-200",
+        )
     )
 
 
-def test_p45_clean_gate_layered_runtime_is_exact_scale_process_runtime() -> None:
-    for scale in [10, 30, 50, 100, 200]:
-        phase = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
-        scenario = f"p45_scale_{scale}_layered_sample_01"
-        assert docker_runtime._p45_clean_gate_layered_node_count(phase, scenario) == scale
-        assert docker_runtime._scenario_node_count_allowed(phase, scenario, scale) is True
-        assert docker_runtime._uses_docker_process_runtime(phase, scenario) is True
-    assert docker_runtime._scenario_node_count_allowed("P45_CLEAN_GATE_LAYERED_DIAGNOSTICS", "p45_scale_200_layered_sample_01", 100) is False
-    assert docker_runtime._scenario_node_count_allowed("P45_CLEAN_GATE_LAYERED_DIAGNOSTICS", "p45_scale_201_layered_sample_01", 201) is False
-
-
-def test_p13_runtime_timing_names_split_diagnostic_probe() -> None:
-    assert "runtime_final_full_probe" in docker_runtime.P13_TIMING_NAMES
-    assert "runtime_diagnostic_full_probe" in docker_runtime.P13_TIMING_NAMES
+def test_runtime_setup_timing_names_split_diagnostic_probe() -> None:
+    assert "runtime_final_full_probe" in docker_runtime.SETUP_TIMING_NAMES
+    assert "runtime_diagnostic_full_probe" in docker_runtime.SETUP_TIMING_NAMES
     timings: dict[str, dict] = {}
     started = docker_runtime.time.monotonic()
     docker_runtime._record_timing(timings, "runtime_final_full_probe", started, status="PASS")
     docker_runtime._record_timing(timings, "runtime_diagnostic_full_probe", started, status="FAIL")
 
-    entries = {entry["name"]: entry for entry in docker_runtime._timing_entries(timings, docker_runtime.P13_TIMING_NAMES)}
+    entries = {entry["name"]: entry for entry in docker_runtime._timing_entries(timings, docker_runtime.SETUP_TIMING_NAMES)}
     assert entries["runtime_final_full_probe"]["status"] == "PASS"
     assert entries["runtime_diagnostic_full_probe"]["status"] == "FAIL"
 
@@ -429,9 +232,9 @@ def test_replica_replicate_parallelism_rejects_unsupported(monkeypatch: pytest.M
 
 def test_process_nodehosts_group_logical_nodes_by_az() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_50.yaml"))
-    nodes = docker_runtime._node_specs(config, "P13_SCALE_LADDER_50_100", "scale_50", "run")
+    nodes = docker_runtime._node_specs(config, "scale_ladder", "scale_50", "run")
 
-    nodehosts = docker_runtime._process_nodehosts(config, nodes, "P13_SCALE_LADDER_50_100", "scale_50", "run")
+    nodehosts = docker_runtime._process_nodehosts(config, nodes, "scale_ladder", "scale_50", "run")
 
     assert [nodehost["nodehost_id"] for nodehost in nodehosts] == [
         "nodehost-az-a-00",
@@ -450,14 +253,14 @@ def _assert_process_bootstrap_uses_nodehost_bundle(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     config_path: str,
-    phase: str,
+    capability_id: str,
     scenario: str,
     expected_nodes: int,
 ) -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file(config_path))
-    run_id = f"{phase}-{scenario}-20260628"
-    nodes = docker_runtime._node_specs(config, phase, scenario, run_id)
-    nodehosts = docker_runtime._process_nodehosts(config, nodes, phase, scenario, run_id)
+    run_id = f"{capability_id}-{scenario}-20260628"
+    nodes = docker_runtime._node_specs(config, capability_id, scenario, run_id)
+    nodehosts = docker_runtime._process_nodehosts(config, nodes, capability_id, scenario, run_id)
     for index, nodehost in enumerate(nodehosts):
         nodehost["container_id"] = f"cid-{index}"
         nodehost["container_ip"] = f"172.18.0.{index + 2}"
@@ -523,7 +326,7 @@ def test_process_bootstrap_uses_nodehost_bundle_for_scale_10(tmp_path: Path, mon
         tmp_path,
         monkeypatch,
         "templates/configs/scale_10.yaml",
-        "P12_SCALE_LADDER_10_30",
+        "scale_ladder",
         "scale_10",
         10,
     )
@@ -534,7 +337,7 @@ def test_process_bootstrap_uses_nodehost_bundle_for_scale_30(tmp_path: Path, mon
         tmp_path,
         monkeypatch,
         "templates/configs/scale_30.yaml",
-        "P12_SCALE_LADDER_10_30",
+        "scale_ladder",
         "scale_30",
         30,
     )
@@ -542,9 +345,9 @@ def test_process_bootstrap_uses_nodehost_bundle_for_scale_30(tmp_path: Path, mon
 
 def test_process_bootstrap_records_setup_timeline_child_spans(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_10.yaml"))
-    run_id = "P12_SCALE_LADDER_10_30-scale_10-20260628"
-    nodes = docker_runtime._node_specs(config, "P12_SCALE_LADDER_10_30", "scale_10", run_id)
-    nodehosts = docker_runtime._process_nodehosts(config, nodes, "P12_SCALE_LADDER_10_30", "scale_10", run_id)
+    run_id = "scale_ladder-scale_10-20260628"
+    nodes = docker_runtime._node_specs(config, "scale_ladder", "scale_10", run_id)
+    nodehosts = docker_runtime._process_nodehosts(config, nodes, "scale_ladder", "scale_10", run_id)
     for index, nodehost in enumerate(nodehosts):
         nodehost["container_id"] = f"cid-{index}"
         nodehost["container_ip"] = f"172.18.0.{index + 2}"
@@ -624,7 +427,7 @@ def test_process_runtime_state_records_required_node_fields() -> None:
     ]
 
     state = docker_runtime._process_runtime_state(
-        "P13_SCALE_LADDER_50_100",
+        "scale_ladder",
         "scale_50",
         "run",
         "network",
@@ -635,6 +438,10 @@ def test_process_runtime_state_records_required_node_fields() -> None:
     )
 
     assert state["runtime"]["type"] == "docker_process"
+    assert state["scenario_id"] == "scale_50"
+    assert state["backend_id"] == "docker_process"
+    assert state["requested_nodes"] == 1
+    assert state["observed_nodes"] == 1
     assert state["runtime"]["cluster_startup_strategy"] == "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe"
     assert state["runtime"]["cluster_meet_fanout"] == 4
     assert state["runtime"]["cluster_startup_parallelism"] == 8
@@ -668,7 +475,7 @@ def test_process_runtime_state_records_large_cluster_create_strategy() -> None:
         for idx in range(31)
     ]
     state = docker_runtime._process_runtime_state(
-        "P13_SCALE_LADDER_50_100",
+        "scale_ladder",
         "scale_50",
         "run",
         "network",
@@ -759,7 +566,7 @@ def test_mesh_meet_connects_each_distinct_pair(monkeypatch: pytest.MonkeyPatch) 
 def test_runtime_state_contains_cleanup_and_probe_fields() -> None:
     config = {"hosts": [{"host_id": "local"}]}
     state = docker_runtime._runtime_state(
-        "P13_SCALE_LADDER_50_100",
+        "scale_ladder",
         "scale_50",
         "run",
         "network",
@@ -1341,27 +1148,27 @@ def test_cleanup_report_shape_without_owned_resources(tmp_path: Path, monkeypatc
     state = {
         "schema_version": "v1",
         "cluster_id": "test",
-        "phase_id": "P03_LOCAL_DOCKER_VALKEY",
-        "scenario": "cluster_smoke",
+        "capability_id": "cluster_lifecycle",
+        "scenario": "cluster_lifecycle",
         "runtime": {"run_id": "test-run"},
         "nodes": [],
     }
     state_path = tmp_path / "state.json"
     state_path.write_text(docker_runtime.json.dumps(state), encoding="utf-8")
-    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, phase, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
-    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, capability_id, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, capability_id, run_id: [])
     report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
     assert report["status"] == "PASS"
     assert report["resources_remaining"] == []
     assert report["cleanup_timing"]["cleanup_residual_scan_seconds"] >= 0.0
-    assert (tmp_path / "cleanup_report_cluster_smoke.json").exists()
+    assert (tmp_path / "cleanup_report_cluster_lifecycle.json").exists()
 
 
 def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state = {
         "schema_version": "v1",
         "cluster_id": "test",
-        "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+        "capability_id": "fault_matrix",
         "runtime": {"run_id": "test-run"},
         "nodes": [],
     }
@@ -1369,8 +1176,8 @@ def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.M
     state_path.write_text(docker_runtime.json.dumps(state), encoding="utf-8")
     fault_state = tmp_path / "fault_state_fault-primary-stop.json"
     fault_state.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, phase, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
-    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, capability_id, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, capability_id, run_id: [])
     report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
     assert report["status"] == "PASS"
     assert not fault_state.exists()
@@ -1383,8 +1190,8 @@ def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: P
     state = {
         "schema_version": "v1",
         "cluster_id": "test",
-        "phase_id": "P13_SCALE_LADDER_50_100",
-        "scenario": "scale_50",
+        "capability_id": "scale_ladder",
+        "scenario": "scale_ladder",
         "runtime": {"type": "docker_process", "run_id": "test-run"},
         "nodehosts": [
             {"nodehost_id": "nodehost-az-a", "container_name": "nodehost-a"},
@@ -1409,7 +1216,7 @@ def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: P
                 json.dumps(
                     {
                         f"{docker_runtime.LABEL_PREFIX}.project": docker_runtime.PROJECT,
-                        f"{docker_runtime.LABEL_PREFIX}.phase": state["phase_id"],
+                        f"{docker_runtime.LABEL_PREFIX}.capability_id": state["capability_id"],
                         f"{docker_runtime.LABEL_PREFIX}.run_id": state["runtime"]["run_id"],
                     }
                 ),
@@ -1430,12 +1237,12 @@ def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: P
     monkeypatch.setattr(
         docker_runtime,
         "_cleanup_resources_by_label",
-        lambda *, phase, run_id: (
+        lambda *, capability_id, run_id: (
             [{"type": "container", "id": "nodehost-a", "action": "remove", "status": "PASS"}],
             {"cleanup_remove_containers_seconds": 0.01, "cleanup_remove_networks_seconds": 0.02},
         ),
     )
-    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, capability_id, run_id: [])
 
     report = docker_runtime._cleanup_process_scenario(state=state, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
 
@@ -1463,8 +1270,8 @@ def test_process_cleanup_tolerates_slow_bulk_termination_when_residuals_clear(tm
     state = {
         "schema_version": "v1",
         "cluster_id": "test",
-        "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
-        "scenario": "strict_management_matrix_200",
+        "capability_id": "management_matrix",
+        "scenario": "management_matrix",
         "runtime": {"type": "docker_process", "run_id": "test-run"},
         "nodehosts": [
             {"nodehost_id": "nodehost-az-a", "container_name": "nodehost-a"},
@@ -1484,7 +1291,7 @@ def test_process_cleanup_tolerates_slow_bulk_termination_when_residuals_clear(tm
                 json.dumps(
                     {
                         f"{docker_runtime.LABEL_PREFIX}.project": docker_runtime.PROJECT,
-                        f"{docker_runtime.LABEL_PREFIX}.phase": state["phase_id"],
+                        f"{docker_runtime.LABEL_PREFIX}.capability_id": state["capability_id"],
                         f"{docker_runtime.LABEL_PREFIX}.run_id": state["runtime"]["run_id"],
                     }
                 ),
@@ -1504,12 +1311,12 @@ def test_process_cleanup_tolerates_slow_bulk_termination_when_residuals_clear(tm
     monkeypatch.setattr(
         docker_runtime,
         "_cleanup_resources_by_label",
-        lambda *, phase, run_id: (
+        lambda *, capability_id, run_id: (
             [{"type": "container", "id": "nodehost-a", "action": "remove", "status": "PASS"}],
             {"cleanup_remove_containers_seconds": 0.01, "cleanup_remove_networks_seconds": 0.02},
         ),
     )
-    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, capability_id, run_id: [])
 
     report = docker_runtime._cleanup_process_scenario(state=state, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
 
@@ -1543,7 +1350,7 @@ def test_container_cleanup_timeout_budget_matches_stop_and_remove(monkeypatch: p
     monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
 
-    actions, _timing = docker_runtime._cleanup_resources_by_label(phase="P32_MANAGEMENT_MATRIX_200_REAL", run_id="test-run")
+    actions, _timing = docker_runtime._cleanup_resources_by_label(capability_id="management_matrix", run_id="test-run")
 
     assert captured["owned container cleanup"] >= docker_runtime.CONTAINER_STOP_TIMEOUT_SECONDS + docker_runtime.CONTAINER_REMOVE_TIMEOUT_SECONDS
     assert [action["status"] for action in actions] == [
@@ -1554,11 +1361,11 @@ def test_container_cleanup_timeout_budget_matches_stop_and_remove(monkeypatch: p
     ]
 
 
-def test_p10_cleanup_appends_orchestrator_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_orchestration_cleanup_appends_orchestrator_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state = {
         "schema_version": "v1",
         "cluster_id": "test",
-        "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+        "capability_id": "orchestration",
         "runtime": {"run_id": "test-run"},
         "nodes": [],
     }
@@ -1567,14 +1374,14 @@ def test_p10_cleanup_appends_orchestrator_stop(tmp_path: Path, monkeypatch: pyte
     orch_report = {
         "schema_version": "v1",
         "artifact_type": "orchestration_report",
-        "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+        "capability_id": "orchestration",
         "run_id": "test-run",
         "status": "PASS",
         "operations": [{"operation": "prepare", "status": "PASS"}],
     }
     (tmp_path / "orchestration_report.json").write_text(docker_runtime.json.dumps(orch_report), encoding="utf-8")
-    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, phase, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
-    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, capability_id, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, capability_id, run_id: [])
 
     report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
     updated = docker_runtime.json.loads((tmp_path / "orchestration_report.json").read_text(encoding="utf-8"))
@@ -1595,7 +1402,7 @@ def test_management_ops_report_taxonomy(tmp_path: Path) -> None:
         },
     ]
     out = tmp_path / "management_ops_report.json"
-    docker_runtime.write_management_ops_report(out, "P04_CLUSTER_MANAGEMENT_OPS", "management_ops", "run", operations)
+    docker_runtime.write_management_ops_report(out, "management_matrix", "management_ops", "run", operations)
     report = docker_runtime.json.loads(out.read_text(encoding="utf-8"))
     assert report["artifact_type"] == "management_ops_report"
     assert report["status"] == "PASS"
@@ -1627,7 +1434,7 @@ def test_parse_info_and_missing_integer_encoding() -> None:
 
 
 def test_event_shape() -> None:
-    event = docker_runtime._event("P06_OBSERVABILITY_METRICS", "run", "sampled", "info", {"node": "n1"})
+    event = docker_runtime._event("observability", "run", "sampled", "info", {"node": "n1"})
     assert event["artifact_type"] == "event"
     assert event["severity"] == "info"
     assert event["details"]["node"] == "n1"
@@ -1710,8 +1517,8 @@ def test_system_metrics_batches_container_stats_once_per_window(tmp_path: Path, 
 
     docker_runtime.write_system_metrics_artifacts(
         tmp_path,
-        "P36_FULL_FLOW_E2E_50_100_200_REAL",
-        "strict_full_flow_50",
+        "local_full_flow",
+        "local_full_flow",
         "run-1",
         nodes,
         lifecycle_windows=["setup", "workload"],
@@ -1729,8 +1536,8 @@ def test_system_metrics_batches_container_stats_once_per_window(tmp_path: Path, 
 
 def test_system_metrics_expose_numeric_container_cpu_and_cluster_source(monkeypatch: pytest.MonkeyPatch) -> None:
     telemetry = docker_runtime.TelemetryRun(
-        phase_id="P36_FULL_FLOW_E2E_50_100_200_REAL",
-        scenario_name="strict_full_flow_50",
+        capability_id="local_full_flow",
+        scenario_name="local_full_flow",
         run_id="run-1",
         coverage_id="system-metrics",
         scale=1,
@@ -1771,7 +1578,7 @@ def test_system_metrics_expose_numeric_container_cpu_and_cluster_source(monkeypa
     assert by_name["cpu_user_percent"]["metric_value"] == docker_runtime.MISSING
 
 
-def test_p36_posthoc_metrics_do_not_claim_unsampled_management_or_fault_windows(tmp_path: Path) -> None:
+def test_local_full_flow_posthoc_metrics_do_not_claim_unsampled_management_or_fault_windows(tmp_path: Path) -> None:
     for name in ["management_sequence.json", "workload_windows.json", "fault_sequence.json"]:
         (tmp_path / name).write_text("{}\n", encoding="utf-8")
 
@@ -1815,15 +1622,15 @@ def test_nodehost_runtime_uses_init_for_process_reaping(monkeypatch: pytest.Monk
         {"container_name": "nodehost-a", "nodehost_id": "nodehost-a", "ports": []},
         "network-a",
         "valkey:9.1",
-        "P36_FULL_FLOW_E2E_50_100_200_REAL",
-        "strict_full_flow_50",
+        "local_full_flow",
+        "local_full_flow",
         "run-1",
     )
 
     assert calls[0][:4] == ["run", "-d", "--init", "--name"]
 
 
-def test_p36_fault_recovery_uses_one_strict_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_local_full_flow_fault_recovery_uses_one_strict_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
     nodes = [{"logical_id": f"node-{index}"} for index in range(6)]
 
@@ -1833,7 +1640,7 @@ def test_p36_fault_recovery_uses_one_strict_snapshot(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr(docker_runtime, "_wait_process_snapshot_clean", wait_snapshot)
 
-    docker_runtime._p36_wait_clean_cluster_snapshot(nodes, timeout=180.0)
+    docker_runtime._local_full_flow_wait_clean_cluster_snapshot(nodes, timeout=180.0)
 
     assert captured == {
         "nodes": nodes,
@@ -1844,7 +1651,7 @@ def test_p36_fault_recovery_uses_one_strict_snapshot(monkeypatch: pytest.MonkeyP
     }
 
 
-def test_p36_network_disconnect_reconnects_when_side_observation_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_local_full_flow_network_disconnect_reconnects_when_side_observation_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
     recovered: list[tuple[int, float]] = []
     nodes = [
@@ -1871,12 +1678,12 @@ def test_p36_network_disconnect_reconnects_when_side_observation_fails(monkeypat
     )
     monkeypatch.setattr(
         docker_runtime,
-        "_p36_wait_clean_cluster_snapshot",
+        "_local_full_flow_wait_clean_cluster_snapshot",
         lambda actual_nodes, timeout: recovered.append((len(actual_nodes), timeout)),
     )
 
     with pytest.raises(DockerRuntimeError, match="side probe failed"):
-        docker_runtime._p36_network_disconnect_probe("owned-network", "nodehost-a", nodes, "network_partition")
+        docker_runtime._local_full_flow_network_disconnect_probe("owned-network", "nodehost-a", nodes, "network_partition")
 
     assert ["network", "connect", "--ip", "172.18.0.2", "owned-network", "nodehost-a"] in calls
     assert recovered == [(2, 180.0)]

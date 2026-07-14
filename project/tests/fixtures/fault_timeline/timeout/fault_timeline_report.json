@@ -63,12 +63,12 @@
         }
       },
       "node_count": 6,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "timeout-small-primary_stop_failover",
       "scale_rung": "small",
-      "scenario_name": "timeout_small",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -123,7 +123,7 @@
   "observed_scale_rungs": [
     "small"
   ],
-  "phase_id": "M1-S06",
+  "capability_id": "failover_timeline",
   "required_fault_types": [
     "primary_stop_failover",
     "replica_stop",
@@ -145,7 +145,7 @@
     "100",
     "200"
   ],
-  "run_id": "m1-s06-fixture",
+  "run_id": "fault-timeline-fixture",
   "schema_version": "v1",
   "status": "PARTIAL",
   "timeline_events_ref": "fault_timeline_events.jsonl"

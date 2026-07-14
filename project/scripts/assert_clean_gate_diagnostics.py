@@ -11,11 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fail-closed P45 clean-gate diagnostics assertion")
-    parser.add_argument("--phase", required=True)
+    parser = argparse.ArgumentParser(description="Fail-closed CLEAN_GATE_DIAGNOSTICS clean-gate diagnostics assertion")
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     args = parser.parse_args()
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     errors: list[str] = []
     diagnostics = _load_json(base / "clean_gate_diagnostics.json", errors)
     rounds = _load_jsonl(base / "clean_gate_probe_rounds.jsonl", errors)
@@ -34,8 +34,8 @@ def main() -> int:
     for field in required:
         if field not in diagnostics or diagnostics.get(field) in {None, ""}:
             errors.append(f"clean_gate_diagnostics.json missing {field}")
-    if diagnostics.get("phase_id") != args.phase:
-        errors.append("clean_gate_diagnostics.json phase_id mismatch")
+    if diagnostics.get("capability_id") != args.capability_id:
+        errors.append("clean_gate_diagnostics.json capability_id mismatch")
     if diagnostics.get("probe_round_count") != len(rounds):
         errors.append("probe_round_count must match clean_gate_probe_rounds.jsonl rows")
     full = [row for row in rounds if row.get("sample_scope") == "all_nodes"]
@@ -45,7 +45,7 @@ def main() -> int:
     if diagnostics.get("representative_probe_count") != len(reps):
         errors.append("representative_probe_count must derive from representative rounds")
     for index, row in enumerate(rounds, start=1):
-        _check_round(index, row, args.phase, errors)
+        _check_round(index, row, args.capability_id, errors)
     if rounds and rounds[0].get("status") != "PASS" and diagnostics.get("last_failing_reason") in {"", "MISSING", None}:
         errors.append("last_failing_reason is required when the clean-gate did not immediately pass")
     slowest = max((row for row in rounds if isinstance(row.get("slowest_probe_ms"), (int, float))), key=lambda r: float(r.get("slowest_probe_ms", 0)), default=None)
@@ -55,16 +55,16 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"PASS clean-gate diagnostics phase={args.phase}")
+    print(f"PASS clean-gate diagnostics capability_id={args.capability_id}")
     return 0
 
 
-def _check_round(index: int, row: dict[str, Any], phase: str, errors: list[str]) -> None:
+def _check_round(index: int, row: dict[str, Any], capability_id: str, errors: list[str]) -> None:
     for field in ["probe_start_ms", "probe_end_ms", "probe_duration_ms", "sample_scope", "sample_count", "failed_reason", "slowest_node"]:
         if field not in row:
             errors.append(f"round {index}: missing {field}")
-    if row.get("phase_id") != phase:
-        errors.append(f"round {index}: phase_id mismatch")
+    if row.get("capability_id") != capability_id:
+        errors.append(f"round {index}: capability_id mismatch")
     if row.get("sample_scope") not in {"representative", "all_nodes"}:
         errors.append(f"round {index}: invalid sample_scope")
     if isinstance(row.get("probe_start_ms"), (int, float)) and isinstance(row.get("probe_end_ms"), (int, float)):

@@ -24,11 +24,20 @@ from valkey_scale_lab.cluster_timeout import (
 )
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import load_effective_config, load_effective_config_with_timing, normalize_config, validate_semantics
+from valkey_scale_lab.execution import (
+    ExecutionProfile,
+    PROFILES,
+    SCENARIO_CAPABILITIES,
+    exact_200_selection_allowed,
+    profile_for_exact_nodes,
+    validate_execution_selection,
+)
 from valkey_scale_lab.fault.network_proxy import ProxyRule, SandboxNetworkProxy
+from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS
 from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics, write_jsonl
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
-from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10_phase_summary
+from valkey_scale_lab.orchestrator.local import write_run_summary as write_orchestration_run_summary
 from valkey_scale_lab.planner.plan import build_cluster_plan
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
@@ -59,30 +68,20 @@ CLUSTER_CREATE_STRATEGIES = {
 }
 PROCESS_BUNDLE_ROOT = "/tmp"
 PROCESS_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
-P30_STAGE = "P30_MANAGEMENT_MATRIX_50_REAL"
-P30_SCENARIO = "strict_management_matrix_50"
-P30_SCALE = 50
-P31_STAGE = "P31_MANAGEMENT_MATRIX_100_REAL"
-P31_SCENARIO = "strict_management_matrix_100"
-P31_SCALE = 100
-P32_STAGE = "P32_MANAGEMENT_MATRIX_200_REAL"
-P32_SCENARIO = "strict_management_matrix_200"
-P32_SCALE = 200
-P35_STAGE = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
-P35_SCENARIO = "strict_fault_matrix_200"
-P35_SCALE = 200
-P36_STAGE = "P36_FULL_FLOW_E2E_50_100_200_REAL"
-P36_SCENARIO_50 = "strict_full_flow_50"
-P36_SCENARIO_100 = "strict_full_flow_100"
-P36_SCENARIO_200 = "strict_full_flow_200"
-P36_MANAGEMENT_SCENARIOS = ["add_remove_node", "reshard_rebalance", "rolling_restart", "bounded_stability"]
-P36_FAULT_SCENARIOS = ["primary_failover", "replica_stop", "node_host_stop", "az_stop", "network_delay", "network_loss", "network_partition", "network_flap", "minority_majority", "split_brain_detection"]
-P41_STAGE = "P41_NODEHOST_DENSITY_GLOBAL_CONFIG"
-P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
-P43_STAGE = "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"
-P44_STAGE = "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
-P45_STAGE = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
-P36_FULL_FLOW_STEPS = [
+MANAGEMENT_MATRIX_CAPABILITY = "management_matrix"
+MANAGEMENT_MATRIX_SCENARIO = "management_matrix"
+FAULT_MATRIX_CAPABILITY = "fault_matrix"
+FAULT_MATRIX_SCENARIO = "fault_matrix"
+LOCAL_FULL_FLOW_CAPABILITY = "local_full_flow"
+LOCAL_FULL_FLOW_SCENARIO = "local_full_flow"
+LOCAL_FULL_FLOW_MANAGEMENT_SCENARIOS = ["add_remove_node", "reshard_rebalance", "rolling_restart", "bounded_stability"]
+LOCAL_FULL_FLOW_FAULT_SCENARIOS = ["primary_failover", "replica_stop", "node_host_stop", "az_stop", "network_delay", "network_loss", "network_partition", "network_flap", "minority_majority", "split_brain_detection"]
+NODEHOST_DENSITY_CAPABILITY = "nodehost_density"
+SERVER_PROFILE_CAPABILITY = "server_profile"
+CLUSTER_TIMEOUT_CAPABILITY = "cluster_timeout"
+FAILOVER_TIMELINE_CAPABILITY = "failover_timeline"
+CLEAN_GATE_DIAGNOSTICS_CAPABILITY = "clean_gate_diagnostics"
+FULL_FLOW_EXECUTION_STEPS = [
     "config_validate",
     "resource_preflight",
     "plan_cluster",
@@ -96,20 +95,8 @@ P36_FULL_FLOW_STEPS = [
     "report_render",
     "cleanup_verify",
 ]
-P30_REQUIRED_ROWS = [
-    "create_cluster",
-    "meet_nodes",
-    "add_replica",
-    "remove_replica",
-    "remove_primary_drained_or_safe_replaced",
-    "remove_failed_node",
-    "reshard_slot_range",
-    "reshard_with_keys",
-    "rebalance_after_imbalance",
-    "rolling_restart_replica_first",
-    "rolling_restart_primary_safe",
-]
-P30_EXECUTION_ROWS = [
+MANAGEMENT_MATRIX_REQUIRED_ROWS = REQUIRED_MANAGEMENT_OPERATIONS
+MANAGEMENT_MATRIX_EXECUTION_ROWS = [
     "create_cluster",
     "meet_nodes",
     "add_replica",
@@ -124,66 +111,7 @@ P30_EXECUTION_ROWS = [
 ]
 
 
-@dataclass(frozen=True)
-class StrictManagementProfile:
-    stage: str
-    scenario: str
-    scale: int
-    config_path: str
-    stage_label: str
-
-    @property
-    def coverage_prefix(self) -> str:
-        return f"{self.scale}.management"
-
-    @property
-    def operation_prefix(self) -> str:
-        return self.stage_label.lower()
-
-
-STRICT_MANAGEMENT_PROFILES = {
-    (P30_STAGE, P30_SCENARIO): StrictManagementProfile(
-        stage=P30_STAGE,
-        scenario=P30_SCENARIO,
-        scale=P30_SCALE,
-        config_path="templates/configs/scale_50.yaml",
-        stage_label="P30",
-    ),
-    (P31_STAGE, P31_SCENARIO): StrictManagementProfile(
-        stage=P31_STAGE,
-        scenario=P31_SCENARIO,
-        scale=P31_SCALE,
-        config_path="templates/configs/scale_100.yaml",
-        stage_label="P31",
-    ),
-    (P32_STAGE, P32_SCENARIO): StrictManagementProfile(
-        stage=P32_STAGE,
-        scenario=P32_SCENARIO,
-        scale=P32_SCALE,
-        config_path="templates/configs/scale_200.yaml",
-        stage_label="P32",
-    ),
-}
-
-
-@dataclass(frozen=True)
-class StrictFullFlowProfile:
-    stage: str
-    scenario: str
-    scale: int
-    config_path: str
-
-    @property
-    def scope(self) -> str:
-        return f"full_flow_{self.scale}"
-
-
-STRICT_FULL_FLOW_PROFILES = {
-    (P36_STAGE, P36_SCENARIO_50): StrictFullFlowProfile(P36_STAGE, P36_SCENARIO_50, 50, "templates/configs/scale_50.yaml"),
-    (P36_STAGE, P36_SCENARIO_100): StrictFullFlowProfile(P36_STAGE, P36_SCENARIO_100, 100, "templates/configs/scale_100.yaml"),
-    (P36_STAGE, P36_SCENARIO_200): StrictFullFlowProfile(P36_STAGE, P36_SCENARIO_200, 200, "templates/configs/scale_200.yaml"),
-}
-P13_TIMING_NAMES = [
+SETUP_TIMING_NAMES = [
     "nodehost_start",
     "process_config_prepare",
     "process_start",
@@ -206,12 +134,36 @@ class DockerRuntimeError(RuntimeError):
     pass
 
 
-def _strict_management_profile(phase: str, scenario: str) -> StrictManagementProfile | None:
-    return STRICT_MANAGEMENT_PROFILES.get((phase, scenario))
+def _runtime_scale_profile(node_count: int) -> ExecutionProfile | None:
+    if node_count == PROFILES["small-real"].requested_nodes:
+        return PROFILES["small-real"]
+    return profile_for_exact_nodes(node_count)
 
 
-def _strict_full_flow_profile(phase: str, scenario: str) -> StrictFullFlowProfile | None:
-    return STRICT_FULL_FLOW_PROFILES.get((phase, scenario))
+def _management_matrix_profile(
+    capability_id: str,
+    scenario_id: str,
+    node_count: int,
+) -> ExecutionProfile | None:
+    if (capability_id, scenario_id) != (
+        MANAGEMENT_MATRIX_CAPABILITY,
+        MANAGEMENT_MATRIX_SCENARIO,
+    ):
+        return None
+    return _runtime_scale_profile(node_count)
+
+
+def _full_flow_profile(
+    capability_id: str,
+    scenario_id: str,
+    node_count: int,
+) -> ExecutionProfile | None:
+    if (capability_id, scenario_id) != (
+        LOCAL_FULL_FLOW_CAPABILITY,
+        LOCAL_FULL_FLOW_SCENARIO,
+    ):
+        return None
+    return _runtime_scale_profile(node_count)
 
 
 @dataclass(frozen=True)
@@ -314,10 +266,13 @@ def run_container_cluster_cli(container: str, *args: Any, timeout: int = 60, che
     return result.stdout.strip()
 
 
-def create_scenario(
+def execute_scenario(
     *,
-    phase: str,
-    scenario: str,
+    capability_id: str,
+    scenario_id: str,
+    backend_id: str,
+    profile_id: str,
+    requested_nodes: int,
     config_path: str | Path,
     artifacts_dir: str | Path,
     state_out: str | Path,
@@ -325,34 +280,152 @@ def create_scenario(
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if (phase, scenario) not in {
-        ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"),
-        ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"),
-        ("P05_WORKLOAD_ENGINE", "workload_smoke"),
-        ("P06_OBSERVABILITY_METRICS", "observability_smoke"),
-        ("P07_FAULT_INJECTION_SANDBOX", "fault_sandbox_setup"),
-        ("P08_FAILOVER_SPLIT_BRAIN", "failover_setup"),
-        ("P09_ANALYSIS_REPORTING", "reporting_source_smoke"),
-        ("P10_MULTI_HOST_ORCHESTRATION", "orchestrated_localhost"),
-        ("P11_STABILITY_SOAK", "stability_soak_smoke"),
-        ("P12_SCALE_LADDER_10_30", "scale_10"),
-        ("P12_SCALE_LADDER_10_30", "scale_30"),
-        ("P13_SCALE_LADDER_50_100", "scale_50"),
-        ("P13_SCALE_LADDER_50_100", "scale_100"),
-        ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"),
-        ("P29_QUANT_TELEMETRY_COLLECTOR_HARDENING", "strict_telemetry_small_real"),
-        (P30_STAGE, P30_SCENARIO),
-        (P31_STAGE, P31_SCENARIO),
-        (P32_STAGE, P32_SCENARIO),
-        ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
-        ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
-        ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
-        ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"),
-        ("P26_FINAL_REPORT_REGRESSION", "final_report_regression_smoke"),
-    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None and _p41_nodehost_density_node_count(phase, scenario) is None and _p42_server_profile_node_count(phase, scenario) is None and _p43_cluster_timeout_node_count(phase, scenario) is None and _p44_failover_timeline_node_count(phase, scenario) is None and _p45_clean_gate_layered_node_count(phase, scenario) is None:
-        raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
-    with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
-        run_id = _run_id(phase, scenario)
+    """Execute one canonical scenario using an explicit backend and profile."""
+    try:
+        backend, profile = validate_execution_selection(
+            scenario_id=scenario_id,
+            backend_id=backend_id,
+            profile_id=profile_id,
+            requested_nodes=requested_nodes,
+        )
+    except ValueError as exc:
+        raise DockerRuntimeError(str(exc)) from exc
+    expected_capability = SCENARIO_CAPABILITIES[scenario_id]
+    if capability_id != expected_capability:
+        raise DockerRuntimeError(
+            "scenario capability mismatch: "
+            f"scenario={scenario_id}, expected={expected_capability}, got={capability_id}"
+        )
+    if backend.backend_id == "fake":
+        return _execute_fake_scenario(
+            capability_id=capability_id,
+            scenario_id=scenario_id,
+            profile_id=profile.profile_id,
+            requested_nodes=requested_nodes,
+            artifacts_dir=artifacts_dir,
+            state_out=state_out,
+        )
+    if backend.backend_id == "native_multi_ecs":
+        raise DockerRuntimeError(
+            "native_multi_ecs is a declared execution backend without a local implementation"
+        )
+    if backend.backend_id == "docker_process" and not (
+        profile.profile_id == "small-real" or profile.profile_id.startswith("exact-")
+    ):
+        raise DockerRuntimeError(
+            f"docker_process runtime has no implementation for profile {profile.profile_id!r}"
+        )
+    if backend.backend_id == "docker_container" and profile.profile_id != "small-real":
+        raise DockerRuntimeError(
+            f"docker_container runtime has no implementation for profile {profile.profile_id!r}"
+        )
+    if backend.backend_id == "docker_process" and scenario_id not in {
+        LOCAL_FULL_FLOW_SCENARIO,
+        MANAGEMENT_MATRIX_SCENARIO,
+        FAULT_MATRIX_SCENARIO,
+        "failover",
+        "failover_latency_curve",
+        "failover_timeline",
+        "clean_gate_diagnostics",
+        "cluster_timeout",
+        "server_profile",
+        "nodehost_density",
+    }:
+        raise DockerRuntimeError(
+            f"docker_process does not implement scenario {scenario_id!r}"
+        )
+    if backend.backend_id == "docker_container" and scenario_id not in {
+        "cluster_lifecycle",
+        "workload",
+        "observability",
+        "fault_sandbox",
+        "failover",
+        "analysis_reporting",
+        "orchestration",
+        "stability",
+        "telemetry",
+    }:
+        raise DockerRuntimeError(
+            f"docker_container does not implement scenario {scenario_id!r}"
+        )
+
+    state = _execute_runtime(
+        capability_id=capability_id,
+        scenario=scenario_id,
+        backend_id=backend.backend_id,
+        profile_id=profile.profile_id,
+        requested_nodes=requested_nodes,
+        config_path=config_path,
+        artifacts_dir=artifacts_dir,
+        state_out=state_out,
+        setup_timeline=setup_timeline,
+        global_config_path=global_config_path,
+        cli_overrides=cli_overrides,
+    )
+    state["scenario_id"] = scenario_id
+    state["backend_id"] = backend_id
+    state["profile_id"] = profile_id
+    Path(state_out).write_text(
+        json.dumps(state, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return state
+
+
+def _execute_fake_scenario(
+    *,
+    capability_id: str,
+    scenario_id: str,
+    profile_id: str,
+    requested_nodes: int,
+    artifacts_dir: str | Path,
+    state_out: str | Path,
+) -> dict[str, Any]:
+    artifacts = Path(artifacts_dir)
+    artifacts.mkdir(parents=True, exist_ok=True)
+    run_id = _run_id(capability_id, scenario_id)
+    state = {
+        "schema_version": "v1",
+        "capability_id": capability_id,
+        "scenario_id": scenario_id,
+        "backend_id": "fake",
+        "profile_id": profile_id,
+        "runtime": {
+            "type": "fake",
+            "run_id": run_id,
+            "admission_evidence": False,
+            "real_runtime": False,
+        },
+        "requested_nodes": requested_nodes,
+        "observed_nodes": requested_nodes,
+        "nodes": [
+            {"logical_id": f"fake-{index:04d}", "simulated": True}
+            for index in range(requested_nodes)
+        ],
+    }
+    Path(state_out).parent.mkdir(parents=True, exist_ok=True)
+    _write_state(Path(state_out), state)
+    return state
+
+
+def _execute_runtime(
+    *,
+    capability_id: str,
+    scenario: str,
+    backend_id: str,
+    profile_id: str,
+    requested_nodes: int,
+    config_path: str | Path,
+    artifacts_dir: str | Path,
+    state_out: str | Path,
+    setup_timeline: SetupTimeline | None = None,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if SCENARIO_CAPABILITIES.get(scenario) != capability_id:
+        raise DockerRuntimeError(f"runtime does not implement capability_id/scenario {capability_id}/{scenario}")
+    with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"capability_id": capability_id, "scenario": scenario}):
+        run_id = _run_id(capability_id, scenario)
         artifacts = Path(artifacts_dir)
         artifacts.mkdir(parents=True, exist_ok=True)
 
@@ -364,7 +437,12 @@ def create_scenario(
             cli_overrides=cli_overrides,
         )
         semantic_start = time.perf_counter()
-        errors = _runtime_semantic_errors(config, phase=phase, scenario=scenario)
+        errors = _runtime_semantic_errors(
+            config,
+            capability_id=capability_id,
+            scenario=scenario,
+            profile_id=profile_id,
+        )
         semantic_ms = round(max(time.perf_counter() - semantic_start, 0.0) * 1000.0, 3)
         config_timing_details.update(config_timings)
         config_timing_details["runtime_semantic_validate_ms"] = semantic_ms
@@ -379,30 +457,34 @@ def create_scenario(
     with _timeline_span(setup_timeline, "node_spec_generation", "planning", {"run_id": run_id}):
         cluster = config["cluster"]
         node_count = int(cluster["shards"]) * (1 + int(cluster["replicas_per_shard"]))
-        if not _scenario_node_count_allowed(phase, scenario, node_count):
-            raise DockerRuntimeError(f"{phase}/{scenario} does not allow {node_count} nodes")
-        nodes = _node_specs(config, phase, scenario, run_id)
+        if node_count != requested_nodes:
+            raise DockerRuntimeError(
+                "runtime configuration must preserve the exact profile size: "
+                f"profile={requested_nodes}, configured={node_count}"
+            )
+        nodes = _node_specs(config, capability_id, scenario, run_id)
         ports = [node["client_port"] for node in nodes]
-        if _uses_docker_process_runtime(phase, scenario):
+        if backend_id == "docker_process":
             ports.extend(node["cluster_bus_port"] for node in nodes)
 
     with _timeline_span(setup_timeline, "port_preflight_check", "preflight", {"port_count": len(ports)}):
         _check_ports_free(ports)
 
-    if _uses_docker_process_runtime(phase, scenario):
+    if backend_id == "docker_process":
         return _create_process_scenario(
-            phase=phase,
+            capability_id=capability_id,
             scenario=scenario,
             run_id=run_id,
             config=config,
             artifacts=artifacts,
             state_out=Path(state_out),
             nodes=nodes,
+            profile_id=profile_id,
             setup_timeline=setup_timeline,
         )
 
-    network_name = _network_name(phase, scenario)
-    cleanup_by_label(phase=phase, run_id=run_id)
+    network_name = _network_name(capability_id, scenario)
+    cleanup_by_label(capability_id=capability_id, run_id=run_id)
     run_docker(
         [
             "network",
@@ -410,7 +492,7 @@ def create_scenario(
             "--label",
             f"{LABEL_PREFIX}.project={PROJECT}",
             "--label",
-            f"{LABEL_PREFIX}.phase={phase}",
+            f"{LABEL_PREFIX}.capability_id={capability_id}",
             "--label",
             f"{LABEL_PREFIX}.run_id={run_id}",
             network_name,
@@ -419,76 +501,72 @@ def create_scenario(
     )
 
     orchestrator = None
-    if phase == "P10_MULTI_HOST_ORCHESTRATION":
+    if capability_id == "orchestration":
         hosts = validate_inventory(config)
         assign_hosts(nodes, hosts)
-        orchestrator = LocalOrchestrator(config=config, phase=phase, scenario=scenario, run_id=run_id)
+        orchestrator = LocalOrchestrator(config=config, capability_id=capability_id, scenario=scenario, run_id=run_id)
         orchestrator.prepare()
     started: list[dict[str, Any]] = []
     try:
         for node in nodes:
             if orchestrator is None:
-                container_id = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id)
+                container_id = _start_container(node, network_name, config["runtime"]["valkey_image"], capability_id, scenario, run_id)
             else:
                 container_id = orchestrator.start_node(
                     node,
-                    lambda n: _start_container(n, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id),
+                    lambda n: _start_container(n, network_name, config["runtime"]["valkey_image"], capability_id, scenario, run_id),
                 )
             node["container_id"] = container_id
             node["pid"] = _container_pid(container_id)
             node["container_ip"] = _container_ip(container_id, network_name)
             started.append(node)
-        state = _runtime_state(phase, scenario, run_id, network_name, config, nodes)
-        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
-        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", phase, scenario, run_id, state)
+        state = _runtime_state(
+            capability_id,
+            scenario,
+            run_id,
+            network_name,
+            config,
+            nodes,
+            backend_id=backend_id,
+            profile_id=profile_id,
+        )
+        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", capability_id, scenario, run_id, state)
+        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", capability_id, scenario, run_id, state)
         _write_state(Path(state_out), state)
         operations = _configure_cluster(nodes)
-        if phase == "P04_CLUSTER_MANAGEMENT_OPS":
-            operations.extend(_run_management_ops(nodes))
-            write_management_ops_report(artifacts / "management_ops_report.json", phase, scenario, run_id, operations)
-            write_p04_management_matrix_contract_artifacts(artifacts, phase, scenario, run_id, nodes)
-        if phase == "P05_WORKLOAD_ENGINE":
-            write_workload_report(artifacts / "workload_report.json", phase, scenario, run_id, config, nodes)
-        if phase == "P06_OBSERVABILITY_METRICS":
-            write_observability_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        if scenario == "workload":
+            write_workload_report(artifacts / "workload_report.json", capability_id, scenario, run_id, config, nodes)
+        if scenario == "observability":
+            write_observability_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
         if orchestrator is not None:
             orchestrator.collect(nodes, artifacts)
             orchestrator.write_report(artifacts / "orchestration_report.json", nodes)
-            write_p10_phase_summary(artifacts / "phase_summary.json", run_id)
-        if phase == "P11_STABILITY_SOAK":
-            write_stability_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        if phase in {"P12_SCALE_LADDER_10_30", "P13_SCALE_LADDER_50_100"}:
-            write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        if phase == "P16_QUANT_TELEMETRY_UNIFICATION":
-            write_goal_loop_quant_telemetry_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        if phase == "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING":
-            write_goal_loop_quant_telemetry_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        if phase == "P17_MANAGEMENT_REMOVE_NODE":
-            write_p17_management_remove_node_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        if phase == "P18_MANAGEMENT_RESHARD_REBALANCE":
-            write_p18_management_reshard_rebalance_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        if phase == "P19_MANAGEMENT_ROLLING_RESTART":
-            write_p19_management_rolling_restart_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        if not strict_full_flow:
-            write_system_metrics_artifacts(
-                artifacts,
-                phase,
-                scenario,
-                run_id,
-                nodes,
-                lifecycle_windows=_system_metric_windows_for_artifacts(artifacts),
-            )
+            write_orchestration_run_summary(artifacts / "run_summary.json", run_id)
+        if scenario == "stability":
+            write_stability_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
+        if scenario == "scale_ladder":
+            write_scale_ladder_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
+        if scenario == "telemetry":
+            write_telemetry_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
+        write_system_metrics_artifacts(
+            artifacts,
+            capability_id,
+            scenario,
+            run_id,
+            nodes,
+            lifecycle_windows=_system_metric_windows_for_artifacts(artifacts),
+        )
         _write_state(Path(state_out), state)
         return state
     except Exception as exc:
         try:
             snapshots.append(_process_cluster_summary("failure", nodes))
-            state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+            state = _process_runtime_state(capability_id, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
             state["runtime"]["setup_error"] = repr(exc)
             _write_state(state_out, state)
             _cleanup_process_scenario(state=state, artifacts_dir=artifacts, out_path=artifacts / "cleanup_report.json")
         except Exception:
-            cleanup_by_label(phase=phase, run_id=run_id)
+            cleanup_by_label(capability_id=capability_id, run_id=run_id)
         raise
 
 
@@ -497,13 +575,13 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     runtime = state.get("runtime")
     if not isinstance(runtime, dict) or not runtime.get("run_id"):
         raise DockerRuntimeError("cleanup requires runtime ownership with an explicit run_id in state")
-    phase = state.get("phase_id", "P03_LOCAL_DOCKER_VALKEY")
+    capability_id = state.get("capability_id", "cluster_lifecycle")
     run_id = str(runtime["run_id"])
     if runtime.get("type") == "docker_process":
         return _cleanup_process_scenario(state=state, artifacts_dir=Path(artifacts_dir), out_path=Path(out_path))
     cleanup_errors: list[str] = []
     try:
-        actions, cleanup_timing = _cleanup_resources_by_label(phase=phase, run_id=run_id)
+        actions, cleanup_timing = _cleanup_resources_by_label(capability_id=capability_id, run_id=run_id)
     except DockerRuntimeError as exc:
         cleanup_errors.append(str(exc))
         actions = [{"type": "resource_discovery", "id": "owned-runtime", "action": "discover", "status": "FAIL", "stderr": str(exc)}]
@@ -511,7 +589,7 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     actions.extend(_cleanup_fault_state_files(Path(artifacts_dir)))
     residual_started = time.monotonic()
     try:
-        resources_remaining = owned_resources(phase=phase, run_id=run_id)
+        resources_remaining = owned_resources(capability_id=capability_id, run_id=run_id)
     except DockerRuntimeError as exc:
         cleanup_errors.append(str(exc))
         resources_remaining = [{"type": "UNKNOWN", "id": "owned-resource-discovery-failed", "reason": str(exc)}]
@@ -519,7 +597,7 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     cleanup_timing.setdefault("cleanup_terminate_processes_seconds", 0.0)
     cleanup_timing.setdefault("cleanup_verify_process_exit_seconds", 0.0)
     cleanup_timing.setdefault("cleanup_verify_nodehost_empty_seconds", 0.0)
-    if phase == "P10_MULTI_HOST_ORCHESTRATION":
+    if capability_id == "orchestration":
         actions.append(
             {
                 "type": "orchestrator",
@@ -529,11 +607,11 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
                 "idempotent": True,
             }
         )
-        _append_p10_orchestrator_cleanup(Path(artifacts_dir), resources_remaining)
+        _append_orchestration_orchestrator_cleanup(Path(artifacts_dir), resources_remaining)
     report = {
         "schema_version": "v1",
         "artifact_type": "cleanup_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -556,12 +634,15 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
 
 
 def _runtime_state(
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     network_name: str,
     config: dict[str, Any],
     nodes: list[dict[str, Any]],
+    *,
+    backend_id: str = "docker_container",
+    profile_id: str | None = None,
 ) -> dict[str, Any]:
     density = _legacy_container_density(config, nodes)
     effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodes))
@@ -569,8 +650,13 @@ def _runtime_state(
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
-        "phase_id": phase,
+        "capability_id": capability_id,
         "scenario": scenario,
+        "scenario_id": scenario,
+        "backend_id": backend_id,
+        "profile_id": profile_id or "MISSING",
+        "requested_nodes": len(nodes),
+        "observed_nodes": len(nodes),
         "runtime": {
             "type": "docker",
             "sandbox_network": True,
@@ -634,169 +720,40 @@ def _legacy_container_density(config: dict[str, Any], nodes: list[dict[str, Any]
     }
 
 
-def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
-    return (
-        _curve_scale_sample_node_count(phase, scenario) is not None
-        or _p22_fault_matrix_node_count(phase, scenario) is not None
-        or _p23_fault_matrix_node_count(phase, scenario) is not None
-        or _p24_fault_matrix_node_count(phase, scenario) is not None
-        or _strict_fault_matrix_node_count(phase, scenario) is not None
-        or _strict_full_flow_node_count(phase, scenario) is not None
-        or _p41_nodehost_density_node_count(phase, scenario) is not None
-        or _p42_server_profile_node_count(phase, scenario) is not None
-        or _p43_cluster_timeout_node_count(phase, scenario) is not None
-        or _p44_failover_timeline_node_count(phase, scenario) is not None
-        or _p45_clean_gate_layered_node_count(phase, scenario) is not None
-        or (phase, scenario) in {
-        ("P12_SCALE_LADDER_10_30", "scale_10"),
-        ("P12_SCALE_LADDER_10_30", "scale_30"),
-        ("P13_SCALE_LADDER_50_100", "scale_50"),
-        ("P13_SCALE_LADDER_50_100", "scale_100"),
-        (P30_STAGE, P30_SCENARIO),
-        (P31_STAGE, P31_SCENARIO),
-        (P32_STAGE, P32_SCENARIO),
-        }
-    )
-
-
-def _curve_scale_sample_node_count(phase: str, scenario: str) -> int | None:
-    return _p20_scale_sample_node_count(phase, scenario) or _p21_scale_sample_node_count(phase, scenario)
-
-
-def _p20_scale_sample_node_count(phase: str, scenario: str) -> int | None:
-    if phase != "P20_FAILOVER_LATENCY_CURVE_30_50_100":
-        return None
-    match = re.fullmatch(r"scale_(30|50|100)_sample_\d+", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p21_scale_sample_node_count(phase: str, scenario: str) -> int | None:
-    if phase != "P21_FAILOVER_LATENCY_CURVE_200":
-        return None
-    match = re.fullmatch(r"scale_200_sample_\d+", scenario)
-    if not match:
-        return None
-    return 200
-
-
-def _p22_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
-    if phase != "P22_FAULT_REPLICA_HOST_AZ_STOP":
-        return None
-    match = re.fullmatch(r"p22_fault_matrix_(6|10|30|50|100)", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p23_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
-    if phase != "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
-        return None
-    match = re.fullmatch(r"p23_fault_matrix_(6|10|30|50|100)", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p24_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
-    if phase != "P24_PARTITION_SPLIT_BRAIN_MATRIX":
-        return None
-    match = re.fullmatch(r"p24_partition_matrix_(6|10|30|50|100)", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p33_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
-    return _strict_fault_matrix_node_count(phase, scenario)
-
-
-def _strict_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
-    strict_fault_scenarios = {
-        ("P33_FAULT_FAILOVER_MATRIX_50_REAL", "strict_fault_matrix_50"): 50,
-        ("P34_FAULT_FAILOVER_MATRIX_100_REAL", "strict_fault_matrix_100"): 100,
-        (P35_STAGE, P35_SCENARIO): P35_SCALE,
-    }
-    return strict_fault_scenarios.get((phase, scenario))
-
-
-def _strict_full_flow_node_count(phase: str, scenario: str) -> int | None:
-    profile = _strict_full_flow_profile(phase, scenario)
-    return profile.scale if profile else None
-
-
-def _p41_nodehost_density_node_count(phase: str, scenario: str) -> int | None:
-    if phase != P41_STAGE:
-        return None
-    match = re.fullmatch(r"p41_nodehost_density_scale_(10|30|50|100|200)", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p42_server_profile_node_count(phase: str, scenario: str) -> int | None:
-    if phase != P42_STAGE:
-        return None
-    match = re.fullmatch(r"p42_server_profile_scale_(10|30|50|100|200)", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p43_cluster_timeout_node_count(phase: str, scenario: str) -> int | None:
-    if phase != P43_STAGE:
-        return None
-    match = re.fullmatch(r"p43_cluster_timeout_scale_(10|30|50|100|200)", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p44_failover_timeline_node_count(phase: str, scenario: str) -> int | None:
-    if phase != P44_STAGE:
-        return None
-    match = re.fullmatch(r"p44_scale_(10|30|50|100|200)_timeline_sample_\d+", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p45_clean_gate_layered_node_count(phase: str, scenario: str) -> int | None:
-    if phase != P45_STAGE:
-        return None
-    match = re.fullmatch(r"p45_scale_(10|30|50|100|200)_layered_sample_\d+", scenario)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def _p42_server_profile_config_path(phase: str, scenario: str) -> str | None:
-    node_count = _p42_server_profile_node_count(phase, scenario)
-    if node_count is None:
-        return None
-    return f"templates/configs/scale_{node_count}.yaml"
-
-
-def _p43_cluster_timeout_config_path(phase: str, scenario: str) -> str | None:
-    node_count = _p43_cluster_timeout_node_count(phase, scenario)
-    if node_count is None:
-        return None
-    return f"templates/configs/scale_{node_count}.yaml"
-
-
-def _runtime_semantic_errors(config: dict[str, Any], *, phase: str, scenario: str) -> list[dict[str, Any]]:
+def _runtime_semantic_errors(
+    config: dict[str, Any],
+    *,
+    capability_id: str,
+    scenario: str,
+    profile_id: str | None = None,
+) -> list[dict[str, Any]]:
     errors = validate_semantics(config)
-    if not _is_exact_200_runtime_exception(config, phase=phase, scenario=scenario):
+    if not _is_exact_200_runtime_exception(
+        config,
+        capability_id=capability_id,
+        scenario=scenario,
+        profile_id=profile_id,
+    ):
         return errors
     return [error for error in errors if error.get("code") != "NODE_CAP_EXCEEDED"]
 
 
-def _is_p21_runtime_exception(config: dict[str, Any], *, phase: str, scenario: str) -> bool:
-    return _is_exact_200_runtime_exception(config, phase=phase, scenario=scenario) and phase == "P21_FAILOVER_LATENCY_CURVE_200"
+def _is_failover_latency_exact_200_runtime_exception(config: dict[str, Any], *, capability_id: str, scenario: str) -> bool:
+    return _is_exact_200_runtime_exception(
+        config,
+        capability_id=capability_id,
+        scenario=scenario,
+        profile_id="exact-200",
+    ) and capability_id == "failover_latency_curve"
 
 
-def _is_exact_200_runtime_exception(config: dict[str, Any], *, phase: str, scenario: str) -> bool:
+def _is_exact_200_runtime_exception(
+    config: dict[str, Any],
+    *,
+    capability_id: str,
+    scenario: str,
+    profile_id: str | None = None,
+) -> bool:
     scale_profile = config.get("scale_profile", {})
     runtime = config.get("runtime", {})
     safety = config.get("safety", {})
@@ -806,88 +763,70 @@ def _is_exact_200_runtime_exception(config: dict[str, Any], *, phase: str, scena
     except (TypeError, ValueError):
         node_count = 0
     return (
-        _exact_200_stage_scenario_allowed(phase, scenario)
+        exact_200_selection_allowed(capability_id=capability_id, scenario_id=scenario)
         and node_count == 200
+        and profile_id == "exact-200"
         and config.get("profile_name") == "scale_200"
-        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE, P43_STAGE, P44_STAGE, P45_STAGE}
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
         and runtime.get("dry_run") is False
     )
-
-
-def _exact_200_stage_scenario_allowed(phase: str, scenario: str) -> bool:
-    return (
-        _p21_scale_sample_node_count(phase, scenario) == 200
-        or (phase, scenario) == (P32_STAGE, P32_SCENARIO)
-        or (phase, scenario) == (P35_STAGE, P35_SCENARIO)
-        or (phase, scenario) == (P36_STAGE, P36_SCENARIO_200)
-        or _p41_nodehost_density_node_count(phase, scenario) == 200
-        or _p42_server_profile_node_count(phase, scenario) == 200
-        or _p43_cluster_timeout_node_count(phase, scenario) == 200
-        or _p44_failover_timeline_node_count(phase, scenario) == 200
-        or _p45_clean_gate_layered_node_count(phase, scenario) == 200
-    )
-
-
 def _create_process_scenario(
     *,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     config: dict[str, Any],
     artifacts: Path,
     state_out: Path,
     nodes: list[dict[str, Any]],
+    profile_id: str,
     setup_timeline: SetupTimeline | None = None,
 ) -> dict[str, Any]:
-    network_name = _network_name(phase, scenario)
-    strict_management = _strict_management_profile(phase, scenario)
-    strict_full_flow = _strict_full_flow_profile(phase, scenario)
-    if strict_management:
+    network_name = _network_name(capability_id, scenario)
+    management_profile = _management_matrix_profile(capability_id, scenario, len(nodes))
+    full_flow_profile = _full_flow_profile(capability_id, scenario, len(nodes))
+    for selected in (management_profile, full_flow_profile):
+        if selected is not None and selected.profile_id != profile_id:
+            raise DockerRuntimeError(
+                f"profile {profile_id!r} does not match configured node count {len(nodes)}"
+            )
+    if management_profile:
         preflight = run_resource_preflight(
-            strict_management.config_path,
+            management_profile.config_template,
             artifacts / "resource_preflight.json",
-            phase_id=phase,
+            capability_id=capability_id,
             scenario=scenario,
+            profile_id=profile_id,
         )
         if preflight.get("can_run") is not True:
-            _write_strict_management_blocked_artifact(artifacts, preflight, strict_management)
-            raise DockerRuntimeError(f"{strict_management.stage_label} resource preflight cannot support exactly {strict_management.scale} nodes; stage is blocked")
-    if strict_full_flow:
-        with _timeline_span(setup_timeline, "resource_preflight", "resource_preflight", {"node_count": strict_full_flow.scale}):
+            _write_management_blocked_artifact(
+                artifacts, preflight, management_profile, capability_id
+            )
+            raise DockerRuntimeError(
+                f"{capability_id} resource preflight cannot support exactly "
+                f"{management_profile.requested_nodes} nodes; execution is blocked"
+            )
+    if full_flow_profile:
+        with _timeline_span(setup_timeline, "resource_preflight", "resource_preflight", {"node_count": full_flow_profile.requested_nodes}):
             preflight = run_resource_preflight(
-                strict_full_flow.config_path,
+                full_flow_profile.config_template,
                 artifacts / "resource_preflight.json",
-                phase_id=phase,
+                capability_id=capability_id,
                 scenario=scenario,
+                profile_id=profile_id,
             )
         if preflight.get("can_run") is not True:
-            _write_strict_full_flow_blocked_artifact(artifacts, preflight, strict_full_flow)
-            raise DockerRuntimeError(f"P36 resource preflight cannot support exactly {strict_full_flow.scale} nodes; stage is blocked")
-    p42_config_path = _p42_server_profile_config_path(phase, scenario)
-    if p42_config_path:
-        preflight = run_resource_preflight(
-            p42_config_path,
-            artifacts / "resource_preflight.json",
-            phase_id=phase,
-            scenario=scenario,
-        )
-        if preflight.get("can_run") is not True:
-            raise DockerRuntimeError(f"P42 resource preflight cannot support {scenario}; stage is blocked")
-    p43_config_path = _p43_cluster_timeout_config_path(phase, scenario)
-    if p43_config_path:
-        preflight = run_resource_preflight(
-            p43_config_path,
-            artifacts / "resource_preflight.json",
-            phase_id=phase,
-            scenario=scenario,
-        )
-        if preflight.get("can_run") is not True:
-            raise DockerRuntimeError(f"P43 resource preflight cannot support {scenario}; stage is blocked")
+            _write_full_flow_blocked_artifact(
+                artifacts, preflight, full_flow_profile, capability_id, scenario
+            )
+            raise DockerRuntimeError(
+                "LOCAL_FULL_FLOW resource preflight cannot support exactly "
+                f"{full_flow_profile.requested_nodes} nodes; execution is blocked"
+            )
     with _timeline_span(setup_timeline, "pre_cleanup_by_label", "docker_cleanup", {"run_id": run_id}):
-        cleanup_by_label(phase=phase, run_id=run_id)
+        cleanup_by_label(capability_id=capability_id, run_id=run_id)
     with _timeline_span(setup_timeline, "docker_network_create", "docker_network", {"network_name": network_name}):
         run_docker(
             [
@@ -896,7 +835,7 @@ def _create_process_scenario(
                 "--label",
                 f"{LABEL_PREFIX}.project={PROJECT}",
                 "--label",
-                f"{LABEL_PREFIX}.phase={phase}",
+                f"{LABEL_PREFIX}.capability_id={capability_id}",
                 "--label",
                 f"{LABEL_PREFIX}.run_id={run_id}",
                 network_name,
@@ -904,13 +843,13 @@ def _create_process_scenario(
             timeout=120,
         )
     with _timeline_span(setup_timeline, "nodehost_plan", "planning", {"node_count": len(nodes)}):
-        nodehosts = _process_nodehosts(config, nodes, phase, scenario, run_id)
+        nodehosts = _process_nodehosts(config, nodes, capability_id, scenario, run_id)
         _write_nodehost_density_plan_artifact(artifacts / "nodehost_density_plan.json", config, nodes, nodehosts, run_id)
     snapshots: list[dict[str, Any]] = []
     timings: dict[str, dict[str, Any]] = {}
     try:
         def start_nodehost(nodehost: dict[str, Any]) -> None:
-            container_id = _start_nodehost(nodehost, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id)
+            container_id = _start_nodehost(nodehost, network_name, config["runtime"]["valkey_image"], capability_id, scenario, run_id)
             nodehost["container_id"] = container_id
             nodehost["container_ip"] = _container_ip(container_id, network_name)
 
@@ -950,7 +889,7 @@ def _create_process_scenario(
             ),
             config_prepare_details,
         )
-        _write_generated_valkey_configs_manifest(artifacts / "generated_valkey_configs_manifest.json", phase, scenario, run_id, nodes)
+        _write_generated_valkey_configs_manifest(artifacts / "generated_valkey_configs_manifest.json", capability_id, scenario, run_id, nodes)
 
         process_start_details: dict[str, Any] = {}
         _run_timed_step(
@@ -985,36 +924,65 @@ def _create_process_scenario(
             ),
             {"node_count": len(nodes)},
         )
-        state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+        state = _process_runtime_state(
+            capability_id,
+            scenario,
+            run_id,
+            network_name,
+            config,
+            nodehosts,
+            nodes,
+            snapshots,
+            profile_id=profile_id,
+        )
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
-        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
-        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", phase, scenario, run_id, state)
+        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", capability_id, scenario, run_id, state)
+        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", capability_id, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_before_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
         operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
         snapshots_path = artifacts / f"cluster_snapshots_{scenario}.json"
         with _timeline_span(setup_timeline, "cluster_snapshot_write", "artifact_write", {"path": snapshots_path.as_posix()}):
             snapshots_path.write_text(json.dumps(snapshots, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+        state = _process_runtime_state(
+            capability_id,
+            scenario,
+            run_id,
+            network_name,
+            config,
+            nodehosts,
+            nodes,
+            snapshots,
+            profile_id=profile_id,
+        )
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
         state["runtime"]["cluster_snapshot_path"] = snapshots_path.as_posix()
         state["runtime"]["operations"] = operations
         timing_path = artifacts / f"runtime_timing_breakdown_{scenario}.json"
         with _timeline_span(setup_timeline, "runtime_timing_write", "artifact_write", {"path": timing_path.as_posix()}):
-            _write_runtime_timing_breakdown(timing_path, phase, scenario, run_id, nodes, timings, status="PASS")
+            _write_runtime_timing_breakdown(
+                timing_path,
+                capability_id,
+                scenario,
+                profile_id,
+                run_id,
+                nodes,
+                timings,
+                status="PASS",
+            )
         state["runtime"]["timing_breakdown_path"] = timing_path.as_posix()
         state["runtime"]["timings"] = _timing_entries(timings)
-        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
-        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", phase, scenario, run_id, state)
+        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", capability_id, scenario, run_id, state)
+        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", capability_id, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_after_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
-        if strict_full_flow:
+        if full_flow_profile:
             with _timeline_span(setup_timeline, "stabilize", "stabilize", {"node_count": len(nodes)}):
-                _p17_wait_clean_cluster(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0))
-        if strict_management:
-            write_p30_management_matrix_artifacts(
+                _management_wait_clean_cluster(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0))
+        if management_profile:
+            write_management_matrix_artifacts(
                 artifacts=artifacts,
-                phase=phase,
+                capability_id=capability_id,
                 scenario=scenario,
                 run_id=run_id,
                 config=config,
@@ -1022,10 +990,10 @@ def _create_process_scenario(
                 nodehosts=nodehosts,
                 state=state,
             )
-        if strict_full_flow:
-            write_p36_full_flow_artifacts(
+        if full_flow_profile:
+            write_full_flow_artifacts(
                 artifacts=artifacts,
-                phase=phase,
+                capability_id=capability_id,
                 scenario=scenario,
                 run_id=run_id,
                 config=config,
@@ -1035,11 +1003,11 @@ def _create_process_scenario(
                 setup_timeline=setup_timeline,
             )
         with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
-            if not strict_management and not strict_full_flow:
-                write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+            if not management_profile and not full_flow_profile:
+                write_scale_ladder_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
         write_system_metrics_artifacts(
             artifacts,
-            phase,
+            capability_id,
             scenario,
             run_id,
             nodes,
@@ -1047,14 +1015,14 @@ def _create_process_scenario(
         )
         return state
     except Exception:
-        cleanup_by_label(phase=phase, run_id=run_id)
+        cleanup_by_label(capability_id=capability_id, run_id=run_id)
         raise
 
 
 def _process_nodehosts(
     config: dict[str, Any],
     nodes: list[dict[str, Any]],
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
 ) -> list[dict[str, Any]]:
@@ -1065,18 +1033,18 @@ def _process_nodehosts(
     return list(plan["nodehosts"])
 
 
-def _p24_process_nodehosts(nodes: list[dict[str, Any]], run_id: str) -> list[dict[str, Any]]:
+def _partition_fault_matrix_process_nodehosts(nodes: list[dict[str, Any]], run_id: str) -> list[dict[str, Any]]:
     safe_run = run_id.lower().replace("_", "-")
     primaries = [node for node in sorted(nodes, key=lambda item: int(item.get("ordinal", 0))) if node.get("role") == "primary"]
     if not primaries:
-        raise DockerRuntimeError("P24 partition runtime requires at least one primary")
+        raise DockerRuntimeError("PARTITION_FAULT_MATRIX partition runtime requires at least one primary")
     minority_id = str(primaries[0]["logical_id"])
     groups = {
-        "nodehost-p24-minority": [node for node in nodes if str(node.get("logical_id")) == minority_id],
-        "nodehost-p24-majority-a": [],
-        "nodehost-p24-majority-b": [],
+        "nodehost-partition_fault_matrix-minority": [node for node in nodes if str(node.get("logical_id")) == minority_id],
+        "nodehost-partition_fault_matrix-majority-a": [],
+        "nodehost-partition_fault_matrix-majority-b": [],
     }
-    majority_ids = ["nodehost-p24-majority-a", "nodehost-p24-majority-b"]
+    majority_ids = ["nodehost-partition_fault_matrix-majority-a", "nodehost-partition_fault_matrix-majority-b"]
     majority_index = 0
     for node in sorted(nodes, key=lambda item: int(item.get("ordinal", 0))):
         if str(node.get("logical_id")) == minority_id:
@@ -1094,13 +1062,13 @@ def _p24_process_nodehosts(nodes: list[dict[str, Any]], run_id: str) -> list[dic
         nodehosts.append(
             {
                 "nodehost_id": nodehost_id,
-                "az_id": "p24-minority" if nodehost_id.endswith("minority") else "p24-majority",
+                "az_id": "partition_fault_matrix-minority" if nodehost_id.endswith("minority") else "partition_fault_matrix-majority",
                 "host_id": "local",
                 "ordinal": ordinal,
                 "container_name": f"vslab-{safe_run}-{nodehost_id}",
                 "ports": ports,
                 "logical_node_count": len(hosted),
-                "p24_partition_group": "minority" if nodehost_id.endswith("minority") else "majority",
+                "partition_fault_matrix_partition_group": "minority" if nodehost_id.endswith("minority") else "majority",
             }
         )
     return nodehosts
@@ -1118,7 +1086,7 @@ def _write_nodehost_density_plan_artifact(path: Path, config: dict[str, Any], no
             "reason": str(exc),
             "nodehosts": nodehosts,
         }
-    plan["phase_id"] = nodes[0].get("phase") if nodes else "MISSING"
+    plan["capability_id"] = nodes[0].get("capability_id") if nodes else "MISSING"
     plan["scenario_name"] = nodes[0].get("scenario") if nodes else "MISSING"
     plan["config_sources"] = config.get("_config_sources", {})
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1129,7 +1097,7 @@ def _start_nodehost(
     nodehost: dict[str, Any],
     network_name: str,
     image: str,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
 ) -> str:
@@ -1144,7 +1112,7 @@ def _start_nodehost(
         "--label",
         f"{LABEL_PREFIX}.project={PROJECT}",
         "--label",
-        f"{LABEL_PREFIX}.phase={phase}",
+        f"{LABEL_PREFIX}.capability_id={capability_id}",
         "--label",
         f"{LABEL_PREFIX}.run_id={run_id}",
         "--label",
@@ -1225,7 +1193,7 @@ def _prepare_process_node_metadata(node: dict[str, Any], nodehost: dict[str, Any
     log_file = f"{data_dir}/valkey.log"
     pid_file = f"{data_dir}/valkey.pid"
     scenario = str(node.get("scenario", ""))
-    local_config_dir = artifacts / "node_configs" / scenario if str(node.get("phase")) == P42_STAGE else artifacts / "node_configs"
+    local_config_dir = artifacts / "node_configs" / scenario if str(node.get("capability_id")) == SERVER_PROFILE_CAPABILITY else artifacts / "node_configs"
     local_config_dir.mkdir(parents=True, exist_ok=True)
     local_config = local_config_dir / f"{logical_id}.conf"
     local_config.write_text(_process_config_text(node, nodehost), encoding="utf-8")
@@ -1597,7 +1565,7 @@ def _process_bootstrap_batching_details(
 
 
 def _process_runtime_state(
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     network_name: str,
@@ -1605,6 +1573,8 @@ def _process_runtime_state(
     nodehosts: list[dict[str, Any]],
     nodes: list[dict[str, Any]],
     snapshots: list[dict[str, Any]],
+    *,
+    profile_id: str | None = None,
 ) -> dict[str, Any]:
     density = _runtime_density_from_nodehosts(config, nodehosts, nodes)
     effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodehosts))
@@ -1612,8 +1582,13 @@ def _process_runtime_state(
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
-        "phase_id": phase,
+        "capability_id": capability_id,
         "scenario": scenario,
+        "scenario_id": scenario,
+        "backend_id": "docker_process",
+        "profile_id": profile_id or "MISSING",
+        "requested_nodes": len(nodes),
+        "observed_nodes": len(nodes),
         "runtime": {
             "type": "docker_process",
             "sandbox_network": True,
@@ -1709,13 +1684,13 @@ def _write_state(path: Path, state: dict[str, Any]) -> None:
     path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _write_effective_server_profile_artifact(path: Path, phase: str, scenario: str, run_id: str, state: dict[str, Any]) -> None:
+def _write_effective_server_profile_artifact(path: Path, capability_id: str, scenario: str, run_id: str, state: dict[str, Any]) -> None:
     profile = dict(state.get("effective_server_profile") or state.get("runtime", {}).get("server_profile") or {})
     profile.update(
         {
             "schema_version": "v1",
             "artifact_type": "effective_server_profile",
-            "phase_id": phase,
+            "capability_id": capability_id,
             "scenario_name": scenario,
             "run_id": run_id,
             "status": "PASS" if profile.get("io_thread_budget_status") in {"PASS", "DEGRADED_WITH_REASON"} else "FAIL",
@@ -1727,13 +1702,13 @@ def _write_effective_server_profile_artifact(path: Path, phase: str, scenario: s
     path.write_text(json.dumps(profile, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _write_effective_cluster_timeout_artifact(path: Path, phase: str, scenario: str, run_id: str, state: dict[str, Any]) -> None:
+def _write_effective_cluster_timeout_artifact(path: Path, capability_id: str, scenario: str, run_id: str, state: dict[str, Any]) -> None:
     timeout = dict(state.get("effective_cluster_timeout") or state.get("runtime", {}).get("cluster_timeout") or {})
     timeout.update(
         {
             "schema_version": "v1",
             "artifact_type": "effective_cluster_timeout",
-            "phase_id": phase,
+            "capability_id": capability_id,
             "scenario_name": scenario,
             "run_id": run_id,
             "status": "PASS" if timeout.get("effective_cluster_node_timeout_ms") else "FAIL",
@@ -1745,7 +1720,7 @@ def _write_effective_cluster_timeout_artifact(path: Path, phase: str, scenario: 
     path.write_text(json.dumps(timeout, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: str, run_id: str, nodes: list[dict[str, Any]]) -> None:
+def _write_generated_valkey_configs_manifest(path: Path, capability_id: str, scenario: str, run_id: str, nodes: list[dict[str, Any]]) -> None:
     entries: list[dict[str, Any]] = []
     for node in nodes:
         config_path = Path(str(node.get("config_artifact_file", "")))
@@ -1776,7 +1751,7 @@ def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: s
     report = {
         "schema_version": "v1",
         "artifact_type": "generated_valkey_configs_manifest",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "scenario_name": scenario,
         "run_id": run_id,
         "status": "PASS" if entries and all((entry["io_threads_line_present"] is True or entry["io_threads_line_required"] is False) and entry["maxmemory_line_present"] and entry["cluster_node_timeout_line_present"] and entry["cluster_node_timeout_source_present"] for entry in entries) else "FAIL",
@@ -1787,10 +1762,10 @@ def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: s
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _write_p05_workload_benchmark_artifacts(
+def _write_workload_workload_benchmark_artifacts(
     *,
     artifacts: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     workload: dict[str, Any],
@@ -1800,10 +1775,10 @@ def _write_p05_workload_benchmark_artifacts(
     nodes: list[dict[str, Any]],
 ) -> None:
     telemetry = TelemetryRun(
-        phase_id=phase,
+        capability_id=capability_id,
         scenario_name=scenario,
         run_id=run_id,
-        coverage_id="p05.workload.benchmark_contract",
+        coverage_id="workload.workload.benchmark_contract",
         scale=len(nodes),
         node_count=len(nodes),
     )
@@ -1824,7 +1799,7 @@ def _write_p05_workload_benchmark_artifacts(
     workload_artifact = {
         "schema_version": "v1",
         "artifact_type": "workload_windows",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -1841,7 +1816,7 @@ def _write_p05_workload_benchmark_artifacts(
             {
                 "schema_version": "v1",
                 "artifact_type": "quant_summary",
-                "phase_id": phase,
+                "capability_id": capability_id,
                 "run_id": run_id,
                 "created_at": "2026-06-28T00:00:00Z",
                 "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -1858,7 +1833,7 @@ def _write_p05_workload_benchmark_artifacts(
     )
 
 
-def _append_p10_orchestrator_cleanup(artifacts_dir: Path, resources_remaining: list[dict[str, Any]]) -> None:
+def _append_orchestration_orchestrator_cleanup(artifacts_dir: Path, resources_remaining: list[dict[str, Any]]) -> None:
     report_path = artifacts_dir / "orchestration_report.json"
     if not report_path.exists():
         return
@@ -1889,18 +1864,18 @@ def _cleanup_fault_state_files(artifacts_dir: Path) -> list[dict[str, Any]]:
     return actions
 
 
-def cleanup_by_label(*, phase: str, run_id: str) -> list[dict[str, Any]]:
-    actions, _timings = _cleanup_resources_by_label(phase=phase, run_id=run_id)
+def cleanup_by_label(*, capability_id: str, run_id: str) -> list[dict[str, Any]]:
+    actions, _timings = _cleanup_resources_by_label(capability_id=capability_id, run_id=run_id)
     return actions
 
 
-def _cleanup_resources_by_label(*, phase: str, run_id: str) -> tuple[list[dict[str, Any]], dict[str, float]]:
+def _cleanup_resources_by_label(*, capability_id: str, run_id: str) -> tuple[list[dict[str, Any]], dict[str, float]]:
     actions: list[dict[str, Any]] = []
     timings = {
         "cleanup_remove_containers_seconds": 0.0,
         "cleanup_remove_networks_seconds": 0.0,
     }
-    label_args = ["--filter", f"label={LABEL_PREFIX}.project={PROJECT}", "--filter", f"label={LABEL_PREFIX}.phase={phase}", "--filter", f"label={LABEL_PREFIX}.run_id={run_id}"]
+    label_args = ["--filter", f"label={LABEL_PREFIX}.project={PROJECT}", "--filter", f"label={LABEL_PREFIX}.capability_id={capability_id}", "--filter", f"label={LABEL_PREFIX}.run_id={run_id}"]
     containers = _docker_ids(["ps", "-a", "-q", *label_args])
     container_started = time.monotonic()
 
@@ -2008,8 +1983,12 @@ def _cleanup_resources_by_label(*, phase: str, run_id: str) -> tuple[list[dict[s
 
 
 def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out_path: Path) -> dict[str, Any]:
-    phase = str(state.get("phase_id", "P13_SCALE_LADDER_50_100"))
-    run_id = str(state.get("runtime", {}).get("run_id", _run_id(phase, str(state.get("scenario", "scale_50")))))
+    capability_id = str(state.get("capability_id", "scale_ladder"))
+    run_id = str(
+        state.get("runtime", {}).get(
+            "run_id", _run_id(capability_id, str(state.get("scenario", capability_id)))
+        )
+    )
     actions: list[dict[str, Any]] = []
     cleanup_timing = {
         "cleanup_terminate_processes_seconds": 0.0,
@@ -2025,7 +2004,7 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     nodes = list(state.get("nodes", []))
     nodes_by_nodehost = _cleanup_nodes_by_nodehost(nodes)
     missing_containers = _require_cleanup_owned_nodehosts(
-        state, phase=phase, run_id=run_id
+        state, capability_id=capability_id, run_id=run_id
     )
     for container in sorted(missing_containers):
         actions.append(
@@ -2208,7 +2187,7 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
 
     cleanup_errors: list[str] = []
     try:
-        resource_actions, resource_timing = _cleanup_resources_by_label(phase=phase, run_id=run_id)
+        resource_actions, resource_timing = _cleanup_resources_by_label(capability_id=capability_id, run_id=run_id)
         cleanup_timing.update(resource_timing)
         actions.extend(resource_actions)
     except DockerRuntimeError as exc:
@@ -2217,7 +2196,7 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     actions.extend(_cleanup_fault_state_files(artifacts_dir))
     residual_started = time.monotonic()
     try:
-        resources_remaining = owned_resources(phase=phase, run_id=run_id)
+        resources_remaining = owned_resources(capability_id=capability_id, run_id=run_id)
     except DockerRuntimeError as exc:
         cleanup_errors.append(str(exc))
         resources_remaining = [{"type": "UNKNOWN", "id": "owned-resource-discovery-failed", "reason": str(exc)}]
@@ -2225,7 +2204,7 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     report = {
         "schema_version": "v1",
         "artifact_type": "cleanup_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -2246,7 +2225,7 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
 
 
 def _require_cleanup_owned_nodehosts(
-    state: dict[str, Any], *, phase: str, run_id: str
+    state: dict[str, Any], *, capability_id: str, run_id: str
 ) -> set[str]:
     for node in state.get("nodes", []):
         if not isinstance(node, dict):
@@ -2267,7 +2246,7 @@ def _require_cleanup_owned_nodehosts(
     }
     expected = {
         f"{LABEL_PREFIX}.project": PROJECT,
-        f"{LABEL_PREFIX}.phase": phase,
+        f"{LABEL_PREFIX}.capability_id": capability_id,
         f"{LABEL_PREFIX}.run_id": run_id,
     }
     missing_containers: set[str] = set()
@@ -2285,7 +2264,7 @@ def _require_cleanup_owned_nodehosts(
         except json.JSONDecodeError:
             labels = None
         if not isinstance(labels, dict) or any(labels.get(key) != value for key, value in expected.items()):
-            raise DockerRuntimeError(f"container {container} is not an owned runtime resource for phase {phase} and run {run_id}")
+            raise DockerRuntimeError(f"container {container} is not an owned runtime resource for capability_id {capability_id} and run {run_id}")
     return missing_containers
 
 
@@ -2423,8 +2402,8 @@ def _wait_container_pid_gone(container: str, pid: str, timeout: float) -> bool:
     return False
 
 
-def owned_resources(*, phase: str, run_id: str) -> list[dict[str, Any]]:
-    label_args = ["--filter", f"label={LABEL_PREFIX}.project={PROJECT}", "--filter", f"label={LABEL_PREFIX}.phase={phase}", "--filter", f"label={LABEL_PREFIX}.run_id={run_id}"]
+def owned_resources(*, capability_id: str, run_id: str) -> list[dict[str, Any]]:
+    label_args = ["--filter", f"label={LABEL_PREFIX}.project={PROJECT}", "--filter", f"label={LABEL_PREFIX}.capability_id={capability_id}", "--filter", f"label={LABEL_PREFIX}.run_id={run_id}"]
     resources: list[dict[str, Any]] = []
     for cid in _docker_ids(["ps", "-a", "-q", *label_args]):
         resources.append({"type": "container", "id": cid})
@@ -2440,7 +2419,7 @@ def _docker_ids(args: list[str]) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
-def _node_specs(config: dict[str, Any], phase: str, scenario: str, run_id: str | None = None) -> list[dict[str, Any]]:
+def _node_specs(config: dict[str, Any], capability_id: str, scenario: str, run_id: str | None = None) -> list[dict[str, Any]]:
     cluster = config["cluster"]
     azs = list(config["network"]["azs"])
     host_ids = [host["host_id"] for host in config.get("hosts", [{"host_id": "local"}])]
@@ -2454,7 +2433,7 @@ def _node_specs(config: dict[str, Any], phase: str, scenario: str, run_id: str |
     effective_timeout_fields = cluster_timeout_node_fields(effective_timeout)
     for shard in range(shards):
         shard_id = f"shard-{shard:04d}"
-        specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)], host_ids[ordinal % len(host_ids)], run_id))
+        specs.append(_spec(cluster, capability_id, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)], host_ids[ordinal % len(host_ids)], run_id))
         specs[-1].update(effective_node_fields)
         specs[-1].update(effective_timeout_fields)
         ordinal += 1
@@ -2462,17 +2441,17 @@ def _node_specs(config: dict[str, Any], phase: str, scenario: str, run_id: str |
         for replica in range(replicas):
             shard_id = f"shard-{shard:04d}"
             az = azs[(shard + replica + 1) % len(azs)]
-            specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, f"replica-{replica:02d}", az, host_ids[ordinal % len(host_ids)], run_id))
+            specs.append(_spec(cluster, capability_id, scenario, ordinal, shard_id, f"replica-{replica:02d}", az, host_ids[ordinal % len(host_ids)], run_id))
             specs[-1].update(effective_node_fields)
             specs[-1].update(effective_timeout_fields)
             ordinal += 1
     return specs
 
 
-def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shard_id: str, role_suffix: str, az_id: str, host_id: str, run_id: str | None = None) -> dict[str, Any]:
+def _spec(cluster: dict[str, Any], capability_id: str, scenario: str, ordinal: int, shard_id: str, role_suffix: str, az_id: str, host_id: str, run_id: str | None = None) -> dict[str, Any]:
     role = "primary" if role_suffix == "primary" else "replica"
     logical_id = f"{shard_id}-{role_suffix}"
-    safe_run = (run_id or _run_id(phase, scenario)).lower().replace("_", "-")
+    safe_run = (run_id or _run_id(capability_id, scenario)).lower().replace("_", "-")
     spec = {
         "logical_id": logical_id,
         "shard_id": shard_id,
@@ -2483,13 +2462,13 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
         "client_port": int(cluster["port_base"]) + ordinal,
         "cluster_bus_port": int(cluster.get("cluster_bus_port_base", int(cluster["port_base"]) + 10000)) + ordinal,
         "container_name": f"vslab-{safe_run}-{logical_id}",
-        "phase": phase,
+        "capability_id": capability_id,
         "scenario": scenario,
     }
     return spec
 
 
-def _start_container(node: dict[str, Any], network_name: str, image: str, phase: str, scenario: str, run_id: str) -> str:
+def _start_container(node: dict[str, Any], network_name: str, image: str, capability_id: str, scenario: str, run_id: str) -> str:
     args = [
         "run",
         "-d",
@@ -2500,7 +2479,7 @@ def _start_container(node: dict[str, Any], network_name: str, image: str, phase:
         "--label",
         f"{LABEL_PREFIX}.project={PROJECT}",
         "--label",
-        f"{LABEL_PREFIX}.phase={phase}",
+        f"{LABEL_PREFIX}.capability_id={capability_id}",
         "--label",
         f"{LABEL_PREFIX}.run_id={run_id}",
         "--label",
@@ -2818,8 +2797,9 @@ def _timing_duration(timings: dict[str, dict[str, Any]], name: str) -> float | s
 
 def _write_runtime_timing_breakdown(
     path: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
+    profile_id: str,
     run_id: str,
     nodes: list[dict[str, Any]],
     timings: dict[str, dict[str, Any]],
@@ -2838,15 +2818,16 @@ def _write_runtime_timing_breakdown(
         cluster_create_duration = "MISSING"
     artifact = {
         "schema_version": "v1",
-        "artifact_type": "p13_timing_breakdown",
-        "phase_id": phase,
+        "artifact_type": "setup_timing_breakdown",
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario": scenario,
+        "profile_id": profile_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab-runtime", "version": __version__},
         "status": status,
         "node_count": len(nodes),
-        "timings": _timing_entries(timings, P13_TIMING_NAMES),
+        "timings": _timing_entries(timings, SETUP_TIMING_NAMES),
         "summary": {
             "cluster_create_duration_seconds": cluster_create_duration,
             "replica_config_duration_seconds": _timing_duration(timings, "replica_replicate"),
@@ -4235,68 +4216,6 @@ def _scale_timeout(nodes: list[dict[str, Any]], *, floor: float, per_node: float
     return max(floor, len(nodes) * per_node)
 
 
-def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> bool:
-    curve_count = _curve_scale_sample_node_count(phase, scenario)
-    if curve_count is not None:
-        return node_count == curve_count
-    p22_count = _p22_fault_matrix_node_count(phase, scenario)
-    if p22_count is not None:
-        return node_count == p22_count and p22_count <= 100
-    p23_count = _p23_fault_matrix_node_count(phase, scenario)
-    if p23_count is not None:
-        return node_count == p23_count and p23_count <= 100
-    p24_count = _p24_fault_matrix_node_count(phase, scenario)
-    if p24_count is not None:
-        return node_count == p24_count and p24_count <= 100
-    strict_fault_count = _strict_fault_matrix_node_count(phase, scenario)
-    if strict_fault_count is not None:
-        return node_count == strict_fault_count
-    strict_full_flow_count = _strict_full_flow_node_count(phase, scenario)
-    if strict_full_flow_count is not None:
-        return node_count == strict_full_flow_count
-    p41_count = _p41_nodehost_density_node_count(phase, scenario)
-    if p41_count is not None:
-        return node_count == p41_count
-    p42_count = _p42_server_profile_node_count(phase, scenario)
-    if p42_count is not None:
-        return node_count == p42_count
-    p43_count = _p43_cluster_timeout_node_count(phase, scenario)
-    if p43_count is not None:
-        return node_count == p43_count
-    p44_count = _p44_failover_timeline_node_count(phase, scenario)
-    if p44_count is not None:
-        return node_count == p44_count
-    p45_count = _p45_clean_gate_layered_node_count(phase, scenario)
-    if p45_count is not None:
-        return node_count == p45_count
-    expected = {
-        ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
-        ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},
-        ("P05_WORKLOAD_ENGINE", "workload_smoke"): {6},
-        ("P06_OBSERVABILITY_METRICS", "observability_smoke"): {6},
-        ("P07_FAULT_INJECTION_SANDBOX", "fault_sandbox_setup"): {6, 30},
-        ("P08_FAILOVER_SPLIT_BRAIN", "failover_setup"): {6},
-        ("P09_ANALYSIS_REPORTING", "reporting_source_smoke"): {6},
-        ("P10_MULTI_HOST_ORCHESTRATION", "orchestrated_localhost"): {6},
-        ("P11_STABILITY_SOAK", "stability_soak_smoke"): {6},
-        ("P12_SCALE_LADDER_10_30", "scale_10"): {10},
-        ("P12_SCALE_LADDER_10_30", "scale_30"): {30},
-        ("P13_SCALE_LADDER_50_100", "scale_50"): {50},
-        ("P13_SCALE_LADDER_50_100", "scale_100"): {100},
-        ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"): {6},
-        ("P29_QUANT_TELEMETRY_COLLECTOR_HARDENING", "strict_telemetry_small_real"): {6},
-        (P30_STAGE, P30_SCENARIO): {P30_SCALE},
-        (P31_STAGE, P31_SCENARIO): {P31_SCALE},
-        (P32_STAGE, P32_SCENARIO): {P32_SCALE},
-        ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"): {6},
-        ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"): {6},
-        ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"): {6},
-        ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"): {6},
-        ("P26_FINAL_REPORT_REGRESSION", "final_report_regression_smoke"): {6},
-    }
-    return node_count in expected.get((phase, scenario), set())
-
-
 def _slot_ranges(primary_count: int) -> list[tuple[int, int]]:
     ranges = _sequential_slot_ranges(primary_count)
     probe_index = _probe_slot_primary_index(primary_count)
@@ -4554,10 +4473,10 @@ def _run_management_ops(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
     for name, reason in [
-        ("remove_node", "P04 records taxonomy only; destructive removal is deferred until a dedicated lifecycle phase."),
-        ("reshard", "P04 smoke cluster keeps slot ownership stable for wrapper data-path proof."),
+        ("remove_node", "MANAGEMENT_CONTRACT records taxonomy only; destructive removal is deferred until a dedicated lifecycle capability_id."),
+        ("reshard", "MANAGEMENT_CONTRACT smoke cluster keeps slot ownership stable for wrapper data-path proof."),
         ("rebalance", "Valkey cluster rebalance orchestration is deferred until management expansion."),
-        ("rolling_restart", "Restart orchestration is deferred to later stability/fault phases."),
+        ("rolling_restart", "Restart orchestration is deferred to later stability/fault capabilities."),
     ]:
         operations.append(
             {
@@ -4572,14 +4491,14 @@ def _run_management_ops(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return operations
 
 
-def write_management_ops_report(path: Path, phase: str, scenario: str, run_id: str, operations: list[dict[str, Any]]) -> None:
+def write_management_ops_report(path: Path, capability_id: str, scenario: str, run_id: str, operations: list[dict[str, Any]]) -> None:
     passed = sum(1 for op in operations if op.get("status") == "PASS")
     skipped = sum(1 for op in operations if op.get("status") == "SKIPPED_WITH_REASON")
     failed = sum(1 for op in operations if op.get("status") == "FAIL")
     report = {
         "schema_version": "v1",
         "artifact_type": "management_ops_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -4604,7 +4523,7 @@ def write_management_ops_report(path: Path, phase: str, scenario: str, run_id: s
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, config: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
+def write_workload_report(path: Path, capability_id: str, scenario: str, run_id: str, config: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
     workload = config.get("workload", {})
     requested_qps = float(workload.get("uniform_qps", 0)) + float(workload.get("hotspot_qps", 0))
     read_ratio = float(workload.get("read_ratio", 0.8))
@@ -4660,12 +4579,12 @@ def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, co
         "full_slot_covered": False,
         "fixed_hash_tag_only": True,
         "status": "SKIPPED_WITH_REASON" if workload.get("hash_slot_distribution") != "full_slot" else "MISSING",
-        "reason": "P05 smoke workload_report preserves legacy single hash-tag probe; canonical benchmark windows carry full-slot evidence when mode=benchmark.",
+        "reason": "WORKLOAD_SMOKE smoke workload_report preserves legacy single hash-tag probe; canonical benchmark windows carry full-slot evidence when mode=benchmark.",
     }
     report = {
         "schema_version": "v1",
         "artifact_type": "workload_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -4698,17 +4617,17 @@ def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, co
             {
                 "name": "before_fault",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P05 workload_smoke has no fault window.",
+                "reason": "WORKLOAD_SMOKE workload has no fault window.",
             },
             {
                 "name": "during_fault",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P05 workload_smoke has no fault window.",
+                "reason": "WORKLOAD_SMOKE workload has no fault window.",
             },
             {
                 "name": "after_recovery",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P05 workload_smoke has no recovery window.",
+                "reason": "WORKLOAD_SMOKE workload has no recovery window.",
             },
         ],
         "latency": _latency_summary(latencies_ms),
@@ -4721,7 +4640,7 @@ def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, co
         "workload_mode": workload_mode,
         "profiles": profiles,
         "canonical_window_refs": [
-            {"artifact": "workload_windows.json", "window_name": name, "status": "SKIPPED_WITH_REASON", "reason": "Legacy P05 workload_report does not own canonical window generation."}
+            {"artifact": "workload_windows.json", "window_name": name, "status": "SKIPPED_WITH_REASON", "reason": "Legacy WORKLOAD_SMOKE workload_report does not own canonical window generation."}
             for name in CANONICAL_WINDOWS
         ],
         "hash_slot_coverage": full_slot_status,
@@ -4732,9 +4651,9 @@ def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, co
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    _write_p05_workload_benchmark_artifacts(
+    _write_workload_workload_benchmark_artifacts(
         artifacts=path.parent,
-        phase=phase,
+        capability_id=capability_id,
         scenario=scenario,
         run_id=run_id,
         workload=workload,
@@ -4747,7 +4666,7 @@ def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, co
 
 def write_observability_artifacts(
     artifacts: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     config: dict[str, Any],
@@ -4759,7 +4678,7 @@ def write_observability_artifacts(
     log_dir.mkdir(parents=True, exist_ok=True)
     metric_lines: list[dict[str, Any]] = []
     event_lines: list[dict[str, Any]] = [
-        _event(phase, run_id, "observability_collection_started", "info", {"scenario": scenario, "nodes": len(nodes)}),
+        _event(capability_id, run_id, "observability_collection_started", "info", {"scenario": scenario, "nodes": len(nodes)}),
     ]
 
     for node in nodes:
@@ -4775,7 +4694,7 @@ def write_observability_artifacts(
             {
                 "schema_version": "v1",
                 "artifact_type": "metric_sample",
-                "phase_id": phase,
+                "capability_id": capability_id,
                 "run_id": run_id,
                 "timestamp": "2026-06-28T00:00:00Z",
                 "source": node["logical_id"],
@@ -4802,7 +4721,7 @@ def write_observability_artifacts(
         )
         event_lines.append(
             _event(
-                phase,
+                capability_id,
                 run_id,
                 "node_metrics_sampled",
                 "info",
@@ -4810,7 +4729,7 @@ def write_observability_artifacts(
             )
         )
 
-    event_lines.append(_event(phase, run_id, "observability_collection_finished", "info", {"sample_count": len(metric_lines)}))
+    event_lines.append(_event(capability_id, run_id, "observability_collection_finished", "info", {"sample_count": len(metric_lines)}))
     metrics_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in metric_lines) + "\n", encoding="utf-8")
     events_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in event_lines) + "\n", encoding="utf-8")
 
@@ -4876,7 +4795,7 @@ def _system_metric_windows_for_artifacts(artifacts: Path) -> list[str]:
 
 def write_system_metrics_artifacts(
     artifacts: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     nodes: list[dict[str, Any]],
@@ -4887,7 +4806,7 @@ def write_system_metrics_artifacts(
     if not nodes:
         return
     telemetry = TelemetryRun(
-        phase_id=phase,
+        capability_id=capability_id,
         scenario_name=scenario,
         run_id=run_id,
         coverage_id="system_metrics.runtime_collection",
@@ -4928,7 +4847,7 @@ def write_system_metrics_artifacts(
                 )
     write_jsonl(artifacts / "system_metrics_timeseries.jsonl", rows)
     _append_jsonl_artifact(artifacts / "metrics_timeseries.jsonl", rows)
-    report = _system_metrics_report(phase, scenario, run_id, nodes, windows, rows, sample_errors)
+    report = _system_metrics_report(capability_id, scenario, run_id, nodes, windows, rows, sample_errors)
     (artifacts / "system_metrics_report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
@@ -5068,7 +4987,6 @@ def _system_node_labels(node: dict[str, Any], window_name: str) -> dict[str, Any
         "container_name": node.get("container_name", node.get("nodehost_container_name", MISSING)),
         "metric_scope": "logical_node_or_nodehost_container_as_named_by_source_type",
         "lifecycle_window": window_name,
-        "stage_window": window_name,
     }
 
 
@@ -5095,7 +5013,7 @@ def _system_metric(
 
 
 def _system_metrics_report(
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     nodes: list[dict[str, Any]],
@@ -5117,8 +5035,8 @@ def _system_metrics_report(
     return {
         "schema_version": "v1",
         "artifact_type": "system_metrics_report",
-        "phase_id": phase,
-        "stage_id": phase,
+        "capability_id": capability_id,
+
         "run_id": run_id,
         "scenario_name": scenario,
         "status": "PASS" if rows and not sample_errors and all(row.get("missing_reason") for row in missing_rows) else "FAIL",
@@ -5237,21 +5155,20 @@ def _float_or_missing(value: Any) -> float | str:
         return MISSING
 
 
-def write_goal_loop_quant_telemetry_artifacts(
+def write_telemetry_artifacts(
     artifacts: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     config: dict[str, Any],
     nodes: list[dict[str, Any]],
 ) -> None:
     artifacts.mkdir(parents=True, exist_ok=True)
-    is_p29 = phase == "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
     telemetry = TelemetryRun(
-        phase_id=phase,
+        capability_id=capability_id,
         scenario_name=scenario,
         run_id=run_id,
-        coverage_id="p29.telemetry.strict_telemetry_small_real" if is_p29 else "p16.telemetry.goal_loop_quant_telemetry",
+        coverage_id="telemetry.telemetry.telemetry",
         scale=len(nodes),
         node_count=len(nodes),
     )
@@ -5260,7 +5177,7 @@ def write_goal_loop_quant_telemetry_artifacts(
             "telemetry_collection_started",
             subject_type="scenario",
             subject_id=scenario,
-            message=f"{phase} telemetry collection started.",
+            message=f"{capability_id} telemetry collection started.",
             metadata={"node_count": len(nodes), "canonical_windows": CANONICAL_WINDOWS},
         )
     ]
@@ -5276,7 +5193,7 @@ def write_goal_loop_quant_telemetry_artifacts(
             server_info = _parse_info(_node_command(node, "INFO", "server", timeout=10))
             default_info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
             info = {**server_info, **default_info}
-            metric_rows.extend(_p16_info_metric_rows(telemetry, logical_id, node, info))
+            metric_rows.extend(_telemetry_info_metric_rows(telemetry, logical_id, node, info))
             events.append(
                 telemetry.event(
                     "valkey_info_sampled",
@@ -5295,7 +5212,7 @@ def write_goal_loop_quant_telemetry_artifacts(
                     metric_name="valkey_info_sample",
                     metric_value=MISSING,
                     metric_unit="status",
-                    labels=_p16_node_labels(node),
+                    labels=_telemetry_node_labels(node),
                     missing_reason_text=f"INFO sample failed: {exc!r}",
                 )
             )
@@ -5303,7 +5220,7 @@ def write_goal_loop_quant_telemetry_artifacts(
         try:
             cluster_info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=10))
             sampled_cluster_info = cluster_info
-            metric_rows.extend(_p16_cluster_info_metric_rows(telemetry, logical_id, node, cluster_info))
+            metric_rows.extend(_telemetry_cluster_info_metric_rows(telemetry, logical_id, node, cluster_info))
             events.append(
                 telemetry.event(
                     "cluster_info_sampled",
@@ -5322,7 +5239,7 @@ def write_goal_loop_quant_telemetry_artifacts(
                     metric_name="cluster_info_sample",
                     metric_value=MISSING,
                     metric_unit="status",
-                    labels=_p16_node_labels(node),
+                    labels=_telemetry_node_labels(node),
                     missing_reason_text=f"CLUSTER INFO sample failed: {exc!r}",
                 )
             )
@@ -5330,7 +5247,7 @@ def write_goal_loop_quant_telemetry_artifacts(
         try:
             cluster_nodes_raw = _node_command(node, "CLUSTER", "NODES", timeout=10)
             sampled_cluster_nodes_raw = cluster_nodes_raw
-            metric_rows.extend(_p16_cluster_nodes_metric_rows(telemetry, logical_id, node, cluster_nodes_raw))
+            metric_rows.extend(_telemetry_cluster_nodes_metric_rows(telemetry, logical_id, node, cluster_nodes_raw))
             events.append(
                 telemetry.event(
                     "cluster_nodes_sampled",
@@ -5349,13 +5266,13 @@ def write_goal_loop_quant_telemetry_artifacts(
                     metric_name="cluster_nodes_sample",
                     metric_value=MISSING,
                     metric_unit="status",
-                    labels=_p16_node_labels(node),
+                    labels=_telemetry_node_labels(node),
                     missing_reason_text=f"CLUSTER NODES sample failed: {exc!r}",
                 )
             )
 
         docker_stats = _docker_stats(node["container_name"])
-        metric_rows.extend(_p16_docker_metric_rows(telemetry, logical_id, node, docker_stats))
+        metric_rows.extend(_telemetry_docker_metric_rows(telemetry, logical_id, node, docker_stats))
         metric_rows.append(
             telemetry.metric(
                 source_type="docker_stats",
@@ -5363,12 +5280,11 @@ def write_goal_loop_quant_telemetry_artifacts(
                 metric_name="process_pid",
                 metric_value=int(node["pid"]) if str(node.get("pid", "")).isdigit() else MISSING,
                 metric_unit="pid",
-                labels=_p16_node_labels(node),
+                labels=_telemetry_node_labels(node),
                 missing_reason_text="" if str(node.get("pid", "")).isdigit() else "Docker inspect did not expose a numeric container process PID",
             )
         )
-        if is_p29:
-            topology_rows.append(_p29_topology_snapshot_row(telemetry, node, sampled_cluster_info, sampled_cluster_nodes_raw))
+        topology_rows.append(_telemetry_topology_snapshot_row(telemetry, node, sampled_cluster_info, sampled_cluster_nodes_raw))
 
     workload = config.get("workload", {})
     requested_qps = min(12.0, float(workload.get("target_qps", workload.get("uniform_qps", 0))) + float(workload.get("hotspot_qps", 0)) or 12.0)
@@ -5391,7 +5307,7 @@ def write_goal_loop_quant_telemetry_artifacts(
             "telemetry_collection_finished",
             subject_type="scenario",
             subject_id=scenario,
-            message=f"{phase} telemetry collection finished.",
+            message=f"{capability_id} telemetry collection finished.",
             metadata={
                 "event_count": len(events) + 1,
                 "metric_count": len(metric_rows),
@@ -5405,20 +5321,19 @@ def write_goal_loop_quant_telemetry_artifacts(
     metrics_path = artifacts / "metrics_timeseries.jsonl"
     workload_windows_path = artifacts / "workload_windows.json"
     quant_summary_path = artifacts / "quant_summary.json"
-    phase_summary_path = artifacts / "phase_summary.json"
+    run_summary_path = artifacts / "run_summary.json"
     topology_path = artifacts / "topology_snapshots.jsonl"
     coverage_ledger_path = artifacts / "coverage_ledger.json"
     telemetry_completeness_path = artifacts / "telemetry_completeness_report.json"
 
     write_jsonl(events_path, events)
     write_jsonl(metrics_path, metric_rows)
-    if is_p29:
-        write_jsonl(topology_path, topology_rows)
+    write_jsonl(topology_path, topology_rows)
     workload_artifact = {
         "schema_version": "v1",
         "artifact_type": "workload_windows",
-        "phase_id": phase,
-        "stage_id": phase,
+        "capability_id": capability_id,
+
         "coverage_id": telemetry.coverage_id,
         "scale": len(nodes),
         "node_count": len(nodes),
@@ -5433,9 +5348,9 @@ def write_goal_loop_quant_telemetry_artifacts(
         "windows": workload_windows,
     }
     workload_windows_path.write_text(json.dumps(workload_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    _write_p16_quant_summary(
+    _write_telemetry_quant_summary(
         quant_summary_path,
-        phase=phase,
+        capability_id=capability_id,
         scenario=scenario,
         run_id=run_id,
         node_count=len(nodes),
@@ -5444,34 +5359,33 @@ def write_goal_loop_quant_telemetry_artifacts(
         workload_windows=workload_windows,
         sample_errors=sample_errors,
     )
-    _write_p16_phase_summary(phase_summary_path, phase=phase, run_id=run_id, sample_errors=sample_errors)
-    if is_p29:
-        _write_p29_coverage_ledger(coverage_ledger_path)
-        _write_p29_telemetry_completeness_report(
-            telemetry_completeness_path,
-            phase=phase,
-            scenario=scenario,
-            run_id=run_id,
-            node_count=len(nodes),
-            events=events,
-            metric_rows=metric_rows,
-            workload_windows=workload_windows,
-            sample_errors=sample_errors,
-            artifact_paths=[
-                events_path,
-                metrics_path,
-                workload_windows_path,
-                quant_summary_path,
-                phase_summary_path,
-                topology_path,
-                coverage_ledger_path,
-                artifacts / "valkey_e2e_evidence.json",
-                artifacts / "cleanup_report.json",
-            ],
-        )
+    _write_telemetry_run_summary(run_summary_path, capability_id=capability_id, run_id=run_id, sample_errors=sample_errors)
+    _write_telemetry_coverage_ledger(coverage_ledger_path)
+    _write_telemetry_completeness_report(
+        telemetry_completeness_path,
+        capability_id=capability_id,
+        scenario=scenario,
+        run_id=run_id,
+        node_count=len(nodes),
+        events=events,
+        metric_rows=metric_rows,
+        workload_windows=workload_windows,
+        sample_errors=sample_errors,
+        artifact_paths=[
+            events_path,
+            metrics_path,
+            workload_windows_path,
+            quant_summary_path,
+            run_summary_path,
+            topology_path,
+            coverage_ledger_path,
+            artifacts / "valkey_e2e_evidence.json",
+            artifacts / "cleanup_report.json",
+        ],
+    )
 
 
-def _p16_node_labels(node: dict[str, Any]) -> dict[str, Any]:
+def _telemetry_node_labels(node: dict[str, Any]) -> dict[str, Any]:
     return {
         "logical_node_id": node.get("logical_id", MISSING),
         "role": node.get("role", MISSING),
@@ -5492,7 +5406,7 @@ def _workload_profile_names(workload: dict[str, Any]) -> list[str]:
     return filtered or ["smoke"]
 
 
-def _p16_metric_value(value: Any, reason: str) -> tuple[int | float | str | bool, str]:
+def _telemetry_metric_value(value: Any, reason: str) -> tuple[int | float | str | bool, str]:
     if value is None or value == MISSING:
         return MISSING, reason
     converted = _int_or_missing(value)
@@ -5501,7 +5415,7 @@ def _p16_metric_value(value: Any, reason: str) -> tuple[int | float | str | bool
     return str(value), ""
 
 
-def _p16_info_metric_rows(
+def _telemetry_info_metric_rows(
     telemetry: TelemetryRun,
     logical_id: str,
     node: dict[str, Any],
@@ -5515,7 +5429,7 @@ def _p16_info_metric_rows(
         ("used_memory", "bytes", "Valkey INFO did not include used_memory"),
         ("total_commands_processed", "count", "Valkey INFO did not include total_commands_processed"),
     ]:
-        value, missing = _p16_metric_value(info.get(name), reason)
+        value, missing = _telemetry_metric_value(info.get(name), reason)
         rows.append(
             telemetry.metric(
                 source_type="valkey_info",
@@ -5523,7 +5437,7 @@ def _p16_info_metric_rows(
                 metric_name=name,
                 metric_value=value,
                 metric_unit=unit,
-                labels=_p16_node_labels(node),
+                labels=_telemetry_node_labels(node),
                 missing_reason_text=missing,
             )
         )
@@ -5534,13 +5448,13 @@ def _p16_info_metric_rows(
             metric_name="valkey_info_sample",
             metric_value=True,
             metric_unit="status",
-            labels=_p16_node_labels(node),
+            labels=_telemetry_node_labels(node),
         )
     )
     return rows
 
 
-def _p16_cluster_info_metric_rows(
+def _telemetry_cluster_info_metric_rows(
     telemetry: TelemetryRun,
     logical_id: str,
     node: dict[str, Any],
@@ -5553,7 +5467,7 @@ def _p16_cluster_info_metric_rows(
         ("cluster_slots_assigned", "count", "CLUSTER INFO did not include cluster_slots_assigned"),
         ("cluster_slots_ok", "count", "CLUSTER INFO did not include cluster_slots_ok"),
     ]:
-        value, missing = _p16_metric_value(cluster_info.get(name), reason)
+        value, missing = _telemetry_metric_value(cluster_info.get(name), reason)
         rows.append(
             telemetry.metric(
                 source_type="cluster_info",
@@ -5561,21 +5475,21 @@ def _p16_cluster_info_metric_rows(
                 metric_name=name,
                 metric_value=value,
                 metric_unit=unit,
-                labels=_p16_node_labels(node),
+                labels=_telemetry_node_labels(node),
                 missing_reason_text=missing,
             )
         )
     return rows
 
 
-def _p16_cluster_nodes_metric_rows(
+def _telemetry_cluster_nodes_metric_rows(
     telemetry: TelemetryRun,
     logical_id: str,
     node: dict[str, Any],
     cluster_nodes_raw: str,
 ) -> list[dict[str, Any]]:
     role_counts = _cluster_nodes_role_counts(cluster_nodes_raw)
-    labels = _p16_node_labels(node)
+    labels = _telemetry_node_labels(node)
     return [
         telemetry.metric(
             source_type="cluster_nodes",
@@ -5620,13 +5534,13 @@ def _cluster_nodes_role_counts(cluster_nodes_raw: str) -> dict[str, int]:
     return counts
 
 
-def _p16_docker_metric_rows(
+def _telemetry_docker_metric_rows(
     telemetry: TelemetryRun,
     logical_id: str,
     node: dict[str, Any],
     stats: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    labels = _p16_node_labels(node)
+    labels = _telemetry_node_labels(node)
     if stats.get("status") != "PASS":
         return [
             telemetry.metric(
@@ -5656,10 +5570,10 @@ def _p16_docker_metric_rows(
     return rows
 
 
-def _write_p16_quant_summary(
+def _write_telemetry_quant_summary(
     path: Path,
     *,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     node_count: int,
@@ -5668,53 +5582,51 @@ def _write_p16_quant_summary(
     workload_windows: list[dict[str, Any]],
     sample_errors: list[dict[str, Any]],
 ) -> None:
-    is_p29 = phase == "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
     nonzero_windows = [
         window["window_name"]
         for window in workload_windows
         if int(window.get("metrics", {}).get("sample_count", 0)) > 0
     ]
     artifact_refs = [
-        f"artifacts/phases/{phase}/events.jsonl",
-        f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
-        f"artifacts/phases/{phase}/workload_windows.json",
-        f"artifacts/phases/{phase}/cleanup_report.json",
-        f"artifacts/phases/{phase}/valkey_e2e_evidence.json",
+        f"artifacts/captures/{capability_id}/events.jsonl",
+        f"artifacts/captures/{capability_id}/metrics_timeseries.jsonl",
+        f"artifacts/captures/{capability_id}/workload_windows.json",
+        f"artifacts/captures/{capability_id}/cleanup_report.json",
+        f"artifacts/captures/{capability_id}/valkey_e2e_evidence.json",
     ]
-    if is_p29:
-        artifact_refs.extend(
-            [
-                f"artifacts/phases/{phase}/coverage_ledger.json",
-                f"artifacts/phases/{phase}/telemetry_completeness_report.json",
-                f"artifacts/phases/{phase}/topology_snapshots.jsonl",
-            ]
-        )
+    artifact_refs.extend(
+        [
+            f"artifacts/captures/{capability_id}/coverage_ledger.json",
+            f"artifacts/captures/{capability_id}/telemetry_completeness_report.json",
+            f"artifacts/captures/{capability_id}/topology_snapshots.jsonl",
+        ]
+    )
     artifact = {
         "schema_version": "v1",
         "artifact_type": "quant_summary",
-        "phase_id": phase,
-        "stage_id": phase,
+        "capability_id": capability_id,
+
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if not sample_errors and nonzero_windows else "FAIL",
-        "summary": "P29 hardened strict telemetry collection with real 6-node Valkey collector smoke evidence and no large-scale matrix coverage claims." if is_p29 else "P16 emitted canonical events, metrics, workload windows, and summary telemetry for a real 6-node Valkey cluster.",
+        "summary": "Telemetry emitted canonical events, metrics, workload windows, topology, and completeness artifacts for a real six-node Valkey cluster.",
         "artifact_refs": artifact_refs,
         "missing_data": [
             {
                 "field": "management_operation_matrix",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P29 only hardens telemetry collector behavior; strict management matrix execution begins in P30." if is_p29 else "P16 only implements canonical telemetry; management operation execution begins in P17.",
+                "reason": "Telemetry collection does not own management operation execution.",
             },
             {
                 "field": "fault_matrix",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P29 only hardens telemetry collector behavior; strict fault/failover matrix execution begins in P33." if is_p29 else "P16 only implements canonical telemetry; fault and failover execution begins in later stages.",
+                "reason": "Telemetry collection does not own fault or failover execution.",
             },
             {
                 "field": "large_scale_matrix_coverage",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P29 is capped to a 6-node collector proof and leaves all 50/100/200 strict coverage rows PENDING." if is_p29 else "P16 is capped to a 6-node telemetry proof and makes no large-scale coverage claim.",
+                "reason": "The small-real profile is a six-node collector proof and makes no exact-scale admission claim.",
             },
         ],
         "runtime_claims": {
@@ -5737,55 +5649,53 @@ def _write_p16_quant_summary(
     path.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _write_p16_phase_summary(path: Path, *, phase: str, run_id: str, sample_errors: list[dict[str, Any]]) -> None:
-    is_p29 = phase == "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
+def _write_telemetry_run_summary(path: Path, *, capability_id: str, run_id: str, sample_errors: list[dict[str, Any]]) -> None:
     required_artifacts = [
-        f"artifacts/phases/{phase}/phase_summary.json",
-        f"artifacts/phases/{phase}/valkey_e2e_evidence.json",
-        f"artifacts/phases/{phase}/cleanup_report.json",
-        f"artifacts/phases/{phase}/events.jsonl",
-        f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
-        f"artifacts/phases/{phase}/workload_windows.json",
-        f"artifacts/phases/{phase}/quant_summary.json",
+        f"artifacts/captures/{capability_id}/run_summary.json",
+        f"artifacts/captures/{capability_id}/valkey_e2e_evidence.json",
+        f"artifacts/captures/{capability_id}/cleanup_report.json",
+        f"artifacts/captures/{capability_id}/events.jsonl",
+        f"artifacts/captures/{capability_id}/metrics_timeseries.jsonl",
+        f"artifacts/captures/{capability_id}/workload_windows.json",
+        f"artifacts/captures/{capability_id}/quant_summary.json",
     ]
-    if is_p29:
-        required_artifacts.extend(
-            [
-                f"artifacts/phases/{phase}/coverage_ledger.json",
-                f"artifacts/phases/{phase}/telemetry_completeness_report.json",
-                f"artifacts/phases/{phase}/topology_snapshots.jsonl",
-            ]
-        )
+    required_artifacts.extend(
+        [
+            f"artifacts/captures/{capability_id}/coverage_ledger.json",
+            f"artifacts/captures/{capability_id}/telemetry_completeness_report.json",
+            f"artifacts/captures/{capability_id}/topology_snapshots.jsonl",
+        ]
+    )
     artifact = {
         "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": phase,
-        "stage_id": phase,
+        "artifact_type": "run_summary",
+        "capability_id": capability_id,
+
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if not sample_errors else "FAIL",
-        "summary": "P29 hardened strict quantitative telemetry collectors and validators with a bounded 6-node real Valkey proof; all strict 50/100/200 matrix rows remain pending." if is_p29 else "P16 unified quantitative telemetry for real 6-node Valkey gate scenarios without implementing future management or fault behavior.",
+        "summary": "Telemetry produced quantitative collector and validator output for the real six-node small-real profile without claiming exact-scale admission.",
         "required_artifacts": required_artifacts,
         "missing_metrics": [
             {
                 "metric": "management_operation_timing",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P29 is the strict telemetry foundation stage; management operation timing is required in P30-P32." if is_p29 else "P16 is the telemetry foundation stage; management operation timing is required in P17-P19.",
-                "impact": "No management operation performance claim is made by P29." if is_p29 else "No management operation performance claim is made by P16.",
+                "reason": "Management operation timing belongs to the management matrix scenario.",
+                "impact": "No management operation performance claim is made by telemetry.",
             },
             {
                 "metric": "fault_or_failover_latency",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P29 is the strict telemetry foundation stage; fault and failover latency are required in P33-P35." if is_p29 else "P16 is the telemetry foundation stage; fault and failover latency are required in P20-P24.",
-                "impact": "No fault or failover performance claim is made by P29." if is_p29 else "No fault or failover performance claim is made by P16.",
+                "reason": "Fault and failover latency belongs to the fault matrix scenario.",
+                "impact": "No fault or failover performance claim is made by telemetry.",
             },
         ],
         "risks": [
             {
-                "risk": "P29 remains a 6-node collector proof; later strict stages must execute their own 50/100/200 real matrix coverage." if is_p29 else "P16 remains a 6-node smoke scenario; later stages must reuse these artifact shapes at larger scale.",
+                "risk": "The small-real telemetry profile does not replace exact 50, 100, or 200 real evidence.",
                 "severity": "medium",
-                "required_before_next_phase": False,
+                "required_before_next_capability": False,
             }
         ],
         "sample_errors": sample_errors,
@@ -5793,7 +5703,7 @@ def _write_p16_phase_summary(path: Path, *, phase: str, run_id: str, sample_erro
     path.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _p29_topology_snapshot_row(
+def _telemetry_topology_snapshot_row(
     telemetry: TelemetryRun,
     node: dict[str, Any],
     cluster_info: dict[str, str],
@@ -5805,8 +5715,8 @@ def _p29_topology_snapshot_row(
     return {
         "schema_version": "v1",
         "artifact_type": "topology_snapshot",
-        "phase_id": telemetry.phase_id,
-        "stage_id": telemetry.stage_id,
+        "capability_id": telemetry.capability_id,
+
         "coverage_id": telemetry.coverage_id,
         "scale": telemetry.scale if telemetry.scale is not None else MISSING,
         "node_count": telemetry.node_count if telemetry.node_count is not None else MISSING,
@@ -5833,7 +5743,7 @@ def _p29_topology_snapshot_row(
     }
 
 
-def _write_p29_coverage_ledger(path: Path) -> None:
+def _write_telemetry_coverage_ledger(path: Path) -> None:
     registry_path = Path("artifacts/coverage/strict_coverage_registry.json")
     if registry_path.exists():
         ledger = json.loads(registry_path.read_text(encoding="utf-8"))
@@ -5841,7 +5751,7 @@ def _write_p29_coverage_ledger(path: Path) -> None:
         ledger = {
             "schema_version": "v1",
             "artifact_type": "strict_coverage_registry",
-            "stage_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
             "source_spec_refs": ["schemas/scenario/gate_scenario.schema.json"],
@@ -5852,7 +5762,7 @@ def _write_p29_coverage_ledger(path: Path) -> None:
                 "counts_by_category": {"lifecycle": 1},
                 "counts_by_execution_mode": {"real": 1},
                 "counts_by_status": {"PENDING": 1},
-                "counts_by_stage_owner": {"P36_FULL_FLOW_E2E_50_100_200_REAL": 1},
+                "counts_by_capability_owner": {"local_full_flow": 1},
                 "real_rows_initial_status": "PENDING",
                 "dry_run_rows_initial_status": "PENDING",
                 "real_runtime_claimed": False,
@@ -5865,11 +5775,11 @@ def _write_p29_coverage_ledger(path: Path) -> None:
                     "node_count": 50,
                     "category": "lifecycle",
                     "row_name": "telemetry_collect",
-                    "stage_owner": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+                    "capability_owner": "local_full_flow",
                     "required": True,
                     "execution_mode": "real",
                     "status": "PENDING",
-                    "status_reason": "P29 validates collector readiness only; matrix coverage requires owning real stage evidence.",
+                    "status_reason": "Telemetry validates collector readiness only; matrix coverage requires owning real capability evidence.",
                     "source_artifacts": [],
                     "validation_artifacts": [],
                     "metric_refs": [],
@@ -5879,13 +5789,12 @@ def _write_p29_coverage_ledger(path: Path) -> None:
                 }
             ],
         }
-    ledger["stage_id"] = "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
     ledger["created_at"] = "2026-06-28T00:00:00Z"
     ledger.setdefault("producer", {})["name"] = "valkey-scale-lab"
     ledger.setdefault("producer", {})["version"] = __version__
     for row in ledger.get("rows", []):
         row["status"] = "PENDING"
-        row["status_reason"] = "P29 validates strict telemetry collector readiness only; this matrix row remains pending until its owning real or dry-run stage."
+        row["status_reason"] = "Telemetry validates strict telemetry collector readiness only; this matrix row remains pending until its owning real or dry-run capability."
         row["source_artifacts"] = []
         row["validation_artifacts"] = []
         row["metric_refs"] = []
@@ -5899,10 +5808,10 @@ def _write_p29_coverage_ledger(path: Path) -> None:
     path.write_text(json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _write_p29_telemetry_completeness_report(
+def _write_telemetry_completeness_report(
     path: Path,
     *,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     node_count: int,
@@ -5934,7 +5843,7 @@ def _write_p29_telemetry_completeness_report(
         blocking_findings.append({"status": "FAIL", "reason": "canonical workload window count mismatch"})
     source_artifacts = []
     for artifact_path in artifact_paths:
-        ref = f"artifacts/phases/{phase}/{artifact_path.name}"
+        ref = f"artifacts/captures/{capability_id}/{artifact_path.name}"
         if artifact_path.exists():
             source_artifacts.append({"path": ref, "sha256": _sha256_file(artifact_path), "status": "PASS"})
         else:
@@ -5942,8 +5851,8 @@ def _write_p29_telemetry_completeness_report(
     report = {
         "schema_version": "v1",
         "artifact_type": "telemetry_completeness_report",
-        "phase_id": phase,
-        "stage_id": phase,
+        "capability_id": capability_id,
+
         "run_id": run_id,
         "scenario_name": scenario,
         "created_at": "2026-06-28T00:00:00Z",
@@ -5951,7 +5860,7 @@ def _write_p29_telemetry_completeness_report(
         "status": "PASS" if not blocking_findings else "FAIL",
         "node_count": node_count,
         "scale": node_count,
-        "coverage_id": "p29.telemetry.strict_telemetry_small_real",
+        "coverage_id": "telemetry.telemetry.telemetry",
         "source_type_coverage": source_type_coverage,
         "schema_validations": [
             {"artifact": "events.jsonl", "schema": "schemas/artifact/scenario_event.schema.json", "status": "PASS", "line_count": len(events)},
@@ -5990,513 +5899,8 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-P17_REQUIRED_ROWS = [
-    ("remove_replica", 6),
-    ("remove_replica", 10),
-    ("remove_primary_drained", 6),
-    ("remove_primary_drained", 10),
-    ("remove_failed_node", 6),
-    ("remove_failed_node", 10),
-]
 
-
-def write_p17_management_remove_node_artifacts(
-    artifacts: Path,
-    phase: str,
-    scenario: str,
-    run_id: str,
-    config: dict[str, Any],
-    nodes: list[dict[str, Any]],
-) -> None:
-    artifacts.mkdir(parents=True, exist_ok=True)
-    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id)
-    events: list[dict[str, Any]] = [
-        telemetry.event(
-            "management_matrix_started",
-            subject_type="management_matrix",
-            subject_id=scenario,
-            message="P17 remove-node management matrix started.",
-            metadata={"required_rows": [{"operation_name": op, "node_count": count} for op, count in P17_REQUIRED_ROWS]},
-        )
-    ]
-    metric_rows: list[dict[str, Any]] = []
-    workload_windows: list[dict[str, Any]] = []
-    operation_rows: list[dict[str, Any]] = []
-    matrix_rows: list[dict[str, Any]] = []
-    topology_rows: list[dict[str, Any]] = []
-    command_log: list[dict[str, Any]] = []
-    cleanup_summaries: list[dict[str, Any]] = []
-
-    for row_index, (operation_name, node_count) in enumerate(P17_REQUIRED_ROWS):
-        row_config = _p17_config_for_node_count(config, node_count, row_index)
-        operation_id = f"{operation_name}-{node_count:02d}"
-        events.append(
-            telemetry.event(
-                "management_operation_started",
-                subject_type="management_operation",
-                subject_id=operation_name,
-                operation_id=operation_id,
-                message=f"P17 {operation_name} on {node_count} nodes started.",
-                metadata={"node_count": node_count},
-            )
-        )
-        row_result, row_events, row_metrics, row_windows, row_topology, row_commands, row_cleanup = _p17_run_management_row(
-            phase=phase,
-            parent_scenario=scenario,
-            parent_run_id=run_id,
-            artifacts=artifacts,
-            config=row_config,
-            operation_name=operation_name,
-            operation_id=operation_id,
-            node_count=node_count,
-            row_index=row_index,
-            telemetry=telemetry,
-        )
-        operation_rows.append(row_result)
-        matrix_rows.append(
-            {
-                "operation_name": operation_name,
-                "node_count": node_count,
-                "operation_status": row_result["operation_status"],
-                "workload_window_ref": row_result["workload_window_ref"],
-                "operation_id": operation_id,
-                "target_logical_id": row_result.get("target_logical_id", MISSING),
-                "real_execution_verified": row_result.get("real_execution_verified", False),
-            }
-        )
-        events.extend(row_events)
-        metric_rows.extend(row_metrics)
-        workload_windows.extend(row_windows)
-        topology_rows.extend(row_topology)
-        command_log.extend(row_commands)
-        cleanup_summaries.append(row_cleanup)
-        events.append(
-            telemetry.event(
-                "management_operation_finished",
-                subject_type="management_operation",
-                subject_id=operation_name,
-                operation_id=operation_id,
-                message=f"P17 {operation_name} on {node_count} nodes finished.",
-                metadata={
-                    "node_count": node_count,
-                    "status": row_result["operation_status"],
-                    "wall_ms": row_result["wall_ms"],
-                    "removed_node_absent": row_result.get("removed_node_absent", False),
-                },
-            )
-        )
-
-    events.append(
-        telemetry.event(
-            "management_matrix_finished",
-            subject_type="management_matrix",
-            subject_id=scenario,
-            message="P17 remove-node management matrix finished.",
-            metadata={"operation_count": len(operation_rows), "command_count": len(command_log)},
-        )
-    )
-
-    operation_rows = [_p30_strict_operation_row(row) for row in operation_rows]
-    workload_windows = [_p30_strict_workload_window(window) for window in workload_windows]
-    write_jsonl(artifacts / "events.jsonl", events)
-    write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
-    write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
-    write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(
-        artifacts / "management_topology_diffs.jsonl",
-        [
-            {
-                "schema_version": "v1",
-                "artifact_type": "management_topology_diff",
-                "phase_id": phase,
-                "run_id": run_id,
-                "operation_id": row["operation_id"],
-                "before_snapshot_ref": row.get("before_topology_snapshot_ref", row.get("topology_before_ref", MISSING)),
-                "after_snapshot_ref": row.get("after_topology_snapshot_ref", row.get("topology_after_ref", MISSING)),
-                "slot_diff": row.get("slot_diff", {}),
-                "role_diff": row.get("role_diff", {}),
-                "known_nodes_delta": row.get("topology_diff", {}).get("known_nodes_delta", 0) if isinstance(row.get("topology_diff"), dict) else 0,
-                "fail_pfail_handshake_delta": row.get("topology_diff", {}).get("fail_pfail_handshake_delta", {}) if isinstance(row.get("topology_diff"), dict) else {},
-                "changed_nodes": row.get("topology_diff", {}).get("changed_nodes", []) if isinstance(row.get("topology_diff"), dict) else [],
-                "moved_slots": row.get("topology_diff", {}).get("moved_slots", []) if isinstance(row.get("topology_diff"), dict) else [],
-                "status": "PASS" if row.get("operation_status") == "PASS" else "FAIL",
-            }
-            for row in operation_rows
-        ],
-    )
-    write_jsonl(artifacts / "management_command_log.jsonl", command_log)
-
-    workload_artifact = {
-        "schema_version": "v1",
-        "artifact_type": "workload_windows",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "scenario_name": scenario,
-        "status": "PASS" if all(window.get("status") == "PASS" for window in workload_windows) else "FAIL",
-        "windows": workload_windows,
-    }
-    (artifacts / "workload_windows.json").write_text(json.dumps(_p30_encode_missing(workload_artifact), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    matrix = {
-        "schema_version": "v1",
-        "artifact_type": "management_ops_matrix",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if all(row["operation_status"] == "PASS" for row in operation_rows) else "FAIL",
-        "operations": matrix_rows,
-        "required_rows": [{"operation_name": op, "node_count": count} for op, count in P17_REQUIRED_ROWS],
-    }
-    (artifacts / "management_ops_matrix.json").write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    impact = {
-        "schema_version": "v1",
-        "artifact_type": "workload_impact_report",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": workload_artifact["status"],
-        "windows": _p17_aggregate_workload_windows(workload_windows),
-        "comparisons": _p17_workload_comparisons(workload_windows),
-        "operation_window_count": len(workload_windows),
-    }
-    (artifacts / "management_workload_impact.json").write_text(json.dumps(impact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    quant_summary = {
-        "schema_version": "v1",
-        "artifact_type": "quant_summary",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if matrix["status"] == "PASS" and workload_artifact["status"] == "PASS" else "FAIL",
-        "summary": "P17 executed real remove-node management operations on 6-node and 10-node Valkey clusters with telemetry, workload, topology, command, and cleanup evidence.",
-        "artifact_refs": [
-            f"artifacts/phases/{phase}/events.jsonl",
-            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
-            f"artifacts/phases/{phase}/workload_windows.json",
-            f"artifacts/phases/{phase}/management_ops_matrix.json",
-            f"artifacts/phases/{phase}/management_operation_results.jsonl",
-            f"artifacts/phases/{phase}/management_workload_impact.json",
-            f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
-            f"artifacts/phases/{phase}/management_command_log.jsonl",
-        ],
-        "missing_data": [],
-        "runtime_claims": {
-            "real_valkey_claimed": True,
-            "management_runtime_claimed": True,
-            "fault_runtime_claimed": False,
-        },
-        "counts": {
-            "main_gate_node_count": len(nodes),
-            "operation_count": len(operation_rows),
-            "six_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 6),
-            "ten_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 10),
-            "event_count": len(events),
-            "metric_count": len(metric_rows),
-            "workload_window_count": len(workload_windows),
-            "topology_snapshot_count": len(topology_rows),
-            "command_log_count": len(command_log),
-        },
-        "cleanup_summaries": cleanup_summaries,
-    }
-    (artifacts / "quant_summary.json").write_text(json.dumps(quant_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    phase_summary = {
-        "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": quant_summary["status"],
-        "summary": "P17 implemented the remove-node management matrix with real Valkey 6-node and 10-node evidence, safe primary failover/removal, failed-node cleanup, workload impact windows, and command/topology traces.",
-        "required_artifacts": [
-            f"artifacts/phases/{phase}/phase_summary.json",
-            f"artifacts/phases/{phase}/valkey_e2e_evidence.json",
-            f"artifacts/phases/{phase}/cleanup_report.json",
-            f"artifacts/phases/{phase}/events.jsonl",
-            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
-            f"artifacts/phases/{phase}/workload_windows.json",
-            f"artifacts/phases/{phase}/quant_summary.json",
-            f"artifacts/phases/{phase}/management_ops_matrix.json",
-            f"artifacts/phases/{phase}/management_operation_results.jsonl",
-            f"artifacts/phases/{phase}/management_workload_impact.json",
-            f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
-            f"artifacts/phases/{phase}/management_command_log.jsonl",
-        ],
-        "missing_metrics": [],
-        "risks": [
-            {
-                "risk": "P17 uses bounded local 6-node and 10-node sidecar runs for operation rows while the wrapper independently probes the main 6-node cluster.",
-                "severity": "low",
-                "required_before_next_phase": False,
-            }
-        ],
-    }
-    (artifacts / "phase_summary.json").write_text(json.dumps(phase_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def _p17_config_for_node_count(base_config: dict[str, Any], node_count: int, row_index: int) -> dict[str, Any]:
-    if node_count == 6:
-        config = json.loads(json.dumps(base_config))
-    elif node_count == 10:
-        config = normalize_config(parse_config_file(Path("templates/configs/scale_10.yaml")))
-    else:
-        raise DockerRuntimeError(f"P17 unsupported node_count={node_count}")
-    shards = int(config["cluster"]["shards"])
-    replicas = int(config["cluster"]["replicas_per_shard"])
-    if shards * (1 + replicas) != node_count:
-        raise DockerRuntimeError(f"P17 config produced {shards * (1 + replicas)} nodes, expected {node_count}")
-    port_base = 7300 + row_index * 40
-    config["cluster"]["port_base"] = port_base
-    config["cluster"]["cluster_bus_port_base"] = port_base + 10000
-    config["cluster"]["node_memory_limit_mb"] = min(int(config["cluster"].get("node_memory_limit_mb") or 128), 128)
-    config["profile_name"] = f"p17_{node_count}_node_row_{row_index}"
-    return config
-
-
-def _p17_run_management_row(
-    *,
-    phase: str,
-    parent_scenario: str,
-    parent_run_id: str,
-    artifacts: Path,
-    config: dict[str, Any],
-    operation_name: str,
-    operation_id: str,
-    node_count: int,
-    row_index: int,
-    telemetry: TelemetryRun,
-) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-    side_scenario = f"{parent_scenario}_{operation_name}_{node_count}"
-    side_run_id = f"{parent_run_id}-{operation_name}-{node_count}"
-    nodes = _node_specs(config, phase, side_scenario, side_run_id)
-    ports = [node["client_port"] for node in nodes]
-    network_name = _network_name(phase, side_scenario)
-    cleanup_path = artifacts / f"sidecar_cleanup_{operation_id}.json"
-    state_path = artifacts / f"sidecar_state_{operation_id}.json"
-    events: list[dict[str, Any]] = []
-    metric_rows: list[dict[str, Any]] = []
-    topology_rows: list[dict[str, Any]] = []
-    command_log: list[dict[str, Any]] = []
-    started_ms = telemetry.now_unix_ms()
-    started_mono = time.monotonic()
-    state: dict[str, Any] | None = None
-
-    try:
-        _check_ports_free(ports)
-        cleanup_by_label(phase=phase, run_id=side_run_id)
-        run_docker(
-            [
-                "network",
-                "create",
-                "--label",
-                f"{LABEL_PREFIX}.project={PROJECT}",
-                "--label",
-                f"{LABEL_PREFIX}.phase={phase}",
-                "--label",
-                f"{LABEL_PREFIX}.run_id={side_run_id}",
-                network_name,
-            ],
-            timeout=120,
-        )
-        for node in nodes:
-            container_id = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, side_scenario, side_run_id)
-            node["container_id"] = container_id
-            node["pid"] = _container_pid(container_id)
-            node["container_ip"] = _container_ip(container_id, network_name)
-        state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, nodes)
-        _write_state(state_path, state)
-        _configure_cluster(nodes)
-        _p17_wait_clean_cluster(nodes, timeout=120.0)
-        topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "before", nodes, nodes))
-        result, row_events, row_metrics, row_windows, during_topology = _p17_run_operation_with_workload(
-            telemetry=telemetry,
-            phase=phase,
-            parent_run_id=parent_run_id,
-            operation_name=operation_name,
-            operation_id=operation_id,
-            node_count=node_count,
-            nodes=nodes,
-            command_log=command_log,
-        )
-        events.extend(row_events)
-        metric_rows.extend(row_metrics)
-        topology_rows.extend(during_topology)
-        topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "after", result["survivors"], nodes))
-        cleanup_report = cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
-        result["sidecar_cleanup_status"] = cleanup_report.get("status", MISSING)
-        result["sidecar_cleanup_report"] = cleanup_path.as_posix()
-        result["removed_resource_cleanup"] = result.get("removed_resource_cleanup", {}) | {
-            "sidecar_cleanup_status": cleanup_report.get("status", MISSING),
-            "sidecar_resources_remaining": cleanup_report.get("resources_remaining", MISSING),
-        }
-        result.pop("survivors", None)
-        result["started_at_unix_ms"] = started_ms
-        result["ended_at_unix_ms"] = telemetry.now_unix_ms()
-        result["wall_ms"] = round(max(time.monotonic() - started_mono, 0.0) * 1000.0, 6)
-        return result, events, metric_rows, row_windows, topology_rows, command_log, _p17_cleanup_summary(operation_id, cleanup_report)
-    except Exception:
-        if state is None:
-            started_nodes = [node for node in nodes if "container_id" in node]
-            state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, started_nodes)
-            _write_state(state_path, state)
-        cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
-        raise
-
-
-def _p17_run_operation_with_workload(
-    *,
-    telemetry: TelemetryRun,
-    phase: str,
-    parent_run_id: str,
-    operation_name: str,
-    operation_id: str,
-    node_count: int,
-    nodes: list[dict[str, Any]],
-    command_log: list[dict[str, Any]],
-) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    events: list[dict[str, Any]] = []
-    metric_rows: list[dict[str, Any]] = []
-    windows: list[dict[str, Any]] = []
-    topology_rows: list[dict[str, Any]] = []
-    operation_result: dict[str, Any] | None = None
-    all_latencies: list[float] = []
-    all_errors: list[str] = []
-    all_started = time.monotonic()
-    all_start = telemetry.event(
-        "workload_window_started",
-        subject_type="workload_window",
-        subject_id=f"{operation_id}:all_run",
-        operation_id=operation_id,
-        message="All-run workload window started for P17 operation.",
-        metadata={"window_name": "all_run", "operation_id": operation_id, "node_count": node_count},
-    )
-    events.append(all_start)
-
-    def cluster_command(*args: Any, timeout: int = 10) -> str:
-        live_nodes = operation_result.get("survivors", nodes) if operation_result else nodes
-        return run_node_cluster_cli(live_nodes[0], *args, timeout=timeout)
-
-    for window_name in CANONICAL_WINDOWS[:-1]:
-        start_event = telemetry.event(
-            "workload_window_started",
-            subject_type="workload_window",
-            subject_id=f"{operation_id}:{window_name}",
-            operation_id=operation_id,
-            message=f"{window_name} workload window started for P17 operation.",
-            metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count},
-        )
-        events.append(start_event)
-        window_started = time.monotonic()
-        latencies_ms: list[float] = []
-        errors: list[str] = []
-        for op_index in range(4):
-            if window_name == "event" and op_index == 1 and operation_result is None:
-                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_before_command", nodes, nodes))
-                op_started = time.monotonic()
-                operation_result = _p17_execute_remove_operation(
-                    telemetry=telemetry,
-                    phase=phase,
-                    parent_run_id=parent_run_id,
-                    operation_name=operation_name,
-                    operation_id=operation_id,
-                    node_count=node_count,
-                    nodes=nodes,
-                    command_log=command_log,
-                )
-                operation_result["command_ms"] = round(max(time.monotonic() - op_started, 0.0) * 1000.0, 6)
-                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_after_command", operation_result["survivors"], nodes))
-            op_type = "SET" if op_index % 3 == 0 else "GET"
-            key = f"{{vslab-p17}}:{operation_id}:{window_name}:{op_index % 3}"
-            value = f"value-{operation_id}-{window_name}-{op_index}"
-            op_started = time.monotonic()
-            try:
-                result = cluster_command(op_type, key, value, timeout=10) if op_type == "SET" else cluster_command(op_type, key, timeout=10)
-                if op_type == "SET" and str(result).upper() != "OK":
-                    errors.append(f"SET unexpected result {result!r}")
-                else:
-                    latencies_ms.append((time.monotonic() - op_started) * 1000.0)
-            except Exception as exc:  # noqa: BLE001
-                errors.append(repr(exc))
-        metrics = workload_metrics(
-            requested_qps=200.0,
-            duration_seconds=max(time.monotonic() - window_started, 0.000001),
-            latencies_ms=latencies_ms,
-            error_texts=errors,
-        )
-        end_event = telemetry.event(
-            "workload_window_finished",
-            subject_type="workload_window",
-            subject_id=f"{operation_id}:{window_name}",
-            operation_id=operation_id,
-            message=f"{window_name} workload window finished for P17 operation.",
-            metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": metrics["sample_count"]},
-        )
-        events.append(end_event)
-        windows.append(
-            {
-                "window_name": window_name,
-                "start_event_id": start_event["event_id"],
-                "end_event_id": end_event["event_id"],
-                "status": "PASS" if not errors else "FAIL",
-                "operation_id": operation_id,
-                "node_count": node_count,
-                "metrics": metrics,
-            }
-        )
-        metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, metrics))
-        all_latencies.extend(latencies_ms)
-        all_errors.extend(errors)
-
-    if operation_result is None:
-        operation_result = _p17_execute_remove_operation(
-            telemetry=telemetry,
-            phase=phase,
-            parent_run_id=parent_run_id,
-            operation_name=operation_name,
-            operation_id=operation_id,
-            node_count=node_count,
-            nodes=nodes,
-            command_log=command_log,
-        )
-    all_metrics = workload_metrics(
-        requested_qps=200.0,
-        duration_seconds=max(time.monotonic() - all_started, 0.000001),
-        latencies_ms=all_latencies,
-        error_texts=all_errors,
-    )
-    all_end = telemetry.event(
-        "workload_window_finished",
-        subject_type="workload_window",
-        subject_id=f"{operation_id}:all_run",
-        operation_id=operation_id,
-        message="All-run workload window finished for P17 operation.",
-        metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]},
-    )
-    events.append(all_end)
-    windows.append(
-        {
-            "window_name": "all_run",
-            "start_event_id": all_start["event_id"],
-            "end_event_id": all_end["event_id"],
-            "status": "PASS" if not all_errors else "FAIL",
-            "operation_id": operation_id,
-            "node_count": node_count,
-            "metrics": all_metrics,
-        }
-    )
-    metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
-    operation_result["workload_window_ref"] = f"{operation_id}:event"
-    return operation_result, events, metric_rows, windows, topology_rows
-
-
-def _p17_workload_metric_rows(
+def _management_workload_metric_rows(
     telemetry: TelemetryRun,
     operation_id: str,
     window_name: str,
@@ -6521,94 +5925,8 @@ def _p17_workload_metric_rows(
     return rows
 
 
-def _p17_execute_remove_operation(
-    *,
-    telemetry: TelemetryRun,
-    phase: str,
-    parent_run_id: str,
-    operation_name: str,
-    operation_id: str,
-    node_count: int,
-    nodes: list[dict[str, Any]],
-    command_log: list[dict[str, Any]],
-) -> dict[str, Any]:
-    primaries = [node for node in nodes if node["role"] == "primary"]
-    replicas = [node for node in nodes if node["role"] == "replica"]
-    before = _p17_cluster_health(nodes)
-    if before["cluster_state"] != "ok" or before["slots_assigned"] != 16384 or before["slots_ok"] != 16384 or before["slots_fail"] != 0:
-        raise DockerRuntimeError(f"P17 operation requires clean cluster before removal; operation_id={operation_id} before={before}")
-    convergence_started = time.monotonic()
-    if operation_name == "remove_replica":
-        target = replicas[0]
-        survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
-        details = _p17_stop_forget_and_remove(telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, target=target, survivors=survivors, expected_primaries=len(primaries), expected_replicas=len(replicas) - 1, command_log=command_log, reason="remove live replica after owned container stop")
-        safe_path = "stop_replica_then_cluster_forget_from_survivors"
-    elif operation_name == "remove_failed_node":
-        target = replicas[-1]
-        survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
-        details = _p17_stop_forget_and_remove(telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, target=target, survivors=survivors, expected_primaries=len(primaries), expected_replicas=len(replicas) - 1, command_log=command_log, reason="owned failed replica stop then metadata removal")
-        safe_path = "owned_failed_replica_stop_then_cluster_forget_from_survivors"
-    elif operation_name == "remove_primary_drained":
-        target = primaries[0]
-        replacement = next(replica for replica in replicas if replica["shard_id"] == target["shard_id"])
-        _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="cluster_failover_takeover", target=replacement, args=["CLUSTER", "FAILOVER", "TAKEOVER"], timeout=60)
-        _p17_wait_node_role(replacement, "master", timeout=90.0)
-        survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
-        details = _p17_stop_forget_and_remove(telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, target=target, survivors=survivors, expected_primaries=len(primaries), expected_replicas=len(replicas) - 1, command_log=command_log, reason="controlled replica takeover before old primary removal")
-        details["replacement_logical_id"] = replacement["logical_id"]
-        safe_path = "cluster_failover_takeover_then_forget_old_primary"
-    else:
-        raise DockerRuntimeError(f"unsupported P17 operation {operation_name}")
 
-    convergence_ms = round(max(time.monotonic() - convergence_started, 0.0) * 1000.0, 6)
-    after = _p17_cluster_health(details["survivors"])
-    errors_by_type = _p17_errors_by_type(command_log, operation_id)
-    removed_absent = _p17_removed_absent(details["survivors"], str(details["removed_node_id"]))
-    pass_status = (
-        removed_absent
-        and before["cluster_state"] == "ok"
-        and before["slots_assigned"] == 16384
-        and after["cluster_state"] == "ok"
-        and after["slots_assigned"] == 16384
-        and after["slots_ok"] == 16384
-        and after["slots_fail"] == 0
-        and details["removed_resource_cleanup"]["status"] == "PASS"
-        and not any(value for value in errors_by_type.values())
-    )
-    return {
-        "schema_version": "v1",
-        "phase_id": phase,
-        "operation_name": operation_name,
-        "operation_id": operation_id,
-        "node_count": node_count,
-        "operation_status": "PASS" if pass_status else "FAIL",
-        "started_at_unix_ms": telemetry.now_unix_ms(),
-        "ended_at_unix_ms": telemetry.now_unix_ms(),
-        "wall_ms": MISSING,
-        "command_ms": MISSING,
-        "convergence_ms": convergence_ms,
-        "cluster_state_before": before["cluster_state"],
-        "cluster_state_after": after["cluster_state"],
-        "slots_before": before["slots_assigned"],
-        "slots_after": after["slots_assigned"],
-        "workload_window_ref": f"{operation_id}:event",
-        "errors_by_type": errors_by_type,
-        "missing_fields": [],
-        "real_execution_verified": pass_status,
-        "safe_path": safe_path,
-        "target_logical_id": details["target_logical_id"],
-        "target_role": details["target_role"],
-        "removed_node_id": details["removed_node_id"],
-        "removed_node_absent": removed_absent,
-        "removed_resource_cleanup": details["removed_resource_cleanup"],
-        "expected_nodes_after": node_count - 1,
-        "observed_nodes_after": after["known_nodes"],
-        "role_counts_after": {"primary": after["primary_count"], "replica": after["replica_count"]},
-        "survivors": details["survivors"],
-    }
-
-
-def _p17_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) -> None:
+def _management_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) -> None:
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
     _wait_cluster_known(nodes, expected=len(nodes), timeout=timeout, final_check=True)
@@ -6617,44 +5935,11 @@ def _p17_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) -> None
     _wait_cluster_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, final_check=True)
 
 
-def _p17_stop_forget_and_remove(
+
+def _management_forget_until_absent(
     *,
     telemetry: TelemetryRun,
-    phase: str,
-    parent_run_id: str,
-    operation_id: str,
-    target: dict[str, Any],
-    survivors: list[dict[str, Any]],
-    expected_primaries: int,
-    expected_replicas: int,
-    command_log: list[dict[str, Any]],
-    reason: str,
-) -> dict[str, Any]:
-    removed_id = _node_command(target, "CLUSTER", "MYID", timeout=30).strip()
-    _p17_log_docker_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="owned_container_stop", target=target, args=["stop", "-t", "2", target["container_name"]], timeout=30)
-    _p17_wait_target_unreachable(target, timeout=20.0)
-    _p17_forget_until_absent(telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, survivors=survivors, removed_id=removed_id, expected_nodes=len(survivors), expected_primaries=expected_primaries, expected_replicas=expected_replicas, command_log=command_log)
-    rm_result = _p17_log_docker_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="owned_removed_node_container_rm", target=target, args=["rm", "-f", target["container_name"]], timeout=30)
-    inspect = run_docker(["ps", "-a", "-q", "--filter", f"name=^{target['container_name']}$"], timeout=30, check=False)
-    cleanup = {
-        "status": "PASS" if rm_result.get("status") == "PASS" and not inspect.stdout.strip() else "FAIL",
-        "target_container_name": target["container_name"],
-        "target_logical_id": target["logical_id"],
-        "reason": reason,
-    }
-    return {
-        "target_logical_id": target["logical_id"],
-        "target_role": target["role"],
-        "removed_node_id": removed_id,
-        "survivors": survivors,
-        "removed_resource_cleanup": cleanup,
-    }
-
-
-def _p17_forget_until_absent(
-    *,
-    telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     parent_run_id: str,
     operation_id: str,
     survivors: list[dict[str, Any]],
@@ -6669,11 +5954,11 @@ def _p17_forget_until_absent(
     while time.monotonic() < deadline:
         for survivor in survivors:
             try:
-                if _p17_cluster_nodes_contains(survivor, removed_id):
-                    _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="cluster_forget_removed_node", target=survivor, args=["CLUSTER", "FORGET", removed_id], timeout=30)
+                if _management_cluster_nodes_contains(survivor, removed_id):
+                    _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="cluster_forget_removed_node", target=survivor, args=["CLUSTER", "FORGET", removed_id], timeout=30)
             except Exception:
                 pass
-        health = _p17_cluster_health(survivors)
+        health = _management_cluster_health(survivors)
         last_health = health
         if (
             health["cluster_state"] == "ok"
@@ -6683,37 +5968,27 @@ def _p17_forget_until_absent(
             and health["slots_assigned"] == 16384
             and health["slots_ok"] == 16384
             and health["slots_fail"] == 0
-            and _p17_removed_absent(survivors, removed_id)
+            and _management_removed_absent(survivors, removed_id)
         ):
             return
         time.sleep(2)
-    raise DockerRuntimeError(f"P17 removed node did not converge absent; removed_id={removed_id} last_health={last_health}")
+    raise DockerRuntimeError(f"MANAGEMENT_MATRIX removed node did not converge absent; removed_id={removed_id} last_health={last_health}")
 
 
-def _p17_cluster_nodes_contains(node: dict[str, Any], node_id: str) -> bool:
+def _management_cluster_nodes_contains(node: dict[str, Any], node_id: str) -> bool:
     text = _node_command(node, "CLUSTER", "NODES", timeout=5)
     return any(line.startswith(node_id + " ") for line in text.splitlines())
 
 
-def _p17_removed_absent(nodes: list[dict[str, Any]], removed_id: str) -> bool:
+def _management_removed_absent(nodes: list[dict[str, Any]], removed_id: str) -> bool:
     for node in nodes:
-        if _p17_cluster_nodes_contains(node, removed_id):
+        if _management_cluster_nodes_contains(node, removed_id):
             return False
     return True
 
 
-def _p17_wait_target_unreachable(target: dict[str, Any], timeout: float) -> None:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        try:
-            _node_command(target, "PING", timeout=1.0)
-        except Exception:
-            return
-        time.sleep(0.5)
-    raise DockerRuntimeError(f"P17 target remained reachable after stop: {target['logical_id']}")
 
-
-def _p17_wait_node_role(node: dict[str, Any], role_flag: str, timeout: float) -> None:
+def _management_wait_node_role(node: dict[str, Any], role_flag: str, timeout: float) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         text = _node_command(node, "CLUSTER", "NODES", timeout=5)
@@ -6722,10 +5997,10 @@ def _p17_wait_node_role(node: dict[str, Any], role_flag: str, timeout: float) ->
             if len(parts) >= 8 and "myself" in parts[2].split(",") and role_flag in parts[2].split(",") and parts[7] == "connected":
                 return
         time.sleep(1)
-    raise DockerRuntimeError(f"P17 node {node['logical_id']} did not reach role flag {role_flag}")
+    raise DockerRuntimeError(f"MANAGEMENT_MATRIX node {node['logical_id']} did not reach role flag {role_flag}")
 
 
-def _p17_cluster_health(nodes: list[dict[str, Any]]) -> dict[str, Any]:
+def _management_cluster_health(nodes: list[dict[str, Any]]) -> dict[str, Any]:
     snapshots = [_process_node_snapshot(node) for node in nodes]
     return {
         "cluster_state": "ok" if snapshots and all(snap["cluster_state"] == "ok" for snap in snapshots) else "unknown",
@@ -6739,24 +6014,24 @@ def _p17_cluster_health(nodes: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _p17_topology_snapshot(
+def _management_topology_snapshot(
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     label: str,
     probe_nodes: list[dict[str, Any]],
     all_nodes: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    health = _p17_cluster_health(probe_nodes)
+    health = _management_cluster_health(probe_nodes)
     try:
         text = _node_command(probe_nodes[0], "CLUSTER", "NODES", timeout=5)
-        parsed_nodes = _p17_parse_cluster_nodes_text(text, all_nodes)
+        parsed_nodes = _management_parse_cluster_nodes_text(text, all_nodes)
     except Exception as exc:  # noqa: BLE001
         parsed_nodes = [{"status": MISSING, "reason": repr(exc)}]
     return {
         "schema_version": "v1",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "snapshot_id": f"{operation_id}-{label}",
         "timestamp_unix_ms": telemetry.now_unix_ms(),
@@ -6775,7 +6050,7 @@ def _p17_topology_snapshot(
     }
 
 
-def _p17_parse_cluster_nodes_text(text: str, all_nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _management_parse_cluster_nodes_text(text: str, all_nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for line in text.splitlines():
         parts = line.split()
@@ -6806,11 +6081,11 @@ def _p17_parse_cluster_nodes_text(text: str, all_nodes: list[dict[str, Any]]) ->
     return rows
 
 
-def _p17_log_node_command(
+def _management_log_node_command(
     command_log: list[dict[str, Any]],
     *,
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     parent_run_id: str,
     operation_id: str,
     command_kind: str,
@@ -6830,7 +6105,7 @@ def _p17_log_node_command(
         status = "FAIL"
     entry = {
         "schema_version": "v1",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": parent_run_id,
         "command_id": command_id,
         "operation_id": operation_id,
@@ -6845,15 +6120,15 @@ def _p17_log_node_command(
     }
     command_log.append(entry)
     if status == "FAIL":
-        raise DockerRuntimeError(f"P17 command failed {command_kind} target={target.get('logical_id')}: {stderr}")
+        raise DockerRuntimeError(f"MANAGEMENT_MATRIX command failed {command_kind} target={target.get('logical_id')}: {stderr}")
     return entry
 
 
-def _p17_log_docker_command(
+def _management_log_docker_command(
     command_log: list[dict[str, Any]],
     *,
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     parent_run_id: str,
     operation_id: str,
     command_kind: str,
@@ -6866,7 +6141,7 @@ def _p17_log_docker_command(
     result = run_docker(args, timeout=timeout, check=False)
     entry = {
         "schema_version": "v1",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": parent_run_id,
         "command_id": command_id,
         "operation_id": operation_id,
@@ -6882,11 +6157,11 @@ def _p17_log_docker_command(
     }
     command_log.append(entry)
     if result.returncode != 0:
-        raise DockerRuntimeError(f"P17 docker command failed {command_kind}: {result.stderr.strip()}")
+        raise DockerRuntimeError(f"MANAGEMENT_MATRIX docker command failed {command_kind}: {result.stderr.strip()}")
     return entry
 
 
-def _p17_errors_by_type(command_log: list[dict[str, Any]], operation_id: str) -> dict[str, int]:
+def _management_errors_by_type(command_log: list[dict[str, Any]], operation_id: str) -> dict[str, int]:
     errors = [row.get("stderr_tail", "") for row in command_log if row.get("operation_id") == operation_id and row.get("status") == "FAIL"]
     counts = {"command_error": len(errors), "timeout": 0, "cluster_unavailable": 0, "cleanup_error": 0, "unknown": 0}
     for text in errors:
@@ -6902,16 +6177,16 @@ def _p17_errors_by_type(command_log: list[dict[str, Any]], operation_id: str) ->
     return counts
 
 
-def _p17_aggregate_workload_windows(windows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _management_aggregate_workload_windows(windows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for window_name in CANONICAL_WINDOWS:
         matching = [window for window in windows if window.get("window_name") == window_name]
         if matching:
-            rows.append({"window_name": window_name, "operation_count": len(matching), "metrics": _p17_merge_workload_metrics([window.get("metrics", {}) for window in matching])})
+            rows.append({"window_name": window_name, "operation_count": len(matching), "metrics": _management_merge_workload_metrics([window.get("metrics", {}) for window in matching])})
     return rows
 
 
-def _p17_merge_workload_metrics(metric_items: list[dict[str, Any]]) -> dict[str, Any]:
+def _management_merge_workload_metrics(metric_items: list[dict[str, Any]]) -> dict[str, Any]:
     latencies_p50 = [float(item["latency_p50_ms"]) for item in metric_items if isinstance(item.get("latency_p50_ms"), (int, float))]
     latencies_p95 = [float(item["latency_p95_ms"]) for item in metric_items if isinstance(item.get("latency_p95_ms"), (int, float))]
     latencies_p99 = [float(item["latency_p99_ms"]) for item in metric_items if isinstance(item.get("latency_p99_ms"), (int, float))]
@@ -6962,8 +6237,8 @@ def _p17_merge_workload_metrics(metric_items: list[dict[str, Any]]) -> dict[str,
     }
 
 
-def _p17_workload_comparisons(windows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    by_name = {row["window_name"]: row["metrics"] for row in _p17_aggregate_workload_windows(windows)}
+def _management_workload_comparisons(windows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_name = {row["window_name"]: row["metrics"] for row in _management_aggregate_workload_windows(windows)}
     baseline = by_name.get("baseline", {})
     event = by_name.get("event", {})
     comparisons: list[dict[str, Any]] = []
@@ -6977,375 +6252,12 @@ def _p17_workload_comparisons(windows: list[dict[str, Any]]) -> list[dict[str, A
     return comparisons
 
 
-def _p17_cleanup_summary(operation_id: str, cleanup_report: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "operation_id": operation_id,
-        "status": cleanup_report.get("status", MISSING),
-        "resources_remaining": cleanup_report.get("resources_remaining", MISSING),
-        "cleanup_action_count": len(cleanup_report.get("cleanup_actions", [])),
-    }
 
 
-P18_REQUIRED_ROWS = [
-    ("reshard_slot_range", 6),
-    ("reshard_slot_range", 10),
-    ("reshard_with_keys", 6),
-    ("reshard_with_keys", 10),
-    ("rebalance_after_imbalance", 6),
-    ("rebalance_after_imbalance", 10),
-]
-
-
-def write_p18_management_reshard_rebalance_artifacts(
-    artifacts: Path,
-    phase: str,
-    scenario: str,
-    run_id: str,
-    config: dict[str, Any],
-    nodes: list[dict[str, Any]],
-) -> None:
-    artifacts.mkdir(parents=True, exist_ok=True)
-    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id)
-    events = [
-        telemetry.event(
-            "management_matrix_started",
-            subject_type="management_matrix",
-            subject_id=scenario,
-            message="P18 reshard/rebalance management matrix started.",
-            metadata={"required_rows": [{"operation_name": op, "node_count": count} for op, count in P18_REQUIRED_ROWS]},
-        )
-    ]
-    metric_rows: list[dict[str, Any]] = []
-    workload_windows: list[dict[str, Any]] = []
-    operation_rows: list[dict[str, Any]] = []
-    matrix_rows: list[dict[str, Any]] = []
-    topology_rows: list[dict[str, Any]] = []
-    command_log: list[dict[str, Any]] = []
-    slot_movements: list[dict[str, Any]] = []
-    rebalance_rows: list[dict[str, Any]] = []
-    cleanup_summaries: list[dict[str, Any]] = []
-
-    for row_index, (operation_name, node_count) in enumerate(P18_REQUIRED_ROWS):
-        operation_id = f"{operation_name}-{node_count:02d}"
-        row_result, row_events, row_metrics, row_windows, row_topology, row_commands, row_movements, row_rebalance, row_cleanup = _p18_run_management_row(
-            phase=phase,
-            parent_scenario=scenario,
-            parent_run_id=run_id,
-            artifacts=artifacts,
-            config=_p18_config_for_node_count(config, node_count, row_index),
-            operation_name=operation_name,
-            operation_id=operation_id,
-            node_count=node_count,
-            row_index=row_index,
-            telemetry=telemetry,
-        )
-        operation_rows.append(row_result)
-        matrix_rows.append(
-            {
-                "operation_name": operation_name,
-                "node_count": node_count,
-                "operation_status": row_result["operation_status"],
-                "workload_window_ref": row_result["workload_window_ref"],
-                "operation_id": operation_id,
-                "real_execution_verified": row_result.get("real_execution_verified", False),
-                "slots_moved": row_result.get("slots_moved", MISSING),
-            }
-        )
-        events.extend(row_events)
-        metric_rows.extend(row_metrics)
-        workload_windows.extend(row_windows)
-        topology_rows.extend(row_topology)
-        command_log.extend(row_commands)
-        slot_movements.extend(row_movements)
-        if row_rebalance:
-            rebalance_rows.append(row_rebalance)
-        cleanup_summaries.append(row_cleanup)
-
-    events.append(
-        telemetry.event(
-            "management_matrix_finished",
-            subject_type="management_matrix",
-            subject_id=scenario,
-            message="P18 reshard/rebalance management matrix finished.",
-            metadata={"operation_count": len(operation_rows), "slot_movement_count": len(slot_movements)},
-        )
-    )
-    write_jsonl(artifacts / "events.jsonl", events)
-    write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
-    write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
-    write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
-    write_jsonl(artifacts / "management_command_log.jsonl", command_log)
-    write_jsonl(artifacts / "reshard_slot_movements.jsonl", slot_movements)
-
-    workload_artifact = {
-        "schema_version": "v1",
-        "artifact_type": "workload_windows",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "scenario_name": scenario,
-        "status": "PASS" if all(window.get("status") == "PASS" for window in workload_windows) else "FAIL",
-        "windows": workload_windows,
-    }
-    (artifacts / "workload_windows.json").write_text(json.dumps(workload_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    matrix = {
-        "schema_version": "v1",
-        "artifact_type": "management_ops_matrix",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if all(row["operation_status"] == "PASS" for row in operation_rows) else "FAIL",
-        "operations": matrix_rows,
-        "required_rows": [{"operation_name": op, "node_count": count} for op, count in P18_REQUIRED_ROWS],
-    }
-    (artifacts / "management_ops_matrix.json").write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    impact = {
-        "schema_version": "v1",
-        "artifact_type": "workload_impact_report",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": workload_artifact["status"],
-        "windows": _p17_aggregate_workload_windows(workload_windows),
-        "comparisons": _p17_workload_comparisons(workload_windows),
-    }
-    (artifacts / "management_workload_impact.json").write_text(json.dumps(impact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    rebalance_summary = _p18_rebalance_summary(phase, run_id, rebalance_rows, slot_movements)
-    (artifacts / "rebalance_summary.json").write_text(json.dumps(rebalance_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    quant_summary = {
-        "schema_version": "v1",
-        "artifact_type": "quant_summary",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if matrix["status"] == "PASS" and workload_artifact["status"] == "PASS" and rebalance_summary["status"] == "PASS" else "FAIL",
-        "summary": "P18 executed real reshard and rebalance operations on 6-node and 10-node Valkey clusters with slot movement, key verification, workload, topology, command, and cleanup evidence.",
-        "artifact_refs": [
-            f"artifacts/phases/{phase}/events.jsonl",
-            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
-            f"artifacts/phases/{phase}/workload_windows.json",
-            f"artifacts/phases/{phase}/management_ops_matrix.json",
-            f"artifacts/phases/{phase}/management_operation_results.jsonl",
-            f"artifacts/phases/{phase}/management_workload_impact.json",
-            f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
-            f"artifacts/phases/{phase}/management_command_log.jsonl",
-            f"artifacts/phases/{phase}/reshard_slot_movements.jsonl",
-            f"artifacts/phases/{phase}/rebalance_summary.json",
-        ],
-        "missing_data": [],
-        "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": True, "fault_runtime_claimed": False},
-        "counts": {
-            "main_gate_node_count": len(nodes),
-            "operation_count": len(operation_rows),
-            "six_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 6),
-            "ten_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 10),
-            "slot_movement_count": len(slot_movements),
-            "rebalance_operation_count": len(rebalance_rows),
-            "event_count": len(events),
-            "metric_count": len(metric_rows),
-            "workload_window_count": len(workload_windows),
-            "topology_snapshot_count": len(topology_rows),
-            "command_log_count": len(command_log),
-        },
-        "cleanup_summaries": cleanup_summaries,
-    }
-    (artifacts / "quant_summary.json").write_text(json.dumps(quant_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    phase_summary = {
-        "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": quant_summary["status"],
-        "summary": "P18 implemented real reshard and rebalance management rows with positive slot movement, moved-key verification, imbalance reduction, workload impact, and cleanup evidence.",
-        "required_artifacts": [f"artifacts/phases/{phase}/{name}" for name in [
-            "phase_summary.json", "valkey_e2e_evidence.json", "cleanup_report.json", "events.jsonl", "metrics_timeseries.jsonl",
-            "workload_windows.json", "quant_summary.json", "management_ops_matrix.json", "management_operation_results.jsonl",
-            "management_workload_impact.json", "management_topology_snapshots.jsonl", "management_command_log.jsonl",
-            "reshard_slot_movements.jsonl", "rebalance_summary.json",
-        ]],
-        "missing_metrics": [],
-        "risks": [{"risk": "P18 uses bounded sidecar slot movement batches to keep local real gates deterministic.", "severity": "low", "required_before_next_phase": False}],
-    }
-    (artifacts / "phase_summary.json").write_text(json.dumps(phase_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def _p18_config_for_node_count(base_config: dict[str, Any], node_count: int, row_index: int) -> dict[str, Any]:
-    config = json.loads(json.dumps(base_config)) if node_count == 6 else normalize_config(parse_config_file(Path("templates/configs/scale_10.yaml")))
-    if int(config["cluster"]["shards"]) * (1 + int(config["cluster"]["replicas_per_shard"])) != node_count:
-        raise DockerRuntimeError(f"P18 config did not produce expected node_count={node_count}")
-    port_base = 7600 + row_index * 40
-    config["cluster"]["port_base"] = port_base
-    config["cluster"]["cluster_bus_port_base"] = port_base + 10000
-    config["cluster"]["node_memory_limit_mb"] = min(int(config["cluster"].get("node_memory_limit_mb") or 128), 128)
-    config["profile_name"] = f"p18_{node_count}_node_row_{row_index}"
-    return config
-
-
-def _p18_run_management_row(
-    *,
-    phase: str,
-    parent_scenario: str,
-    parent_run_id: str,
-    artifacts: Path,
-    config: dict[str, Any],
-    operation_name: str,
-    operation_id: str,
-    node_count: int,
-    row_index: int,
-    telemetry: TelemetryRun,
-) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any] | None, dict[str, Any]]:
-    side_scenario = f"{parent_scenario}_{operation_name}_{node_count}"
-    side_run_id = f"{parent_run_id}-{operation_name}-{node_count}"
-    nodes = _node_specs(config, phase, side_scenario, side_run_id)
-    network_name = _network_name(phase, side_scenario)
-    state_path = artifacts / f"sidecar_state_{operation_id}.json"
-    cleanup_path = artifacts / f"sidecar_cleanup_{operation_id}.json"
-    events: list[dict[str, Any]] = []
-    metrics: list[dict[str, Any]] = []
-    topology: list[dict[str, Any]] = []
-    commands: list[dict[str, Any]] = []
-    movements: list[dict[str, Any]] = []
-    started_ms = telemetry.now_unix_ms()
-    started_mono = time.monotonic()
-    state: dict[str, Any] | None = None
-    try:
-        _check_ports_free([node["client_port"] for node in nodes])
-        cleanup_by_label(phase=phase, run_id=side_run_id)
-        run_docker(["network", "create", "--label", f"{LABEL_PREFIX}.project={PROJECT}", "--label", f"{LABEL_PREFIX}.phase={phase}", "--label", f"{LABEL_PREFIX}.run_id={side_run_id}", network_name], timeout=120)
-        for node in nodes:
-            cid = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, side_scenario, side_run_id)
-            node["container_id"] = cid
-            node["pid"] = _container_pid(cid)
-            node["container_ip"] = _container_ip(cid, network_name)
-        state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, nodes)
-        _write_state(state_path, state)
-        _configure_cluster(nodes)
-        _p17_wait_clean_cluster(nodes, timeout=120.0)
-        topology.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "before", nodes, nodes))
-        result, row_events, row_metrics, windows, during_topology, row_movements, rebalance = _p18_run_operation_with_workload(
-            telemetry=telemetry,
-            phase=phase,
-            parent_run_id=parent_run_id,
-            operation_name=operation_name,
-            operation_id=operation_id,
-            node_count=node_count,
-            nodes=nodes,
-            command_log=commands,
-        )
-        events.extend(row_events)
-        metrics.extend(row_metrics)
-        topology.extend(during_topology)
-        movements.extend(row_movements)
-        topology.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "after", nodes, nodes))
-        cleanup_report = cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
-        result["sidecar_cleanup_status"] = cleanup_report.get("status", MISSING)
-        result["sidecar_cleanup_report"] = cleanup_path.as_posix()
-        result["started_at_unix_ms"] = started_ms
-        result["ended_at_unix_ms"] = telemetry.now_unix_ms()
-        result["wall_ms"] = round(max(time.monotonic() - started_mono, 0.0) * 1000.0, 6)
-        return result, events, metrics, windows, topology, commands, movements, rebalance, _p17_cleanup_summary(operation_id, cleanup_report)
-    except Exception:
-        if state is None:
-            state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, [node for node in nodes if "container_id" in node])
-            _write_state(state_path, state)
-        cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
-        raise
-
-
-def _p18_run_operation_with_workload(
+def _management_reshard_execute_operation(
     *,
     telemetry: TelemetryRun,
-    phase: str,
-    parent_run_id: str,
-    operation_name: str,
-    operation_id: str,
-    node_count: int,
-    nodes: list[dict[str, Any]],
-    command_log: list[dict[str, Any]],
-) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any] | None]:
-    events: list[dict[str, Any]] = []
-    metric_rows: list[dict[str, Any]] = []
-    windows: list[dict[str, Any]] = []
-    topology_rows: list[dict[str, Any]] = []
-    movements: list[dict[str, Any]] = []
-    result: dict[str, Any] | None = None
-    rebalance: dict[str, Any] | None = None
-    all_latencies: list[float] = []
-    all_errors: list[str] = []
-    all_started = time.monotonic()
-    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message="All-run workload window started for P18 operation.", metadata={"window_name": "all_run", "operation_id": operation_id})
-    events.append(all_start)
-
-    def cluster_command(*args: Any, timeout: int = 10) -> str:
-        return run_node_cluster_cli(nodes[0], *args, timeout=timeout)
-
-    for window_name in CANONICAL_WINDOWS[:-1]:
-        start_event = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{window_name} workload window started for P18 operation.", metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count})
-        events.append(start_event)
-        started = time.monotonic()
-        latencies: list[float] = []
-        errors: list[str] = []
-        for op_index in range(4):
-            if window_name == "event" and op_index == 1 and result is None:
-                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_before_command", nodes, nodes))
-                op_started = time.monotonic()
-                result, movements, rebalance = _p18_execute_operation(
-                    telemetry=telemetry,
-                    phase=phase,
-                    run_id=parent_run_id,
-                    operation_name=operation_name,
-                    operation_id=operation_id,
-                    node_count=node_count,
-                    nodes=nodes,
-                    command_log=command_log,
-                )
-                result["command_ms"] = round(max(time.monotonic() - op_started, 0.0) * 1000.0, 6)
-                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_after_command", nodes, nodes))
-            key = f"{{vslab-p18-workload-{operation_id}-{window_name}-{op_index % 3}}}:k"
-            value = f"value-{operation_id}-{window_name}-{op_index}"
-            op_started = time.monotonic()
-            try:
-                if op_index % 3 == 0:
-                    response = cluster_command("SET", key, value, timeout=10)
-                    if str(response).upper() != "OK":
-                        errors.append(f"SET unexpected result {response!r}")
-                    else:
-                        latencies.append((time.monotonic() - op_started) * 1000.0)
-                else:
-                    _ = cluster_command("GET", key, timeout=10)
-                    latencies.append((time.monotonic() - op_started) * 1000.0)
-            except Exception as exc:  # noqa: BLE001
-                errors.append(repr(exc))
-        metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - started, 0.000001), latencies_ms=latencies, error_texts=errors)
-        end_event = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{window_name} workload window finished for P18 operation.", metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": metrics["sample_count"]})
-        events.append(end_event)
-        windows.append({"window_name": window_name, "start_event_id": start_event["event_id"], "end_event_id": end_event["event_id"], "status": "PASS" if not errors else "FAIL", "operation_id": operation_id, "node_count": node_count, "metrics": metrics})
-        metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, metrics))
-        all_latencies.extend(latencies)
-        all_errors.extend(errors)
-    if result is None:
-        result, movements, rebalance = _p18_execute_operation(telemetry=telemetry, phase=phase, run_id=parent_run_id, operation_name=operation_name, operation_id=operation_id, node_count=node_count, nodes=nodes, command_log=command_log)
-    all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
-    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message="All-run workload window finished for P18 operation.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
-    events.append(all_end)
-    windows.append({"window_name": "all_run", "start_event_id": all_start["event_id"], "end_event_id": all_end["event_id"], "status": "PASS" if not all_errors else "FAIL", "operation_id": operation_id, "node_count": node_count, "metrics": all_metrics})
-    metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
-    result["workload_window_ref"] = f"{operation_id}:event"
-    return result, events, metric_rows, windows, topology_rows, movements, rebalance
-
-
-def _p18_execute_operation(
-    *,
-    telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_name: str,
     operation_id: str,
@@ -7353,44 +6265,44 @@ def _p18_execute_operation(
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any] | None]:
-    before = _p17_cluster_health(nodes)
+    before = _management_cluster_health(nodes)
     if before["cluster_state"] != "ok" or before["slots_assigned"] != 16384:
-        raise DockerRuntimeError(f"P18 operation requires clean cluster before movement: {before}")
+        raise DockerRuntimeError(f"MANAGEMENT_MATRIX operation requires clean cluster before movement: {before}")
     started = time.monotonic()
     primaries = [node for node in nodes if node["role"] == "primary"]
     source = primaries[0]
     target = primaries[1]
     source_id = _node_command(source, "CLUSTER", "MYID", timeout=30).strip()
     target_id = _node_command(target, "CLUSTER", "MYID", timeout=30).strip()
-    source_slots = _p18_primary_owned_slots(source, source_id)
+    source_slots = _management_reshard_primary_owned_slots(source, source_id)
     moved_slots: list[int] = []
     movements: list[dict[str, Any]] = []
     rebalance: dict[str, Any] | None = None
     seeded_keys: list[str] = []
     imbalance_before: float | str = MISSING
     imbalance_after: float | str = MISSING
-    counts_before = _p18_primary_slot_counts(nodes)
+    counts_before = _management_reshard_primary_slot_counts(nodes)
 
     if operation_name == "reshard_slot_range":
         selected_slots = source_slots[:4]
-        moved_slots, seeded_keys, movements = _p18_move_slots(telemetry, phase, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=False, movement_kind="reshard_slot_range")
+        moved_slots, seeded_keys, movements = _management_reshard_move_slots(telemetry, capability_id, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=False, movement_kind="reshard_slot_range")
     elif operation_name == "reshard_with_keys":
         selected_slots = source_slots[12:16] if len(source_slots) >= 16 else source_slots[:4]
-        moved_slots, seeded_keys, movements = _p18_move_slots(telemetry, phase, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=True, movement_kind="reshard_with_keys")
+        moved_slots, seeded_keys, movements = _management_reshard_move_slots(telemetry, capability_id, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=True, movement_kind="reshard_with_keys")
     elif operation_name == "rebalance_after_imbalance":
         setup_source = primaries[1]
         setup_target = primaries[0]
         setup_source_id = _node_command(setup_source, "CLUSTER", "MYID", timeout=30).strip()
         setup_target_id = _node_command(setup_target, "CLUSTER", "MYID", timeout=30).strip()
-        setup_slots = _p18_primary_owned_slots(setup_source, setup_source_id)
+        setup_slots = _management_reshard_primary_owned_slots(setup_source, setup_source_id)
         imbalance_setup_slots = setup_slots[:20]
-        _p18_move_slots(telemetry, phase, run_id, f"{operation_id}-setup", nodes, setup_source, setup_target, setup_source_id, setup_target_id, imbalance_setup_slots, command_log, seed_keys=False, movement_kind="create_imbalance")
-        counts_imbalanced = _p18_primary_slot_counts(nodes)
-        imbalance_before = _p18_imbalance(counts_imbalanced)
+        _management_reshard_move_slots(telemetry, capability_id, run_id, f"{operation_id}-setup", nodes, setup_source, setup_target, setup_source_id, setup_target_id, imbalance_setup_slots, command_log, seed_keys=False, movement_kind="create_imbalance")
+        counts_imbalanced = _management_reshard_primary_slot_counts(nodes)
+        imbalance_before = _management_reshard_imbalance(counts_imbalanced)
         selected_slots = imbalance_setup_slots[:10]
-        moved_slots, seeded_keys, movements = _p18_move_slots(telemetry, phase, run_id, operation_id, nodes, setup_target, setup_source, setup_target_id, setup_source_id, selected_slots, command_log, seed_keys=False, movement_kind="rebalance_after_imbalance")
-        counts_after_rebalance = _p18_primary_slot_counts(nodes)
-        imbalance_after = _p18_imbalance(counts_after_rebalance)
+        moved_slots, seeded_keys, movements = _management_reshard_move_slots(telemetry, capability_id, run_id, operation_id, nodes, setup_target, setup_source, setup_target_id, setup_source_id, selected_slots, command_log, seed_keys=False, movement_kind="rebalance_after_imbalance")
+        counts_after_rebalance = _management_reshard_primary_slot_counts(nodes)
+        imbalance_after = _management_reshard_imbalance(counts_after_rebalance)
         rebalance = {
             "operation_id": operation_id,
             "node_count": node_count,
@@ -7401,13 +6313,13 @@ def _p18_execute_operation(
             "movement_ids": [row["movement_id"] for row in movements],
         }
     else:
-        raise DockerRuntimeError(f"unsupported P18 operation {operation_name}")
+        raise DockerRuntimeError(f"unsupported MANAGEMENT_MATRIX operation {operation_name}")
 
-    after = _p17_cluster_health(nodes)
-    counts_after = _p18_primary_slot_counts(nodes)
-    errors_by_type = _p17_errors_by_type(command_log, operation_id)
-    readable = _p18_verify_keys_readable(nodes[0], seeded_keys)
-    writable = all(_p18_verify_slot_writable(nodes[0], slot, operation_id) for slot in moved_slots[: min(3, len(moved_slots))])
+    after = _management_cluster_health(nodes)
+    counts_after = _management_reshard_primary_slot_counts(nodes)
+    errors_by_type = _management_errors_by_type(command_log, operation_id)
+    readable = _management_reshard_verify_keys_readable(nodes[0], seeded_keys)
+    writable = all(_management_reshard_verify_slot_writable(nodes[0], slot, operation_id) for slot in moved_slots[: min(3, len(moved_slots))])
     slot_coverage_complete = after["cluster_state"] == "ok" and after["slots_assigned"] == 16384 and after["slots_ok"] == 16384 and after["slots_fail"] == 0
     pass_status = bool(
         moved_slots
@@ -7424,7 +6336,7 @@ def _p18_execute_operation(
     )
     return {
         "schema_version": "v1",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "operation_name": operation_name,
         "operation_id": operation_id,
         "node_count": node_count,
@@ -7461,9 +6373,9 @@ def _p18_execute_operation(
     }, movements, rebalance
 
 
-def _p18_move_slots(
+def _management_reshard_move_slots(
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     nodes: list[dict[str, Any]],
@@ -7483,28 +6395,28 @@ def _p18_move_slots(
     for slot in slots:
         keys: list[str] = []
         if seed_keys:
-            key = _p18_key_for_slot(source, slot, operation_id)
+            key = _management_reshard_key_for_slot(source, slot, operation_id)
             response = run_node_cluster_cli(source, "SET", key, f"value-{operation_id}-{slot}", timeout=10)
             if str(response).upper() != "OK":
-                raise DockerRuntimeError(f"P18 seed key failed slot={slot}: {response}")
+                raise DockerRuntimeError(f"MANAGEMENT_MATRIX seed key failed slot={slot}: {response}")
             keys.append(key)
             seeded_keys.append(key)
-        _p18_log_slot_command(command_log, telemetry, phase, run_id, operation_id, "cluster_setslot_importing", target, ["CLUSTER", "SETSLOT", slot, "IMPORTING", source_id])
-        _p18_log_slot_command(command_log, telemetry, phase, run_id, operation_id, "cluster_setslot_migrating", source, ["CLUSTER", "SETSLOT", slot, "MIGRATING", target_id])
+        _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_importing", target, ["CLUSTER", "SETSLOT", slot, "IMPORTING", source_id])
+        _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_migrating", source, ["CLUSTER", "SETSLOT", slot, "MIGRATING", target_id])
         if keys:
             migrate_port = str(target["client_port"]) if target.get("runtime_type") == "docker_process" or target.get("nodehost_container_name") else "6379"
-            _p18_log_slot_command(command_log, telemetry, phase, run_id, operation_id, "cluster_migrate_keys", source, ["MIGRATE", target["container_ip"], migrate_port, "", "0", "5000", "KEYS", *keys], timeout=30)
+            _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_migrate_keys", source, ["MIGRATE", target["container_ip"], migrate_port, "", "0", "5000", "KEYS", *keys], timeout=30)
         for node in [item for item in nodes if item["role"] == "primary"]:
-            _p18_log_slot_command(command_log, telemetry, phase, run_id, operation_id, "cluster_setslot_node", node, ["CLUSTER", "SETSLOT", slot, "NODE", target_id])
-        _p17_wait_clean_cluster(nodes, timeout=60.0)
-        if not _p18_node_owns_slot(target, target_id, slot):
-            raise DockerRuntimeError(f"P18 target did not own moved slot {slot}")
+            _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_node", node, ["CLUSTER", "SETSLOT", slot, "NODE", target_id])
+        _management_wait_clean_cluster(nodes, timeout=60.0)
+        if not _management_reshard_node_owns_slot(target, target_id, slot):
+            raise DockerRuntimeError(f"MANAGEMENT_MATRIX target did not own moved slot {slot}")
         moved.append(slot)
     if moved:
         rows.append(
             {
                 "schema_version": "v1",
-                "phase_id": phase,
+                "capability_id": capability_id,
                 "run_id": run_id,
                 "movement_id": f"{operation_id}-{movement_kind}-{min(moved)}-{max(moved)}",
                 "operation_id": operation_id,
@@ -7523,19 +6435,19 @@ def _p18_move_slots(
     return moved, seeded_keys, rows
 
 
-def _p18_log_slot_command(command_log: list[dict[str, Any]], telemetry: TelemetryRun, phase: str, run_id: str, operation_id: str, command_kind: str, target: dict[str, Any], args: list[Any], timeout: int = 30) -> None:
-    _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, command_kind=command_kind, target=target, args=args, timeout=timeout)
+def _management_reshard_log_slot_command(command_log: list[dict[str, Any]], telemetry: TelemetryRun, capability_id: str, run_id: str, operation_id: str, command_kind: str, target: dict[str, Any], args: list[Any], timeout: int = 30) -> None:
+    _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind=command_kind, target=target, args=args, timeout=timeout)
 
 
-def _p18_key_for_slot(node: dict[str, Any], slot: int, operation_id: str) -> str:
+def _management_reshard_key_for_slot(node: dict[str, Any], slot: int, operation_id: str) -> str:
     for idx in range(200000):
-        key = f"{{p18-{operation_id}-{slot}-{idx}}}:value"
-        if _p18_key_slot(key) == slot:
+        key = f"{{management_reshard-{operation_id}-{slot}-{idx}}}:value"
+        if _management_reshard_key_slot(key) == slot:
             return key
     raise DockerRuntimeError(f"could not find key for slot {slot}")
 
 
-def _p18_key_slot(key: str) -> int:
+def _management_reshard_key_slot(key: str) -> int:
     encoded = key.encode("utf-8")
     left = key.find("{")
     if left >= 0:
@@ -7545,7 +6457,7 @@ def _p18_key_slot(key: str) -> int:
     return binascii.crc_hqx(encoded, 0) % 16384
 
 
-def _p18_verify_keys_readable(node: dict[str, Any], keys: list[str]) -> bool:
+def _management_reshard_verify_keys_readable(node: dict[str, Any], keys: list[str]) -> bool:
     for key in keys:
         value = run_node_cluster_cli(node, "GET", key, timeout=10)
         if value is None or value == "":
@@ -7553,22 +6465,22 @@ def _p18_verify_keys_readable(node: dict[str, Any], keys: list[str]) -> bool:
     return True
 
 
-def _p18_verify_slot_writable(node: dict[str, Any], slot: int, operation_id: str) -> bool:
-    key = _p18_key_for_slot(node, slot, f"{operation_id}-post")
+def _management_reshard_verify_slot_writable(node: dict[str, Any], slot: int, operation_id: str) -> bool:
+    key = _management_reshard_key_for_slot(node, slot, f"{operation_id}-post")
     return str(run_node_cluster_cli(node, "SET", key, f"post-{slot}", timeout=10)).upper() == "OK"
 
 
-def _p18_node_owns_slot(node: dict[str, Any], node_id: str, slot: int) -> bool:
+def _management_reshard_node_owns_slot(node: dict[str, Any], node_id: str, slot: int) -> bool:
     text = _node_command(node, "CLUSTER", "NODES", timeout=5)
     for line in text.splitlines():
         parts = line.split()
         if len(parts) < 9 or parts[0] != node_id:
             continue
-        return any(_p18_slot_spec_contains(spec, slot) for spec in parts[8:] if not spec.startswith("["))
+        return any(_management_reshard_slot_spec_contains(spec, slot) for spec in parts[8:] if not spec.startswith("["))
     return False
 
 
-def _p18_primary_owned_slots(node: dict[str, Any], node_id: str) -> list[int]:
+def _management_reshard_primary_owned_slots(node: dict[str, Any], node_id: str) -> list[int]:
     text = _node_command(node, "CLUSTER", "NODES", timeout=5)
     slots: list[int] = []
     for line in text.splitlines():
@@ -7589,14 +6501,14 @@ def _p18_primary_owned_slots(node: dict[str, Any], node_id: str) -> list[int]:
     return sorted(slots)
 
 
-def _p18_slot_spec_contains(spec: str, slot: int) -> bool:
+def _management_reshard_slot_spec_contains(spec: str, slot: int) -> bool:
     if "-" in spec:
         start, end = spec.split("-", 1)
         return int(start) <= slot <= int(end)
     return int(spec) == slot
 
 
-def _p18_primary_slot_counts(nodes: list[dict[str, Any]]) -> dict[str, int]:
+def _management_reshard_primary_slot_counts(nodes: list[dict[str, Any]]) -> dict[str, int]:
     first = nodes[0]
     text = _node_command(first, "CLUSTER", "NODES", timeout=5)
     counts: dict[str, int] = {}
@@ -7617,597 +6529,36 @@ def _p18_primary_slot_counts(nodes: list[dict[str, Any]]) -> dict[str, int]:
     return counts
 
 
-def _p18_imbalance(counts: dict[str, int]) -> float:
+def _management_reshard_imbalance(counts: dict[str, int]) -> float:
     values = list(counts.values())
     return float(max(values) - min(values)) if values else 0.0
 
 
-def _p18_rebalance_summary(phase: str, run_id: str, rows: list[dict[str, Any]], movements: list[dict[str, Any]]) -> dict[str, Any]:
+def _management_rebalance_summary(capability_id: str, run_id: str, rows: list[dict[str, Any]], movements: list[dict[str, Any]]) -> dict[str, Any]:
     before_values = [row["imbalance_before"] for row in rows if isinstance(row.get("imbalance_before"), (int, float))]
     after_values = [row["imbalance_after"] for row in rows if isinstance(row.get("imbalance_after"), (int, float))]
     status = "PASS" if rows and all(float(row["imbalance_before"]) > float(row["imbalance_after"]) for row in rows) else "FAIL"
     return {
         "schema_version": "v1",
         "artifact_type": "rebalance_summary",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": status,
         "imbalance_before": max(before_values) if before_values else MISSING,
         "imbalance_after": min(after_values) if after_values else MISSING,
-        "workload_impact_ref": f"artifacts/phases/{phase}/management_workload_impact.json",
+        "workload_impact_ref": f"artifacts/captures/{capability_id}/management_workload_impact.json",
         "rows": rows,
         "movement_ids": [row["movement_id"] for row in movements if row.get("movement_kind") == "rebalance_after_imbalance"],
     }
 
 
-P19_REQUIRED_ROWS = [
-    ("rolling_restart_replica_first", 6),
-    ("rolling_restart_replica_first", 10),
-    ("rolling_restart_primary_safe", 6),
-    ("rolling_restart_primary_safe", 10),
-]
 
-
-def write_p19_management_rolling_restart_artifacts(
-    artifacts: Path,
-    phase: str,
-    scenario: str,
-    run_id: str,
-    config: dict[str, Any],
-    nodes: list[dict[str, Any]],
-) -> None:
-    artifacts.mkdir(parents=True, exist_ok=True)
-    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id)
-    events = [
-        telemetry.event(
-            "management_matrix_started",
-            subject_type="management_matrix",
-            subject_id=scenario,
-            message="P19 rolling-restart management matrix started.",
-            metadata={"required_rows": [{"operation_name": op, "node_count": count} for op, count in P19_REQUIRED_ROWS]},
-        )
-    ]
-    metric_rows: list[dict[str, Any]] = []
-    workload_windows: list[dict[str, Any]] = []
-    operation_rows: list[dict[str, Any]] = []
-    matrix_rows: list[dict[str, Any]] = []
-    topology_rows: list[dict[str, Any]] = []
-    command_log: list[dict[str, Any]] = []
-    restart_plans: list[dict[str, Any]] = []
-    restart_results: list[dict[str, Any]] = []
-    cleanup_summaries: list[dict[str, Any]] = []
-
-    for row_index, (operation_name, node_count) in enumerate(P19_REQUIRED_ROWS):
-        operation_id = f"{operation_name}-{node_count:02d}"
-        row_result, row_events, row_metrics, row_windows, row_topology, row_commands, row_plan, row_restarts, row_cleanup = _p19_run_management_row(
-            phase=phase,
-            parent_scenario=scenario,
-            parent_run_id=run_id,
-            artifacts=artifacts,
-            config=_p19_config_for_node_count(config, node_count, row_index),
-            operation_name=operation_name,
-            operation_id=operation_id,
-            node_count=node_count,
-            row_index=row_index,
-            telemetry=telemetry,
-        )
-        operation_rows.append(row_result)
-        matrix_rows.append(
-            {
-                "operation_name": operation_name,
-                "node_count": node_count,
-                "operation_status": row_result["operation_status"],
-                "workload_window_ref": row_result["workload_window_ref"],
-                "operation_id": operation_id,
-                "real_execution_verified": row_result.get("real_execution_verified", False),
-                "restart_count": row_result.get("restart_count", MISSING),
-                "health_gate_count": row_result.get("health_gate_count", MISSING),
-                "max_concurrent_restarts": row_result.get("max_concurrent_restarts", MISSING),
-            }
-        )
-        events.extend(row_events)
-        metric_rows.extend(row_metrics)
-        workload_windows.extend(row_windows)
-        topology_rows.extend(row_topology)
-        command_log.extend(row_commands)
-        restart_plans.append(row_plan)
-        restart_results.extend(row_restarts)
-        cleanup_summaries.append(row_cleanup)
-
-    events.append(
-        telemetry.event(
-            "management_matrix_finished",
-            subject_type="management_matrix",
-            subject_id=scenario,
-            message="P19 rolling-restart management matrix finished.",
-            metadata={"operation_count": len(operation_rows), "restart_count": len(restart_results)},
-        )
-    )
-    _p30_attach_setup_command_refs(operation_rows, artifacts)
-    strict_by_id = {row["operation_id"]: row for row in operation_rows}
-    for matrix_row in matrix_rows:
-        result = strict_by_id.get(matrix_row["operation_id"], {})
-        for field in [
-            "operation_status",
-            "coverage_id",
-            "scale",
-            "command_count",
-            "command_log_refs",
-            "workload_impact_ref",
-            "cleanup_ref",
-            "before_topology_snapshot_ref",
-            "after_topology_snapshot_ref",
-            "topology_diff_ref",
-        ]:
-            if field in result:
-                matrix_row[field] = result[field]
-
-    write_jsonl(artifacts / "events.jsonl", events)
-    write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
-    write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
-    write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
-    write_jsonl(artifacts / "management_command_log.jsonl", command_log)
-    write_jsonl(artifacts / "rolling_restart_results.jsonl", restart_results)
-
-    workload_artifact = {
-        "schema_version": "v1",
-        "artifact_type": "workload_windows",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "scenario_name": scenario,
-        "status": "PASS" if all(window.get("status") == "PASS" for window in workload_windows) else "FAIL",
-        "windows": workload_windows,
-    }
-    (artifacts / "workload_windows.json").write_text(json.dumps(workload_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    matrix = {
-        "schema_version": "v1",
-        "artifact_type": "management_ops_matrix",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if all(row["operation_status"] == "PASS" for row in operation_rows) else "FAIL",
-        "operations": matrix_rows,
-        "required_rows": [{"operation_name": op, "node_count": count} for op, count in P19_REQUIRED_ROWS],
-    }
-    (artifacts / "management_ops_matrix.json").write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    rolling_plan = {
-        "schema_version": "v1",
-        "artifact_type": "rolling_restart_plan",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if all(plan.get("status") == "PASS" for plan in restart_plans) else "FAIL",
-        "health_gate": {
-            "required_between_nodes": True,
-            "required_after_each_restart": True,
-            "cluster_state": "ok",
-            "slots_assigned": 16384,
-            "max_concurrent_restarts": 1,
-        },
-        "restart_order": [
-            {"operation_id": plan["operation_id"], **entry}
-            for plan in restart_plans
-            for entry in plan.get("restart_order", [])
-        ],
-        "operations": restart_plans,
-        "required_rows": [{"operation_name": op, "node_count": count} for op, count in P19_REQUIRED_ROWS],
-    }
-    (artifacts / "rolling_restart_plan.json").write_text(json.dumps(rolling_plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    impact = {
-        "schema_version": "v1",
-        "artifact_type": "workload_impact_report",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": workload_artifact["status"],
-        "windows": _p17_aggregate_workload_windows(workload_windows),
-        "comparisons": _p17_workload_comparisons(workload_windows),
-        "operation_window_count": len(workload_windows),
-    }
-    (artifacts / "management_workload_impact.json").write_text(json.dumps(impact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    quant_summary = {
-        "schema_version": "v1",
-        "artifact_type": "quant_summary",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if matrix["status"] == "PASS" and workload_artifact["status"] == "PASS" and rolling_plan["status"] == "PASS" else "FAIL",
-        "summary": "P19 executed real rolling restart management operations on 6-node and 10-node Valkey clusters with one-node-at-a-time owned Docker restarts, inter-node health gates, workload impact, topology, command, plan, and result evidence.",
-        "artifact_refs": [
-            f"artifacts/phases/{phase}/events.jsonl",
-            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
-            f"artifacts/phases/{phase}/workload_windows.json",
-            f"artifacts/phases/{phase}/management_ops_matrix.json",
-            f"artifacts/phases/{phase}/management_operation_results.jsonl",
-            f"artifacts/phases/{phase}/management_workload_impact.json",
-            f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
-            f"artifacts/phases/{phase}/management_command_log.jsonl",
-            f"artifacts/phases/{phase}/rolling_restart_plan.json",
-            f"artifacts/phases/{phase}/rolling_restart_results.jsonl",
-        ],
-        "missing_data": [field for row in restart_results for field in row.get("missing_fields", [])],
-        "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": True, "fault_runtime_claimed": False},
-        "counts": {
-            "main_gate_node_count": len(nodes),
-            "operation_count": len(operation_rows),
-            "six_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 6),
-            "ten_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 10),
-            "restart_result_count": len(restart_results),
-            "event_count": len(events),
-            "metric_count": len(metric_rows),
-            "workload_window_count": len(workload_windows),
-            "topology_snapshot_count": len(topology_rows),
-            "command_log_count": len(command_log),
-        },
-        "cleanup_summaries": cleanup_summaries,
-    }
-    (artifacts / "quant_summary.json").write_text(json.dumps(quant_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    phase_summary = {
-        "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": quant_summary["status"],
-        "summary": "P19 implemented deterministic rolling restart rows with replica-first ordering, safe primary restart paths, per-node health gates, workload impact, and cleanup evidence.",
-        "required_artifacts": [f"artifacts/phases/{phase}/{name}" for name in [
-            "phase_summary.json", "valkey_e2e_evidence.json", "cleanup_report.json", "events.jsonl", "metrics_timeseries.jsonl",
-            "workload_windows.json", "quant_summary.json", "management_ops_matrix.json", "management_operation_results.jsonl",
-            "management_workload_impact.json", "management_topology_snapshots.jsonl", "management_command_log.jsonl",
-            "rolling_restart_plan.json", "rolling_restart_results.jsonl",
-        ]],
-        "missing_metrics": _p19_phase_missing_metrics(quant_summary["missing_data"]),
-        "risks": [{"risk": "P19 uses bounded local 6-node and 10-node sidecar runs while the wrapper independently probes the main 6-node cluster.", "severity": "low", "required_before_next_phase": False}],
-    }
-    (artifacts / "phase_summary.json").write_text(json.dumps(phase_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def _p19_phase_missing_metrics(missing_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    by_metric: dict[str, dict[str, Any]] = {}
-    for item in missing_data:
-        if not isinstance(item, dict):
-            continue
-        metric = str(item.get("metric") or item.get("field") or "")
-        reason = str(item.get("reason") or "")
-        status = str(item.get("status") or MISSING)
-        if not metric or status != MISSING or not reason:
-            continue
-        by_metric.setdefault(
-            metric,
-            {
-                "metric": metric,
-                "status": MISSING,
-                "reason": reason,
-                "impact": "P19 records this metric as unavailable for restart rows where no outage or no primary promotion applied; per-node rolling_restart_results.jsonl carries the row-level reason.",
-            },
-        )
-    return list(by_metric.values())
-
-
-def _p19_config_for_node_count(base_config: dict[str, Any], node_count: int, row_index: int) -> dict[str, Any]:
-    config = json.loads(json.dumps(base_config)) if node_count == 6 else normalize_config(parse_config_file(Path("templates/configs/scale_10.yaml")))
-    if int(config["cluster"]["shards"]) * (1 + int(config["cluster"]["replicas_per_shard"])) != node_count:
-        raise DockerRuntimeError(f"P19 config did not produce expected node_count={node_count}")
-    port_base = 7900 + row_index * 40
-    config["cluster"]["port_base"] = port_base
-    config["cluster"]["cluster_bus_port_base"] = port_base + 10000
-    config["cluster"]["node_memory_limit_mb"] = min(int(config["cluster"].get("node_memory_limit_mb") or 128), 128)
-    config["profile_name"] = f"p19_{node_count}_node_row_{row_index}"
-    return config
-
-
-def _p19_run_management_row(
-    *,
-    phase: str,
-    parent_scenario: str,
-    parent_run_id: str,
-    artifacts: Path,
-    config: dict[str, Any],
-    operation_name: str,
-    operation_id: str,
-    node_count: int,
-    row_index: int,
-    telemetry: TelemetryRun,
-) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
-    side_scenario = f"{parent_scenario}_{operation_name}_{node_count}"
-    side_run_id = f"{parent_run_id}-{operation_name}-{node_count}"
-    nodes = _node_specs(config, phase, side_scenario, side_run_id)
-    network_name = _network_name(phase, side_scenario)
-    state_path = artifacts / f"sidecar_state_{operation_id}.json"
-    cleanup_path = artifacts / f"sidecar_cleanup_{operation_id}.json"
-    events: list[dict[str, Any]] = []
-    metrics: list[dict[str, Any]] = []
-    topology: list[dict[str, Any]] = []
-    commands: list[dict[str, Any]] = []
-    started_ms = telemetry.now_unix_ms()
-    started_mono = time.monotonic()
-    state: dict[str, Any] | None = None
-    try:
-        _check_ports_free([node["client_port"] for node in nodes])
-        cleanup_by_label(phase=phase, run_id=side_run_id)
-        run_docker(["network", "create", "--label", f"{LABEL_PREFIX}.project={PROJECT}", "--label", f"{LABEL_PREFIX}.phase={phase}", "--label", f"{LABEL_PREFIX}.run_id={side_run_id}", network_name], timeout=120)
-        for node in nodes:
-            cid = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, side_scenario, side_run_id)
-            node["container_id"] = cid
-            node["pid"] = _container_pid(cid)
-            node["container_ip"] = _container_ip(cid, network_name)
-        state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, nodes)
-        _write_state(state_path, state)
-        _configure_cluster(nodes)
-        _p17_wait_clean_cluster(nodes, timeout=120.0)
-        topology.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "before", nodes, nodes))
-        result, row_events, row_metrics, windows, during_topology, plan, restarts = _p19_run_operation_with_workload(
-            telemetry=telemetry,
-            phase=phase,
-            parent_run_id=parent_run_id,
-            operation_name=operation_name,
-            operation_id=operation_id,
-            node_count=node_count,
-            nodes=nodes,
-            command_log=commands,
-        )
-        events.extend(row_events)
-        metrics.extend(row_metrics)
-        topology.extend(during_topology)
-        topology.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "after", nodes, nodes))
-        cleanup_report = cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
-        result["sidecar_cleanup_status"] = cleanup_report.get("status", MISSING)
-        result["sidecar_cleanup_report"] = cleanup_path.as_posix()
-        result["started_at_unix_ms"] = started_ms
-        result["ended_at_unix_ms"] = telemetry.now_unix_ms()
-        result["wall_ms"] = round(max(time.monotonic() - started_mono, 0.0) * 1000.0, 6)
-        result["operation_status"] = "PASS" if result["operation_status"] == "PASS" and cleanup_report.get("status") == "PASS" else "FAIL"
-        result["real_execution_verified"] = bool(result["operation_status"] == "PASS")
-        return result, events, metrics, windows, topology, commands, plan, restarts, _p17_cleanup_summary(operation_id, cleanup_report)
-    except Exception:
-        if state is None:
-            state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, [node for node in nodes if "container_id" in node])
-            _write_state(state_path, state)
-        cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
-        raise
-
-
-def _p19_run_operation_with_workload(
-    *,
-    telemetry: TelemetryRun,
-    phase: str,
-    parent_run_id: str,
-    operation_name: str,
-    operation_id: str,
-    node_count: int,
-    nodes: list[dict[str, Any]],
-    command_log: list[dict[str, Any]],
-) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
-    events: list[dict[str, Any]] = []
-    metric_rows: list[dict[str, Any]] = []
-    windows: list[dict[str, Any]] = []
-    topology_rows: list[dict[str, Any]] = []
-    result: dict[str, Any] | None = None
-    plan: dict[str, Any] | None = None
-    restart_rows: list[dict[str, Any]] = []
-    all_latencies: list[float] = []
-    all_errors: list[str] = []
-    all_started = time.monotonic()
-    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message="All-run workload window started for P19 operation.", metadata={"window_name": "all_run", "operation_id": operation_id})
-    events.append(all_start)
-
-    def cluster_command(*args: Any, timeout: int = 10) -> str:
-        return run_node_cluster_cli(nodes[0], *args, timeout=timeout)
-
-    for window_name in CANONICAL_WINDOWS[:-1]:
-        start_event = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{window_name} workload window started for P19 operation.", metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count})
-        events.append(start_event)
-        started = time.monotonic()
-        latencies: list[float] = []
-        errors: list[str] = []
-        for op_index in range(4):
-            if window_name == "event" and op_index == 1 and result is None:
-                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_before_restart", nodes, nodes))
-                op_started = time.monotonic()
-                result, plan, restart_rows, restart_events = _p19_execute_operation(
-                    telemetry=telemetry,
-                    phase=phase,
-                    run_id=parent_run_id,
-                    operation_name=operation_name,
-                    operation_id=operation_id,
-                    node_count=node_count,
-                    nodes=nodes,
-                    command_log=command_log,
-                )
-                result["command_ms"] = round(max(time.monotonic() - op_started, 0.0) * 1000.0, 6)
-                events.extend(restart_events)
-                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_after_restart", nodes, nodes))
-            key = f"{{vslab-p19-workload-{operation_id}-{window_name}-{op_index % 3}}}:k"
-            value = f"value-{operation_id}-{window_name}-{op_index}"
-            op_started = time.monotonic()
-            try:
-                if op_index % 3 == 0:
-                    response = cluster_command("SET", key, value, timeout=10)
-                    if str(response).upper() != "OK":
-                        errors.append(f"SET unexpected result {response!r}")
-                    else:
-                        latencies.append((time.monotonic() - op_started) * 1000.0)
-                else:
-                    _ = cluster_command("GET", key, timeout=10)
-                    latencies.append((time.monotonic() - op_started) * 1000.0)
-            except Exception as exc:  # noqa: BLE001
-                errors.append(repr(exc))
-        metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - started, 0.000001), latencies_ms=latencies, error_texts=errors)
-        end_event = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{window_name} workload window finished for P19 operation.", metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": metrics["sample_count"]})
-        events.append(end_event)
-        windows.append({"window_name": window_name, "start_event_id": start_event["event_id"], "end_event_id": end_event["event_id"], "status": "PASS", "operation_id": operation_id, "node_count": node_count, "metrics": metrics})
-        metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, metrics))
-        all_latencies.extend(latencies)
-        all_errors.extend(errors)
-
-    if result is None:
-        result, plan, restart_rows, restart_events = _p19_execute_operation(telemetry=telemetry, phase=phase, run_id=parent_run_id, operation_name=operation_name, operation_id=operation_id, node_count=node_count, nodes=nodes, command_log=command_log)
-        events.extend(restart_events)
-    all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
-    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message="All-run workload window finished for P19 operation.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
-    events.append(all_end)
-    windows.append({"window_name": "all_run", "start_event_id": all_start["event_id"], "end_event_id": all_end["event_id"], "status": "PASS", "operation_id": operation_id, "node_count": node_count, "metrics": all_metrics})
-    metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
-    result["workload_window_ref"] = f"{operation_id}:event"
-    return result, events, metric_rows, windows, topology_rows, plan, restart_rows
-
-
-def _p19_execute_operation(
-    *,
-    telemetry: TelemetryRun,
-    phase: str,
-    run_id: str,
-    operation_name: str,
-    operation_id: str,
-    node_count: int,
-    nodes: list[dict[str, Any]],
-    command_log: list[dict[str, Any]],
-) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
-    before = _p17_cluster_health(nodes)
-    if before["cluster_state"] != "ok" or before["slots_assigned"] != 16384 or before["slots_ok"] != 16384:
-        raise DockerRuntimeError(f"P19 operation requires clean cluster before restart: {before}")
-    started = time.monotonic()
-    plan_entries = _p19_plan_entries(operation_name, operation_id, nodes)
-    plan = {
-        "operation_id": operation_id,
-        "operation_name": operation_name,
-        "node_count": node_count,
-        "status": "PASS",
-        "max_concurrent_restarts": 1,
-        "health_gate": {
-            "required_between_nodes": True,
-            "required_after_each_restart": True,
-            "cluster_state": "ok",
-            "slots_assigned": 16384,
-            "known_nodes": node_count,
-        },
-        "restart_order": plan_entries,
-    }
-    restart_rows: list[dict[str, Any]] = []
-    events: list[dict[str, Any]] = []
-    for entry in plan_entries:
-        target = next(node for node in nodes if node["logical_id"] == entry["logical_node_id"])
-        safe_details: dict[str, Any] = {"safe_path": "not_required_for_replica_restart", "safe_command_ref": MISSING}
-        role_before = _p19_current_role(target, nodes)
-        if operation_name == "rolling_restart_primary_safe" and role_before == "primary":
-            safe_details = _p19_make_primary_safe(
-                telemetry=telemetry,
-                phase=phase,
-                run_id=run_id,
-                operation_id=operation_id,
-                target=target,
-                nodes=nodes,
-                command_log=command_log,
-            )
-            role_before = _p19_current_role(target, nodes)
-        start_event = telemetry.event("node_restart_started", subject_type="valkey_node", subject_id=target["logical_id"], operation_id=operation_id, message="Owned Docker container restart started for P19 rolling restart.", metadata={"sequence": entry["sequence"], "role_before_restart": role_before})
-        events.append(start_event)
-        restart_row = _p19_restart_one_node(
-            telemetry=telemetry,
-            phase=phase,
-            run_id=run_id,
-            operation_id=operation_id,
-            operation_name=operation_name,
-            node_count=node_count,
-            sequence=int(entry["sequence"]),
-            planned_role=str(entry["planned_role"]),
-            role_before=role_before,
-            target=target,
-            nodes=nodes,
-            command_log=command_log,
-            safe_details=safe_details,
-        )
-        restart_rows.append(restart_row)
-        events.append(telemetry.event("node_restart_completed", subject_type="valkey_node", subject_id=target["logical_id"], operation_id=operation_id, message="Owned Docker container restart completed and health gate passed for P19 rolling restart.", metadata={"sequence": entry["sequence"], "health_gate_status": restart_row["health_gate_status"]}))
-    after = _p17_cluster_health(nodes)
-    errors_by_type = _p17_errors_by_type(command_log, operation_id)
-    pass_status = bool(
-        restart_rows
-        and len(restart_rows) == node_count
-        and all(row.get("health_gate_status") == "PASS" for row in restart_rows)
-        and not any(errors_by_type.values())
-        and before["cluster_state"] == "ok"
-        and after["cluster_state"] == "ok"
-        and before["slots_assigned"] == 16384
-        and after["slots_assigned"] == 16384
-        and after["slots_ok"] == 16384
-    )
-    return {
-        "schema_version": "v1",
-        "phase_id": phase,
-        "operation_name": operation_name,
-        "operation_id": operation_id,
-        "node_count": node_count,
-        "operation_status": "PASS" if pass_status else "FAIL",
-        "started_at_unix_ms": telemetry.now_unix_ms(),
-        "ended_at_unix_ms": telemetry.now_unix_ms(),
-        "wall_ms": MISSING,
-        "command_ms": MISSING,
-        "convergence_ms": round(max(time.monotonic() - started, 0.0) * 1000.0, 6),
-        "cluster_state_before": before["cluster_state"],
-        "cluster_state_after": after["cluster_state"],
-        "slots_before": before["slots_assigned"],
-        "slots_after": after["slots_assigned"],
-        "workload_window_ref": f"{operation_id}:event",
-        "errors_by_type": errors_by_type,
-        "missing_fields": [field for row in restart_rows for field in row.get("missing_fields", [])],
-        "real_execution_verified": pass_status,
-        "restart_count": len(restart_rows),
-        "health_gate_count": sum(1 for row in restart_rows if row.get("health_gate_status") == "PASS"),
-        "max_concurrent_restarts": 1,
-        "plan_ref": "rolling_restart_plan.json",
-        "result_ref": "rolling_restart_results.jsonl",
-        "safe_primary_path": "cluster_failover_takeover_before_owned_container_restart" if operation_name == "rolling_restart_primary_safe" else "replica_first_owned_container_restart",
-        "cluster_known_nodes_before": before["known_nodes"],
-        "cluster_known_nodes_after": after["known_nodes"],
-    }, plan, restart_rows, events
-
-
-def _p19_plan_entries(operation_name: str, operation_id: str, nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    if operation_name == "rolling_restart_replica_first":
-        ordered = sorted(nodes, key=lambda node: (0 if node["role"] == "replica" else 1, str(node["shard_id"]), str(node["logical_id"])))
-    elif operation_name == "rolling_restart_primary_safe":
-        ordered = sorted(nodes, key=lambda node: (str(node["shard_id"]), 0 if node["role"] == "primary" else 1, str(node["logical_id"])))
-    else:
-        raise DockerRuntimeError(f"unsupported P19 operation {operation_name}")
-    return [
-        {
-            "sequence": index,
-            "logical_node_id": node["logical_id"],
-            "planned_role": node["role"],
-            "shard_id": node["shard_id"],
-            "container_name": node["container_name"],
-            "operation_id": operation_id,
-        }
-        for index, node in enumerate(ordered, start=1)
-    ]
-
-
-def _p19_current_role(target: dict[str, Any], nodes: list[dict[str, Any]]) -> str:
-    topology = _p19_live_topology(nodes)
-    row = topology.get(target["logical_id"], {})
-    return str(row.get("role", target.get("role", "unknown")))
-
-
-def _p19_live_topology(nodes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _management_live_topology(nodes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     for probe in nodes:
         try:
-            parsed = _p17_parse_cluster_nodes_text(_node_command(probe, "CLUSTER", "NODES", timeout=5), nodes)
+            parsed = _management_parse_cluster_nodes_text(_node_command(probe, "CLUSTER", "NODES", timeout=5), nodes)
             by_logical = {str(row.get("logical_id")): row for row in parsed if row.get("logical_id") and row.get("logical_id") != MISSING}
             if by_logical:
                 return by_logical
@@ -8216,26 +6567,26 @@ def _p19_live_topology(nodes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]
     return {}
 
 
-def _p19_make_primary_safe(
+def _management_make_primary_safe(
     *,
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     target: dict[str, Any],
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    topology = _p19_live_topology(nodes)
+    topology = _management_live_topology(nodes)
     target_row = topology.get(target["logical_id"], {})
     target_node_id = str(target_row.get("node_id", MISSING))
     replacement = next((node for node in nodes if node["logical_id"] != target["logical_id"] and node["shard_id"] == target["shard_id"] and topology.get(node["logical_id"], {}).get("role") == "replica"), None)
     if replacement is None:
-        raise DockerRuntimeError(f"P19 could not find same-shard replica to make primary restart safe for {target['logical_id']}")
+        raise DockerRuntimeError(f"MANAGEMENT_MATRIX could not find same-shard replica to make primary restart safe for {target['logical_id']}")
     started = telemetry.now_unix_ms()
-    command = _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_failover_takeover_before_primary_restart", target=replacement, args=["CLUSTER", "FAILOVER", "TAKEOVER"], timeout=60)
-    _p17_wait_node_role(replacement, "master", timeout=90.0)
-    _p17_wait_clean_cluster(nodes, timeout=120.0)
+    command = _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_failover_takeover_before_primary_restart", target=replacement, args=["CLUSTER", "FAILOVER", "TAKEOVER"], timeout=60)
+    _management_wait_node_role(replacement, "master", timeout=90.0)
+    _management_wait_clean_cluster(nodes, timeout=120.0)
     completed = telemetry.now_unix_ms()
     return {
         "safe_path": "cluster_failover_takeover_before_owned_container_restart",
@@ -8254,144 +6605,64 @@ def _p19_make_primary_safe(
     }
 
 
-def _p19_restart_one_node(
-    *,
-    telemetry: TelemetryRun,
-    phase: str,
-    run_id: str,
-    operation_id: str,
-    operation_name: str,
-    node_count: int,
-    sequence: int,
-    planned_role: str,
-    role_before: str,
-    target: dict[str, Any],
-    nodes: list[dict[str, Any]],
-    command_log: list[dict[str, Any]],
-    safe_details: dict[str, Any],
-) -> dict[str, Any]:
-    restart_started = telemetry.now_unix_ms()
-    restart_mono_started = time.monotonic()
-    before_restart_count = _container_restart_count(target["container_name"])
-    command = _p17_log_docker_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, command_kind="owned_container_restart", target=target, args=["restart", "-t", "2", target["container_name"]], timeout=60)
-    restart_completed = telemetry.now_unix_ms()
-    _wait_for_nodes([target], timeout=60.0)
-    health_started = telemetry.now_unix_ms()
-    health_mono_started = time.monotonic()
-    _p17_wait_clean_cluster(nodes, timeout=120.0)
-    health = _p17_cluster_health(nodes)
-    health_completed = telemetry.now_unix_ms()
-    after_restart_count = _container_restart_count(target["container_name"])
-    restart_delta = _restart_delta(before_restart_count, after_restart_count)
-    health_status = "PASS" if (
-        command.get("status") == "PASS"
-        and health["cluster_state"] == "ok"
-        and health["known_nodes"] == node_count
-        and health["slots_assigned"] == 16384
-        and health["slots_ok"] == 16384
-        and health["slots_fail"] == 0
-    ) else "FAIL"
-    missing_fields = list(safe_details.get("missing_fields", []))
-    if operation_name == "rolling_restart_primary_safe" and role_before != "primary":
-        missing_fields.extend(
-            [
-                {"field": "promotion_latency_ms", "status": MISSING, "reason": "Target was not primary at restart time, so no failover promotion was required."},
-                {"field": "cluster_recovery_latency_ms", "status": MISSING, "reason": "Target was not primary at restart time, so primary failover recovery did not apply."},
-                {"field": "read_unavailability_ms", "status": MISSING, "reason": "Target was not primary at restart time, so primary read-unavailability measurement did not apply."},
-                {"field": "write_unavailability_ms", "status": MISSING, "reason": "Target was not primary at restart time, so primary write-unavailability measurement did not apply."},
-            ]
-        )
-    return {
-        "schema_version": "v1",
-        "phase_id": phase,
-        "run_id": run_id,
-        "operation_id": operation_id,
-        "operation_name": operation_name,
-        "node_count": node_count,
-        "sequence": sequence,
-        "node_logical_id": target["logical_id"],
-        "shard_id": target["shard_id"],
-        "planned_role": planned_role,
-        "role_before_restart": role_before,
-        "container_name": target["container_name"],
-        "max_concurrent_restarts": 1,
-        "concurrent_restart_group": sequence,
-        "restart_started_at_ms": restart_started,
-        "restart_completed_at_ms": restart_completed,
-        "restart_wall_ms": round(max(time.monotonic() - restart_mono_started, 0.0) * 1000.0, 6),
-        "health_gate_started_at_ms": health_started,
-        "health_gate_completed_at_ms": health_completed,
-        "health_gate_wall_ms": round(max(time.monotonic() - health_mono_started, 0.0) * 1000.0, 6),
-        "health_gate_status": health_status,
-        "cluster_state_after_gate": health["cluster_state"],
-        "known_nodes_after_gate": health["known_nodes"],
-        "slots_after_gate": health["slots_assigned"],
-        "slots_ok_after_gate": health["slots_ok"],
-        "slots_fail_after_gate": health["slots_fail"],
-        "command_ref": command["command_id"],
-        "command_status": command["status"],
-        "docker_restart_count_before": before_restart_count,
-        "docker_restart_count_after": after_restart_count,
-        "docker_restart_count_delta": restart_delta,
-        "workload_impact_ref": f"{operation_id}:event",
-        "primary_safe_path": safe_details.get("safe_path", "not_required_for_replica_restart"),
-        "safe_command_ref": safe_details.get("safe_command_ref", MISSING),
-        "target_primary_node_id": safe_details.get("target_primary_node_id", MISSING),
-        "replacement_logical_id": safe_details.get("replacement_logical_id", MISSING),
-        "replacement_node_id": safe_details.get("replacement_node_id", MISSING),
-        "promotion_latency_ms": safe_details.get("promotion_latency_ms", MISSING),
-        "cluster_recovery_latency_ms": safe_details.get("cluster_recovery_latency_ms", MISSING),
-        "read_unavailability_ms": safe_details.get("read_unavailability_ms", MISSING),
-        "write_unavailability_ms": safe_details.get("write_unavailability_ms", MISSING),
-        "missing_fields": missing_fields,
-    }
 
-
-def _write_strict_management_blocked_artifact(artifacts: Path, preflight: dict[str, Any], profile: StrictManagementProfile) -> None:
-    blocked_dir = Path("artifacts/goal_loop_strict") / profile.stage
+def _write_management_blocked_artifact(
+    artifacts: Path,
+    preflight: dict[str, Any],
+    profile: ExecutionProfile,
+    capability_id: str,
+) -> None:
+    blocked_dir = Path("artifacts/captures") / capability_id
     blocked_dir.mkdir(parents=True, exist_ok=True)
     failed = [item for item in preflight.get("checks", []) if item.get("status") != "PASS"]
     lines = [
-        f"# BLOCKED - {profile.stage}",
+        f"# BLOCKED - {capability_id}",
         "",
-        f"Resource preflight could not support exactly {profile.scale} real Valkey nodes.",
+        f"Resource preflight could not support exactly {profile.requested_nodes} real Valkey nodes.",
         "",
         f"- preflight_status: {preflight.get('status', MISSING)}",
         f"- can_run: {preflight.get('can_run', MISSING)}",
         f"- nodes_requested: {preflight.get('nodes_requested', preflight.get('node_count', MISSING))}",
-        f"- config_path: {profile.config_path}",
+        f"- config_path: {profile.config_template}",
         f"- failed_checks: {', '.join(str(item.get('name', MISSING)) for item in failed) or 'MISSING'}",
         "",
-        "The stage is intentionally blocked rather than downshifted or faked.",
+        "The execution is intentionally blocked rather than downshifted or faked.",
     ]
     (blocked_dir / "BLOCKED.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def _write_strict_full_flow_blocked_artifact(artifacts: Path, preflight: dict[str, Any], profile: StrictFullFlowProfile) -> None:
+def _write_full_flow_blocked_artifact(
+    artifacts: Path,
+    preflight: dict[str, Any],
+    profile: ExecutionProfile,
+    capability_id: str,
+    scenario: str,
+) -> None:
     blocked_dir = artifacts / "blocked"
     blocked_dir.mkdir(parents=True, exist_ok=True)
     failed = [item for item in preflight.get("checks", []) if item.get("status") != "PASS"]
     lines = [
-        f"# BLOCKED - {profile.stage}",
+        f"# BLOCKED - {capability_id}",
         "",
-        f"Resource preflight could not support exactly {profile.scale} real Valkey nodes for {profile.scenario}.",
+        f"Resource preflight could not support exactly {profile.requested_nodes} real Valkey nodes for {scenario}.",
         "",
         f"- preflight_status: {preflight.get('status', MISSING)}",
         f"- can_run: {preflight.get('can_run', MISSING)}",
         f"- nodes_requested: {preflight.get('nodes_requested', preflight.get('node_count', MISSING))}",
-        f"- config_path: {profile.config_path}",
+        f"- config_path: {profile.config_template}",
         f"- failed_checks: {', '.join(str(item.get('name', MISSING)) for item in failed) or 'MISSING'}",
         f"- scoped_artifacts: {artifacts.as_posix()}",
         "",
-        "The stage is intentionally blocked rather than downshifted or faked.",
+        "The execution is intentionally blocked rather than downshifted or faked.",
     ]
-    (blocked_dir / f"BLOCKED_{profile.scope}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    scope = f"full_flow_{profile.requested_nodes}"
+    (blocked_dir / f"BLOCKED_{scope}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def write_p36_full_flow_artifacts(
+def write_full_flow_artifacts(
     *,
     artifacts: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     config: dict[str, Any],
@@ -8400,37 +6671,42 @@ def write_p36_full_flow_artifacts(
     state: dict[str, Any],
     setup_timeline: SetupTimeline | None = None,
 ) -> None:
-    profile = _strict_full_flow_profile(phase, scenario)
+    profile = _full_flow_profile(capability_id, scenario, len(nodes))
     if profile is None:
-        raise DockerRuntimeError(f"{phase}/{scenario} is not a strict full-flow scenario")
-    if len(nodes) != profile.scale:
-        raise DockerRuntimeError(f"P36 requires exactly {profile.scale} nodes for {scenario}, got {len(nodes)}")
+        raise DockerRuntimeError(f"{capability_id}/{scenario} is not the local full-flow scenario")
+    if len(nodes) != profile.requested_nodes:
+        raise DockerRuntimeError(f"LOCAL_FULL_FLOW requires exactly {profile.requested_nodes} nodes for {scenario}, got {len(nodes)}")
     artifacts.mkdir(parents=True, exist_ok=True)
-    parent = _p36_parent_artifacts_dir(artifacts)
+    parent = _local_full_flow_parent_artifacts_dir(artifacts)
 
-    config_errors = _runtime_semantic_errors(config, phase=phase, scenario=scenario)
+    config_errors = _runtime_semantic_errors(
+        config,
+        capability_id=capability_id,
+        scenario=scenario,
+        profile_id=profile.profile_id,
+    )
     config_report = {
         "schema_version": "v1",
         "artifact_type": "config_validation_report",
-        "phase_id": phase,
-        "stage_id": phase,
+        "capability_id": capability_id,
+
         "scenario_name": scenario,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if not config_errors else "FAIL",
-        "node_count": profile.scale,
+        "node_count": profile.requested_nodes,
         "errors": config_errors,
         "bounded_exception": {
-            "allowed": profile.scale == 200,
-            "phase_id": phase if profile.scale == 200 else "SKIPPED_WITH_REASON",
-            "scenario_name": scenario if profile.scale == 200 else "SKIPPED_WITH_REASON",
-            "reason": "P36 exact 200-node full-flow bounded exception." if profile.scale == 200 else "No bounded exception required for this scale.",
+            "allowed": profile.requested_nodes == 200,
+            "capability_id": capability_id if profile.requested_nodes == 200 else "SKIPPED_WITH_REASON",
+            "scenario_name": scenario if profile.requested_nodes == 200 else "SKIPPED_WITH_REASON",
+            "reason": "LOCAL_FULL_FLOW exact 200-node full-flow bounded exception." if profile.requested_nodes == 200 else "No bounded exception required for this scale.",
         },
     }
     _write_json_artifact(artifacts / "config_validation_report.json", config_report)
-    _write_p30_cluster_plan(artifacts / "cluster_plan.json", config, phase, scenario, run_id)
-    _write_p30_run_state(artifacts / "run_state.json", phase, scenario, run_id, state)
+    _write_management_matrix_cluster_plan(artifacts / "cluster_plan.json", config, capability_id, scenario, run_id)
+    _write_management_matrix_run_state(artifacts / "run_state.json", capability_id, scenario, run_id, state)
 
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
@@ -8439,18 +6715,18 @@ def write_p36_full_flow_artifacts(
     management_command_log: list[dict[str, Any]] = []
     fault_command_log: list[dict[str, Any]] = []
 
-    with _timeline_span(setup_timeline, "baseline_workload", "baseline_workload", {"node_count": profile.scale}):
-        baseline = _p36_run_baseline_workload(phase, scenario, run_id, profile.scale, nodes)
+    with _timeline_span(setup_timeline, "baseline_workload", "baseline_workload", {"node_count": profile.requested_nodes}):
+        baseline = _local_full_flow_run_baseline_workload(capability_id, scenario, run_id, profile.requested_nodes, nodes)
     events.extend(baseline["events"])
     metrics.extend(baseline["metrics"])
     workload_windows.extend(baseline["windows"])
 
-    with _timeline_span(setup_timeline, "management_matrix", "management_matrix", {"node_count": profile.scale}):
-        management = _p36_run_management_sequence(
-            phase=phase,
+    with _timeline_span(setup_timeline, "management_matrix", "management_matrix", {"node_count": profile.requested_nodes}):
+        management = _local_full_flow_run_management_sequence(
+            capability_id=capability_id,
             scenario=scenario,
             run_id=run_id,
-            scale=profile.scale,
+            scale=profile.requested_nodes,
             nodes=nodes,
             command_log=management_command_log,
         )
@@ -8459,12 +6735,12 @@ def write_p36_full_flow_artifacts(
     workload_windows.extend(management["windows"])
     topology_rows.extend(management["topology"])
 
-    with _timeline_span(setup_timeline, "fault_matrix", "fault_matrix", {"node_count": profile.scale}):
-        fault = _p36_run_fault_failover_sequence(
-            phase=phase,
+    with _timeline_span(setup_timeline, "fault_matrix", "fault_matrix", {"node_count": profile.requested_nodes}):
+        fault = _local_full_flow_run_fault_failover_sequence(
+            capability_id=capability_id,
             scenario=scenario,
             run_id=run_id,
-            scale=profile.scale,
+            scale=profile.requested_nodes,
             nodes=nodes,
             command_log=fault_command_log,
             network_name=str(state.get("runtime", {}).get("network_name", "")),
@@ -8474,17 +6750,17 @@ def write_p36_full_flow_artifacts(
     workload_windows.extend(fault["windows"])
     topology_rows.extend(fault["topology"])
 
-    with _timeline_span(setup_timeline, "recovery", "recovery", {"node_count": profile.scale}):
-        recovery_health = _p17_cluster_health(nodes)
-        if recovery_health.get("cluster_state") != "ok" or recovery_health.get("known_nodes") != profile.scale:
-            raise DockerRuntimeError(f"P36 recovery verification failed: {recovery_health}")
+    with _timeline_span(setup_timeline, "recovery", "recovery", {"node_count": profile.requested_nodes}):
+        recovery_health = _management_cluster_health(nodes)
+        if recovery_health.get("cluster_state") != "ok" or recovery_health.get("known_nodes") != profile.requested_nodes:
+            raise DockerRuntimeError(f"LOCAL_FULL_FLOW recovery verification failed: {recovery_health}")
         fault["summary"]["recovery_health"] = recovery_health
 
-    with _timeline_span(setup_timeline, "artifact_validation", "artifact_validation", {"node_count": profile.scale}):
+    with _timeline_span(setup_timeline, "artifact_validation", "artifact_validation", {"node_count": profile.requested_nodes}):
         validation_diagnostics = {
             "schema_version": "v1",
-            "artifact_type": "p36_pre_analysis_validation",
-            "phase_id": phase,
+            "artifact_type": "local_full_flow_pre_analysis_validation",
+            "capability_id": capability_id,
             "run_id": run_id,
             "management_status": management["summary"].get("status"),
             "fault_status": fault["summary"].get("status"),
@@ -8512,19 +6788,19 @@ def write_p36_full_flow_artifacts(
         _write_json_artifact(artifacts / "pre_analysis_validation.json", validation_diagnostics)
         if management["summary"].get("status") != "PASS" or fault["summary"].get("status") != "PASS":
             raise DockerRuntimeError(
-                "P36 matrix artifacts failed pre-analysis validation: "
+                "LOCAL_FULL_FLOW matrix artifacts failed pre-analysis validation: "
                 + json.dumps(validation_diagnostics, sort_keys=True)
             )
         if not events or not metrics or not workload_windows or not management_command_log or not fault_command_log:
-            raise DockerRuntimeError("P36 matrix artifacts are incomplete before analysis")
-    write_system_metrics_artifacts(artifacts, phase, scenario, run_id, nodes, lifecycle_windows=["full_flow"])
-    metrics.extend(_p36_load_jsonl(artifacts / "system_metrics_timeseries.jsonl"))
-    _p36_normalize_event_ids(events, workload_windows)
-    lifecycle_steps = _p36_lifecycle_steps(profile.scale, artifacts, management, fault)
-    with _timeline_span(setup_timeline, "analysis", "analysis", {"node_count": profile.scale}):
-        analysis_summary = _p36_analysis_summary(phase, scenario, run_id, profile.scale, lifecycle_steps, management, fault, events, metrics, workload_windows)
-    with _timeline_span(setup_timeline, "report", "report", {"node_count": profile.scale}):
-        report_index = _p36_report_index(phase, scenario, run_id, profile.scale, analysis_summary)
+            raise DockerRuntimeError("LOCAL_FULL_FLOW matrix artifacts are incomplete before analysis")
+    write_system_metrics_artifacts(artifacts, capability_id, scenario, run_id, nodes, lifecycle_windows=["full_flow"])
+    metrics.extend(_local_full_flow_load_jsonl(artifacts / "system_metrics_timeseries.jsonl"))
+    _local_full_flow_normalize_event_ids(events, workload_windows)
+    lifecycle_steps = _local_full_flow_lifecycle_steps(profile.requested_nodes, artifacts, management, fault)
+    with _timeline_span(setup_timeline, "analysis", "analysis", {"node_count": profile.requested_nodes}):
+        analysis_summary = _local_full_flow_analysis_summary(capability_id, scenario, run_id, profile.requested_nodes, lifecycle_steps, management, fault, events, metrics, workload_windows)
+    with _timeline_span(setup_timeline, "report", "report", {"node_count": profile.requested_nodes}):
+        report_index = _local_full_flow_report_index(capability_id, scenario, run_id, profile.requested_nodes, analysis_summary)
 
     _write_json_artifact(artifacts / "analysis_summary.json", analysis_summary)
     _write_json_artifact(artifacts / "report_index.json", report_index)
@@ -8535,8 +6811,8 @@ def write_p36_full_flow_artifacts(
         {
             "schema_version": "v1",
             "artifact_type": "workload_windows",
-            "phase_id": phase,
-            "stage_id": phase,
+            "capability_id": capability_id,
+
             "scenario_name": scenario,
             "run_id": run_id,
             "created_at": "2026-06-28T00:00:00Z",
@@ -8550,20 +6826,20 @@ def write_p36_full_flow_artifacts(
     write_jsonl(artifacts / "rolling_restart_results.jsonl", management["restart_results"])
     _write_json_artifact(
         artifacts / "rolling_restart_plan.json",
-        _p30_rolling_plan(phase, run_id, management["restart_plans"]),
+        _management_matrix_rolling_plan(capability_id, run_id, management["restart_plans"]),
     )
     write_jsonl(artifacts / "fault_command_log.jsonl", fault_command_log)
     _write_json_artifact(artifacts / "management_sequence.json", management["summary"])
     _write_json_artifact(artifacts / "fault_sequence.json", fault["summary"])
     scenario_rows: list[dict[str, Any]] = []
-    for scenario_id in P36_MANAGEMENT_SCENARIOS:
+    for scenario_id in LOCAL_FULL_FLOW_MANAGEMENT_SCENARIOS:
         evidence = management["scenario_evidence"][scenario_id]
         scenario_rows.append(
             {
                 "id": scenario_id,
                 "run_id": run_id,
                 "status": "REAL_PASS",
-                "operation_ids": sorted(_p36_operation_ids_for_refs(events, management_command_log, evidence)),
+                "operation_ids": sorted(_local_full_flow_operation_ids_for_refs(events, management_command_log, evidence)),
                 "event_ids": evidence["event_ids"],
                 "command_ids": evidence["command_ids"],
                 "evidence_refs": [
@@ -8577,14 +6853,14 @@ def write_p36_full_flow_artifacts(
                 ],
             }
         )
-    for scenario_id in P36_FAULT_SCENARIOS:
+    for scenario_id in LOCAL_FULL_FLOW_FAULT_SCENARIOS:
         evidence = fault["scenario_evidence"][scenario_id]
         scenario_rows.append(
             {
                 "id": scenario_id,
                 "run_id": run_id,
                 "status": "REAL_PASS",
-                "operation_ids": sorted(_p36_operation_ids_for_refs(events, fault_command_log, evidence)),
+                "operation_ids": sorted(_local_full_flow_operation_ids_for_refs(events, fault_command_log, evidence)),
                 "event_ids": evidence["event_ids"],
                 "command_ids": evidence["command_ids"],
                 "evidence_refs": ["runtime/fault_sequence.json", "runtime/fault_command_log.jsonl"],
@@ -8595,11 +6871,11 @@ def write_p36_full_flow_artifacts(
         {
             "schema_version": "v1",
             "artifact_type": "scenario_results",
-            "phase_id": phase,
+            "capability_id": capability_id,
             "run_id": run_id,
             "status": "PASS",
-            "scale": profile.scale,
-            "node_count": profile.scale,
+            "scale": profile.requested_nodes,
+            "node_count": profile.requested_nodes,
             "scenarios": scenario_rows,
         },
     )
@@ -8608,37 +6884,37 @@ def write_p36_full_flow_artifacts(
         {
             "schema_version": "v1",
             "artifact_type": "full_flow_result",
-            "phase_id": phase,
-            "stage_id": phase,
+            "capability_id": capability_id,
+
             "scenario_name": scenario,
             "run_id": run_id,
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
-            "scale": profile.scale,
-            "nodes_requested": profile.scale,
+            "scale": profile.requested_nodes,
+            "nodes_requested": profile.requested_nodes,
             "nodes_observed": len(nodes),
             "status": "PASS" if all(step["status"] == "PASS" for step in lifecycle_steps) and management["summary"]["status"] == "PASS" and fault["summary"]["status"] == "PASS" else "FAIL",
             "steps": lifecycle_steps,
             "management_execution_refs": [
-                _p36_rel(artifacts / "management_sequence.json"),
-                _p36_rel(artifacts / "management_command_log.jsonl"),
-                _p36_rel(artifacts / "rolling_restart_plan.json"),
-                _p36_rel(artifacts / "rolling_restart_results.jsonl"),
+                _local_full_flow_rel(artifacts / "management_sequence.json"),
+                _local_full_flow_rel(artifacts / "management_command_log.jsonl"),
+                _local_full_flow_rel(artifacts / "rolling_restart_plan.json"),
+                _local_full_flow_rel(artifacts / "rolling_restart_results.jsonl"),
             ],
             "fault_execution_refs": [
-                _p36_rel(artifacts / "fault_sequence.json"),
-                _p36_rel(artifacts / "fault_command_log.jsonl"),
+                _local_full_flow_rel(artifacts / "fault_sequence.json"),
+                _local_full_flow_rel(artifacts / "fault_command_log.jsonl"),
             ],
-            "analysis_ref": _p36_rel(artifacts / "analysis_summary.json"),
-            "report_ref": _p36_rel(artifacts / "report_index.json"),
-            "cleanup_ref": _p36_rel(artifacts / "cleanup_report.json"),
-            "evidence_ref": _p36_rel(artifacts / "valkey_e2e_evidence.json"),
+            "analysis_ref": _local_full_flow_rel(artifacts / "analysis_summary.json"),
+            "report_ref": _local_full_flow_rel(artifacts / "report_index.json"),
+            "cleanup_ref": _local_full_flow_rel(artifacts / "cleanup_report.json"),
+            "evidence_ref": _local_full_flow_rel(artifacts / "valkey_e2e_evidence.json"),
         },
     )
-    refresh_p36_full_flow_aggregate(parent)
+    refresh_full_flow_aggregate(parent)
 
 
-def _p36_normalize_event_ids(events: list[dict[str, Any]], windows: list[dict[str, Any]]) -> None:
+def _local_full_flow_normalize_event_ids(events: list[dict[str, Any]], windows: list[dict[str, Any]]) -> None:
     mapping: dict[tuple[str, str], str] = {}
     seen: set[str] = set()
     for index, event in enumerate(events):
@@ -8664,11 +6940,11 @@ def _p36_normalize_event_ids(events: list[dict[str, Any]], windows: list[dict[st
                     metrics[field] = mapping[(operation_id, old)]
 
 
-def _p36_load_jsonl(path: Path) -> list[dict[str, Any]]:
+def _local_full_flow_load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-def _p36_operation_ids_for_refs(
+def _local_full_flow_operation_ids_for_refs(
     events: list[dict[str, Any]],
     commands: list[dict[str, Any]],
     evidence: dict[str, list[str]],
@@ -8682,40 +6958,40 @@ def _p36_operation_ids_for_refs(
     }
 
 
-def _p36_run_baseline_workload(phase: str, scenario: str, run_id: str, scale: int, nodes: list[dict[str, Any]]) -> dict[str, Any]:
-    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.baseline_workload", scale=scale, node_count=scale)
-    operation_id = f"p36-baseline-workload-{scale}"
-    start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:baseline", operation_id=operation_id, message=f"P36 exact-{scale} baseline workload started.", metadata={"window_name": "baseline"})
+def _local_full_flow_run_baseline_workload(capability_id: str, scenario: str, run_id: str, scale: int, nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    telemetry = TelemetryRun(capability_id=capability_id, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.baseline_workload", scale=scale, node_count=scale)
+    operation_id = f"local_full_flow-baseline-workload-{scale}"
+    start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:baseline", operation_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} baseline workload started.", metadata={"window_name": "baseline"})
     latencies: list[float] = []
     errors: list[str] = []
     started = time.monotonic()
     for index in range(6):
-        key = f"{{vslab-p36-baseline-{scale}-{index % 3}}}:k"
+        key = f"{{vslab-local_full_flow-baseline-{scale}-{index % 3}}}:k"
         value = f"value-{scale}-{index}"
         op_started = time.monotonic()
         try:
             if index % 2 == 0:
-                response = run_node_cluster_cli(_p30_first_live_node(nodes), "SET", key, value, timeout=10)
+                response = run_node_cluster_cli(_management_matrix_first_live_node(nodes), "SET", key, value, timeout=10)
                 if str(response).upper() != "OK":
                     errors.append(f"SET unexpected result {response!r}")
                 else:
                     latencies.append((time.monotonic() - op_started) * 1000.0)
             else:
-                _ = run_node_cluster_cli(_p30_first_live_node(nodes), "GET", key, timeout=10)
+                _ = run_node_cluster_cli(_management_matrix_first_live_node(nodes), "GET", key, timeout=10)
                 latencies.append((time.monotonic() - op_started) * 1000.0)
         except Exception as exc:  # noqa: BLE001
             errors.append(repr(exc))
     metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - started, 0.000001), latencies_ms=latencies, error_texts=errors)
-    end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:baseline", operation_id=operation_id, message=f"P36 exact-{scale} baseline workload finished.", metadata={"window_name": "baseline", "sample_count": metrics["sample_count"]})
+    end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:baseline", operation_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} baseline workload finished.", metadata={"window_name": "baseline", "sample_count": metrics["sample_count"]})
     metrics["window_start_event_id"] = start["event_id"]
     metrics["window_end_event_id"] = end["event_id"]
-    window = _p30_workload_window("baseline", start["event_id"], end["event_id"], "PASS" if not errors else "FAIL", operation_id, telemetry.coverage_id, metrics)
-    return {"events": [start, end], "metrics": _p17_workload_metric_rows(telemetry, operation_id, "baseline", metrics), "windows": [window]}
+    window = _management_matrix_workload_window("baseline", start["event_id"], end["event_id"], "PASS" if not errors else "FAIL", operation_id, telemetry.coverage_id, metrics)
+    return {"events": [start, end], "metrics": _management_workload_metric_rows(telemetry, operation_id, "baseline", metrics), "windows": [window]}
 
 
-def _p36_run_management_sequence(
+def _local_full_flow_run_management_sequence(
     *,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     scale: int,
@@ -8729,21 +7005,21 @@ def _p36_run_management_sequence(
     results: list[dict[str, Any]] = []
     restart_plans: list[dict[str, Any]] = []
     restart_results: list[dict[str, Any]] = []
-    scenario_evidence = {name: {"event_ids": [], "command_ids": []} for name in P36_MANAGEMENT_SCENARIOS}
+    scenario_evidence = {name: {"event_ids": [], "command_ids": []} for name in LOCAL_FULL_FLOW_MANAGEMENT_SCENARIOS}
     matrix_started = time.monotonic()
-    for operation_name in P30_EXECUTION_ROWS:
-        scenario_id = _p36_management_scenario(operation_name)
-        operation_id = f"p36-management-{operation_name}-{scale}"
-        telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.management.{operation_name}", scale=scale, node_count=scale)
-        started_event = _p36_observation_event(run_id, operation_id, scenario_id, "management_operation_started")
+    for operation_name in MANAGEMENT_MATRIX_EXECUTION_ROWS:
+        scenario_id = _local_full_flow_management_scenario(operation_name)
+        operation_id = f"local_full_flow-management-{operation_name}-{scale}"
+        telemetry = TelemetryRun(capability_id=capability_id, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.management.{operation_name}", scale=scale, node_count=scale)
+        started_event = _local_full_flow_observation_event(run_id, operation_id, scenario_id, "management_operation_started")
         events.append(started_event)
         scenario_evidence[scenario_id]["event_ids"].append(started_event["event_id"])
-        before = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, f"{operation_name}_before", nodes, nodes)
+        before = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, f"{operation_name}_before", nodes, nodes)
         topology_rows.append(before)
         command_start = len(command_log)
-        result, row_events, row_metrics, row_windows, row_topology, extras = _p30_run_operation_with_workload(
+        result, row_events, row_metrics, row_windows, row_topology, extras = _management_matrix_run_operation_with_workload(
             telemetry=telemetry,
-            phase=phase,
+            capability_id=capability_id,
             run_id=run_id,
             scenario=scenario,
             operation_name=operation_name,
@@ -8761,14 +7037,14 @@ def _p36_run_management_sequence(
         if extras.get("restart_plan"):
             restart_plans.append(extras["restart_plan"])
         restart_results.extend(extras.get("restart_results", []))
-        topology_rows.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, f"{operation_name}_after", nodes, nodes))
-        finished_event = _p36_observation_event(run_id, operation_id, scenario_id, "management_operation_finished")
+        topology_rows.append(_management_topology_snapshot(telemetry, capability_id, run_id, operation_id, f"{operation_name}_after", nodes, nodes))
+        finished_event = _local_full_flow_observation_event(run_id, operation_id, scenario_id, "management_operation_finished")
         events.append(finished_event)
         scenario_evidence[scenario_id]["event_ids"].append(finished_event["event_id"])
         results.append(result)
 
-    stability_id = f"p36-management-bounded-stability-{scale}"
-    stability_started = _p36_observation_event(run_id, stability_id, "bounded_stability", "bounded_stability_started")
+    stability_id = f"local_full_flow-management-bounded-stability-{scale}"
+    stability_started = _local_full_flow_observation_event(run_id, stability_id, "bounded_stability", "bounded_stability_started")
     events.append(stability_started)
     stability_monotonic_started = time.monotonic()
     health_criteria: dict[str, Any] = {
@@ -8785,7 +7061,7 @@ def _p36_run_management_sequence(
             time.sleep(health_interval_seconds)
         health_started = _unix_ms_runtime()
         health_monotonic_started = time.monotonic()
-        health_text = _node_command(_p30_first_live_node(nodes), "CLUSTER", "INFO", timeout=30)
+        health_text = _node_command(_management_matrix_first_live_node(nodes), "CLUSTER", "INFO", timeout=30)
         health_duration_ms = max(round((time.monotonic() - health_monotonic_started) * 1000.0, 6), 0.000001)
         health_ended = _unix_ms_runtime()
         observed: dict[str, Any] = {}
@@ -8823,7 +7099,7 @@ def _p36_run_management_sequence(
             }
         )
         scenario_evidence["bounded_stability"]["command_ids"].append(health_command_id)
-    stability_finished = _p36_observation_event(run_id, stability_id, "bounded_stability", "bounded_stability_finished")
+    stability_finished = _local_full_flow_observation_event(run_id, stability_id, "bounded_stability", "bounded_stability_finished")
     events.append(stability_finished)
     scenario_evidence["bounded_stability"]["event_ids"].extend([stability_started["event_id"], stability_finished["event_id"]])
     stability_duration_ms = max(round((time.monotonic() - stability_monotonic_started) * 1000.0, 6), 0.000001)
@@ -8833,9 +7109,9 @@ def _p36_run_management_sequence(
     status = "PASS" if all(row.get("operation_status") == "PASS" for row in results) else "FAIL"
     summary = {
         "schema_version": "v1",
-        "artifact_type": "p36_management_sequence",
-        "phase_id": phase,
-        "stage_id": phase,
+        "artifact_type": "local_full_flow_management_sequence",
+        "capability_id": capability_id,
+
         "scenario_name": scenario,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
@@ -8843,7 +7119,7 @@ def _p36_run_management_sequence(
         "status": status,
         "scale": scale,
         "node_count": scale,
-        "operation_sequence": list(P30_EXECUTION_ROWS),
+        "operation_sequence": list(MANAGEMENT_MATRIX_EXECUTION_ROWS),
         "representative": False,
         "result": {"operation_status": status, "duration_ms": duration_ms, "operations": results},
         "stability": {
@@ -8864,7 +7140,7 @@ def _p36_run_management_sequence(
         ],
     }
     return {
-        "summary": _p30_encode_missing(summary),
+        "summary": _management_matrix_encode_missing(summary),
         "events": events,
         "metrics": metrics,
         "windows": windows,
@@ -8875,7 +7151,7 @@ def _p36_run_management_sequence(
     }
 
 
-def _p36_management_scenario(operation_name: str) -> str:
+def _local_full_flow_management_scenario(operation_name: str) -> str:
     if operation_name.startswith("reshard") or operation_name.startswith("rebalance"):
         return "reshard_rebalance"
     if operation_name.startswith("rolling_restart"):
@@ -8883,7 +7159,7 @@ def _p36_management_scenario(operation_name: str) -> str:
     return "add_remove_node"
 
 
-def _p36_observation_event(run_id: str, operation_id: str, scenario_id: str, event_type: str) -> dict[str, Any]:
+def _local_full_flow_observation_event(run_id: str, operation_id: str, scenario_id: str, event_type: str) -> dict[str, Any]:
     now_ms = _unix_ms_runtime()
     return {
         "schema_version": "v1",
@@ -8902,9 +7178,9 @@ def _unix_ms_runtime() -> int:
     return time.time_ns() // 1_000_000
 
 
-def _p36_run_fault_failover_sequence(
+def _local_full_flow_run_fault_failover_sequence(
     *,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     scale: int,
@@ -8912,16 +7188,16 @@ def _p36_run_fault_failover_sequence(
     command_log: list[dict[str, Any]],
     network_name: str,
 ) -> dict[str, Any]:
-    operation_id = f"p36-fault-primary-handoff-{scale}"
-    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.telemetry_collect", scale=scale, node_count=scale)
-    topology_before = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "fault_before", nodes, nodes)
-    topology = _p19_live_topology(nodes)
+    operation_id = f"local_full_flow-fault-primary-handoff-{scale}"
+    telemetry = TelemetryRun(capability_id=capability_id, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.telemetry_collect", scale=scale, node_count=scale)
+    topology_before = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "fault_before", nodes, nodes)
+    topology = _management_live_topology(nodes)
     target_primary = next((node for node in nodes if topology.get(node["logical_id"], {}).get("role") == "primary"), None)
     if target_primary is None:
-        raise DockerRuntimeError("P36 fault/failover sequence could not find a live primary")
+        raise DockerRuntimeError("LOCAL_FULL_FLOW fault/failover sequence could not find a live primary")
     replacement = next((node for node in nodes if node["shard_id"] == target_primary["shard_id"] and topology.get(node["logical_id"], {}).get("role") == "replica"), None)
     if replacement is None:
-        raise DockerRuntimeError(f"P36 fault/failover sequence could not find a replica for {target_primary['logical_id']}")
+        raise DockerRuntimeError(f"LOCAL_FULL_FLOW fault/failover sequence could not find a replica for {target_primary['logical_id']}")
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
     windows: list[dict[str, Any]] = []
@@ -8929,66 +7205,66 @@ def _p36_run_fault_failover_sequence(
     all_errors: list[str] = []
     failover_details: dict[str, Any] | None = None
     all_started = time.monotonic()
-    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, fault_id=operation_id, message=f"P36 exact-{scale} failover all-run workload started.", metadata={"window_name": "all_run"})
+    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, fault_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} failover all-run workload started.", metadata={"window_name": "all_run"})
     events.append(all_start)
     for window_name in CANONICAL_WINDOWS[:-1]:
-        start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, fault_id=operation_id, message=f"P36 exact-{scale} failover {window_name} workload started.", metadata={"window_name": window_name})
+        start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, fault_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} failover {window_name} workload started.", metadata={"window_name": window_name})
         events.append(start)
         latencies: list[float] = []
         errors: list[str] = []
         started = time.monotonic()
         for index in range(4):
             if window_name == "event" and index == 1 and failover_details is None:
-                event_started = telemetry.event("fault_failover_started", subject_type="valkey_node", subject_id=replacement["logical_id"], operation_id=operation_id, fault_id=operation_id, message="P36 controlled primary handoff started with CLUSTER FAILOVER TAKEOVER.", metadata={"target_primary": target_primary["logical_id"], "replacement": replacement["logical_id"]})
+                event_started = telemetry.event("fault_failover_started", subject_type="valkey_node", subject_id=replacement["logical_id"], operation_id=operation_id, fault_id=operation_id, message="LOCAL_FULL_FLOW controlled primary handoff started with CLUSTER FAILOVER TAKEOVER.", metadata={"target_primary": target_primary["logical_id"], "replacement": replacement["logical_id"]})
                 events.append(event_started)
-                failover_details = _p19_make_primary_safe(telemetry=telemetry, phase=phase, run_id=run_id, operation_id=operation_id, target=target_primary, nodes=nodes, command_log=command_log)
-                _p17_wait_clean_cluster(nodes, timeout=180.0)
-                events.append(telemetry.event("fault_failover_finished", subject_type="valkey_node", subject_id=replacement["logical_id"], operation_id=operation_id, fault_id=operation_id, message="P36 controlled primary handoff recovered with clean cluster.", metadata=failover_details))
-            key = f"{{vslab-p36-fault-{scale}-{window_name}-{index % 3}}}:k"
+                failover_details = _management_make_primary_safe(telemetry=telemetry, capability_id=capability_id, run_id=run_id, operation_id=operation_id, target=target_primary, nodes=nodes, command_log=command_log)
+                _management_wait_clean_cluster(nodes, timeout=180.0)
+                events.append(telemetry.event("fault_failover_finished", subject_type="valkey_node", subject_id=replacement["logical_id"], operation_id=operation_id, fault_id=operation_id, message="LOCAL_FULL_FLOW controlled primary handoff recovered with clean cluster.", metadata=failover_details))
+            key = f"{{vslab-local_full_flow-fault-{scale}-{window_name}-{index % 3}}}:k"
             value = f"value-{scale}-{window_name}-{index}"
             op_started = time.monotonic()
             try:
                 if index % 3 == 0:
-                    response = run_node_cluster_cli(_p30_first_live_node(nodes), "SET", key, value, timeout=10)
+                    response = run_node_cluster_cli(_management_matrix_first_live_node(nodes), "SET", key, value, timeout=10)
                     if str(response).upper() != "OK":
                         errors.append(f"SET unexpected result {response!r}")
                     else:
                         latencies.append((time.monotonic() - op_started) * 1000.0)
                 else:
-                    _ = run_node_cluster_cli(_p30_first_live_node(nodes), "GET", key, timeout=10)
+                    _ = run_node_cluster_cli(_management_matrix_first_live_node(nodes), "GET", key, timeout=10)
                     latencies.append((time.monotonic() - op_started) * 1000.0)
             except Exception as exc:  # noqa: BLE001
                 errors.append(repr(exc))
         window_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - started, 0.000001), latencies_ms=latencies, error_texts=errors)
-        end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, fault_id=operation_id, message=f"P36 exact-{scale} failover {window_name} workload finished.", metadata={"window_name": window_name, "sample_count": window_metrics["sample_count"]})
+        end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, fault_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} failover {window_name} workload finished.", metadata={"window_name": window_name, "sample_count": window_metrics["sample_count"]})
         events.append(end)
         window_metrics["window_start_event_id"] = start["event_id"]
         window_metrics["window_end_event_id"] = end["event_id"]
         window_status = "PASS" if window_name == "event" or not errors else "FAIL"
-        windows.append(_p30_workload_window(window_name, start["event_id"], end["event_id"], window_status, operation_id, telemetry.coverage_id, window_metrics))
-        metrics.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, window_metrics))
+        windows.append(_management_matrix_workload_window(window_name, start["event_id"], end["event_id"], window_status, operation_id, telemetry.coverage_id, window_metrics))
+        metrics.extend(_management_workload_metric_rows(telemetry, operation_id, window_name, window_metrics))
         all_latencies.extend(latencies)
         all_errors.extend(errors)
     if failover_details is None:
-        failover_details = _p19_make_primary_safe(telemetry=telemetry, phase=phase, run_id=run_id, operation_id=operation_id, target=target_primary, nodes=nodes, command_log=command_log)
-        _p17_wait_clean_cluster(nodes, timeout=180.0)
+        failover_details = _management_make_primary_safe(telemetry=telemetry, capability_id=capability_id, run_id=run_id, operation_id=operation_id, target=target_primary, nodes=nodes, command_log=command_log)
+        _management_wait_clean_cluster(nodes, timeout=180.0)
     all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
-    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, fault_id=operation_id, message=f"P36 exact-{scale} failover all-run workload finished.", metadata={"window_name": "all_run", "sample_count": all_metrics["sample_count"]})
+    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, fault_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} failover all-run workload finished.", metadata={"window_name": "all_run", "sample_count": all_metrics["sample_count"]})
     events.append(all_end)
     all_metrics["window_start_event_id"] = all_start["event_id"]
     all_metrics["window_end_event_id"] = all_end["event_id"]
-    windows.append(_p30_workload_window("all_run", all_start["event_id"], all_end["event_id"], "PASS", operation_id, telemetry.coverage_id, all_metrics))
-    metrics.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
+    windows.append(_management_matrix_workload_window("all_run", all_start["event_id"], all_end["event_id"], "PASS", operation_id, telemetry.coverage_id, all_metrics))
+    metrics.extend(_management_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
     primary_evidence = {"event_ids": [], "command_ids": []}
-    primary_started = _p36_observation_event(run_id, operation_id, "primary_failover", "primary_failover_observed_started")
-    primary_finished = _p36_observation_event(run_id, operation_id, "primary_failover", "primary_failover_observed_finished")
+    primary_started = _local_full_flow_observation_event(run_id, operation_id, "primary_failover", "primary_failover_observed_started")
+    primary_finished = _local_full_flow_observation_event(run_id, operation_id, "primary_failover", "primary_failover_observed_finished")
     events.extend([primary_started, primary_finished])
     primary_evidence["event_ids"].extend([primary_started["event_id"], primary_finished["event_id"]])
     for command in command_log:
         command["scenario_id"] = "primary_failover"
         primary_evidence["command_ids"].append(str(command["command_id"]))
 
-    live_topology = _p19_live_topology(nodes)
+    live_topology = _management_live_topology(nodes)
     target_replica = next(node for node in nodes if live_topology.get(node["logical_id"], {}).get("role") == "replica")
     nodehost_names = sorted({str(node.get("nodehost_container_name")) for node in nodes if node.get("nodehost_container_name")})
     target_nodehost = nodehost_names[0]
@@ -8996,20 +7272,20 @@ def _p36_run_fault_failover_sequence(
     az_nodehosts = sorted({str(node["nodehost_container_name"]) for node in nodes if str(node.get("az_id")) == target_az})
     survivor = next(node for node in nodes if str(node.get("nodehost_container_name")) not in set(az_nodehosts))
     fault_actions: list[tuple[str, Callable[[], dict[str, Any]]]] = [
-        ("replica_stop", lambda: _p36_process_pause_probe(target_replica, survivor, nodes)),
-        ("node_host_stop", lambda: _p36_nodehost_pause_probe(target_nodehost, survivor, nodes)),
-        ("az_stop", lambda: _p36_az_pause_probe(az_nodehosts, survivor, nodes)),
-        ("network_delay", lambda: _p36_proxy_fault_probe(nodes[0], ProxyRule("network_delay", delay_ms=25), expect_success=True)),
-        ("network_loss", lambda: _p36_proxy_fault_probe(nodes[0], ProxyRule("network_loss", loss_percent=100.0), expect_success=False)),
-        ("network_partition", lambda: _p36_network_disconnect_probe(network_name, target_nodehost, nodes, "network_partition")),
-        ("network_flap", lambda: _p36_proxy_fault_probe(nodes[0], ProxyRule("network_flap", flap_down_ms=250, flap_iterations=1), expect_success=False)),
-        ("minority_majority", lambda: _p36_network_disconnect_probe(network_name, target_nodehost, nodes, "minority_majority")),
-        ("split_brain_detection", lambda: _p36_network_disconnect_probe(network_name, target_nodehost, nodes, "split_brain_detection")),
+        ("replica_stop", lambda: _local_full_flow_process_pause_probe(target_replica, survivor, nodes)),
+        ("node_host_stop", lambda: _local_full_flow_nodehost_pause_probe(target_nodehost, survivor, nodes)),
+        ("az_stop", lambda: _local_full_flow_az_pause_probe(az_nodehosts, survivor, nodes)),
+        ("network_delay", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_delay", delay_ms=25), expect_success=True)),
+        ("network_loss", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_loss", loss_percent=100.0), expect_success=False)),
+        ("network_partition", lambda: _local_full_flow_network_disconnect_probe(network_name, target_nodehost, nodes, "network_partition")),
+        ("network_flap", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_flap", flap_down_ms=250, flap_iterations=1), expect_success=False)),
+        ("minority_majority", lambda: _local_full_flow_network_disconnect_probe(network_name, target_nodehost, nodes, "minority_majority")),
+        ("split_brain_detection", lambda: _local_full_flow_network_disconnect_probe(network_name, target_nodehost, nodes, "split_brain_detection")),
     ]
     scenario_evidence = {"primary_failover": primary_evidence}
     fault_results: list[dict[str, Any]] = []
     for scenario_id, action in fault_actions:
-        result = _p36_execute_fault_probe(
+        result = _local_full_flow_execute_fault_probe(
             run_id=run_id,
             scale=scale,
             scenario_id=scenario_id,
@@ -9021,14 +7297,14 @@ def _p36_run_fault_failover_sequence(
         )
         scenario_evidence[scenario_id] = result["evidence"]
         fault_results.append(result["result"])
-    health = _p17_cluster_health(nodes)
-    topology_after = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "fault_after", nodes, nodes)
+    health = _management_cluster_health(nodes)
+    topology_after = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "fault_after", nodes, nodes)
     status = "PASS" if health["cluster_state"] == "ok" and health["known_nodes"] == scale and health["slots_assigned"] == 16384 and all(window.get("status") == "PASS" for window in windows) else "FAIL"
     summary = {
         "schema_version": "v1",
-        "artifact_type": "p36_fault_sequence",
-        "phase_id": phase,
-        "stage_id": phase,
+        "artifact_type": "local_full_flow_fault_sequence",
+        "capability_id": capability_id,
+
         "scenario_name": scenario,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
@@ -9036,7 +7312,7 @@ def _p36_run_fault_failover_sequence(
         "status": status,
         "scale": scale,
         "node_count": scale,
-        "fault_sequence": list(P36_FAULT_SCENARIOS),
+        "fault_sequence": list(LOCAL_FULL_FLOW_FAULT_SCENARIOS),
         "representative": False,
         "real_execution_verified": status == "PASS",
         "target_primary_logical_id": target_primary["logical_id"],
@@ -9048,10 +7324,10 @@ def _p36_run_fault_failover_sequence(
         "workload_window_ref": f"{operation_id}:event",
         "source_refs": ["fault_sequence.json", "fault_command_log.jsonl", "full_flow_topology_snapshots.jsonl", "workload_windows.json"],
     }
-    return {"summary": _p30_encode_missing(summary), "events": events, "metrics": metrics, "windows": windows, "topology": [topology_before, topology_after], "scenario_evidence": scenario_evidence}
+    return {"summary": _management_matrix_encode_missing(summary), "events": events, "metrics": metrics, "windows": windows, "topology": [topology_before, topology_after], "scenario_evidence": scenario_evidence}
 
 
-def _p36_execute_fault_probe(
+def _local_full_flow_execute_fault_probe(
     *,
     run_id: str,
     scale: int,
@@ -9062,8 +7338,8 @@ def _p36_execute_fault_probe(
     metrics: list[dict[str, Any]],
     windows: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    operation_id = f"p36-fault-{scenario_id}-{scale}"
-    start = _p36_observation_event(run_id, operation_id, scenario_id, "fault_scenario_started")
+    operation_id = f"local_full_flow-fault-{scenario_id}-{scale}"
+    start = _local_full_flow_observation_event(run_id, operation_id, scenario_id, "fault_scenario_started")
     events.append(start)
     started_unix = _unix_ms_runtime()
     started = time.monotonic()
@@ -9073,7 +7349,7 @@ def _p36_execute_fault_probe(
     error: Exception | None = None
     try:
         details = action()
-        _p36_validate_fault_probe_observation(scenario_id, details)
+        _local_full_flow_validate_fault_probe_observation(scenario_id, details)
     except Exception as exc:
         error = exc
     duration_ms = round((time.monotonic() - started) * 1000.0, 6)
@@ -9101,7 +7377,7 @@ def _p36_execute_fault_probe(
     )
     if error is not None:
         raise error
-    end = _p36_observation_event(run_id, operation_id, scenario_id, "fault_scenario_finished")
+    end = _local_full_flow_observation_event(run_id, operation_id, scenario_id, "fault_scenario_finished")
     events.append(end)
     metric = {
         "schema_version": "v1",
@@ -9134,14 +7410,14 @@ def _p36_execute_fault_probe(
     )
     window_metrics["window_start_event_id"] = start["event_id"]
     window_metrics["window_end_event_id"] = end["event_id"]
-    windows.append(_p30_workload_window("event", start["event_id"], end["event_id"], "PASS", operation_id, f"{scale}.fault.{scenario_id}", window_metrics))
+    windows.append(_management_matrix_workload_window("event", start["event_id"], end["event_id"], "PASS", operation_id, f"{scale}.fault.{scenario_id}", window_metrics))
     return {
         "evidence": {"event_ids": [start["event_id"], end["event_id"]], "command_ids": [command_id]},
         "result": {"id": scenario_id, "status": "REAL_PASS", "operation_id": operation_id, "duration_ms": duration_ms, "details": details},
     }
 
 
-def _p36_validate_fault_probe_observation(scenario_id: str, details: dict[str, Any]) -> None:
+def _local_full_flow_validate_fault_probe_observation(scenario_id: str, details: dict[str, Any]) -> None:
     if not isinstance(details.get("actions"), list) or not details["actions"]:
         raise DockerRuntimeError(f"{scenario_id} fault probe did not record owned actions")
     if scenario_id in {"network_partition", "minority_majority", "split_brain_detection"}:
@@ -9171,7 +7447,7 @@ def _p36_validate_fault_probe_observation(scenario_id: str, details: dict[str, A
             raise DockerRuntimeError(f"{scenario_id} fault probe did not verify workload recovery")
 
 
-def _p36_process_pause_probe(target: dict[str, Any], survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+def _local_full_flow_process_pause_probe(target: dict[str, Any], survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
     container = str(target["nodehost_container_name"])
     pid = str(int(target["pid"]))
     actions = [f"docker exec {container} kill -STOP {pid}", f"docker exec {container} kill -CONT {pid}"]
@@ -9180,26 +7456,26 @@ def _p36_process_pause_probe(target: dict[str, Any], survivor: dict[str, Any], n
         observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
     finally:
         run_docker(["exec", container, "sh", "-c", f"kill -CONT {pid}"], timeout=30)
-        _p17_wait_clean_cluster(nodes, timeout=180.0)
+        _management_wait_clean_cluster(nodes, timeout=180.0)
     if "cluster_state:" not in observed:
         raise DockerRuntimeError("replica_stop probe did not observe cluster state")
     return {"actions": actions, "target_logical_id": target["logical_id"], "observed_cluster_info": observed[-1000:]}
 
 
-def _p36_nodehost_pause_probe(container: str, survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+def _local_full_flow_nodehost_pause_probe(container: str, survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
     actions = [f"docker pause {container}", f"docker unpause {container}"]
     run_docker(["pause", container], timeout=30)
     try:
         observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
     finally:
         run_docker(["unpause", container], timeout=30)
-        _p17_wait_clean_cluster(nodes, timeout=180.0)
+        _management_wait_clean_cluster(nodes, timeout=180.0)
     if "cluster_state:" not in observed:
         raise DockerRuntimeError("node_host_stop probe did not observe cluster state")
     return {"actions": actions, "target_container": container, "observed_cluster_info": observed[-1000:]}
 
 
-def _p36_az_pause_probe(containers: list[str], survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+def _local_full_flow_az_pause_probe(containers: list[str], survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
     paused: list[str] = []
     try:
         for container in containers:
@@ -9209,13 +7485,13 @@ def _p36_az_pause_probe(containers: list[str], survivor: dict[str, Any], nodes: 
     finally:
         for container in reversed(paused):
             run_docker(["unpause", container], timeout=30)
-        _p17_wait_clean_cluster(nodes, timeout=180.0)
+        _management_wait_clean_cluster(nodes, timeout=180.0)
     if "cluster_state:" not in observed:
         raise DockerRuntimeError("az_stop probe did not observe cluster state")
     return {"actions": [*[f"docker pause {item}" for item in containers], *[f"docker unpause {item}" for item in reversed(containers)]], "target_containers": containers, "observed_cluster_info": observed[-1000:]}
 
 
-def _p36_proxy_fault_probe(node: dict[str, Any], rule: ProxyRule, *, expect_success: bool) -> dict[str, Any]:
+def _local_full_flow_proxy_fault_probe(node: dict[str, Any], rule: ProxyRule, *, expect_success: bool) -> dict[str, Any]:
     proxy = SandboxNetworkProxy(target_host="127.0.0.1", target_port=int(node["client_port"]), rule=rule)
     response = b""
     error = ""
@@ -9243,7 +7519,7 @@ def _p36_proxy_fault_probe(node: dict[str, Any], rule: ProxyRule, *, expect_succ
     }
 
 
-def _p36_network_disconnect_probe(network_name: str, container: str, nodes: list[dict[str, Any]], scenario_id: str) -> dict[str, Any]:
+def _local_full_flow_network_disconnect_probe(network_name: str, container: str, nodes: list[dict[str, Any]], scenario_id: str) -> dict[str, Any]:
     if not network_name:
         raise DockerRuntimeError(f"{scenario_id} requires an owned runtime network")
     target = next(node for node in nodes if str(node.get("nodehost_container_name")) == container)
@@ -9291,7 +7567,7 @@ def _p36_network_disconnect_probe(network_name: str, container: str, nodes: list
         run_docker(["network", "connect", "--ip", ip, network_name, container], timeout=60)
         reconnect_ms = round(max(time.monotonic() - reconnect_started, 0.0) * 1000.0, 6)
         recovery_started = time.monotonic()
-        _p36_wait_clean_cluster_snapshot(nodes, timeout=180.0)
+        _local_full_flow_wait_clean_cluster_snapshot(nodes, timeout=180.0)
         recovery_health_ms = round(max(time.monotonic() - recovery_started, 0.0) * 1000.0, 6)
     observe_client("recovery", target)
     recovery_verified = client_observations[-1]["success"] is True
@@ -9329,7 +7605,7 @@ def _bounded_cluster_info_excerpt(value: str, limit: int = 1000) -> str:
     return value[:side] + marker + value[-side:]
 
 
-def _p36_wait_clean_cluster_snapshot(nodes: list[dict[str, Any]], timeout: float) -> None:
+def _local_full_flow_wait_clean_cluster_snapshot(nodes: list[dict[str, Any]], timeout: float) -> None:
     expected_primaries = len(nodes) // 2
     _wait_process_snapshot_clean(
         nodes,
@@ -9340,13 +7616,13 @@ def _p36_wait_clean_cluster_snapshot(nodes: list[dict[str, Any]], timeout: float
     )
 
 
-def _p36_lifecycle_steps(scale: int, artifacts: Path, management: dict[str, Any], fault: dict[str, Any]) -> list[dict[str, Any]]:
+def _local_full_flow_lifecycle_steps(scale: int, artifacts: Path, management: dict[str, Any], fault: dict[str, Any]) -> list[dict[str, Any]]:
     scoped = artifacts.as_posix()
     refs_by_step = {
         "config_validate": [f"{scoped}/config_validation_report.json"],
         "resource_preflight": [f"{scoped}/resource_preflight.json"],
         "plan_cluster": [f"{scoped}/cluster_plan.json"],
-        "create_cluster": [f"{scoped}/run_state.json", f"{scoped}/cluster_snapshots_{P36_SCENARIO_50 if scale == 50 else P36_SCENARIO_100 if scale == 100 else P36_SCENARIO_200}.json"],
+        "create_cluster": [f"{scoped}/run_state.json", f"{scoped}/cluster_snapshots_{LOCAL_FULL_FLOW_SCENARIO if scale == 50 else LOCAL_FULL_FLOW_SCENARIO if scale == 100 else LOCAL_FULL_FLOW_SCENARIO}.json"],
         "meet_nodes": [f"{scoped}/run_state.json"],
         "assign_slots": [f"{scoped}/run_state.json"],
         "add_replica": [f"{scoped}/run_state.json"],
@@ -9357,7 +7633,7 @@ def _p36_lifecycle_steps(scale: int, artifacts: Path, management: dict[str, Any]
         "cleanup_verify": [f"{scoped}/cleanup_report.json"],
     }
     rows: list[dict[str, Any]] = []
-    for step in P36_FULL_FLOW_STEPS:
+    for step in FULL_FLOW_EXECUTION_STEPS:
         source_refs = refs_by_step[step]
         rows.append(
             {
@@ -9372,8 +7648,8 @@ def _p36_lifecycle_steps(scale: int, artifacts: Path, management: dict[str, Any]
     return rows
 
 
-def _p36_analysis_summary(
-    phase: str,
+def _local_full_flow_analysis_summary(
+    capability_id: str,
     scenario: str,
     run_id: str,
     scale: int,
@@ -9432,12 +7708,12 @@ def _p36_analysis_summary(
                 "reason": "No numeric system-process or system-network resource samples were captured.",
             }
         ]
-    return _p30_encode_missing(
+    return _management_matrix_encode_missing(
         {
             "schema_version": "v1",
-            "artifact_type": "p36_analysis_summary",
-            "phase_id": phase,
-            "stage_id": phase,
+            "artifact_type": "local_full_flow_analysis_summary",
+            "capability_id": capability_id,
+
             "scenario_name": scenario,
             "run_id": run_id,
             "created_at": "2026-06-28T00:00:00Z",
@@ -9458,7 +7734,7 @@ def _p36_analysis_summary(
                 "node_count": scale,
                 "source": "full_flow_topology_snapshots.jsonl",
             },
-            "phase_durations": {
+            "lifecycle_durations": {
                 "management_duration_ms": management["summary"].get("result", {}).get("duration_ms", MISSING),
                 "failover_promotion_latency_ms": fault["summary"].get("failover_details", {}).get("promotion_latency_ms", MISSING),
                 "failover_recovery_latency_ms": fault["summary"].get("failover_details", {}).get("cluster_recovery_latency_ms", MISSING),
@@ -9492,13 +7768,13 @@ def _p36_analysis_summary(
     )
 
 
-def _p36_report_index(phase: str, scenario: str, run_id: str, scale: int, analysis: dict[str, Any]) -> dict[str, Any]:
-    return _p30_encode_missing(
+def _local_full_flow_report_index(capability_id: str, scenario: str, run_id: str, scale: int, analysis: dict[str, Any]) -> dict[str, Any]:
+    return _management_matrix_encode_missing(
         {
             "schema_version": "v1",
-            "artifact_type": "p36_report_index",
-            "phase_id": phase,
-            "stage_id": phase,
+            "artifact_type": "local_full_flow_report_index",
+            "capability_id": capability_id,
+
             "scenario_name": scenario,
             "run_id": run_id,
             "created_at": "2026-06-28T00:00:00Z",
@@ -9519,17 +7795,17 @@ def _p36_report_index(phase: str, scenario: str, run_id: str, scale: int, analys
     )
 
 
-def refresh_p36_full_flow_aggregate(parent: Path) -> None:
+def refresh_full_flow_aggregate(parent: Path) -> None:
     parent = Path(parent)
     if parent.name.startswith("full_flow_"):
         parent = parent.parent
     parent.mkdir(parents=True, exist_ok=True)
-    scale_rows = [_p36_parent_row(parent, scale) for scale in (50, 100, 200)]
+    scale_rows = [_local_full_flow_parent_row(parent, scale) for scale in (50, 100, 200)]
     available_rows = [row for row in scale_rows if row["scoped_result_status"] != "MISSING"]
     all_pass = len(scale_rows) == 3 and all(row["status"] == "PASS" for row in scale_rows)
-    events = _p36_collect_jsonl(parent, "events.jsonl")
-    metrics = _p36_collect_jsonl(parent, "metrics_timeseries.jsonl")
-    workload_windows = _p36_collect_workload_windows(parent)
+    events = _local_full_flow_collect_jsonl(parent, "events.jsonl")
+    metrics = _local_full_flow_collect_jsonl(parent, "metrics_timeseries.jsonl")
+    workload_windows = _local_full_flow_collect_workload_windows(parent)
     if events:
         write_jsonl(parent / "events.jsonl", events)
     if metrics:
@@ -9540,9 +7816,9 @@ def refresh_p36_full_flow_aggregate(parent: Path) -> None:
             {
                 "schema_version": "v1",
                 "artifact_type": "workload_windows",
-                "phase_id": P36_STAGE,
-                "stage_id": P36_STAGE,
-                "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-aggregate-20260628",
+                "capability_id": LOCAL_FULL_FLOW_CAPABILITY,
+
+                "run_id": "local_full_flow-aggregate-20260628",
                 "created_at": "2026-06-28T00:00:00Z",
                 "producer": {"name": "valkey-scale-lab", "version": __version__},
                 "status": "PASS" if all(row.get("status") == "PASS" for row in workload_windows) else "FAIL",
@@ -9554,29 +7830,29 @@ def refresh_p36_full_flow_aggregate(parent: Path) -> None:
         {
             "schema_version": "v1",
             "artifact_type": "full_flow_matrix",
-            "phase_id": P36_STAGE,
-            "stage_id": P36_STAGE,
-            "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-aggregate-20260628",
+            "capability_id": LOCAL_FULL_FLOW_CAPABILITY,
+
+            "run_id": "local_full_flow-aggregate-20260628",
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
             "status": "PASS" if all_pass else "PARTIAL",
             "required_scales": [50, 100, 200],
-            "required_steps": P36_FULL_FLOW_STEPS,
+            "required_steps": FULL_FLOW_EXECUTION_STEPS,
             "scales": scale_rows,
         },
     )
     if available_rows:
         write_jsonl(parent / "full_flow_results.jsonl", scale_rows)
-    coverage_ledger = _p36_coverage_ledger(parent, scale_rows)
+    coverage_ledger = _local_full_flow_coverage_ledger(parent, scale_rows)
     _write_json_artifact(parent / "coverage_ledger.json", coverage_ledger)
-    _p36_update_global_coverage_registry(scale_rows)
-    _write_json_artifact(parent / "cleanup_report.json", _p36_parent_cleanup_report(parent, scale_rows))
-    quant_summary = _p36_quant_summary(parent, scale_rows, events, metrics, workload_windows, all_pass)
+    _local_full_flow_update_global_coverage_registry(scale_rows)
+    _write_json_artifact(parent / "cleanup_report.json", _local_full_flow_parent_cleanup_report(parent, scale_rows))
+    quant_summary = _local_full_flow_quant_summary(parent, scale_rows, events, metrics, workload_windows, all_pass)
     _write_json_artifact(parent / "quant_summary.json", quant_summary)
-    _write_json_artifact(parent / "phase_summary.json", _p36_phase_summary(parent, scale_rows, quant_summary))
+    _write_json_artifact(parent / "run_summary.json", _local_full_flow_run_summary(parent, scale_rows, quant_summary))
 
 
-def _p36_parent_row(parent: Path, scale: int) -> dict[str, Any]:
+def _local_full_flow_parent_row(parent: Path, scale: int) -> dict[str, Any]:
     scope = f"full_flow_{scale}"
     scoped = parent / scope
     result = _load_json_if_exists(scoped / "full_flow_result.json") or {}
@@ -9587,18 +7863,18 @@ def _p36_parent_row(parent: Path, scale: int) -> dict[str, Any]:
     cleanup_pass = cleanup.get("status") == "PASS"
     evidence_pass = evidence.get("status") == "PASS" and evidence.get("real_valkey") is True and evidence.get("nodes_requested") == scale and evidence.get("nodes_observed") == scale and evidence.get("data_path_result") == "PASS"
     scoped_pass = result.get("status") == "PASS" and result.get("nodes_observed") == scale and result.get("nodes_requested") == scale
-    status = "PASS" if scoped_pass and evidence_pass and cleanup_pass and set(P36_FULL_FLOW_STEPS).issubset(step_names) else "MISSING" if not result else "FAIL"
-    return _p30_encode_missing(
+    status = "PASS" if scoped_pass and evidence_pass and cleanup_pass and set(FULL_FLOW_EXECUTION_STEPS).issubset(step_names) else "MISSING" if not result else "FAIL"
+    return _management_matrix_encode_missing(
         {
             "schema_version": "v1",
             "artifact_type": "full_flow_result",
-            "phase_id": P36_STAGE,
-            "stage_id": P36_STAGE,
+            "capability_id": LOCAL_FULL_FLOW_CAPABILITY,
+
             "scale": scale,
             "node_count": scale,
             "nodes_requested": scale,
             "nodes_observed": evidence.get("nodes_observed", result.get("nodes_observed", MISSING)),
-            "scenario_name": f"strict_full_flow_{scale}",
+            "scenario_name": LOCAL_FULL_FLOW_SCENARIO,
             "artifact_scope": scope,
             "status": status,
             "scoped_result_status": result.get("status", MISSING),
@@ -9607,26 +7883,26 @@ def _p36_parent_row(parent: Path, scale: int) -> dict[str, Any]:
             "real_valkey": evidence.get("real_valkey", MISSING),
             "data_path_result": evidence.get("data_path_result", MISSING),
             "steps": steps,
-            "required_steps": P36_FULL_FLOW_STEPS,
+            "required_steps": FULL_FLOW_EXECUTION_STEPS,
             "management_execution_refs": result.get("management_execution_refs", []),
             "fault_execution_refs": result.get("fault_execution_refs", []),
-            "analysis_ref": result.get("analysis_ref", f"artifacts/phases/{P36_STAGE}/{scope}/analysis_summary.json"),
-            "report_ref": result.get("report_ref", f"artifacts/phases/{P36_STAGE}/{scope}/report_index.json"),
-            "evidence_ref": f"artifacts/phases/{P36_STAGE}/{scope}/valkey_e2e_evidence.json",
-            "cleanup_ref": f"artifacts/phases/{P36_STAGE}/{scope}/cleanup_report.json",
+            "analysis_ref": result.get("analysis_ref", f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/analysis_summary.json"),
+            "report_ref": result.get("report_ref", f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/report_index.json"),
+            "evidence_ref": f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/valkey_e2e_evidence.json",
+            "cleanup_ref": f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/cleanup_report.json",
             "source_artifacts": [
-                f"artifacts/phases/{P36_STAGE}/{scope}/full_flow_result.json",
-                f"artifacts/phases/{P36_STAGE}/{scope}/events.jsonl",
-                f"artifacts/phases/{P36_STAGE}/{scope}/metrics_timeseries.jsonl",
-                f"artifacts/phases/{P36_STAGE}/{scope}/workload_windows.json",
-                f"artifacts/phases/{P36_STAGE}/{scope}/valkey_e2e_evidence.json",
-                f"artifacts/phases/{P36_STAGE}/{scope}/cleanup_report.json",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/full_flow_result.json",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/events.jsonl",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/metrics_timeseries.jsonl",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/workload_windows.json",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/valkey_e2e_evidence.json",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/cleanup_report.json",
             ],
         }
     )
 
 
-def _p36_collect_jsonl(parent: Path, name: str) -> list[dict[str, Any]]:
+def _local_full_flow_collect_jsonl(parent: Path, name: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for scale in (50, 100, 200):
         path = parent / f"full_flow_{scale}" / name
@@ -9638,7 +7914,7 @@ def _p36_collect_jsonl(parent: Path, name: str) -> list[dict[str, Any]]:
     return rows
 
 
-def _p36_collect_workload_windows(parent: Path) -> list[dict[str, Any]]:
+def _local_full_flow_collect_workload_windows(parent: Path) -> list[dict[str, Any]]:
     windows: list[dict[str, Any]] = []
     for scale in (50, 100, 200):
         artifact = _load_json_if_exists(parent / f"full_flow_{scale}" / "workload_windows.json") or {}
@@ -9651,14 +7927,13 @@ def _p36_collect_workload_windows(parent: Path) -> list[dict[str, Any]]:
     return windows
 
 
-def _p36_coverage_ledger(parent: Path, scale_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _local_full_flow_coverage_ledger(parent: Path, scale_rows: list[dict[str, Any]]) -> dict[str, Any]:
     path = Path("artifacts/coverage/strict_coverage_registry.json")
     if path.exists():
         ledger = json.loads(path.read_text(encoding="utf-8"))
     else:
         ledger = {"schema_version": "v1", "artifact_type": "strict_coverage_registry", "rows": [], "summary": {}}
-    ledger["stage_id"] = P36_STAGE
-    ledger.pop("phase_id", None)
+    ledger.pop("capability_id", None)
     ledger.pop("status", None)
     ledger["created_at"] = ledger.get("created_at") or "2026-06-28T00:00:00Z"
     ledger["producer"] = ledger.get("producer") or {"name": "valkey-scale-lab", "version": __version__}
@@ -9668,7 +7943,7 @@ def _p36_coverage_ledger(parent: Path, scale_rows: list[dict[str, Any]]) -> dict
     rows = ledger.setdefault("rows", [])
     by_scale = {int(row["scale"]): row for row in scale_rows}
     for row in rows:
-        if row.get("stage_owner") != P36_STAGE or row.get("category") != "lifecycle":
+        if row.get("capability_owner") != LOCAL_FULL_FLOW_CAPABILITY or row.get("category") != "lifecycle":
             continue
         scale = int(row.get("scale", 0) or 0)
         row_name = str(row.get("row_name", ""))
@@ -9676,38 +7951,38 @@ def _p36_coverage_ledger(parent: Path, scale_rows: list[dict[str, Any]]) -> dict
         passed = result.get("status") == "PASS"
         scope = f"full_flow_{scale}"
         row["status"] = "PASS" if passed else "PENDING"
-        row["status_reason"] = f"P36 exact-{scale} lifecycle step {row_name} executed through the full-flow scenario and verified by scoped evidence." if passed else f"Awaiting P36 exact-{scale} scoped real full-flow evidence."
+        row["status_reason"] = f"LOCAL_FULL_FLOW exact-{scale} lifecycle step {row_name} executed through the full-flow scenario and verified by scoped evidence." if passed else f"Awaiting LOCAL_FULL_FLOW exact-{scale} scoped real full-flow evidence."
         row["source_artifacts"] = [
-            f"artifacts/phases/{P36_STAGE}/{scope}/full_flow_result.json",
-            f"artifacts/phases/{P36_STAGE}/{scope}/valkey_e2e_evidence.json",
+            f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/full_flow_result.json",
+            f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/valkey_e2e_evidence.json",
         ] if passed else []
         row["validation_artifacts"] = [
-            f"artifacts/phases/{P36_STAGE}/full_flow_matrix.json",
-            f"artifacts/phases/{P36_STAGE}/full_flow_results.jsonl",
-            f"artifacts/phases/{P36_STAGE}/{scope}/analysis_summary.json",
-            f"artifacts/phases/{P36_STAGE}/{scope}/report_index.json",
+            f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/full_flow_matrix.json",
+            f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/full_flow_results.jsonl",
+            f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/analysis_summary.json",
+            f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/report_index.json",
         ] if passed else []
-        row["metric_refs"] = [f"artifacts/phases/{P36_STAGE}/metrics_timeseries.jsonl"] if passed else []
-        row["cleanup_ref"] = f"artifacts/phases/{P36_STAGE}/{scope}/cleanup_report.json" if passed else ""
-        row["review_ref"] = f"artifacts/goal_loop_strict/{P36_STAGE}/REVIEW.md" if passed else ""
+        row["metric_refs"] = [f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/metrics_timeseries.jsonl"] if passed else []
+        row["cleanup_ref"] = f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{scope}/cleanup_report.json" if passed else ""
+        row["review_ref"] = f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/REVIEW.md" if passed else ""
         row["commit_sha"] = "PENDING_REVIEW_AND_COMMIT" if passed else ""
-    _p30_refresh_registry_summary(ledger, P36_STAGE)
-    return _p30_encode_missing(ledger)
+    _management_matrix_refresh_registry_summary(ledger, LOCAL_FULL_FLOW_CAPABILITY)
+    return _management_matrix_encode_missing(ledger)
 
 
-def _p36_update_global_coverage_registry(scale_rows: list[dict[str, Any]]) -> None:
+def _local_full_flow_update_global_coverage_registry(scale_rows: list[dict[str, Any]]) -> None:
     # Exact-gate runs are self-contained and never mutate a repository-global ledger.
     return
 
 
-def _p36_parent_cleanup_report(parent: Path, scale_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _local_full_flow_parent_cleanup_report(parent: Path, scale_rows: list[dict[str, Any]]) -> dict[str, Any]:
     cleanup_reports = []
     resources_remaining: list[dict[str, Any]] = []
     actions: list[dict[str, Any]] = []
     for row in scale_rows:
         scale = int(row["scale"])
         cleanup = _load_json_if_exists(parent / f"full_flow_{scale}" / "cleanup_report.json") or {}
-        cleanup_reports.append({"scale": scale, "status": cleanup.get("status", MISSING), "path": f"artifacts/phases/{P36_STAGE}/full_flow_{scale}/cleanup_report.json"})
+        cleanup_reports.append({"scale": scale, "status": cleanup.get("status", MISSING), "path": f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/full_flow_{scale}/cleanup_report.json"})
         resources = cleanup.get("resources_remaining", [])
         if isinstance(resources, list):
             resources_remaining.extend(resources)
@@ -9717,12 +7992,12 @@ def _p36_parent_cleanup_report(parent: Path, scale_rows: list[dict[str, Any]]) -
                 copied["scale"] = scale
                 actions.append(copied)
     status = "PASS" if cleanup_reports and all(item["status"] == "PASS" for item in cleanup_reports) and not resources_remaining else "FAIL"
-    return _p30_encode_missing(
+    return _management_matrix_encode_missing(
         {
             "schema_version": "v1",
             "artifact_type": "cleanup_report",
-            "phase_id": P36_STAGE,
-            "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-aggregate-20260628",
+            "capability_id": LOCAL_FULL_FLOW_CAPABILITY,
+            "run_id": "local_full_flow-aggregate-20260628",
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
             "status": status,
@@ -9734,27 +8009,27 @@ def _p36_parent_cleanup_report(parent: Path, scale_rows: list[dict[str, Any]]) -
     )
 
 
-def _p36_quant_summary(parent: Path, scale_rows: list[dict[str, Any]], events: list[dict[str, Any]], metrics: list[dict[str, Any]], windows: list[dict[str, Any]], all_pass: bool) -> dict[str, Any]:
+def _local_full_flow_quant_summary(parent: Path, scale_rows: list[dict[str, Any]], events: list[dict[str, Any]], metrics: list[dict[str, Any]], windows: list[dict[str, Any]], all_pass: bool) -> dict[str, Any]:
     passed = [row for row in scale_rows if row.get("status") == "PASS"]
-    return _p30_encode_missing(
+    return _management_matrix_encode_missing(
         {
             "schema_version": "v1",
             "artifact_type": "quant_summary",
-            "phase_id": P36_STAGE,
-            "stage_id": P36_STAGE,
-            "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-aggregate-20260628",
+            "capability_id": LOCAL_FULL_FLOW_CAPABILITY,
+
+            "run_id": "local_full_flow-aggregate-20260628",
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
             "status": "PASS" if all_pass else "PARTIAL",
-            "summary": "P36 aggregates exact-scale real full-flow lifecycle, management, fault/failover, telemetry, analysis, report, and cleanup evidence for 50, 100, and 200 nodes.",
+            "summary": "LOCAL_FULL_FLOW aggregates exact-scale real full-flow lifecycle, management, fault/failover, telemetry, analysis, report, and cleanup evidence for 50, 100, and 200 nodes.",
             "artifact_refs": [
-                f"artifacts/phases/{P36_STAGE}/full_flow_matrix.json",
-                f"artifacts/phases/{P36_STAGE}/full_flow_results.jsonl",
-                f"artifacts/phases/{P36_STAGE}/events.jsonl",
-                f"artifacts/phases/{P36_STAGE}/metrics_timeseries.jsonl",
-                f"artifacts/phases/{P36_STAGE}/workload_windows.json",
-                f"artifacts/phases/{P36_STAGE}/coverage_ledger.json",
-                f"artifacts/phases/{P36_STAGE}/cleanup_report.json",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/full_flow_matrix.json",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/full_flow_results.jsonl",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/events.jsonl",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/metrics_timeseries.jsonl",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/workload_windows.json",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/coverage_ledger.json",
+                f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/cleanup_report.json",
             ],
             "missing_data": [],
             "runtime_claims": {
@@ -9776,9 +8051,9 @@ def _p36_quant_summary(parent: Path, scale_rows: list[dict[str, Any]], events: l
     )
 
 
-def _p36_phase_summary(parent: Path, scale_rows: list[dict[str, Any]], quant_summary: dict[str, Any]) -> dict[str, Any]:
+def _local_full_flow_run_summary(parent: Path, scale_rows: list[dict[str, Any]], quant_summary: dict[str, Any]) -> dict[str, Any]:
     required = [
-        "phase_summary.json",
+        "run_summary.json",
         "full_flow_matrix.json",
         "full_flow_results.jsonl",
         "events.jsonl",
@@ -9791,24 +8066,24 @@ def _p36_phase_summary(parent: Path, scale_rows: list[dict[str, Any]], quant_sum
         "full_flow_100/valkey_e2e_evidence.json",
         "full_flow_200/valkey_e2e_evidence.json",
     ]
-    return _p30_encode_missing(
+    return _management_matrix_encode_missing(
         {
             "schema_version": "v1",
-            "artifact_type": "phase_summary",
-            "phase_id": P36_STAGE,
-            "stage_id": P36_STAGE,
-            "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-aggregate-20260628",
+            "artifact_type": "run_summary",
+            "capability_id": LOCAL_FULL_FLOW_CAPABILITY,
+
+            "run_id": "local_full_flow-aggregate-20260628",
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
             "status": "PASS" if quant_summary.get("status") == "PASS" else "PARTIAL",
-            "summary": "P36 proves the product-level full flow at real exact 50, 100, and 200 nodes with scoped Valkey evidence, representative management and fault/failover execution, analysis, report, telemetry, and cleanup artifacts.",
-            "required_artifacts": [f"artifacts/phases/{P36_STAGE}/{name}" for name in required],
+            "summary": "LOCAL_FULL_FLOW proves the product-level full flow at real exact 50, 100, and 200 nodes with scoped Valkey evidence, representative management and fault/failover execution, analysis, report, telemetry, and cleanup artifacts.",
+            "required_artifacts": [f"artifacts/captures/{LOCAL_FULL_FLOW_CAPABILITY}/{name}" for name in required],
             "missing_metrics": [],
             "risks": [
                 {
-                    "risk": "P36 full-flow representative management/fault sequences are intentionally narrower than the full P30-P35 matrices, which remain the owning matrix evidence.",
+                    "risk": "LOCAL_FULL_FLOW full-flow representative management/fault sequences are intentionally narrower than the full MANAGEMENT_MATRIX-FAULT_MATRIX_200 matrices, which remain the owning matrix evidence.",
                     "severity": "low",
-                    "required_before_next_phase": False,
+                    "required_before_next_capability": False,
                 }
             ],
             "scales": scale_rows,
@@ -9817,7 +8092,7 @@ def _p36_phase_summary(parent: Path, scale_rows: list[dict[str, Any]], quant_sum
     )
 
 
-def _p36_parent_artifacts_dir(artifacts: Path) -> Path:
+def _local_full_flow_parent_artifacts_dir(artifacts: Path) -> Path:
     return artifacts.parent if artifacts.name.startswith("full_flow_") else artifacts
 
 
@@ -9829,17 +8104,17 @@ def _load_json_if_exists(path: Path) -> dict[str, Any] | None:
 
 def _write_json_artifact(path: Path, artifact: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(_p30_encode_missing(artifact), indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(_management_matrix_encode_missing(artifact), indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
 
 
-def _p36_rel(path: Path) -> str:
+def _local_full_flow_rel(path: Path) -> str:
     return path.as_posix()
 
 
-def write_p30_management_matrix_artifacts(
+def write_management_matrix_artifacts(
     *,
     artifacts: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     config: dict[str, Any],
@@ -9847,14 +8122,14 @@ def write_p30_management_matrix_artifacts(
     nodehosts: list[dict[str, Any]],
     state: dict[str, Any],
 ) -> None:
-    profile = _strict_management_profile(phase, scenario)
+    profile = _management_matrix_profile(capability_id, scenario, len(nodes))
     if profile is None:
-        raise DockerRuntimeError(f"{phase}/{scenario} is not a strict management matrix scenario")
-    if len(nodes) != profile.scale:
-        raise DockerRuntimeError(f"{profile.stage_label} requires exactly {profile.scale} nodes, got {len(nodes)}")
+        raise DockerRuntimeError(f"{capability_id}/{scenario} is not the management matrix scenario")
+    if len(nodes) != profile.requested_nodes:
+        raise DockerRuntimeError(f"{capability_id} requires exactly {profile.requested_nodes} nodes, got {len(nodes)}")
     artifacts.mkdir(parents=True, exist_ok=True)
-    _write_p30_cluster_plan(artifacts / "cluster_plan.json", config, phase, scenario, run_id)
-    _write_p30_run_state(artifacts / "run_state.json", phase, scenario, run_id, state)
+    _write_management_matrix_cluster_plan(artifacts / "cluster_plan.json", config, capability_id, scenario, run_id)
+    _write_management_matrix_run_state(artifacts / "run_state.json", capability_id, scenario, run_id, state)
 
     events: list[dict[str, Any]] = []
     metric_rows: list[dict[str, Any]] = []
@@ -9868,16 +8143,16 @@ def write_p30_management_matrix_artifacts(
     restart_plans: list[dict[str, Any]] = []
     restart_results: list[dict[str, Any]] = []
 
-    for row_index, operation_name in enumerate(P30_EXECUTION_ROWS):
-        operation_id = f"{profile.operation_prefix}-{operation_name}-{profile.scale}"
-        coverage_id = f"{profile.coverage_prefix}.{operation_name}"
+    for row_index, operation_name in enumerate(MANAGEMENT_MATRIX_EXECUTION_ROWS):
+        operation_id = f"{capability_id}-{operation_name}-{profile.requested_nodes}"
+        coverage_id = f"{profile.requested_nodes}.management.{operation_name}"
         telemetry = TelemetryRun(
-            phase_id=phase,
+            capability_id=capability_id,
             scenario_name=scenario,
             run_id=run_id,
             coverage_id=coverage_id,
-            scale=profile.scale,
-            node_count=profile.scale,
+            scale=profile.requested_nodes,
+            node_count=profile.requested_nodes,
         )
         events.append(
             telemetry.event(
@@ -9885,15 +8160,15 @@ def write_p30_management_matrix_artifacts(
                 subject_type="management_operation",
                 subject_id=operation_name,
                 operation_id=operation_id,
-                message=f"{profile.stage_label} {operation_name} real {profile.scale}-node operation started.",
+                message=f"{capability_id} {operation_name} real {profile.requested_nodes}-node operation started.",
                 metadata={"row_index": row_index, "coverage_id": coverage_id},
             )
         )
-        before_snapshot = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "before", nodes, nodes)
+        before_snapshot = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "before", nodes, nodes)
         topology_rows.append(before_snapshot)
-        result, row_events, row_metrics, row_windows, during_topology, extras = _p30_run_operation_with_workload(
+        result, row_events, row_metrics, row_windows, during_topology, extras = _management_matrix_run_operation_with_workload(
             telemetry=telemetry,
-            phase=phase,
+            capability_id=capability_id,
             run_id=run_id,
             scenario=scenario,
             operation_name=operation_name,
@@ -9902,7 +8177,7 @@ def write_p30_management_matrix_artifacts(
             command_log=command_log,
         )
         topology_rows.extend(during_topology)
-        topology_rows.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, "after_restore", nodes, nodes))
+        topology_rows.append(_management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "after_restore", nodes, nodes))
         events.extend(row_events)
         metric_rows.extend(row_metrics)
         workload_windows.extend(row_windows)
@@ -9917,7 +8192,7 @@ def write_p30_management_matrix_artifacts(
             {
                 "operation_name": operation_name,
                 "coverage_id": coverage_id,
-                "node_count": profile.scale,
+                "node_count": profile.requested_nodes,
                 "operation_status": result["operation_status"],
                 "workload_window_ref": result["workload_window_ref"],
                 "operation_id": operation_id,
@@ -9927,7 +8202,7 @@ def write_p30_management_matrix_artifacts(
                 "before_topology_snapshot_ref": result.get("before_topology_snapshot_ref", f"management_topology_snapshots.jsonl#{before_snapshot['snapshot_id']}"),
                 "after_topology_snapshot_ref": result.get("after_topology_snapshot_ref", f"management_topology_snapshots.jsonl#{operation_id}-after_restore"),
                 "topology_diff_ref": result.get("topology_diff_ref", f"management_topology_diffs.jsonl#{operation_id}"),
-                "scale": profile.scale,
+                "scale": profile.requested_nodes,
                 "command_count": result.get("command_count", 0),
                 "command_log_refs": result.get("command_log_refs", []),
                 "workload_impact_ref": result.get("workload_impact_ref", f"management_workload_impact.json#{operation_id}"),
@@ -9941,12 +8216,12 @@ def write_p30_management_matrix_artifacts(
                 subject_type="management_operation",
                 subject_id=operation_name,
                 operation_id=operation_id,
-                message=f"{profile.stage_label} {operation_name} real {profile.scale}-node operation finished.",
+                message=f"{capability_id} {operation_name} real {profile.requested_nodes}-node operation finished.",
                 metadata={"status": result["operation_status"], "wall_ms": result["wall_ms"]},
             )
         )
 
-    _p30_attach_setup_command_refs(operation_rows, artifacts)
+    _management_matrix_attach_setup_command_refs(operation_rows, artifacts)
     strict_by_id = {row["operation_id"]: row for row in operation_rows}
     for matrix_row in matrix_rows:
         result = strict_by_id.get(matrix_row["operation_id"], {})
@@ -9971,7 +8246,7 @@ def write_p30_management_matrix_artifacts(
     write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
     write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
     write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
+    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(capability_id, run_id, row) for row in operation_rows])
     write_jsonl(artifacts / "management_command_log.jsonl", command_log)
     if slot_movements:
         write_jsonl(artifacts / "reshard_slot_movements.jsonl", slot_movements)
@@ -9981,7 +8256,7 @@ def write_p30_management_matrix_artifacts(
     workload_artifact = {
         "schema_version": "v1",
         "artifact_type": "workload_windows",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -9993,29 +8268,29 @@ def write_p30_management_matrix_artifacts(
     matrix = {
         "schema_version": "v1",
         "artifact_type": "management_ops_matrix",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if all(row["operation_status"] == "PASS" for row in operation_rows) else "FAIL",
         "scenario": scenario,
-        "required_operations": P30_REQUIRED_ROWS,
+        "required_operations": MANAGEMENT_MATRIX_REQUIRED_ROWS,
         "operations": matrix_rows,
-        "required_rows": [{"operation_name": name, "node_count": profile.scale, "coverage_id": f"{profile.coverage_prefix}.{name}"} for name in P30_REQUIRED_ROWS],
+        "required_rows": [{"operation_name": name, "node_count": profile.requested_nodes, "coverage_id": f"{profile.requested_nodes}.management.{name}"} for name in MANAGEMENT_MATRIX_REQUIRED_ROWS],
     }
-    (artifacts / "management_ops_matrix.json").write_text(json.dumps(_p30_encode_missing(matrix), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    (artifacts / "rebalance_summary.json").write_text(json.dumps(_p30_encode_missing(_p18_rebalance_summary(phase, run_id, rebalance_rows, slot_movements)), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    (artifacts / "rolling_restart_plan.json").write_text(json.dumps(_p30_encode_missing(_p30_rolling_plan(phase, run_id, restart_plans)), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (artifacts / "management_ops_matrix.json").write_text(json.dumps(_management_matrix_encode_missing(matrix), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (artifacts / "rebalance_summary.json").write_text(json.dumps(_management_matrix_encode_missing(_management_rebalance_summary(capability_id, run_id, rebalance_rows, slot_movements)), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (artifacts / "rolling_restart_plan.json").write_text(json.dumps(_management_matrix_encode_missing(_management_matrix_rolling_plan(capability_id, run_id, restart_plans)), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     impact = {
         "schema_version": "v1",
         "artifact_type": "workload_impact_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": workload_artifact["status"],
-        "windows": _p17_aggregate_workload_windows(workload_windows),
-        "comparisons": _p17_workload_comparisons(workload_windows),
+        "windows": _management_aggregate_workload_windows(workload_windows),
+        "comparisons": _management_workload_comparisons(workload_windows),
         "operation_window_count": len(workload_windows),
         "operations": [
             {
@@ -10027,21 +8302,21 @@ def write_p30_management_matrix_artifacts(
             for row in operation_rows
         ],
     }
-    (artifacts / "management_workload_impact.json").write_text(json.dumps(_p30_encode_missing(impact), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    coverage_ledger = _p30_coverage_ledger(phase, operation_rows)
-    (artifacts / "coverage_ledger.json").write_text(json.dumps(_p30_encode_missing(coverage_ledger), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    _p30_update_global_coverage_registry(operation_rows)
+    (artifacts / "management_workload_impact.json").write_text(json.dumps(_management_matrix_encode_missing(impact), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    coverage_ledger = _management_matrix_coverage_ledger(capability_id, operation_rows)
+    (artifacts / "coverage_ledger.json").write_text(json.dumps(_management_matrix_encode_missing(coverage_ledger), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _management_matrix_update_global_coverage_registry(operation_rows)
 
     quant_summary = {
         "schema_version": "v1",
         "artifact_type": "quant_summary",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if matrix["status"] == "PASS" and workload_artifact["status"] == "PASS" else "FAIL",
-        "summary": f"{profile.stage_label} executed all required management rows on an exact {profile.scale}-node real Valkey cluster with workload, command, topology, convergence, coverage, and cleanup evidence.",
-        "artifact_refs": [f"artifacts/phases/{phase}/{name}" for name in [
+        "summary": f"{capability_id} executed all required management rows on an exact {profile.requested_nodes}-node real Valkey cluster with workload, command, topology, convergence, coverage, and cleanup evidence.",
+        "artifact_refs": [f"artifacts/captures/{capability_id}/{name}" for name in [
             "events.jsonl", "metrics_timeseries.jsonl", "workload_windows.json", "management_ops_matrix.json",
             "management_operation_results.jsonl", "management_workload_impact.json", "management_topology_snapshots.jsonl",
             "management_topology_diffs.jsonl", "management_command_log.jsonl", "coverage_ledger.json", "resource_preflight.json", "cluster_plan.json",
@@ -10050,7 +8325,7 @@ def write_p30_management_matrix_artifacts(
         "missing_data": [field for row in operation_rows for field in row.get("missing_fields", [])],
         "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": True, "fault_runtime_claimed": False},
         "counts": {
-            "node_count": profile.scale,
+            "node_count": profile.requested_nodes,
             "operation_count": len(operation_rows),
             "coverage_pass_count": sum(1 for row in operation_rows if row["operation_status"] == "PASS"),
             "event_count": len(events),
@@ -10060,18 +8335,18 @@ def write_p30_management_matrix_artifacts(
             "command_log_count": len(command_log),
         },
     }
-    (artifacts / "quant_summary.json").write_text(json.dumps(_p30_encode_missing(quant_summary), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    phase_summary = {
+    (artifacts / "quant_summary.json").write_text(json.dumps(_management_matrix_encode_missing(quant_summary), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    run_summary = {
         "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": phase,
+        "artifact_type": "run_summary",
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": quant_summary["status"],
-        "summary": f"{profile.stage_label} proves the strict {profile.scale}-node management matrix with real Valkey operations and fail-closed telemetry artifacts.",
-        "required_artifacts": [f"artifacts/phases/{phase}/{name}" for name in [
-            "phase_summary.json", "valkey_e2e_evidence.json", "resource_preflight.json", "cluster_plan.json",
+        "summary": f"{capability_id} proves the exact {profile.requested_nodes}-node management matrix with real Valkey operations and fail-closed telemetry artifacts.",
+        "required_artifacts": [f"artifacts/captures/{capability_id}/{name}" for name in [
+            "run_summary.json", "valkey_e2e_evidence.json", "resource_preflight.json", "cluster_plan.json",
             "run_state.json", "cleanup_report.json", "events.jsonl", "metrics_timeseries.jsonl", "workload_windows.json",
             "quant_summary.json", "coverage_ledger.json", "management_ops_matrix.json",
             "management_operation_results.jsonl", "management_topology_snapshots.jsonl", "management_command_log.jsonl",
@@ -10088,227 +8363,8 @@ def write_p30_management_matrix_artifacts(
         ],
         "risks": [],
     }
-    (artifacts / "phase_summary.json").write_text(json.dumps(_p30_encode_missing(phase_summary), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (artifacts / "run_summary.json").write_text(json.dumps(_management_matrix_encode_missing(run_summary), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-
-def write_p04_management_matrix_contract_artifacts(
-    artifacts: Path,
-    phase: str,
-    scenario: str,
-    run_id: str,
-    nodes: list[dict[str, Any]],
-) -> None:
-    """Emit the management matrix contract from the legacy P04 real smoke path.
-
-    P04 remains a compatibility smoke gate; destructive rows are not silently
-    claimed as executed here. Strict real execution lives in the management
-    stages, while this path proves that a real P04 run emits the same artifact
-    families and explicit skip reasons.
-    """
-    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id, coverage_id="p04.management_contract", scale=len(nodes), node_count=len(nodes))
-    node_count = len(nodes)
-    health = _p17_cluster_health(nodes)
-    command_refs = _command_refs_by_kind(artifacts / "command_log.jsonl")
-    topology_rows: list[dict[str, Any]] = []
-    operation_rows: list[dict[str, Any]] = []
-    workload_windows: list[dict[str, Any]] = []
-    matrix_rows: list[dict[str, Any]] = []
-    started_ms = telemetry.now_unix_ms()
-
-    for index, operation_name in enumerate(P30_REQUIRED_ROWS, start=1):
-        operation_id = f"p04-contract-{index:02d}-{operation_name}"
-        before_snapshot = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "before", nodes, nodes)
-        after_snapshot = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "after", nodes, nodes)
-        topology_rows.extend([before_snapshot, after_snapshot])
-        row_refs = _p04_setup_command_refs(operation_name, command_refs)
-        setup_observed = operation_name in {"create_cluster", "meet_nodes", "add_replica"}
-        status = "PASS_NOOP_VERIFIED" if setup_observed and row_refs else "SKIPPED_WITH_REASON"
-        reason = (
-            "Legacy P04 smoke observed this setup operation through live cluster state and setup command audit refs."
-            if status == "PASS_NOOP_VERIFIED"
-            else "Legacy P04 smoke does not execute destructive or long-running management matrix rows; strict management stages execute them."
-        )
-        if setup_observed and not row_refs:
-            reason = "Legacy P04 smoke observed live setup state, but command refs were unavailable; encoded as skipped rather than inventing evidence."
-        window = _p04_contract_workload_window(telemetry, operation_id, operation_name, status, reason)
-        workload_windows.append(window)
-        diff = _management_diff_from_health(health, status)
-        missing_fields = [] if status == "PASS_NOOP_VERIFIED" else [_p30_skipped(operation_name, reason)]
-        row = _p30_encode_missing(
-            {
-                "schema_version": "v1",
-                "artifact_type": "management_operation_result",
-                "phase_id": phase,
-                "run_id": run_id,
-                "scenario": scenario,
-                "coverage_id": f"p04.management_contract.{operation_name}",
-                "operation_name": operation_name,
-                "operation_id": operation_id,
-                "node_count": node_count,
-                "scale": node_count,
-                "operation_status": status,
-                "status_reason": reason,
-                "started_at_unix_ms": started_ms + index,
-                "ended_at_unix_ms": started_ms + index,
-                "operation_duration_ms": 0.0,
-                "wall_ms": 0.0,
-                "prepare_ms": 0.0,
-                "command_ms": 0.0,
-                "convergence_ms": 0.0,
-                "cleanup_ms": 0.0,
-                "before_topology_snapshot": before_snapshot,
-                "after_topology_snapshot": after_snapshot,
-                "before_topology_snapshot_ref": f"management_topology_snapshots.jsonl#{before_snapshot['snapshot_id']}",
-                "after_topology_snapshot_ref": f"management_topology_snapshots.jsonl#{after_snapshot['snapshot_id']}",
-                "topology_diff": diff,
-                "topology_diff_ref": f"management_topology_diffs.jsonl#{operation_id}",
-                "slot_diff": diff["slot_diff"],
-                "role_diff": diff["role_diff"],
-                "cluster_state_before": health["cluster_state"],
-                "cluster_state_after": health["cluster_state"],
-                "known_nodes_before": health["known_nodes"],
-                "known_nodes_after": health["known_nodes"],
-                "fail_pfail_handshake_before": {"fail": 0, "pfail": 0, "handshake": 0},
-                "fail_pfail_handshake_after": {"fail": 0, "pfail": 0, "handshake": 0},
-                "command_count": len(row_refs),
-                "retry_count": 0,
-                "error_count": 0,
-                "command_log_refs": row_refs,
-                "workload_window_ref": f"{operation_id}:event",
-                "workload_impact_ref": f"management_workload_impact.json#{operation_id}",
-                "cleanup_ref": "cleanup_report.json",
-                "source_evidence_refs": [
-                    f"artifacts/phases/{phase}/management_ops_report.json",
-                    f"artifacts/phases/{phase}/command_log.jsonl",
-                    f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
-                ],
-                "missing_fields": missing_fields,
-                "real_execution_verified": status == "PASS_NOOP_VERIFIED",
-                "bytes_migrated": _p30_skipped("bytes_migrated", "P04 compatibility smoke does not expose migrated byte counts."),
-                "slots_moved": 0,
-                "keys_moved": 0,
-                "rolling_restart_steps": [] if operation_name.startswith("rolling_restart") else _p30_skipped("rolling_restart_steps", "Not a rolling restart row."),
-                "rebalance_summary_ref": "rebalance_summary.json",
-            }
-        )
-        operation_rows.append(row)
-        matrix_rows.append(
-            {
-                "operation_name": operation_name,
-                "operation_id": operation_id,
-                "coverage_id": row["coverage_id"],
-                "node_count": node_count,
-                "scale": node_count,
-                "operation_status": status,
-                "operation_result_ref": f"management_operation_results.jsonl#{operation_id}",
-                "before_topology_snapshot_ref": row["before_topology_snapshot_ref"],
-                "after_topology_snapshot_ref": row["after_topology_snapshot_ref"],
-                "topology_diff_ref": row["topology_diff_ref"],
-                "command_count": len(row_refs),
-                "command_log_refs": row_refs,
-                "workload_impact_ref": row["workload_impact_ref"],
-                "cleanup_ref": "cleanup_report.json",
-            }
-        )
-
-    write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
-    write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
-    workload_artifact = _p04_contract_workload_artifact(phase, scenario, run_id, workload_windows)
-    (artifacts / "workload_windows.json").write_text(json.dumps(_p30_encode_missing(workload_artifact), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    matrix_status = "SKIPPED_WITH_REASON" if any(row["operation_status"] == "SKIPPED_WITH_REASON" for row in operation_rows) else "PASS"
-    matrix = {
-        "schema_version": "v1",
-        "artifact_type": "management_ops_matrix",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "scenario": scenario,
-        "status": matrix_status,
-        "required_operations": P30_REQUIRED_ROWS,
-        "operations": matrix_rows,
-    }
-    (artifacts / "management_ops_matrix.json").write_text(json.dumps(_p30_encode_missing(matrix), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    impact = {
-        "schema_version": "v1",
-        "artifact_type": "workload_impact_report",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": matrix_status,
-        "windows": _p17_aggregate_workload_windows(workload_windows),
-        "comparisons": _p17_workload_comparisons(workload_windows),
-        "operation_window_count": len(workload_windows),
-        "operations": [{"operation_id": row["operation_id"], "operation_name": row["operation_name"], "coverage_id": row["coverage_id"], "window_refs": [row["workload_window_ref"]]} for row in operation_rows],
-    }
-    (artifacts / "management_workload_impact.json").write_text(json.dumps(_p30_encode_missing(impact), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    (artifacts / "rebalance_summary.json").write_text(json.dumps(_p30_encode_missing(_p18_rebalance_summary(phase, run_id, [], [])), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    (artifacts / "rolling_restart_plan.json").write_text(json.dumps(_p30_encode_missing(_p30_rolling_plan(phase, run_id, [])), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    write_jsonl(artifacts / "rolling_restart_results.jsonl", [_p04_skipped_rolling_restart_result(phase, run_id, name, node_count) for name in ("rolling_restart_replica_first", "rolling_restart_primary_safe")])
-
-
-def _p04_contract_workload_window(telemetry: TelemetryRun, operation_id: str, operation_name: str, status: str, reason: str) -> dict[str, Any]:
-    metrics = workload_metrics(requested_qps=0.0, duration_seconds=0.000001, latencies_ms=[], error_texts=[])
-    metrics["status_reason"] = reason
-    return _p30_workload_window("event", f"{operation_id}-workload-start", f"{operation_id}-workload-end", "PASS" if status == "PASS_NOOP_VERIFIED" else "SKIPPED_WITH_REASON", operation_id, f"p04.management_contract.{operation_name}", metrics)
-
-
-def _p04_contract_workload_artifact(phase: str, scenario: str, run_id: str, windows: list[dict[str, Any]]) -> dict[str, Any]:
-    return {
-        "schema_version": "v1",
-        "artifact_type": "workload_windows",
-        "phase_id": phase,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "scenario_name": scenario,
-        "status": "SKIPPED_WITH_REASON" if any(window.get("status") == "SKIPPED_WITH_REASON" for window in windows) else "PASS",
-        "windows": windows,
-    }
-
-
-def _p04_setup_command_refs(operation_name: str, refs_by_kind: dict[str, list[str]]) -> list[str]:
-    kind_map = {
-        "create_cluster": ["cluster_meet", "cluster_addslots", "cluster_replicate", "cluster_probe"],
-        "meet_nodes": ["cluster_meet", "cluster_probe"],
-        "add_replica": ["cluster_replicate", "cluster_probe"],
-    }
-    refs: list[str] = []
-    for kind in kind_map.get(operation_name, []):
-        refs.extend(refs_by_kind.get(kind, []))
-    return sorted(dict.fromkeys(refs))
-
-
-def _p04_skipped_rolling_restart_result(phase: str, run_id: str, operation_name: str, node_count: int) -> dict[str, Any]:
-    operation_id = f"p04-contract-{P30_REQUIRED_ROWS.index(operation_name) + 1:02d}-{operation_name}"
-    reason = "Legacy P04 smoke does not execute rolling restart rows; strict management stages execute them."
-    return {
-        "schema_version": "v1",
-        "phase_id": phase,
-        "run_id": run_id,
-        "operation_id": operation_id,
-        "operation_name": operation_name,
-        "node_count": node_count,
-        "sequence": 1,
-        "node_logical_id": "SKIPPED_WITH_REASON",
-        "planned_role": "replica" if operation_name == "rolling_restart_replica_first" else "primary",
-        "role_before_restart": "unknown",
-        "max_concurrent_restarts": 1,
-        "restart_started_at_ms": 0,
-        "restart_completed_at_ms": 0,
-        "health_gate_started_at_ms": 0,
-        "health_gate_completed_at_ms": 0,
-        "health_gate_status": "SKIPPED_WITH_REASON",
-        "cluster_state_after_gate": "SKIPPED_WITH_REASON",
-        "known_nodes_after_gate": node_count,
-        "slots_after_gate": 16384,
-        "command_ref": "SKIPPED_WITH_REASON",
-        "command_status": "FAIL",
-        "workload_impact_ref": f"management_workload_impact.json#{operation_id}",
-        "missing_fields": [_p30_skipped("rolling_restart_result", reason)],
-    }
 
 
 def _command_refs_by_kind(path: Path) -> dict[str, list[str]]:
@@ -10325,12 +8381,34 @@ def _command_refs_by_kind(path: Path) -> dict[str, list[str]]:
         command_id = str(row.get("command_id", ""))
         if not command_id:
             continue
-        kind = str(row.get("command_kind") or classify_command_kind([str(part) for part in row.get("command", [])]))
+        kind = str(
+            row.get("command_kind")
+            or classify_command_kind([str(part) for part in row.get("command", [])])
+        )
         refs.setdefault(kind, []).append(f"{path.name}#{command_id}")
     return refs
 
 
-def _p30_attach_setup_command_refs(operation_rows: list[dict[str, Any]], artifacts: Path) -> None:
+def _management_setup_command_refs(
+    operation_name: str, refs_by_kind: dict[str, list[str]]
+) -> list[str]:
+    kind_map = {
+        "create_cluster": [
+            "cluster_meet",
+            "cluster_addslots",
+            "cluster_replicate",
+            "cluster_probe",
+        ],
+        "meet_nodes": ["cluster_meet", "cluster_probe"],
+        "add_replica": ["cluster_replicate", "cluster_probe"],
+    }
+    refs: list[str] = []
+    for kind in kind_map.get(operation_name, []):
+        refs.extend(refs_by_kind.get(kind, []))
+    return sorted(dict.fromkeys(refs))
+
+
+def _management_matrix_attach_setup_command_refs(operation_rows: list[dict[str, Any]], artifacts: Path) -> None:
     refs_by_kind = _command_refs_by_kind(artifacts / "command_log.jsonl")
     for row in operation_rows:
         operation_name = str(row.get("operation_name", ""))
@@ -10338,22 +8416,22 @@ def _p30_attach_setup_command_refs(operation_rows: list[dict[str, Any]], artifac
             continue
         if int(row.get("command_count", 0)) > 0:
             continue
-        refs = _p04_setup_command_refs(operation_name, refs_by_kind)
+        refs = _management_setup_command_refs(operation_name, refs_by_kind)
         if refs:
             row["command_count"] = len(refs)
             row["command_log_refs"] = refs
             row["command_log_ref"] = "command_log.jsonl"
             evidence = list(row.get("source_evidence_refs", []))
-            evidence.append(f"artifacts/phases/{row.get('phase_id', 'UNKNOWN')}/command_log.jsonl")
+            evidence.append(f"artifacts/captures/{row.get('capability_id', 'UNKNOWN')}/command_log.jsonl")
             row["source_evidence_refs"] = sorted(dict.fromkeys(evidence))
         elif row.get("operation_status") == "PASS":
             row["operation_status"] = "PASS_NOOP_VERIFIED"
             row["status_reason"] = f"{operation_name} was observed from live cluster state, but setup command refs were unavailable; no command evidence was invented."
-            row.setdefault("missing_fields", []).append(_p30_missing("command_log_refs", row["status_reason"]))
+            row.setdefault("missing_fields", []).append(_management_matrix_missing("command_log_refs", row["status_reason"]))
             row["real_execution_verified"] = False
 
 
-def _p30_skipped(field: str, reason: str) -> dict[str, str]:
+def _management_matrix_skipped(field: str, reason: str) -> dict[str, str]:
     return {"status": "SKIPPED_WITH_REASON", "field": field, "reason": reason, "impact": "Encoded explicitly; no metric value was invented."}
 
 
@@ -10369,14 +8447,14 @@ def _management_diff_from_health(health: dict[str, Any], status: str) -> dict[st
     }
 
 
-def _management_topology_diff_row(phase: str, run_id: str, row: dict[str, Any]) -> dict[str, Any]:
+def _management_topology_diff_row(capability_id: str, run_id: str, row: dict[str, Any]) -> dict[str, Any]:
     topology = row.get("topology_diff") if isinstance(row.get("topology_diff"), dict) else {}
     status = str(row.get("operation_status", "FAIL"))
-    return _p30_encode_missing(
+    return _management_matrix_encode_missing(
         {
             "schema_version": "v1",
             "artifact_type": "management_topology_diff",
-            "phase_id": phase,
+            "capability_id": capability_id,
             "run_id": run_id,
             "operation_id": row.get("operation_id", MISSING),
             "before_snapshot_ref": row.get("before_topology_snapshot_ref", row.get("topology_before_ref", MISSING)),
@@ -10392,10 +8470,10 @@ def _management_topology_diff_row(phase: str, run_id: str, row: dict[str, Any]) 
     )
 
 
-def _p30_run_operation_with_workload(
+def _management_matrix_run_operation_with_workload(
     *,
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     scenario: str,
     operation_name: str,
@@ -10412,9 +8490,9 @@ def _p30_run_operation_with_workload(
     result: dict[str, Any] | None = None
     extras: dict[str, Any] = {"slot_movements": [], "restart_results": []}
     all_started = time.monotonic()
-    stage_label = phase.split("_", 1)[0]
+    capability_label = capability_id.split("_", 1)[0]
     node_count = len(nodes)
-    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message=f"{stage_label} all-run workload window started.", metadata={"window_name": "all_run", "operation_id": operation_id})
+    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message=f"{capability_label} all-run workload window started.", metadata={"window_name": "all_run", "operation_id": operation_id})
     events.append(all_start)
 
     def cluster_command(*args: Any, timeout: int = 10) -> str:
@@ -10423,7 +8501,7 @@ def _p30_run_operation_with_workload(
         return run_node_cluster_cli(nodes[0], *args, timeout=timeout)
 
     def workload_command(window_name: str, op_index: int, latencies: list[float], errors: list[str]) -> None:
-        key = f"{{vslab-{stage_label.lower()}-{operation_name}-{window_name}-{op_index % 3}}}:k"
+        key = f"{{vslab-{capability_label.lower()}-{operation_name}-{window_name}-{op_index % 3}}}:k"
         value = f"value-{operation_id}-{window_name}-{op_index}"
         op_started = time.monotonic()
         try:
@@ -10440,13 +8518,13 @@ def _p30_run_operation_with_workload(
             errors.append(repr(exc))
 
     for window_name in CANONICAL_WINDOWS[:-1]:
-        start_event = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{stage_label} {window_name} workload window started.", metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count})
+        start_event = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{capability_label} {window_name} workload window started.", metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count})
         events.append(start_event)
         started = time.monotonic()
         latencies: list[float] = []
         errors: list[str] = []
         if window_name == "event" and result is None:
-            topology.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, "during_before_command", nodes, nodes))
+            topology.append(_management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "during_before_command", nodes, nodes))
             stop_workload = threading.Event()
             workload_ready = threading.Event()
 
@@ -10466,9 +8544,9 @@ def _p30_run_operation_with_workload(
                     raise DockerRuntimeError("management event workload failed to start")
                 op_started = time.monotonic()
                 try:
-                    result, extras = _p30_execute_operation(
+                    result, extras = _management_matrix_execute_operation(
                         telemetry=telemetry,
-                        phase=phase,
+                        capability_id=capability_id,
                         run_id=run_id,
                         scenario=scenario,
                         operation_name=operation_name,
@@ -10480,30 +8558,30 @@ def _p30_run_operation_with_workload(
                     stop_workload.set()
                     workload_future.result(timeout=15.0)
                 result["command_ms"] = round(max(time.monotonic() - op_started, 0.0) * 1000.0, 6)
-            topology.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, "during_after_command", nodes, nodes))
+            topology.append(_management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "during_after_command", nodes, nodes))
         else:
             for op_index in range(4):
                 workload_command(window_name, op_index, latencies, errors)
         window_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - started, 0.000001), latencies_ms=latencies, error_texts=errors)
-        end_event = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{stage_label} {window_name} workload window finished.", metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": window_metrics["sample_count"]})
+        end_event = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{capability_label} {window_name} workload window finished.", metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": window_metrics["sample_count"]})
         events.append(end_event)
         window_metrics["window_start_event_id"] = start_event["event_id"]
         window_metrics["window_end_event_id"] = end_event["event_id"]
         window_status = "PASS" if window_name == "event" or not errors else "FAIL"
-        windows.append(_p30_workload_window(window_name, start_event["event_id"], end_event["event_id"], window_status, operation_id, telemetry.coverage_id, window_metrics))
-        metrics.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, window_metrics))
+        windows.append(_management_matrix_workload_window(window_name, start_event["event_id"], end_event["event_id"], window_status, operation_id, telemetry.coverage_id, window_metrics))
+        metrics.extend(_management_workload_metric_rows(telemetry, operation_id, window_name, window_metrics))
         all_latencies.extend(latencies)
         all_errors.extend(errors)
     if result is None:
-        result, extras = _p30_execute_operation(telemetry=telemetry, phase=phase, run_id=run_id, scenario=scenario, operation_name=operation_name, operation_id=operation_id, nodes=nodes, command_log=command_log)
+        result, extras = _management_matrix_execute_operation(telemetry=telemetry, capability_id=capability_id, run_id=run_id, scenario=scenario, operation_name=operation_name, operation_id=operation_id, nodes=nodes, command_log=command_log)
     events.extend(extras.get("restart_events", []))
     all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
-    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message=f"{stage_label} all-run workload window finished.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
+    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message=f"{capability_label} all-run workload window finished.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
     events.append(all_end)
     all_metrics["window_start_event_id"] = all_start["event_id"]
     all_metrics["window_end_event_id"] = all_end["event_id"]
-    windows.append(_p30_workload_window("all_run", all_start["event_id"], all_end["event_id"], "PASS", operation_id, telemetry.coverage_id, all_metrics))
-    metrics.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
+    windows.append(_management_matrix_workload_window("all_run", all_start["event_id"], all_end["event_id"], "PASS", operation_id, telemetry.coverage_id, all_metrics))
+    metrics.extend(_management_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
     result["workload_window_ref"] = f"{operation_id}:event"
     result["workload_impact"] = {
         "error_count": len(all_errors),
@@ -10516,21 +8594,21 @@ def _p30_run_operation_with_workload(
     return result, events, metrics, windows, topology, extras
 
 
-def _p30_missing(field: str, reason: str) -> dict[str, str]:
+def _management_matrix_missing(field: str, reason: str) -> dict[str, str]:
     return {"status": MISSING, "field": field, "reason": reason}
 
 
-def _p30_encode_missing(value: Any, path: str = "$") -> Any:
+def _management_matrix_encode_missing(value: Any, path: str = "$") -> Any:
     if value is None:
-        return _p30_missing(path, f"{path} was unavailable or not applicable for this artifact.")
+        return _management_matrix_missing(path, f"{path} was unavailable or not applicable for this artifact.")
     if isinstance(value, dict):
-        return {key: _p30_encode_missing(item, f"{path}.{key}") for key, item in value.items()}
+        return {key: _management_matrix_encode_missing(item, f"{path}.{key}") for key, item in value.items()}
     if isinstance(value, list):
-        return [_p30_encode_missing(item, f"{path}[{index}]") for index, item in enumerate(value)]
+        return [_management_matrix_encode_missing(item, f"{path}[{index}]") for index, item in enumerate(value)]
     return value
 
 
-def _p30_workload_window(
+def _management_matrix_workload_window(
     window_name: str,
     start_event_id: str,
     end_event_id: str,
@@ -10561,7 +8639,7 @@ def _p30_workload_window(
             "full_slot_covered": False,
             "fixed_hash_tag_only": False,
             "status": "PASS",
-            "reason": "Management workload windows rotate multiple operation-scoped hash tags; P05 full-slot generator separately proves 0-16383 coverage.",
+            "reason": "Management workload windows rotate multiple operation-scoped hash tags; WORKLOAD_SMOKE full-slot generator separately proves 0-16383 coverage.",
         },
         "config": {
             "target_qps": metrics.get("requested_qps", 200.0),
@@ -10579,22 +8657,22 @@ def _p30_workload_window(
         if metric_name in metrics:
             window[metric_name] = metrics[metric_name]
         else:
-            window[metric_name] = _p30_missing(metric_name, f"workload metric {metric_name} was not emitted")
+            window[metric_name] = _management_matrix_missing(metric_name, f"workload metric {metric_name} was not emitted")
     return window
 
 
-def _p30_strict_workload_window(window: dict[str, Any]) -> dict[str, Any]:
+def _management_matrix_strict_workload_window(window: dict[str, Any]) -> dict[str, Any]:
     metrics = window.get("metrics", {})
     if not isinstance(metrics, dict):
         metrics = {}
     for metric_name in WORKLOAD_WINDOW_REQUIRED_METRICS:
         if metric_name not in window:
-            window[metric_name] = metrics.get(metric_name, _p30_missing(metric_name, f"workload metric {metric_name} was not emitted"))
-    return _p30_encode_missing(window)
+            window[metric_name] = metrics.get(metric_name, _management_matrix_missing(metric_name, f"workload metric {metric_name} was not emitted"))
+    return _management_matrix_encode_missing(window)
 
 
-def _p30_slot_balance(nodes: list[dict[str, Any]]) -> dict[str, Any]:
-    counts = _p18_primary_slot_counts(nodes)
+def _management_matrix_slot_balance(nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    counts = _management_reshard_primary_slot_counts(nodes)
     values = [int(value) for value in counts.values()]
     if not values:
         return {
@@ -10616,7 +8694,7 @@ def _p30_slot_balance(nodes: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-P30_REQUIRED_OPERATION_FIELDS = [
+MANAGEMENT_MATRIX_REQUIRED_OPERATION_FIELDS = [
     "coverage_id",
     "operation_name",
     "operation_id",
@@ -10685,20 +8763,20 @@ WORKLOAD_WINDOW_REQUIRED_METRICS = [
 ]
 
 
-def _p30_strict_operation_row(row: dict[str, Any]) -> dict[str, Any]:
+def _management_matrix_strict_operation_row(row: dict[str, Any]) -> dict[str, Any]:
     missing_fields = list(row.get("missing_fields", []))
-    for field in P30_REQUIRED_OPERATION_FIELDS:
+    for field in MANAGEMENT_MATRIX_REQUIRED_OPERATION_FIELDS:
         if field not in row:
-            row[field] = _p30_missing(field, f"{field} was not emitted by the P30 operation path.")
+            row[field] = _management_matrix_missing(field, f"{field} was not emitted by the MANAGEMENT_MATRIX operation path.")
             missing_fields.append(row[field])
     row["missing_fields"] = missing_fields
-    return _p30_encode_missing(row)
+    return _management_matrix_encode_missing(row)
 
 
-def _p30_execute_operation(
+def _management_matrix_execute_operation(
     *,
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     scenario: str,
     operation_name: str,
@@ -10707,29 +8785,29 @@ def _p30_execute_operation(
     command_log: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     node_count = len(nodes)
-    stage_label = phase.split("_", 1)[0]
-    before = _p17_cluster_health(nodes)
-    before_topology_snapshot = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "before_embedded", nodes, nodes)
+    capability_label = capability_id.split("_", 1)[0]
+    before = _management_cluster_health(nodes)
+    before_topology_snapshot = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "before_embedded", nodes, nodes)
     if before["cluster_state"] != "ok" or before["known_nodes"] != node_count or before["slots_assigned"] != 16384:
-        raise DockerRuntimeError(f"{stage_label} operation requires clean exact {node_count}-node cluster before {operation_name}: {before}")
-    slot_balance_before = _p30_slot_balance(nodes)
+        raise DockerRuntimeError(f"{capability_label} operation requires clean exact {node_count}-node cluster before {operation_name}: {before}")
+    slot_balance_before = _management_matrix_slot_balance(nodes)
     started_ms = telemetry.now_unix_ms()
     monotonic_start_ms = telemetry.monotonic_ms()
     started = time.monotonic()
     extras: dict[str, Any] = {"slot_movements": [], "restart_results": []}
     base: dict[str, Any]
     if operation_name in {"create_cluster", "meet_nodes"}:
-        base = _p30_verify_setup_row(phase, operation_name, operation_id, before)
+        base = _management_matrix_verify_setup_row(capability_id, operation_name, operation_id, before)
     elif operation_name == "add_replica":
-        base = _p30_remove_and_restore_row(telemetry, phase, run_id, "remove_replica", operation_id, nodes, command_log)
+        base = _management_matrix_remove_and_restore_row(telemetry, capability_id, run_id, "remove_replica", operation_id, nodes, command_log)
         base["safe_path"] = "remove_owned_replica_then_rejoin_with_fresh_identity_as_live_add_replica"
         base["management_mutation"] = "replica_removed_then_added_back"
     elif operation_name in {"remove_replica", "remove_failed_node", "remove_primary_drained_or_safe_replaced"}:
-        base = _p30_remove_and_restore_row(telemetry, phase, run_id, operation_name, operation_id, nodes, command_log)
+        base = _management_matrix_remove_and_restore_row(telemetry, capability_id, run_id, operation_name, operation_id, nodes, command_log)
     elif operation_name in {"reshard_slot_range", "reshard_with_keys", "rebalance_after_imbalance"}:
-        base, movements, rebalance = _p18_execute_operation(
+        base, movements, rebalance = _management_reshard_execute_operation(
             telemetry=telemetry,
-            phase=phase,
+            capability_id=capability_id,
             run_id=run_id,
             operation_name=operation_name,
             operation_id=operation_id,
@@ -10741,9 +8819,9 @@ def _p30_execute_operation(
         if rebalance:
             extras["rebalance"] = rebalance
     elif operation_name in {"rolling_restart_replica_first", "rolling_restart_primary_safe"}:
-        base, plan, restart_rows, restart_events = _p30_execute_process_rolling_restart(
+        base, plan, restart_rows, restart_events = _management_matrix_execute_process_rolling_restart(
             telemetry=telemetry,
-            phase=phase,
+            capability_id=capability_id,
             run_id=run_id,
             operation_name=operation_name,
             operation_id=operation_id,
@@ -10755,10 +8833,10 @@ def _p30_execute_operation(
         extras["restart_events"] = restart_events
     else:
         raise DockerRuntimeError(f"unsupported strict management operation {operation_name}")
-    _p17_wait_clean_cluster(nodes, timeout=180.0)
-    after = _p17_cluster_health(nodes)
-    after_topology_snapshot = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "after_embedded", nodes, nodes)
-    slot_balance_after = _p30_slot_balance(nodes)
+    _management_wait_clean_cluster(nodes, timeout=180.0)
+    after = _management_cluster_health(nodes)
+    after_topology_snapshot = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "after_embedded", nodes, nodes)
+    slot_balance_after = _management_matrix_slot_balance(nodes)
     ended_ms = telemetry.now_unix_ms()
     monotonic_end_ms = telemetry.monotonic_ms()
     wall_ms = round(max(time.monotonic() - started, 0.0) * 1000.0, 6)
@@ -10774,7 +8852,7 @@ def _p30_execute_operation(
         {
             "schema_version": "v1",
             "artifact_type": "management_operation_result",
-            "phase_id": phase,
+            "capability_id": capability_id,
             "run_id": run_id,
             "scenario": scenario,
             "coverage_id": f"{node_count}.management.{operation_name}",
@@ -10829,7 +8907,7 @@ def _p30_execute_operation(
             "workload_window_ref": f"{operation_id}:event",
             "workload_impact_ref": f"management_workload_impact.json#{operation_id}",
             "cleanup_ref": "cleanup_report.json",
-            "errors_by_type": _p17_errors_by_type(command_log, operation_id),
+            "errors_by_type": _management_errors_by_type(command_log, operation_id),
             "command_count": len([row for row in command_log if row.get("operation_id") == operation_id]),
             "retry_count": 0,
             "error_count": sum(1 for row in command_log if row.get("operation_id") == operation_id and row.get("status") != "PASS"),
@@ -10839,26 +8917,26 @@ def _p30_execute_operation(
             "topology_before_ref": f"{operation_id}-before",
             "topology_after_ref": f"{operation_id}-after_restore",
             "command_log_ref": "management_command_log.jsonl",
-            "source_evidence_ref": f"artifacts/phases/{phase}/management_operation_results.jsonl",
+            "source_evidence_ref": f"artifacts/captures/{capability_id}/management_operation_results.jsonl",
             "source_evidence_refs": [
-                f"artifacts/phases/{phase}/management_operation_results.jsonl",
-                f"artifacts/phases/{phase}/management_command_log.jsonl",
-                f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
-                f"artifacts/phases/{phase}/workload_windows.json",
+                f"artifacts/captures/{capability_id}/management_operation_results.jsonl",
+                f"artifacts/captures/{capability_id}/management_command_log.jsonl",
+                f"artifacts/captures/{capability_id}/management_topology_snapshots.jsonl",
+                f"artifacts/captures/{capability_id}/workload_windows.json",
             ],
         }
     )
     base.setdefault("missing_fields", [])
     base.setdefault("slots_moved", 0)
     base.setdefault("keys_moved", 0)
-    base.setdefault("bytes_migrated", _p30_missing("bytes_migrated", "Valkey command path did not expose migrated byte counts for this operation."))
+    base.setdefault("bytes_migrated", _management_matrix_missing("bytes_migrated", "Valkey command path did not expose migrated byte counts for this operation."))
     base.setdefault("command_ms", round(max(time.monotonic() - started, 0.0) * 1000.0, 6))
     base.setdefault("convergence_ms", round(max(time.monotonic() - started, 0.0) * 1000.0, 6))
     return base, extras
 
 
-def _p30_verify_setup_row(phase: str, operation_name: str, operation_id: str, before: dict[str, Any]) -> dict[str, Any]:
-    del phase
+def _management_matrix_verify_setup_row(capability_id: str, operation_name: str, operation_id: str, before: dict[str, Any]) -> dict[str, Any]:
+    del capability_id
     node_count = int(before["known_nodes"])
     primary_count = int(before["primary_count"])
     replica_count = int(before["replica_count"])
@@ -10882,9 +8960,9 @@ def _p30_verify_setup_row(phase: str, operation_name: str, operation_id: str, be
     }
 
 
-def _p30_remove_and_restore_row(
+def _management_matrix_remove_and_restore_row(
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_name: str,
     operation_id: str,
@@ -10892,14 +8970,14 @@ def _p30_remove_and_restore_row(
     command_log: list[dict[str, Any]],
 ) -> dict[str, Any]:
     node_count = len(nodes)
-    topology = _p19_live_topology(nodes)
+    topology = _management_live_topology(nodes)
     primaries = [node for node in nodes if topology.get(node["logical_id"], {}).get("role") == "primary"]
     replicas = [node for node in nodes if topology.get(node["logical_id"], {}).get("role") == "replica"]
     if operation_name == "remove_primary_drained_or_safe_replaced":
         target = primaries[0]
         replacement = next(node for node in replicas if node["shard_id"] == target["shard_id"])
-        _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_failover_takeover_before_primary_remove", target=replacement, args=["CLUSTER", "FAILOVER", "TAKEOVER"], timeout=60)
-        _p17_wait_node_role(replacement, "master", timeout=90.0)
+        _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_failover_takeover_before_primary_remove", target=replacement, args=["CLUSTER", "FAILOVER", "TAKEOVER"], timeout=60)
+        _management_wait_node_role(replacement, "master", timeout=90.0)
         safe_path = "cluster_failover_takeover_then_forget_and_restore_old_primary_as_replica"
         restore_as_replica = True
     else:
@@ -10908,15 +8986,15 @@ def _p30_remove_and_restore_row(
         restore_as_replica = True
     removed_id = _node_command(target, "CLUSTER", "MYID", timeout=30).strip()
     old_pid = target.get("pid", MISSING)
-    _p30_stop_process(target, telemetry, phase, run_id, operation_id, command_log, command_kind="owned_valkey_process_stop")
+    _management_matrix_stop_process(target, telemetry, capability_id, run_id, operation_id, command_log, command_kind="owned_valkey_process_stop")
     survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
     expected_primaries = len(primaries)
     expected_replicas = len(replicas) - 1 if restore_as_replica else len(replicas)
-    _p17_forget_until_absent(telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, survivors=survivors, removed_id=removed_id, expected_nodes=node_count - 1, expected_primaries=expected_primaries, expected_replicas=expected_replicas, command_log=command_log)
-    absent = _p17_removed_absent(survivors, removed_id)
-    _p30_start_process(target, telemetry, phase, run_id, operation_id, command_log, fresh_cluster_identity=True)
-    _p30_rejoin_as_replica(target, nodes, telemetry, phase, run_id, operation_id, command_log)
-    _p17_wait_clean_cluster(nodes, timeout=180.0)
+    _management_forget_until_absent(telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, survivors=survivors, removed_id=removed_id, expected_nodes=node_count - 1, expected_primaries=expected_primaries, expected_replicas=expected_replicas, command_log=command_log)
+    absent = _management_removed_absent(survivors, removed_id)
+    _management_matrix_start_process(target, telemetry, capability_id, run_id, operation_id, command_log, fresh_cluster_identity=True)
+    _management_matrix_rejoin_as_replica(target, nodes, telemetry, capability_id, run_id, operation_id, command_log)
+    _management_wait_clean_cluster(nodes, timeout=180.0)
     return {
         "operation_status": "PASS" if absent and old_pid != target.get("pid", MISSING) else "FAIL",
         "safe_path": safe_path,
@@ -10931,10 +9009,10 @@ def _p30_remove_and_restore_row(
     }
 
 
-def _p30_execute_process_rolling_restart(
+def _management_matrix_execute_process_rolling_restart(
     *,
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_name: str,
     operation_id: str,
@@ -10942,11 +9020,11 @@ def _p30_execute_process_rolling_restart(
     command_log: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
     node_count = len(nodes)
-    stage_label = phase.split("_", 1)[0]
-    before = _p17_cluster_health(nodes)
-    initial_topology = _p19_live_topology(nodes)
-    plan_entries = _p30_rolling_restart_plan_entries(operation_name, operation_id, nodes, topology=initial_topology)
-    batches = _p30_rolling_restart_batches(plan_entries, nodes)
+    capability_label = capability_id.split("_", 1)[0]
+    before = _management_cluster_health(nodes)
+    initial_topology = _management_live_topology(nodes)
+    plan_entries = _management_matrix_rolling_restart_plan_entries(operation_name, operation_id, nodes, topology=initial_topology)
+    batches = _management_matrix_rolling_restart_batches(plan_entries, nodes)
     max_concurrent = max((len(batch) for batch in batches), default=0)
     plan = {
         "operation_id": operation_id,
@@ -10983,7 +9061,7 @@ def _p30_execute_process_rolling_restart(
     nodes_by_id = {str(node["logical_id"]): node for node in nodes}
     for batch_index, batch in enumerate(batches, start=1):
         targets = [nodes_by_id[str(entry["logical_node_id"])] for entry in batch]
-        topology = _p19_live_topology(nodes)
+        topology = _management_live_topology(nodes)
         safe_by_id: dict[str, dict[str, Any]] = {}
         for entry, target in zip(batch, targets):
             logical_id = str(target["logical_id"])
@@ -10995,9 +9073,9 @@ def _p30_execute_process_rolling_restart(
                 )
             safe_details: dict[str, Any] = {"safe_path": "not_required_for_replica_restart", "safe_command_ref": MISSING}
             if entry["planned_role"] == "primary":
-                safe_details = _p30_make_primary_restart_safe(
+                safe_details = _management_matrix_make_primary_restart_safe(
                     telemetry=telemetry,
-                    phase=phase,
+                    capability_id=capability_id,
                     run_id=run_id,
                     operation_id=operation_id,
                     target=target,
@@ -11016,7 +9094,7 @@ def _p30_execute_process_rolling_restart(
                 nodes_by_id[str(safe_by_id[str(target["logical_id"])]["replacement_logical_id"])]
                 for target in targets
             ]
-            _, handoff_probe = _p30_wait_rolling_restart_health(
+            _, handoff_probe = _management_matrix_wait_rolling_restart_health(
                 nodes,
                 timeout=120.0,
                 full_probe=False,
@@ -11024,8 +9102,8 @@ def _p30_execute_process_rolling_restart(
             )
             handoff_probe["gate_kind"] = "primary_handoff"
             handoff_probe["batch_id"] = batch_index
-            handoff_probe["command_ref"] = _p30_log_health_probe_summary(
-                command_log, telemetry, phase, run_id, operation_id, handoff_probe
+            handoff_probe["command_ref"] = _management_matrix_log_health_probe_summary(
+                command_log, telemetry, capability_id, run_id, operation_id, handoff_probe
             )
             probe_summaries.append(handoff_probe)
 
@@ -11035,7 +9113,7 @@ def _p30_execute_process_rolling_restart(
                 subject_type="rolling_restart_batch",
                 subject_id=str(batch_index),
                 operation_id=operation_id,
-                message=f"Owned Valkey process restart batch started for {stage_label} rolling restart.",
+                message=f"Owned Valkey process restart batch started for {capability_label} rolling restart.",
                 metadata={"batch_id": batch_index, "batch_size": len(batch), "sequences": [entry["sequence"] for entry in batch]},
             )
         )
@@ -11047,30 +9125,30 @@ def _p30_execute_process_rolling_restart(
                     subject_type="valkey_node",
                     subject_id=target["logical_id"],
                     operation_id=operation_id,
-                    message=f"Owned Valkey process restart started for {stage_label} rolling restart.",
+                    message=f"Owned Valkey process restart started for {capability_label} rolling restart.",
                     metadata={"sequence": entry["sequence"], "batch_id": batch_index, "role_before_restart": details["role_before_restart"]},
                 )
             )
 
         process_results = _bounded_parallel(
             list(zip(batch, targets)),
-            lambda item: _p30_restart_process_target(
+            lambda item: _management_matrix_restart_process_target(
                 entry=item[0],
                 target=item[1],
                 telemetry=telemetry,
-                phase=phase,
+                capability_id=capability_id,
                 run_id=run_id,
                 operation_id=operation_id,
             ),
             parallelism=ROLLING_RESTART_MAX_PARALLELISM,
             timeout=90.0,
-            label=f"{stage_label} rolling restart batch {batch_index}",
+            label=f"{capability_label} rolling restart batch {batch_index}",
         )
         process_by_sequence = {int(item["sequence"]): item for item in process_results}
         for entry in batch:
-            _p30_merge_parallel_command_rows(command_log, process_by_sequence[int(entry["sequence"])].pop("command_rows"))
+            _management_matrix_merge_parallel_command_rows(command_log, process_by_sequence[int(entry["sequence"])].pop("command_rows"))
 
-        post_restart_topology = _p19_live_topology(nodes) if any(entry["planned_role"] == "replica" for entry in batch) else {}
+        post_restart_topology = _management_live_topology(nodes) if any(entry["planned_role"] == "replica" for entry in batch) else {}
         for entry, target in zip(batch, targets):
             if entry["planned_role"] != "replica":
                 continue
@@ -11087,7 +9165,7 @@ def _p30_execute_process_rolling_restart(
                 raise DockerRuntimeError(
                     f"strict rolling restart could not find live primary after restarting replica {target['logical_id']}"
                 )
-            safe_by_id[str(target["logical_id"])]["replica_sync_after_restart"] = _p30_wait_replica_sync_ready(
+            safe_by_id[str(target["logical_id"])]["replica_sync_after_restart"] = _management_matrix_wait_replica_sync_ready(
                 target,
                 primary,
                 timeout=120.0,
@@ -11097,9 +9175,9 @@ def _p30_execute_process_rolling_restart(
             for target in targets:
                 safe_details = safe_by_id[str(target["logical_id"])]
                 replacement = nodes_by_id[str(safe_details["replacement_logical_id"])]
-                restore_details = _p30_restore_primary_placement(
+                restore_details = _management_matrix_restore_primary_placement(
                     telemetry=telemetry,
-                    phase=phase,
+                    capability_id=capability_id,
                     run_id=run_id,
                     operation_id=operation_id,
                     target=target,
@@ -11109,7 +9187,7 @@ def _p30_execute_process_rolling_restart(
                 safe_details.update(restore_details)
 
         health_started = telemetry.now_unix_ms()
-        health, probe = _p30_wait_rolling_restart_health(
+        health, probe = _management_matrix_wait_rolling_restart_health(
             nodes,
             timeout=180.0,
             full_probe=False,
@@ -11118,9 +9196,9 @@ def _p30_execute_process_rolling_restart(
         health_completed = telemetry.now_unix_ms()
         probe["gate_kind"] = "post_batch"
         probe["batch_id"] = batch_index
-        probe["command_ref"] = _p30_log_health_probe_summary(command_log, telemetry, phase, run_id, operation_id, probe)
+        probe["command_ref"] = _management_matrix_log_health_probe_summary(command_log, telemetry, capability_id, run_id, operation_id, probe)
         probe_summaries.append(probe)
-        health_status = "PASS" if _p30_clean_health(health, node_count) else "FAIL"
+        health_status = "PASS" if _management_matrix_clean_health(health, node_count) else "FAIL"
 
         for entry, target in zip(batch, targets):
             sequence = int(entry["sequence"])
@@ -11128,7 +9206,7 @@ def _p30_execute_process_rolling_restart(
             safe_details = safe_by_id[str(target["logical_id"])]
             row = {
                 "schema_version": "v1",
-                "phase_id": phase,
+                "capability_id": capability_id,
                 "run_id": run_id,
                 "operation_id": operation_id,
                 "operation_name": operation_name,
@@ -11187,7 +9265,7 @@ def _p30_execute_process_rolling_restart(
                     subject_type="valkey_node",
                     subject_id=target["logical_id"],
                     operation_id=operation_id,
-                    message=f"Owned Valkey process restart completed and batch health gate passed for {stage_label} rolling restart.",
+                    message=f"Owned Valkey process restart completed and batch health gate passed for {capability_label} rolling restart.",
                     metadata={"sequence": sequence, "batch_id": batch_index, "health_gate_status": health_status},
                 )
             )
@@ -11197,20 +9275,20 @@ def _p30_execute_process_rolling_restart(
                 subject_type="rolling_restart_batch",
                 subject_id=str(batch_index),
                 operation_id=operation_id,
-                message=f"Owned Valkey process restart batch completed for {stage_label} rolling restart.",
+                message=f"Owned Valkey process restart batch completed for {capability_label} rolling restart.",
                 metadata={"batch_id": batch_index, "batch_size": len(batch), "health_gate_status": health_status, "probe_command_ref": probe["command_ref"]},
             )
         )
 
-    after, final_probe = _p30_wait_rolling_restart_health(nodes, timeout=180.0, full_probe=True)
+    after, final_probe = _management_matrix_wait_rolling_restart_health(nodes, timeout=180.0, full_probe=True)
     final_probe["gate_kind"] = "final_full"
     final_probe["batch_id"] = MISSING
-    final_probe["command_ref"] = _p30_log_health_probe_summary(command_log, telemetry, phase, run_id, operation_id, final_probe)
+    final_probe["command_ref"] = _management_matrix_log_health_probe_summary(command_log, telemetry, capability_id, run_id, operation_id, final_probe)
     probe_summaries.append(final_probe)
-    final_topology = _p19_live_topology(nodes)
+    final_topology = _management_live_topology(nodes)
     topology_placement_restored = bool(final_topology) and (
-        _p30_topology_placement_signature(final_topology)
-        == _p30_topology_placement_signature(initial_topology)
+        _management_matrix_topology_placement_signature(final_topology)
+        == _management_matrix_topology_placement_signature(initial_topology)
     )
     probe_summary = {
         "batch_count": len(batches),
@@ -11249,7 +9327,7 @@ def _p30_execute_process_rolling_restart(
     }, plan, restart_rows, events
 
 
-def _p30_topology_placement_signature(topology: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _management_matrix_topology_placement_signature(topology: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     logical_by_node_id = {
         str(row.get("node_id")): logical_id
         for logical_id, row in topology.items()
@@ -11265,7 +9343,7 @@ def _p30_topology_placement_signature(topology: dict[str, dict[str, Any]]) -> di
     }
 
 
-def _p30_rolling_restart_plan_entries(
+def _management_matrix_rolling_restart_plan_entries(
     operation_name: str,
     operation_id: str,
     nodes: list[dict[str, Any]],
@@ -11274,7 +9352,7 @@ def _p30_rolling_restart_plan_entries(
 ) -> list[dict[str, Any]]:
     if operation_name not in {"rolling_restart_replica_first", "rolling_restart_primary_safe"}:
         raise DockerRuntimeError(f"unsupported strict rolling restart operation {operation_name}")
-    live_topology = topology if topology is not None else _p19_live_topology(nodes)
+    live_topology = topology if topology is not None else _management_live_topology(nodes)
     live_roles = {
         str(node["logical_id"]): str(live_topology.get(str(node["logical_id"]), {}).get("role", "MISSING"))
         for node in nodes
@@ -11305,7 +9383,7 @@ def _p30_rolling_restart_plan_entries(
     ]
 
 
-def _p30_rolling_restart_batches(plan_entries: list[dict[str, Any]], nodes: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+def _management_matrix_rolling_restart_batches(plan_entries: list[dict[str, Any]], nodes: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
     nodes_by_id = {str(node["logical_id"]): node for node in nodes}
     pending = list(plan_entries)
     batches: list[list[dict[str, Any]]] = []
@@ -11314,14 +9392,14 @@ def _p30_rolling_restart_batches(plan_entries: list[dict[str, Any]], nodes: list
         deferred: list[dict[str, Any]] = []
         used_shards: set[str] = set()
         used_nodehosts: set[str] = set()
-        phase_role = str(pending[0]["planned_role"])
+        batch_role = str(pending[0]["planned_role"])
         max_batch_size = ROLLING_RESTART_MAX_PARALLELISM
         for entry in pending:
             target = nodes_by_id[str(entry["logical_node_id"])]
             shard = str(entry["shard_id"])
             nodehost = str(target["nodehost_container_name"])
             eligible = (
-                str(entry["planned_role"]) == phase_role
+                str(entry["planned_role"]) == batch_role
                 and shard not in used_shards
                 and nodehost not in used_nodehosts
                 and len(batch) < max_batch_size
@@ -11339,10 +9417,10 @@ def _p30_rolling_restart_batches(plan_entries: list[dict[str, Any]], nodes: list
     return batches
 
 
-def _p30_make_primary_restart_safe(
+def _management_matrix_make_primary_restart_safe(
     *,
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     target: dict[str, Any],
@@ -11364,12 +9442,12 @@ def _p30_make_primary_restart_safe(
         raise DockerRuntimeError(f"strict rolling restart could not find a same-shard replica for {target['logical_id']}")
     started_ms = telemetry.now_unix_ms()
     started = time.monotonic()
-    sync_details = _p30_wait_replica_sync_ready(replacement, target, timeout=90.0)
+    sync_details = _management_matrix_wait_replica_sync_ready(replacement, target, timeout=90.0)
     promotion_started = time.monotonic()
-    command = _p17_log_node_command(
+    command = _management_log_node_command(
         command_log,
         telemetry=telemetry,
-        phase=phase,
+        capability_id=capability_id,
         parent_run_id=run_id,
         operation_id=operation_id,
         command_kind="cluster_failover_before_primary_restart",
@@ -11377,8 +9455,8 @@ def _p30_make_primary_restart_safe(
         args=["CLUSTER", "FAILOVER"],
         timeout=60,
     )
-    _p17_wait_node_role(replacement, "master", timeout=90.0)
-    _p17_wait_node_role(target, "slave", timeout=90.0)
+    _management_wait_node_role(replacement, "master", timeout=90.0)
+    _management_wait_node_role(target, "slave", timeout=90.0)
     completed_ms = telemetry.now_unix_ms()
     promotion_ms = round(max(time.monotonic() - promotion_started, 0.0) * 1000.0, 6)
     handoff_ms = round(max(time.monotonic() - started, 0.0) * 1000.0, 6)
@@ -11402,10 +9480,10 @@ def _p30_make_primary_restart_safe(
     }
 
 
-def _p30_restore_primary_placement(
+def _management_matrix_restore_primary_placement(
     *,
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     target: dict[str, Any],
@@ -11413,11 +9491,11 @@ def _p30_restore_primary_placement(
     command_log: list[dict[str, Any]],
 ) -> dict[str, Any]:
     started = time.monotonic()
-    sync_details = _p30_wait_replica_sync_ready(target, replacement, timeout=120.0)
-    command = _p17_log_node_command(
+    sync_details = _management_matrix_wait_replica_sync_ready(target, replacement, timeout=120.0)
+    command = _management_log_node_command(
         command_log,
         telemetry=telemetry,
-        phase=phase,
+        capability_id=capability_id,
         parent_run_id=run_id,
         operation_id=operation_id,
         command_kind="cluster_failover_restore_primary_placement",
@@ -11426,8 +9504,8 @@ def _p30_restore_primary_placement(
         timeout=60,
     )
     role_convergence_started = time.monotonic()
-    _p17_wait_node_role(target, "master", timeout=90.0)
-    _p17_wait_node_role(replacement, "slave", timeout=90.0)
+    _management_wait_node_role(target, "master", timeout=90.0)
+    _management_wait_node_role(replacement, "slave", timeout=90.0)
     return {
         "restore_command_ref": command["command_id"],
         "placement_restored": True,
@@ -11442,7 +9520,7 @@ def _p30_restore_primary_placement(
     }
 
 
-def _p30_wait_replica_sync_ready(
+def _management_matrix_wait_replica_sync_ready(
     replica: dict[str, Any],
     primary: dict[str, Any],
     *,
@@ -11489,12 +9567,12 @@ def _p30_wait_replica_sync_ready(
     )
 
 
-def _p30_restart_process_target(
+def _management_matrix_restart_process_target(
     *,
     entry: dict[str, Any],
     target: dict[str, Any],
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
 ) -> dict[str, Any]:
@@ -11502,8 +9580,8 @@ def _p30_restart_process_target(
     old_pid = target.get("pid", MISSING)
     started_ms = telemetry.now_unix_ms()
     started = time.monotonic()
-    _p30_stop_process(target, telemetry, phase, run_id, operation_id, command_rows, command_kind="owned_valkey_process_restart_stop")
-    _p30_start_process(target, telemetry, phase, run_id, operation_id, command_rows, fresh_cluster_identity=False)
+    _management_matrix_stop_process(target, telemetry, capability_id, run_id, operation_id, command_rows, command_kind="owned_valkey_process_restart_stop")
+    _management_matrix_start_process(target, telemetry, capability_id, run_id, operation_id, command_rows, fresh_cluster_identity=False)
     return {
         "sequence": int(entry["sequence"]),
         "process_pid_before": old_pid,
@@ -11515,7 +9593,7 @@ def _p30_restart_process_target(
     }
 
 
-def _p30_merge_parallel_command_rows(command_log: list[dict[str, Any]], rows: list[dict[str, Any]]) -> None:
+def _management_matrix_merge_parallel_command_rows(command_log: list[dict[str, Any]], rows: list[dict[str, Any]]) -> None:
     for row in rows:
         copied = dict(row)
         operation_id = str(copied["operation_id"])
@@ -11523,10 +9601,10 @@ def _p30_merge_parallel_command_rows(command_log: list[dict[str, Any]], rows: li
         command_log.append(copied)
 
 
-def _p30_log_docker_exec(
+def _management_matrix_log_docker_exec(
     command_log: list[dict[str, Any]],
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     command_kind: str,
@@ -11541,7 +9619,7 @@ def _p30_log_docker_exec(
     result = run_docker(args, timeout=timeout, check=False)
     entry = {
         "schema_version": "v1",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "command_id": command_id,
         "operation_id": operation_id,
@@ -11557,11 +9635,11 @@ def _p30_log_docker_exec(
     }
     command_log.append(entry)
     if check and result.returncode != 0:
-        raise DockerRuntimeError(f"{phase.split('_', 1)[0]} docker command failed {command_kind}: {result.stderr.strip()}")
+        raise DockerRuntimeError(f"{capability_id.split('_', 1)[0]} docker command failed {command_kind}: {result.stderr.strip()}")
     return result
 
 
-def _p30_clean_health(health: dict[str, Any], node_count: int) -> bool:
+def _management_matrix_clean_health(health: dict[str, Any], node_count: int) -> bool:
     expected_primaries = node_count // 2
     expected_replicas = node_count - expected_primaries
     return bool(
@@ -11578,7 +9656,7 @@ def _p30_clean_health(health: dict[str, Any], node_count: int) -> bool:
     )
 
 
-def _p30_health_from_process_snapshots(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
+def _management_matrix_health_from_process_snapshots(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
     passing = [snapshot for snapshot in snapshots if snapshot.get("probe_status") == "PASS"]
     return {
         "cluster_state": "ok" if passing and len(passing) == len(snapshots) and all(snapshot["cluster_state"] == "ok" for snapshot in passing) else "unknown",
@@ -11595,7 +9673,7 @@ def _p30_health_from_process_snapshots(snapshots: list[dict[str, Any]]) -> dict[
     }
 
 
-def _p30_wait_rolling_restart_health(
+def _management_matrix_wait_rolling_restart_health(
     nodes: list[dict[str, Any]],
     *,
     timeout: float,
@@ -11615,7 +9693,7 @@ def _p30_wait_rolling_restart_health(
     representative_probe_count = 0
     full_probe_count = 0
     retry_count = 0
-    last = _p30_health_from_process_snapshots([])
+    last = _management_matrix_health_from_process_snapshots([])
     last_scope = "all_nodes" if full_probe else "representative_by_az_and_required_nodes"
     attempt_summaries: list[dict[str, Any]] = []
     while time.monotonic() < deadline:
@@ -11626,7 +9704,7 @@ def _p30_wait_rolling_restart_health(
             full_probe_count += len(snapshots)
         else:
             representative_probe_count += len(snapshots)
-        last = _p30_health_from_process_snapshots(snapshots)
+        last = _management_matrix_health_from_process_snapshots(snapshots)
         attempt_summaries.append(
             {
                 "attempt": len(attempt_summaries) + 1,
@@ -11636,14 +9714,14 @@ def _p30_wait_rolling_restart_health(
                 "health": {key: value for key, value in last.items() if key != "snapshots"},
             }
         )
-        if _p30_clean_health(last, node_count):
+        if _management_matrix_clean_health(last, node_count):
             last_scope = current_scope
             break
 
         if not full_probe:
             diagnostic = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
             full_probe_count += len(diagnostic)
-            last = _p30_health_from_process_snapshots(diagnostic)
+            last = _management_matrix_health_from_process_snapshots(diagnostic)
             last_scope = "all_nodes_diagnostic"
             attempt_summaries.append(
                 {
@@ -11654,11 +9732,11 @@ def _p30_wait_rolling_restart_health(
                     "health": {key: value for key, value in last.items() if key != "snapshots"},
                 }
             )
-            if _p30_clean_health(last, node_count):
+            if _management_matrix_clean_health(last, node_count):
                 break
         retry_count += 1
         time.sleep(1.0)
-    if not _p30_clean_health(last, node_count):
+    if not _management_matrix_clean_health(last, node_count):
         raise DockerRuntimeError(f"rolling restart health gate did not converge; scope={last_scope} health={last}")
     probe = {
         "status": "PASS",
@@ -11677,10 +9755,10 @@ def _p30_wait_rolling_restart_health(
     return last, probe
 
 
-def _p30_log_health_probe_summary(
+def _management_matrix_log_health_probe_summary(
     command_log: list[dict[str, Any]],
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     probe: dict[str, Any],
@@ -11691,7 +9769,7 @@ def _p30_log_health_probe_summary(
     command_log.append(
         {
             "schema_version": "v1",
-            "phase_id": phase,
+            "capability_id": capability_id,
             "run_id": run_id,
             "command_id": command_id,
             "operation_id": operation_id,
@@ -11722,10 +9800,10 @@ def _p30_log_health_probe_summary(
     return command_id
 
 
-def _p30_stop_process(
+def _management_matrix_stop_process(
     target: dict[str, Any],
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     command_log: list[dict[str, Any]],
@@ -11735,10 +9813,10 @@ def _p30_stop_process(
     container = str(target["nodehost_container_name"])
     pid = str(target["pid"])
     port = str(target["client_port"])
-    _p30_log_docker_exec(
+    _management_matrix_log_docker_exec(
         command_log,
         telemetry,
-        phase,
+        capability_id,
         run_id,
         operation_id,
         f"{command_kind}_shutdown_nosave",
@@ -11749,10 +9827,10 @@ def _p30_stop_process(
     )
     if _wait_container_pid_gone(container, pid, timeout=10.0):
         return
-    _p30_log_docker_exec(
+    _management_matrix_log_docker_exec(
         command_log,
         telemetry,
-        phase,
+        capability_id,
         run_id,
         operation_id,
         f"{command_kind}_kill_term_fallback",
@@ -11762,13 +9840,13 @@ def _p30_stop_process(
         check=False,
     )
     if not _wait_container_pid_gone(container, pid, timeout=30.0):
-        raise DockerRuntimeError(f"{phase.split('_', 1)[0]} process {target['logical_id']} pid={pid} did not stop")
+        raise DockerRuntimeError(f"{capability_id.split('_', 1)[0]} process {target['logical_id']} pid={pid} did not stop")
 
 
-def _p30_start_process(
+def _management_matrix_start_process(
     target: dict[str, Any],
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     command_log: list[dict[str, Any]],
@@ -11777,8 +9855,8 @@ def _p30_start_process(
 ) -> None:
     container = str(target["nodehost_container_name"])
     if fresh_cluster_identity:
-        _p30_log_docker_exec(command_log, telemetry, phase, run_id, operation_id, "owned_valkey_process_remove_nodes_conf", target, ["exec", container, "rm", "-f", f"{target['data_dir']}/nodes.conf"], timeout=10)
-    _p30_log_docker_exec(command_log, telemetry, phase, run_id, operation_id, "owned_valkey_process_start", target, ["exec", container, "valkey-server", str(target["config_file"])], timeout=30)
+        _management_matrix_log_docker_exec(command_log, telemetry, capability_id, run_id, operation_id, "owned_valkey_process_remove_nodes_conf", target, ["exec", container, "rm", "-f", f"{target['data_dir']}/nodes.conf"], timeout=10)
+    _management_matrix_log_docker_exec(command_log, telemetry, capability_id, run_id, operation_id, "owned_valkey_process_start", target, ["exec", container, "valkey-server", str(target["config_file"])], timeout=30)
     deadline = time.monotonic() + 30.0
     while time.monotonic() < deadline:
         try:
@@ -11788,60 +9866,65 @@ def _p30_start_process(
         except Exception:
             pass
         time.sleep(0.5)
-    raise DockerRuntimeError(f"{phase.split('_', 1)[0]} process {target['logical_id']} did not restart")
+    raise DockerRuntimeError(f"{capability_id.split('_', 1)[0]} process {target['logical_id']} did not restart")
 
 
-def _p30_rejoin_as_replica(
+def _management_matrix_rejoin_as_replica(
     target: dict[str, Any],
     nodes: list[dict[str, Any]],
     telemetry: TelemetryRun,
-    phase: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     command_log: list[dict[str, Any]],
 ) -> None:
-    seed = _p30_first_live_node([node for node in nodes if node["logical_id"] != target["logical_id"]])
-    _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_meet_restored_node", target=seed, args=["CLUSTER", "MEET", _cluster_meet_address(target), _cluster_meet_port(target)], timeout=30)
+    seed = _management_matrix_first_live_node([node for node in nodes if node["logical_id"] != target["logical_id"]])
+    _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_meet_restored_node", target=seed, args=["CLUSTER", "MEET", _cluster_meet_address(target), _cluster_meet_port(target)], timeout=30)
     _wait_process_known(nodes, expected=len(nodes), timeout=120.0, final_check=False)
-    topology = _p19_live_topology(nodes)
+    topology = _management_live_topology(nodes)
     primary = next(node for node in nodes if node["shard_id"] == target["shard_id"] and node["logical_id"] != target["logical_id"] and topology.get(node["logical_id"], {}).get("role") == "primary")
     master_id = _node_command(primary, "CLUSTER", "MYID", timeout=30).strip()
-    _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_replicate_restored_node", target=target, args=["CLUSTER", "REPLICATE", master_id], timeout=60)
+    _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_replicate_restored_node", target=target, args=["CLUSTER", "REPLICATE", master_id], timeout=60)
     _wait_process_replica_of(target, master_id, timeout=120.0)
 
 
-def _p30_first_live_node(nodes: list[dict[str, Any]]) -> dict[str, Any]:
+def _management_matrix_first_live_node(nodes: list[dict[str, Any]]) -> dict[str, Any]:
     for node in nodes:
         try:
             if _node_command(node, "PING", timeout=2.0) == "PONG":
                 return node
         except Exception:
             continue
-    raise DockerRuntimeError("strict management runtime could not find a live Valkey node")
+    raise DockerRuntimeError("management matrix runtime could not find a live Valkey node")
 
 
-def _write_p30_cluster_plan(path: Path, config: dict[str, Any], phase: str, scenario: str, run_id: str) -> None:
-    profile = _strict_management_profile(phase, scenario)
-    config_path = Path(profile.config_path if profile else "templates/configs/scale_50.yaml")
+def _write_management_matrix_cluster_plan(path: Path, config: dict[str, Any], capability_id: str, scenario: str, run_id: str) -> None:
+    cluster = config["cluster"]
+    node_count = int(cluster["shards"]) * (1 + int(cluster["replicas_per_shard"]))
+    profile = _runtime_scale_profile(node_count)
+    if profile is None:
+        raise DockerRuntimeError(
+            f"management matrix has no registered exact profile for {node_count} nodes"
+        )
+    config_path = Path(profile.config_template)
     plan = build_cluster_plan(
         config,
         config_path=config_path,
-        bounded_exception_phase=phase,
-        bounded_exception_scenario=scenario,
+        capability_id=capability_id,
+        scenario=scenario,
     )
-    plan["phase_id"] = phase
+    plan["capability_id"] = capability_id
     plan["run_id"] = run_id
     plan["scenario_name"] = scenario
-    plan["stage_id"] = phase
-    path.write_text(json.dumps(_p30_encode_missing(plan), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(_management_matrix_encode_missing(plan), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _write_p30_run_state(path: Path, phase: str, scenario: str, run_id: str, state: dict[str, Any]) -> None:
+def _write_management_matrix_run_state(path: Path, capability_id: str, scenario: str, run_id: str, state: dict[str, Any]) -> None:
     report = {
         "schema_version": "v1",
         "artifact_type": "strict_run_state",
-        "phase_id": phase,
-        "stage_id": phase,
+        "capability_id": capability_id,
+
         "scenario_name": scenario,
         "run_id": run_id,
         "status": "PASS",
@@ -11851,10 +9934,10 @@ def _write_p30_run_state(path: Path, phase: str, scenario: str, run_id: str, sta
         "nodes": state.get("nodes", []),
         "cluster_snapshot_count": len(state.get("cluster_snapshots", [])),
     }
-    path.write_text(json.dumps(_p30_encode_missing(report), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(_management_matrix_encode_missing(report), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _management_matrix_coverage_ledger(capability_id: str, operation_rows: list[dict[str, Any]]) -> dict[str, Any]:
     node_count = int(operation_rows[0]["node_count"]) if operation_rows else 0
     registry_path = Path("artifacts/coverage/strict_coverage_registry.json")
     if registry_path.exists():
@@ -11863,15 +9946,14 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
         ledger = {
             "schema_version": "v1",
             "artifact_type": "strict_coverage_registry",
-            "stage_id": phase,
+
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
             "source_spec_refs": ["schemas/scenario/gate_scenario.schema.json"],
             "summary": {},
             "rows": [],
         }
-    ledger["stage_id"] = phase
-    ledger.pop("phase_id", None)
+    ledger.pop("capability_id", None)
     ledger.pop("status", None)
     ledger["created_at"] = ledger.get("created_at") or "2026-06-28T00:00:00Z"
     ledger.setdefault("producer", {})["name"] = ledger.get("producer", {}).get("name", "valkey-scale-lab")
@@ -11889,7 +9971,7 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
                 "node_count": node_count,
                 "category": "management",
                 "row_name": row["operation_name"],
-                "stage_owner": phase,
+                "capability_owner": capability_id,
                 "required": True,
                 "execution_mode": "real",
                 "status": "PENDING",
@@ -11912,34 +9994,34 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
         target["status_reason"] = f"Real exact-{node_count} management operation executed and verified." if row["operation_status"] == "PASS" else f"Real exact-{node_count} management operation failed verification."
         target["source_artifacts"] = row["source_evidence_refs"]
         target["validation_artifacts"] = [
-            f"artifacts/phases/{phase}/management_ops_matrix.json",
-            f"artifacts/phases/{phase}/management_operation_results.jsonl",
-            f"artifacts/phases/{phase}/management_workload_impact.json",
+            f"artifacts/captures/{capability_id}/management_ops_matrix.json",
+            f"artifacts/captures/{capability_id}/management_operation_results.jsonl",
+            f"artifacts/captures/{capability_id}/management_workload_impact.json",
         ]
-        target["metric_refs"] = [f"artifacts/phases/{phase}/metrics_timeseries.jsonl"]
-        target["cleanup_ref"] = f"artifacts/phases/{phase}/cleanup_report.json"
-        target["review_ref"] = f"artifacts/goal_loop_strict/{phase}/REVIEW.md"
+        target["metric_refs"] = [f"artifacts/captures/{capability_id}/metrics_timeseries.jsonl"]
+        target["cleanup_ref"] = f"artifacts/captures/{capability_id}/cleanup_report.json"
+        target["review_ref"] = f"artifacts/captures/{capability_id}/REVIEW.md"
         target["commit_sha"] = "PENDING_REVIEW_AND_COMMIT"
-    _p30_refresh_registry_summary(ledger, phase)
+    _management_matrix_refresh_registry_summary(ledger, capability_id)
     return ledger
 
 
-def _p30_update_global_coverage_registry(operation_rows: list[dict[str, Any]]) -> None:
+def _management_matrix_update_global_coverage_registry(operation_rows: list[dict[str, Any]]) -> None:
     # Product executions emit run-scoped coverage only.
     return
 
 
-def _p30_refresh_registry_summary(registry: dict[str, Any], stage: str) -> None:
+def _management_matrix_refresh_registry_summary(registry: dict[str, Any], capability_id: str) -> None:
     rows = registry.get("rows", [])
     counts_by_status: dict[str, int] = {}
     counts_by_category: dict[str, int] = {}
     counts_by_execution_mode: dict[str, int] = {}
-    counts_by_stage_owner: dict[str, int] = {}
+    counts_by_capability_owner: dict[str, int] = {}
     for row in rows:
         counts_by_status[str(row.get("status", "MISSING"))] = counts_by_status.get(str(row.get("status", "MISSING")), 0) + 1
         counts_by_category[str(row.get("category", "MISSING"))] = counts_by_category.get(str(row.get("category", "MISSING")), 0) + 1
         counts_by_execution_mode[str(row.get("execution_mode", "MISSING"))] = counts_by_execution_mode.get(str(row.get("execution_mode", "MISSING")), 0) + 1
-        counts_by_stage_owner[str(row.get("stage_owner", "MISSING"))] = counts_by_stage_owner.get(str(row.get("stage_owner", "MISSING")), 0) + 1
+        counts_by_capability_owner[str(row.get("capability_owner", "MISSING"))] = counts_by_capability_owner.get(str(row.get("capability_owner", "MISSING")), 0) + 1
     summary = registry.setdefault("summary", {})
     summary["total_rows"] = len(rows)
     summary.setdefault("expected_total_rows", len(rows))
@@ -11947,20 +10029,20 @@ def _p30_refresh_registry_summary(registry: dict[str, Any], stage: str) -> None:
     summary["counts_by_category"] = counts_by_category
     summary["counts_by_execution_mode"] = counts_by_execution_mode
     summary["counts_by_status"] = counts_by_status
-    summary["counts_by_stage_owner"] = counts_by_stage_owner
+    summary["counts_by_capability_owner"] = counts_by_capability_owner
     summary.setdefault("real_rows_initial_status", "PENDING")
     summary.setdefault("dry_run_rows_initial_status", "PENDING")
     summary["real_runtime_claimed"] = False
     summary["real_execution_above_200_permitted"] = False
-    summary["last_updated_stage"] = stage
+    summary["last_updated_capability"] = capability_id
 
 
-def _p30_rolling_plan(phase: str, run_id: str, restart_plans: list[dict[str, Any]]) -> dict[str, Any]:
+def _management_matrix_rolling_plan(capability_id: str, run_id: str, restart_plans: list[dict[str, Any]]) -> dict[str, Any]:
     max_concurrent = max((int(plan.get("max_concurrent_restarts", 0)) for plan in restart_plans), default=0)
     return {
         "schema_version": "v1",
         "artifact_type": "rolling_restart_plan",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -11981,7 +10063,7 @@ def _p30_rolling_plan(phase: str, run_id: str, restart_plans: list[dict[str, Any
 
 def write_stability_artifacts(
     artifacts: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     config: dict[str, Any],
@@ -11991,7 +10073,7 @@ def write_stability_artifacts(
     metrics_path = artifacts / "stability_metrics.jsonl"
     baseline_path = artifacts / "stability_baseline_comparison.json"
     report_path = artifacts / "stability_report.json"
-    phase_summary_path = artifacts / "phase_summary.json"
+    run_summary_path = artifacts / "run_summary.json"
     windows = ["baseline", "steady", "fault", "recovery", "post_recovery"]
     interval_count = len(windows)
     ops_per_interval = 12
@@ -12041,7 +10123,7 @@ def write_stability_artifacts(
                 {
                     "schema_version": "v1",
                     "artifact_type": "metric_sample",
-                    "phase_id": phase,
+                    "capability_id": capability_id,
                     "run_id": run_id,
                     "timestamp": f"2026-06-28T00:00:0{interval}Z",
                     "source": node["logical_id"],
@@ -12117,14 +10199,14 @@ def write_stability_artifacts(
     baseline = {
         "schema_version": "v1",
         "artifact_type": "stability_baseline_comparison",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "NO_BASELINE_YET",
         "baseline_source": {
             "status": "SKIPPED_WITH_REASON",
-            "reason": "No previous stability baseline artifact exists for this first soak phase.",
+            "reason": "No previous stability baseline artifact exists for this first soak capability_id.",
         },
         "comparisons": [
             {
@@ -12146,7 +10228,7 @@ def write_stability_artifacts(
     report = {
         "schema_version": "v1",
         "artifact_type": "stability_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -12203,7 +10285,7 @@ def write_stability_artifacts(
     metrics_path.write_text("\n".join(json.dumps(sample, sort_keys=True) for sample in samples) + "\n", encoding="utf-8")
     baseline_path.write_text(json.dumps(baseline, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    write_stability_phase_summary(phase_summary_path, run_id)
+    write_stability_run_summary(run_summary_path, run_id)
 
 
 def _stability_error_taxonomy(errors: list[dict[str, Any]], *, window: str | None = None) -> dict[str, Any]:
@@ -12239,28 +10321,28 @@ def _stability_error_taxonomy(errors: list[dict[str, Any]], *, window: str | Non
     }
 
 
-def write_stability_phase_summary(path: Path, run_id: str) -> None:
+def write_stability_run_summary(path: Path, run_id: str) -> None:
     summary = {
         "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": "P11_STABILITY_SOAK",
+        "artifact_type": "run_summary",
+        "capability_id": "stability",
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
-        "summary": "P11 ran a bounded real Valkey stability soak with periodic metrics collection, steady workload, restart/error/leak summaries, cleanup verification, and first-run baseline semantics.",
+        "summary": "STABILITY ran a bounded real Valkey stability soak with periodic metrics collection, steady workload, restart/error/leak summaries, cleanup verification, and first-run baseline semantics.",
         "required_artifacts": [
-            "artifacts/phases/P11_STABILITY_SOAK/phase_summary.json",
-            "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
-            "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
-            "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+            "artifacts/captures/stability/run_summary.json",
+            "artifacts/captures/stability/valkey_e2e_evidence.json",
+            "artifacts/captures/stability/stability_report.json",
+            "artifacts/captures/stability/cleanup_report.json",
         ],
         "missing_metrics": [],
         "risks": [
             {
                 "risk": "Automatic soak duration is intentionally short to keep local CI bounded; longer soak windows should be opt-in profiles.",
                 "severity": "low",
-                "required_before_next_phase": False,
+                "required_before_next_capability": False,
             }
         ],
     }
@@ -12269,7 +10351,7 @@ def write_stability_phase_summary(path: Path, run_id: str) -> None:
 
 def write_scale_ladder_artifacts(
     artifacts: Path,
-    phase: str,
+    capability_id: str,
     scenario: str,
     run_id: str,
     config: dict[str, Any],
@@ -12278,7 +10360,7 @@ def write_scale_ladder_artifacts(
     node_count = len(nodes)
     rung_path = artifacts / f"scale_rung_{node_count}.json"
     report_path = artifacts / "scale_ladder_report.json"
-    phase_summary_path = artifacts / "phase_summary.json"
+    run_summary_path = artifacts / "run_summary.json"
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
     cluster_states: list[str] = []
@@ -12312,7 +10394,7 @@ def write_scale_ladder_artifacts(
     rung = {
         "schema_version": "v1",
         "artifact_type": "scale_rung_summary",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -12344,7 +10426,7 @@ def write_scale_ladder_artifacts(
             "cluster_known_nodes_min": min((value for value in cluster_known_nodes if isinstance(value, int)), default="MISSING"),
             "cluster_known_nodes_max": max((value for value in cluster_known_nodes if isinstance(value, int)), default="MISSING"),
         },
-        "evidence_path": f"artifacts/phases/{phase}/valkey_e2e_evidence_{node_count}.json",
+        "evidence_path": f"artifacts/captures/{capability_id}/valkey_e2e_evidence_{node_count}.json",
         "errors": sample_errors,
     }
     rung_path.write_text(json.dumps(rung, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -12354,8 +10436,8 @@ def write_scale_ladder_artifacts(
     report = {
         "schema_version": "v1",
         "artifact_type": "scale_ladder_report",
-        "phase_id": phase,
-        "run_id": f"{phase}-scale-ladder-20260628",
+        "capability_id": capability_id,
+        "run_id": f"{capability_id}-scale-ladder-20260628",
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if rungs and all(item.get("status") == "PASS" for item in rungs) else "FAIL",
@@ -12368,42 +10450,45 @@ def write_scale_ladder_artifacts(
         },
     }
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    write_scale_phase_summary(phase_summary_path, phase)
+    write_scale_run_summary(run_summary_path, capability_id)
 
 
-def write_scale_phase_summary(path: Path, phase: str) -> None:
-    if phase == "P13_SCALE_LADDER_50_100":
-        rungs = [50, 100]
-        summary_text = "P13 completes the default scale ceiling by running real 50-node and 100-node Valkey scale rungs with resource preflight, independent e2e evidence, cleanup protection, baseline snapshots, and a scale ladder comparison artifact."
-        risk = "Scale ladder comparison reaches the default 100-node ceiling on a single Docker host; host-specific resource limits may vary."
-    else:
-        rungs = [10, 30]
-        summary_text = "P12 runs real 10-node and 30-node Valkey scale rungs with resource preflight, independent e2e evidence, rung metrics, management summaries, and a scale ladder comparison artifact."
-        risk = "Scale ladder comparison uses bounded local single-host Docker rungs; host-specific resource limits may vary."
+def write_scale_run_summary(path: Path, capability_id: str) -> None:
+    if capability_id != "scale_ladder":
+        raise DockerRuntimeError(
+            f"scale run summary only supports scale_ladder, got {capability_id!r}"
+        )
+    rungs = [10, 30, 50, 100]
+    summary_text = "SCALE_LADDER runs the canonical real 10, 30, 50, and 100-node Valkey rungs with exact profiles, resource preflight, independent evidence, cleanup protection, and one comparison artifact."
+    risk = "Scale ladder comparison reaches the default 100-node ceiling on a single Docker host; host-specific resource limits may vary."
     summary = {
         "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": phase,
-        "run_id": f"{phase}-scale-ladder-20260628",
+        "artifact_type": "run_summary",
+        "capability_id": capability_id,
+        "run_id": f"{capability_id}-scale-ladder-20260628",
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
         "summary": summary_text,
         "required_artifacts": [
-            f"artifacts/phases/{phase}/phase_summary.json",
-            f"artifacts/phases/{phase}/resource_preflight_{rungs[0]}.json",
-            f"artifacts/phases/{phase}/resource_preflight_{rungs[1]}.json",
-            f"artifacts/phases/{phase}/valkey_e2e_evidence_{rungs[0]}.json",
-            f"artifacts/phases/{phase}/valkey_e2e_evidence_{rungs[1]}.json",
-            f"artifacts/phases/{phase}/scale_ladder_report.json",
-            f"artifacts/phases/{phase}/cleanup_report.json",
+            f"artifacts/captures/{capability_id}/run_summary.json",
+            *[
+                f"artifacts/captures/{capability_id}/resource_preflight_{rung}.json"
+                for rung in rungs
+            ],
+            *[
+                f"artifacts/captures/{capability_id}/valkey_e2e_evidence_{rung}.json"
+                for rung in rungs
+            ],
+            f"artifacts/captures/{capability_id}/scale_ladder_report.json",
+            f"artifacts/captures/{capability_id}/cleanup_report.json",
         ],
         "missing_metrics": [],
         "risks": [
             {
                 "risk": risk,
                 "severity": "low",
-                "required_before_next_phase": False,
+                "required_before_next_capability": False,
             }
         ],
     }
@@ -12489,11 +10574,11 @@ def _memory_growth_summary(memory_by_node: dict[str, list[int]]) -> dict[str, An
     }
 
 
-def _event(phase: str, run_id: str, event_type: str, severity: str, details: dict[str, Any]) -> dict[str, Any]:
+def _event(capability_id: str, run_id: str, event_type: str, severity: str, details: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "artifact_type": "event",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "timestamp": "2026-06-28T00:00:00Z",
         "event_type": event_type,
@@ -12672,8 +10757,8 @@ def _network_id(network_name: str) -> str:
     return run_docker(["network", "inspect", "-f", "{{.Id}}", network_name], timeout=30).stdout.strip()
 
 
-def _network_name(phase: str, scenario: str) -> str:
-    return f"vslab-{phase.lower().replace('_', '-')}-{scenario}"
+def _network_name(capability_id: str, scenario: str) -> str:
+    return f"vslab-{capability_id.lower().replace('_', '-')}-{scenario}"
 
 
 def _check_ports_free(ports: list[int]) -> None:
@@ -12686,5 +10771,5 @@ def _check_ports_free(ports: list[int]) -> None:
                 raise DockerRuntimeError(f"port 127.0.0.1:{port} is not available: {exc}") from exc
 
 
-def _run_id(phase: str, scenario: str) -> str:
-    return f"{phase}-{scenario}-{RUN_DATE}"
+def _run_id(capability_id: str, scenario: str) -> str:
+    return f"{capability_id}-{scenario}-{RUN_DATE}"

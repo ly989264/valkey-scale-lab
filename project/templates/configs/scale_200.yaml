@@ -29,7 +29,6 @@ cluster:
   port_base: 7800
   cluster_bus_port_base: 17800
 scale_profile:
-  bounded_exception_phase: P21_FAILOVER_LATENCY_CURVE_200
   bounded_exception_nodes: 200
   automatic_default_cap_remains: 100
 workload:

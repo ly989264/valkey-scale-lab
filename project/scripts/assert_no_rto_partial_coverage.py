@@ -11,14 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Reject partial P44 failover RTO coverage")
-    parser.add_argument("--phase", required=True)
+    parser = argparse.ArgumentParser(description="Reject partial FAILOVER_TIMELINE failover RTO coverage")
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     parser.add_argument("--require-scales", default="30,50,100,200")
     parser.add_argument("--require-dry-run-gt-200", action="store_true")
     args = parser.parse_args()
 
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     required_scales = {int(item) for item in args.require_scales.split(",") if item}
     errors: list[str] = []
     samples = _load_jsonl(base / "failover_timeline_samples.jsonl", errors)
@@ -40,9 +40,9 @@ def main() -> int:
     if missing:
         errors.append(f"missing real observer-backed scales: {missing}")
     if len([scale for scale, rows in real_by_scale.items() if rows]) <= 1:
-        errors.append("P44 cannot pass with only one scale of observer evidence")
+        errors.append("FAILOVER_TIMELINE cannot pass with only one scale of observer evidence")
     if samples and smoke_count == len(samples):
-        errors.append("P44 cannot pass with smoke-only coverage")
+        errors.append("FAILOVER_TIMELINE cannot pass with smoke-only coverage")
     _check_workload_windows(samples, client_rows, workload_windows, errors)
     if args.require_dry_run_gt_200:
         projection = _load_json(base / "dry_run_gt_200_projection.json", errors)
@@ -59,7 +59,7 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"PASS no RTO partial coverage phase={args.phase}")
+    print(f"PASS no RTO partial coverage capability_id={args.capability_id}")
     return 0
 
 

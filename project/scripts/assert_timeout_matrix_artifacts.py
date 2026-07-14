@@ -21,10 +21,10 @@ REQUIRED_FIELDS = {
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", required=True)
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     args = parser.parse_args()
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     path = base / "timeout_matrix_report.json"
     errors: list[str] = []
     if not path.exists():
@@ -35,7 +35,7 @@ def main() -> int:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)
         return 1
-    print(f"PASS timeout matrix artifacts phase={args.phase}")
+    print(f"PASS timeout matrix artifacts capability_id={args.capability_id}")
     return 0
 
 

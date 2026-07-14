@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Repository Layout Report",
   "type": "object",
-  "required": ["schema_version", "artifact_type", "phase_id", "status", "repo_root", "project_root", "evidence_root", "expected_root_entries", "observed_root_entries", "unexpected_root_entries", "classifications", "links", "integrity", "errors"],
+  "required": ["schema_version", "artifact_type", "capability_id", "status", "repo_root", "project_root", "evidence_root", "expected_root_entries", "observed_root_entries", "unexpected_root_entries", "classifications", "links", "integrity", "errors"],
   "properties": {
     "schema_version": {"const": "v1"},
     "artifact_type": {"const": "repository_layout_report"},
-    "phase_id": {"const": "P46_REPOSITORY_LAYOUT_MIGRATION"},
+    "capability_id": {"const": "repository_layout"},
     "status": {"enum": ["PASS", "FAIL"]},
     "repo_root": {"type": "string", "minLength": 1},
     "project_root": {"type": "string", "minLength": 1},

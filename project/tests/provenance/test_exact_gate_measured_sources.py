@@ -97,7 +97,7 @@ def _bundle(root: Path) -> Path:
                 "event_ids": [event_id],
             }
         )
-    surfaces = {name: {} for name in {"topology_summary", "phase_durations", "bottlenecks", "resources", "workload_impact", "failover", "recovery", "error_summary", "missing_evidence"}}
+    surfaces = {name: {} for name in {"topology_summary", "lifecycle_durations", "bottlenecks", "resources", "workload_impact", "failover", "recovery", "error_summary", "missing_evidence"}}
     objects = {
         "run_state.json": {**common, "nodes": [{"logical_id": f"node-{index}"} for index in range(50)]},
         "resource_preflight.json": {**common, "run_id": "preflight-run", "can_run": True, "nodes_requested": 50},

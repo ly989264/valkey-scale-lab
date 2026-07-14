@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 
+from valkey_scale_lab.execution import profile_for_exact_nodes
+
 from .contracts import GatePlan, ScenarioDefinition
 
 
@@ -28,14 +30,7 @@ def compile_gate_plan(
     normal_development_eligible = requested_nodes <= policy.normal_development_cap
     bounded_200_exception = requested_nodes == policy.bounded_exception_scale
     above_200 = requested_nodes > policy.bounded_exception_scale
-    legacy_profile = next(
-        (
-            binding
-            for binding in definition.legacy_profiles
-            if binding.requested_nodes == requested_nodes
-        ),
-        None,
-    )
+    profile = profile_for_exact_nodes(requested_nodes)
 
     if normal_development_eligible:
         execution_mode = "normal_development"
@@ -70,14 +65,14 @@ def compile_gate_plan(
         "requires_resource_preflight": requires_resource_preflight,
         "requires_cost_acknowledgement": requires_cost_acknowledgement,
         "downscale_allowed": False,
-        "legacy_profile": (
+        "profile": (
             None
-            if legacy_profile is None
+            if profile is None
             else {
-                "requested_nodes": legacy_profile.requested_nodes,
-                "runtime_phase": legacy_profile.runtime_phase,
-                "runtime_scenario": legacy_profile.runtime_scenario,
-                "config_template": legacy_profile.config_template,
+                "profile_id": profile.profile_id,
+                "requested_nodes": profile.requested_nodes,
+                "environment": profile.environment,
+                "config_template": profile.config_template,
             }
         ),
         "lifecycle_ids": list(definition.lifecycle_ids),
@@ -102,7 +97,7 @@ def compile_gate_plan(
         definition_digest=definition.digest,
         requested_nodes=requested_nodes,
         exact=True,
-        legacy_profile=legacy_profile,
+        profile=profile,
         execution_mode=execution_mode,
         normal_development_eligible=normal_development_eligible,
         automatic_execution_allowed=automatic_execution_allowed,
@@ -117,6 +112,6 @@ def compile_gate_plan(
         management_execution_order=definition.management_execution_order,
         artifacts=definition.artifacts,
         report_surfaces=definition.report_surfaces,
-        legacy_projection_steps=definition.legacy_projection_steps,
+        execution_steps=definition.execution_steps,
         digest=plan_digest,
     )

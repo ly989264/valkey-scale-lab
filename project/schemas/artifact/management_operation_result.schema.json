@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "scenario",
     "coverage_id",
@@ -49,7 +49,7 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "management_operation_result"},
-    "phase_id": {"type": "string", "minLength": 1},
+    "capability_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
     "scenario": {"type": "string", "minLength": 1},
     "coverage_id": {"type": "string", "minLength": 1},

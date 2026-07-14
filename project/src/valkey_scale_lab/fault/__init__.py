@@ -1,1 +1,1 @@
-"""Fault-injection package placeholder for later phases."""
+"""Fault-injection package placeholder for later capabilities."""

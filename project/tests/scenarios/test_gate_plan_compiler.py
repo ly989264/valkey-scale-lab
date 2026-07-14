@@ -50,13 +50,13 @@ def test_compiler_encodes_product_safety_policy_without_inventing_permissions() 
     assert not scale_201.automatic_execution_allowed
 
 
-def test_compiler_only_resolves_declared_existing_legacy_profiles() -> None:
+def test_compiler_only_resolves_declared_existing_profiles() -> None:
     definition = load_local_full_flow_definition()
-    assert compile_gate_plan(definition, 30).legacy_profile is None
+    assert compile_gate_plan(definition, 30).profile_id == "exact-30"
     assert compile_gate_plan(definition, 50).config_template == "templates/configs/scale_50.yaml"
-    assert compile_gate_plan(definition, 100).runtime_scenario == "strict_full_flow_100"
-    assert compile_gate_plan(definition, 200).runtime_scenario == "strict_full_flow_200"
-    assert compile_gate_plan(definition, 201).legacy_profile is None
+    assert compile_gate_plan(definition, 100).profile_id == "exact-100"
+    assert compile_gate_plan(definition, 200).profile_id == "exact-200"
+    assert compile_gate_plan(definition, 201).profile is None
 
 
 @pytest.mark.parametrize("value", [29, 2001, True, 50.0, "50"])

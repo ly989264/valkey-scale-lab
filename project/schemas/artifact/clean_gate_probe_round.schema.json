@@ -4,7 +4,7 @@
   "type": "object",
   "required": [
     "schema_version",
-    "phase_id",
+    "capability_id",
     "run_id",
     "scenario_name",
     "sample_id",
@@ -18,7 +18,7 @@
   ],
   "properties": {
     "schema_version": {"type": "string", "const": "v1"},
-    "phase_id": {"type": "string"},
+    "capability_id": {"type": "string"},
     "run_id": {"type": "string"},
     "scenario_name": {"type": "string"},
     "sample_id": {"type": "string"},

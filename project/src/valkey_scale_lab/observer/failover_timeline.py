@@ -83,7 +83,7 @@ FAULT_EVENT_STATUSES = {"OBSERVED", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_W
 
 
 class FailoverTimelineError(ValueError):
-    """Raised when P44 timeline inputs cannot support a real RTO metric."""
+    """Raised when FAILOVER_TIMELINE timeline inputs cannot support a real RTO metric."""
 
 
 def missing_metric(reason: str, *, status: str = "MISSING", impact: str | None = None) -> dict[str, str]:
@@ -97,7 +97,7 @@ def missing_metric(reason: str, *, status: str = "MISSING", impact: str | None =
 
 def make_fault_timeline_event(
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     scenario_name: str,
     sample_id: str,
@@ -130,7 +130,7 @@ def make_fault_timeline_event(
     event = {
         "schema_version": "v1",
         "artifact_type": "fault_timeline_event",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario_name": scenario_name,
         "sample_id": sample_id,
@@ -205,7 +205,7 @@ def build_failover_latency_sample_from_timeline(row: dict[str, Any]) -> dict[str
         raise FailoverTimelineError("timeline row metrics must be an object")
     return {
         "schema_version": "v1",
-        "phase_id": row.get("phase_id", "P44_FAULT_TIMELINE"),
+        "capability_id": row.get("capability_id", "FAILOVER_TIMELINE_FAULT_TIMELINE"),
         "node_count": row.get("node_count", 0),
         "sample_id": row.get("sample_id", "MISSING"),
         "target_primary_logical_id": row.get("target_logical_id", row.get("subject_id", "MISSING")),
@@ -232,7 +232,7 @@ def build_failover_latency_sample_from_timeline(row: dict[str, Any]) -> dict[str
 def build_fault_timeline_report(
     events: list[dict[str, Any]],
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     workload_windows: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -255,7 +255,7 @@ def build_fault_timeline_report(
         status = _row_status(sample_events, metrics)
         rows.append({
             "schema_version": "v1",
-            "phase_id": phase_id,
+            "capability_id": capability_id,
             "run_id": run_id,
             "scenario_name": first.get("scenario_name", "MISSING"),
             "sample_id": sample_id,
@@ -281,7 +281,7 @@ def build_fault_timeline_report(
     return {
         "schema_version": "v1",
         "artifact_type": "fault_timeline_report",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "status": "PASS" if rows and all(row["status"] == "PASS" for row in rows) else "PARTIAL",
         "fault_rows": rows,
@@ -400,7 +400,7 @@ def _require_number(row: dict[str, Any], field: str) -> float:
     value = row.get(field)
     if isinstance(value, (int, float)):
         return float(value)
-    raise FailoverTimelineError(f"{field} must be numeric for a real P44 timeline sample")
+    raise FailoverTimelineError(f"{field} must be numeric for a real FAILOVER_TIMELINE timeline sample")
 
 
 def derive_rto_metrics(row: dict[str, Any]) -> dict[str, float]:
@@ -443,7 +443,7 @@ def derive_rto_metrics(row: dict[str, Any]) -> dict[str, float]:
 def build_rto_summary(
     samples: list[dict[str, Any]],
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     timeout_config_ms: int,
     server_profile: str,
@@ -471,7 +471,7 @@ def build_rto_summary(
     return {
         "schema_version": "v1",
         "artifact_type": "failover_rto_summary",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "status": "PASS" if pass_samples and len(pass_samples) == len(samples) else "FAIL",
         "sample_count": len(pass_samples),
@@ -490,7 +490,7 @@ def build_clean_gate_diagnostics(
     samples: list[dict[str, Any]],
     probe_rounds: list[dict[str, Any]],
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
 ) -> dict[str, Any]:
     pass_samples = [sample for sample in samples if sample.get("status") == "PASS" and sample.get("real_valkey") is True]
@@ -509,7 +509,7 @@ def build_clean_gate_diagnostics(
     return {
         "schema_version": "v1",
         "artifact_type": "clean_gate_diagnostics",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "status": "PASS" if pass_samples and len(pass_samples) == len(samples) else "FAIL",
         "sample_count": len(samples),
@@ -541,7 +541,7 @@ def build_clean_gate_diagnostics(
 def build_layered_recovery_summary(
     samples: list[dict[str, Any]],
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
 ) -> dict[str, Any]:
     pass_samples = [sample for sample in samples if sample.get("status") == "PASS" and sample.get("real_valkey") is True]
@@ -565,7 +565,7 @@ def build_layered_recovery_summary(
     return {
         "schema_version": "v1",
         "artifact_type": "layered_recovery_summary",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "status": "PASS" if pass_samples and len(pass_samples) == len(samples) else "FAIL",
         "sample_count": len(pass_samples),
@@ -583,7 +583,7 @@ def build_layered_recovery_summary(
 def build_recovery_endpoint_summary(
     samples: list[dict[str, Any]],
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
 ) -> dict[str, Any]:
     endpoints = []
@@ -599,7 +599,7 @@ def build_recovery_endpoint_summary(
     return {
         "schema_version": "v1",
         "artifact_type": "recovery_endpoint_summary",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "status": "PASS" if samples and all(sample.get("status") == "PASS" for sample in samples) else "FAIL",
         "endpoints": endpoints,
@@ -836,7 +836,7 @@ class FailoverTimelineObserver:
     def __init__(
         self,
         *,
-        phase_id: str,
+        capability_id: str,
         run_id: str,
         scenario_name: str,
         sample_id: str,
@@ -849,7 +849,7 @@ class FailoverTimelineObserver:
         timeout_seconds: float = 1.0,
         max_observer_endpoints: int = 32,
     ) -> None:
-        self.phase_id = phase_id
+        self.capability_id = capability_id
         self.run_id = run_id
         self.scenario_name = scenario_name
         self.sample_id = sample_id
@@ -869,7 +869,7 @@ class FailoverTimelineObserver:
     def start(self) -> None:
         if self._thread is not None:
             raise RuntimeError("observer already started")
-        self._thread = threading.Thread(target=self._run, name=f"p44-observer-{self.sample_id}", daemon=True)
+        self._thread = threading.Thread(target=self._run, name=f"failover_timeline-observer-{self.sample_id}", daemon=True)
         self._thread.start()
 
     def stop(self) -> None:
@@ -888,7 +888,7 @@ class FailoverTimelineObserver:
         )
         row = {
             "schema_version": "v1",
-            "phase_id": self.phase_id,
+            "capability_id": self.capability_id,
             "run_id": self.run_id,
             "scenario_name": self.scenario_name,
             "sample_id": self.sample_id,

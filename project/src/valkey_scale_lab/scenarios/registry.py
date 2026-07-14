@@ -6,7 +6,7 @@ from typing import Any, Callable, Mapping, Optional
 
 
 LIFECYCLE_HANDLER_IDS = tuple(
-    f"legacy.{step_id}"
+    f"product.{step_id}"
     for step_id in (
         "resource_preflight",
         "runtime_start",
@@ -24,28 +24,28 @@ LIFECYCLE_HANDLER_IDS = tuple(
 )
 
 SCENARIO_HANDLER_IDS = (
-    "legacy.management_operation",
-    "legacy.bounded_stability",
-    "legacy.primary_failover",
-    "legacy.process_pause",
-    "legacy.nodehost_pause",
-    "legacy.az_pause",
-    "legacy.proxy",
-    "legacy.network_disconnect",
+    "product.management_operation",
+    "product.bounded_stability",
+    "product.primary_failover",
+    "product.process_pause",
+    "product.nodehost_pause",
+    "product.az_pause",
+    "product.proxy",
+    "product.network_disconnect",
 )
 
 HANDLER_REGISTRY: Mapping[str, str] = MappingProxyType(
     {
         **{handler_id: "lifecycle" for handler_id in LIFECYCLE_HANDLER_IDS},
         **{
-            "legacy.management_operation": "management",
-            "legacy.bounded_stability": "management",
-            "legacy.primary_failover": "fault",
-            "legacy.process_pause": "fault",
-            "legacy.nodehost_pause": "fault",
-            "legacy.az_pause": "fault",
-            "legacy.proxy": "fault",
-            "legacy.network_disconnect": "fault",
+            "product.management_operation": "management",
+            "product.bounded_stability": "management",
+            "product.primary_failover": "fault",
+            "product.process_pause": "fault",
+            "product.nodehost_pause": "fault",
+            "product.az_pause": "fault",
+            "product.proxy": "fault",
+            "product.network_disconnect": "fault",
         },
     }
 )

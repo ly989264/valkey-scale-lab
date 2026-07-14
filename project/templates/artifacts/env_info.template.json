@@ -1,8 +1,8 @@
 {
   "schema_version": "v1",
   "artifact_type": "env_info",
-  "phase_id": "P00_REPO_CONTRACT",
-  "run_id": "phase-P00_REPO_CONTRACT",
+  "capability_id": "repository_contract",
+  "run_id": "capability_id-repository_contract",
   "created_at": "2026-01-01T00:00:00Z",
   "producer": {"name": "valkey-scale-lab", "version": "0.1.0"},
   "status": "PASS",

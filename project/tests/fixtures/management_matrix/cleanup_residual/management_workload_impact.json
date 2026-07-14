@@ -7,7 +7,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-01-create_cluster",
+      "operation_id": "management-matrix-01-create_cluster",
       "operation_name": "create_cluster",
       "status": "PASS"
     },
@@ -17,7 +17,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-02-meet_nodes",
+      "operation_id": "management-matrix-02-meet_nodes",
       "operation_name": "meet_nodes",
       "status": "PASS"
     },
@@ -27,7 +27,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-03-add_replica",
+      "operation_id": "management-matrix-03-add_replica",
       "operation_name": "add_replica",
       "status": "PASS"
     },
@@ -37,7 +37,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-04-remove_replica",
+      "operation_id": "management-matrix-04-remove_replica",
       "operation_name": "remove_replica",
       "status": "PASS"
     },
@@ -47,7 +47,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-05-remove_primary_drained_or_safe_replaced",
+      "operation_id": "management-matrix-05-remove_primary_drained_or_safe_replaced",
       "operation_name": "remove_primary_drained_or_safe_replaced",
       "status": "PASS"
     },
@@ -57,7 +57,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-06-remove_failed_node",
+      "operation_id": "management-matrix-06-remove_failed_node",
       "operation_name": "remove_failed_node",
       "status": "PASS"
     },
@@ -67,7 +67,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-07-reshard_slot_range",
+      "operation_id": "management-matrix-07-reshard_slot_range",
       "operation_name": "reshard_slot_range",
       "status": "PASS"
     },
@@ -77,7 +77,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-08-reshard_with_keys",
+      "operation_id": "management-matrix-08-reshard_with_keys",
       "operation_name": "reshard_with_keys",
       "status": "PASS"
     },
@@ -87,7 +87,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-09-rebalance_after_imbalance",
+      "operation_id": "management-matrix-09-rebalance_after_imbalance",
       "operation_name": "rebalance_after_imbalance",
       "status": "PASS"
     },
@@ -97,7 +97,7 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-10-rolling_restart_replica_first",
+      "operation_id": "management-matrix-10-rolling_restart_replica_first",
       "operation_name": "rolling_restart_replica_first",
       "status": "PASS"
     },
@@ -107,14 +107,14 @@
       "during_qps": 980.0,
       "error_rate": 0.0,
       "latency_p99_ms": 4.2,
-      "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+      "operation_id": "management-matrix-11-rolling_restart_primary_safe",
       "operation_name": "rolling_restart_primary_safe",
       "status": "PASS"
     }
   ],
-  "phase_id": "M1-S04",
-  "run_id": "m1-s04-cleanup_residual",
-  "scenario": "cleanup_residual",
+  "capability_id": "management_matrix",
+  "run_id": "management-matrix-cleanup_residual",
+  "scenario": "management_matrix",
   "schema_version": "v1",
   "status": "PASS"
 }

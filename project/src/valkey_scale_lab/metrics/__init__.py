@@ -28,11 +28,10 @@ def metric_missing(reason: str) -> str:
 
 @dataclass
 class TelemetryRun:
-    phase_id: str
+    capability_id: str
     scenario_name: str
     run_id: str
     sample_id: str = "sample-0001"
-    stage_id: str | None = None
     coverage_id: str = "telemetry.collector_smoke"
     scale: int | None = None
     node_count: int | None = None
@@ -40,10 +39,6 @@ class TelemetryRun:
     start_wall_unix_ms: int = field(default_factory=lambda: int(time.time() * 1000))
     start_monotonic: float = field(default_factory=time.monotonic)
     _event_counter: int = 0
-
-    def __post_init__(self) -> None:
-        if self.stage_id is None:
-            self.stage_id = self.phase_id
 
     def now_unix_ms(self) -> int:
         return int(time.time() * 1000)
@@ -57,7 +52,7 @@ class TelemetryRun:
         *,
         severity: str = "INFO",
         subject_type: str = "harness",
-        subject_id: str = "P16_QUANT_TELEMETRY_UNIFICATION",
+        subject_id: str = "telemetry",
         operation_id: str = SKIPPED_WITH_REASON,
         fault_id: str = SKIPPED_WITH_REASON,
         message: str,
@@ -67,8 +62,7 @@ class TelemetryRun:
         return {
             "schema_version": "v1",
             "run_id": self.run_id,
-            "phase_id": self.phase_id,
-            "stage_id": self.stage_id,
+            "capability_id": self.capability_id,
             "coverage_id": self.coverage_id,
             "scale": self.scale if self.scale is not None else MISSING,
             "node_count": self.node_count if self.node_count is not None else MISSING,
@@ -104,8 +98,7 @@ class TelemetryRun:
         return {
             "schema_version": "v1",
             "run_id": self.run_id,
-            "phase_id": self.phase_id,
-            "stage_id": self.stage_id,
+            "capability_id": self.capability_id,
             "coverage_id": self.coverage_id,
             "scale": self.scale if self.scale is not None else MISSING,
             "node_count": self.node_count if self.node_count is not None else MISSING,

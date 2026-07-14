@@ -52,8 +52,8 @@ def test_density_planner_splits_100_and_200_nodes(tmp_path: Path) -> None:
     plan200 = build_cluster_plan(
         config200,
         config_path=Path("templates/configs/scale_200.yaml"),
-        bounded_exception_phase="P32_MANAGEMENT_MATRIX_200_REAL",
-        bounded_exception_scenario="strict_management_matrix_200",
+        capability_id="management_matrix",
+        scenario="management_matrix",
     )
     assert plan200["nodehost_density"]["actual_nodehost_count"] == 8
     assert max(plan200["nodehost_density"]["logical_nodes_per_nodehost"].values()) == 25
@@ -74,7 +74,7 @@ def test_density_planner_fails_closed_when_max_nodehosts_too_low() -> None:
 
 def test_resource_preflight_records_density_checks(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
+    monkeypatch.setattr(resource, "_cleanup_state_check", lambda capability_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
     monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
 
     report = resource.run_resource_preflight("templates/configs/scale_100.yaml", tmp_path / "preflight.json")
@@ -90,7 +90,7 @@ def test_resource_preflight_records_density_checks(tmp_path: Path, monkeypatch) 
 
 def test_resource_preflight_fails_when_density_over_max(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
+    monkeypatch.setattr(resource, "_cleanup_state_check", lambda capability_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
     monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
 
     report = resource.run_resource_preflight(

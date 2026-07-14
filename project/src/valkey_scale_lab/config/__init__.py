@@ -1,1 +1,1 @@
-"""Configuration package placeholder for later phases."""
+"""Configuration package placeholder for later capabilities."""

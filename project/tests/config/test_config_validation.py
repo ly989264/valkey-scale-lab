@@ -124,12 +124,12 @@ def test_1000_dry_run_template_validates(tmp_path: Path) -> None:
     assert report["total_nodes"] == 1000
 
 
-def test_p37_200_plus_dry_run_profile_validates(tmp_path: Path) -> None:
-    config = tmp_path / "scale_250_p37.yaml"
+def test_scale_projection_200_plus_profile_validates(tmp_path: Path) -> None:
+    config = tmp_path / "scale_250_scale_projection.yaml"
     config.write_text(
         """
 schema_version: v1
-profile_name: scale_250_p37_dry_run
+profile_name: scale_250_scale_projection
 safety:
   default_max_nodes: 100
   allow_1000_nodes: false
@@ -161,7 +161,7 @@ cluster:
   node_memory_limit_mb: 32
 scale_profile:
   dry_run_only: true
-  p37_dry_run_target: true
+  scale_projection_target: true
   target_nodes: 250
   execution_mode: dry_run
 workload:
@@ -215,7 +215,7 @@ cluster:
   node_memory_limit_mb: 32
 scale_profile:
   dry_run_only: true
-  p37_dry_run_target: true
+  scale_projection_target: true
   target_nodes: 250
   execution_mode: dry_run
 workload:

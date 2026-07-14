@@ -14,31 +14,31 @@ from valkey_scale_lab.observer.failover_timeline import RTO_METRIC_FIELDS, deriv
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fail-closed P45 layered recovery semantic assertion")
-    parser.add_argument("--phase", required=True)
+    parser = argparse.ArgumentParser(description="Fail-closed CLEAN_GATE_DIAGNOSTICS layered recovery semantic assertion")
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     args = parser.parse_args()
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     errors: list[str] = []
     samples = _load_jsonl(base / "failover_timeline_samples.jsonl", errors)
     summary = _load_json(base / "layered_recovery_summary.json", errors)
     endpoints = _load_json(base / "recovery_endpoint_summary.json", errors)
     for sample in samples:
-        _check_sample(sample, args.phase, errors)
+        _check_sample(sample, args.capability_id, errors)
     _check_summary(summary, samples, errors)
     _check_endpoint_summary(endpoints, samples, errors)
     if errors:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"PASS layered recovery semantics phase={args.phase}")
+    print(f"PASS layered recovery semantics capability_id={args.capability_id}")
     return 0
 
 
-def _check_sample(sample: dict[str, Any], phase: str, errors: list[str]) -> None:
+def _check_sample(sample: dict[str, Any], capability_id: str, errors: list[str]) -> None:
     sample_id = str(sample.get("sample_id", "MISSING"))
-    if sample.get("phase_id") != phase:
-        errors.append(f"{sample_id}: phase_id must be {phase}")
+    if sample.get("capability_id") != capability_id:
+        errors.append(f"{sample_id}: capability_id must be {capability_id}")
     expected_sources = {
         "level_1_source": "observer",
         "level_2_source": "client_probe",

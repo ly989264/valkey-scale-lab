@@ -10,8 +10,8 @@ from typing import Any
 
 from valkey_scale_lab import __version__
 
-PHASE_ID = "P09_ANALYSIS_REPORTING"
-RUN_ID = "P09_ANALYSIS_REPORTING-analysis-20260628"
+CAPABILITY_ID = "analysis_reporting"
+RUN_ID = "analysis_reporting-analysis-20260628"
 CREATED_AT = "2026-06-28T00:00:00Z"
 
 
@@ -39,7 +39,7 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_metrics_csv(report_dir / "metrics.csv", metrics),
         _write_missing_csv(report_dir / "missing_metrics.csv", missing),
         _write_baseline_csv(report_dir / "baseline_comparison.csv", analysis.get("baseline_comparison", {})),
-        _write_setup_phase_csv(report_dir / "setup_phase_durations.csv", analysis.get("setup_aggregates", {})),
+        _write_setup_stage_csv(report_dir / "setup_lifecycle_durations.csv", analysis.get("setup_aggregates", {})),
         _write_setup_nodes_csv(report_dir / "setup_slowest_nodes.csv", analysis.get("setup_aggregates", {})),
         _write_command_rows_csv(report_dir / "command_slowest.csv", analysis.get("command_audit", {}).get("slowest_commands_topN", [])),
         _write_command_rows_csv(report_dir / "command_failures.csv", analysis.get("command_audit", {}).get("failed_commands", [])),
@@ -78,7 +78,7 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
     index = {
         "schema_version": "v1",
         "artifact_type": "report_index",
-        "phase_id": PHASE_ID,
+        "capability_id": CAPABILITY_ID,
         "run_id": report_run_id,
         "created_at": report_created_at,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -117,7 +117,7 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         "conclusion_summary": _conclusion_summary(analysis),
         "setup_report_inputs": {
             "setup_telemetry": analysis.get("setup_telemetry", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include setup telemetry"}),
-            "csv": "setup_phase_durations.csv",
+            "csv": "setup_lifecycle_durations.csv",
             "svg": "setup_waterfall.svg",
         },
         "command_audit_report_inputs": {
@@ -179,7 +179,7 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         },
     }
     _write_json(index_path, index)
-    _write_phase_summary(index_path.parent, analysis, index_path, generated)
+    _write_run_summary(index_path.parent, analysis, index_path, generated)
     return index
 
 
@@ -253,13 +253,13 @@ def _write_baseline_csv(path: Path, baseline: dict[str, Any]) -> Path:
     return path
 
 
-def _write_setup_phase_csv(path: Path, setup: dict[str, Any]) -> Path:
+def _write_setup_stage_csv(path: Path, setup: dict[str, Any]) -> Path:
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["metric", "value_ms", "status", "reason"])
         writer.writeheader()
-        for item in setup.get("phase_duration_ranking", []):
+        for item in setup.get("stage_duration_ranking", []):
             writer.writerow({"metric": item.get("metric", "MISSING"), "value_ms": item.get("value_ms", ""), "status": "PASS", "reason": ""})
-        if not setup.get("phase_duration_ranking"):
+        if not setup.get("stage_duration_ranking"):
             writer.writerow({"metric": "setup_telemetry", "value_ms": "", "status": setup.get("status", "SKIPPED_WITH_REASON"), "reason": setup.get("reason", "")})
     return path
 
@@ -580,7 +580,7 @@ def _conclusion_summary(analysis: dict[str, Any]) -> dict[str, Any]:
     fault = analysis.get("fault_timeline", {})
     system = analysis.get("system_metrics", {})
     findings = {str(item.get("name")): item for item in analysis.get("findings", []) if isinstance(item, dict)}
-    slow_setup = (setup.get("phase_duration_ranking") or [{}])[0] if isinstance(setup, dict) else {}
+    slow_setup = (setup.get("stage_duration_ranking") or [{}])[0] if isinstance(setup, dict) else {}
     slow_node = (setup.get("slowest_nodes_topN") or [{}])[0] if isinstance(setup, dict) else {}
     slow_command = (command.get("slowest_commands_topN") or [{}])[0] if isinstance(command, dict) else {}
     slow_management = (management.get("duration_ranking_topN") or [{}])[0] if isinstance(management, dict) else {}
@@ -599,7 +599,7 @@ def _conclusion_summary(analysis: dict[str, Any]) -> dict[str, Any]:
     cleanup = findings.get("cleanup", {})
     missing_count = len(analysis.get("missing_metrics", []))
     return {
-        "slowest_setup_phase": slow_setup,
+        "slowest_setup_stage": slow_setup,
         "slowest_node": slow_node,
         "slowest_command": slow_command,
         "slowest_management_operation": slow_management,
@@ -616,7 +616,7 @@ def _conclusion_summary(analysis: dict[str, Any]) -> dict[str, Any]:
 
 def _conclusion_lines(analysis: dict[str, Any]) -> list[str]:
     summary = _conclusion_summary(analysis)
-    slow_setup = summary.get("slowest_setup_phase", {})
+    slow_setup = summary.get("slowest_setup_stage", {})
     slow_node = summary.get("slowest_node", {})
     slow_command = summary.get("slowest_command", {})
     slow_mgmt = summary.get("slowest_management_operation", {})
@@ -673,7 +673,7 @@ def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="640" height="{height}" viewBox="0 0 640 {height}">\n'
         '<rect width="100%" height="100%" fill="#ffffff"/>\n'
-        '<text x="12" y="24" font-size="16" font-weight="700">P09 Artifact Metrics</text>\n'
+        '<text x="12" y="24" font-size="16" font-weight="700">ANALYSIS_REPORTING Artifact Metrics</text>\n'
         + "\n".join(rows)
         + "\n</svg>\n"
     )
@@ -682,7 +682,7 @@ def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
 
 
 def _write_setup_waterfall_svg(path: Path, setup: dict[str, Any]) -> Path:
-    rows = [item for item in setup.get("phase_duration_ranking", []) if isinstance(item.get("value_ms"), (int, float))]
+    rows = [item for item in setup.get("stage_duration_ranking", []) if isinstance(item.get("value_ms"), (int, float))]
     max_value = max([float(item["value_ms"]) for item in rows] + [1.0])
     y = 42
     parts: list[str] = []
@@ -956,7 +956,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
         "# 中文自动化可视化分析报告",
         "",
         f"状态: {analysis.get('status', 'MISSING')}",
-        f"来源阶段: {analysis.get('source', {}).get('phase_id', 'MISSING')}",
+        f"来源阶段: {analysis.get('source', {}).get('capability_id', 'MISSING')}",
         "",
         "## 总览页",
         "",
@@ -980,14 +980,14 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     for finding in analysis.get("findings", []):
         lines.append(f"- {finding.get('name', 'finding')}: {finding.get('status', 'MISSING')}")
     lines.extend(["", "## 集群拉起瀑布图", ""])
-    if setup.get("phase_duration_ranking"):
+    if setup.get("stage_duration_ranking"):
         lines.append("![集群拉起瀑布图](setup_waterfall.svg)")
     else:
         lines.append(f"- {setup.get('status', 'SKIPPED_WITH_REASON')}: {setup.get('reason', '未提供 setup telemetry')}")
     lines.extend(["", "## 阶段耗时排序", ""])
-    for item in setup.get("phase_duration_ranking", [])[:10]:
+    for item in setup.get("stage_duration_ranking", [])[:10]:
         lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('value_ms', 'MISSING')} ms")
-    if not setup.get("phase_duration_ranking"):
+    if not setup.get("stage_duration_ranking"):
         lines.append("- SKIPPED_WITH_REASON: 无可排序的阶段耗时")
     lines.extend(["", "## 慢节点 TopN", ""])
     slow_nodes = setup.get("slowest_nodes_topN", [])
@@ -1112,7 +1112,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- fault_timeline_events.csv", "- fault_timeline_summary.csv", "- failover_latency_distribution.csv", "- split_brain_windows.csv", "- fault_workload_impact.csv", "- system_metrics_by_window.csv", "- system_metrics_abnormal_nodes.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg", "- fault_timeline.svg", "- failover_latency_distribution.svg", "- split_brain_window.svg", "- fault_workload_impact.svg", "- system_resource_trends.svg"])
+    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_lifecycle_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- fault_timeline_events.csv", "- fault_timeline_summary.csv", "- failover_latency_distribution.csv", "- split_brain_windows.csv", "- fault_workload_impact.csv", "- system_metrics_by_window.csv", "- system_metrics_abnormal_nodes.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg", "- fault_timeline.svg", "- failover_latency_distribution.svg", "- split_brain_window.svg", "- fault_workload_impact.svg", "- system_resource_trends.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -1153,7 +1153,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     )
     setup_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td></tr>".format(html.escape(str(item.get("metric", "MISSING"))), html.escape(str(item.get("value_ms", "MISSING"))))
-        for item in setup.get("phase_duration_ranking", [])[:12]
+        for item in setup.get("stage_duration_ranking", [])[:12]
     ) or '<tr><td colspan="2">SKIPPED_WITH_REASON: 无可排序的阶段耗时</td></tr>'
     slow_node_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
@@ -1272,7 +1272,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
 <body>
   <h1>中文自动化可视化分析报告</h1>
   <p>状态: <code>{html.escape(str(analysis.get("status", "MISSING")))}</code></p>
-  <p>来源阶段: <code>{html.escape(str(analysis.get("source", {}).get("phase_id", "MISSING")))}</code></p>
+  <p>来源阶段: <code>{html.escape(str(analysis.get("source", {}).get("capability_id", "MISSING")))}</code></p>
   <h2>总览页</h2>
   <p>本报告由本地 artifact 自动生成，不调用 LLM、不访问外网、不依赖在线图表服务。所有结论来自 schema 化 JSON/JSONL、CSV 和本地 SVG 产物。</p>
   <h2>结论摘要</h2>
@@ -1326,7 +1326,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <h2>系统异常节点 TopN</h2>
   <table><thead><tr><th>节点</th><th>rss max bytes</th><th>used_memory max bytes</th><th>缺失数</th></tr></thead><tbody>{system_node_rows}</tbody></table>
   <h2>图表</h2>
-  <img src="metric_chart.svg" alt="P09 artifact metrics chart">
+  <img src="metric_chart.svg" alt="ANALYSIS_REPORTING artifact metrics chart">
 </body>
 </html>
 """
@@ -1348,22 +1348,22 @@ def _command_html_rows(rows: list[dict[str, Any]]) -> str:
     )
 
 
-def _write_phase_summary(phase_dir: Path, analysis: dict[str, Any], index_path: Path, reports: list[Path]) -> None:
-    phase_summary = {
+def _write_run_summary(artifact_dir: Path, analysis: dict[str, Any], index_path: Path, reports: list[Path]) -> None:
+    run_summary = {
         "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": PHASE_ID,
+        "artifact_type": "run_summary",
+        "capability_id": CAPABILITY_ID,
         "run_id": str(analysis.get("run_id") or RUN_ID),
         "created_at": str(analysis.get("created_at") or CREATED_AT),
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
-        "summary": "P09 analyzed prior real Valkey failover artifacts and rendered deterministic machine-readable, tabular, chart, HTML, and markdown report outputs without inventing missing metrics.",
+        "summary": "ANALYSIS_REPORTING analyzed prior real Valkey failover artifacts and rendered deterministic machine-readable, tabular, chart, HTML, and markdown report outputs without inventing missing metrics.",
         "required_artifacts": [
-            "artifacts/phases/P09_ANALYSIS_REPORTING/phase_summary.json",
-            "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
-            "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
-            "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json",
-            "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+            "artifacts/captures/analysis_reporting/run_summary.json",
+            "artifacts/captures/analysis_reporting/analysis_summary.json",
+            "artifacts/captures/analysis_reporting/report_index.json",
+            "artifacts/captures/analysis_reporting/valkey_e2e_evidence.json",
+            "artifacts/captures/analysis_reporting/cleanup_report.json",
         ],
         "missing_metrics": list(analysis.get("missing_metrics", [])),
         "run_manifest_ref": analysis.get("run_manifest_ref"),
@@ -1372,13 +1372,13 @@ def _write_phase_summary(phase_dir: Path, analysis: dict[str, Any], index_path: 
             {
                 "risk": "Baseline comparison is initialized with NO_BASELINE_YET until a versioned baseline exists.",
                 "severity": "low",
-                "required_before_next_phase": False,
+                "required_before_next_capability": False,
             }
         ],
         "report_index": _rel(index_path),
         "report_outputs": [_rel(path) for path in reports],
     }
-    _write_json(phase_dir / "phase_summary.json", phase_summary)
+    _write_json(artifact_dir / "run_summary.json", run_summary)
 
 
 def _report_record(path: Path) -> dict[str, str]:

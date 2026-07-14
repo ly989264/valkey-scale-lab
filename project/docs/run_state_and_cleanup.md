@@ -1,6 +1,6 @@
 # Run State and Cleanup Contract
 
-P00 defines the lifecycle contract only. Later phases must implement this design before starting real processes or containers.
+The product applies this lifecycle contract uniformly to every scenario before starting real processes or containers.
 
 ## Ownership
 
@@ -8,7 +8,7 @@ Every process, container, network, directory, PID file, and state file created b
 
 - `project`: `valkey-scale-lab`
 - `cluster_id`: run-specific ID recorded in state
-- `phase_id`: current phase ID
+- `capability_id`: canonical capability ID
 - `run_id`: deterministic run identifier recorded in artifacts
 - `logical_id`: stable node or fault target name when applicable
 
@@ -24,6 +24,6 @@ Scenario creation writes a JSON state file through `python3 -m valkey_scale_lab.
 
 Faults and cleanup must stay inside owned Docker/container namespaces, owned containers, or an explicit sandbox proxy layer. Host-level route, firewall, interface, and OS network service changes are outside the project contract.
 
-## P00 Status
+## Repository Contract
 
-P00 does not start Valkey, Docker containers, workload processes, or fault injectors. It only establishes the package, CLI, artifact, and cleanup contract that later phases must satisfy.
+Every runtime backend must satisfy the same package, CLI, artifact, ownership, and cleanup contract. Profiles may select scale and environment, but cannot weaken these requirements.

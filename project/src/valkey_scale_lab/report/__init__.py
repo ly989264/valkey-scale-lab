@@ -1,5 +1,5 @@
 """Report generation entry points."""
-from valkey_scale_lab.report.final import FinalReportError, build_final_goal_loop_report
+from valkey_scale_lab.report.final import FinalReportError, build_final_report
 from valkey_scale_lab.report.render import ReportError, render_report
 from valkey_scale_lab.report.validated import (
     REPORT_SCHEMA_VERSION,
@@ -16,7 +16,7 @@ __all__ = [
     "ReportError",
     "ValidatedReport",
     "ValidatedReportError",
-    "build_final_goal_loop_report",
+    "build_final_report",
     "render_report",
     "render_validated_report",
 ]

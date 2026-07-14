@@ -27,7 +27,7 @@ MATRIX = [5000, 10000, 15000, 30000, 60000]
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", required=True)
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--global-config", default="config/valkey_scale_lab_global.yaml")
     parser.add_argument("--config", action="append", dest="configs")
     parser.add_argument("--artifact-dir")
@@ -35,7 +35,7 @@ def main() -> int:
 
     errors: list[str] = []
     global_path = _path(args.global_config)
-    artifact_dir = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    artifact_dir = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     configs = [_path(item) for item in (args.configs or DEFAULT_CONFIGS)]
 
     _check_global_config(global_path, errors)
@@ -48,7 +48,7 @@ def main() -> int:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)
         return 1
-    print(f"PASS cluster timeout config phase={args.phase}")
+    print(f"PASS cluster timeout config capability_id={args.capability_id}")
     return 0
 
 
@@ -94,7 +94,7 @@ def _check_effective_config(config_path: Path, global_path: Path, errors: list[s
 
 
 def _check_validation_report(config_path: Path, global_path: Path, errors: list[str]) -> None:
-    out = ROOT / "artifacts" / "_p43_assert_tmp" / f"{config_path.stem}_validation.json"
+    out = ROOT / "artifacts" / "_cluster_timeout_assert_tmp" / f"{config_path.stem}_validation.json"
     report = validate_config_file(config_path, out, global_config_path=global_path)
     for field in ["requested_cluster_node_timeout_ms", "effective_cluster_node_timeout_ms", "cluster_node_timeout_source"]:
         if field not in report:

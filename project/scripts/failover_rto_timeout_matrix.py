@@ -14,7 +14,7 @@ ALLOWED_TIMEOUTS = [5000, 10000, 15000, 30000, 60000]
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Explicit failover RTO cluster-node-timeout matrix runner")
-    parser.add_argument("--phase", default="P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE")
+    parser.add_argument("--capability-id", default="cluster_timeout")
     parser.add_argument("--config", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--node-count", type=int, required=True)
@@ -40,7 +40,7 @@ def main() -> int:
     report = {
         "schema_version": "v1",
         "artifact_type": "timeout_matrix_report",
-        "phase_id": args.phase,
+        "capability_id": args.capability_id,
         "status": status,
         "configured_matrix_ms": ALLOWED_TIMEOUTS,
         "selection_policy": "explicit_timeout_ms_required",
@@ -59,16 +59,20 @@ def main() -> int:
 def _run_or_record_cell(args: argparse.Namespace, timeout: int, base: Path) -> dict[str, Any]:
     if not args.execute:
         return _not_run_row(args.node_count, timeout, "Selected matrix cell was not executed because --execute was not set.")
-    scenario = f"p43_timeout_matrix_{args.node_count}_{timeout}"
+    scenario = "cluster_timeout"
     evidence = base / f"timeout_matrix_{args.node_count}_{timeout}_evidence.json"
     failover = base / f"timeout_matrix_{args.node_count}_{timeout}_failover.json"
     cmd = [
         sys.executable,
         str(ROOT / "scripts" / "fault_failover_gate.py"),
-        "--phase",
-        args.phase,
+        "--capability-id",
+        args.capability_id,
         "--scenario",
         scenario,
+        "--backend",
+        "docker_process",
+        "--profile",
+        f"exact-{args.node_count}",
         "--config",
         args.config,
         "--out",

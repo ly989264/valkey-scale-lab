@@ -1,0 +1,14 @@
+{
+  "missing_metrics": [
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because cleanup_verified=FAIL: owned test container remained after cleanup",
+      "sample_id": "cleanup_residual-small-primary_stop_failover",
+      "status": "MISSING"
+    }
+  ],
+  "capability_id": "failover_timeline",
+  "run_id": "fault-timeline-fixture",
+  "status": "FAIL"
+}

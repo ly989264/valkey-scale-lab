@@ -6,16 +6,16 @@ from pathlib import Path
 from valkey_scale_lab.report import render_report
 
 
-def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: Path) -> None:
+def test_report_renderer_writes_index_tables_chart_and_run_summary(tmp_path: Path) -> None:
     analysis = {
         "schema_version": "v1",
         "artifact_type": "analysis_summary",
-        "phase_id": "P09_ANALYSIS_REPORTING",
-        "run_id": "p09-run",
+        "capability_id": "analysis_reporting",
+        "run_id": "analysis_reporting-run",
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "test", "version": "v1"},
         "status": "PASS",
-        "source": {"phase_id": "P08_FAILOVER_SPLIT_BRAIN"},
+        "source": {"capability_id": "fault_matrix"},
         "findings": [{"name": "failover", "status": "PASS"}],
         "metrics": [
             {"name": "failover_latency_ms", "status": "PASS", "value": 10.0, "unit": "ms"},
@@ -61,7 +61,7 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
         "missing_metrics.csv",
         "baseline_comparison.csv",
         "metric_chart.svg",
-        "setup_phase_durations.csv",
+        "setup_lifecycle_durations.csv",
         "setup_slowest_nodes.csv",
         "setup_waterfall.svg",
         "command_slowest.csv",
@@ -101,7 +101,7 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
     assert index["conclusion_summary"]["source"] == "artifact_derived"
     assert (tmp_path / "report" / "exports" / "metrics.csv").exists()
     assert (tmp_path / "report" / "assets" / "metric_chart.svg").exists()
-    assert (tmp_path / "phase_summary.json").exists()
+    assert (tmp_path / "run_summary.json").exists()
     assert "MISSING" in (tmp_path / "report" / "missing_metrics.csv").read_text(encoding="utf-8")
     assert "慢命令 TopN" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "Workload 基准压测" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
@@ -114,12 +114,12 @@ def test_report_renderer_marks_empty_missing_metrics_as_none(tmp_path: Path) -> 
     analysis = {
         "schema_version": "v1",
         "artifact_type": "analysis_summary",
-        "phase_id": "P09_ANALYSIS_REPORTING",
-        "run_id": "p09-empty-missing",
+        "capability_id": "analysis_reporting",
+        "run_id": "analysis_reporting-empty-missing",
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "test", "version": "v1"},
         "status": "PASS",
-        "source": {"phase_id": "P08_FAILOVER_SPLIT_BRAIN"},
+        "source": {"capability_id": "fault_matrix"},
         "findings": [],
         "metrics": [{"name": "cluster_state_ok", "status": "PASS", "value": 1, "unit": "bool"}],
         "missing_metrics": [],

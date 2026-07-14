@@ -14,8 +14,8 @@ from valkey_scale_lab.observer.failover_timeline import (
     FULL_FLOW_TIMELINE_METRICS,
 )
 
-PHASE_ID = "P09_ANALYSIS_REPORTING"
-RUN_ID = "P09_ANALYSIS_REPORTING-analysis-20260628"
+CAPABILITY_ID = "analysis_reporting"
+RUN_ID = "analysis_reporting-analysis-20260628"
 CREATED_AT = "2026-06-28T00:00:00Z"
 
 
@@ -28,7 +28,7 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     if not source_dir.exists():
         raise AnalysisError(f"input artifact directory does not exist: {source_dir}")
 
-    phase_summary = _load_required(source_dir / "phase_summary.json")
+    run_summary = _load_required(source_dir / "run_summary.json")
     evidence = _load_required(source_dir / "valkey_e2e_evidence.json")
     failover = _load_required(source_dir / "failover_report.json")
     cleanup = _load_required(source_dir / "cleanup_report.json")
@@ -65,7 +65,7 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         ]
     system_metrics = _system_metrics_aggregates(system_metrics_report, system_metric_rows)
 
-    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit, management_ops, workload_benchmark, fault_timeline, system_metrics)
+    missing_metrics = _collect_missing_metrics(run_summary, failover, setup_telemetry, command_audit, management_ops, workload_benchmark, fault_timeline, system_metrics)
     failovers = list(failover.get("failovers", []))
     primary_failover = failovers[0] if failovers else {}
     failover_latency = primary_failover.get("failover_latency_ms", "MISSING")
@@ -90,10 +90,10 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     ]
     findings = [
         {
-            "name": "source_phase",
-            "status": phase_summary.get("status", "MISSING"),
-            "source_phase_id": phase_summary.get("phase_id", "MISSING"),
-            "source_run_id": phase_summary.get("run_id", "MISSING"),
+            "name": "source_capability",
+            "status": run_summary.get("status", "MISSING"),
+            "source_capability_id": run_summary.get("capability_id", "MISSING"),
+            "source_run_id": run_summary.get("run_id", "MISSING"),
         },
         {
             "name": "real_valkey_evidence",
@@ -172,7 +172,7 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     summary = {
         "schema_version": "v1",
         "artifact_type": "analysis_summary",
-        "phase_id": PHASE_ID,
+        "capability_id": CAPABILITY_ID,
         "run_id": output_run_id,
         "created_at": output_created_at,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -180,8 +180,8 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         "source": {
             "input_dir": source_dir.as_posix(),
             "input_kind": "run_manifest" if run_manifest else "artifact_dir",
-            "phase_id": phase_summary.get("phase_id", "MISSING"),
-            "run_id": phase_summary.get("run_id", "MISSING"),
+            "capability_id": run_summary.get("capability_id", "MISSING"),
+            "run_id": run_summary.get("run_id", "MISSING"),
         },
         "source_artifacts": [_artifact_record(path) for path in _source_artifact_paths(source_dir, out, baseline_path)],
         "run_manifest_ref": metadata_refs.get("run_manifest_ref"),
@@ -307,7 +307,7 @@ def _load_run_metadata(run_manifest: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def _collect_missing_metrics(
-    phase_summary: dict[str, Any],
+    run_summary: dict[str, Any],
     failover: dict[str, Any],
     setup_telemetry: dict[str, Any] | None = None,
     command_audit: dict[str, Any] | None = None,
@@ -317,7 +317,7 @@ def _collect_missing_metrics(
     system_metrics: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
-    for item in phase_summary.get("missing_metrics", []):
+    for item in run_summary.get("missing_metrics", []):
         if isinstance(item, dict) and item.get("metric"):
             found[str(item["metric"])] = dict(item)
     for name, value in failover.get("summary", {}).items():
@@ -446,7 +446,7 @@ def _system_metrics_aggregates(report: dict[str, Any], rows: list[dict[str, Any]
     for row in rows:
         labels = row.get("labels", {}) if isinstance(row.get("labels"), dict) else {}
         node_id = str(labels.get("logical_node_id", row.get("source_id", "MISSING")))
-        window = str(labels.get("lifecycle_window", labels.get("stage_window", "MISSING")))
+        window = str(labels.get("lifecycle_window", "MISSING"))
         metric_name = str(row.get("metric_name", "MISSING"))
         value = row.get("metric_value", "MISSING")
         by_node.setdefault(node_id, {"node_id": node_id, "sample_count": 0, "missing_count": 0, "windows": set(), "numeric": {}})
@@ -766,11 +766,11 @@ def _setup_aggregates(setup_telemetry: dict[str, Any]) -> dict[str, Any]:
         for name, value in metrics.items()
         if isinstance(value, (int, float)) and not isinstance(value, bool)
     ] if isinstance(metrics, dict) else []
-    phase_duration_ranking = sorted(numeric, key=lambda item: item["value_ms"], reverse=True)
+    stage_duration_ranking = sorted(numeric, key=lambda item: item["value_ms"], reverse=True)
     return {
         "status": setup_telemetry.get("status", "MISSING"),
         "node_count": setup_telemetry.get("node_count", "MISSING"),
-        "phase_duration_ranking": phase_duration_ranking,
+        "stage_duration_ranking": stage_duration_ranking,
         "slowest_nodes_topN": setup_telemetry.get("slowest_nodes_topN", []),
         "slowest_replica_replicate_topN": setup_telemetry.get("slowest_replica_replicate_topN", []),
         "cleanup": setup_telemetry.get("cleanup", {}),
@@ -999,14 +999,14 @@ def _baseline_comparison(metrics: list[dict[str, Any]], source_dir: Path, *, run
     return {
         "schema_version": "v1",
         "artifact_type": "baseline_comparison",
-        "phase_id": PHASE_ID,
+        "capability_id": CAPABILITY_ID,
         "run_id": run_id,
         "created_at": created_at,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "NO_BASELINE_YET",
         "baseline_source": {
             "status": "SKIPPED_WITH_REASON",
-            "reason": "No versioned baseline artifact exists for the first analysis-reporting phase.",
+            "reason": "No versioned baseline artifact exists for the first analysis-reporting capability_id.",
         },
         "source_dir": source_dir.as_posix(),
         "comparisons": [

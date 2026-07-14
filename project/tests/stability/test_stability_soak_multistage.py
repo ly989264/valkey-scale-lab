@@ -28,8 +28,8 @@ def test_l09_stability_timeseries_schema_accepts_generated_rows(tmp_path: Path, 
     ]
     docker_runtime.write_stability_artifacts(
         tmp_path,
-        "P11_STABILITY_SOAK",
-        "stability_soak_smoke",
+        "stability",
+        "stability",
         "run",
         {"workload": {}},
         nodes,

@@ -69,7 +69,7 @@
       ]
     }
   },
-  "phase_id": "M1-S05",
+  "capability_id": "workload",
   "producer": {
     "name": "valkey-scale-lab",
     "version": "0.1.0"

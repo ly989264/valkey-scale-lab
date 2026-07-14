@@ -46,8 +46,8 @@ def _clean_health(node_count: int) -> dict[str, Any]:
 
 def _telemetry(node_count: int) -> TelemetryRun:
     return TelemetryRun(
-        phase_id="P36_FULL_FLOW_E2E_50_100_200_REAL",
-        scenario_name=f"strict_full_flow_{node_count}",
+        capability_id="local_full_flow",
+        scenario_name="local_full_flow",
         run_id=f"rolling-{node_count}",
         coverage_id=f"{node_count}.management.rolling_restart",
         scale=node_count,
@@ -58,10 +58,10 @@ def _telemetry(node_count: int) -> TelemetryRun:
 def test_strict_rolling_restart_batches_are_bounded_by_shard_and_nodehost() -> None:
     nodes = _nodes(200)
     topology = {node["logical_id"]: {"role": node["role"]} for node in nodes}
-    entries = docker_runtime._p30_rolling_restart_plan_entries(
+    entries = docker_runtime._management_matrix_rolling_restart_plan_entries(
         "rolling_restart_replica_first", "op", nodes, topology=topology
     )
-    batches = docker_runtime._p30_rolling_restart_batches(entries, nodes)
+    batches = docker_runtime._management_matrix_rolling_restart_batches(entries, nodes)
 
     assert len(batches) < len(nodes)
     assert max(len(batch) for batch in batches) == docker_runtime.ROLLING_RESTART_MAX_PARALLELISM
@@ -78,15 +78,15 @@ def _run_restart(monkeypatch: pytest.MonkeyPatch, node_count: int, operation_nam
     probe_modes: list[bool] = []
     safe_targets: list[str] = []
 
-    monkeypatch.setattr(docker_runtime, "_p17_cluster_health", lambda _nodes: _clean_health(node_count))
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", lambda _nodes: _clean_health(node_count))
     monkeypatch.setattr(
         docker_runtime,
-        "_p19_live_topology",
+        "_management_live_topology",
         lambda current: {node["logical_id"]: {"role": node["role"]} for node in current},
     )
     monkeypatch.setattr(
         docker_runtime,
-        "_p17_wait_clean_cluster",
+        "_management_wait_clean_cluster",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("per-node full clean gate must not run")),
     )
 
@@ -138,23 +138,23 @@ def _run_restart(monkeypatch: pytest.MonkeyPatch, node_count: int, operation_nam
             "role_before_restart": "replica",
         }
 
-    monkeypatch.setattr(docker_runtime, "_p30_restart_process_target", restart_target)
-    monkeypatch.setattr(docker_runtime, "_p30_wait_rolling_restart_health", wait_health)
-    monkeypatch.setattr(docker_runtime, "_p30_make_primary_restart_safe", make_safe)
+    monkeypatch.setattr(docker_runtime, "_management_matrix_restart_process_target", restart_target)
+    monkeypatch.setattr(docker_runtime, "_management_matrix_wait_rolling_restart_health", wait_health)
+    monkeypatch.setattr(docker_runtime, "_management_matrix_make_primary_restart_safe", make_safe)
     monkeypatch.setattr(
         docker_runtime,
-        "_p30_wait_replica_sync_ready",
+        "_management_matrix_wait_replica_sync_ready",
         lambda replica, primary, timeout: {"status": "PASS", "wait_ms": 1.0},
     )
     monkeypatch.setattr(
         docker_runtime,
-        "_p30_restore_primary_placement",
+        "_management_matrix_restore_primary_placement",
         lambda **_kwargs: {"restore_command_ref": "restore-command", "placement_restored": True},
     )
 
-    result, plan, rows, _events = docker_runtime._p30_execute_process_rolling_restart(
+    result, plan, rows, _events = docker_runtime._management_matrix_execute_process_rolling_restart(
         telemetry=_telemetry(node_count),
-        phase="P36_FULL_FLOW_E2E_50_100_200_REAL",
+        capability_id="local_full_flow",
         run_id=f"rolling-{node_count}",
         operation_name=operation_name,
         operation_id=f"rolling-{operation_name}-{node_count}",
@@ -197,10 +197,10 @@ def test_health_probe_telemetry_counts_representative_and_full_node_commands(mon
 
     monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", snapshots)
 
-    _health, representative = docker_runtime._p30_wait_rolling_restart_health(
+    _health, representative = docker_runtime._management_matrix_wait_rolling_restart_health(
         nodes, timeout=10.0, full_probe=False
     )
-    _health, full = docker_runtime._p30_wait_rolling_restart_health(
+    _health, full = docker_runtime._management_matrix_wait_rolling_restart_health(
         nodes, timeout=10.0, full_probe=True
     )
 
@@ -240,7 +240,7 @@ def test_rolling_restart_plan_uses_live_roles_instead_of_inventory_roles() -> No
         for node in nodes
     }
 
-    entries = docker_runtime._p30_rolling_restart_plan_entries(
+    entries = docker_runtime._management_matrix_rolling_restart_plan_entries(
         "rolling_restart_primary_safe",
         "op-live-roles",
         nodes,
@@ -267,21 +267,21 @@ def test_primary_safe_handoff_and_restore_verify_both_roles(monkeypatch: pytest.
         commands.append((command_kind, target["logical_id"]))
         return {"command_id": f"command-{len(commands)}"}
 
-    monkeypatch.setattr(docker_runtime, "_p17_log_node_command", log_command)
+    monkeypatch.setattr(docker_runtime, "_management_log_node_command", log_command)
     monkeypatch.setattr(
         docker_runtime,
-        "_p17_wait_node_role",
+        "_management_wait_node_role",
         lambda node, role, timeout: role_waits.append((node["logical_id"], role)),
     )
     monkeypatch.setattr(
         docker_runtime,
-        "_p30_wait_replica_sync_ready",
+        "_management_matrix_wait_replica_sync_ready",
         lambda replica, primary, timeout: {"status": "PASS", "wait_ms": 1.0},
     )
 
-    safe = docker_runtime._p30_make_primary_restart_safe(
+    safe = docker_runtime._management_matrix_make_primary_restart_safe(
         telemetry=_telemetry(6),
-        phase="P36_FULL_FLOW_E2E_50_100_200_REAL",
+        capability_id="local_full_flow",
         run_id="rolling-6",
         operation_id="primary-safe",
         target=target,
@@ -289,9 +289,9 @@ def test_primary_safe_handoff_and_restore_verify_both_roles(monkeypatch: pytest.
         topology=topology,
         command_log=[],
     )
-    restored = docker_runtime._p30_restore_primary_placement(
+    restored = docker_runtime._management_matrix_restore_primary_placement(
         telemetry=_telemetry(6),
-        phase="P36_FULL_FLOW_E2E_50_100_200_REAL",
+        capability_id="local_full_flow",
         run_id="rolling-6",
         operation_id="primary-safe",
         target=target,
@@ -326,7 +326,7 @@ def test_replica_sync_gate_requires_link_sync_and_caught_up_offset(monkeypatch: 
     monkeypatch.setattr(docker_runtime, "_node_command", node_command)
     monkeypatch.setattr(docker_runtime, "_process_node_is_replica_of", lambda node, master_id: True)
 
-    result = docker_runtime._p30_wait_replica_sync_ready(replica, primary, timeout=1.0)
+    result = docker_runtime._management_matrix_wait_replica_sync_ready(replica, primary, timeout=1.0)
 
     assert result["status"] == "PASS"
     assert result["replica_repl_offset"] == result["primary_repl_offset"] == 100
@@ -340,7 +340,7 @@ def test_replica_sync_gate_fails_closed_when_topology_is_not_replica(monkeypatch
     monkeypatch.setattr(docker_runtime, "_node_command", lambda node, *args, timeout: "primary-id")
 
     with pytest.raises(docker_runtime.DockerRuntimeError, match="did not catch up"):
-        docker_runtime._p30_wait_replica_sync_ready(replica, primary, timeout=1.0)
+        docker_runtime._management_matrix_wait_replica_sync_ready(replica, primary, timeout=1.0)
 
 
 def test_health_probe_scope_resets_after_diagnostic_retry(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -362,7 +362,7 @@ def test_health_probe_scope_resets_after_diagnostic_retry(monkeypatch: pytest.Mo
     monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", snapshots)
     monkeypatch.setattr(docker_runtime.time, "sleep", lambda _seconds: None)
 
-    _health, probe = docker_runtime._p30_wait_rolling_restart_health(
+    _health, probe = docker_runtime._management_matrix_wait_rolling_restart_health(
         nodes,
         timeout=1.0,
         full_probe=False,
@@ -388,7 +388,7 @@ def test_topology_placement_signature_detects_master_and_slot_drift() -> None:
         "primary": {**before["primary"], "slots": ["0-99"]},
     }
 
-    signature = docker_runtime._p30_topology_placement_signature(before)
+    signature = docker_runtime._management_matrix_topology_placement_signature(before)
 
-    assert signature != docker_runtime._p30_topology_placement_signature(wrong_master)
-    assert signature != docker_runtime._p30_topology_placement_signature(wrong_slots)
+    assert signature != docker_runtime._management_matrix_topology_placement_signature(wrong_master)
+    assert signature != docker_runtime._management_matrix_topology_placement_signature(wrong_slots)

@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Partition Report",
   "type": "object",
-  "required": ["schema_version", "artifact_type", "phase_id", "run_id", "groups", "traffic_policy", "probes"],
+  "required": ["schema_version", "artifact_type", "capability_id", "run_id", "groups", "traffic_policy", "probes"],
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "partition_report"},
-    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "capability_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
     "run_id": {"type": "string", "minLength": 1},
     "groups": {"type": "object"},
     "traffic_policy": {"type": "object"},

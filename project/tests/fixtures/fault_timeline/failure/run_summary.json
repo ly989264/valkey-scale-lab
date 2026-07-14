@@ -1,0 +1,49 @@
+{
+  "missing_metrics": [
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_completed=FAIL: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=FAIL: fault apply command failed; downstream event not attempted; fault_effect_observed=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; promotion_observed=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; workload_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    }
+  ],
+  "capability_id": "failover_timeline",
+  "run_id": "fault-timeline-fixture",
+  "status": "FAIL"
+}

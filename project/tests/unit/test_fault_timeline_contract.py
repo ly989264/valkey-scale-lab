@@ -21,7 +21,7 @@ def test_fault_timeline_derives_required_metrics_without_cleanup_substitution() 
     assert metrics["cleanup_duration_ms"] == 10
     assert metrics["client_unavailability_ms"] == 45
 
-    report = build_fault_timeline_report(events, phase_id="M1-S06", run_id="run", workload_windows={"fault_metrics": {"client_unavailability_ms": 45, "split_brain_window_ms": 0, "cluster_down_window_ms": 12}})
+    report = build_fault_timeline_report(events, capability_id="failover_timeline", run_id="run", workload_windows={"fault_metrics": {"client_unavailability_ms": 45, "split_brain_window_ms": 0, "cluster_down_window_ms": 12}})
     sample = build_failover_latency_sample_from_timeline(report["fault_rows"][0])
     assert sample["derived_from_timeline"] is True
     assert sample["timeline_ref"].startswith("fault_timeline_events.jsonl#")
@@ -46,7 +46,7 @@ def test_observed_events_must_be_monotonic() -> None:
 def test_unobserved_event_without_reason_is_rejected() -> None:
     with pytest.raises(FailoverTimelineError, match="requires reason"):
         make_fault_timeline_event(
-            phase_id="M1-S06",
+            capability_id="failover_timeline",
             run_id="run",
             scenario_name="scenario",
             sample_id="sample",
@@ -65,7 +65,7 @@ def _events(missing_event: str | None = None) -> list[dict]:
         status = "MISSING" if event_name == missing_event else "OBSERVED"
         rows.append(
             make_fault_timeline_event(
-                phase_id="M1-S06",
+                capability_id="failover_timeline",
                 run_id="run",
                 scenario_name="scenario",
                 sample_id="sample",

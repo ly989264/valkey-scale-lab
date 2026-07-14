@@ -18,7 +18,7 @@ from schema_validator import load_json, validate  # noqa: E402
 
 WINDOWS = ["baseline", "steady", "fault", "recovery", "post_recovery"]
 REQUIRED_NODE_COUNTS = [6, 30, 50, 100]
-P14_ID = "P14_SCALE_1000_OPTIN_DRYRUN"
+SCALE_PLANNING_ID = "scale_planning"
 EXPLICIT_MISSING_STATUSES = {"MISSING", "SKIPPED_WITH_REASON"}
 
 
@@ -114,14 +114,14 @@ class StabilitySoakAuditor:
 
     def audit_small_real_profile(self) -> dict[str, Any]:
         finding_start = len(self.findings)
-        phase_dir = self.root / "artifacts/phases/P11_STABILITY_SOAK"
-        report_path = phase_dir / "stability_report.json"
-        evidence_path = phase_dir / "valkey_e2e_evidence.json"
-        cleanup_path = phase_dir / "cleanup_report_stability_soak_smoke.json"
-        baseline_path = phase_dir / "stability_baseline_comparison.json"
+        capture_dir = self.root / "artifacts/captures/stability"
+        report_path = capture_dir / "stability_report.json"
+        evidence_path = capture_dir / "valkey_e2e_evidence.json"
+        cleanup_path = capture_dir / "cleanup_report_stability.json"
+        baseline_path = capture_dir / "stability_baseline_comparison.json"
         source_artifacts = [
             rel(self.root, report_path),
-            rel(self.root, phase_dir / "stability_metrics.jsonl"),
+            rel(self.root, capture_dir / "stability_metrics.jsonl"),
             rel(self.root, baseline_path),
             rel(self.root, evidence_path),
             rel(self.root, cleanup_path),
@@ -144,7 +144,7 @@ class StabilitySoakAuditor:
                 severity="high",
                 category="stability_report_schema",
                 blocking=True,
-                description="P11 stability report does not satisfy the L09 stability schema.",
+                description="STABILITY report does not satisfy the canonical stability schema.",
                 evidence=schema_errors[:5],
             )
         metrics_path = self.root / str(report.get("metrics_timeseries_path", ""))
@@ -173,7 +173,7 @@ class StabilitySoakAuditor:
                 severity="high",
                 category="missing_timeseries_windows",
                 blocking=True,
-                description="Stability JSONL is missing required L09 windows.",
+                description="Stability JSONL is missing required lifecycle windows.",
                 evidence=missing_windows,
             )
         for row in rows:
@@ -183,7 +183,7 @@ class StabilitySoakAuditor:
                     severity="high",
                     category="timeseries_schema",
                     blocking=True,
-                    description="Stability JSONL row does not satisfy the L09 sample schema.",
+                    description="Stability JSONL row does not satisfy the canonical sample schema.",
                     evidence=[f"{rel(self.root, metrics_path)}:{row.get('_line')}: {errors[0]}"],
                 )
                 break
@@ -292,7 +292,7 @@ class StabilitySoakAuditor:
         return {
             "schema_version": "v1",
             "artifact_type": "stability_soak_profile",
-            "phase_id": "P11_STABILITY_SOAK",
+            "capability_id": "stability",
             "run_id": str(report.get("run_id")),
             "created_at": utc_now(),
             "producer": {"name": "scripts/audit_stability_soak_metrics.py", "version": "v1"},
@@ -394,9 +394,9 @@ class StabilitySoakAuditor:
         return records
 
     def resource_profile(self, node_count: int) -> dict[str, Any]:
-        phase_id = "P12_SCALE_LADDER_10_30" if node_count == 30 else "P13_SCALE_LADDER_50_100"
-        preflight = self.root / f"artifacts/phases/{phase_id}/resource_preflight_{node_count}.json"
-        deferral = self.root / "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+        capability_id = "scale_ladder"
+        preflight = self.root / f"artifacts/captures/{capability_id}/resource_preflight_{node_count}.json"
+        deferral = self.root / "artifacts/captures/stability/resource_aware_profile_deferral.json"
         if preflight.exists():
             payload = load_json(preflight)
         else:
@@ -411,11 +411,11 @@ class StabilitySoakAuditor:
         can_run = payload.get("can_run") is True and payload.get("status") == "PASS"
         if can_run and deferral.exists():
             deferral_payload = load_json(deferral)
-            reason = str(deferral_payload.get("reason") or "Bounded large stability measurement deferred by reviewed L09 resource-aware profile.")
+            reason = str(deferral_payload.get("reason") or "Bounded large stability measurement deferred by a reviewed resource-aware profile.")
             skip_category = "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON"
             extra_sources = [rel(self.root, deferral)]
         elif can_run:
-            reason = "Resource preflight passed, but no reviewed L09 measurement deferral artifact exists."
+            reason = "Resource preflight passed, but no reviewed measurement deferral artifact exists."
             skip_category = "MISSING_MEASUREMENT_DEFERRAL"
             extra_sources = []
             self.finding(
@@ -442,8 +442,8 @@ class StabilitySoakAuditor:
         return {
             "schema_version": "v1",
             "artifact_type": "stability_soak_profile",
-            "phase_id": phase_id,
-            "run_id": f"{phase_id}-stability-resource-aware-{node_count}-20260701",
+            "capability_id": capability_id,
+            "run_id": f"{capability_id}-stability-resource-aware-{node_count}-20260701",
             "created_at": utc_now(),
             "producer": {"name": "scripts/audit_stability_soak_metrics.py", "version": "v1"},
             "status": "SKIPPED_WITH_REASON",
@@ -474,11 +474,11 @@ class StabilitySoakAuditor:
             "source_hashes": [self.source_record(path) for path in [rel(self.root, preflight), *extra_sources]],
         }
 
-    def audit_p14_boundary(self) -> dict[str, Any]:
-        p14_dir = self.root / "artifacts/phases" / P14_ID
+    def audit_scale_planning_boundary(self) -> dict[str, Any]:
+        scale_planning_dir = self.root / "artifacts/captures" / SCALE_PLANNING_ID
         real_artifacts = []
-        if p14_dir.exists():
-            for path in p14_dir.glob("*.json"):
+        if scale_planning_dir.exists():
+            for path in scale_planning_dir.glob("*.json"):
                 try:
                     payload = load_json(path)
                 except Exception:  # noqa: BLE001
@@ -488,17 +488,17 @@ class StabilitySoakAuditor:
         if real_artifacts:
             self.finding(
                 severity="high",
-                category="p14_real_stability_evidence",
+                category="scale_planning_real_stability_evidence",
                 blocking=True,
-                description="P14/1000-node real evidence is forbidden for automatic L09.",
+                description="SCALE_PLANNING/1000-node real evidence is forbidden for automatic stability coverage.",
                 evidence=real_artifacts,
             )
         return {
-            "phase_id": P14_ID,
+            "capability_id": SCALE_PLANNING_ID,
             "status": "SKIPPED_WITH_REASON",
             "real_valkey_coverage": False,
             "dry_run_only": True,
-            "reason": "P14 is opt-in dry-run only and was not executed by L09.",
+            "reason": "SCALE_PLANNING is opt-in dry-run only and is not executed by automatic stability coverage.",
         }
 
     def build(self) -> dict[str, Any]:
@@ -506,7 +506,7 @@ class StabilitySoakAuditor:
         for node_count in [30, 50, 100]:
             if node_count in self.required_node_counts:
                 profiles.append(self.resource_profile(node_count))
-        p14_boundary = self.audit_p14_boundary()
+        scale_planning_boundary = self.audit_scale_planning_boundary()
         present_counts = {profile["node_count"] for profile in profiles}
         missing_counts = [count for count in self.required_node_counts if count not in present_counts]
         if missing_counts:
@@ -514,7 +514,7 @@ class StabilitySoakAuditor:
                 severity="high",
                 category="missing_required_profile",
                 blocking=True,
-                description="Missing required L09 stability profile node counts.",
+                description="Missing required stability profile node counts.",
                 evidence=[str(count) for count in missing_counts],
             )
         missing_metric_count = 0
@@ -539,7 +539,7 @@ class StabilitySoakAuditor:
                 "windows": WINDOWS,
             },
             "profiles": profiles,
-            "p14_boundary": p14_boundary,
+            "scale_planning_boundary": scale_planning_boundary,
             "findings": self.findings,
         }
 
@@ -549,7 +549,7 @@ def parse_node_counts(value: str) -> list[int]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Audit L09 stability soak metrics artifacts")
+    parser = argparse.ArgumentParser(description="Audit canonical stability soak metrics artifacts")
     parser.add_argument("--root", default=".")
     parser.add_argument("--out", required=True)
     parser.add_argument("--require-node-counts", default="6,30,50,100")

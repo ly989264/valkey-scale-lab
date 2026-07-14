@@ -12,7 +12,7 @@ def _state(path: Path) -> Path:
     data = {
         "schema_version": "v1",
         "cluster_id": "test",
-        "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+        "capability_id": "fault_matrix",
         "runtime": {"run_id": "test-run", "sandbox_network": True},
         "nodes": [{"logical_id": "shard-0000-primary", "az_id": "az-a", "container_name": "owned"}],
     }
@@ -124,7 +124,7 @@ def test_node_stop_stops_owned_container(tmp_path: Path, monkeypatch: pytest.Mon
             Result.stdout = json.dumps(
                 {
                     "org.valkey-scale-lab.project": "valkey-scale-lab",
-                    "org.valkey-scale-lab.phase": "P07_FAULT_INJECTION_SANDBOX",
+                    "org.valkey-scale-lab.capability_id": "fault_matrix",
                     "org.valkey-scale-lab.run_id": "test-run",
                 }
             )
@@ -150,7 +150,7 @@ def test_node_stop_process_runtime_targets_logical_pid_not_shared_nodehost(tmp_p
     data = {
         "schema_version": "v1",
         "cluster_id": "test",
-        "phase_id": "P13_SCALE_LADDER_50_100",
+        "capability_id": "scale_ladder",
         "runtime": {"run_id": "test-run", "sandbox_network": True, "type": "docker_process"},
         "nodes": [
             {
@@ -197,7 +197,7 @@ def test_node_stop_process_runtime_targets_logical_pid_not_shared_nodehost(tmp_p
             Result.stdout = json.dumps(
                 {
                     "org.valkey-scale-lab.project": "valkey-scale-lab",
-                    "org.valkey-scale-lab.phase": "P13_SCALE_LADDER_50_100",
+                    "org.valkey-scale-lab.capability_id": "scale_ladder",
                     "org.valkey-scale-lab.run_id": "test-run",
                 }
             )

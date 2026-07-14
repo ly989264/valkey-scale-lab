@@ -1,9 +1,9 @@
 {
   "schema_version": "v1",
   "artifact_type": "management_workload_impact",
-  "phase_id": "M1-S04",
+  "capability_id": "management_matrix",
   "run_id": "empty",
-  "scenario": "empty",
+  "scenario": "management_matrix",
   "status": "FAIL",
   "operations": []
 }

@@ -2119,14 +2119,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-07-reshard_slot_range",
+        "operation_id": "management-matrix-07-reshard_slot_range",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 101
         },
-        "run_id": "m1-s04-dry_run_200_plus",
+        "run_id": "management-matrix-dry_run_200_plus",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -2630,9 +2630,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-07-reshard_slot_range-after"
+        "snapshot_id": "management-matrix-07-reshard_slot_range-after"
       },
-      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-after",
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-07-reshard_slot_range-after",
       "artifact_type": "management_operation_result",
       "before_topology_snapshot": {
         "artifact_type": "management_topology_snapshot",
@@ -4751,14 +4751,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-07-reshard_slot_range",
+        "operation_id": "management-matrix-07-reshard_slot_range",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 101
         },
-        "run_id": "m1-s04-dry_run_200_plus",
+        "run_id": "management-matrix-dry_run_200_plus",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -5262,9 +5262,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-07-reshard_slot_range-before"
+        "snapshot_id": "management-matrix-07-reshard_slot_range-before"
       },
-      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-before",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-07-reshard_slot_range-before",
       "bytes_migrated": {
         "field": "bytes_migrated",
         "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
@@ -5307,14 +5307,14 @@
       "known_nodes_before": 201,
       "missing_fields": [],
       "movement_ids": [
-        "m1-s04-07-reshard_slot_range-move-0001"
+        "management-matrix-07-reshard_slot_range-move-0001"
       ],
       "node_count": 201,
       "operation_duration_ms": 89.0,
-      "operation_id": "m1-s04-07-reshard_slot_range",
+      "operation_id": "management-matrix-07-reshard_slot_range",
       "operation_name": "reshard_slot_range",
       "operation_status": "PASS",
-      "phase_id": "M1-S04",
+      "capability_id": "management_matrix",
       "post_move_writable": true,
       "prepare_ms": 3.0,
       "retry_count": 0,
@@ -5322,9 +5322,9 @@
         "primary": 0,
         "replica": 0
       },
-      "run_id": "m1-s04-dry_run_200_plus",
+      "run_id": "management-matrix-dry_run_200_plus",
       "scale": 201,
-      "scenario": "dry_run_200_plus",
+      "scenario": "management_matrix",
       "schema_version": "v1",
       "slot_balance_after": {
         "imbalance": 1,
@@ -5359,10 +5359,10 @@
       ],
       "source_node_id": "nodeid-0000",
       "started_at_unix_ms": 1760000007000,
-      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+      "status_reason": "Fixture operation carries the full management_matrix evidence contract.",
       "target_node_id": "nodeid-0001",
-      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-after",
-      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-before",
+      "topology_after_ref": "management_topology_snapshots.jsonl#management-matrix-07-reshard_slot_range-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#management-matrix-07-reshard_slot_range-before",
       "topology_diff": {
         "changed_nodes": [],
         "fail_pfail_handshake_delta": {
@@ -5384,11 +5384,11 @@
         },
         "status": "PASS"
       },
-      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-07-reshard_slot_range",
+      "topology_diff_ref": "management_topology_diffs.jsonl#management-matrix-07-reshard_slot_range",
       "topology_ref": "management_topology_snapshots.jsonl",
       "wall_ms": 89.0,
-      "workload_impact_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range",
-      "workload_window_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range"
+      "workload_impact_ref": "management_workload_impact.json#management-matrix-07-reshard_slot_range",
+      "workload_window_ref": "management_workload_impact.json#management-matrix-07-reshard_slot_range"
     },
     {
       "after_topology_snapshot": {
@@ -7508,14 +7508,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-08-reshard_with_keys",
+        "operation_id": "management-matrix-08-reshard_with_keys",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 101
         },
-        "run_id": "m1-s04-dry_run_200_plus",
+        "run_id": "management-matrix-dry_run_200_plus",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -8019,9 +8019,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-08-reshard_with_keys-after"
+        "snapshot_id": "management-matrix-08-reshard_with_keys-after"
       },
-      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-after",
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-08-reshard_with_keys-after",
       "artifact_type": "management_operation_result",
       "before_topology_snapshot": {
         "artifact_type": "management_topology_snapshot",
@@ -10140,14 +10140,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-08-reshard_with_keys",
+        "operation_id": "management-matrix-08-reshard_with_keys",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 101
         },
-        "run_id": "m1-s04-dry_run_200_plus",
+        "run_id": "management-matrix-dry_run_200_plus",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -10651,9 +10651,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-08-reshard_with_keys-before"
+        "snapshot_id": "management-matrix-08-reshard_with_keys-before"
       },
-      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-before",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-08-reshard_with_keys-before",
       "bytes_migrated": {
         "field": "bytes_migrated",
         "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
@@ -10696,14 +10696,14 @@
       "known_nodes_before": 201,
       "missing_fields": [],
       "movement_ids": [
-        "m1-s04-08-reshard_with_keys-move-0001"
+        "management-matrix-08-reshard_with_keys-move-0001"
       ],
       "node_count": 201,
       "operation_duration_ms": 96.0,
-      "operation_id": "m1-s04-08-reshard_with_keys",
+      "operation_id": "management-matrix-08-reshard_with_keys",
       "operation_name": "reshard_with_keys",
       "operation_status": "PASS",
-      "phase_id": "M1-S04",
+      "capability_id": "management_matrix",
       "post_move_writable": true,
       "prepare_ms": 3.0,
       "retry_count": 0,
@@ -10711,9 +10711,9 @@
         "primary": 0,
         "replica": 0
       },
-      "run_id": "m1-s04-dry_run_200_plus",
+      "run_id": "management-matrix-dry_run_200_plus",
       "scale": 201,
-      "scenario": "dry_run_200_plus",
+      "scenario": "management_matrix",
       "schema_version": "v1",
       "slot_balance_after": {
         "imbalance": 1,
@@ -10748,10 +10748,10 @@
       ],
       "source_node_id": "nodeid-0000",
       "started_at_unix_ms": 1760000008000,
-      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+      "status_reason": "Fixture operation carries the full management_matrix evidence contract.",
       "target_node_id": "nodeid-0001",
-      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-after",
-      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-before",
+      "topology_after_ref": "management_topology_snapshots.jsonl#management-matrix-08-reshard_with_keys-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#management-matrix-08-reshard_with_keys-before",
       "topology_diff": {
         "changed_nodes": [],
         "fail_pfail_handshake_delta": {
@@ -10773,11 +10773,11 @@
         },
         "status": "PASS"
       },
-      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-08-reshard_with_keys",
+      "topology_diff_ref": "management_topology_diffs.jsonl#management-matrix-08-reshard_with_keys",
       "topology_ref": "management_topology_snapshots.jsonl",
       "wall_ms": 96.0,
-      "workload_impact_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys",
-      "workload_window_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys"
+      "workload_impact_ref": "management_workload_impact.json#management-matrix-08-reshard_with_keys",
+      "workload_window_ref": "management_workload_impact.json#management-matrix-08-reshard_with_keys"
     },
     {
       "after_topology_snapshot": {
@@ -12897,14 +12897,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "operation_id": "management-matrix-09-rebalance_after_imbalance",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 101
         },
-        "run_id": "m1-s04-dry_run_200_plus",
+        "run_id": "management-matrix-dry_run_200_plus",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -13408,9 +13408,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-09-rebalance_after_imbalance-after"
+        "snapshot_id": "management-matrix-09-rebalance_after_imbalance-after"
       },
-      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-after",
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-09-rebalance_after_imbalance-after",
       "artifact_type": "management_operation_result",
       "before_topology_snapshot": {
         "artifact_type": "management_topology_snapshot",
@@ -15529,14 +15529,14 @@
             "status": "ok"
           }
         ],
-        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "operation_id": "management-matrix-09-rebalance_after_imbalance",
         "pfail_count": 0,
-        "phase_id": "M1-S04",
+        "capability_id": "management_matrix",
         "role_counts": {
           "primary": 100,
           "replica": 101
         },
-        "run_id": "m1-s04-dry_run_200_plus",
+        "run_id": "management-matrix-dry_run_200_plus",
         "schema_version": "v1",
         "slot_ranges": [
           {
@@ -16040,9 +16040,9 @@
             "start": 16137
           }
         ],
-        "snapshot_id": "m1-s04-09-rebalance_after_imbalance-before"
+        "snapshot_id": "management-matrix-09-rebalance_after_imbalance-before"
       },
-      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-before",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#management-matrix-09-rebalance_after_imbalance-before",
       "bytes_migrated": {
         "field": "bytes_migrated",
         "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
@@ -16085,14 +16085,14 @@
       "known_nodes_before": 201,
       "missing_fields": [],
       "movement_ids": [
-        "m1-s04-09-rebalance_after_imbalance-move-0001"
+        "management-matrix-09-rebalance_after_imbalance-move-0001"
       ],
       "node_count": 201,
       "operation_duration_ms": 103.0,
-      "operation_id": "m1-s04-09-rebalance_after_imbalance",
+      "operation_id": "management-matrix-09-rebalance_after_imbalance",
       "operation_name": "rebalance_after_imbalance",
       "operation_status": "PASS",
-      "phase_id": "M1-S04",
+      "capability_id": "management_matrix",
       "post_move_writable": true,
       "prepare_ms": 3.0,
       "retry_count": 0,
@@ -16100,9 +16100,9 @@
         "primary": 0,
         "replica": 0
       },
-      "run_id": "m1-s04-dry_run_200_plus",
+      "run_id": "management-matrix-dry_run_200_plus",
       "scale": 201,
-      "scenario": "dry_run_200_plus",
+      "scenario": "management_matrix",
       "schema_version": "v1",
       "slot_balance_after": {
         "imbalance": 1,
@@ -16137,10 +16137,10 @@
       ],
       "source_node_id": "nodeid-0000",
       "started_at_unix_ms": 1760000009000,
-      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+      "status_reason": "Fixture operation carries the full management_matrix evidence contract.",
       "target_node_id": "nodeid-0001",
-      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-after",
-      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-before",
+      "topology_after_ref": "management_topology_snapshots.jsonl#management-matrix-09-rebalance_after_imbalance-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#management-matrix-09-rebalance_after_imbalance-before",
       "topology_diff": {
         "changed_nodes": [],
         "fail_pfail_handshake_delta": {
@@ -16162,15 +16162,15 @@
         },
         "status": "PASS"
       },
-      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-09-rebalance_after_imbalance",
+      "topology_diff_ref": "management_topology_diffs.jsonl#management-matrix-09-rebalance_after_imbalance",
       "topology_ref": "management_topology_snapshots.jsonl",
       "wall_ms": 103.0,
-      "workload_impact_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance",
-      "workload_window_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance"
+      "workload_impact_ref": "management_workload_impact.json#management-matrix-09-rebalance_after_imbalance",
+      "workload_window_ref": "management_workload_impact.json#management-matrix-09-rebalance_after_imbalance"
     }
   ],
-  "phase_id": "M1-S04",
-  "run_id": "m1-s04-dry_run_200_plus",
+  "capability_id": "management_matrix",
+  "run_id": "management-matrix-dry_run_200_plus",
   "schema_version": "v1",
   "status": "PASS"
 }

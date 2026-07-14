@@ -1,1 +1,1 @@
-{"event_id":"evt-missing","event_type":"workload_window_started","message":"fixture missing metric","phase_id":"M1-S05","run_id":"fixture-missing","schema_version":"v1"}
+{"event_id":"evt-missing","event_type":"workload_window_started","message":"fixture missing metric","capability_id":"workload","run_id":"fixture-missing","schema_version":"v1"}

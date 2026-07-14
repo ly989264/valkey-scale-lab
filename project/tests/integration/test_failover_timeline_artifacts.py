@@ -6,7 +6,7 @@ from pathlib import Path
 
 from valkey_scale_lab.observer.failover_timeline import build_rto_summary
 
-PHASE = "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
+CAPABILITY = "failover_timeline"
 
 
 def write_json(path: Path, obj: dict) -> None:
@@ -20,7 +20,7 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 def test_fake_schema_timeline_artifacts_validate_but_do_not_claim_real(tmp_path: Path) -> None:
     sample = {
         "schema_version": "v1",
-        "phase_id": PHASE,
+        "capability_id": CAPABILITY,
         "run_id": "fake-run",
         "scenario_name": "fake-schema",
         "sample_id": "fake-schema-sample",
@@ -57,7 +57,7 @@ def test_fake_schema_timeline_artifacts_validate_but_do_not_claim_real(tmp_path:
         summary,
         build_rto_summary(
             [sample],
-            phase_id=PHASE,
+            capability_id=CAPABILITY,
             run_id="fake-summary",
             timeout_config_ms=30000,
             server_profile="unit_schema",
@@ -83,8 +83,8 @@ def test_fake_schema_timeline_artifacts_validate_but_do_not_claim_real(tmp_path:
         [
             "python3",
             "scripts/assert_failover_timeline_completeness.py",
-            "--phase",
-            PHASE,
+            "--capability-id",
+            CAPABILITY,
             "--artifact-dir",
             str(tmp_path),
             "--require-scales",

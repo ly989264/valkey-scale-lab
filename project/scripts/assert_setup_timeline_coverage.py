@@ -43,14 +43,14 @@ def main() -> int:
     if args.analysis:
         analysis = load_json(ROOT / args.analysis, errors, "analysis summary")
         setup = analysis.get("setup_aggregates", {}) if isinstance(analysis, dict) else {}
-        if not setup.get("phase_duration_ranking"):
-            errors.append("analysis setup_aggregates.phase_duration_ranking must be non-empty")
+        if not setup.get("stage_duration_ranking"):
+            errors.append("analysis setup_aggregates.stage_duration_ranking must be non-empty")
         if "slowest_nodes_topN" not in setup:
             errors.append("analysis setup_aggregates missing slowest_nodes_topN")
     if args.report_index:
         index = load_json(ROOT / args.report_index, errors, "report index")
         reports = {Path(item.get("path", "")).name for item in index.get("reports", []) if isinstance(item, dict)}
-        for name in ["setup_phase_durations.csv", "setup_slowest_nodes.csv", "setup_waterfall.svg", "report.md", "index.html"]:
+        for name in ["setup_lifecycle_durations.csv", "setup_slowest_nodes.csv", "setup_waterfall.svg", "report.md", "index.html"]:
             if name not in reports:
                 errors.append(f"report_index missing setup output {name}")
         report_dir = (ROOT / args.report_index).parent

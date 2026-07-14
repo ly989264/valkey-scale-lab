@@ -15,7 +15,7 @@ RUN_ID = "review-scenario-provenance"
 NOW_MS = 1_800_000_000_000
 REPORT_SURFACES = {
     "topology_summary",
-    "phase_durations",
+    "lifecycle_durations",
     "bottlenecks",
     "resources",
     "workload_impact",
@@ -38,6 +38,25 @@ def _write_json(path: Path, value: dict) -> None:
 
 def _write_jsonl(path: Path, rows: list[dict]) -> None:
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+
+def test_product_digest_excludes_generated_outputs_but_tracks_source(tmp_path: Path) -> None:
+    source = tmp_path / "src" / "product.py"
+    source.parent.mkdir()
+    source.write_text("VALUE = 1\n", encoding="utf-8")
+    initial = exact_gate.product_tree_digest(tmp_path)
+
+    artifact = tmp_path / "artifacts" / "captures" / "run.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text('{"status":"PASS"}\n', encoding="utf-8")
+    cache = tmp_path / "src" / "__pycache__" / "product.pyc"
+    cache.parent.mkdir()
+    cache.write_bytes(b"generated")
+
+    assert exact_gate.product_tree_digest(tmp_path) == initial
+
+    source.write_text("VALUE = 2\n", encoding="utf-8")
+    assert exact_gate.product_tree_digest(tmp_path) != initial
 
 
 def test_rejects_unclassified_source_rows_instead_of_inventing_scenario_provenance(tmp_path: Path) -> None:

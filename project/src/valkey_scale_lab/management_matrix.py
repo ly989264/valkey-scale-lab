@@ -26,7 +26,7 @@ ROLLING_RESTART_OPERATIONS = {"rolling_restart_replica_first", "rolling_restart_
 COMMON_RESULT_FIELDS = [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "scenario",
     "coverage_id",
@@ -114,7 +114,7 @@ def fixture_nodes(node_count: int) -> list[dict[str, Any]]:
 
 def build_topology_snapshot(
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     operation_id: str,
     label: str,
@@ -132,7 +132,7 @@ def build_topology_snapshot(
     return {
         "schema_version": "v1",
         "artifact_type": "management_topology_snapshot",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "operation_id": operation_id,
         "snapshot_id": f"{operation_id}-{label}",
@@ -179,7 +179,7 @@ def diff_topology(before: dict[str, Any], after: dict[str, Any]) -> dict[str, An
 
 def build_management_operation_result(
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     scenario: str,
     operation_name: str,
@@ -197,7 +197,7 @@ def build_management_operation_result(
     result: dict[str, Any] = {
         "schema_version": "v1",
         "artifact_type": "management_operation_result",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario": scenario,
         "coverage_id": f"{node_count}.management.{operation_name}",
@@ -312,11 +312,11 @@ def build_management_operation_result(
     return result
 
 
-def build_topology_diff_row(phase_id: str, run_id: str, result: dict[str, Any]) -> dict[str, Any]:
+def build_topology_diff_row(capability_id: str, run_id: str, result: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "artifact_type": "management_topology_diff",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "operation_id": result["operation_id"],
         "before_snapshot_ref": result["before_topology_snapshot_ref"],
@@ -325,10 +325,10 @@ def build_topology_diff_row(phase_id: str, run_id: str, result: dict[str, Any]) 
     }
 
 
-def write_management_matrix_artifacts(
+def write_management_matrix_fixture_artifacts(
     artifacts_dir: str | Path,
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     scenario: str,
     node_count: int = 6,
@@ -343,14 +343,14 @@ def write_management_matrix_artifacts(
     diffs: list[dict[str, Any]] = []
     for index, operation_name in enumerate(REQUIRED_MANAGEMENT_OPERATIONS, start=1):
         operation_id = f"management-{index:02d}-{operation_name}"
-        before = build_topology_snapshot(phase_id=phase_id, run_id=run_id, operation_id=operation_id, label="before", nodes=nodes)
-        after = build_topology_snapshot(phase_id=phase_id, run_id=run_id, operation_id=operation_id, label="after", nodes=nodes)
+        before = build_topology_snapshot(capability_id=capability_id, run_id=run_id, operation_id=operation_id, label="before", nodes=nodes)
+        after = build_topology_snapshot(capability_id=capability_id, run_id=run_id, operation_id=operation_id, label="after", nodes=nodes)
         command_id = f"cmd-{index:06d}"
         command_rows.append(
             {
                 "schema_version": "v1",
                 "artifact_type": "command_log_entry",
-                "phase_id": phase_id,
+                "capability_id": capability_id,
                 "run_id": run_id,
                 "scenario": scenario,
                 "command_id": command_id,
@@ -370,7 +370,7 @@ def write_management_matrix_artifacts(
             }
         )
         result = build_management_operation_result(
-            phase_id=phase_id,
+            capability_id=capability_id,
             run_id=run_id,
             scenario=scenario,
             operation_name=operation_name,
@@ -384,7 +384,7 @@ def write_management_matrix_artifacts(
         )
         snapshots.extend([before, after])
         results.append(result)
-        diffs.append(build_topology_diff_row(phase_id, run_id, result))
+        diffs.append(build_topology_diff_row(capability_id, run_id, result))
     _write_jsonl(artifacts / "command_log.jsonl", command_rows)
     _write_jsonl(artifacts / "management_operation_results.jsonl", results)
     _write_jsonl(artifacts / "management_topology_snapshots.jsonl", snapshots)
@@ -392,7 +392,7 @@ def write_management_matrix_artifacts(
     workload_impact = {
         "schema_version": "v1",
         "artifact_type": "management_workload_impact",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario": scenario,
         "status": operation_status,
@@ -413,7 +413,7 @@ def write_management_matrix_artifacts(
     matrix = {
         "schema_version": "v1",
         "artifact_type": "management_ops_matrix",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario": scenario,
         "status": operation_status,
@@ -441,10 +441,10 @@ def write_management_matrix_artifacts(
     }
     _write_json(artifacts / "management_ops_matrix.json", matrix)
     _write_json(artifacts / "management_workload_impact.json", workload_impact)
-    _write_json(artifacts / "command_audit_summary.json", _command_audit_summary(phase_id, run_id, scenario, command_rows))
-    _write_json(artifacts / "rolling_restart_plan.json", {"schema_version": "v1", "artifact_type": "rolling_restart_plan", "phase_id": phase_id, "run_id": run_id, "status": "PASS", "operations": [row for row in results if row["operation_name"] in ROLLING_RESTART_OPERATIONS]})
+    _write_json(artifacts / "command_audit_summary.json", _command_audit_summary(capability_id, run_id, scenario, command_rows))
+    _write_json(artifacts / "rolling_restart_plan.json", {"schema_version": "v1", "artifact_type": "rolling_restart_plan", "capability_id": capability_id, "run_id": run_id, "status": "PASS", "operations": [row for row in results if row["operation_name"] in ROLLING_RESTART_OPERATIONS]})
     _write_jsonl(artifacts / "rolling_restart_results.jsonl", [row for row in results if row["operation_name"] in ROLLING_RESTART_OPERATIONS])
-    _write_json(artifacts / "rebalance_summary.json", {"schema_version": "v1", "artifact_type": "rebalance_summary", "phase_id": phase_id, "run_id": run_id, "status": "PASS", "operations": [row for row in results if row["operation_name"] in RESHARD_REBALANCE_OPERATIONS]})
+    _write_json(artifacts / "rebalance_summary.json", {"schema_version": "v1", "artifact_type": "rebalance_summary", "capability_id": capability_id, "run_id": run_id, "status": "PASS", "operations": [row for row in results if row["operation_name"] in RESHARD_REBALANCE_OPERATIONS]})
     return matrix
 
 
@@ -458,11 +458,11 @@ def load_management_artifacts(artifacts_dir: str | Path) -> dict[str, Any]:
     }
 
 
-def _command_audit_summary(phase_id: str, run_id: str, scenario: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _command_audit_summary(capability_id: str, run_id: str, scenario: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "artifact_type": "command_audit_summary",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario": scenario,
         "status": "PASS",

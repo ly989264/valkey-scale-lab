@@ -12,10 +12,10 @@ def _patch_resource_preflight_host(monkeypatch) -> None:
     monkeypatch.setattr(
         resource,
         "_cleanup_state_check",
-        lambda phase_id, scenario, node_count: resource._check(
+        lambda capability_id, scenario, node_count: resource._check(
             "previous_cleanup_state",
             True,
-            {"node_count": node_count, "phase_id": phase_id, "scenario": scenario},
+            {"node_count": node_count, "capability_id": capability_id, "scenario": scenario},
         ),
     )
     monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
@@ -29,114 +29,131 @@ def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monk
 
     assert report["status"] == "PASS"
     assert report["node_count"] == 10
-    assert report["phase_id"] == "P12_SCALE_LADDER_10_30"
+    assert report["capability_id"] == "scale_ladder"
     assert {check["name"] for check in report["checks"]} >= {"docker_available", "client_ports", "cluster_bus_ports"}
 
 
-def test_p21_resource_preflight_allows_only_exact_200_exception(tmp_path: Path, monkeypatch) -> None:
+def test_failover_latency_exact_200_resource_preflight_allows_only_exact_200_exception(tmp_path: Path, monkeypatch) -> None:
     _patch_resource_preflight_host(monkeypatch)
 
-    report = resource.run_resource_preflight("templates/configs/scale_200.yaml", tmp_path / "preflight.json")
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_200.yaml",
+        tmp_path / "preflight.json",
+        capability_id="failover_latency_curve",
+        scenario="failover_latency_curve",
+        profile_id="exact-200",
+    )
 
     assert report["status"] == "PASS"
-    assert report["phase_id"] == "P21_FAILOVER_LATENCY_CURVE_200"
+    assert report["capability_id"] == "failover_latency_curve"
     assert report["node_count"] == 200
     assert report["dry_run"] is False
-    assert report["bounded_exception"]["phase_id"] == "P21_FAILOVER_LATENCY_CURVE_200"
+    assert report["bounded_exception"]["capability_id"] == "failover_latency_curve"
     assert report["bounded_exception"]["default_max_nodes"] == 100
 
 
-def test_p32_resource_preflight_allows_exact_200_stage_exception(tmp_path: Path, monkeypatch) -> None:
+def test_management_matrix_200_resource_preflight_allows_exact_200_profile_exception(tmp_path: Path, monkeypatch) -> None:
     _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
-        tmp_path / "p32_preflight.json",
-        phase_id="P32_MANAGEMENT_MATRIX_200_REAL",
-        scenario="strict_management_matrix_200",
+        tmp_path / "management_matrix_200_preflight.json",
+        capability_id="management_matrix",
+        scenario="management_matrix",
+        profile_id="exact-200",
     )
 
     assert report["status"] == "PASS"
-    assert report["phase_id"] == "P32_MANAGEMENT_MATRIX_200_REAL"
-    assert report["scenario_name"] == "strict_management_matrix_200"
+    assert report["capability_id"] == "management_matrix"
+    assert report["scenario_name"] == "management_matrix"
     assert report["node_count"] == 200
-    assert report["bounded_exception"]["phase_id"] == "P32_MANAGEMENT_MATRIX_200_REAL"
+    assert report["bounded_exception"]["capability_id"] == "management_matrix"
     assert report["bounded_exception"]["default_max_nodes"] == 100
 
 
-def test_p32_resource_preflight_rejects_wrong_200_scenario(tmp_path: Path, monkeypatch) -> None:
+def test_management_matrix_200_resource_preflight_rejects_wrong_200_scenario(tmp_path: Path, monkeypatch) -> None:
     _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
-        tmp_path / "bad_p32_preflight.json",
-        phase_id="P32_MANAGEMENT_MATRIX_200_REAL",
-        scenario="strict_management_matrix_199",
+        tmp_path / "bad_management_matrix_200_preflight.json",
+        capability_id="management_matrix",
+        scenario="management_matrix_typo",
+        profile_id="exact-200",
     )
 
     assert report["status"] == "FAIL"
     assert any(check["name"] == "exact_200_bounded_exception" and check["status"] == "FAIL" for check in report["checks"])
 
 
-def test_p35_resource_preflight_allows_exact_200_fault_stage_exception(tmp_path: Path, monkeypatch) -> None:
+def test_fault_matrix_200_resource_preflight_allows_exact_200_fault_profile_exception(tmp_path: Path, monkeypatch) -> None:
     _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
-        tmp_path / "p35_preflight.json",
-        phase_id="P35_FAULT_FAILOVER_MATRIX_200_REAL",
-        scenario="strict_fault_matrix_200",
+        tmp_path / "fault_matrix_200_preflight.json",
+        capability_id="fault_matrix",
+        scenario="fault_matrix",
+        profile_id="exact-200",
     )
 
     assert report["status"] == "PASS"
-    assert report["phase_id"] == "P35_FAULT_FAILOVER_MATRIX_200_REAL"
-    assert report["scenario_name"] == "strict_fault_matrix_200"
+    assert report["capability_id"] == "fault_matrix"
+    assert report["scenario_name"] == "fault_matrix"
     assert report["node_count"] == 200
-    assert report["bounded_exception"]["phase_id"] == "P35_FAULT_FAILOVER_MATRIX_200_REAL"
-    assert report["bounded_exception"]["scenario_name"] == "strict_fault_matrix_200"
+    assert report["bounded_exception"]["capability_id"] == "fault_matrix"
+    assert report["bounded_exception"]["scenario_name"] == "fault_matrix"
     assert report["bounded_exception"]["default_max_nodes"] == 100
 
 
-def test_p36_resource_preflight_allows_exact_200_full_flow_exception(tmp_path: Path, monkeypatch) -> None:
+def test_local_full_flow_resource_preflight_allows_exact_200_full_flow_exception(tmp_path: Path, monkeypatch) -> None:
     _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
-        tmp_path / "p36_preflight.json",
-        phase_id="P36_FULL_FLOW_E2E_50_100_200_REAL",
-        scenario="strict_full_flow_200",
+        tmp_path / "local_full_flow_preflight.json",
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        profile_id="exact-200",
     )
 
     assert report["status"] == "PASS"
-    assert report["phase_id"] == "P36_FULL_FLOW_E2E_50_100_200_REAL"
-    assert report["scenario_name"] == "strict_full_flow_200"
+    assert report["capability_id"] == "local_full_flow"
+    assert report["scenario_name"] == "local_full_flow"
     assert report["node_count"] == 200
-    assert report["bounded_exception"]["phase_id"] == "P36_FULL_FLOW_E2E_50_100_200_REAL"
-    assert report["bounded_exception"]["scenario_name"] == "strict_full_flow_200"
+    assert report["bounded_exception"]["capability_id"] == "local_full_flow"
+    assert report["bounded_exception"]["scenario_name"] == "local_full_flow"
     assert report["bounded_exception"]["default_max_nodes"] == 100
 
 
-def test_p35_resource_preflight_rejects_wrong_200_fault_scenario(tmp_path: Path, monkeypatch) -> None:
+def test_fault_matrix_200_resource_preflight_rejects_wrong_200_fault_scenario(tmp_path: Path, monkeypatch) -> None:
     _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
-        tmp_path / "bad_p35_preflight.json",
-        phase_id="P35_FAULT_FAILOVER_MATRIX_200_REAL",
-        scenario="strict_fault_matrix_199",
+        tmp_path / "bad_fault_matrix_200_preflight.json",
+        capability_id="fault_matrix",
+        scenario="fault_matrix_typo",
+        profile_id="exact-200",
     )
 
     assert report["status"] == "FAIL"
     assert any(check["name"] == "exact_200_bounded_exception" and check["status"] == "FAIL" for check in report["checks"])
 
 
-def test_resource_preflight_rejects_unmarked_real_200_config(tmp_path: Path, monkeypatch) -> None:
+def test_resource_preflight_rejects_profile_without_exact_200_scale_exception(tmp_path: Path, monkeypatch) -> None:
     _patch_resource_preflight_host(monkeypatch)
     raw = Path("templates/configs/scale_200.yaml").read_text(encoding="utf-8")
     bad_config = tmp_path / "bad_scale_200.yaml"
-    bad_config.write_text(raw.replace("bounded_exception_phase: P21_FAILOVER_LATENCY_CURVE_200", "bounded_exception_phase: P22_FAULT_REPLICA_HOST_AZ_STOP"), encoding="utf-8")
+    bad_config.write_text(raw.replace("bounded_exception_nodes: 200", "bounded_exception_nodes: 199"), encoding="utf-8")
 
-    report = resource.run_resource_preflight(bad_config, tmp_path / "bad_preflight.json")
+    report = resource.run_resource_preflight(
+        bad_config,
+        tmp_path / "bad_preflight.json",
+        capability_id="failover_latency_curve",
+        scenario="failover_latency_curve",
+        profile_id="exact-200",
+    )
 
     assert report["status"] == "FAIL"
     assert any(check["name"] == "exact_200_bounded_exception" and check["status"] == "FAIL" for check in report["checks"])
@@ -158,15 +175,15 @@ def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -
     nodes_10 = _nodes(10)
     nodes_30 = _nodes(30)
 
-    docker_runtime.write_scale_ladder_artifacts(tmp_path, "P12_SCALE_LADDER_10_30", "scale_10", "run-10", {"profile_name": "scale_10"}, nodes_10)
+    docker_runtime.write_scale_ladder_artifacts(tmp_path, "scale_ladder", "scale_10", "run-10", {"profile_name": "scale_10"}, nodes_10)
     expected["count"] = 30
-    docker_runtime.write_scale_ladder_artifacts(tmp_path, "P12_SCALE_LADDER_10_30", "scale_30", "run-30", {"profile_name": "scale_30"}, nodes_30)
+    docker_runtime.write_scale_ladder_artifacts(tmp_path, "scale_ladder", "scale_30", "run-30", {"profile_name": "scale_30"}, nodes_30)
 
     report = json.loads((tmp_path / "scale_ladder_report.json").read_text(encoding="utf-8"))
     assert report["status"] == "PASS"
     assert report["summary"]["rung_counts_observed"] == [10, 30]
     assert report["summary"]["comparison"]["node_count_multiplier"] == 3.0
-    assert (tmp_path / "phase_summary.json").exists()
+    assert (tmp_path / "run_summary.json").exists()
 
 
 def test_scale_rung_fails_when_membership_is_fragmented(tmp_path: Path, monkeypatch) -> None:
@@ -182,7 +199,7 @@ def test_scale_rung_fails_when_membership_is_fragmented(tmp_path: Path, monkeypa
     monkeypatch.setattr(docker_runtime, "run_container_cli", fake_cli)
     docker_runtime.write_scale_ladder_artifacts(
         tmp_path,
-        "P13_SCALE_LADDER_50_100",
+        "scale_ladder",
         "scale_50",
         "run-50",
         {"profile_name": "scale_50"},
@@ -195,12 +212,13 @@ def test_scale_rung_fails_when_membership_is_fragmented(tmp_path: Path, monkeypa
     assert rung["management"]["cluster_known_nodes_max"] == 6
 
 
-def test_scale_phase_summary_uses_p13_required_paths(tmp_path: Path) -> None:
-    docker_runtime.write_scale_phase_summary(tmp_path / "phase_summary.json", "P13_SCALE_LADDER_50_100")
-    summary = json.loads((tmp_path / "phase_summary.json").read_text(encoding="utf-8"))
-    assert summary["phase_id"] == "P13_SCALE_LADDER_50_100"
-    assert "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json" in summary["required_artifacts"]
-    assert "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json" in summary["required_artifacts"]
+def test_scale_run_summary_uses_canonical_rung_paths(tmp_path: Path) -> None:
+    docker_runtime.write_scale_run_summary(tmp_path / "run_summary.json", "scale_ladder")
+    summary = json.loads((tmp_path / "run_summary.json").read_text(encoding="utf-8"))
+    assert summary["capability_id"] == "scale_ladder"
+    assert "artifacts/captures/scale_ladder/resource_preflight_10.json" in summary["required_artifacts"]
+    assert "artifacts/captures/scale_ladder/resource_preflight_50.json" in summary["required_artifacts"]
+    assert "artifacts/captures/scale_ladder/valkey_e2e_evidence_100.json" in summary["required_artifacts"]
 
 
 def _nodes(count: int) -> list[dict]:

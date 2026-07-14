@@ -16,8 +16,8 @@ def test_cleanup_rejects_failed_owned_resource_discovery(
             {
                 "schema_version": "v1",
                 "cluster_id": "cleanup-discovery-gap",
-                "phase_id": "P03_LOCAL_DOCKER_VALKEY",
-                "scenario": "cluster_smoke",
+                "capability_id": "cluster_lifecycle",
+                "scenario": "cluster_lifecycle",
                 "runtime": {"run_id": "cleanup-discovery-gap"},
                 "nodes": [],
             }

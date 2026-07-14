@@ -46,4 +46,4 @@ This creates two Docker nodehosts for scale scenarios:
 - `nodehost-az-b`
 
 The 1000-node profile remains dry-run only unless the existing opt-in guard is present.
-Default automatic phases remain capped at 100 nodes.
+Default automatic capabilities remain capped at 100 nodes.

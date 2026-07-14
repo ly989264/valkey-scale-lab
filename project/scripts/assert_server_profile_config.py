@@ -33,7 +33,7 @@ MERGE_ORDER = ["built-in defaults", "global config", "scenario config", "CLI ove
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", required=True)
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--global-config", default="config/valkey_scale_lab_global.yaml")
     parser.add_argument("--config", action="append", dest="configs")
     parser.add_argument("--artifact-dir")
@@ -42,20 +42,20 @@ def main() -> int:
     errors: list[str] = []
     global_path = _path(args.global_config)
     configs = [_path(item) for item in (args.configs or DEFAULT_CONFIGS)]
-    artifact_dir = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    artifact_dir = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
 
     _check_global_config(global_path, errors)
     for config_path in configs:
         _check_effective_config(config_path, global_path, errors)
     if configs:
         _check_merge_precedence(configs[0], global_path, errors)
-    _check_phase_artifacts_if_present(artifact_dir, errors)
+    _check_capability_artifacts_if_present(artifact_dir, errors)
 
     if errors:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)
         return 1
-    print(f"PASS server profile config phase={args.phase}")
+    print(f"PASS server profile config capability_id={args.capability_id}")
     return 0
 
 
@@ -126,7 +126,7 @@ def _check_effective_config(config_path: Path, global_path: Path, errors: list[s
     profile = config.get("_effective_server_profile", {})
     _check_profile_fields(_rel(config_path), profile, errors)
     if _int(config.get("cluster", {}).get("node_memory_limit_mb"), 0) != 64:
-        errors.append(f"{_rel(config_path)}: effective cluster.node_memory_limit_mb must be 64 unless explicitly stage-justified")
+        errors.append(f"{_rel(config_path)}: effective cluster.node_memory_limit_mb must be 64 unless explicitly profile-justified")
     if profile.get("effective_node_memory_limit_mb") != 64:
         errors.append(f"{_rel(config_path)}: effective profile memory must be 64 MB")
     total_threads = _int(profile.get("total_valkey_threads"), 0)
@@ -158,13 +158,13 @@ def _check_merge_precedence(config_path: Path, global_path: Path, errors: list[s
         errors.append(f"merge precedence check failed: {exc}")
 
 
-def _check_phase_artifacts_if_present(base: Path, errors: list[str]) -> None:
+def _check_capability_artifacts_if_present(base: Path, errors: list[str]) -> None:
     if not base.exists():
         return
     for name in ["effective_server_profile.json", "config_validation_report.json", "cluster_plan.json"]:
         path = base / name
         if not path.exists():
-            errors.append(f"P42 artifact missing: {name}")
+            errors.append(f"SERVER_PROFILE artifact missing: {name}")
             continue
         obj = _load_json(path, errors, name)
         if name == "effective_server_profile.json":

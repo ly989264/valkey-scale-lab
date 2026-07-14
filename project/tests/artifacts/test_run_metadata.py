@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_run_context_writes_metadata_and_manifest_schema_valid(tmp_path: Path) -> None:
     config = tmp_path / "config.yml"
     config.write_text("cluster:\n  shards: 1\n", encoding="utf-8")
-    context = create_run_context("m1-s01-unit", tmp_path / "runs")
+    context = create_run_context("run-metadata-unit", tmp_path / "runs")
 
     metadata = build_run_metadata(
         context,
@@ -34,14 +34,14 @@ def test_run_context_writes_metadata_and_manifest_schema_valid(tmp_path: Path) -
     assert context.state_root.is_dir()
     assert context.metadata_path == context.state_root / "run_metadata.json"
     assert context.manifest_path == context.state_root / "run_manifest.json"
-    assert manifest["artifact_root"].endswith("runs/m1-s01-unit/artifacts")
+    assert manifest["artifact_root"].endswith("runs/run-metadata-unit/artifacts")
     assert validate(metadata, load_json(ROOT / "schemas/artifact/run_metadata.schema.json")) == []
     assert validate(manifest, load_json(ROOT / "schemas/artifact/run_manifest.schema.json")) == []
-    assert load_run_manifest(context.run_root)["run_id"] == "m1-s01-unit"
+    assert load_run_manifest(context.run_root)["run_id"] == "run-metadata-unit"
 
 
 def test_analysis_and_report_accept_run_root_and_show_metadata(tmp_path: Path) -> None:
-    context = create_run_context("m1-s01-analysis", tmp_path / "runs")
+    context = create_run_context("run-metadata-analysis", tmp_path / "runs")
     _write_source_artifacts(context.artifact_root)
     metadata = build_run_metadata(context, runtime_provider="fake", runtime_mode="smoke")
     write_run_metadata(context, metadata)
@@ -52,15 +52,15 @@ def test_analysis_and_report_accept_run_root_and_show_metadata(tmp_path: Path) -
     index = render_report(analysis_path, context.report_root, context.artifact_root / "report_index.json")
 
     assert summary["source"]["input_kind"] == "run_manifest"
-    assert summary["run_id"] == "m1-s01-analysis"
+    assert summary["run_id"] == "run-metadata-analysis"
     assert summary["created_at"] == metadata["created_at"]
-    assert summary["run_metadata"]["run_id"] == "m1-s01-analysis"
+    assert summary["run_metadata"]["run_id"] == "run-metadata-analysis"
     assert summary["run_manifest_ref"]["path"].endswith("run_manifest.json")
-    assert index["run_id"] == "m1-s01-analysis"
+    assert index["run_id"] == "run-metadata-analysis"
     assert index["created_at"] == metadata["created_at"]
     assert index["run_metadata_ref"]["path"].endswith("run_metadata.json")
     assert "运行元数据" in (context.report_root / "report.md").read_text(encoding="utf-8")
-    assert "m1-s01-analysis" in (context.report_root / "index.html").read_text(encoding="utf-8")
+    assert "run-metadata-analysis" in (context.report_root / "index.html").read_text(encoding="utf-8")
 
 
 def test_legacy_artifact_directory_remains_supported(tmp_path: Path) -> None:
@@ -74,12 +74,12 @@ def test_legacy_artifact_directory_remains_supported(tmp_path: Path) -> None:
 
 
 def test_cli_run_init_defaults_to_run_scoped_state_metadata(tmp_path: Path, capsys) -> None:
-    exit_code = main(["run", "init", "--run-id", "m1-s01-cli", "--runs-root", str(tmp_path / "runs")])
+    exit_code = main(["run", "init", "--run-id", "run-metadata-cli", "--runs-root", str(tmp_path / "runs")])
 
     assert exit_code == 0
     output = capsys.readouterr().out
-    assert "m1-s01-cli" in output
-    run_root = tmp_path / "runs" / "m1-s01-cli"
+    assert "run-metadata-cli" in output
+    run_root = tmp_path / "runs" / "run-metadata-cli"
     assert (run_root / "artifacts").is_dir()
     assert (run_root / "logs").is_dir()
     assert (run_root / "reports").is_dir()
@@ -100,9 +100,9 @@ def test_blocked_dry_run_and_failure_fixtures_use_structured_reasons() -> None:
 def _write_source_artifacts(source: Path) -> None:
     source.mkdir(parents=True, exist_ok=True)
     _write(
-        source / "phase_summary.json",
+        source / "run_summary.json",
         {
-            "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+            "capability_id": "fault_matrix",
             "run_id": "source-run",
             "status": "PASS",
             "missing_metrics": [{"metric": "split_brain_duration_ms", "status": "MISSING", "reason": "not measured"}],

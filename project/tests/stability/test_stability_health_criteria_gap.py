@@ -24,8 +24,8 @@ def test_bounded_soak_fails_when_sampled_cluster_health_is_failed(tmp_path: Path
 
     docker_runtime.write_stability_artifacts(
         tmp_path,
-        "P11_STABILITY_SOAK",
-        "stability_soak_smoke",
+        "stability",
+        "stability",
         "health-gap",
         {"workload": {}},
         nodes,

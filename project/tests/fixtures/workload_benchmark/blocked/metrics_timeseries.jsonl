@@ -1,1 +1,1 @@
-{"metric_name":"achieved_qps","metric_unit":"ops_per_second","metric_value":"MISSING","missing_reason":"blocked before workload execution","phase_id":"M1-S05","run_id":"fixture-blocked","schema_version":"v1","source_id":"uniform:baseline","source_type":"workload"}
+{"metric_name":"achieved_qps","metric_unit":"ops_per_second","metric_value":"MISSING","missing_reason":"blocked before workload execution","capability_id":"workload","run_id":"fixture-blocked","schema_version":"v1","source_id":"uniform:baseline","source_type":"workload"}

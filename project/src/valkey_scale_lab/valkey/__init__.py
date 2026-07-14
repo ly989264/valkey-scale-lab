@@ -1,1 +1,1 @@
-"""Valkey control package placeholder for later phases."""
+"""Valkey control package placeholder for later capabilities."""

@@ -17,7 +17,7 @@ def test_system_metrics_success_fixture_validates_schema() -> None:
     ]
     assert rows
     for row in rows[:80]:
-        assert {"schema_version", "run_id", "phase_id", "scenario_name", "sample_id", "source_type", "source_id", "metric_name", "metric_value", "metric_unit", "labels", "missing_reason"}.issubset(row)
+        assert {"schema_version", "run_id", "capability_id", "scenario_name", "sample_id", "source_type", "source_id", "metric_name", "metric_value", "metric_unit", "labels", "missing_reason"}.issubset(row)
     report = json.loads((FIXTURES / "success" / "system_metrics_report.json").read_text(encoding="utf-8"))
     assert report["artifact_type"] == "system_metrics_report"
     assert report["sample_count"] == len(rows)

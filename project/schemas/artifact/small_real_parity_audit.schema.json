@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "stage_id",
+    "capability_id",
     "run_id",
     "created_at",
     "producer",
@@ -22,7 +22,7 @@
   "properties": {
     "schema_version": {"type": "string", "const": "v1"},
     "artifact_type": {"type": "string", "const": "small_real_parity_audit"},
-    "stage_id": {"type": "string", "const": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY"},
+    "capability_id": {"type": "string", "const": "small_real_parity"},
     "run_id": {"type": "string", "minLength": 1},
     "created_at": {"type": "string", "minLength": 1},
     "producer": {
@@ -91,10 +91,10 @@
       "minItems": 8,
       "items": {
         "type": "object",
-        "required": ["surface", "phase_id", "scenario", "fake_coverage", "real_coverage", "cleanup", "metrics", "status"],
+        "required": ["surface", "capability_id", "scenario", "fake_coverage", "real_coverage", "cleanup", "metrics", "status"],
         "properties": {
           "surface": {"type": "string", "minLength": 1},
-          "phase_id": {"type": "string", "minLength": 1},
+          "capability_id": {"type": "string", "minLength": 1},
           "scenario": {"type": "string", "minLength": 1},
           "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]},
           "fake_coverage": {

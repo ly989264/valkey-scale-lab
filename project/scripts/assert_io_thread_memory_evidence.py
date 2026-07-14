@@ -21,11 +21,11 @@ PROFILE_FIELDS = [
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", required=True)
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     args = parser.parse_args()
 
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     errors: list[str] = []
     artifacts = {
         "effective_server_profile": _load_json(base / "effective_server_profile.json", errors, "effective_server_profile"),
@@ -51,7 +51,7 @@ def main() -> int:
     if errors:
         _print(errors)
         return 1
-    print(f"PASS io-thread and memory evidence phase={args.phase}")
+    print(f"PASS io-thread and memory evidence capability_id={args.capability_id}")
     return 0
 
 

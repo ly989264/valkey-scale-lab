@@ -13,22 +13,16 @@ from typing import Any
 from valkey_scale_lab import __version__
 from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout
 from valkey_scale_lab.config.validation import load_effective_config, validate_semantics
+from valkey_scale_lab.execution import (
+    ExecutionSelectionError,
+    exact_200_selection_allowed,
+    resolve_profile,
+)
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.server_profile import compute_effective_server_profile
 
 CREATED_AT = "2026-06-28T00:00:00Z"
-P21_STAGE = "P21_FAILOVER_LATENCY_CURVE_200"
-P32_STAGE = "P32_MANAGEMENT_MATRIX_200_REAL"
-P32_SCENARIO = "strict_management_matrix_200"
-P35_STAGE = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
-P35_SCENARIO = "strict_fault_matrix_200"
-P36_STAGE = "P36_FULL_FLOW_E2E_50_100_200_REAL"
-P36_SCENARIO = "strict_full_flow_200"
-P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
-P43_STAGE = "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"
-P44_STAGE = "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
-P45_STAGE = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
-EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE, P43_STAGE, P44_STAGE, P45_STAGE}
+DEFAULT_PREFLIGHT_CAPABILITY = "scale_ladder"
 
 
 class ResourcePreflightError(RuntimeError):
@@ -40,8 +34,9 @@ def run_resource_preflight(
     out_path: str | Path,
     dry_run: bool = False,
     *,
-    phase_id: str | None = None,
+    capability_id: str | None = None,
     scenario: str | None = None,
+    profile_id: str | None = None,
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -49,11 +44,23 @@ def run_resource_preflight(
     if dry_run:
         config.setdefault("runtime", {})["dry_run"] = True
     node_count = int(config["cluster"]["shards"]) * (1 + int(config["cluster"]["replicas_per_shard"]))
-    phase_id = phase_id or _phase_for_node_count(node_count)
-    scenario_name = scenario or _scenario_for_node_count(node_count)
-    exact_200_exception = _is_exact_200_bounded_exception(config, node_count, dry_run, phase_id=phase_id, scenario=scenario_name)
+    if profile_id is not None:
+        try:
+            resolve_profile(profile_id, requested_nodes=node_count)
+        except ExecutionSelectionError as exc:
+            raise ResourcePreflightError(str(exc)) from exc
+    capability_id = capability_id or DEFAULT_PREFLIGHT_CAPABILITY
+    scenario_name = scenario or capability_id
+    exact_200_exception = _is_exact_200_bounded_exception(
+        config,
+        node_count,
+        dry_run,
+        capability_id=capability_id,
+        scenario=scenario_name,
+        profile_id=profile_id,
+    )
     semantic_errors = _semantic_errors_for_preflight(config, allow_exact_200=exact_200_exception)
-    run_id = f"{phase_id}-resource-preflight-{node_count}-20260628"
+    run_id = f"{capability_id}-resource-preflight-{node_count}-20260628"
     checks: list[dict[str, Any]] = []
     density_plan: dict[str, Any] | None = None
     density_error: str | None = None
@@ -75,7 +82,7 @@ def run_resource_preflight(
             {
                 "node_count": node_count,
                 "default_cap": 100,
-                "bounded_exception_phase": phase_id if exact_200_exception else "MISSING",
+                "selected_capability_id": capability_id if exact_200_exception else "MISSING",
             },
         )
     )
@@ -86,7 +93,7 @@ def run_resource_preflight(
                 exact_200_exception,
                 {
                     "node_count": node_count,
-                    "phase_id": phase_id,
+                    "capability_id": capability_id,
                     "scenario_name": scenario_name,
                     "profile_name": config.get("profile_name", "MISSING"),
                     "dry_run": dry_run or config.get("runtime", {}).get("dry_run") is True,
@@ -129,13 +136,13 @@ def run_resource_preflight(
     checks.append(_port_check(int(config["cluster"]["cluster_bus_port_base"]), node_count, "cluster_bus_ports"))
     checks.append(_runtime_limit_check(node_count, density_plan=density_plan))
     checks.extend(_nodehost_density_checks(config, density_plan, density_error))
-    checks.append(_cleanup_state_check(phase_id, scenario_name, node_count))
+    checks.append(_cleanup_state_check(capability_id, scenario_name, node_count))
 
     can_run = all(item["status"] == "PASS" for item in checks)
     report = {
         "schema_version": "v1",
         "artifact_type": "resource_preflight",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": CREATED_AT,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -144,14 +151,15 @@ def run_resource_preflight(
         "nodes_requested": node_count,
         "can_run": can_run,
         "scenario_name": scenario_name,
+        "profile_id": profile_id or "MISSING",
         "config_path": str(config_path),
         "dry_run": dry_run,
         "bounded_exception": {
-            "phase_id": phase_id if exact_200_exception else "MISSING",
+            "capability_id": capability_id if exact_200_exception else "MISSING",
             "scenario_name": scenario_name if exact_200_exception else "MISSING",
             "node_count": 200 if exact_200_exception else "MISSING",
             "default_max_nodes": 100,
-            "config_marker_phase": config.get("scale_profile", {}).get("bounded_exception_phase", "MISSING"),
+            "profile_exception_nodes": config.get("scale_profile", {}).get("bounded_exception_nodes", "MISSING"),
         },
         "host": _host_facts(),
         "resource_estimates": _resource_estimates(
@@ -210,56 +218,29 @@ def run_resource_preflight(
     return report
 
 
-def _is_p21_200_exception(config: dict[str, Any], node_count: int, dry_run_arg: bool) -> bool:
-    return _is_exact_200_bounded_exception(
-        config,
-        node_count,
-        dry_run_arg,
-        phase_id=P21_STAGE,
-        scenario=_scenario_for_node_count(node_count),
-    )
-
-
 def _is_exact_200_bounded_exception(
     config: dict[str, Any],
     node_count: int,
     dry_run_arg: bool,
     *,
-    phase_id: str,
+    capability_id: str,
     scenario: str,
+    profile_id: str | None,
 ) -> bool:
     scale_profile = config.get("scale_profile", {})
     runtime = config.get("runtime", {})
     safety = config.get("safety", {})
     return (
         node_count == 200
-        and _exact_200_phase_scenario_allowed(phase_id, scenario)
+        and profile_id == "exact-200"
+        and exact_200_selection_allowed(capability_id=capability_id, scenario_id=scenario)
         and config.get("profile_name") == "scale_200"
-        and scale_profile.get("bounded_exception_phase") in EXACT_200_CONFIG_MARKER_PHASES
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
         and dry_run_arg is False
         and runtime.get("dry_run") is False
     )
-
-
-def _exact_200_phase_scenario_allowed(phase_id: str, scenario: str) -> bool:
-    if phase_id == P21_STAGE:
-        return scenario == "scale_200" or scenario.startswith("scale_200_sample_")
-    return (phase_id, scenario) in {
-        (P32_STAGE, P32_SCENARIO),
-        (P35_STAGE, P35_SCENARIO),
-        (P36_STAGE, P36_SCENARIO),
-    } or (phase_id == P42_STAGE and scenario == "p42_server_profile_scale_200") or (
-        phase_id == P43_STAGE and scenario == "p43_cluster_timeout_scale_200"
-    ) or (
-        phase_id == P44_STAGE and scenario.startswith("p44_scale_200_timeline_sample_")
-    ) or (
-        phase_id == P45_STAGE and scenario.startswith("p45_scale_200_layered_sample_")
-    )
-
-
 def _semantic_errors_for_preflight(config: dict[str, Any], *, allow_exact_200: bool) -> list[dict[str, Any]]:
     errors = validate_semantics(config)
     if not allow_exact_200:
@@ -270,24 +251,6 @@ def _semantic_errors_for_preflight(config: dict[str, Any], *, allow_exact_200: b
             continue
         filtered.append(error)
     return filtered
-
-
-def _phase_for_node_count(node_count: int) -> str:
-    if node_count in {10, 30}:
-        return "P12_SCALE_LADDER_10_30"
-    if node_count in {50, 100}:
-        return "P13_SCALE_LADDER_50_100"
-    if node_count == 200:
-        return "P21_FAILOVER_LATENCY_CURVE_200"
-    if node_count >= 1000:
-        return "P14_SCALE_1000_OPTIN_DRYRUN"
-    return "P12_SCALE_LADDER_10_30"
-
-
-def _scenario_for_node_count(node_count: int) -> str:
-    return f"scale_{node_count}"
-
-
 def _check(name: str, ok: bool, details: dict[str, Any]) -> dict[str, Any]:
     return {"name": name, "status": "PASS" if ok else "FAIL", "details": details}
 
@@ -361,7 +324,7 @@ def _resource_estimates(node_count: int, memory_limit_mb: int, *, density_plan: 
         "projected_nodehost_memory_mb": _projected_nodehost_memory(memory_limit_mb, density_plan, node_count),
         "host_available_memory_mb": _host_available_memory_mb(),
         "required_disk_free_mb": 1024,
-        "workload_overhead": "low_nonzero_p21_profile" if node_count == 200 else "standard_profile",
+        "workload_overhead": "low_nonzero_failover_latency_exact_200_profile" if node_count == 200 else "standard_profile",
     }
 
 
@@ -495,8 +458,8 @@ def _port_check(base: int, count: int, name: str) -> dict[str, Any]:
     return _check(name, not unavailable, {"base": base, "count": count, "unavailable": unavailable})
 
 
-def _cleanup_state_check(phase_id: str, scenario: str, node_count: int) -> dict[str, Any]:
-    run_id = f"{phase_id}-{scenario}-20260628"
+def _cleanup_state_check(capability_id: str, scenario: str, node_count: int) -> dict[str, Any]:
+    run_id = f"{capability_id}-{scenario}-20260628"
     try:
         container_proc = subprocess.run(
             [
@@ -507,7 +470,7 @@ def _cleanup_state_check(phase_id: str, scenario: str, node_count: int) -> dict[
                 "--filter",
                 "label=org.valkey-scale-lab.project=valkey-scale-lab",
                 "--filter",
-                f"label=org.valkey-scale-lab.phase={phase_id}",
+                f"label=org.valkey-scale-lab.capability_id={capability_id}",
                 "--filter",
                 f"label=org.valkey-scale-lab.run_id={run_id}",
             ],
@@ -525,7 +488,7 @@ def _cleanup_state_check(phase_id: str, scenario: str, node_count: int) -> dict[
                 "--filter",
                 "label=org.valkey-scale-lab.project=valkey-scale-lab",
                 "--filter",
-                f"label=org.valkey-scale-lab.phase={phase_id}",
+                f"label=org.valkey-scale-lab.capability_id={capability_id}",
                 "--filter",
                 f"label=org.valkey-scale-lab.run_id={run_id}",
             ],

@@ -8,7 +8,7 @@ from typing import Any, Callable
 
 from valkey_scale_lab import __version__
 
-PHASE_ID = "P10_MULTI_HOST_ORCHESTRATION"
+CAPABILITY_ID = "orchestration"
 CREATED_AT = "2026-06-28T00:00:00Z"
 
 
@@ -64,9 +64,9 @@ def assign_hosts(nodes: list[dict[str, Any]], hosts: list[Host]) -> None:
 
 
 class LocalOrchestrator:
-    def __init__(self, *, config: dict[str, Any], phase: str, scenario: str, run_id: str) -> None:
+    def __init__(self, *, config: dict[str, Any], capability_id: str, scenario: str, run_id: str) -> None:
         self.config = config
-        self.phase = phase
+        self.capability_id = capability_id
         self.scenario = scenario
         self.run_id = run_id
         self.hosts = validate_inventory(config)
@@ -138,7 +138,7 @@ class LocalOrchestrator:
         report = {
             "schema_version": "v1",
             "artifact_type": "orchestration_report",
-            "phase_id": self.phase,
+            "capability_id": self.capability_id,
             "run_id": self.run_id,
             "created_at": CREATED_AT,
             "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -174,34 +174,34 @@ class LocalOrchestrator:
         return report
 
 
-def write_phase_summary(path: Path, run_id: str) -> None:
+def write_run_summary(path: Path, run_id: str) -> None:
     summary = {
         "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": PHASE_ID,
+        "artifact_type": "run_summary",
+        "capability_id": CAPABILITY_ID,
         "run_id": run_id,
         "created_at": CREATED_AT,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
-        "summary": "P10 introduced host inventory validation and a local remote-agent abstraction, then ran a real six-node Valkey 9.1.0 localhost scenario through the orchestration layer with host identity preserved in state and artifacts.",
+        "summary": "ORCHESTRATION introduced host inventory validation and a local remote-agent abstraction, then ran a real six-node Valkey 9.1.0 localhost scenario through the orchestration layer with host identity preserved in state and artifacts.",
         "required_artifacts": [
-            "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/phase_summary.json",
-            "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json",
-            "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+            "artifacts/captures/orchestration/run_summary.json",
+            "artifacts/captures/orchestration/valkey_e2e_evidence.json",
+            "artifacts/captures/orchestration/cleanup_report.json",
         ],
         "missing_metrics": [
             {
                 "metric": "remote_ssh_latency_ms",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P10 automatic gate uses local loopback orchestration; no remote SSH transport is contacted.",
+                "reason": "ORCHESTRATION automatic gate uses local loopback orchestration; no remote SSH transport is contacted.",
                 "impact": "Remote transport latency is deferred until explicit multi-host inventory is supplied.",
             }
         ],
         "risks": [
             {
-                "risk": "Automatic P10 validates the remote-agent abstraction locally; real cross-host SSH execution remains configuration-dependent.",
+                "risk": "Automatic ORCHESTRATION validates the remote-agent abstraction locally; real cross-host SSH execution remains configuration-dependent.",
                 "severity": "low",
-                "required_before_next_phase": False,
+                "required_before_next_capability": False,
             }
         ],
     }

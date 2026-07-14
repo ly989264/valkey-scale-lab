@@ -20,7 +20,7 @@ def test_failover_report_shape_allows_measured_or_missing_duration(tmp_path: Pat
     report = {
         "schema_version": "v1",
         "artifact_type": "failover_report",
-        "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+        "capability_id": "fault_matrix",
         "run_id": "test",
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "test", "version": "v1"},
@@ -51,11 +51,26 @@ def test_failover_report_shape_allows_measured_or_missing_duration(tmp_path: Pat
     assert loaded["summary"]["split_brain_duration_ms"]["status"] == "MISSING"
 
 
-def test_p20_sample_scenario_maps_to_unique_scale_setup_alias() -> None:
+def test_fault_matrix_profiles_select_scale_without_changing_scenario_semantics() -> None:
     gate = load_fault_failover_gate()
 
-    assert gate.scale_setup_scenario("scale_100_sample_03_fault_failover") == "scale_100_sample_03"
-    assert gate.scale_setup_scenario("scale_30_fault_failover") == "scale_30"
+    profiles = [gate.fault_matrix_execution(None, node_count) for node_count in (6, 50, 100, 200)]
+
+    assert [profile.profile_id for profile in profiles] == ["small-real", "exact-50", "exact-100", "exact-200"]
+    assert [profile.scale for profile in profiles] == [6, 50, 100, 200]
+    assert all(profile.profile is gate.resolve_profile(profile.profile_id, requested_nodes=profile.scale) for profile in profiles)
+    assert gate.FAULT_MATRIX_SCENARIO == "fault_matrix"
+    assert gate.fault_matrix_execution("exact-200", 50) is None
+
+
+def test_failover_latency_samples_keep_scale_in_profile_and_sample_id_only(tmp_path: Path) -> None:
+    gate = load_fault_failover_gate()
+
+    paths = gate.failover_latency_standard_inner_paths(tmp_path, 100, 3)
+
+    assert gate.FAILOVER_LATENCY_SCENARIO == "failover_latency_curve"
+    assert "rung-100-sample-03" in paths["sample_dir"].as_posix()
+    assert "scale_100" not in paths["state"].as_posix()
 
 
 def test_failover_timeout_resolves_global_config_when_cli_absent() -> None:

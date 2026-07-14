@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "scenario",
     "operation_id",
@@ -34,7 +34,7 @@
   "properties": {
     "schema_version": {"const": "v1"},
     "artifact_type": {"const": "runtime_command_log_entry"},
-    "phase_id": {"type": "string", "minLength": 1},
+    "capability_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
     "scenario": {"type": "string", "minLength": 1},
     "sequence": {"type": "integer", "minimum": 1},

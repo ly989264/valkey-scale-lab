@@ -8,19 +8,18 @@ from typing import Any
 
 from valkey_scale_lab import __version__
 
-PHASE_ID = "P26_FINAL_REPORT_REGRESSION"
-RUN_ID = "P26_FINAL_REPORT_REGRESSION-final-report-20260703"
+CAPABILITY_ID = "final_report"
+RUN_ID = "final_report-final-report-20260703"
 CREATED_AT = "2026-07-03T00:00:00Z"
-SCENARIO_NAME = "final_goal_loop_report"
+SCENARIO_NAME = "final_report"
 CANONICAL_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]
 
-SETUP_ROWS = ["create_cluster", "meet_nodes", "add_replica"]
 MANAGEMENT_ROWS = [
     "create_cluster",
     "meet_nodes",
     "add_replica",
     "remove_replica",
-    "remove_primary_drained",
+    "remove_primary_drained_or_safe_replaced",
     "remove_failed_node",
     "reshard_slot_range",
     "reshard_with_keys",
@@ -47,7 +46,7 @@ REQUIRED_REPORTS = [
     "reports/failover_latency_curve.md",
     "reports/fault_matrix.md",
     "reports/workload_impact.md",
-    "reports/final_goal_loop_report.md",
+    "reports/final_report.md",
 ]
 REQUIRED_EXPORTS = [
     "exports/management_ops_matrix.csv",
@@ -61,8 +60,8 @@ class FinalReportError(RuntimeError):
     pass
 
 
-def build_final_goal_loop_report(input_dir: str | Path, out_dir: str | Path, phase_id: str = PHASE_ID) -> dict[str, Any]:
-    phases_dir = Path(input_dir)
+def build_final_report(input_dir: str | Path, out_dir: str | Path, capability_id: str = CAPABILITY_ID) -> dict[str, Any]:
+    captures_dir = Path(input_dir)
     output_dir = Path(out_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     reports_dir = output_dir / "reports"
@@ -72,7 +71,7 @@ def build_final_goal_loop_report(input_dir: str | Path, out_dir: str | Path, pha
     exports_dir.mkdir(parents=True, exist_ok=True)
     regression_dir.mkdir(parents=True, exist_ok=True)
 
-    sources = _load_sources(phases_dir)
+    sources = _load_sources(captures_dir)
     management_rows = _management_rows(sources)
     failover_rows = _failover_rows(sources)
     fault_rows = _fault_rows(sources)
@@ -90,7 +89,7 @@ def build_final_goal_loop_report(input_dir: str | Path, out_dir: str | Path, pha
             "operation_name",
             "status",
             "node_counts",
-            "source_stage_ids",
+            "source_capability_ids",
             "row_count",
             "source_artifacts",
             "reason",
@@ -129,7 +128,7 @@ def build_final_goal_loop_report(input_dir: str | Path, out_dir: str | Path, pha
         [
             "row_id",
             "category",
-            "source_stage_id",
+            "source_capability_id",
             "operation_or_fault",
             "node_count",
             "status",
@@ -144,30 +143,30 @@ def build_final_goal_loop_report(input_dir: str | Path, out_dir: str | Path, pha
 
     _write_markdown_table(
         reports_dir / "management_ops_matrix.md",
-        "P26 Management Operation Matrix",
+        "FINAL_REPORT Management Operation Matrix",
         management_rows,
-        ["operation_name", "status", "node_counts", "row_count", "source_stage_ids", "reason"],
+        ["operation_name", "status", "node_counts", "row_count", "source_capability_ids", "reason"],
     )
     _write_markdown_table(
         reports_dir / "failover_latency_curve.md",
-        "P26 Failover Latency Curve",
+        "FINAL_REPORT Failover Latency Curve",
         failover_rows,
         ["rung", "metric", "sample_count", "p50_ms", "p95_ms", "max_ms", "reason"],
     )
     _write_markdown_table(
         reports_dir / "fault_matrix.md",
-        "P26 Fault Matrix",
+        "FINAL_REPORT Fault Matrix",
         fault_rows,
         ["fault_row", "status", "node_counts", "sample_count", "implementation_paths", "reason"],
     )
     _write_markdown_table(
         reports_dir / "workload_impact.md",
-        "P26 Workload Impact",
+        "FINAL_REPORT Workload Impact",
         workload_rows,
         [
             "row_id",
             "category",
-            "source_stage_id",
+            "source_capability_id",
             "operation_or_fault",
             "node_count",
             "status",
@@ -188,16 +187,16 @@ def build_final_goal_loop_report(input_dir: str | Path, out_dir: str | Path, pha
             "fault_matrix": (fault_csv, len(fault_rows), "final_report_index.json"),
             "workload_impact": (workload_csv, len(workload_rows), "final_report_index.json"),
         },
-        phase_id,
+        capability_id,
     )
-    _write_final_report(reports_dir / "final_goal_loop_report.md", coverage, source_records)
+    _write_final_report(reports_dir / "final_report.md", coverage, source_records)
 
     report_records = [_file_record(output_dir / rel) for rel in REQUIRED_REPORTS]
     export_records = [_file_record(output_dir / rel, table_name=Path(rel).stem) for rel in REQUIRED_EXPORTS]
     index = {
         "schema_version": "v1",
         "artifact_type": "final_report_index",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": RUN_ID,
         "created_at": CREATED_AT,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
@@ -218,33 +217,26 @@ def build_final_goal_loop_report(input_dir: str | Path, out_dir: str | Path, pha
     }
     _write_json(output_dir / "final_report_index.json", index)
     _write_json(output_dir / "report_index.json", index)
-    _write_common_artifacts(output_dir, phase_id, index, csv_index)
+    _write_common_artifacts(output_dir, capability_id, index, csv_index)
     _write_regression_sidecars(regression_dir, index, sources)
     return index
 
 
-def _load_sources(phases_dir: Path) -> dict[str, Path]:
+def _load_sources(captures_dir: Path) -> dict[str, Path]:
     paths = {
-        "p04_management": phases_dir / "P04_CLUSTER_MANAGEMENT_OPS" / "management_ops_report.json",
-        "p16_quant": phases_dir / "P16_QUANT_TELEMETRY_UNIFICATION" / "quant_summary.json",
-        "p17_management_matrix": phases_dir / "P17_MANAGEMENT_REMOVE_NODE" / "management_ops_matrix.json",
-        "p17_management_results": phases_dir / "P17_MANAGEMENT_REMOVE_NODE" / "management_operation_results.jsonl",
-        "p18_management_matrix": phases_dir / "P18_MANAGEMENT_RESHARD_REBALANCE" / "management_ops_matrix.json",
-        "p18_management_results": phases_dir / "P18_MANAGEMENT_RESHARD_REBALANCE" / "management_operation_results.jsonl",
-        "p19_management_matrix": phases_dir / "P19_MANAGEMENT_ROLLING_RESTART" / "management_ops_matrix.json",
-        "p19_management_results": phases_dir / "P19_MANAGEMENT_ROLLING_RESTART" / "management_operation_results.jsonl",
-        "p20_samples": phases_dir / "P20_FAILOVER_LATENCY_CURVE_30_50_100" / "failover_latency_samples.jsonl",
-        "p20_curve": phases_dir / "P20_FAILOVER_LATENCY_CURVE_30_50_100" / "failover_latency_curve.json",
-        "p21_samples": phases_dir / "P21_FAILOVER_LATENCY_CURVE_200" / "failover_latency_samples_200.jsonl",
-        "p21_curve": phases_dir / "P21_FAILOVER_LATENCY_CURVE_200" / "failover_latency_curve_combined_30_50_100_200.json",
-        "p22_faults": phases_dir / "P22_FAULT_REPLICA_HOST_AZ_STOP" / "fault_results.jsonl",
-        "p23_faults": phases_dir / "P23_FAULT_NETWORK_DELAY_LOSS_FLAP" / "fault_results.jsonl",
-        "p23_network": phases_dir / "P23_FAULT_NETWORK_DELAY_LOSS_FLAP" / "network_fault_report.json",
-        "p24_faults": phases_dir / "P24_PARTITION_SPLIT_BRAIN_MATRIX" / "fault_results.jsonl",
-        "p24_partition": phases_dir / "P24_PARTITION_SPLIT_BRAIN_MATRIX" / "partition_report.json",
-        "p24_split_brain": phases_dir / "P24_PARTITION_SPLIT_BRAIN_MATRIX" / "split_brain_report.json",
-        "p25_workload": phases_dir / "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS" / "workload_impact_cross_stage.json",
-        "p25_missing": phases_dir / "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS" / "missing_data_summary.json",
+        "telemetry_quant": captures_dir / "telemetry" / "quant_summary.json",
+        "management_matrix": captures_dir / "management_matrix" / "management_ops_matrix.json",
+        "management_results": captures_dir / "management_matrix" / "management_operation_results.jsonl",
+        "failover_latency_standard_samples": captures_dir / "failover_latency_curve" / "failover_latency_samples.jsonl",
+        "failover_latency_standard_curve": captures_dir / "failover_latency_curve" / "failover_latency_curve.json",
+        "failover_latency_exact_200_samples": captures_dir / "failover_latency_curve" / "failover_latency_samples_200.jsonl",
+        "failover_latency_exact_200_curve": captures_dir / "failover_latency_curve" / "failover_latency_curve_combined_30_50_100_200.json",
+        "fault_matrix_faults": captures_dir / "fault_matrix" / "fault_results.jsonl",
+        "network_fault_matrix_network": captures_dir / "fault_matrix" / "network_fault_report.json",
+        "partition_fault_matrix_partition": captures_dir / "fault_matrix" / "partition_report.json",
+        "partition_fault_matrix_split_brain": captures_dir / "fault_matrix" / "split_brain_report.json",
+        "fault_workload_impact_workload": captures_dir / "fault_workload_impact" / "workload_impact_analysis.json",
+        "fault_workload_impact_missing": captures_dir / "fault_workload_impact" / "missing_data_summary.json",
     }
     missing = [path.as_posix() for path in paths.values() if not path.exists()]
     if missing:
@@ -257,40 +249,19 @@ def _load_sources(phases_dir: Path) -> dict[str, Path]:
 
 def _management_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
     rows_by_name: dict[str, list[dict[str, Any]]] = {name: [] for name in MANAGEMENT_ROWS}
-    p04 = _read_json(sources["p04_management"])
-    p04_ops = {row.get("operation"): row for row in p04.get("operations", []) if isinstance(row, dict)}
-    setup_map = {
-        "create_cluster": ["tree_fanout_meet_primaries", "parallel_add_slots", "convergence_check", "cluster_info"],
-        "meet_nodes": ["tree_fanout_meet_primaries", "tree_fanout_meet_replicas"],
-        "add_replica": ["parallel_add_replicas"],
-    }
-    for final_name, op_names in setup_map.items():
-        source_rows = [p04_ops.get(name, {}) for name in op_names]
-        rows_by_name[final_name].append(
-            {
-                "operation_name": final_name,
-                "status": "PASS" if all(row.get("status") == "PASS" for row in source_rows) else "FAIL",
-                "node_count": 6,
-                "source_stage_id": "P04_CLUSTER_MANAGEMENT_OPS",
-                "source_artifact": _rel(sources["p04_management"]),
-                "reason": "",
-            }
-        )
-
-    for key in ["p17_management_results", "p18_management_results", "p19_management_results"]:
-        for row in _read_jsonl(sources[key]):
-            op_name = str(row.get("operation_name", "MISSING"))
-            if op_name in rows_by_name:
-                rows_by_name[op_name].append(
-                    {
-                        "operation_name": op_name,
-                        "status": row.get("operation_status", "MISSING"),
-                        "node_count": row.get("node_count", "MISSING"),
-                        "source_stage_id": row.get("phase_id", "MISSING"),
-                        "source_artifact": _rel(sources[key]),
-                        "reason": _reason_for(row),
-                    }
-                )
+    for row in _read_jsonl(sources["management_results"]):
+        op_name = str(row.get("operation_name", "MISSING"))
+        if op_name in rows_by_name:
+            rows_by_name[op_name].append(
+                {
+                    "operation_name": op_name,
+                    "status": row.get("operation_status", "MISSING"),
+                    "node_count": row.get("node_count", "MISSING"),
+                    "source_capability_id": row.get("capability_id", "MISSING"),
+                    "source_artifact": _rel(sources["management_results"]),
+                    "reason": _reason_for(row),
+                }
+            )
 
     result: list[dict[str, Any]] = []
     for name in MANAGEMENT_ROWS:
@@ -300,7 +271,7 @@ def _management_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
                 "operation_name": name,
                 "status": _rollup_status([row.get("status") for row in group]),
                 "node_counts": _join_sorted(row.get("node_count") for row in group),
-                "source_stage_ids": _join_sorted(row.get("source_stage_id") for row in group),
+                "source_capability_ids": _join_sorted(row.get("source_capability_id") for row in group),
                 "row_count": len(group),
                 "source_artifacts": _join_sorted(row.get("source_artifact") for row in group),
                 "reason": _join_reasons(group),
@@ -310,12 +281,12 @@ def _management_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
 
 
 def _failover_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
-    samples = _read_jsonl(sources["p20_samples"]) + _read_jsonl(sources["p21_samples"])
+    samples = _read_jsonl(sources["failover_latency_standard_samples"]) + _read_jsonl(sources["failover_latency_exact_200_samples"])
     sample_counts: dict[int, int] = {}
     for sample in samples:
         rung = int(sample.get("rung") or sample.get("node_count") or 0)
         sample_counts[rung] = sample_counts.get(rung, 0) + 1
-    curve = _read_json(sources["p21_curve"])
+    curve = _read_json(sources["failover_latency_exact_200_curve"])
     rows: list[dict[str, Any]] = []
     for series in curve.get("derived_series", []):
         if not isinstance(series, dict):
@@ -331,7 +302,7 @@ def _failover_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
                 "p50_ms": series.get("p50_ms", "MISSING"),
                 "p95_ms": series.get("p95_ms", "MISSING"),
                 "max_ms": series.get("max_ms", "MISSING"),
-                "source_artifacts": _join_sorted([_rel(sources["p20_samples"]), _rel(sources["p21_samples"]), _rel(sources["p21_curve"])]),
+                "source_artifacts": _join_sorted([_rel(sources["failover_latency_standard_samples"]), _rel(sources["failover_latency_exact_200_samples"]), _rel(sources["failover_latency_exact_200_curve"])]),
                 "reason": _reason_for(series),
             }
         )
@@ -339,11 +310,7 @@ def _failover_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
 
 
 def _fault_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
-    fault_source_rows = (
-        _read_jsonl(sources["p22_faults"])
-        + _read_jsonl(sources["p23_faults"])
-        + _read_jsonl(sources["p24_faults"])
-    )
+    fault_source_rows = _read_jsonl(sources["fault_matrix_faults"])
     grouped: dict[str, list[dict[str, Any]]] = {name: [] for name in FAULT_ROWS}
     for row in fault_source_rows:
         fault_type = str(row.get("fault_type", "MISSING"))
@@ -359,25 +326,25 @@ def _fault_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
         for target in targets:
             if target in grouped:
                 grouped[target].append(row)
-    failover_sample_count = len(_read_jsonl(sources["p20_samples"]) + _read_jsonl(sources["p21_samples"]))
+    failover_sample_count = len(_read_jsonl(sources["failover_latency_standard_samples"]) + _read_jsonl(sources["failover_latency_exact_200_samples"]))
     grouped["primary_stop_failover"].append(
         {
             "status": "PASS",
             "node_count": "30;50;100;200",
             "sample_count": failover_sample_count,
             "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
-            "source_artifact": _join_sorted([_rel(sources["p20_samples"]), _rel(sources["p21_samples"])]),
+            "source_artifact": _join_sorted([_rel(sources["failover_latency_standard_samples"]), _rel(sources["failover_latency_exact_200_samples"])]),
             "reason": "",
         }
     )
-    workload = _read_json(sources["p25_workload"])
+    workload = _read_json(sources["fault_workload_impact_workload"])
     grouped["fault_workload_impact"].append(
         {
             "status": "PASS" if int(workload.get("row_counts", {}).get("fault", 0) or 0) >= 21 else "FAIL",
             "node_count": "all_source_rows",
             "sample_count": int(workload.get("row_counts", {}).get("fault", 0) or 0),
-            "implementation_path": "artifact_only_p25_consolidation",
-            "source_artifact": _rel(sources["p25_workload"]),
+            "implementation_path": "artifact_only_fault_workload_impact_consolidation",
+            "source_artifact": _rel(sources["fault_workload_impact_workload"]),
             "reason": "",
         }
     )
@@ -399,7 +366,7 @@ def _fault_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
 
 
 def _workload_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
-    workload = _read_json(sources["p25_workload"])
+    workload = _read_json(sources["fault_workload_impact_workload"])
     rows = []
     for row in workload.get("rows", []):
         if not isinstance(row, dict):
@@ -411,7 +378,7 @@ def _workload_rows(sources: dict[str, Path]) -> list[dict[str, Any]]:
             {
                 "row_id": row.get("row_id", "MISSING"),
                 "category": row.get("category", "MISSING"),
-                "source_stage_id": row.get("source_stage_id", "MISSING"),
+                "source_capability_id": row.get("source_capability_id", "MISSING"),
                 "operation_or_fault": op_or_fault,
                 "node_count": row.get("node_count", "MISSING"),
                 "status": row.get("status", "MISSING"),
@@ -436,9 +403,9 @@ def _coverage_summary(
     failover_counts: dict[str, int] = {}
     for row in failover_rows:
         failover_counts[str(row["rung"])] = max(failover_counts.get(str(row["rung"]), 0), int(row["sample_count"]))
-    p25 = _read_json(sources["p25_workload"])
-    p24_rows = [row for row in workload_rows if row.get("source_stage_id") == "P24_PARTITION_SPLIT_BRAIN_MATRIX"]
-    missing = _read_json(sources["p25_missing"])
+    fault_workload_impact = _read_json(sources["fault_workload_impact_workload"])
+    partition_fault_matrix_rows = [row for row in workload_rows if row.get("source_capability_id") == "fault_matrix"]
+    missing = _read_json(sources["fault_workload_impact_missing"])
     return {
         "management": {
             "required_rows": MANAGEMENT_ROWS,
@@ -457,9 +424,9 @@ def _coverage_summary(
         },
         "workload": {
             "row_count": len(workload_rows),
-            "source_row_counts": p25.get("row_counts", {}),
-            "p24_row_count": len(p24_rows),
-            "p24_error_taxonomy_present": _p24_error_taxonomy_present(p25),
+            "source_row_counts": fault_workload_impact.get("row_counts", {}),
+            "partition_fault_matrix_row_count": len(partition_fault_matrix_rows),
+            "partition_fault_matrix_error_taxonomy_present": _partition_fault_matrix_error_taxonomy_present(fault_workload_impact),
         },
         "missing_data": {
             "item_count": int(missing.get("item_count", len(missing.get("items", []))) or 0),
@@ -467,17 +434,17 @@ def _coverage_summary(
         },
         "cleanup": {"status": "PASS_EXPECTED_FROM_REAL_SMOKE_GATE", "resources_remaining": 0},
         "safety": {
-            "p14_automatic": False,
+            "scale_planning_automatic": False,
             "default_max_nodes": 100,
-            "p21_bounded_exception_nodes": 200,
+            "failover_latency_exact_200_bounded_exception_nodes": 200,
             "source_scenarios_rerun": False,
         },
     }
 
 
-def _write_common_artifacts(output_dir: Path, phase_id: str, index: dict[str, Any], csv_index: dict[str, Any]) -> None:
-    event_start = _event("p26-final-report-start", "final_report_generation_started", "final report generation started")
-    event_finish = _event("p26-final-report-finish", "final_report_generation_finished", "final report generation finished")
+def _write_common_artifacts(output_dir: Path, capability_id: str, index: dict[str, Any], csv_index: dict[str, Any]) -> None:
+    event_start = _event("final_report-final-report-start", "final_report_generation_started", "final report generation started")
+    event_finish = _event("final_report-final-report-finish", "final_report_generation_finished", "final report generation finished")
     _write_jsonl(output_dir / "events.jsonl", [event_start, event_finish])
     metrics = [
         _metric("report_count", len(index["reports"]), "count"),
@@ -507,7 +474,7 @@ def _write_common_artifacts(output_dir: Path, phase_id: str, index: dict[str, An
         "unknown_error_count": "SKIPPED_WITH_REASON",
         "sample_count": 0,
         "missing_reasons": {
-            "all": "P26 is an artifact-only final reporting stage; workload metrics are sourced from prior JSON artifacts rather than rerun.",
+            "all": "FINAL_REPORT is an artifact-only reporting capability; workload metrics are sourced from prior JSON artifacts rather than rerun.",
         },
     }
     windows = [
@@ -516,7 +483,7 @@ def _write_common_artifacts(output_dir: Path, phase_id: str, index: dict[str, An
             "start_event_id": event_start["event_id"],
             "end_event_id": event_finish["event_id"],
             "status": "SKIPPED_WITH_REASON",
-            "reason": "P26 final reporting does not run a workload window; prior workload artifacts are cited in reports.",
+            "reason": "FINAL_REPORT final reporting does not run a workload window; prior workload artifacts are cited in reports.",
             "metrics": skipped_metrics,
         }
         for name in CANONICAL_WINDOWS
@@ -526,15 +493,15 @@ def _write_common_artifacts(output_dir: Path, phase_id: str, index: dict[str, An
         {
             "schema_version": "v1",
             "artifact_type": "workload_windows",
-            "phase_id": phase_id,
+            "capability_id": capability_id,
             "run_id": RUN_ID,
             "windows": windows,
         },
     )
     artifact_refs = [
-        "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
-        "artifacts/phases/P26_FINAL_REPORT_REGRESSION/report_index.json",
-        "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
+        "artifacts/captures/final_report/final_report_index.json",
+        "artifacts/captures/final_report/report_index.json",
+        "artifacts/captures/final_report/csv_export_index.json",
         *[record["path"] for record in index["reports"]],
         *[record["path"] for record in index["exports"]],
         *[record["path"] for record in index["source_artifacts"]],
@@ -544,18 +511,18 @@ def _write_common_artifacts(output_dir: Path, phase_id: str, index: dict[str, An
         {
             "schema_version": "v1",
             "artifact_type": "quant_summary",
-            "phase_id": phase_id,
+            "capability_id": capability_id,
             "run_id": RUN_ID,
             "created_at": CREATED_AT,
             "producer": {"name": "valkey-scale-lab", "version": __version__},
             "status": "PASS",
-            "summary": "P26 generated final reports and regression sidecars from versioned JSON/JSONL artifacts only; current-stage real Valkey evidence is produced by the preceding smoke gate.",
+            "summary": "FINAL_REPORT generated final reports and regression sidecars from versioned JSON/JSONL artifacts only; real Valkey evidence is produced by the owning execution gate.",
             "artifact_refs": artifact_refs,
             "missing_data": [
                 {
-                    "field": "p26.workload_runtime_windows",
+                    "field": "final_report.workload_runtime_windows",
                     "status": "SKIPPED_WITH_REASON",
-                    "reason": "P26 is an artifact-only final report stage and does not rerun workload scenarios.",
+                    "reason": "FINAL_REPORT is an artifact-only reporting capability and does not rerun workload scenarios.",
                 }
             ],
             "runtime_claims": {
@@ -575,36 +542,36 @@ def _write_common_artifacts(output_dir: Path, phase_id: str, index: dict[str, An
         },
     )
     _write_json(
-        output_dir / "phase_summary.json",
+        output_dir / "run_summary.json",
         {
             "schema_version": "v1",
-            "artifact_type": "phase_summary",
-            "phase_id": phase_id,
+            "artifact_type": "run_summary",
+            "capability_id": capability_id,
             "run_id": RUN_ID,
             "created_at": CREATED_AT,
             "producer": {"name": "valkey-scale-lab", "version": __version__},
             "status": "PASS",
-            "summary": "P26 final report/regression hardening produced artifact-only Markdown reports, CSV exports, indexes, and compact regression sidecars.",
+            "summary": "FINAL_REPORT final report/regression hardening produced artifact-only Markdown reports, CSV exports, indexes, and compact regression sidecars.",
             "required_artifacts": [
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/phase_summary.json",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/valkey_e2e_evidence.json",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/cleanup_report.json",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/events.jsonl",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/metrics_timeseries.jsonl",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/workload_windows.json",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/quant_summary.json",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/report_index.json",
-                "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
+                "artifacts/captures/final_report/run_summary.json",
+                "artifacts/captures/final_report/valkey_e2e_evidence.json",
+                "artifacts/captures/final_report/cleanup_report.json",
+                "artifacts/captures/final_report/events.jsonl",
+                "artifacts/captures/final_report/metrics_timeseries.jsonl",
+                "artifacts/captures/final_report/workload_windows.json",
+                "artifacts/captures/final_report/quant_summary.json",
+                "artifacts/captures/final_report/final_report_index.json",
+                "artifacts/captures/final_report/report_index.json",
+                "artifacts/captures/final_report/csv_export_index.json",
                 *REQUIRED_REPORTS,
                 *REQUIRED_EXPORTS,
             ],
             "missing_metrics": [
                 {
-                    "metric": "p26.workload_runtime_windows",
+                    "metric": "final_report.workload_runtime_windows",
                     "status": "SKIPPED_WITH_REASON",
-                    "reason": "P26 does not rerun source workload scenarios; prior workload artifacts provide the metrics.",
-                    "impact": "Final reports cite P17-P25 artifact data instead.",
+                    "reason": "FINAL_REPORT does not rerun source workload scenarios; prior workload artifacts provide the metrics.",
+                    "impact": "Final reports cite canonical management_matrix and fault_workload_impact artifact data instead.",
                 }
             ],
             "risks": [],
@@ -626,13 +593,13 @@ def _write_regression_sidecars(regression_dir: Path, index: dict[str, Any], sour
             "cases": [
                 {
                     "status": "MISSING",
-                    "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure.",
-                    "source_artifact": _rel(sources["p24_split_brain"]),
+                    "reason": "PARTITION_FAULT_MATRIX partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure.",
+                    "source_artifact": _rel(sources["partition_fault_matrix_split_brain"]),
                 },
                 {
                     "status": "SKIPPED_WITH_REASON",
-                    "reason": "P26 does not rerun source workload scenarios; prior workload artifacts provide the metrics.",
-                    "source_artifact": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/workload_windows.json",
+                    "reason": "FINAL_REPORT does not rerun source workload scenarios; prior workload artifacts provide the metrics.",
+                    "source_artifact": "artifacts/captures/final_report/workload_windows.json",
                 },
             ],
         },
@@ -667,8 +634,8 @@ def _require_fault_rows(rows: list[dict[str, Any]]) -> None:
 def _require_workload_rows(rows: list[dict[str, Any]]) -> None:
     if len(rows) < 49:
         raise FinalReportError(f"workload impact coverage requires at least 49 rows, got {len(rows)}")
-    if sum(1 for row in rows if row.get("source_stage_id") == "P24_PARTITION_SPLIT_BRAIN_MATRIX") < 6:
-        raise FinalReportError("workload impact coverage missing P24 taxonomy rows")
+    if sum(1 for row in rows if row.get("source_capability_id") == "fault_matrix") < 6:
+        raise FinalReportError("workload impact coverage missing PARTITION_FAULT_MATRIX taxonomy rows")
 
 
 def _write_csv(path: Path, rows: list[dict[str, Any]], fields: list[str]) -> Path:
@@ -698,7 +665,7 @@ def _write_markdown_table(path: Path, title: str, rows: list[dict[str, Any]], fi
 
 def _write_final_report(path: Path, coverage: dict[str, Any], source_records: list[dict[str, Any]]) -> Path:
     lines = [
-        "# P26 Final Goal Loop Report",
+        "# FINAL_REPORT Final Goal Loop Report",
         "",
         "Status: PASS",
         "",
@@ -713,10 +680,10 @@ def _write_final_report(path: Path, coverage: dict[str, Any], source_records: li
         "",
         "## Safety Boundaries",
         "",
-        "- P14_SCALE_1000_OPTIN_DRYRUN remains non-automatic.",
+        "- scale_planning remains non-automatic.",
         "- Default automatic max nodes remains 100.",
-        "- P21's 200-node failover evidence is a bounded exception and is consumed as an artifact only.",
-        "- P26 did not rerun P17-P25 source scenarios.",
+        "- FAILOVER_LATENCY_EXACT_200's 200-node failover evidence is a bounded exception and is consumed as an artifact only.",
+        "- FINAL_REPORT did not rerun MANAGEMENT_MATRIX-FAULT_WORKLOAD_IMPACT source scenarios.",
         "",
         "## Source Artifacts",
         "",
@@ -727,20 +694,20 @@ def _write_final_report(path: Path, coverage: dict[str, Any], source_records: li
     return path
 
 
-def _write_csv_index(path: Path, exports: dict[str, tuple[Path, int, str]], phase_id: str) -> dict[str, Any]:
+def _write_csv_index(path: Path, exports: dict[str, tuple[Path, int, str]], capability_id: str) -> dict[str, Any]:
     obj = {
         "schema_version": "v1",
         "artifact_type": "csv_export_index",
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": RUN_ID,
-        "json_source_artifact": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+        "json_source_artifact": "artifacts/captures/final_report/final_report_index.json",
         "exports": [
             {
                 "table_name": table,
                 "path": _rel(csv_path),
                 "row_count": row_count,
                 "json_source_count": row_count,
-                "json_source_artifact": f"artifacts/phases/P26_FINAL_REPORT_REGRESSION/{json_source}",
+                "json_source_artifact": f"artifacts/captures/final_report/{json_source}",
                 "sha256": _sha256_file(csv_path),
             }
             for table, (csv_path, row_count, json_source) in sorted(exports.items())
@@ -774,16 +741,16 @@ def _event(event_id: str, event_type: str, message: str) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "run_id": RUN_ID,
-        "phase_id": PHASE_ID,
+        "capability_id": CAPABILITY_ID,
         "scenario_name": SCENARIO_NAME,
-        "sample_id": "p26-final-report",
+        "sample_id": "final_report-final-report",
         "event_id": event_id,
         "event_type": event_type,
         "timestamp_unix_ms": 1783075200000,
         "monotonic_ms": 0.0 if event_id.endswith("start") else 1.0,
         "severity": "INFO",
         "subject_type": "report",
-        "subject_id": "final_goal_loop_report",
+        "subject_id": "final_report",
         "operation_id": "",
         "fault_id": "",
         "message": message,
@@ -795,9 +762,9 @@ def _metric(metric_name: str, value: int, unit: str) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "run_id": RUN_ID,
-        "phase_id": PHASE_ID,
+        "capability_id": CAPABILITY_ID,
         "scenario_name": SCENARIO_NAME,
-        "sample_id": "p26-final-report",
+        "sample_id": "final_report-final-report",
         "timestamp_unix_ms": 1783075200000,
         "monotonic_ms": 1.0,
         "source_type": "harness",
@@ -813,19 +780,15 @@ def _metric(metric_name: str, value: int, unit: str) -> dict[str, Any]:
 def _fault_source_artifact(row: dict[str, Any], sources: dict[str, Path]) -> str:
     if row.get("source_artifact"):
         return str(row["source_artifact"])
-    phase = row.get("phase_id")
-    if phase == "P22_FAULT_REPLICA_HOST_AZ_STOP":
-        return _rel(sources["p22_faults"])
-    if phase == "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
-        return _rel(sources["p23_faults"])
-    if phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
-        return _rel(sources["p24_faults"])
+    capability_id = row.get("capability_id")
+    if capability_id == "fault_matrix":
+        return _rel(sources["fault_matrix_faults"])
     return "MISSING"
 
 
-def _p24_error_taxonomy_present(p25: dict[str, Any]) -> bool:
-    for row in p25.get("rows", []):
-        if not isinstance(row, dict) or row.get("source_stage_id") != "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+def _partition_fault_matrix_error_taxonomy_present(fault_workload_impact: dict[str, Any]) -> bool:
+    for row in fault_workload_impact.get("rows", []):
+        if not isinstance(row, dict) or row.get("source_capability_id") != "fault_matrix":
             continue
         taxonomy = row.get("error_taxonomy", {})
         if isinstance(taxonomy, dict) and "cluster_down_error_count" in json.dumps(taxonomy):

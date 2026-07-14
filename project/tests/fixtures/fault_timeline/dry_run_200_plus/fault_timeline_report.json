@@ -72,12 +72,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -171,12 +171,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -270,12 +270,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -369,12 +369,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -468,12 +468,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -567,12 +567,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -666,12 +666,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -765,12 +765,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -864,12 +864,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -963,12 +963,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -1062,12 +1062,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -1161,12 +1161,12 @@
         }
       },
       "node_count": 200,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
       "scale_rung": "200_plus_dry_run_planning",
-      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -1883,7 +1883,7 @@
   "observed_scale_rungs": [
     "200_plus_dry_run_planning"
   ],
-  "phase_id": "M1-S06",
+  "capability_id": "failover_timeline",
   "required_fault_types": [
     "primary_stop_failover",
     "replica_stop",
@@ -1905,7 +1905,7 @@
     "100",
     "200"
   ],
-  "run_id": "m1-s06-fixture",
+  "run_id": "fault-timeline-fixture",
   "schema_version": "v1",
   "status": "PARTIAL",
   "timeline_events_ref": "fault_timeline_events.jsonl"

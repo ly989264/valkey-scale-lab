@@ -17,7 +17,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
 
 
-LAYERS = ["fake", "small-real", "30", "50", "100", "1000-dry-run"]
+LAYERS = ["fake", "small-real", "30", "50", "100", "200", "1000-dry-run"]
 SURFACES = [
     "cluster_build",
     "management",
@@ -31,7 +31,19 @@ SURFACES = [
     "report_visualization",
 ]
 REPORT_VIEW_SUFFIXES = {".csv", ".html", ".md", ".svg"}
-P14_ID = "P14_SCALE_1000_OPTIN_DRYRUN"
+SCALE_PLANNING_ID = "scale_planning"
+SCENARIO_BY_SURFACE = {
+    "cluster_build": "cluster_lifecycle",
+    "management": "management_matrix",
+    "workload": "workload",
+    "observability": "observability",
+    "fault": "fault_matrix",
+    "failover": "failover",
+    "stability": "stability",
+    "cleanup": "local_full_flow",
+    "scale": "scale_ladder",
+    "report_visualization": "analysis_reporting",
+}
 
 
 def utc_now() -> str:
@@ -117,7 +129,7 @@ class MetricCoverageBuilder:
             "exists": path.exists(),
             "sha256": sha256_file(path) if path.exists() else "MISSING",
             "artifact_type": str(payload.get("artifact_type") or ("report_view" if path.suffix in REPORT_VIEW_SUFFIXES else "artifact")),
-            "phase_id": str(payload.get("phase_id") or self.phase_from_path(path_text) or "MISSING"),
+            "capability_id": str(payload.get("capability_id") or self.capability_from_path(path_text) or "MISSING"),
             "run_id": payload.get("run_id"),
             "scenario": payload.get("scenario"),
             "node_count": payload.get("node_count") or payload.get("nodes_observed"),
@@ -126,9 +138,9 @@ class MetricCoverageBuilder:
         self.source_cache[path_text] = meta
         return meta
 
-    def phase_from_path(self, path_text: str) -> str | None:
+    def capability_from_path(self, path_text: str) -> str | None:
         parts = Path(path_text).parts
-        if len(parts) >= 3 and parts[0] == "artifacts" and parts[1] == "phases":
+        if len(parts) >= 3 and parts[0] == "artifacts" and parts[1] == "captures":
             return parts[2]
         return None
 
@@ -169,6 +181,8 @@ class MetricCoverageBuilder:
             return "1000-dry-run"
         if count == 100:
             return "100"
+        if count == 200:
+            return "200"
         if count == 50:
             return "50"
         if count == 30:
@@ -251,7 +265,7 @@ class MetricCoverageBuilder:
                 "source_artifact_type": meta["artifact_type"],
                 "source_kind": source_kind,
                 "source_pointer": source_pointer,
-                "phase_id": meta["phase_id"],
+                "capability_id": meta["capability_id"],
                 "run_id": meta["run_id"],
                 "scenario": scenario if scenario is not None else meta["scenario"],
                 "node_count_scope": str(node_count_scope if node_count_scope is not None else meta.get("node_count") or "unknown"),
@@ -290,24 +304,22 @@ class MetricCoverageBuilder:
         return ok, payload
 
     def add_real_evidence_metrics(self) -> None:
-        surface_by_phase = {
-            "P03_LOCAL_DOCKER_VALKEY": "cluster_build",
-            "P04_CLUSTER_MANAGEMENT_OPS": "management",
-            "P05_WORKLOAD_ENGINE": "workload",
-            "P06_OBSERVABILITY_METRICS": "observability",
-            "P07_FAULT_INJECTION_SANDBOX": "fault",
-            "P08_FAILOVER_SPLIT_BRAIN": "failover",
-            "P09_ANALYSIS_REPORTING": "report_visualization",
-            "P10_MULTI_HOST_ORCHESTRATION": "cluster_build",
-            "P11_STABILITY_SOAK": "stability",
-            "P12_SCALE_LADDER_10_30": "scale",
-            "P13_SCALE_LADDER_50_100": "scale",
+        surface_by_capability = {
+            "cluster_lifecycle": "cluster_build",
+            "management_matrix": "management",
+            "workload": "workload",
+            "observability": "observability",
+            "fault_matrix": "fault",
+            "analysis_reporting": "report_visualization",
+            "orchestration": "cluster_build",
+            "stability": "stability",
+            "scale_ladder": "scale",
         }
-        for path in sorted((self.root / "artifacts" / "phases").glob("P*/valkey_e2e_evidence*.json")):
+        for path in sorted((self.root / "artifacts" / "captures").glob("*/valkey_e2e_evidence*.json")):
             path_text = rel(self.root, path)
             payload = load_json(path)
-            phase_id = payload.get("phase_id") or self.phase_from_path(path_text) or "MISSING"
-            surface = surface_by_phase.get(phase_id, "cluster_build")
+            capability_id = payload.get("capability_id") or self.capability_from_path(path_text) or "MISSING"
+            surface = surface_by_capability.get(capability_id, "cluster_build")
             nodes = payload.get("nodes_observed")
             ok, _ = self.validate_real_evidence(path_text, nodes if isinstance(nodes, int) else None)
             layer = self.layer_for(node_count=nodes, dry_run_only=False, real_valkey=ok)
@@ -337,7 +349,7 @@ class MetricCoverageBuilder:
                 )
 
     def add_cleanup_metrics(self) -> None:
-        for path in sorted((self.root / "artifacts" / "phases").glob("P*/cleanup_report*.json")):
+        for path in sorted((self.root / "artifacts" / "captures").glob("*/cleanup_report*.json")):
             path_text = rel(self.root, path)
             payload = load_json(path)
             remaining = payload.get("resources_remaining")
@@ -376,7 +388,7 @@ class MetricCoverageBuilder:
         return scope if scope in {"30", "50", "100"} else "small-real"
 
     def add_management_metrics(self) -> None:
-        path = "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json"
+        path = "artifacts/captures/management_matrix/management_ops_report.json"
         payload = self.load_json(path)
         if not payload:
             return
@@ -398,7 +410,7 @@ class MetricCoverageBuilder:
             )
 
     def add_workload_metrics(self) -> None:
-        path = "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json"
+        path = "artifacts/captures/workload/workload_report.json"
         payload = self.load_json(path)
         if not payload:
             return
@@ -439,7 +451,7 @@ class MetricCoverageBuilder:
             )
 
     def add_observability_metrics(self) -> None:
-        path = "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl"
+        path = "artifacts/captures/observability/metrics_timeseries.jsonl"
         full = self.root / path
         if not full.exists():
             return
@@ -461,7 +473,7 @@ class MetricCoverageBuilder:
                         source_artifact=path,
                         source_pointer=f"$[0].metrics.{group}.{key}",
                         value=value,
-                        scenario="observability_smoke",
+                        scenario="observability",
                         node_count_scope="6",
                         evidence_layer="small-real",
                     )
@@ -479,7 +491,7 @@ class MetricCoverageBuilder:
         return "count"
 
     def add_fault_metrics(self) -> None:
-        path = "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json"
+        path = "artifacts/captures/fault_matrix/fault_report.json"
         payload = self.load_json(path)
         if not payload:
             return
@@ -510,7 +522,7 @@ class MetricCoverageBuilder:
             )
 
     def add_failover_metrics(self) -> None:
-        path = "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json"
+        path = "artifacts/captures/fault_matrix/failover_report.json"
         payload = self.load_json(path)
         if not payload:
             return
@@ -540,8 +552,8 @@ class MetricCoverageBuilder:
         )
 
     def add_analysis_report_metrics(self) -> None:
-        analysis = "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json"
-        report_index = "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json"
+        analysis = "artifacts/captures/analysis_reporting/analysis_summary.json"
+        report_index = "artifacts/captures/analysis_reporting/report_index.json"
         payload = self.load_json(analysis)
         if payload:
             for idx, metric in enumerate(payload.get("metrics", [])):
@@ -577,7 +589,7 @@ class MetricCoverageBuilder:
             )
 
     def add_stability_metrics(self) -> None:
-        path = "artifacts/phases/P11_STABILITY_SOAK/stability_report.json"
+        path = "artifacts/captures/stability/stability_report.json"
         payload = self.load_json(path)
         if not payload:
             return
@@ -616,7 +628,7 @@ class MetricCoverageBuilder:
         self.add_stability_soak_rollup_metrics()
 
     def add_stability_soak_rollup_metrics(self) -> None:
-        path = "artifacts/loop_engineering/reports/stability_soak_metrics.json"
+        path = "artifacts/captures/analysis_reporting/stability_soak_metrics.json"
         payload = self.load_json(path)
         if not payload:
             return
@@ -645,7 +657,7 @@ class MetricCoverageBuilder:
                     value=record.get("value"),
                     value_status=value_status,
                     reason=record.get("reason", ""),
-                    scenario=profile.get("run_id"),
+                    scenario="stability",
                     node_count_scope=str(node_count),
                     evidence_layer=layer,
                     evidence_class=evidence_class,
@@ -661,7 +673,7 @@ class MetricCoverageBuilder:
                     value=None,
                     value_status="SKIPPED_WITH_REASON",
                     reason=profile.get("reason", "Resource-aware bounded profile was not measured."),
-                    scenario=profile.get("run_id"),
+                    scenario="stability",
                     node_count_scope=str(node_count),
                     evidence_layer=layer,
                     evidence_class="source_artifact",
@@ -669,7 +681,7 @@ class MetricCoverageBuilder:
                 )
 
     def add_scale_metrics(self) -> None:
-        for path in sorted((self.root / "artifacts" / "phases").glob("P*/scale_rung_*.json")):
+        for path in sorted((self.root / "artifacts" / "captures").glob("*/scale_rung_*.json")):
             path_text = rel(self.root, path)
             payload = load_json(path)
             node_count = int(payload.get("node_count", 0))
@@ -702,7 +714,7 @@ class MetricCoverageBuilder:
                     evidence_class="real_valkey" if real else "source_artifact",
                     real_valkey_coverage=real,
                 )
-        for path in sorted((self.root / "artifacts" / "phases" / "P13_SCALE_LADDER_50_100").glob("p13_timing_breakdown_scale_*.json")):
+        for path in sorted((self.root / "artifacts" / "captures" / "scale_ladder").glob("setup_timing_breakdown_exact-*.json")):
             path_text = rel(self.root, path)
             payload = load_json(path)
             node_count = int(payload.get("node_count", 0))
@@ -722,7 +734,7 @@ class MetricCoverageBuilder:
                     )
 
     def add_scale_build_metrics(self) -> None:
-        path = "artifacts/loop_engineering/reports/scale_build_metrics.json"
+        path = "artifacts/captures/analysis_reporting/scale_build_metrics.json"
         payload = self.load_json(path)
         if not payload:
             return
@@ -730,12 +742,12 @@ class MetricCoverageBuilder:
             if not isinstance(rung, dict):
                 continue
             node_count = rung.get("node_count")
-            if node_count not in {30, 50, 100}:
+            if node_count not in {10, 30, 50, 100}:
                 self.finding(
                     severity="high",
                     category="invalid_scale_build_rung",
                     blocking=True,
-                    description="Scale build metrics may only include canonical real rungs 30, 50, and 100",
+                    description="Scale build metrics may only include canonical real rungs 10, 30, 50, and 100",
                     evidence=[str(node_count)],
                 )
                 continue
@@ -769,7 +781,7 @@ class MetricCoverageBuilder:
                 )
 
     def add_fault_failover_scale_metrics(self) -> None:
-        path = "artifacts/loop_engineering/reports/fault_failover_scale.json"
+        path = "artifacts/captures/analysis_reporting/fault_failover_scale.json"
         payload = self.load_json(path)
         if not payload:
             return
@@ -779,12 +791,12 @@ class MetricCoverageBuilder:
             if not isinstance(rung, dict):
                 continue
             node_count = rung.get("node_count")
-            if node_count not in {30, 50, 100}:
+            if node_count not in {30, 50, 100, 200}:
                 self.finding(
                     severity="high",
                     category="invalid_fault_failover_rung",
                     blocking=True,
-                    description="Fault/failover scale metrics may only include canonical real rungs 30, 50, and 100",
+                    description="Fault/failover scale metrics may only include canonical real rungs 30, 50, 100, and 200",
                     evidence=[str(node_count)],
                 )
                 continue
@@ -819,7 +831,7 @@ class MetricCoverageBuilder:
                 )
 
     def add_dryrun_metrics(self) -> None:
-        path = "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json"
+        path = "artifacts/captures/scale_planning/scale_1000_dryrun_plan.json"
         payload = self.load_json(path)
         if payload:
             self.add_metric(
@@ -829,7 +841,7 @@ class MetricCoverageBuilder:
                 source_artifact=path,
                 source_pointer="$.node_count",
                 value=payload.get("node_count"),
-                scenario="scale_1000_dryrun",
+                scenario="scale_planning",
                 node_count_scope="1000",
                 evidence_layer="1000-dry-run",
                 evidence_class="dry_run_planner",
@@ -840,7 +852,7 @@ class MetricCoverageBuilder:
         else:
             self.finding(
                 severity="medium",
-                category="p14_dryrun_absent",
+                category="scale_planning_dryrun_absent",
                 blocking=False,
                 description="1000 dry-run planner artifact is absent",
                 evidence=[path],
@@ -852,12 +864,12 @@ class MetricCoverageBuilder:
                 name=f"fake.{surface}.coverage_placeholder",
                 surface=surface,
                 unit="status",
-                source_artifact="artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
-                source_pointer=f"$.L03.required_layers.fake.{surface}",
+                source_artifact="verification/catalog.json",
+                source_pointer=f"$.suites.{surface}",
                 value=None,
                 value_status="SKIPPED_WITH_REASON",
                 reason="Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
-                scenario="fake",
+                scenario=SCENARIO_BY_SURFACE[surface],
                 node_count_scope="fake",
                 evidence_layer="fake",
                 evidence_class="fake",
@@ -930,7 +942,8 @@ class MetricCoverageBuilder:
                 metrics = by_key.get((layer, surface), [])
                 entries.append(self.matrix_entry(layer, surface, metrics))
         blocking = [finding for finding in self.findings if finding["blocking"]]
-        p14_artifacts = list((self.root / "artifacts" / "phases" / P14_ID).glob("*")) if (self.root / "artifacts" / "phases" / P14_ID).exists() else []
+        scale_planning_dir = self.root / "artifacts" / "captures" / SCALE_PLANNING_ID
+        scale_planning_artifacts = list(scale_planning_dir.glob("*")) if scale_planning_dir.exists() else []
         return {
             "schema_version": "v1",
             "artifact_type": "coverage_matrix",
@@ -947,13 +960,13 @@ class MetricCoverageBuilder:
             "layers": LAYERS,
             "surfaces": SURFACES,
             "entries": entries,
-            "p14_boundary": {
-                "phase_id": P14_ID,
+            "scale_planning_boundary": {
+                "capability_id": SCALE_PLANNING_ID,
                 "status": "SKIPPED_WITH_REASON",
                 "real_valkey_coverage": False,
                 "dry_run_only": True,
-                "dry_run_artifact_count": len(p14_artifacts),
-                "reason": "P14 is opt-in dry-run only and was not executed by L03.",
+                "dry_run_artifact_count": len(scale_planning_artifacts),
+                "reason": "SCALE_PLANNING is opt-in dry-run only and is not executed by automatic coverage.",
             },
             "findings": self.findings,
         }

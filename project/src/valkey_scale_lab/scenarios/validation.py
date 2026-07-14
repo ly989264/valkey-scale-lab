@@ -49,7 +49,7 @@ FAULT_IDS = (
 
 REPORT_IDS = (
     "topology_summary",
-    "phase_durations",
+    "lifecycle_durations",
     "bottlenecks",
     "resources",
     "workload_impact",
@@ -96,7 +96,7 @@ ADMITTED_JSON_KINDS = (
 
 ADMITTED_JSONL_KINDS = ("command_log", "fault_command_log", "events", "metrics")
 
-LEGACY_PROJECTION_STEPS = (
+EXECUTION_STEPS = (
     "config_validate",
     "resource_preflight",
     "plan_cluster",
@@ -147,20 +147,20 @@ MANAGEMENT_EXECUTION_ORDER = (
 )
 
 EXPECTED_SCENARIO_HANDLERS = {
-    "add_remove_node": "legacy.management_operation",
-    "reshard_rebalance": "legacy.management_operation",
-    "rolling_restart": "legacy.management_operation",
-    "bounded_stability": "legacy.bounded_stability",
-    "primary_failover": "legacy.primary_failover",
-    "replica_stop": "legacy.process_pause",
-    "node_host_stop": "legacy.nodehost_pause",
-    "az_stop": "legacy.az_pause",
-    "network_delay": "legacy.proxy",
-    "network_loss": "legacy.proxy",
-    "network_partition": "legacy.network_disconnect",
-    "network_flap": "legacy.proxy",
-    "minority_majority": "legacy.network_disconnect",
-    "split_brain_detection": "legacy.network_disconnect",
+    "add_remove_node": "product.management_operation",
+    "reshard_rebalance": "product.management_operation",
+    "rolling_restart": "product.management_operation",
+    "bounded_stability": "product.bounded_stability",
+    "primary_failover": "product.primary_failover",
+    "replica_stop": "product.process_pause",
+    "node_host_stop": "product.nodehost_pause",
+    "az_stop": "product.az_pause",
+    "network_delay": "product.proxy",
+    "network_loss": "product.proxy",
+    "network_partition": "product.network_disconnect",
+    "network_flap": "product.proxy",
+    "minority_majority": "product.network_disconnect",
+    "split_brain_detection": "product.network_disconnect",
 }
 
 EXPECTED_SCENARIO_PARAMETERS = {
@@ -217,8 +217,7 @@ _TOP_LEVEL_KEYS = {
     "artifacts",
     "report_surfaces",
     "scale_policy",
-    "legacy_profiles",
-    "legacy_projection_steps",
+    "execution_steps",
 }
 
 
@@ -230,8 +229,8 @@ def validate_scenario_definition(document: Any) -> tuple[str, ...]:
     _check_keys(document, _TOP_LEVEL_KEYS, _TOP_LEVEL_KEYS, "$", errors)
     if document.get("$schema") != "../../../../schemas/scenario/gate_scenario.schema.json":
         errors.append("$.$schema: unexpected schema path")
-    if document.get("schema_version") != "gate-scenario-v2":
-        errors.append("$.schema_version: expected 'gate-scenario-v2'")
+    if document.get("schema_version") != "gate-scenario-v3":
+        errors.append("$.schema_version: expected 'gate-scenario-v3'")
     if document.get("definition_id") != "local_full_flow":
         errors.append("$.definition_id: expected 'local_full_flow'")
     if isinstance(document.get("version"), bool) or document.get("version") != 1:
@@ -248,11 +247,10 @@ def validate_scenario_definition(document: Any) -> tuple[str, ...]:
     _validate_artifacts(document.get("artifacts"), errors)
     _expect_ordered_strings(document.get("report_surfaces"), REPORT_IDS, "$.report_surfaces", errors)
     _validate_scale_policy(document.get("scale_policy"), errors)
-    _validate_legacy_profiles(document.get("legacy_profiles"), errors)
     _expect_ordered_strings(
-        document.get("legacy_projection_steps"),
-        LEGACY_PROJECTION_STEPS,
-        "$.legacy_projection_steps",
+        document.get("execution_steps"),
+        EXECUTION_STEPS,
+        "$.execution_steps",
         errors,
     )
     return tuple(errors)
@@ -277,7 +275,7 @@ def _validate_lifecycle(value: Any, errors: list[str]) -> None:
         _check_keys(item, {"id", "handler_id", "depends_on", "always_run", "terminal"}, {"id", "handler_id", "depends_on", "always_run", "terminal"}, path, errors)
         step_id = item.get("id")
         handler_id = item.get("handler_id")
-        expected_handler = f"legacy.{step_id}"
+        expected_handler = f"product.{step_id}"
         if handler_id != expected_handler or HANDLER_REGISTRY.get(str(handler_id)) != "lifecycle":
             errors.append(f"{path}.handler_id: expected closed handler {expected_handler!r}")
         depends_on = item.get("depends_on")
@@ -483,29 +481,6 @@ def _validate_scale_policy(value: Any, errors: list[str]) -> None:
             matches = actual == expected_value
         if not matches:
             errors.append(f"$.scale_policy.{key}: expected {expected_value!r}")
-
-
-def _validate_legacy_profiles(value: Any, errors: list[str]) -> None:
-    if not isinstance(value, list):
-        errors.append("$.legacy_profiles: expected array")
-        return
-    expected_scales = (50, 100, 200)
-    scales = [row.get("requested_nodes") for row in value if isinstance(row, Mapping)]
-    _expect_exact_order(scales, expected_scales, "$.legacy_profiles requested_nodes", errors)
-    for index, row in enumerate(value):
-        path = f"$.legacy_profiles[{index}]"
-        if not isinstance(row, Mapping):
-            errors.append(f"{path}: expected object")
-            continue
-        _check_keys(row, {"requested_nodes", "runtime_phase", "runtime_scenario", "config_template"}, {"requested_nodes", "runtime_phase", "runtime_scenario", "config_template"}, path, errors)
-        scale = row.get("requested_nodes")
-        if row.get("runtime_phase") != "P36_FULL_FLOW_E2E_50_100_200_REAL":
-            errors.append(f"{path}.runtime_phase: unexpected legacy phase")
-        if row.get("runtime_scenario") != f"strict_full_flow_{scale}":
-            errors.append(f"{path}.runtime_scenario: unexpected legacy scenario")
-        template = row.get("config_template")
-        if template != f"templates/configs/scale_{scale}.yaml" or not isinstance(template, str) or not _is_safe_relative_path(template):
-            errors.append(f"{path}.config_template: unsafe or unexpected template path")
 
 
 def _check_acyclic(graph: Mapping[str, Sequence[str]], errors: list[str]) -> None:

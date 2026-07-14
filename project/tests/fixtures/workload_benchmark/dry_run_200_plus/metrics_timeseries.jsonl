@@ -1,1 +1,1 @@
-{"metric_name":"achieved_qps","metric_unit":"ops_per_second","metric_value":"MISSING","missing_reason":"planning-only dry run, no workload executed","phase_id":"M1-S05","run_id":"fixture-dry-run","schema_version":"v1","source_id":"uniform:baseline","source_type":"workload"}
+{"metric_name":"achieved_qps","metric_unit":"ops_per_second","metric_value":"MISSING","missing_reason":"planning-only dry run, no workload executed","capability_id":"workload","run_id":"fixture-dry-run","schema_version":"v1","source_id":"uniform:baseline","source_type":"workload"}

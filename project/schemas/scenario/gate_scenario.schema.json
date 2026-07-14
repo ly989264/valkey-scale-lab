@@ -15,12 +15,11 @@
     "artifacts",
     "report_surfaces",
     "scale_policy",
-    "legacy_profiles",
-    "legacy_projection_steps"
+    "execution_steps"
   ],
   "properties": {
     "$schema": {"type": "string", "minLength": 1},
-    "schema_version": {"const": "gate-scenario-v2"},
+    "schema_version": {"const": "gate-scenario-v3"},
     "definition_id": {"const": "local_full_flow"},
     "version": {"const": 1},
     "lifecycle": {
@@ -69,13 +68,7 @@
       "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
     },
     "scale_policy": {"$ref": "#/$defs/scalePolicy"},
-    "legacy_profiles": {
-      "type": "array",
-      "minItems": 3,
-      "maxItems": 3,
-      "items": {"$ref": "#/$defs/legacyProfile"}
-    },
-    "legacy_projection_steps": {
+    "execution_steps": {
       "type": "array",
       "minItems": 12,
       "maxItems": 12,
@@ -85,7 +78,7 @@
   },
   "$defs": {
     "identifier": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-    "handlerId": {"type": "string", "pattern": "^legacy\\.[a-z][a-z0-9_]*$"},
+    "handlerId": {"type": "string", "pattern": "^product\\.[a-z][a-z0-9_]*$"},
     "safePath": {
       "type": "string",
       "minLength": 1,
@@ -175,17 +168,6 @@
         "above_200_requires_operator_opt_in": {"const": true},
         "above_200_requires_resource_preflight": {"const": true},
         "above_200_requires_cost_acknowledgement": {"const": true}
-      }
-    },
-    "legacyProfile": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["requested_nodes", "runtime_phase", "runtime_scenario", "config_template"],
-      "properties": {
-        "requested_nodes": {"enum": [50, 100, 200]},
-        "runtime_phase": {"const": "P36_FULL_FLOW_E2E_50_100_200_REAL"},
-        "runtime_scenario": {"type": "string", "pattern": "^strict_full_flow_(50|100|200)$"},
-        "config_template": {"$ref": "#/$defs/safePath"}
       }
     }
   }

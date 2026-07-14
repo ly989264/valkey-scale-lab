@@ -66,7 +66,7 @@ class SandboxNetworkProxy:
         self.listen_port = int(listener.getsockname()[1])
         self._listener = listener
         self._started_at = time.monotonic()
-        self._thread = threading.Thread(target=self._accept_loop, name=f"p23-sandbox-proxy-{self.listen_port}", daemon=True)
+        self._thread = threading.Thread(target=self._accept_loop, name=f"network_fault_matrix-sandbox-proxy-{self.listen_port}", daemon=True)
         self._thread.start()
 
     def close(self) -> None:

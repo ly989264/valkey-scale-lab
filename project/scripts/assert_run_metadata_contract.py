@@ -116,7 +116,7 @@ def _validate_manifest_freshness(context: Any, errors: list[str]) -> None:
     write_run_manifest(context)
     manifest = load_json(context.manifest_path)
     paths = {item.get("path", "") for item in manifest.get("artifacts", []) if isinstance(item, dict)}
-    expected_suffixes = ["phase_summary.json", "analysis_summary.json", "report_index.json"]
+    expected_suffixes = ["run_summary.json", "analysis_summary.json", "report_index.json"]
     for suffix in expected_suffixes:
         if not any(path.endswith(suffix) for path in paths):
             errors.append(f"manifest did not include refreshed artifact ending with {suffix}")
@@ -132,9 +132,9 @@ def _require_dirs(context: Any, errors: list[str]) -> None:
 def _write_source_artifacts(source: Path) -> None:
     source.mkdir(parents=True, exist_ok=True)
     _write(
-        source / "phase_summary.json",
+        source / "run_summary.json",
         {
-            "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+            "capability_id": "fault_matrix",
             "run_id": "source-run",
             "status": "PASS",
             "missing_metrics": [{"metric": "split_brain_duration_ms", "status": "MISSING", "reason": "not measured"}],

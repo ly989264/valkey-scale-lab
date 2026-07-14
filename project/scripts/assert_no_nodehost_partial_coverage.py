@@ -19,9 +19,9 @@ REAL_ROWS = {
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", required=True)
+    parser.add_argument("--capability-id", required=True)
     args = parser.parse_args()
-    base = ROOT / "artifacts" / "phases" / args.phase
+    base = ROOT / "artifacts" / "capabilities" / args.capability_id
     errors: list[str] = []
     ledger_path = base / "coverage_ledger.json"
     if not ledger_path.exists():
@@ -72,7 +72,7 @@ def main() -> int:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)
         return 1
-    print(f"PASS no nodehost partial coverage phase={args.phase}")
+    print(f"PASS no nodehost partial coverage capability_id={args.capability_id}")
     return 0
 
 

@@ -4,7 +4,7 @@
   "type": "object",
   "required": [
     "schema_version",
-    "phase_id",
+    "capability_id",
     "node_count",
     "sample_id",
     "target_primary_logical_id",
@@ -21,7 +21,7 @@
   ],
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
-    "phase_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "capability_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
     "node_count": {"type": "integer", "minimum": 1},
     "sample_id": {"type": "string", "minLength": 1},
     "target_primary_logical_id": {"type": "string", "minLength": 1},

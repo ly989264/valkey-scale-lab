@@ -1,1 +1,1 @@
-"""Planner package placeholder for later phases."""
+"""Planner package placeholder for later capabilities."""

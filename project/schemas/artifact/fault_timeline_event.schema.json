@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "scenario_name",
     "sample_id",
@@ -27,7 +27,7 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "fault_timeline_event"},
-    "phase_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "capability_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
     "run_id": {"type": "string", "minLength": 1},
     "scenario_name": {"type": "string", "minLength": 1},
     "sample_id": {"type": "string", "minLength": 1},

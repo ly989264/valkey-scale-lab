@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "status",
     "sample_count",
@@ -23,7 +23,7 @@
   "properties": {
     "schema_version": {"type": "string", "const": "v1"},
     "artifact_type": {"type": "string", "const": "layered_recovery_summary"},
-    "phase_id": {"type": "string"},
+    "capability_id": {"type": "string"},
     "run_id": {"type": "string"},
     "status": {"type": "string", "enum": ["PASS", "FAIL"]},
     "sample_count": {"type": "integer", "minimum": 0},

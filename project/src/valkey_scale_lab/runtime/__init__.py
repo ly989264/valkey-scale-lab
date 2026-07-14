@@ -1,1 +1,1 @@
-"""Runtime package placeholder for later phases."""
+"""Runtime package placeholder for later capabilities."""

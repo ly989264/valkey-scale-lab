@@ -15,8 +15,8 @@ def test_process_cleanup_rejects_unverified_nodehost_before_signalling_pids(
     state_path.write_text(
         json.dumps(
             {
-                "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
-                "scenario": "strict_full_flow_50",
+                "capability_id": "local_full_flow",
+                "scenario": "local_full_flow",
                 "runtime": {"type": "docker_process", "run_id": "claimed-run"},
                 "nodehosts": [
                     {

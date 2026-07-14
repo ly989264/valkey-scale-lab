@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "operation_id",
     "before_snapshot_ref",
@@ -21,7 +21,7 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "management_topology_diff"},
-    "phase_id": {"type": "string", "minLength": 1},
+    "capability_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
     "operation_id": {"type": "string", "minLength": 1},
     "before_snapshot_ref": {"type": "string", "minLength": 1},

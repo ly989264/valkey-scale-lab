@@ -9,9 +9,9 @@ from typing import Any, Callable, Iterator
 
 from valkey_scale_lab import __version__
 
-SETUP_TIMELINE_ARTIFACT_TYPE = "p13_setup_exhaustive_timeline"
+SETUP_TIMELINE_ARTIFACT_TYPE = "setup_timeline"
 SETUP_TELEMETRY_ARTIFACT_TYPE = "setup_telemetry"
-SETUP_TIMELINE_OPTIMIZATION_PHASE = "P13O-07_SETUP_EXHAUSTIVE_TIMELINE"
+SETUP_TIMELINE_KIND = "setup_timeline"
 SETUP_TIMELINE_UNEXPLAINED_LIMIT_SECONDS = 2.0
 
 REQUIRED_SETUP_SEGMENTS = [
@@ -132,7 +132,7 @@ def _skipped(reason: str) -> dict[str, str]:
 class SetupTimeline:
     """Sequential, leaf-only setup timeline recorder.
 
-    Parent phases are represented in the artifact hierarchy. They are not added
+    Parent capabilities are represented in the artifact hierarchy. They are not added
     to the segment list, so total duration is the sum of non-overlapping leaf
     spans and explicit gaps only.
     """
@@ -260,9 +260,10 @@ class SetupTimeline:
     def to_artifact(
         self,
         *,
-        phase_id: str,
+        capability_id: str,
         run_id: str,
         scenario: str,
+        profile_id: str,
         node_count: int,
         status: str,
         setup_command_wall_seconds: float | None = None,
@@ -272,9 +273,10 @@ class SetupTimeline:
     ) -> dict[str, Any]:
         segments = self.segments
         return build_setup_timeline_artifact(
-            phase_id=phase_id,
+            capability_id=capability_id,
             run_id=run_id,
             scenario=scenario,
+            profile_id=profile_id,
             node_count=node_count,
             status=status,
             segments=segments,
@@ -294,9 +296,10 @@ class SetupTimeline:
 
 def build_setup_timeline_artifact(
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     scenario: str,
+    profile_id: str,
     node_count: int,
     status: str,
     segments: list[dict[str, Any]],
@@ -314,12 +317,12 @@ def build_setup_timeline_artifact(
         if unexplained is None
         else ("PASS" if unexplained <= SETUP_TIMELINE_UNEXPLAINED_LIMIT_SECONDS else "FAIL")
     )
-    hierarchy = build_phase_hierarchy(normalized_segments)
+    hierarchy = build_stage_hierarchy(normalized_segments)
     coverage = setup_timeline_coverage(normalized_segments, hierarchy)
     errors = validate_setup_timeline_artifact_data(
         {
             "segments": normalized_segments,
-            "phase_hierarchy": hierarchy,
+            "stage_hierarchy": hierarchy,
             "setup_command_wall_seconds": wall,
             "setup_timeline_total_seconds": total,
             "setup_timeline_unexplained_seconds": unexplained,
@@ -339,10 +342,11 @@ def build_setup_timeline_artifact(
     artifact = {
         "schema_version": "v1",
         "artifact_type": SETUP_TIMELINE_ARTIFACT_TYPE,
-        "phase_id": phase_id,
-        "optimization_phase_id": SETUP_TIMELINE_OPTIMIZATION_PHASE,
+        "capability_id": capability_id,
+        "timeline_kind": SETUP_TIMELINE_KIND,
         "run_id": run_id,
         "scenario": scenario,
+        "profile_id": profile_id,
         "created_at": utc_now(),
         "producer": {"name": "valkey-scale-lab-runtime", "version": __version__},
         "status": artifact_status,
@@ -353,14 +357,14 @@ def build_setup_timeline_artifact(
         "setup_timeline_unexplained_status": unexplained_status,
         "setup_timeline_unexplained_explanation": unexplained_explanation(wall, total, unexplained),
         "segments": normalized_segments,
-        "phase_hierarchy": hierarchy,
-        "required_phase_coverage": coverage,
+        "stage_hierarchy": hierarchy,
+        "required_stage_coverage": coverage,
         "largest_segments": summary["largest_segments"],
         "largest_gaps": summary["largest_gaps"],
         "real_valkey_evidence_summary": real_valkey_evidence_summary
         or {
             "status": "MISSING",
-            "reason": "real Valkey evidence is added by the P13O validator after wrapper probes complete",
+            "reason": "real Valkey evidence is added by the gate validator after wrapper probes complete",
         },
         "source_artifacts": source_artifacts or [],
         "summary": summary,
@@ -373,9 +377,10 @@ def build_setup_timeline_artifact(
 
 def build_setup_telemetry_artifact(
     *,
-    phase_id: str,
+    capability_id: str,
     run_id: str,
     scenario: str,
+    profile_id: str,
     status: str,
     node_count: int,
     segments: list[dict[str, Any]] | None = None,
@@ -449,9 +454,10 @@ def build_setup_telemetry_artifact(
     artifact = {
         "schema_version": "v1",
         "artifact_type": SETUP_TELEMETRY_ARTIFACT_TYPE,
-        "phase_id": phase_id,
+        "capability_id": capability_id,
         "run_id": run_id,
         "scenario": scenario,
+        "profile_id": profile_id,
         "created_at": utc_now(),
         "producer": {"name": "valkey-scale-lab-runtime", "version": __version__},
         "status": status if not missing_metrics or status != "PASS" else "PASS",
@@ -660,7 +666,7 @@ def _normalize_segments(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return normalized
 
 
-def build_phase_hierarchy(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def build_stage_hierarchy(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_name: dict[str, list[dict[str, Any]]] = {}
     for segment in segments:
         by_name.setdefault(str(segment["name"]), []).append(segment)
@@ -809,7 +815,7 @@ def validate_setup_timeline_artifact_data(artifact: dict[str, Any], *, require_w
     for name in REQUIRED_SETUP_SEGMENTS:
         if name not in names:
             errors.append(f"missing required setup timeline segment: {name}")
-    hierarchy = artifact.get("phase_hierarchy", [])
+    hierarchy = artifact.get("stage_hierarchy", [])
     groups = {str(item.get("name")): item for item in hierarchy if isinstance(item, dict)}
     for name in REQUIRED_SETUP_GROUPS:
         group = groups.get(name)

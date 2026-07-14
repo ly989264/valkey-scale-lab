@@ -212,6 +212,14 @@ class GateOrchestrator:
             raise GateRequestContractError(
                 "request requested_nodes must exactly match the compiled plan"
             )
+        if (
+            request.profile_id is not None
+            and plan.profile_id is not None
+            and request.profile_id != plan.profile_id
+        ):
+            raise GateRequestContractError(
+                "request profile_id must match the exact scale selected by the plan"
+            )
 
     @staticmethod
     def _execution_permission_failure(
@@ -266,8 +274,8 @@ class GateOrchestrator:
             definition_digest=plan.definition_digest,
             plan_digest=plan.digest,
             fault_scope=request.fault_scope,
-            runtime_phase=plan.runtime_phase,
-            runtime_scenario=plan.runtime_scenario,
+            backend_id=request.backend_id,
+            profile_id=request.profile_id or plan.profile_id or f"exact-{request.requested_nodes}",
             config_template=plan.config_template,
             configuration=request.configuration,
             metadata=request.metadata,

@@ -23,8 +23,8 @@ from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan, density_runtime_config
 from valkey_scale_lab.server_profile import normalize_server_profile_config
 
-PHASE_ID = "P01_CONFIG_SCHEMA"
-RUN_ID = "P01_CONFIG_SCHEMA-local-20260628"
+CAPABILITY_ID = "config_validation"
+RUN_ID = "config_validation-local-20260628"
 CREATED_AT = "2026-06-28T00:00:00Z"
 REQUIRED_1000_ENV_VALUE = "I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE"
 GLOBAL_CONFIG_PATH = Path("config/valkey_scale_lab_global.yaml")
@@ -123,7 +123,7 @@ def validate_config_file(
     report = {
         "schema_version": "v1",
         "artifact_type": "config_validation_report",
-        "phase_id": PHASE_ID,
+        "capability_id": CAPABILITY_ID,
         "run_id": RUN_ID,
         "created_at": CREATED_AT,
         "producer": producer(),
@@ -173,7 +173,7 @@ def emit_schema_report(out_path: str | Path) -> dict[str, Any]:
     report = {
         "schema_version": "v1",
         "artifact_type": "config_schema_report",
-        "phase_id": PHASE_ID,
+        "capability_id": CAPABILITY_ID,
         "run_id": RUN_ID,
         "created_at": CREATED_AT,
         "producer": producer(),
@@ -378,7 +378,7 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     default_cap = safety.get("default_max_nodes", 100)
     allow_1000 = safety.get("allow_1000_nodes") is True
     dry_run = runtime.get("dry_run") is True
-    p37_dry_run = is_p37_200_plus_dry_run_profile(config)
+    scale_projection = is_scale_projection_profile(config)
     legacy_1000_dry_run = (
         total_nodes >= 1000
         and allow_1000
@@ -389,20 +389,20 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     )
 
     if default_cap != 100:
-        errors.append(_err("DEFAULT_NODE_CAP", "safety.default_max_nodes must be exactly 100 for development phases"))
+        errors.append(_err("DEFAULT_NODE_CAP", "safety.default_max_nodes must be exactly 100 for development capabilities"))
     if total_nodes > 200:
         if not dry_run:
             errors.append(_err("REAL_EXECUTION_ABOVE_200_FORBIDDEN", "configs above 200 nodes must use runtime.dry_run: true"))
-        if not p37_dry_run and not legacy_1000_dry_run:
+        if not scale_projection and not legacy_1000_dry_run:
             errors.append(
                 _err(
                     "MISSING_200_PLUS_DRY_RUN_PROFILE",
-                    "configs above 200 nodes require an explicit P37 dry-run profile or the legacy 1000-node dry-run opt-in",
+                    "configs above 200 nodes require an explicit scale-projection profile or the legacy 1000-node dry-run opt-in",
                 )
             )
         if workload.get("enabled") is True:
             errors.append(_err("WORKLOAD_ABOVE_200_FORBIDDEN", "configs above 200 nodes must not enable workload execution"))
-    if total_nodes > default_cap and not allow_1000 and not p37_dry_run:
+    if total_nodes > default_cap and not allow_1000 and not scale_projection:
         errors.append(_err("NODE_CAP_EXCEEDED", f"config creates {total_nodes} nodes above default cap {default_cap}"))
     if total_nodes >= 1000:
         if not allow_1000:
@@ -471,7 +471,7 @@ def _validate_failover_timeline_observer(observability: dict[str, Any]) -> list[
     return errors
 
 
-def is_p37_200_plus_dry_run_profile(config: dict[str, Any]) -> bool:
+def is_scale_projection_profile(config: dict[str, Any]) -> bool:
     total_nodes = _total_nodes(config)
     safety = _obj(config, "safety")
     runtime = _obj(config, "runtime")
@@ -481,7 +481,7 @@ def is_p37_200_plus_dry_run_profile(config: dict[str, Any]) -> bool:
         total_nodes > 200
         and runtime.get("dry_run") is True
         and scale_profile.get("dry_run_only") is True
-        and scale_profile.get("p37_dry_run_target") is True
+        and scale_profile.get("scale_projection_target") is True
         and scale_profile.get("execution_mode") == "dry_run"
         and int(scale_profile.get("target_nodes", 0) or 0) == total_nodes
         and workload.get("enabled") is not True
@@ -707,37 +707,37 @@ def _err(code: str, message: str) -> dict[str, Any]:
     return {"code": code, "message": message}
 
 
-def write_phase_summary(path: str | Path) -> None:
+def write_run_summary(path: str | Path) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     summary = {
         "schema_version": "v1",
-        "artifact_type": "phase_summary",
-        "phase_id": PHASE_ID,
+        "artifact_type": "run_summary",
+        "capability_id": CAPABILITY_ID,
         "run_id": RUN_ID,
         "created_at": CREATED_AT,
         "producer": producer(),
         "status": "PASS",
-        "summary": "P01 implemented deterministic run configuration parsing, normalization, schema reporting, and semantic validation for safety, runtime, host, AZ, cluster, workload, fault, and 1000-node opt-in settings.",
+        "summary": "CONFIG_VALIDATION implemented deterministic run configuration parsing, normalization, schema reporting, and semantic validation for safety, runtime, host, AZ, cluster, workload, fault, and 1000-node opt-in settings.",
         "required_artifacts": [
-            "artifacts/phases/P01_CONFIG_SCHEMA/phase_summary.json",
-            "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_report.json",
-            "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_multi_az_report.json",
-            "artifacts/phases/P01_CONFIG_SCHEMA/config_schema_report.json",
+            "artifacts/captures/config_validation/run_summary.json",
+            "artifacts/captures/config_validation/config_validation_report.json",
+            "artifacts/captures/config_validation/config_validation_multi_az_report.json",
+            "artifacts/captures/config_validation/config_schema_report.json",
         ],
         "missing_metrics": [
             {
                 "metric": "real_valkey_e2e_evidence",
                 "status": "SKIPPED_WITH_REASON",
-                "reason": "P01_CONFIG_SCHEMA is a fake-only configuration validation phase; real Valkey evidence begins at P03.",
-                "impact": "No runtime cluster claims are made by this phase.",
+                "reason": "config_validation is a fake-only configuration validation capability_id; real Valkey evidence begins at CLUSTER_LIFECYCLE.",
+                "impact": "No runtime cluster claims are made by this capability_id.",
             }
         ],
         "risks": [
             {
                 "risk": "YAML support is intentionally limited to the repository's JSON-compatible template style until a dependency policy is introduced.",
                 "severity": "low",
-                "required_before_next_phase": False,
+                "required_before_next_capability": False,
             }
         ],
     }

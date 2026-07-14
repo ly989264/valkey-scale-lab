@@ -23,6 +23,6 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 markers = [
-  "slow: timeout-sensitive checks that are not part of the default P13 fast feedback lane",
+  "slow: timeout-sensitive checks that are not part of the default setup fast feedback lane",
   "perf: performance or benchmarking checks that must be run explicitly",
 ]

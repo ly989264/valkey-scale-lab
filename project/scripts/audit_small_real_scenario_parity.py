@@ -17,17 +17,17 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
 
 
-STAGE_ID = "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY"
-RUN_ID = "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY-small-real-parity-v1"
+CAPABILITY_ID = "small_real_parity"
+RUN_ID = "small-real-parity-audit-v1"
 CREATED_AT = "2026-06-30T00:00:00Z"
 RENDERED_SUFFIXES = {".html", ".csv", ".svg", ".md"}
-COMMAND_FORBIDDEN_TOKENS = {"P14_SCALE_1000_OPTIN_DRYRUN", "VSLAB_ALLOW_1000_DRYRUN"}
+COMMAND_FORBIDDEN_TOKENS = {"scale_planning", "VSLAB_ALLOW_1000_DRYRUN"}
 
 
 @dataclass(frozen=True)
 class SurfaceSpec:
     surface: str
-    phase_id: str
+    capability_id: str
     scenario: str
     evidence_path: str
     cleanup_path: str
@@ -41,59 +41,59 @@ class SurfaceSpec:
 
 SURFACES = [
     SurfaceSpec(
-        "cluster_smoke",
-        "P03_LOCAL_DOCKER_VALKEY",
-        "cluster_smoke",
-        "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
-        "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+        "cluster_lifecycle",
+        "cluster_lifecycle",
+        "cluster_lifecycle",
+        "artifacts/captures/cluster_lifecycle/valkey_e2e_evidence.json",
+        "artifacts/captures/cluster_lifecycle/cleanup_report.json",
     ),
     SurfaceSpec(
         "management_ops",
-        "P04_CLUSTER_MANAGEMENT_OPS",
-        "management_ops",
-        "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json",
-        "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
-        ("artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",),
+        "management_matrix",
+        "management_matrix",
+        "artifacts/captures/management_matrix/valkey_e2e_evidence.json",
+        "artifacts/captures/management_matrix/cleanup_report.json",
+        ("artifacts/captures/management_matrix/management_ops_report.json",),
     ),
     SurfaceSpec(
-        "workload_smoke",
-        "P05_WORKLOAD_ENGINE",
-        "workload_smoke",
-        "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
-        "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
-        ("artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",),
+        "workload",
+        "workload",
+        "workload",
+        "artifacts/captures/workload/valkey_e2e_evidence.json",
+        "artifacts/captures/workload/cleanup_report.json",
+        ("artifacts/captures/workload/workload_report.json",),
     ),
     SurfaceSpec(
-        "observability_smoke",
-        "P06_OBSERVABILITY_METRICS",
-        "observability_smoke",
-        "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json",
-        "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+        "observability",
+        "observability",
+        "observability",
+        "artifacts/captures/observability/valkey_e2e_evidence.json",
+        "artifacts/captures/observability/cleanup_report.json",
         (
-            "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl",
-            "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl",
+            "artifacts/captures/observability/metrics_timeseries.jsonl",
+            "artifacts/captures/observability/events.jsonl",
         ),
     ),
     SurfaceSpec(
         "fault_sandbox",
-        "P07_FAULT_INJECTION_SANDBOX",
-        "fault_sandbox",
-        "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
-        "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
-        ("artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",),
+        "fault_matrix",
+        "fault_matrix",
+        "artifacts/captures/fault_matrix/valkey_e2e_evidence.json",
+        "artifacts/captures/fault_matrix/cleanup_report.json",
+        ("artifacts/captures/fault_matrix/fault_report.json",),
         expected_data_path="SKIPPED_WITH_REASON",
         producer="scripts/fault_safety_gate.py",
     ),
     SurfaceSpec(
         "failover_primary_stop",
-        "P08_FAILOVER_SPLIT_BRAIN",
-        "primary_stop_failover",
-        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
-        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+        "fault_matrix",
+        "fault_matrix",
+        "artifacts/captures/fault_matrix/valkey_e2e_evidence.json",
+        "artifacts/captures/fault_matrix/cleanup_report.json",
         (
-            "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
-            "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_report.json",
-            "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/state_failover.json",
+            "artifacts/captures/fault_matrix/failover_report.json",
+            "artifacts/captures/fault_matrix/fault_report.json",
+            "artifacts/captures/fault_matrix/state_failover.json",
         ),
         expected_nodes=None,
         min_nodes_observed=5,
@@ -102,31 +102,31 @@ SURFACES = [
     ),
     SurfaceSpec(
         "stability_soak",
-        "P11_STABILITY_SOAK",
-        "stability_soak_smoke",
-        "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
-        "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+        "stability",
+        "stability",
+        "artifacts/captures/stability/valkey_e2e_evidence.json",
+        "artifacts/captures/stability/cleanup_report.json",
         (
-            "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
-            "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
-            "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+            "artifacts/captures/stability/stability_report.json",
+            "artifacts/captures/stability/stability_metrics.jsonl",
+            "artifacts/captures/stability/stability_baseline_comparison.json",
         ),
     ),
     SurfaceSpec(
         "cleanup",
-        "P03_P11_SMALL_REAL_CLEANUP",
-        "cleanup",
-        "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
-        "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+        "small_real_parity",
+        "local_full_flow",
+        "artifacts/captures/cluster_lifecycle/cleanup_report.json",
+        "artifacts/captures/cluster_lifecycle/cleanup_report.json",
         (
-            "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
-            "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
-            "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
-            "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
-            "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
-            "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
-            "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
-            "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+            "artifacts/captures/management_matrix/cleanup_report.json",
+            "artifacts/captures/workload/cleanup_report.json",
+            "artifacts/captures/observability/cleanup_report.json",
+            "artifacts/captures/fault_matrix/cleanup_report.json",
+            "artifacts/captures/fault_matrix/cleanup_report.json",
+            "artifacts/captures/analysis_reporting/cleanup_report.json",
+            "artifacts/captures/orchestration/cleanup_report.json",
+            "artifacts/captures/stability/cleanup_report.json",
         ),
         expected_nodes=None,
         expected_data_path=None,
@@ -150,14 +150,14 @@ SCHEMA_BY_ARTIFACT_TYPE = {
     "small_real_parity_audit": "schemas/artifact/small_real_parity_audit.schema.json",
     "metric_catalog": "schemas/artifact/metric_catalog.schema.json",
     "coverage_matrix": "schemas/artifact/coverage_matrix.schema.json",
-    "loop_report_index": "schemas/artifact/loop_report_index.schema.json",
+    "audit_report_index": "schemas/artifact/audit_report_index.schema.json",
 }
 
 FAKE_METRICS = {
-    "cluster_smoke": ["cluster_smoke.real_evidence.nodes_observed", "cluster_smoke.real_evidence.data_path_result"],
+    "cluster_lifecycle": ["cluster_lifecycle.real_evidence.nodes_observed", "cluster_lifecycle.real_evidence.data_path_result"],
     "management_ops": ["management_ops.operation.meet.duration_seconds", "management_ops.operation.remove_node.status"],
-    "workload_smoke": ["workload_smoke.achieved_qps", "workload_smoke.latency.p95_ms"],
-    "observability_smoke": ["observability_smoke.metrics.sample_count", "observability_smoke.events.count"],
+    "workload": ["workload.achieved_qps", "workload.latency.p95_ms"],
+    "observability": ["observability.metrics.sample_count", "observability.events.count"],
     "fault_sandbox": ["fault_sandbox.safety.host_network_mutated", "fault_sandbox.observed_impact"],
     "failover_primary_stop": ["failover_primary_stop.failover_latency_ms", "failover_primary_stop.split_brain_duration_ms"],
     "stability_soak": ["stability_soak.duration_seconds", "stability_soak.baseline.max_memory_growth_bytes"],
@@ -503,7 +503,7 @@ class SmallRealParityAudit:
 
     def add_fake_metrics(self, spec: SurfaceSpec) -> dict[str, Any]:
         metric_names = FAKE_METRICS[spec.surface]
-        source = f"artifacts/loop_engineering/stages/{STAGE_ID}/current_harness_plan.json"
+        source = "verification/catalog.json"
         for idx, name in enumerate(metric_names):
             self.add_metric(
                 name=name,
@@ -514,7 +514,7 @@ class SmallRealParityAudit:
                 value=None,
                 value_status="SKIPPED_WITH_REASON",
                 reason="Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage.",
-                scenario="fake",
+                scenario=spec.scenario,
                 node_count_scope="fake",
                 evidence_layer="fake",
                 evidence_class="fake",
@@ -547,12 +547,12 @@ class SmallRealParityAudit:
                     reason=op.get("reason", ""),
                     scenario=spec.scenario,
                 )
-        elif spec.surface == "workload_smoke":
+        elif spec.surface == "workload":
             payload = self.load_json(spec.metric_paths[0])
             for name, unit, pointer in [
-                ("workload_smoke.achieved_qps", "qps", "$.achieved_qps"),
-                ("workload_smoke.latency.p95_ms", "ms", "$.latency.p95"),
-                ("workload_smoke.errors.total", "count", "$.errors.total"),
+                ("workload.achieved_qps", "qps", "$.achieved_qps"),
+                ("workload.latency.p95_ms", "ms", "$.latency.p95"),
+                ("workload.errors.total", "count", "$.errors.total"),
             ]:
                 self.add_metric(
                     name=name,
@@ -566,7 +566,7 @@ class SmallRealParityAudit:
             for idx, window in enumerate(payload.get("timing_windows", [])):
                 if window.get("status") == "SKIPPED_WITH_REASON":
                     self.add_metric(
-                        name=f"workload_smoke.timing_window.{window.get('name')}.duration_seconds",
+                        name=f"workload.timing_window.{window.get('name')}.duration_seconds",
                         surface=spec.surface,
                         unit="seconds",
                         source_artifact=spec.metric_paths[0],
@@ -576,11 +576,11 @@ class SmallRealParityAudit:
                         reason=window.get("reason", ""),
                         scenario=spec.scenario,
                     )
-        elif spec.surface == "observability_smoke":
+        elif spec.surface == "observability":
             samples = self.read_jsonl(spec.metric_paths[0])
             events = self.read_jsonl(spec.metric_paths[1])
             self.add_metric(
-                name="observability_smoke.metrics.sample_count",
+                name="observability.metrics.sample_count",
                 surface=spec.surface,
                 unit="count",
                 source_artifact=spec.metric_paths[0],
@@ -589,7 +589,7 @@ class SmallRealParityAudit:
                 scenario=spec.scenario,
             )
             self.add_metric(
-                name="observability_smoke.events.count",
+                name="observability.events.count",
                 surface=spec.surface,
                 unit="count",
                 source_artifact=spec.metric_paths[1],
@@ -747,7 +747,7 @@ class SmallRealParityAudit:
                     value=remaining,
                     value_status="MEASURED" if remaining is not None else "MISSING",
                     reason="" if remaining is not None else "cleanup_report lacks resources_remaining",
-                    scenario="cleanup",
+                    scenario=spec.scenario,
                     evidence_class="source_artifact",
                 )
                 self.add_metric(
@@ -757,7 +757,7 @@ class SmallRealParityAudit:
                     source_artifact=path_text,
                     source_pointer="$.cleanup_actions",
                     value=len(actions),
-                    scenario="cleanup",
+                    scenario=spec.scenario,
                     evidence_class="source_artifact",
                 )
 
@@ -789,7 +789,7 @@ class SmallRealParityAudit:
             surfaces.append(
                 {
                     "surface": spec.surface,
-                    "phase_id": spec.phase_id,
+                    "capability_id": spec.capability_id,
                     "scenario": spec.scenario,
                     "status": surface_status,
                     "fake_coverage": fake,
@@ -802,9 +802,9 @@ class SmallRealParityAudit:
 
     def build_report_checks(self) -> list[dict[str, Any]]:
         checks: list[dict[str, Any]] = []
-        catalog_path = "artifacts/loop_engineering/reports/metric_catalog.json"
-        coverage_path = "artifacts/loop_engineering/reports/coverage_matrix.json"
-        report_index_path = "artifacts/loop_engineering/reports/report_index.json"
+        catalog_path = "artifacts/captures/analysis_reporting/metric_catalog.json"
+        coverage_path = "artifacts/captures/analysis_reporting/coverage_matrix.json"
+        report_index_path = "artifacts/captures/analysis_reporting/report_index.json"
         for path_text in [catalog_path, coverage_path, report_index_path]:
             self.source_meta(path_text)
         catalog = self.load_json(catalog_path)
@@ -849,39 +849,39 @@ class SmallRealParityAudit:
                 description="Report index or rendered reports are incorrectly marked source-of-truth",
                 evidence=[report_index_path],
             )
-        command_guard = self.check_l06_commands()
+        command_guard = self.check_commands()
         checks.append(command_guard)
         return checks
 
-    def check_l06_commands(self) -> dict[str, Any]:
-        command_log = self.root / "artifacts" / "loop_engineering" / "stages" / STAGE_ID / "commands.jsonl"
-        if not command_log.exists():
-            return {"name": "p14_forbidden_command_guard", "status": "SKIPPED_WITH_REASON", "reason": "L06 command log not present yet"}
+    def check_commands(self) -> dict[str, Any]:
+        command_logs = sorted((self.root / "artifacts" / "captures").glob("*/command_log*.jsonl"))
         offending: list[str] = []
-        for line in command_log.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            try:
-                entry = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            command_text = " ".join(str(part) for part in entry.get("command", []))
-            env_text = json.dumps(entry.get("environment", {}), sort_keys=True)
-            for token in COMMAND_FORBIDDEN_TOKENS:
-                if token in command_text or token in env_text:
-                    offending.append(token)
+        for command_log in command_logs:
+            for line in command_log.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                command_text = " ".join(str(part) for part in entry.get("command", []))
+                env_text = json.dumps(entry.get("environment", {}), sort_keys=True)
+                for token in COMMAND_FORBIDDEN_TOKENS:
+                    if token in command_text or token in env_text:
+                        offending.append(token)
         if offending:
             self.finding(
                 severity="high",
-                category="p14_forbidden_command",
+                category="scale_planning_forbidden_command",
                 blocking=True,
-                description="L06 command log contains forbidden P14 execution or opt-in token",
+                description="Product command logs contain forbidden SCALE_PLANNING execution or opt-in token",
                 evidence=sorted(set(offending)),
             )
         return {
-            "name": "p14_forbidden_command_guard",
+            "name": "scale_planning_forbidden_command_guard",
             "status": "PASS" if not offending else "FAIL",
             "value": not offending,
+            "command_logs_checked": len(command_logs),
             "forbidden_tokens": sorted(COMMAND_FORBIDDEN_TOKENS),
         }
 
@@ -900,18 +900,18 @@ class SmallRealParityAudit:
                 "failover": "scripts/fault_failover_gate.py",
             },
             "version_prefix_required": "9.1.",
-            "p08_expected_nodes": {
+            "failover_expected_nodes": {
                 "initial_state_nodes": 6,
                 "post_fault_min_live_nodes": 5,
                 "reason": "primary-stop failover evidence observes live nodes after the stopped primary is removed from the probe set",
             },
-            "p14_real_valkey_coverage": False,
-            "p14_execution_allowed": False,
+            "scale_planning_real_valkey_coverage": False,
+            "scale_planning_execution_allowed": False,
         }
         result = {
             "schema_version": "v1",
             "artifact_type": "small_real_parity_audit",
-            "stage_id": STAGE_ID,
+            "capability_id": CAPABILITY_ID,
             "run_id": RUN_ID,
             "created_at": CREATED_AT,
             "producer": {"name": "scripts/audit_small_real_scenario_parity.py", "version": "v1"},

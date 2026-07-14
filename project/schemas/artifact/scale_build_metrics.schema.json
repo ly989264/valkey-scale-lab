@@ -10,7 +10,7 @@
     "status",
     "summary",
     "canonical_rungs",
-    "p14_boundary",
+    "scale_planning_boundary",
     "findings"
   ],
   "properties": {
@@ -38,7 +38,7 @@
         "skipped_metric_count",
         "real_valkey_rung_count",
         "cleanup_pass_count",
-        "p14_dry_run_only"
+        "scale_planning_dry_run_only"
       ],
       "properties": {
         "blocking_findings_count": {"type": "integer", "minimum": 0},
@@ -55,7 +55,7 @@
         "skipped_metric_count": {"type": "integer", "minimum": 0},
         "real_valkey_rung_count": {"type": "integer", "const": 3},
         "cleanup_pass_count": {"type": "integer", "const": 3},
-        "p14_dry_run_only": {"type": "boolean", "const": true}
+        "scale_planning_dry_run_only": {"type": "boolean", "const": true}
       },
       "additionalProperties": true
     },
@@ -68,7 +68,7 @@
         "required": [
           "node_count",
           "scenario",
-          "phase_id",
+          "capability_id",
           "status",
           "evidence_path",
           "source_artifacts",
@@ -84,7 +84,7 @@
         "properties": {
           "node_count": {"type": "integer", "enum": [30, 50, 100]},
           "scenario": {"type": "string", "minLength": 1},
-          "phase_id": {"type": "string", "minLength": 1},
+          "capability_id": {"type": "string", "minLength": 1},
           "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED", "PARTIAL"]},
           "evidence_path": {"type": "string", "minLength": 1},
           "source_artifacts": {
@@ -145,10 +145,10 @@
         "additionalProperties": true
       }
     },
-    "p14_boundary": {
+    "scale_planning_boundary": {
       "type": "object",
       "required": [
-        "phase_id",
+        "capability_id",
         "status",
         "dry_run_only",
         "real_valkey_coverage",
@@ -156,7 +156,7 @@
         "reason"
       ],
       "properties": {
-        "phase_id": {"type": "string", "const": "P14_SCALE_1000_OPTIN_DRYRUN"},
+        "capability_id": {"type": "string", "const": "scale_planning"},
         "status": {"type": "string", "const": "SKIPPED_WITH_REASON"},
         "dry_run_only": {"type": "boolean", "const": true},
         "real_valkey_coverage": {"type": "boolean", "const": false},

@@ -211,7 +211,7 @@ def run_windowed_workload(
         window_started = time.monotonic()
         latencies_ms: list[float] = []
         errors: list[str] = []
-        selected_keys = keys or [f"{{vslab-p16}}:{window_name}:{idx}" for idx in range(max(operations_per_window, 1))]
+        selected_keys = keys or [f"{{vslab-telemetry}}:{window_name}:{idx}" for idx in range(max(operations_per_window, 1))]
         for op_index in range(operations_per_window):
             op_type = "SET" if op_index % 3 == 0 else "GET"
             if profile is not None:

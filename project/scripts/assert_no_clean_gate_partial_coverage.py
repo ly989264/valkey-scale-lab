@@ -11,13 +11,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Reject partial P45 clean-gate layered coverage")
-    parser.add_argument("--phase", required=True)
+    parser = argparse.ArgumentParser(description="Reject partial CLEAN_GATE_DIAGNOSTICS clean-gate layered coverage")
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     parser.add_argument("--require-scales", default="30,50,100,200")
     parser.add_argument("--require-dry-run-gt-200", action="store_true")
     args = parser.parse_args()
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     required_scales = {int(item) for item in args.require_scales.split(",") if item}
     errors: list[str] = []
     samples = _load_jsonl(base / "failover_timeline_samples.jsonl", errors)
@@ -27,8 +27,8 @@ def main() -> int:
     for sample in samples:
         sample_id = str(sample.get("sample_id", "MISSING"))
         node_count = sample.get("node_count")
-        if sample.get("phase_id") != args.phase:
-            errors.append(f"{sample_id}: P45 cannot pass with historical phase_id={sample.get('phase_id')}")
+        if sample.get("capability_id") != args.capability_id:
+            errors.append(f"{sample_id}: CLEAN_GATE_DIAGNOSTICS cannot pass with historical capability_id={sample.get('capability_id')}")
         if sample.get("execution_mode") in {"fake_schema", "unit_schema"} and sample.get("real_valkey") is True:
             errors.append(f"{sample_id}: fake/schema execution cannot claim real_valkey")
         if sample.get("real_valkey") is True and sample.get("status") == "PASS" and isinstance(node_count, int):
@@ -43,7 +43,7 @@ def main() -> int:
     if missing:
         errors.append(f"missing required real layered scales: {missing}")
     if len([scale for scale, rows in real_by_scale.items() if rows]) <= 1:
-        errors.append("P45 cannot pass with only one scale of layered evidence")
+        errors.append("CLEAN_GATE_DIAGNOSTICS cannot pass with only one scale of layered evidence")
     if args.require_dry_run_gt_200:
         projection = _load_json(base / "dry_run_gt_200_projection.json", errors)
         if projection.get("dry_run") is not True:
@@ -59,7 +59,7 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"PASS no clean-gate partial coverage phase={args.phase}")
+    print(f"PASS no clean-gate partial coverage capability_id={args.capability_id}")
     return 0
 
 

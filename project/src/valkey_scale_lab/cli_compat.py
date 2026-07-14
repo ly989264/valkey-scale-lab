@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from valkey_scale_lab.compat import resolve_phase_alias
+from valkey_scale_lab.execution import SCENARIO_CAPABILITIES, resolve_profile
 from valkey_scale_lab.analysis import summary as analysis_summary
 from valkey_scale_lab.analysis import workload_impact
 from valkey_scale_lab.config import validation as config_validation
@@ -52,7 +54,7 @@ def create_plan_file(
 
 def create_scenario(
     *,
-    phase: str,
+    alias_id: str,
     scenario: str,
     config_path: str | Path,
     artifacts_dir: str | Path,
@@ -61,9 +63,17 @@ def create_scenario(
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return docker_runtime.create_scenario(
-        phase=phase,
-        scenario=scenario,
+    alias = resolve_phase_alias(alias_id, scenario)
+    profile = resolve_profile(
+        alias.profile_id,
+        requested_nodes=_configured_node_count(config_path),
+    )
+    return execute_scenario(
+        capability_id=alias.capability_id,
+        scenario_id=alias.scenario_id,
+        backend_id=alias.backend_id,
+        profile_id=profile.profile_id,
+        requested_nodes=profile.requested_nodes,
         config_path=config_path,
         artifacts_dir=artifacts_dir,
         state_out=state_out,
@@ -71,6 +81,43 @@ def create_scenario(
         global_config_path=global_config_path,
         cli_overrides=cli_overrides,
     )
+
+
+def execute_scenario(
+    *,
+    capability_id: str | None = None,
+    scenario_id: str,
+    backend_id: str,
+    profile_id: str,
+    requested_nodes: int,
+    config_path: str | Path,
+    artifacts_dir: str | Path,
+    state_out: str | Path,
+    setup_timeline: SetupTimeline | None = None,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return docker_runtime.execute_scenario(
+        capability_id=capability_id or SCENARIO_CAPABILITIES[scenario_id],
+        scenario_id=scenario_id,
+        backend_id=backend_id,
+        profile_id=profile_id,
+        requested_nodes=requested_nodes,
+        config_path=config_path,
+        artifacts_dir=artifacts_dir,
+        state_out=state_out,
+        setup_timeline=setup_timeline,
+        global_config_path=global_config_path,
+        cli_overrides=cli_overrides,
+    )
+
+
+def _configured_node_count(config_path: str | Path) -> int:
+    config = docker_runtime.normalize_config(
+        docker_runtime.parse_config_file(config_path)
+    )
+    cluster = config["cluster"]
+    return int(cluster["shards"]) * (1 + int(cluster["replicas_per_shard"]))
 
 
 def cleanup_scenario(
@@ -125,13 +172,13 @@ def build_workload_impact_analysis(
     source_root: str | Path,
     out_dir: str | Path,
     *,
-    phase_id: str = workload_impact.PHASE_ID,
+    capability_id: str = workload_impact.CAPABILITY_ID,
     run_id: str = workload_impact.RUN_ID,
 ) -> dict[str, Any]:
     return workload_impact.build_workload_impact_analysis(
         source_root,
         out_dir,
-        phase_id=phase_id,
+        capability_id=capability_id,
         run_id=run_id,
     )
 
@@ -144,20 +191,30 @@ def render_report(
     return summary_report.render_report(analysis_path, out_dir, index_out)
 
 
+def build_final_report(
+    input_dir: str | Path,
+    out_dir: str | Path,
+    capability_id: str = final_report.CAPABILITY_ID,
+) -> dict[str, Any]:
+    return final_report.build_final_report(
+        input_dir,
+        out_dir,
+        capability_id=capability_id,
+    )
+
+
 def build_final_goal_loop_report(
     input_dir: str | Path,
     out_dir: str | Path,
-    phase_id: str = final_report.PHASE_ID,
+    capability_id: str = final_report.CAPABILITY_ID,
 ) -> dict[str, Any]:
-    return final_report.build_final_goal_loop_report(
-        input_dir,
-        out_dir,
-        phase_id=phase_id,
-    )
+    """Compatibility alias for the former controller-named report entry point."""
+    return build_final_report(input_dir, out_dir, capability_id=capability_id)
 
 
 __all__ = [
     "apply_fault",
+    "build_final_report",
     "build_final_goal_loop_report",
     "build_workload_impact_analysis",
     "cleanup_scenario",
@@ -165,6 +222,7 @@ __all__ = [
     "create_analysis_summary",
     "create_plan_file",
     "create_scenario",
+    "execute_scenario",
     "emit_schema_report",
     "render_report",
     "validate_config_file",

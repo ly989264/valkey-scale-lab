@@ -4,20 +4,20 @@ import json
 from pathlib import Path
 
 from valkey_scale_lab.analysis import create_analysis_summary
-from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS, write_management_matrix_artifacts
+from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS, write_management_matrix_fixture_artifacts
 from valkey_scale_lab.report import render_report
 from valkey_scale_lab.runtime import docker_runtime
 
 
 def _base_required_artifacts(path: Path) -> None:
-    (path / "phase_summary.json").write_text(json.dumps({"phase_id": "M1-S04", "run_id": "m1-s04", "status": "PASS", "missing_metrics": []}), encoding="utf-8")
+    (path / "run_summary.json").write_text(json.dumps({"capability_id": "management_matrix", "run_id": "management-matrix", "status": "PASS", "missing_metrics": []}), encoding="utf-8")
     (path / "valkey_e2e_evidence.json").write_text(json.dumps({"status": "PASS", "real_valkey": False, "valkey_versions": [], "nodes_observed": 6, "cluster_state_observed": "ok"}), encoding="utf-8")
     (path / "failover_report.json").write_text(json.dumps({"status": "SKIPPED_WITH_REASON", "failovers": [{"failover_latency_ms": "MISSING"}], "summary": {}}), encoding="utf-8")
     (path / "cleanup_report.json").write_text(json.dumps({"status": "PASS", "resources_remaining": []}), encoding="utf-8")
 
 
 def test_management_writer_emits_required_contract(tmp_path: Path) -> None:
-    write_management_matrix_artifacts(tmp_path, phase_id="M1-S04", run_id="m1-s04-test", scenario="fixture", node_count=6)
+    write_management_matrix_fixture_artifacts(tmp_path, capability_id="management_matrix", run_id="management-matrix-test", scenario="management_matrix", node_count=6)
 
     matrix = json.loads((tmp_path / "management_ops_matrix.json").read_text(encoding="utf-8"))
     results = [json.loads(line) for line in (tmp_path / "management_operation_results.jsonl").read_text(encoding="utf-8").splitlines()]
@@ -34,7 +34,7 @@ def test_management_analysis_and_report_rendering(tmp_path: Path) -> None:
     source = tmp_path / "source"
     source.mkdir()
     _base_required_artifacts(source)
-    write_management_matrix_artifacts(source, phase_id="M1-S04", run_id="m1-s04-test", scenario="fixture", node_count=6)
+    write_management_matrix_fixture_artifacts(source, capability_id="management_matrix", run_id="management-matrix-test", scenario="management_matrix", node_count=6)
 
     analysis = create_analysis_summary(source, tmp_path / "analysis_summary.json")
     assert analysis["management_ops"]["operation_count"] == len(REQUIRED_MANAGEMENT_OPERATIONS)
@@ -49,7 +49,7 @@ def test_management_analysis_and_report_rendering(tmp_path: Path) -> None:
     assert "管理操作矩阵" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
 
 
-def test_p04_real_smoke_emits_matrix_contract_without_fake_destructive_pass(tmp_path: Path, monkeypatch) -> None:
+def test_canonical_management_matrix_does_not_promote_unexecuted_rows(tmp_path: Path) -> None:
     command_rows = [
         {"command_id": "cmd-meet", "command_kind": "cluster_meet", "command": ["CLUSTER", "MEET"]},
         {"command_id": "cmd-slots", "command_kind": "cluster_addslots", "command": ["CLUSTER", "ADDSLOTS"]},
@@ -58,47 +58,37 @@ def test_p04_real_smoke_emits_matrix_contract_without_fake_destructive_pass(tmp_
     ]
     (tmp_path / "command_log.jsonl").write_text("\n".join(json.dumps(row) for row in command_rows) + "\n", encoding="utf-8")
 
-    monkeypatch.setattr(
-        docker_runtime,
-        "_p17_cluster_health",
-        lambda nodes: {
-            "cluster_state": "ok",
-            "known_nodes": len(nodes),
-            "slots_assigned": 16384,
-            "slots_ok": 16384,
-            "slots_fail": 0,
-            "primary_count": 3,
-            "replica_count": 3,
+    rows = [
+        {
+            "capability_id": "management_matrix",
+            "operation_name": "create_cluster",
+            "operation_status": "PASS",
+            "command_count": 0,
+            "command_log_refs": [],
+            "source_evidence_refs": [],
+            "missing_fields": [],
         },
-    )
+        {
+            "capability_id": "management_matrix",
+            "operation_name": "remove_replica",
+            "operation_status": "FAIL",
+            "command_count": 0,
+            "command_log_refs": [],
+            "source_evidence_refs": [],
+            "missing_fields": [{"field": "real_execution_verified", "status": "MISSING", "reason": "not executed"}],
+        },
+    ]
 
-    def snapshot(_telemetry, phase, run_id, operation_id, label, _probe_nodes, _all_nodes):
-        return {
-            "schema_version": "v1",
-            "phase_id": phase,
-            "run_id": run_id,
-            "snapshot_id": f"{operation_id}-{label}",
-            "nodes": [],
-            "slots": {"assigned": 16384, "ok": 16384},
-        }
+    docker_runtime._management_matrix_attach_setup_command_refs(rows, tmp_path)
 
-    monkeypatch.setattr(docker_runtime, "_p17_topology_snapshot", snapshot)
-
-    docker_runtime.write_p04_management_matrix_contract_artifacts(
-        tmp_path,
-        "P04_CLUSTER_MANAGEMENT_OPS",
-        "management_ops",
-        "run-p04",
-        [{"logical_id": f"node-{index}"} for index in range(6)],
-    )
-
-    matrix = json.loads((tmp_path / "management_ops_matrix.json").read_text(encoding="utf-8"))
-    results = [json.loads(line) for line in (tmp_path / "management_operation_results.jsonl").read_text(encoding="utf-8").splitlines()]
-    diffs = [json.loads(line) for line in (tmp_path / "management_topology_diffs.jsonl").read_text(encoding="utf-8").splitlines()]
-
-    setup_rows = [row for row in results if row["operation_name"] in {"create_cluster", "meet_nodes", "add_replica"}]
-    destructive_rows = [row for row in results if row["operation_name"] not in {"create_cluster", "meet_nodes", "add_replica"}]
-    assert len(matrix["operations"]) == len(REQUIRED_MANAGEMENT_OPERATIONS)
-    assert len(diffs) == len(REQUIRED_MANAGEMENT_OPERATIONS)
-    assert all(row["operation_status"] == "PASS_NOOP_VERIFIED" and row["command_count"] > 0 for row in setup_rows)
-    assert all(row["operation_status"] == "SKIPPED_WITH_REASON" and row["missing_fields"] for row in destructive_rows)
+    assert rows[0]["operation_status"] == "PASS"
+    assert rows[0]["command_count"] == 4
+    assert rows[0]["command_log_refs"] == [
+        "command_log.jsonl#cmd-meet",
+        "command_log.jsonl#cmd-probe",
+        "command_log.jsonl#cmd-replica",
+        "command_log.jsonl#cmd-slots",
+    ]
+    assert rows[1]["operation_status"] == "FAIL"
+    assert rows[1]["command_count"] == 0
+    assert rows[1]["missing_fields"]

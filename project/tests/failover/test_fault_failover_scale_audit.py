@@ -21,30 +21,28 @@ def _write(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def _phase_dir(root: Path, node_count: int) -> Path:
-    if node_count == 30:
-        return root / "artifacts" / "phases" / "P12_SCALE_LADDER_10_30"
-    return root / "artifacts" / "phases" / "P13_SCALE_LADDER_50_100"
+def _capture_dir(root: Path, node_count: int) -> Path:
+    return root / "artifacts" / "captures" / "fault_matrix"
 
 
 def _scenario(node_count: int) -> str:
-    return f"scale_{node_count}_fault_failover"
+    return "fault_matrix"
 
 
-def _phase(node_count: int) -> str:
-    return "P12_SCALE_LADDER_10_30" if node_count == 30 else "P13_SCALE_LADDER_50_100"
+def _capability(node_count: int) -> str:
+    return "fault_matrix"
 
 
 def _bundle(root: Path, node_count: int) -> None:
-    phase = _phase(node_count)
+    capability_id = _capability(node_count)
     scenario = _scenario(node_count)
-    run_id = f"{phase}-{scenario}-test"
-    base = _phase_dir(root, node_count)
+    run_id = f"{capability_id}-{scenario}-test"
+    base = _capture_dir(root, node_count)
     producer = {"name": "scripts/fault_failover_gate.py", "version": "v1"}
     _write(base / f"resource_preflight_fault_{node_count}.json", {
         "schema_version": "v1",
         "artifact_type": "resource_preflight",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-30T00:00:00Z",
         "producer": producer,
@@ -55,7 +53,7 @@ def _bundle(root: Path, node_count: int) -> None:
     _write(base / f"fault_report_{node_count}.json", {
         "schema_version": "v1",
         "artifact_type": "fault_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-30T00:00:00Z",
         "producer": producer,
@@ -81,7 +79,7 @@ def _bundle(root: Path, node_count: int) -> None:
     _write(base / f"failover_report_{node_count}.json", {
         "schema_version": "v1",
         "artifact_type": "failover_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-30T00:00:00Z",
         "producer": producer,
@@ -105,7 +103,7 @@ def _bundle(root: Path, node_count: int) -> None:
     _write(base / f"workload_window_report_{node_count}.json", {
         "schema_version": "v1",
         "artifact_type": "workload_window_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-30T00:00:00Z",
         "producer": producer,
@@ -121,7 +119,7 @@ def _bundle(root: Path, node_count: int) -> None:
     _write(base / f"valkey_e2e_evidence_fault_{node_count}.json", {
         "schema_version": "v1",
         "artifact_type": "valkey_e2e_evidence",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-30T00:00:00Z",
         "producer": producer,
@@ -142,13 +140,13 @@ def _bundle(root: Path, node_count: int) -> None:
         },
         "valkey_versions": ["9.1.0"],
         "selected_primary_logical_id": "shard-0000-primary",
-        "cleanup": {"status": "PASS", "path": f"artifacts/phases/{phase}/cleanup_report_fault_{node_count}.json"},
+        "cleanup": {"status": "PASS", "path": f"artifacts/captures/{capability_id}/cleanup_report_fault_{node_count}.json"},
         "errors": [],
     })
     _write(base / f"cleanup_report_fault_{node_count}.json", {
         "schema_version": "v1",
         "artifact_type": "cleanup_report",
-        "phase_id": phase,
+        "capability_id": capability_id,
         "run_id": run_id,
         "created_at": "2026-06-30T00:00:00Z",
         "producer": producer,
@@ -159,7 +157,7 @@ def _bundle(root: Path, node_count: int) -> None:
 
 
 def _write_complete(root: Path) -> None:
-    for node_count in [30, 50, 100]:
+    for node_count in [30, 50, 100, 200]:
         _bundle(root, node_count)
 
 
@@ -175,20 +173,20 @@ def _run_audit(root: Path, out: Path) -> subprocess.CompletedProcess[str]:
 
 def test_fault_failover_scale_audit_accepts_complete_bundle(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    out = tmp_path / "artifacts" / "loop_engineering" / "reports" / "fault_failover_scale.json"
+    out = tmp_path / "artifacts" / "captures" / "analysis_reporting" / "fault_failover_scale.json"
     result = _run_audit(tmp_path, out)
     assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["status"] == "PASS"
-    assert payload["summary"]["canonical_node_counts"] == [30, 50, 100]
-    assert payload["summary"]["real_valkey_rung_count"] == 3
+    assert payload["summary"]["canonical_node_counts"] == [30, 50, 100, 200]
+    assert payload["summary"]["real_valkey_rung_count"] == 4
     assert validate(payload, load_json(SCHEMA)) == []
 
 
 def test_fault_failover_scale_audit_rejects_explicit_fixture_evidence(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    for node_count in [30, 50, 100]:
-        path = _phase_dir(tmp_path, node_count) / f"valkey_e2e_evidence_fault_{node_count}.json"
+    for node_count in [30, 50, 100, 200]:
+        path = _capture_dir(tmp_path, node_count) / f"valkey_e2e_evidence_fault_{node_count}.json"
         payload = json.loads(path.read_text(encoding="utf-8"))
         payload["fixture"] = True
         payload["evidence_origin"] = "generated_fixture"
@@ -204,18 +202,18 @@ def test_fault_failover_scale_audit_rejects_explicit_fixture_evidence(tmp_path: 
 
 def test_fault_failover_scale_audit_rejects_missing_workload_window(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    (_phase_dir(tmp_path, 50) / "workload_window_report_50.json").unlink()
+    (_capture_dir(tmp_path, 50) / "workload_window_report_50.json").unlink()
     out = tmp_path / "fault_failover_scale.json"
     result = _run_audit(tmp_path, out)
     assert result.returncode == 1
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["status"] == "FAIL"
-    assert any(f["category"] == "missing_l08_artifact" and f["node_count"] == 50 for f in payload["findings"])
+    assert any(f["category"] == "missing_required_artifact" and f["node_count"] == 50 for f in payload["findings"])
 
 
 def test_fault_failover_scale_audit_rejects_all_skipped_workload_windows(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    path = _phase_dir(tmp_path, 30) / "workload_window_report_30.json"
+    path = _capture_dir(tmp_path, 30) / "workload_window_report_30.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     for window in payload["windows"]:
         window["status"] = "SKIPPED_WITH_REASON"
@@ -230,7 +228,7 @@ def test_fault_failover_scale_audit_rejects_all_skipped_workload_windows(tmp_pat
 
 def test_fault_failover_scale_audit_rejects_background_workload_scope(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    path = _phase_dir(tmp_path, 30) / "workload_window_report_30.json"
+    path = _capture_dir(tmp_path, 30) / "workload_window_report_30.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     payload["windows"][1]["workload_scope"] = "cluster_background"
     payload["windows"][1]["source_logical_id"] = "shard-9999-primary"
@@ -244,7 +242,7 @@ def test_fault_failover_scale_audit_rejects_background_workload_scope(tmp_path: 
 
 def test_fault_failover_scale_audit_rejects_missing_after_clear_observation(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    path = _phase_dir(tmp_path, 100) / "valkey_e2e_evidence_fault_100.json"
+    path = _capture_dir(tmp_path, 100) / "valkey_e2e_evidence_fault_100.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     payload["observations"].pop("after_clear")
     payload.pop("nodes_observed_after_clear")
@@ -258,7 +256,7 @@ def test_fault_failover_scale_audit_rejects_missing_after_clear_observation(tmp_
 
 def test_fault_failover_scale_audit_rejects_missing_data_path_result(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    path = _phase_dir(tmp_path, 50) / "valkey_e2e_evidence_fault_50.json"
+    path = _capture_dir(tmp_path, 50) / "valkey_e2e_evidence_fault_50.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     payload["data_path_result"] = "MISSING"
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -269,9 +267,9 @@ def test_fault_failover_scale_audit_rejects_missing_data_path_result(tmp_path: P
     assert any(f["category"] == "data_path_invalid" and f["node_count"] == 50 for f in payload["findings"])
 
 
-def test_fault_failover_scale_audit_rejects_p14_real_fault_artifact(tmp_path: Path) -> None:
+def test_fault_failover_scale_audit_rejects_scale_planning_real_fault_artifact(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    _write(tmp_path / "artifacts" / "phases" / "P14_SCALE_1000_OPTIN_DRYRUN" / "valkey_e2e_evidence_fault_1000.json", {
+    _write(tmp_path / "artifacts" / "captures" / "scale_planning" / "valkey_e2e_evidence_fault_1000.json", {
         "artifact_type": "valkey_e2e_evidence",
         "real_valkey": True,
         "node_count": 1000,
@@ -281,13 +279,13 @@ def test_fault_failover_scale_audit_rejects_p14_real_fault_artifact(tmp_path: Pa
     result = _run_audit(tmp_path, out)
     assert result.returncode == 1
     payload = json.loads(out.read_text(encoding="utf-8"))
-    assert payload["p14_boundary"]["real_valkey_coverage"] is False
-    assert any(f["category"] == "p14_real_fault_failover_forbidden" for f in payload["findings"])
+    assert payload["scale_planning_boundary"]["real_valkey_coverage"] is False
+    assert any(f["category"] == "scale_planning_real_fault_failover_forbidden" for f in payload["findings"])
 
 
-def test_fault_failover_scale_audit_allows_p14_dryrun_resource_metadata(tmp_path: Path) -> None:
+def test_fault_failover_scale_audit_allows_scale_planning_dryrun_resource_metadata(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    _write(tmp_path / "artifacts" / "phases" / "P14_SCALE_1000_OPTIN_DRYRUN" / "resource_preflight_1000.json", {
+    _write(tmp_path / "artifacts" / "captures" / "scale_planning" / "resource_preflight_1000.json", {
         "artifact_type": "resource_preflight",
         "real_valkey": False,
         "node_count": 1000,
@@ -298,13 +296,13 @@ def test_fault_failover_scale_audit_allows_p14_dryrun_resource_metadata(tmp_path
     result = _run_audit(tmp_path, out)
     assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(out.read_text(encoding="utf-8"))
-    assert payload["p14_boundary"]["status"] == "SKIPPED_WITH_REASON"
-    assert not any(f["category"] == "p14_real_fault_failover_forbidden" for f in payload["findings"])
+    assert payload["scale_planning_boundary"]["status"] == "SKIPPED_WITH_REASON"
+    assert not any(f["category"] == "scale_planning_real_fault_failover_forbidden" for f in payload["findings"])
 
 
 def test_workload_window_schema_requires_three_windows(tmp_path: Path) -> None:
     _write_complete(tmp_path)
-    payload = json.loads((_phase_dir(tmp_path, 30) / "workload_window_report_30.json").read_text(encoding="utf-8"))
+    payload = json.loads((_capture_dir(tmp_path, 30) / "workload_window_report_30.json").read_text(encoding="utf-8"))
     schema = load_json(WINDOW_SCHEMA)
     assert validate(payload, schema) == []
     payload["windows"] = payload["windows"][:2]

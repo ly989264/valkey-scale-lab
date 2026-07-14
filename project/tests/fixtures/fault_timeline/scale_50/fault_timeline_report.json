@@ -56,12 +56,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-az_stop",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -139,12 +139,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-fault_period_workload_impact",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -219,12 +219,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-majority_partition",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PASS",
       "timeline_event_refs": [
@@ -299,12 +299,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-minority_partition",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PASS",
       "timeline_event_refs": [
@@ -382,12 +382,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-network_delay",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -465,12 +465,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-network_flap",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -548,12 +548,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-network_loss",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -631,12 +631,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-network_partition",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -714,12 +714,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-node_host_stop",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -794,12 +794,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-primary_stop_failover",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PASS",
       "timeline_event_refs": [
@@ -877,12 +877,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-replica_stop",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PARTIAL",
       "timeline_event_refs": [
@@ -957,12 +957,12 @@
         "workload_recovery_ms": 10.0
       },
       "node_count": 50,
-      "phase_id": "M1-S06",
+      "capability_id": "failover_timeline",
       "real_valkey": false,
-      "run_id": "m1-s06-fixture",
+      "run_id": "fault-timeline-fixture",
       "sample_id": "scale_50-50-split_brain_window_detection",
       "scale_rung": "50",
-      "scenario_name": "scale_50_50",
+      "scenario_name": "failover_timeline",
       "schema_version": "v1",
       "status": "PASS",
       "timeline_event_refs": [
@@ -1063,7 +1063,7 @@
   "observed_scale_rungs": [
     "50"
   ],
-  "phase_id": "M1-S06",
+  "capability_id": "failover_timeline",
   "required_fault_types": [
     "primary_stop_failover",
     "replica_stop",
@@ -1085,7 +1085,7 @@
     "100",
     "200"
   ],
-  "run_id": "m1-s06-fixture",
+  "run_id": "fault-timeline-fixture",
   "schema_version": "v1",
   "status": "PARTIAL",
   "timeline_events_ref": "fault_timeline_events.jsonl"

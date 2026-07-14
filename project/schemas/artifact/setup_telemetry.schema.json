@@ -5,9 +5,10 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "scenario",
+    "profile_id",
     "created_at",
     "producer",
     "status",
@@ -25,9 +26,10 @@
   "properties": {
     "schema_version": {"type": "string", "const": "v1"},
     "artifact_type": {"type": "string", "const": "setup_telemetry"},
-    "phase_id": {"type": "string", "minLength": 1},
+    "capability_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
     "scenario": {"type": "string", "minLength": 1},
+    "profile_id": {"type": "string", "minLength": 1},
     "created_at": {"type": "string", "minLength": 1},
     "producer": {"type": "object"},
     "status": {"type": "string", "enum": ["PASS", "FAIL", "PARTIAL", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"]},

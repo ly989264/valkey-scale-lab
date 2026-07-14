@@ -8,15 +8,15 @@ from valkey_scale_lab.observer.failover_timeline import (
     derive_rto_metrics,
 )
 
-PHASE = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
+CAPABILITY = "clean_gate_diagnostics"
 
 
 def sample(**overrides):
     row = {
         "schema_version": "v1",
-        "phase_id": PHASE,
+        "capability_id": CAPABILITY,
         "run_id": "run",
-        "scenario_name": "p45_scale_30_layered_sample_01",
+        "scenario_name": "clean_gate_diagnostics",
         "sample_id": "s30",
         "status": "PASS",
         "execution_mode": "real_valkey",
@@ -45,9 +45,9 @@ def rounds():
     return [
         {
             "schema_version": "v1",
-            "phase_id": PHASE,
+            "capability_id": CAPABILITY,
             "run_id": "run",
-            "scenario_name": "p45_scale_30_layered_sample_01",
+            "scenario_name": "clean_gate_diagnostics",
             "sample_id": "s30",
             "probe_start_ms": 1600,
             "probe_end_ms": 1650,
@@ -61,9 +61,9 @@ def rounds():
         },
         {
             "schema_version": "v1",
-            "phase_id": PHASE,
+            "capability_id": CAPABILITY,
             "run_id": "run",
-            "scenario_name": "p45_scale_30_layered_sample_01",
+            "scenario_name": "clean_gate_diagnostics",
             "sample_id": "s30",
             "probe_start_ms": 2150,
             "probe_end_ms": 2200,
@@ -79,7 +79,7 @@ def rounds():
 
 
 def test_clean_gate_diagnostics_aggregate_rounds_and_last_reason() -> None:
-    diagnostics = build_clean_gate_diagnostics([sample()], rounds(), phase_id=PHASE, run_id="diag")
+    diagnostics = build_clean_gate_diagnostics([sample()], rounds(), capability_id=CAPABILITY, run_id="diag")
 
     assert diagnostics["probe_round_count"] == 2
     assert diagnostics["full_probe_count"] == 1
@@ -91,7 +91,7 @@ def test_clean_gate_diagnostics_aggregate_rounds_and_last_reason() -> None:
 
 
 def test_layered_summary_preserves_source_boundaries() -> None:
-    summary = build_layered_recovery_summary([sample()], phase_id=PHASE, run_id="summary")
+    summary = build_layered_recovery_summary([sample()], capability_id=CAPABILITY, run_id="summary")
     row = summary["per_sample"][0]
 
     assert row["pfail_to_cluster_ok_ms"] == 400
@@ -104,4 +104,4 @@ def test_layered_summary_preserves_source_boundaries() -> None:
 def test_layered_summary_rejects_non_monotonic_clean_tail() -> None:
     bad = sample(clean_snapshot_passed_at_ms=1500)
     with pytest.raises(Exception):
-        build_layered_recovery_summary([bad], phase_id=PHASE, run_id="summary")
+        build_layered_recovery_summary([bad], capability_id=CAPABILITY, run_id="summary")

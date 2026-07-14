@@ -6,7 +6,7 @@ from pathlib import Path
 
 from valkey_scale_lab.observer.failover_timeline import derive_rto_metrics
 
-PHASE = "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
+CAPABILITY = "failover_timeline"
 
 
 def write_json(path: Path, obj: dict) -> None:
@@ -20,7 +20,7 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 def sample(sample_id: str, node_count: int, **overrides):
     row = {
         "schema_version": "v1",
-        "phase_id": PHASE,
+        "capability_id": CAPABILITY,
         "run_id": f"run-{sample_id}",
         "scenario_name": f"scenario-{sample_id}",
         "sample_id": sample_id,
@@ -57,7 +57,7 @@ def populate(base: Path, samples: list[dict]) -> None:
         [
             {
                 "schema_version": "v1",
-                "phase_id": PHASE,
+                "capability_id": CAPABILITY,
                 "run_id": row["run_id"],
                 "scenario_name": row["scenario_name"],
                 "sample_id": row["sample_id"],
@@ -82,7 +82,7 @@ def populate(base: Path, samples: list[dict]) -> None:
         [
             {
                 "schema_version": "v1",
-                "phase_id": PHASE,
+                "capability_id": CAPABILITY,
                 "run_id": row["run_id"],
                 "scenario_name": row["scenario_name"],
                 "sample_id": row["sample_id"],
@@ -167,7 +167,7 @@ def populate(base: Path, samples: list[dict]) -> None:
         {
             "schema_version": "v1",
             "artifact_type": "workload_windows",
-            "phase_id": PHASE,
+            "capability_id": CAPABILITY,
             "run_id": "workload-windows",
             "windows": windows,
         },
@@ -177,7 +177,7 @@ def populate(base: Path, samples: list[dict]) -> None:
         {
             "schema_version": "v1",
             "artifact_type": "failover_rto_summary",
-            "phase_id": PHASE,
+            "capability_id": CAPABILITY,
             "run_id": "summary",
             "status": "PASS",
             "sample_count": len(samples),
@@ -210,7 +210,7 @@ def populate(base: Path, samples: list[dict]) -> None:
 
 def run_script(name: str, base: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["python3", f"scripts/{name}.py", "--phase", PHASE, "--artifact-dir", str(base), "--require-scales", "30,50,100,200"],
+        ["python3", f"scripts/{name}.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base), "--require-scales", "30,50,100,200"],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -244,7 +244,7 @@ def test_semantics_assertion_rejects_clean_gate_substitution(tmp_path: Path) -> 
     populate(base, [bad, sample("s50", 50), sample("s100", 100), sample("s200", 200)])
 
     proc = subprocess.run(
-        ["python3", "scripts/assert_rto_metric_semantics.py", "--phase", PHASE, "--artifact-dir", str(base)],
+        ["python3", "scripts/assert_rto_metric_semantics.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base)],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -264,8 +264,8 @@ def test_partial_coverage_assertion_rejects_one_scale_only(tmp_path: Path) -> No
         [
             "python3",
             "scripts/assert_no_rto_partial_coverage.py",
-            "--phase",
-            PHASE,
+            "--capability-id",
+            CAPABILITY,
             "--artifact-dir",
             str(base),
             "--require-scales",
@@ -296,8 +296,8 @@ def test_partial_coverage_assertion_rejects_synthetic_workload_metrics(tmp_path:
         [
             "python3",
             "scripts/assert_no_rto_partial_coverage.py",
-            "--phase",
-            PHASE,
+            "--capability-id",
+            CAPABILITY,
             "--artifact-dir",
             str(base),
             "--require-scales",

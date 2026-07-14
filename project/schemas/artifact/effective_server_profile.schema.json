@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "status",
     "server_profile",
@@ -19,7 +19,7 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "effective_server_profile"},
-    "phase_id": {"type": "string"},
+    "capability_id": {"type": "string"},
     "run_id": {"type": "string"},
     "status": {"type": "string", "enum": ["PASS", "FAIL", "DEGRADED_WITH_REASON", "SKIPPED_WITH_REASON"]},
     "server_profile": {"type": "string", "enum": ["correctness", "one_b_dev", "one_b_perf"]},

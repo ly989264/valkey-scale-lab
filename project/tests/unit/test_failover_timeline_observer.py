@@ -16,7 +16,7 @@ from valkey_scale_lab.observer.failover_timeline import (
 def complete_sample(**overrides):
     row = {
         "schema_version": "v1",
-        "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+        "capability_id": "failover_timeline",
         "run_id": "run",
         "scenario_name": "scenario",
         "sample_id": "sample",
@@ -114,7 +114,7 @@ def test_build_rto_summary_uses_only_real_pass_samples() -> None:
 
     summary = build_rto_summary(
         samples,
-        phase_id="P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+        capability_id="failover_timeline",
         run_id="summary",
         timeout_config_ms=30000,
         server_profile="global_default",
@@ -134,7 +134,7 @@ def test_observer_endpoint_selection_always_includes_target_at_large_scale() -> 
     ]
 
     observer = FailoverTimelineObserver(
-        phase_id="P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+        capability_id="failover_timeline",
         run_id="run",
         scenario_name="scenario",
         sample_id="sample",

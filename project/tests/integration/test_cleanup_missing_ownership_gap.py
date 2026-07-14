@@ -17,8 +17,8 @@ def test_cleanup_rejects_state_missing_runtime_ownership(
         json.dumps(
             {
                 "schema_version": "v1",
-                "phase_id": "P03_LOCAL_DOCKER_VALKEY",
-                "scenario": "cluster_smoke",
+                "capability_id": "cluster_lifecycle",
+                "scenario": "cluster_lifecycle",
                 "nodes": [],
             }
         ),
@@ -27,8 +27,8 @@ def test_cleanup_rejects_state_missing_runtime_ownership(
 
     cleanup_calls: list[tuple[str, str]] = []
 
-    def fake_cleanup(*, phase: str, run_id: str):
-        cleanup_calls.append((phase, run_id))
+    def fake_cleanup(*, capability_id: str, run_id: str):
+        cleanup_calls.append((capability_id, run_id))
         return [], {
             "cleanup_remove_containers_seconds": 0.0,
             "cleanup_remove_networks_seconds": 0.0,

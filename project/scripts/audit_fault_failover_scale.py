@@ -12,22 +12,27 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = {
     30: {
-        "phase_id": "P12_SCALE_LADDER_10_30",
-        "scenario": "scale_30_fault_failover",
-        "dir": "artifacts/phases/P12_SCALE_LADDER_10_30",
+        "capability_id": "fault_matrix",
+        "scenario": "fault_matrix",
+        "dir": "artifacts/captures/fault_matrix",
     },
     50: {
-        "phase_id": "P13_SCALE_LADDER_50_100",
-        "scenario": "scale_50_fault_failover",
-        "dir": "artifacts/phases/P13_SCALE_LADDER_50_100",
+        "capability_id": "fault_matrix",
+        "scenario": "fault_matrix",
+        "dir": "artifacts/captures/fault_matrix",
     },
     100: {
-        "phase_id": "P13_SCALE_LADDER_50_100",
-        "scenario": "scale_100_fault_failover",
-        "dir": "artifacts/phases/P13_SCALE_LADDER_50_100",
+        "capability_id": "fault_matrix",
+        "scenario": "fault_matrix",
+        "dir": "artifacts/captures/fault_matrix",
+    },
+    200: {
+        "capability_id": "fault_matrix",
+        "scenario": "fault_matrix",
+        "dir": "artifacts/captures/fault_matrix",
     },
 }
-P14_ID = "P14_SCALE_1000_OPTIN_DRYRUN"
+SCALE_PLANNING_ID = "scale_planning"
 
 
 def utc_now() -> str:
@@ -90,7 +95,7 @@ class Auditor:
         self.seq += 1
         self.findings.append(
             {
-                "id": f"L08-FF-{self.seq:04d}",
+                "id": f"FAULT-FAILOVER-{self.seq:04d}",
                 "node_count": node_count,
                 "category": category,
                 "severity": severity,
@@ -152,8 +157,8 @@ class Auditor:
             if payloads[role] is None:
                 self.finding(
                     node_count=node_count,
-                    category="missing_l08_artifact",
-                    description=f"Missing required L08 {role} artifact for {node_count} nodes",
+                    category="missing_required_artifact",
+                    description=f"Missing required {role} artifact for {node_count} nodes",
                     evidence=[rel(self.root, path)],
                 )
 
@@ -162,7 +167,7 @@ class Auditor:
             preflight.get("status") == "PASS" and preflight.get("can_run") is True,
             node_count=node_count,
             category="resource_preflight_blocked",
-            description="Resource preflight must pass before accepting real L08 fault/failover evidence",
+            description="Resource preflight must pass before accepting real fault/failover evidence",
             evidence=[rel(self.root, paths["resource_preflight"]), str(preflight.get("status")), str(preflight.get("can_run"))],
         )
 
@@ -224,7 +229,7 @@ class Auditor:
                 continue
             status = window.get("status", "MEASURED")
             reason = window.get("reason", "")
-            self.check(status == "MEASURED", node_count=node_count, category="workload_window_not_measured", description="PASS L08 workload windows must be measured SET/GET workload operations", evidence=[rel(self.root, paths["workload_window_report"]), str(window.get("name")), str(status)])
+            self.check(status == "MEASURED", node_count=node_count, category="workload_window_not_measured", description="PASS workload windows must be measured SET/GET operations", evidence=[rel(self.root, paths["workload_window_report"]), str(window.get("name")), str(status)])
             self.check(status == "MEASURED" or bool(reason), node_count=node_count, category="missing_reason_absent", description="Skipped/missing workload windows require reason", evidence=[rel(self.root, paths["workload_window_report"]), str(window.get("name"))])
             self.check(window.get("workload_scope") == "failed_primary_slot", node_count=node_count, category="workload_window_invalid", description="Workload window must target the selected failed primary's slot range", evidence=[rel(self.root, paths["workload_window_report"]), str(window.get("name")), str(window.get("workload_scope"))])
             self.check(window.get("source_logical_id") == selected_logical, node_count=node_count, category="workload_window_invalid", description="Workload source logical id must match selected failed primary", evidence=[rel(self.root, paths["workload_window_report"]), str(window.get("name")), str(window.get("source_logical_id")), str(selected_logical)])
@@ -261,7 +266,7 @@ class Auditor:
         rung_findings = self.findings[before_count:]
         return {
             "node_count": node_count,
-            "phase_id": spec["phase_id"],
+            "capability_id": spec["capability_id"],
             "scenario": spec["scenario"],
             "status": "PASS" if not any(f["blocking"] for f in rung_findings) else "FAIL",
             "real_valkey": payloads["valkey_e2e_evidence"] is not None and evidence.get("real_valkey") is True and not any(f["blocking"] for f in rung_findings),
@@ -270,11 +275,11 @@ class Auditor:
             "findings": rung_findings,
         }
 
-    def audit_p14(self) -> dict[str, Any]:
-        p14_dir = self.root / "artifacts" / "phases" / P14_ID
+    def audit_scale_planning(self) -> dict[str, Any]:
+        scale_planning_dir = self.root / "artifacts" / "captures" / SCALE_PLANNING_ID
         real_count = 0
-        if p14_dir.exists():
-            for path in p14_dir.glob("*.json"):
+        if scale_planning_dir.exists():
+            for path in scale_planning_dir.glob("*.json"):
                 payload = load_json(path) or {}
                 artifact_type = payload.get("artifact_type")
                 fault_failover_artifact = artifact_type in {
@@ -290,19 +295,20 @@ class Auditor:
                 }
                 if fault_failover_artifact and (payload.get("real_valkey") is True or payload.get("node_count") == 1000 or "1000" in path.name):
                     real_count += 1
-                    self.finding(node_count=1000, category="p14_real_fault_failover_forbidden", description="P14/1000 real fault/failover evidence is forbidden in L08", evidence=[rel(self.root, path)])
+                    self.finding(node_count=1000, category="scale_planning_real_fault_failover_forbidden", description="SCALE_PLANNING/1000 real fault/failover evidence is forbidden in automatic coverage", evidence=[rel(self.root, path)])
         return {
-            "phase_id": P14_ID,
+            "capability_id": SCALE_PLANNING_ID,
             "status": "SKIPPED_WITH_REASON" if real_count == 0 else "FAIL",
             "dry_run_only": True,
             "real_valkey_coverage": False,
             "real_evidence_count": real_count,
-            "reason": "P14 remains opt-in dry-run/resource/planner only and L08 did not run 1000-node fault/failover gates.",
+            "reason": "SCALE_PLANNING remains opt-in dry-run/resource/planner only; automatic coverage does not run 1000-node fault/failover gates.",
         }
 
     def build(self) -> dict[str, Any]:
-        rungs = [self.audit_rung(node_count) for node_count in [30, 50, 100]]
-        p14 = self.audit_p14()
+        node_counts = sorted(CANONICAL)
+        rungs = [self.audit_rung(node_count) for node_count in node_counts]
+        scale_planning = self.audit_scale_planning()
         blocking = [finding for finding in self.findings if finding["blocking"]]
         metrics = [record for rung in rungs for record in rung["metric_records"]]
         return {
@@ -312,7 +318,7 @@ class Auditor:
             "producer": {"name": "scripts/audit_fault_failover_scale.py", "version": "v1"},
             "status": "PASS" if not blocking else "FAIL",
             "summary": {
-                "canonical_node_counts": [30, 50, 100],
+                "canonical_node_counts": node_counts,
                 "rung_count": len(rungs),
                 "blocking_findings_count": len(blocking),
                 "real_valkey_rung_count": sum(1 for rung in rungs if rung["real_valkey"] is True),
@@ -320,13 +326,13 @@ class Auditor:
                 "missing_metric_count": sum(1 for metric in metrics if metric["status"] in {"MISSING", "SKIPPED_WITH_REASON"}),
             },
             "canonical_rungs": rungs,
-            "p14_boundary": p14,
+            "scale_planning_boundary": scale_planning,
             "findings": self.findings,
         }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Audit L08 30/50/100 fault/failover scale artifacts")
+    parser = argparse.ArgumentParser(description="Audit canonical 30/50/100/200 fault/failover artifacts")
     parser.add_argument("--root", default=".")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()

@@ -15,7 +15,7 @@ def write_json(path: Path, obj: dict) -> None:
 
 
 def test_runtime_distribution_assertion_fails_on_over_limit_density(tmp_path: Path) -> None:
-    base = tmp_path / "phase"
+    base = tmp_path / "capability_id"
     density = {
         "nodehost_strategy": "density_limited",
         "max_nodehosts": 64,
@@ -33,8 +33,8 @@ def test_runtime_distribution_assertion_fails_on_over_limit_density(tmp_path: Pa
         [
             sys.executable,
             str(ROOT / "scripts/assert_runtime_nodehost_distribution.py"),
-            "--phase",
-            "P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+            "--capability-id",
+            "nodehost_density",
             "--artifact-dir",
             str(base),
         ],
@@ -49,8 +49,8 @@ def test_runtime_distribution_assertion_fails_on_over_limit_density(tmp_path: Pa
 
 
 def test_partial_coverage_assertion_fails_when_scale_rows_missing(tmp_path: Path) -> None:
-    phase = "P41_NODEHOST_DENSITY_GLOBAL_CONFIG"
-    base = ROOT / "artifacts" / "phases" / phase
+    capability_id = "nodehost_density"
+    base = ROOT / "artifacts" / "capabilities" / capability_id
     saved = (base / "coverage_ledger.json").read_text(encoding="utf-8") if (base / "coverage_ledger.json").exists() else None
     try:
         write_json(
@@ -58,12 +58,12 @@ def test_partial_coverage_assertion_fails_when_scale_rows_missing(tmp_path: Path
             {
                 "schema_version": "v1",
                 "artifact_type": "coverage_ledger",
-                "phase_id": phase,
+                "capability_id": capability_id,
                 "rows": [{"coverage_id": "fake_schema_unit", "status": "PASS", "artifact_refs": ["x"]}],
             },
         )
         proc = subprocess.run(
-            [sys.executable, "scripts/assert_no_nodehost_partial_coverage.py", "--phase", phase],
+            [sys.executable, "scripts/assert_no_nodehost_partial_coverage.py", "--capability-id", capability_id],
             cwd=ROOT,
             text=True,
             stdout=subprocess.PIPE,

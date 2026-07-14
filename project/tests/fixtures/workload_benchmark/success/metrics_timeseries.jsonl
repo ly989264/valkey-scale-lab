@@ -1,1 +1,1 @@
-{"metric_name":"achieved_qps","metric_unit":"ops_per_second","metric_value":5.8,"phase_id":"M1-S05","run_id":"fixture-success","schema_version":"v1","source_id":"smoke:baseline","source_type":"workload"}
+{"metric_name":"achieved_qps","metric_unit":"ops_per_second","metric_value":5.8,"capability_id":"workload","run_id":"fixture-success","schema_version":"v1","source_id":"smoke:baseline","source_type":"workload"}

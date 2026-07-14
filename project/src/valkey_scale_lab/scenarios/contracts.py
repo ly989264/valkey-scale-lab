@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Mapping, Optional, Tuple
 
+from valkey_scale_lab.execution import ExecutionProfile
+
 
 def freeze_json(value: Any) -> Any:
     """Return a recursively immutable representation of JSON-compatible data."""
@@ -131,8 +133,7 @@ class ScenarioDefinition:
     artifacts: Tuple[ArtifactSpec, ...]
     report_surfaces: Tuple[ReportSurface, ...]
     scale_policy: ScalePolicy
-    legacy_profiles: Tuple["LegacyProfileBinding", ...]
-    legacy_projection_steps: Tuple[str, ...]
+    execution_steps: Tuple[str, ...]
     digest: str
 
     @property
@@ -197,21 +198,13 @@ class ScenarioDefinition:
 
 
 @dataclass(frozen=True)
-class LegacyProfileBinding:
-    requested_nodes: int
-    runtime_phase: str
-    runtime_scenario: str
-    config_template: str
-
-
-@dataclass(frozen=True)
 class GatePlan:
     definition_id: str
     definition_version: int
     definition_digest: str
     requested_nodes: int
     exact: bool
-    legacy_profile: Optional[LegacyProfileBinding]
+    profile: Optional[ExecutionProfile]
     execution_mode: str
     normal_development_eligible: bool
     automatic_execution_allowed: bool
@@ -226,7 +219,7 @@ class GatePlan:
     management_execution_order: Tuple[str, ...]
     artifacts: Tuple[ArtifactSpec, ...]
     report_surfaces: Tuple[ReportSurface, ...]
-    legacy_projection_steps: Tuple[str, ...]
+    execution_steps: Tuple[str, ...]
     digest: str
 
     @property
@@ -234,16 +227,12 @@ class GatePlan:
         return self.requested_nodes
 
     @property
-    def runtime_scenario(self) -> Optional[str]:
-        return self.legacy_profile.runtime_scenario if self.legacy_profile else None
-
-    @property
-    def runtime_phase(self) -> Optional[str]:
-        return self.legacy_profile.runtime_phase if self.legacy_profile else None
+    def profile_id(self) -> Optional[str]:
+        return self.profile.profile_id if self.profile else None
 
     @property
     def config_template(self) -> Optional[str]:
-        return self.legacy_profile.config_template if self.legacy_profile else None
+        return self.profile.config_template if self.profile else None
 
     @property
     def bounded_exception(self) -> bool:

@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "status",
     "required_fault_types",
@@ -21,7 +21,7 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "fault_timeline_report"},
-    "phase_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "capability_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
     "run_id": {"type": "string", "minLength": 1},
     "status": {"type": "string", "enum": ["PASS", "PARTIAL", "FAIL", "BLOCKED_WITH_REASON"]},
     "required_fault_types": {"type": "array", "minItems": 12, "items": {"type": "string"}},

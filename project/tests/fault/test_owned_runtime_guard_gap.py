@@ -17,7 +17,7 @@ def test_node_stop_rejects_state_target_without_runtime_ownership(
             {
                 "schema_version": "v1",
                 "cluster_id": "claimed-run",
-                "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+                "capability_id": "fault_matrix",
                 "runtime": {"run_id": "claimed-run", "sandbox_network": True, "type": "docker"},
                 "nodes": [
                     {
@@ -73,7 +73,7 @@ def test_node_stop_clear_rechecks_runtime_ownership_before_restart(
     state.write_text(
         json.dumps(
             {
-                "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+                "capability_id": "fault_matrix",
                 "runtime": {"run_id": "claimed-run"},
                 "nodes": [],
             }
@@ -85,7 +85,7 @@ def test_node_stop_clear_rechecks_runtime_ownership_before_restart(
             {
                 "fault_id": "fault-primary-stop",
                 "fault_type": "node_stop",
-                "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+                "capability_id": "fault_matrix",
                 "run_id": "claimed-run",
                 "target": {"container_name": "replaced-container"},
                 "observed_impact": {

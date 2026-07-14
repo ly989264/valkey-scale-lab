@@ -1,0 +1,6 @@
+{
+  "capability_id": "management_matrix",
+  "run_id": "management-matrix-dry_run_200_plus",
+  "status": "PASS",
+  "missing_metrics": []
+}

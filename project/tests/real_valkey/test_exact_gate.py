@@ -18,8 +18,8 @@ from valkey_scale_lab.gates import (
     GateRequest,
     GateService,
     GateStatus,
-    LegacyGateAdapter,
-    LegacyRuntimeEntrypoints,
+    ProductGateAdapter,
+    ProductRuntimeEntrypoints,
     OwnedFaultScope,
     StepStatus,
 )
@@ -56,7 +56,7 @@ def _entrypoints(
     preflight_nodes: int | None = None,
     probe: Callable[..., dict[str, Any]] | None = None,
     cleanup_status: str = "PASS",
-) -> LegacyRuntimeEntrypoints:
+) -> ProductRuntimeEntrypoints:
     def preflight(**kwargs: Any) -> dict[str, Any]:
         calls.append("preflight")
         report = {
@@ -71,11 +71,11 @@ def _entrypoints(
         Path(kwargs["out_path"]).write_text(json.dumps(report), encoding="utf-8")
         return report
 
-    def create(**kwargs: Any) -> dict[str, Any]:
+    def execute(**kwargs: Any) -> dict[str, Any]:
         calls.append("create")
         state = {
-            "phase_id": kwargs["phase"],
-            "scenario": kwargs["scenario"],
+            "capability_id": kwargs["capability_id"],
+            "scenario_id": kwargs["scenario_id"],
             "runtime": {"run_id": "owned-legacy-runtime"},
             "nodes": [
                 {"logical_id": f"node-{index:03d}"}
@@ -114,17 +114,17 @@ def _entrypoints(
         Path(kwargs["out_path"]).write_text(json.dumps(report), encoding="utf-8")
         return report
 
-    return LegacyRuntimeEntrypoints(
-        create=create,
+    return ProductRuntimeEntrypoints(
+        execute=execute,
         cleanup=cleanup,
         preflight=preflight,
         live_probe=live_probe,
     )
 
 
-def _execute(tmp_path: Path, entrypoints: LegacyRuntimeEntrypoints, *, nodes: int = 50):
+def _execute(tmp_path: Path, entrypoints: ProductRuntimeEntrypoints, *, nodes: int = 50):
     request = _request(tmp_path, nodes=nodes)
-    adapter = LegacyGateAdapter(entrypoints)
+    adapter = ProductGateAdapter(entrypoints)
     result = GateService().execute(
         compile_gate_plan(DEFINITION, nodes),
         request,
@@ -234,10 +234,10 @@ def test_probe_and_cleanup_failures_are_both_preserved(tmp_path: Path) -> None:
     assert result.primary_failure is not None
     assert result.primary_failure.reason == "probe primary failure"
     assert result.cleanup_failure is not None
-    assert result.cleanup_failure.reason == "legacy cleanup did not PASS"
+    assert result.cleanup_failure.reason == "cleanup did not PASS"
     message = exact_gate._gate_failure_message(result)
     assert "probe primary failure" in message
-    assert "legacy cleanup did not PASS" in message
+    assert "cleanup did not PASS" in message
     assert calls.count("cleanup") == 1
 
 
@@ -258,13 +258,13 @@ def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
             "nodes_requested": 50,
             "node_count": 50,
             "checks": [{"name": "hermetic", "status": "PASS"}],
-            "phase_id": kwargs["phase_id"],
+            "capability_id": kwargs["capability_id"],
             "scenario_name": kwargs["scenario"],
         }
         Path(out).write_text(json.dumps(report), encoding="utf-8")
         return report
 
-    def create(**kwargs: Any) -> dict[str, Any]:
+    def execute(**kwargs: Any) -> dict[str, Any]:
         calls.append("create")
         timeline = kwargs["setup_timeline"]
         for name, category in [
@@ -283,8 +283,8 @@ def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
                 time.sleep(0.0001)
         state = {
             "cluster_id": "owned-runtime-50",
-            "phase_id": kwargs["phase"],
-            "scenario": kwargs["scenario"],
+            "capability_id": kwargs["capability_id"],
+            "scenario_id": kwargs["scenario_id"],
             "runtime": {
                 "run_id": "owned-runtime-50"
             },
@@ -325,11 +325,11 @@ def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
         }
 
     monkeypatch.setattr(exact_gate, "run_resource_preflight", preflight)
-    monkeypatch.setattr(exact_gate, "create_scenario", create)
+    monkeypatch.setattr(exact_gate, "execute_scenario", execute)
     monkeypatch.setattr(exact_gate, "cleanup_scenario", cleanup)
     monkeypatch.setattr(
         exact_gate,
-        "_p17_cluster_health",
+        "_management_cluster_health",
         probe_health,
     )
     monkeypatch.setattr(exact_gate, "_observed_versions", lambda _nodes: ["9.1.2"])
@@ -382,18 +382,18 @@ def test_large_partition_observations_keep_cluster_state_in_bounded_excerpts(
     monkeypatch.setattr(docker_runtime, "_node_command", node_command)
     monkeypatch.setattr(
         docker_runtime,
-        "_p36_wait_clean_cluster_snapshot",
+        "_local_full_flow_wait_clean_cluster_snapshot",
         lambda *_args, **_kwargs: None,
     )
 
-    details = docker_runtime._p36_network_disconnect_probe(
+    details = docker_runtime._local_full_flow_network_disconnect_probe(
         "owned-network",
         "nodehost-a",
         nodes,
         "network_partition",
     )
 
-    docker_runtime._p36_validate_fault_probe_observation(
+    docker_runtime._local_full_flow_validate_fault_probe_observation(
         "network_partition", details
     )
     assert len(details["majority_cluster_info"]) <= 1000
@@ -407,7 +407,7 @@ def test_cleanup_ownership_check_accepts_an_already_removed_owned_resource(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     state = {
-        "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+        "capability_id": "local_full_flow",
         "runtime": {"run_id": "owned-run"},
         "nodehosts": [
             {"nodehost_id": "az-a-00", "container_name": "removed-nodehost"}
@@ -477,6 +477,6 @@ def test_cleanup_ownership_check_accepts_an_already_removed_owned_resource(
     with pytest.raises(docker_runtime.DockerRuntimeError, match="not an owned"):
         docker_runtime._require_cleanup_owned_nodehosts(
             state,
-            phase=state["phase_id"],
+            capability_id=state["capability_id"],
             run_id=state["runtime"]["run_id"],
         )

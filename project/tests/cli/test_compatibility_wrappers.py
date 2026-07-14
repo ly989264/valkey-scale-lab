@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 from pathlib import Path
 from typing import Any, Callable
 
 import pytest
 
 from valkey_scale_lab import cli, cli_compat
+from valkey_scale_lab.execution import ExecutionSelectionError
 from valkey_scale_lab.planner.plan import PlannerError
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
@@ -14,6 +16,56 @@ from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
 
 _SETUP_TIMELINE = object()
+
+
+def _load_fault_safety_alias():
+    path = Path(__file__).resolve().parents[2] / "scripts" / "fault_safety_gate.py"
+    spec = importlib.util.spec_from_file_location("fault_safety_alias", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_fault_safety_legacy_alias_delegates_to_one_canonical_selection() -> None:
+    gate = _load_fault_safety_alias()
+    args = gate._parser().parse_args(
+        [
+            "--phase",
+            "P22_FAULT_REPLICA_HOST_AZ_STOP",
+            "--out",
+            "evidence.json",
+            "--fault-report",
+            "fault.json",
+        ]
+    )
+
+    assert gate._selection(args) == (
+        "fault_matrix",
+        "fault_matrix",
+        "docker_container",
+        "small-real",
+        6,
+    )
+
+
+def test_fault_safety_canonical_selection_rejects_profile_node_mismatch() -> None:
+    gate = _load_fault_safety_alias()
+    args = gate._parser().parse_args(
+        [
+            "--profile",
+            "exact-200",
+            "--nodes",
+            "50",
+            "--out",
+            "evidence.json",
+            "--fault-report",
+            "fault.json",
+        ]
+    )
+
+    with pytest.raises(ExecutionSelectionError):
+        gate._selection(args)
 
 
 @pytest.mark.parametrize(
@@ -36,10 +88,10 @@ _SETUP_TIMELINE = object()
         ),
         (
             cli_compat.docker_runtime,
-            "create_scenario",
-            lambda: cli_compat.create_scenario(phase="P", scenario="S", config_path="config.yaml", artifacts_dir="artifacts", state_out="state.json", setup_timeline=_SETUP_TIMELINE, global_config_path="global.yaml", cli_overrides={"runtime": {"io_threads": 2}}),
+            "execute_scenario",
+            lambda: cli_compat.execute_scenario(scenario_id="local_full_flow", backend_id="docker_process", profile_id="exact-50", requested_nodes=50, config_path="config.yaml", artifacts_dir="artifacts", state_out="state.json", setup_timeline=_SETUP_TIMELINE, global_config_path="global.yaml", cli_overrides={"runtime": {"io_threads": 2}}),
             (),
-            {"phase": "P", "scenario": "S", "config_path": "config.yaml", "artifacts_dir": "artifacts", "state_out": "state.json", "setup_timeline": _SETUP_TIMELINE, "global_config_path": "global.yaml", "cli_overrides": {"runtime": {"io_threads": 2}}},
+            {"capability_id": "local_full_flow", "scenario_id": "local_full_flow", "backend_id": "docker_process", "profile_id": "exact-50", "requested_nodes": 50, "config_path": "config.yaml", "artifacts_dir": "artifacts", "state_out": "state.json", "setup_timeline": _SETUP_TIMELINE, "global_config_path": "global.yaml", "cli_overrides": {"runtime": {"io_threads": 2}}},
         ),
         (
             cli_compat.docker_runtime,
@@ -66,17 +118,17 @@ _SETUP_TIMELINE = object()
         (
             cli_compat.workload_impact,
             "build_workload_impact_analysis",
-            lambda: cli_compat.build_workload_impact_analysis("input", "analysis", phase_id="P25", run_id="run-1"),
+            lambda: cli_compat.build_workload_impact_analysis("input", "analysis", capability_id="P25", run_id="run-1"),
             ("input", "analysis"),
-            {"phase_id": "P25", "run_id": "run-1"},
+            {"capability_id": "P25", "run_id": "run-1"},
         ),
         (cli_compat.summary_report, "render_report", lambda: cli_compat.render_report("analysis.json", "reports", "index.json"), ("analysis.json", "reports", "index.json"), {}),
         (
             cli_compat.final_report,
-            "build_final_goal_loop_report",
+            "build_final_report",
             lambda: cli_compat.build_final_goal_loop_report("input", "reports", "P26"),
             ("input", "reports"),
-            {"phase_id": "P26"},
+            {"capability_id": "P26"},
         ),
     ],
 )
@@ -110,8 +162,8 @@ def test_compatibility_wrappers_preserve_arguments_returns_and_exceptions(
     assert caught.value is error
 
 
-def test_cli_keeps_legacy_symbols_bound_for_import_compatibility() -> None:
-    assert cli.create_scenario is docker_runtime.create_scenario
+def test_cli_keeps_product_symbols_bound_for_import_compatibility() -> None:
+    assert cli.execute_scenario is docker_runtime.execute_scenario
     assert cli.cleanup_scenario is docker_runtime.cleanup_scenario
 
 
@@ -150,12 +202,17 @@ def test_gate_scenario_and_cleanup_handlers_use_compatibility_boundary(
 
     monkeypatch.setattr(cli_compat, "create_scenario", create)
     monkeypatch.setattr(cli, "_finalize_setup_timeline", lambda *args, **kwargs: None)
-    assert cli.main(["gate", "scenario", "--phase", "P", "--scenario", "S", "--config", "config.yaml", "--artifacts-dir", str(artifacts), "--state-out", str(state_path)]) == 0
+    assert cli.main(["gate", "scenario", "--phase", "P03_LOCAL_DOCKER_VALKEY", "--scenario", "cluster_smoke", "--config", "config.yaml", "--artifacts-dir", str(artifacts), "--state-out", str(state_path)]) == 0
+    assert calls[0][1]["alias_id"] == "P03_LOCAL_DOCKER_VALKEY"
+    assert calls[0][1]["scenario"] == "cluster_smoke"
     assert isinstance(calls[0][1]["setup_timeline"], SetupTimeline)
     assert calls[0][1]["global_config_path"] is None
     assert calls[0][1]["cli_overrides"] is None
+    command_audit = json.loads((artifacts / "command_audit_summary.json").read_text(encoding="utf-8"))
+    assert command_audit["capability_id"] == "cluster_lifecycle"
+    assert command_audit["scenario"] == "cluster_lifecycle"
 
-    state_path.write_text(json.dumps({"phase_id": "P", "scenario": "S", "runtime": {"run_id": "run-1"}}), encoding="utf-8")
+    state_path.write_text(json.dumps({"capability_id": "P", "scenario": "S", "runtime": {"run_id": "run-1"}}), encoding="utf-8")
 
     def cleanup(**kwargs: Any) -> dict[str, Any]:
         calls.append(("cleanup", kwargs))
@@ -171,7 +228,7 @@ def test_fault_handlers_use_compatibility_boundary(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     state = tmp_path / "state.json"
-    state.write_text(json.dumps({"phase_id": "P", "scenario": "S", "runtime": {"run_id": "run-1"}}), encoding="utf-8")
+    state.write_text(json.dumps({"capability_id": "P", "scenario": "S", "runtime": {"run_id": "run-1"}}), encoding="utf-8")
     calls: list[tuple[str, dict[str, Any]]] = []
     monkeypatch.setattr(cli_compat, "apply_fault", lambda **kw: calls.append(("apply", kw)) or {})
     monkeypatch.setattr(cli_compat, "clear_fault", lambda **kw: calls.append(("clear", kw)) or {})
@@ -184,13 +241,17 @@ def test_analyze_and_report_handlers_use_compatibility_boundary(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     calls: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
-    for name in ("create_analysis_summary", "build_workload_impact_analysis", "render_report", "build_final_goal_loop_report"):
+    for name in ("create_analysis_summary", "build_workload_impact_analysis", "render_report", "build_final_report"):
         monkeypatch.setattr(cli_compat, name, lambda *a, _name=name, **kw: calls.append((_name, a, kw)) or {})
     assert cli.main(["analyze", "--input", "input", "--out", str(tmp_path / "analysis.json")]) == 0
     assert cli.main(["analyze", "--kind", "workload-impact", "--input", "input", "--out-dir", str(tmp_path / "impact")]) == 0
+    assert cli.main(["analyze", "--kind", "workload-impact", "--phase", "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "--input", "input", "--out-dir", str(tmp_path / "legacy-impact")]) == 0
     assert cli.main(["report", "--analysis", "analysis.json", "--out-dir", str(tmp_path / "reports"), "--index-out", str(tmp_path / "index.json")]) == 0
-    assert cli.main(["report", "--kind", "final-goal-loop", "--input", "input", "--out-dir", str(tmp_path / "final")]) == 0
-    assert [name for name, _, _ in calls] == ["create_analysis_summary", "build_workload_impact_analysis", "render_report", "build_final_goal_loop_report"]
+    assert cli.main(["report", "--kind", "final-report", "--input", "input", "--out-dir", str(tmp_path / "final")]) == 0
+    assert cli.main(["report", "--kind", "final-report", "--phase", "P26_FINAL_REPORT_REGRESSION", "--input", "input", "--out-dir", str(tmp_path / "legacy-final")]) == 0
+    assert [name for name, _, _ in calls] == ["create_analysis_summary", "build_workload_impact_analysis", "build_workload_impact_analysis", "render_report", "build_final_report", "build_final_report"]
+    assert calls[2][2]["capability_id"] == "fault_workload_impact"
+    assert calls[5][2]["capability_id"] == "final_report"
 
 
 def test_exact_gate_handler_uses_product_neutral_arguments(

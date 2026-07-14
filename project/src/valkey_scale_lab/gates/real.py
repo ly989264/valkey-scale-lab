@@ -20,29 +20,31 @@ from valkey_scale_lab.evidence import (
     canonical_bundle_spec,
     validate_raw_sources,
 )
+from valkey_scale_lab.execution import ExecutionProfile
 from valkey_scale_lab.gates import (
     FaultTargetKind,
     GateRequest,
     GateService,
     GateStatus,
-    LegacyGateAdapter,
-    LegacyRuntimeEntrypoints,
+    ProductGateAdapter,
+    ProductRuntimeEntrypoints,
     OwnedFaultScope,
 )
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.docker_runtime import (
     DockerRuntimeError,
     _node_command,
-    _p17_cluster_health,
+    _management_cluster_health,
     cleanup_scenario,
-    create_scenario,
+    execute_scenario,
 )
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
-from valkey_scale_lab.scenarios import (
-    LegacyProfileBinding,
-    ScenarioDefinition,
-    compile_gate_plan,
-)
+from valkey_scale_lab.scenarios import ScenarioDefinition, compile_gate_plan
+
+
+PRODUCT_DIGEST_EXCLUDED_ROOTS = {".pytest_cache", "artifacts", "audit", "runs"}
+PRODUCT_DIGEST_EXCLUDED_DIR_NAMES = {"__pycache__"}
+PRODUCT_DIGEST_EXCLUDED_FILE_SUFFIXES = {".pyc", ".pyo"}
 
 
 def product_tree_digest(project_root: str | Path | None = None) -> str:
@@ -57,9 +59,16 @@ def product_tree_digest(project_root: str | Path | None = None) -> str:
     manifest: dict[str, dict[str, Any]] = {}
     for current, directories, files in os.walk(root, topdown=True, followlinks=False):
         current_path = Path(current)
+        directories[:] = [
+            name
+            for name in directories
+            if not _product_digest_excluded(current_path / name, root, is_dir=True)
+        ]
         for name in sorted((*directories, *files)):
             path = current_path / name
             relative = path.relative_to(root).as_posix()
+            if _product_digest_excluded(path, root, is_dir=path.is_dir()):
+                continue
             info = path.lstat()
             mode = stat.S_IMODE(info.st_mode)
             if stat.S_ISLNK(info.st_mode):
@@ -89,6 +98,15 @@ def product_tree_digest(project_root: str | Path | None = None) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _product_digest_excluded(path: Path, root: Path, *, is_dir: bool) -> bool:
+    relative = path.relative_to(root)
+    if relative.parts and relative.parts[0] in PRODUCT_DIGEST_EXCLUDED_ROOTS:
+        return True
+    if is_dir and path.name in PRODUCT_DIGEST_EXCLUDED_DIR_NAMES:
+        return True
+    return not is_dir and path.suffix in PRODUCT_DIGEST_EXCLUDED_FILE_SUFFIXES
+
+
 def _file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -107,6 +125,8 @@ def run_exact_gate(
     ownership_id: str,
     provenance_id: str,
     product_digest: str,
+    backend_id: str = "docker_process",
+    profile_id: str | None = None,
     prior_admission_digest: str | None = None,
     operator_opt_in: bool = False,
     cost_acknowledged: bool = False,
@@ -125,21 +145,27 @@ def run_exact_gate(
     plan = compile_gate_plan(definition, scale)
     if not plan.exact or plan.downscale_allowed:
         raise DockerRuntimeError("compiled plan does not preserve the exact requested scale")
-    if plan.legacy_profile is None:
-        profile = LegacyProfileBinding(
+    if plan.profile is None:
+        profile = ExecutionProfile(
+            profile_id=f"exact-{scale}",
             requested_nodes=scale,
-            runtime_phase="P36_FULL_FLOW_E2E_50_100_200_REAL",
-            runtime_scenario=f"strict_full_flow_{scale}",
+            environment="local-real",
             config_template=str(config_path),
         )
     else:
-        profile = LegacyProfileBinding(
+        profile = ExecutionProfile(
+            profile_id=plan.profile.profile_id,
             requested_nodes=scale,
-            runtime_phase=plan.legacy_profile.runtime_phase,
-            runtime_scenario=plan.legacy_profile.runtime_scenario,
+            environment=plan.profile.environment,
             config_template=str(config_path),
         )
-    plan = replace(plan, legacy_profile=profile)
+    plan = replace(plan, profile=profile)
+    if profile_id is not None and profile_id != profile.profile_id:
+        raise DockerRuntimeError(
+            f"profile {profile_id!r} does not match exact requested scale {scale}"
+        )
+    if backend_id != "docker_process":
+        raise DockerRuntimeError("exact real admission requires backend docker_process")
     fault_scope = OwnedFaultScope(
         run_id=run_id,
         ownership_id=ownership_id,
@@ -153,13 +179,15 @@ def run_exact_gate(
         requested_nodes=scale,
         artifact_root=base,
         fault_scope=fault_scope,
+        backend_id=backend_id,
+        profile_id=profile.profile_id,
         operator_opt_in=operator_opt_in,
         cost_acknowledged=cost_acknowledged,
         metadata={"product_digest": product_digest},
     )
-    adapter = LegacyGateAdapter(
-        LegacyRuntimeEntrypoints(
-            create=create_scenario,
+    adapter = ProductGateAdapter(
+        ProductRuntimeEntrypoints(
+            execute=execute_scenario,
             cleanup=cleanup_scenario,
             preflight=_run_exact_preflight,
             live_probe=_run_live_exact_probe,
@@ -234,8 +262,10 @@ def _require_docker_daemon() -> None:
 
 def _run_exact_preflight(
     *,
-    phase: str,
-    scenario: str,
+    capability_id: str,
+    scenario_id: str,
+    backend_id: str,
+    profile_id: str,
     config_path: str,
     out_path: Path,
     requested_nodes: int,
@@ -243,8 +273,9 @@ def _run_exact_preflight(
     report = run_resource_preflight(
         config_path,
         out_path,
-        phase_id=phase,
-        scenario=scenario,
+        capability_id=capability_id,
+        scenario=scenario_id,
+        profile_id=profile_id,
     )
     observed = report.get("nodes_requested", report.get("node_count"))
     if observed != requested_nodes:
@@ -265,7 +296,7 @@ def _run_live_exact_probe(
         raise DockerRuntimeError(
             f"real gate requested {requested_nodes} nodes but runtime returned {len(nodes)}"
         )
-    health = _p17_cluster_health(nodes)
+    health = _management_cluster_health(nodes)
     required_health = {
         "cluster_state": "ok",
         "known_nodes": requested_nodes,

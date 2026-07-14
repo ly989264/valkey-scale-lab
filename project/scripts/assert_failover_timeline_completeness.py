@@ -14,13 +14,13 @@ from valkey_scale_lab.observer.failover_timeline import REQUIRED_TIMESTAMPS, der
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fail-closed P44 failover timeline completeness assertion")
-    parser.add_argument("--phase", required=True)
+    parser = argparse.ArgumentParser(description="Fail-closed FAILOVER_TIMELINE failover timeline completeness assertion")
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     parser.add_argument("--require-scales", default="30,50,100,200")
     args = parser.parse_args()
 
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     required_scales = {int(item) for item in args.require_scales.split(",") if item}
     errors: list[str] = []
     samples = _load_jsonl(base / "failover_timeline_samples.jsonl", errors)
@@ -34,12 +34,12 @@ def main() -> int:
     observed_scales: set[int] = set()
     for sample in samples:
         sample_id = str(sample.get("sample_id", "MISSING"))
-        if sample.get("phase_id") != args.phase:
-            errors.append(f"{sample_id}: phase_id must be {args.phase}")
+        if sample.get("capability_id") != args.capability_id:
+            errors.append(f"{sample_id}: capability_id must be {args.capability_id}")
         if sample.get("status") != "PASS":
             errors.append(f"{sample_id}: real timeline sample status must be PASS")
         if sample.get("real_valkey") is not True:
-            errors.append(f"{sample_id}: real_valkey must be true for real P44 evidence")
+            errors.append(f"{sample_id}: real_valkey must be true for real FAILOVER_TIMELINE evidence")
         if sample.get("execution_mode") != "real_valkey":
             errors.append(f"{sample_id}: execution_mode must be real_valkey")
         if sample.get("timeline_source") != "concurrent_failover_timeline_observer":
@@ -75,7 +75,7 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"PASS failover timeline completeness phase={args.phase}")
+    print(f"PASS failover timeline completeness capability_id={args.capability_id}")
     return 0
 
 

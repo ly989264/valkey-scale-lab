@@ -5,7 +5,7 @@
   "required": [
     "schema_version",
     "artifact_type",
-    "phase_id",
+    "capability_id",
     "run_id",
     "status",
     "command_log_ref",
@@ -24,7 +24,7 @@
   "properties": {
     "schema_version": {"const": "v1"},
     "artifact_type": {"const": "command_audit_summary"},
-    "phase_id": {"type": "string", "minLength": 1},
+    "capability_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
     "scenario": {"type": "string"},
     "status": {"enum": ["PASS", "FAIL", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"]},

@@ -25,9 +25,9 @@ def test_cluster_timeout_profile_and_scenario_and_cli_precedence() -> None:
     assert profiled["_effective_cluster_timeout"]["effective_cluster_node_timeout_ms"] == 30000
 
     raw["cluster"]["cluster_node_timeout_ms"] = 60000
-    scenario = normalize_config(raw, scenario_config_path="templates/configs/scale_10.yaml")
-    assert scenario["_effective_cluster_timeout"]["cluster_node_timeout_source"] == "scenario"
-    assert scenario["_effective_cluster_timeout"]["effective_cluster_node_timeout_ms"] == 60000
+    scenario_config = normalize_config(raw, scenario_config_path="templates/configs/scale_10.yaml")
+    assert scenario_config["_effective_cluster_timeout"]["cluster_node_timeout_source"] == "scenario"
+    assert scenario_config["_effective_cluster_timeout"]["effective_cluster_node_timeout_ms"] == 60000
 
     cli = normalize_config(
         raw,
@@ -51,8 +51,8 @@ def test_invalid_cluster_timeout_values_fail_validation(tmp_path: Path) -> None:
 
 def test_generated_process_config_contains_timeout_and_source() -> None:
     config = load_effective_config("templates/configs/scale_10.yaml")
-    node = docker_runtime._node_specs(config, "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE", "p43_cluster_timeout_scale_10", "p43-test")[0]
-    node["run_id"] = "p43-test"
+    node = docker_runtime._node_specs(config, "cluster_timeout", "cluster_timeout_cluster_timeout_scale_10", "cluster_timeout-test")[0]
+    node["run_id"] = "cluster_timeout-test"
     nodehost = {"container_ip": "172.18.0.2"}
 
     text = docker_runtime._process_config_text(node, nodehost)

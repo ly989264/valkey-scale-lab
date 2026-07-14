@@ -4,17 +4,17 @@ import json
 from pathlib import Path
 
 from valkey_scale_lab.analysis import create_analysis_summary
-from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS, write_management_matrix_artifacts
+from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS, write_management_matrix_fixture_artifacts
 
 
 def test_analysis_preserves_missing_metrics_and_writes_baseline(tmp_path: Path) -> None:
     source = tmp_path / "source"
     source.mkdir()
     _write(
-        source / "phase_summary.json",
+        source / "run_summary.json",
         {
-            "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
-            "run_id": "p08-run",
+            "capability_id": "fault_matrix",
+            "run_id": "failover-run",
             "status": "PASS",
             "missing_metrics": [
                 {"metric": "split_brain_duration_ms", "status": "MISSING", "reason": "not measured"}
@@ -59,7 +59,7 @@ def test_analysis_preserves_missing_metrics_and_writes_baseline(tmp_path: Path) 
 def test_analysis_aggregates_command_log(tmp_path: Path) -> None:
     source = tmp_path / "source"
     source.mkdir()
-    _write(source / "phase_summary.json", {"phase_id": "M1-S03", "run_id": "m1-s03", "status": "PASS", "missing_metrics": []})
+    _write(source / "run_summary.json", {"capability_id": "command_audit", "run_id": "command-audit", "status": "PASS", "missing_metrics": []})
     _write(source / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": False, "valkey_versions": [], "nodes_observed": 1, "cluster_state_observed": "ok"})
     _write(source / "failover_report.json", {"status": "PASS", "failovers": [{"failover_latency_ms": 1}], "summary": {}})
     _write(source / "cleanup_report.json", {"status": "PASS", "resources_remaining": []})
@@ -76,11 +76,11 @@ def test_analysis_aggregates_command_log(tmp_path: Path) -> None:
 def test_analysis_aggregates_management_matrix(tmp_path: Path) -> None:
     source = tmp_path / "source"
     source.mkdir()
-    _write(source / "phase_summary.json", {"phase_id": "M1-S04", "run_id": "m1-s04", "status": "PASS", "missing_metrics": []})
+    _write(source / "run_summary.json", {"capability_id": "management_matrix", "run_id": "management-matrix", "status": "PASS", "missing_metrics": []})
     _write(source / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": False, "valkey_versions": [], "nodes_observed": 6, "cluster_state_observed": "ok"})
     _write(source / "failover_report.json", {"status": "SKIPPED_WITH_REASON", "failovers": [{"failover_latency_ms": 1}], "summary": {}})
     _write(source / "cleanup_report.json", {"status": "PASS", "resources_remaining": []})
-    write_management_matrix_artifacts(source, phase_id="M1-S04", run_id="m1-s04", scenario="fixture", node_count=6)
+    write_management_matrix_fixture_artifacts(source, capability_id="management_matrix", run_id="management-matrix", scenario="management_matrix", node_count=6)
 
     summary = create_analysis_summary(source, tmp_path / "analysis_summary.json")
 
@@ -92,7 +92,7 @@ def test_analysis_aggregates_management_matrix(tmp_path: Path) -> None:
 def test_analysis_aggregates_workload_benchmark(tmp_path: Path) -> None:
     source = tmp_path / "source"
     source.mkdir()
-    _write(source / "phase_summary.json", {"phase_id": "M1-S05", "run_id": "m1-s05", "status": "PASS", "missing_metrics": []})
+    _write(source / "run_summary.json", {"capability_id": "workload", "run_id": "workload-analysis", "status": "PASS", "missing_metrics": []})
     _write(source / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": False, "valkey_versions": [], "nodes_observed": 1, "cluster_state_observed": "ok"})
     _write(source / "failover_report.json", {"status": "SKIPPED_WITH_REASON", "failovers": [{"failover_latency_ms": 1}], "summary": {}})
     _write(source / "cleanup_report.json", {"status": "PASS", "resources_remaining": []})
@@ -101,8 +101,8 @@ def test_analysis_aggregates_workload_benchmark(tmp_path: Path) -> None:
         {
             "schema_version": "v1",
             "artifact_type": "workload_windows",
-            "phase_id": "M1-S05",
-            "run_id": "m1-s05",
+            "capability_id": "workload",
+            "run_id": "workload-analysis",
             "status": "PASS",
             "workload_mode": "benchmark",
             "profiles_covered": ["uniform"],

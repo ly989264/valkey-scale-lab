@@ -16,13 +16,13 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
 
 
-P12_ID = "P12_SCALE_LADDER_10_30"
-P13_ID = "P13_SCALE_LADDER_50_100"
-P14_ID = "P14_SCALE_1000_OPTIN_DRYRUN"
+SCALE_LADDER_ID = "scale_ladder"
+SCALE_PLANNING_ID = "scale_planning"
 RUNG_CONFIG = {
-    30: {"phase_id": P12_ID, "phase_dir": Path("artifacts/phases") / P12_ID},
-    50: {"phase_id": P13_ID, "phase_dir": Path("artifacts/phases") / P13_ID},
-    100: {"phase_id": P13_ID, "phase_dir": Path("artifacts/phases") / P13_ID},
+    10: {"capability_id": SCALE_LADDER_ID, "capture_dir": Path("artifacts/captures") / SCALE_LADDER_ID},
+    30: {"capability_id": SCALE_LADDER_ID, "capture_dir": Path("artifacts/captures") / SCALE_LADDER_ID},
+    50: {"capability_id": SCALE_LADDER_ID, "capture_dir": Path("artifacts/captures") / SCALE_LADDER_ID},
+    100: {"capability_id": SCALE_LADDER_ID, "capture_dir": Path("artifacts/captures") / SCALE_LADDER_ID},
 }
 REPORT_VIEW_SUFFIXES = {".html", ".svg", ".csv", ".md"}
 
@@ -76,7 +76,7 @@ class ScaleBuildAudit:
         classification: str = "current",
     ) -> str:
         self.finding_seq += 1
-        finding_id = f"L07-SCALE-{self.finding_seq:04d}"
+        finding_id = f"SCALE-BUILD-{self.finding_seq:04d}"
         self.findings.append(
             {
                 "id": finding_id,
@@ -252,18 +252,18 @@ class ScaleBuildAudit:
 
     def audit_rung(self, node_count: int) -> dict[str, Any]:
         cfg = RUNG_CONFIG[node_count]
-        phase_id = str(cfg["phase_id"])
-        phase_dir = Path(cfg["phase_dir"])
-        scenario = f"scale_{node_count}"
-        evidence_path = phase_dir / f"valkey_e2e_evidence_{node_count}.json"
-        preflight_path = phase_dir / f"resource_preflight_{node_count}.json"
-        scale_rung_path = phase_dir / f"scale_rung_{node_count}.json"
-        cleanup_path = phase_dir / f"cleanup_report_scale_{node_count}.json"
-        snapshots_path = phase_dir / f"cluster_snapshots_scale_{node_count}.json"
-        scale_report_path = phase_dir / "scale_ladder_report.json"
-        timing_path = phase_dir / f"p13_timing_breakdown_scale_{node_count}.json"
-        runtime_timing_path = phase_dir / f"runtime_timing_breakdown_scale_{node_count}.json"
-        setup_timeline_path = phase_dir / f"setup_timeline_scale_{node_count}.json"
+        capability_id = str(cfg["capability_id"])
+        capture_dir = Path(cfg["capture_dir"])
+        scenario = "scale_ladder"
+        evidence_path = capture_dir / f"valkey_e2e_evidence_{node_count}.json"
+        preflight_path = capture_dir / f"resource_preflight_{node_count}.json"
+        scale_rung_path = capture_dir / f"scale_rung_{node_count}.json"
+        cleanup_path = capture_dir / f"cleanup_report_scale_{node_count}.json"
+        snapshots_path = capture_dir / f"cluster_snapshots_scale_{node_count}.json"
+        scale_report_path = capture_dir / "scale_ladder_report.json"
+        timing_path = capture_dir / f"setup_timing_breakdown_exact-{node_count}.json"
+        runtime_timing_path = capture_dir / f"runtime_timing_breakdown_scale_{node_count}.json"
+        setup_timeline_path = capture_dir / f"setup_timeline_scale_{node_count}.json"
 
         finding_ids: list[str] = []
 
@@ -277,7 +277,7 @@ class ScaleBuildAudit:
         cleanup = self.load(cleanup_path, schema_path="schemas/artifact/cleanup_report.schema.json")
         snapshots = self.load(snapshots_path)
         scale_report = self.load(scale_report_path, schema_path="schemas/artifact/scale_ladder_report.schema.json")
-        timing = self.load(timing_path, schema_path="schemas/artifact/p13_timing_breakdown.schema.json", required=node_count in {50, 100})
+        timing = self.load(timing_path, schema_path="schemas/artifact/setup_timing_breakdown.schema.json")
         runtime_timing = self.load(runtime_timing_path, required=False)
         setup_timeline = self.load(setup_timeline_path, required=False)
         final_snapshot = self.final_snapshot(snapshots)
@@ -303,7 +303,7 @@ class ScaleBuildAudit:
 
         if isinstance(evidence, dict):
             add(self.check(evidence.get("status") == "PASS", category="invalid_real_evidence", description=f"{scenario} evidence status must be PASS", evidence=[rel(self.root, evidence_path), str(evidence.get("status"))]))
-            add(self.check(evidence.get("phase_id") == phase_id, category="invalid_real_evidence", description=f"{scenario} evidence phase_id must match canonical phase", evidence=[rel(self.root, evidence_path), str(evidence.get("phase_id"))]))
+            add(self.check(evidence.get("capability_id") == capability_id, category="invalid_real_evidence", description=f"{scenario} evidence capability_id must match canonical capability_id", evidence=[rel(self.root, evidence_path), str(evidence.get("capability_id"))]))
             add(self.check(evidence.get("scenario") == scenario, category="invalid_real_evidence", description=f"{scenario} evidence scenario mismatch", evidence=[rel(self.root, evidence_path), str(evidence.get("scenario"))]))
             add(self.check(evidence.get("real_valkey") is True, category="invalid_real_evidence", description=f"{scenario} must be real Valkey evidence", evidence=[rel(self.root, evidence_path)]))
             add(self.check(evidence.get("nodes_observed") == node_count, category="invalid_real_evidence", description=f"{scenario} observed node count must match rung", evidence=[rel(self.root, evidence_path), str(evidence.get("nodes_observed"))]))
@@ -341,13 +341,13 @@ class ScaleBuildAudit:
         metric_records: list[dict[str, Any]] = []
         metric_records.append(self.metric("resource_preflight.can_run", value=preflight.get("can_run") if isinstance(preflight, dict) else None, source_artifact=rel(self.root, preflight_path), source_role="resource_preflight", reason="resource preflight must pass before real scale evidence can be accepted"))
         metric_records.append(self.metric("resource_preflight.status", value=preflight.get("status") if isinstance(preflight, dict) else None, source_artifact=rel(self.root, preflight_path), source_role="resource_preflight"))
-        metric_records.append(self.metric("process_startup.nodehost_start_seconds", value=self.timing_by_name(timing, "nodehost_start"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown", reason="30-node historical evidence predates P13 timing breakdown" if node_count == 30 else ""))
-        metric_records.append(self.metric("process_startup.process_config_prepare_seconds", value=self.timing_by_name(timing, "process_config_prepare"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown", reason="30-node historical evidence predates P13 timing breakdown" if node_count == 30 else ""))
-        metric_records.append(self.metric("process_startup.process_start_seconds", value=self.timing_by_name(timing, "process_start"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown", reason="30-node historical evidence predates P13 timing breakdown" if node_count == 30 else ""))
-        metric_records.append(self.metric("process_startup.process_ready_wait_seconds", value=self.timing_by_name(timing, "process_ready_wait"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown", reason="30-node historical evidence predates P13 timing breakdown" if node_count == 30 else ""))
-        metric_records.append(self.metric("cluster_create.primary_cluster_create_seconds", value=self.timing_by_name(timing, "primary_cluster_create"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown", reason="30-node historical evidence predates P13 timing breakdown" if node_count == 30 else ""))
-        metric_records.append(self.metric("cluster_create.replica_meet_seconds", value=self.timing_by_name(timing, "replica_meet"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown", reason="30-node historical evidence predates P13 timing breakdown" if node_count == 30 else ""))
-        metric_records.append(self.metric("role_convergence.replica_replicate_seconds", value=self.timing_by_name(timing, "replica_replicate"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown", reason="30-node historical evidence predates P13 timing breakdown" if node_count == 30 else ""))
+        metric_records.append(self.metric("process_startup.nodehost_start_seconds", value=self.timing_by_name(timing, "nodehost_start"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown"))
+        metric_records.append(self.metric("process_startup.process_config_prepare_seconds", value=self.timing_by_name(timing, "process_config_prepare"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown"))
+        metric_records.append(self.metric("process_startup.process_start_seconds", value=self.timing_by_name(timing, "process_start"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown"))
+        metric_records.append(self.metric("process_startup.process_ready_wait_seconds", value=self.timing_by_name(timing, "process_ready_wait"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown"))
+        metric_records.append(self.metric("cluster_create.primary_cluster_create_seconds", value=self.timing_by_name(timing, "primary_cluster_create"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown"))
+        metric_records.append(self.metric("cluster_create.replica_meet_seconds", value=self.timing_by_name(timing, "replica_meet"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown"))
+        metric_records.append(self.metric("role_convergence.replica_replicate_seconds", value=self.timing_by_name(timing, "replica_replicate"), unit="seconds", source_artifact=rel(self.root, timing_path), source_role="timing_breakdown"))
         metric_records.append(self.metric("slot_assignment.slots_assigned", value=final_snapshot.get("slots_assigned"), unit="slots", source_artifact=rel(self.root, snapshots_path), source_role="cluster_snapshots"))
         metric_records.append(self.metric("slot_assignment.slots_ok", value=final_snapshot.get("slots_ok"), unit="slots", source_artifact=rel(self.root, snapshots_path), source_role="cluster_snapshots"))
         metric_records.append(self.metric("membership_convergence.known_nodes", value=final_snapshot.get("known_nodes"), unit="nodes", source_artifact=rel(self.root, snapshots_path), source_role="cluster_snapshots"))
@@ -373,7 +373,7 @@ class ScaleBuildAudit:
         metric_records.append(self.metric("runtime.cluster_create_duration_seconds", value=runtime_timing.get("summary", {}).get("cluster_create_duration_seconds") if isinstance(runtime_timing, dict) else None, unit="seconds", source_artifact=rel(self.root, runtime_timing_path), source_role="runtime_timing", reason="30-node historical evidence predates runtime_timing_breakdown artifact" if node_count == 30 else ""))
 
         for metric_record in metric_records:
-            if metric_record["status"] == "MISSING" and node_count in {50, 100} and metric_record["source_role"] in {"timing_breakdown", "cleanup", "setup_timeline", "runtime_timing"}:
+            if metric_record["status"] == "MISSING" and metric_record["source_role"] in {"timing_breakdown", "cleanup", "setup_timeline", "runtime_timing"}:
                 add(self.finding(
                     severity="high",
                     category="missing_required_scale_build_metric",
@@ -386,7 +386,7 @@ class ScaleBuildAudit:
         return {
             "node_count": node_count,
             "scenario": scenario,
-            "phase_id": phase_id,
+            "capability_id": capability_id,
             "status": rung_status,
             "evidence_path": rel(self.root, evidence_path),
             "source_artifacts": source_artifacts,
@@ -406,11 +406,11 @@ class ScaleBuildAudit:
                 return finding
         return {}
 
-    def audit_p14_boundary(self) -> dict[str, Any]:
-        phase_dir = self.path(Path("artifacts/phases") / P14_ID)
+    def audit_scale_planning_boundary(self) -> dict[str, Any]:
+        capture_dir = self.path(Path("artifacts/captures") / SCALE_PLANNING_ID)
         real_artifacts: list[Path] = []
-        if phase_dir.exists():
-            for path in sorted(phase_dir.glob("*.json")):
+        if capture_dir.exists():
+            for path in sorted(capture_dir.glob("*.json")):
                 try:
                     payload = load_json(path)
                 except Exception:  # noqa: BLE001
@@ -426,7 +426,6 @@ class ScaleBuildAudit:
                 looks_real = (
                     path.name.startswith("valkey_e2e")
                     or payload.get("real_valkey") is True
-                    or scenario == "scale_1000"
                     or artifact_type in {"scale_rung_summary", "scale_ladder_report"}
                 )
                 if node_count == 1000 and not allowed_dryrun_metadata:
@@ -442,23 +441,23 @@ class ScaleBuildAudit:
         for path in real_artifacts:
             self.finding(
                 severity="high",
-                category="p14_real_artifact_present",
+                category="scale_planning_real_artifact_present",
                 blocking=True,
-                description="P14 must not have real Valkey or real 1000-node scale artifacts in automatic L07 coverage",
+                description="SCALE_PLANNING must not have real Valkey or real 1000-node artifacts in automatic coverage",
                 evidence=[rel(self.root, path)],
             )
         return {
-            "phase_id": P14_ID,
+            "capability_id": SCALE_PLANNING_ID,
             "status": "FAIL" if real_artifacts else "SKIPPED_WITH_REASON",
             "dry_run_only": True,
             "real_valkey_coverage": False,
             "real_evidence_count": len(real_artifacts),
-            "reason": "P14 is opt-in dry-run/resource/planner only and is not counted as real scale build coverage.",
+            "reason": "SCALE_PLANNING is opt-in dry-run/resource/planner only and is not counted as real scale build coverage.",
         }
 
     def build(self) -> dict[str, Any]:
-        rungs = [self.audit_rung(node_count) for node_count in [30, 50, 100]]
-        p14_boundary = self.audit_p14_boundary()
+        rungs = [self.audit_rung(node_count) for node_count in [10, 30, 50, 100]]
+        scale_planning_boundary = self.audit_scale_planning_boundary()
         measured = sum(1 for rung in rungs for metric in rung["metric_records"] if metric["status"] == "MEASURED")
         missing = sum(1 for rung in rungs for metric in rung["metric_records"] if metric["status"] == "MISSING")
         skipped = sum(1 for rung in rungs for metric in rung["metric_records"] if metric["status"] == "SKIPPED_WITH_REASON")
@@ -479,10 +478,10 @@ class ScaleBuildAudit:
                 "skipped_metric_count": skipped,
                 "real_valkey_rung_count": sum(1 for rung in rungs if rung["real_valkey"] is True),
                 "cleanup_pass_count": sum(1 for rung in rungs if any(metric["name"] == "cleanup.resources_remaining_count" and metric["value"] == 0 for metric in rung["metric_records"])),
-                "p14_dry_run_only": p14_boundary["dry_run_only"],
+                "scale_planning_dry_run_only": scale_planning_boundary["dry_run_only"],
             },
             "canonical_rungs": rungs,
-            "p14_boundary": p14_boundary,
+            "scale_planning_boundary": scale_planning_boundary,
             "findings": self.findings,
         }
 

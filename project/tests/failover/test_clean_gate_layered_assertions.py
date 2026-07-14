@@ -11,7 +11,7 @@ from valkey_scale_lab.observer.failover_timeline import (
     derive_rto_metrics,
 )
 
-PHASE = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
+CAPABILITY = "clean_gate_diagnostics"
 
 
 def write_json(path: Path, obj: dict) -> None:
@@ -25,9 +25,9 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 def sample(sample_id: str, node_count: int, **overrides):
     row = {
         "schema_version": "v1",
-        "phase_id": PHASE,
+        "capability_id": CAPABILITY,
         "run_id": f"run-{sample_id}",
-        "scenario_name": f"p45_scale_{node_count}_layered_sample_01",
+        "scenario_name": "clean_gate_diagnostics",
         "sample_id": sample_id,
         "status": "PASS",
         "execution_mode": "real_valkey",
@@ -63,7 +63,7 @@ def round_for(row: dict, status: str = "PASS") -> dict:
     return {
         "schema_version": "v1",
         "artifact_type": "clean_gate_probe_round",
-        "phase_id": PHASE,
+        "capability_id": CAPABILITY,
         "run_id": row["run_id"],
         "scenario_name": row["scenario_name"],
         "sample_id": row["sample_id"],
@@ -84,17 +84,17 @@ def populate(base: Path, rows: list[dict]) -> None:
     rounds = [round_for(row) for row in rows]
     write_jsonl(base / "failover_timeline_samples.jsonl", rows)
     write_jsonl(base / "clean_gate_probe_rounds.jsonl", rounds)
-    write_jsonl(base / "observer_samples.jsonl", [{"sample_id": row["sample_id"], "phase_id": PHASE, "status": "PASS"} for row in rows])
-    write_jsonl(base / "client_recovery_samples.jsonl", [{"sample_id": row["sample_id"], "phase_id": PHASE, "status": "PASS", "timestamp_unix_ms": row["first_client_success_at_ms"]} for row in rows])
-    write_json(base / "clean_gate_diagnostics.json", build_clean_gate_diagnostics(rows, rounds, phase_id=PHASE, run_id="diag"))
-    write_json(base / "layered_recovery_summary.json", build_layered_recovery_summary(rows, phase_id=PHASE, run_id="summary"))
-    write_json(base / "recovery_endpoint_summary.json", build_recovery_endpoint_summary(rows, phase_id=PHASE, run_id="endpoints"))
+    write_jsonl(base / "observer_samples.jsonl", [{"sample_id": row["sample_id"], "capability_id": CAPABILITY, "status": "PASS"} for row in rows])
+    write_jsonl(base / "client_recovery_samples.jsonl", [{"sample_id": row["sample_id"], "capability_id": CAPABILITY, "status": "PASS", "timestamp_unix_ms": row["first_client_success_at_ms"]} for row in rows])
+    write_json(base / "clean_gate_diagnostics.json", build_clean_gate_diagnostics(rows, rounds, capability_id=CAPABILITY, run_id="diag"))
+    write_json(base / "layered_recovery_summary.json", build_layered_recovery_summary(rows, capability_id=CAPABILITY, run_id="summary"))
+    write_json(base / "recovery_endpoint_summary.json", build_recovery_endpoint_summary(rows, capability_id=CAPABILITY, run_id="endpoints"))
     write_json(base / "dry_run_gt_200_projection.json", {"dry_run": True, "real_valkey": False, "runtime_resources_created": False, "node_count": 1000})
 
 
 def run_script(name: str, base: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["python3", f"scripts/{name}.py", "--phase", PHASE, "--artifact-dir", str(base), "--require-scales", "30,50,100,200"],
+        ["python3", f"scripts/{name}.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base), "--require-scales", "30,50,100,200"],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -102,15 +102,15 @@ def run_script(name: str, base: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_p45_layered_assertions_pass_on_full_fixture(tmp_path: Path) -> None:
+def test_clean_gate_diagnostics_layered_assertions_pass_on_full_fixture(tmp_path: Path) -> None:
     base = tmp_path / "artifacts"
     populate(base, [sample("s30", 30), sample("s50", 50), sample("s100", 100), sample("s200", 200)])
 
     for name in ["assert_clean_gate_diagnostics", "assert_layered_recovery_semantics", "assert_no_clean_gate_rto_conflation"]:
-        proc = subprocess.run(["python3", f"scripts/{name}.py", "--phase", PHASE, "--artifact-dir", str(base)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        proc = subprocess.run(["python3", f"scripts/{name}.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
         assert proc.returncode == 0, proc.stderr
     proc = subprocess.run(
-        ["python3", "scripts/assert_no_clean_gate_partial_coverage.py", "--phase", PHASE, "--artifact-dir", str(base), "--require-scales", "30,50,100,200", "--require-dry-run-gt-200"],
+        ["python3", "scripts/assert_no_clean_gate_partial_coverage.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base), "--require-scales", "30,50,100,200", "--require-dry-run-gt-200"],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -119,24 +119,24 @@ def test_p45_layered_assertions_pass_on_full_fixture(tmp_path: Path) -> None:
     assert proc.returncode == 0, proc.stderr
 
 
-def test_p45_conflation_assertion_rejects_clean_snapshot_substitution(tmp_path: Path) -> None:
+def test_clean_gate_diagnostics_conflation_assertion_rejects_clean_snapshot_substitution(tmp_path: Path) -> None:
     base = tmp_path / "artifacts"
     bad = sample("s30", 30)
     bad["pfail_to_cluster_ok_ms"] = bad["kill_to_clean_snapshot_ms"]
     populate(base, [bad, sample("s50", 50), sample("s100", 100), sample("s200", 200)])
 
-    proc = subprocess.run(["python3", "scripts/assert_no_clean_gate_rto_conflation.py", "--phase", PHASE, "--artifact-dir", str(base)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+    proc = subprocess.run(["python3", "scripts/assert_no_clean_gate_rto_conflation.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
 
     assert proc.returncode == 1
     assert "pfail_to_cluster_ok_ms" in proc.stderr
 
 
-def test_p45_partial_coverage_rejects_historical_phase(tmp_path: Path) -> None:
+def test_clean_gate_diagnostics_partial_coverage_rejects_historical_capability(tmp_path: Path) -> None:
     base = tmp_path / "artifacts"
-    bad = sample("s30", 30, phase_id="P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY")
+    bad = sample("s30", 30, capability_id="failover_timeline")
     populate(base, [bad])
 
-    proc = subprocess.run(["python3", "scripts/assert_no_clean_gate_partial_coverage.py", "--phase", PHASE, "--artifact-dir", str(base), "--require-scales", "30,50,100,200"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+    proc = subprocess.run(["python3", "scripts/assert_no_clean_gate_partial_coverage.py", "--capability-id", CAPABILITY, "--artifact-dir", str(base), "--require-scales", "30,50,100,200"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
 
     assert proc.returncode == 1
-    assert "historical phase_id" in proc.stderr
+    assert "historical capability_id" in proc.stderr

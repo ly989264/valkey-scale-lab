@@ -11,7 +11,7 @@
     {
       "id": "local.lifecycle",
       "statement": "The reusable local lifecycle, scenario, management, fault, recovery, and cleanup contracts pass hermetic verification.",
-      "suite_ids": ["scenario.contract", "runtime.local.lifecycle"],
+      "suite_ids": ["scenario.contract", "runtime.local.lifecycle", "runtime.fake.full-flow", "runtime.small-real.parity"],
       "evidence_gate_ids": ["local.exact.50", "local.exact.200"]
     },
     {

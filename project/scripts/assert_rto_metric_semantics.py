@@ -14,12 +14,12 @@ from valkey_scale_lab.observer.failover_timeline import RTO_METRIC_FIELDS, deriv
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fail-closed P44 RTO metric semantic assertion")
-    parser.add_argument("--phase", required=True)
+    parser = argparse.ArgumentParser(description="Fail-closed FAILOVER_TIMELINE RTO metric semantic assertion")
+    parser.add_argument("--capability-id", required=True)
     parser.add_argument("--artifact-dir")
     args = parser.parse_args()
 
-    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "phases" / args.phase
+    base = Path(args.artifact_dir) if args.artifact_dir else ROOT / "artifacts" / "capabilities" / args.capability_id
     errors: list[str] = []
     samples = _load_jsonl(base / "failover_timeline_samples.jsonl", errors)
     for sample in samples:
@@ -30,7 +30,7 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"PASS RTO metric semantics phase={args.phase}")
+    print(f"PASS RTO metric semantics capability_id={args.capability_id}")
     return 0
 
 
