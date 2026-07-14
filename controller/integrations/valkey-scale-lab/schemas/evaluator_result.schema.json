@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:valkey-scale-lab:vpro2:evaluator-result:v1",
+  "$id": "urn:valkey-scale-lab:controller:evaluator-result:v1",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -14,7 +14,7 @@
     "facts"
   ],
   "properties": {
-    "schema_version": {"const": "vpro2-evaluator-result-v1"},
+    "schema_version": {"const": "controller-evaluator-result-v1"},
     "evaluator_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
     "product_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},

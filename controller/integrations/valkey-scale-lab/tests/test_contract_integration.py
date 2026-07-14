@@ -76,9 +76,9 @@ def test_compiler_maps_project_conditions_and_evidence_one_to_one() -> None:
     assert "authority/tools/run_verification.py" in json.dumps(draft)
 
 
-def test_compiled_draft_is_accepted_by_the_vpro2_contract_parser(monkeypatch) -> None:
-    monkeypatch.syspath_prepend(str(REPOSITORY_ROOT / "controller/vpro2/src"))
-    from vpro2.contracts import parse_contract
+def test_compiled_draft_is_accepted_by_the_controller_contract_parser(monkeypatch) -> None:
+    monkeypatch.syspath_prepend(str(REPOSITORY_ROOT / "controller/src"))
+    from controller.contracts import parse_contract
 
     contract = parse_contract(COMPILER.compile_contract("m1"), project_root=REPOSITORY_ROOT)
     assert contract.milestone.id == "ValkeyScaleLab.m1"
@@ -110,11 +110,11 @@ def test_milestone_evaluator_only_checks_sealed_structure_and_prerequisites() ->
     assert {row["status"] for row in results} == {"PASS"}
 
 
-def test_product_digest_matches_the_vpro2_product_root_contract(monkeypatch) -> None:
-    monkeypatch.syspath_prepend(str(REPOSITORY_ROOT / "controller/vpro2/src"))
+def test_product_digest_matches_the_controller_product_root_contract(monkeypatch) -> None:
+    monkeypatch.syspath_prepend(str(REPOSITORY_ROOT / "controller/src"))
     monkeypatch.syspath_prepend(str(PROJECT_ROOT / "src"))
     from valkey_scale_lab.gates.real import product_tree_digest
-    from vpro2.integrity import canonical_digest, tree_manifest
+    from controller.integrity import canonical_digest, tree_manifest
 
     expected = canonical_digest(
         {"product": {"kind": "directory", "manifest": tree_manifest(PROJECT_ROOT)}}
@@ -122,7 +122,7 @@ def test_product_digest_matches_the_vpro2_product_root_contract(monkeypatch) -> 
     assert product_tree_digest(PROJECT_ROOT) == expected
 
 
-def test_compiled_dynamic_receipt_path_runs_through_the_vpro2_evaluator_runner(
+def test_compiled_dynamic_receipt_path_runs_through_the_controller_evaluator_runner(
     tmp_path: Path, monkeypatch
 ) -> None:
     workspace = tmp_path / "workspace"
@@ -196,11 +196,11 @@ def test_compiled_dynamic_receipt_path_runs_through_the_vpro2_evaluator_runner(
     write(policy_path, PRODUCER.fingerprint(Path(sys.executable)))
     draft = COMPILER.compile_contract("m1", project_root=product)
 
-    monkeypatch.syspath_prepend(str(REPOSITORY_ROOT / "controller/vpro2/src"))
-    from vpro2.contracts import parse_contract
-    from vpro2.runner import EvaluatorRunner
+    monkeypatch.syspath_prepend(str(REPOSITORY_ROOT / "controller/src"))
+    from controller.contracts import parse_contract
+    from controller.runner import EvaluatorRunner
 
-    # Kernel sandbox profiles have dedicated VPRO2 tests. This integration test
+    # Kernel sandbox profiles have dedicated CONTROLLER tests. This integration test
     # exercises the real evaluator protocol in environments that prohibit a
     # nested sandbox-exec invocation.
     monkeypatch.setattr(
@@ -218,7 +218,7 @@ def test_compiled_dynamic_receipt_path_runs_through_the_vpro2_evaluator_runner(
         workspace_root=workspace,
         product_relative="product",
         milestone_id="m1",
-        run_id="vpro-run-1",
+        run_id="controller-run-1",
         expected_product_digest=product_digest,
         evidence_root=evidence_root,
         policy_path=policy_path,
@@ -239,13 +239,13 @@ def test_compiled_dynamic_receipt_path_runs_through_the_vpro2_evaluator_runner(
     )
     milestone_run = runner.run(
         contract.evaluator("ValkeyMilestoneEvaluator"),
-        run_id="vpro-run-1",
+        run_id="controller-run-1",
         product_digest=product_digest,
         evaluation_id="evaluation-1",
     )
     verification_run = runner.run(
         contract.evaluator("ValkeyVerificationAdmissionEvaluator"),
-        run_id="vpro-run-1",
+        run_id="controller-run-1",
         product_digest=product_digest,
         evaluation_id="evaluation-2",
     )
@@ -256,7 +256,7 @@ def test_compiled_dynamic_receipt_path_runs_through_the_vpro2_evaluator_runner(
 def test_operator_seals_a_prior_terminal_and_final_admission(tmp_path: Path) -> None:
     milestone_path = PROJECT_ROOT / "milestones/m1/milestone.json"
     terminal = {
-        "schema_version": "vpro2-terminal-receipt-v1",
+        "schema_version": "controller-terminal-receipt-v1",
         "status": "SUCCESS",
         "milestone_id": "ValkeyScaleLab.m1",
         "run_id": "prior-run",

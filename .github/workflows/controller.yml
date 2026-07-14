@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  vpro:
+  controller:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,11 +15,13 @@ jobs:
           python-version: '3.11'
       - name: Install test dependencies
         run: python3 -m pip install -r project/requirements-dev.txt
-      - name: Verify frozen framework
+      - name: Verify controller release
         run: |
-          VPRO_FRAMEWORK_ANCHOR="$PWD/controller/vpro/codex/vpro/framework_release.json" \
-            python3 -I -S -B controller/vpro/VPRO_LAUNCH.py framework-verify
-      - name: VPRO core tests
-        run: PYTHONPATH=controller/vpro/src python3 -m pytest -q controller/vpro/tests/vpro
-      - name: Product boundary and bundle integration tests
-        run: PYTHONPATH=controller/vpro/src python3 -m pytest -q controller/tests
+          cp controller/codex/framework_release.json "$RUNNER_TEMP/controller-framework-receipt.json"
+          chmod 600 "$RUNNER_TEMP/controller-framework-receipt.json"
+          CONTROLLER_FRAMEWORK_RECEIPT="$RUNNER_TEMP/controller-framework-receipt.json" \
+            python3 -I -S -B controller/CONTROLLER_LAUNCH.py framework-verify
+      - name: Controller core tests
+        run: PYTHONPATH=controller/src python3 -m pytest -q controller/tests/framework
+      - name: Product boundary and integration tests
+        run: PYTHONPATH=controller/src python3 -m pytest -q controller/tests

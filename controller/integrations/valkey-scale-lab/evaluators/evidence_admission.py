@@ -50,7 +50,7 @@ def _evaluate_gate(
     product_root: Path,
     candidate_schema: dict[str, Any],
     prerequisites: Sequence[dict[str, Any]],
-    vpro_run_id: str,
+    controller_run_id: str,
     product_digest: str,
     now_unix: int,
     max_age_seconds: int,
@@ -82,7 +82,7 @@ def _evaluate_gate(
                 definition=definition,
                 candidate_schema=candidate_schema,
                 scale=scale,
-                invocation_run_id=vpro_run_id,
+                invocation_run_id=controller_run_id,
                 product_digest=product_digest,
             )
         )
@@ -147,7 +147,7 @@ def _evaluate_gate(
             else {"errors": errors}
         ),
         "captured_at_unix": captured_at,
-        "run_id": vpro_run_id,
+        "run_id": controller_run_id,
         "product_digest": product_digest,
         "substituted": False,
     }
@@ -191,7 +191,7 @@ def evaluate(
             product_root=Path(product_root).resolve(),
             candidate_schema=candidate_schema,
             prerequisites=prerequisites,
-            vpro_run_id=run_id,
+            controller_run_id=run_id,
             product_digest=product_digest,
             now_unix=current,
             max_age_seconds=max_age_seconds,

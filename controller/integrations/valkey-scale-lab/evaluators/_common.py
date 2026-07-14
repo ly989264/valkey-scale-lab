@@ -67,12 +67,12 @@ def safe_file(root: Path, raw: Any) -> Path | None:
 
 def environment_bindings() -> tuple[str, str, str, str, Path, Path]:
     names = (
-        "VPRO2_EVALUATOR_ID",
-        "VPRO2_RUN_ID",
-        "VPRO2_PRODUCT_DIGEST",
-        "VPRO2_INPUT_DIGEST",
-        "VPRO2_RESULT_PATH",
-        "VPRO2_EVIDENCE_ROOT",
+        "CONTROLLER_EVALUATOR_ID",
+        "CONTROLLER_RUN_ID",
+        "CONTROLLER_PRODUCT_DIGEST",
+        "CONTROLLER_INPUT_DIGEST",
+        "CONTROLLER_RESULT_PATH",
+        "CONTROLLER_EVIDENCE_ROOT",
     )
     missing = [name for name in names if not os.environ.get(name)]
     if missing:
@@ -98,7 +98,7 @@ def write_result(
     evidence_results: list[dict[str, Any]],
 ) -> int:
     value = {
-        "schema_version": "vpro2-evaluator-result-v1",
+        "schema_version": "controller-evaluator-result-v1",
         "evaluator_id": evaluator_id,
         "run_id": run_id,
         "product_digest": product_digest,

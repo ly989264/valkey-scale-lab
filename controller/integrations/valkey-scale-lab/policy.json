@@ -1,5 +1,5 @@
 {
-  "schema_version": "valkey-vpro2-controller-policy-v1",
+  "schema_version": "valkey-controller-policy-v1",
   "evidence_freshness_seconds": 86400,
   "evaluator_timeout_seconds": 300,
   "capability_limits": {

@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:controller:schema:milestone:v2",
+  "title": "CONTROLLER Goal-Driven Milestone Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "milestone",
+    "success_conditions",
+    "evaluators",
+    "evidence_requirements",
+    "safety",
+    "resource_budget",
+    "termination"
+  ],
+  "properties": {
+    "schema_version": {"const": "controller-milestone-v2"},
+    "milestone": {"$ref": "#/$defs/milestone"},
+    "success_conditions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/successCondition"}
+    },
+    "evaluators": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/evaluator"}
+    },
+    "evidence_requirements": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/evidenceRequirement"}
+    },
+    "safety": {"$ref": "#/$defs/safety"},
+    "resource_budget": {"$ref": "#/$defs/resourceBudget"},
+    "termination": {"$ref": "#/$defs/termination"}
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,127}$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/identifier"}
+    },
+    "nonemptyIdList": {
+      "allOf": [
+        {"$ref": "#/$defs/idList"},
+        {"minItems": 1}
+      ]
+    },
+    "safePath": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*(?:^|/)\\.(?:/|$))[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$"
+    },
+    "pathList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/safePath"}
+    },
+    "nonemptyPathList": {
+      "allOf": [
+        {"$ref": "#/$defs/pathList"},
+        {"minItems": 1}
+      ]
+    },
+    "milestone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "title", "final_goal"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$"
+        },
+        "title": {"type": "string", "minLength": 1},
+        "final_goal": {"type": "string", "minLength": 1}
+      }
+    },
+    "successCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "evaluator_ids",
+        "evidence_requirement_ids",
+        "required"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "statement": {"type": "string", "minLength": 1},
+        "evaluator_ids": {"$ref": "#/$defs/nonemptyIdList"},
+        "evidence_requirement_ids": {"$ref": "#/$defs/idList"},
+        "required": {"const": true}
+      }
+    },
+    "evaluator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "mode",
+        "authority",
+        "trust_mode",
+        "argv",
+        "cwd",
+        "timeout_seconds",
+        "inputs",
+        "output_schema",
+        "cost",
+        "cost_units",
+        "capabilities"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "mode": {"enum": ["milestone", "admission"]},
+        "authority": {"const": "independent_evaluator"},
+        "trust_mode": {"const": "sealed_local"},
+        "argv": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "cwd": {
+          "oneOf": [
+            {"const": "."},
+            {"$ref": "#/$defs/safePath"}
+          ]
+        },
+        "timeout_seconds": {"type": "integer", "minimum": 1},
+        "inputs": {"$ref": "#/$defs/nonemptyPathList"},
+        "output_schema": {"$ref": "#/$defs/safePath"},
+        "cost": {"enum": ["cheap", "normal", "expensive"]},
+        "cost_units": {"type": "integer", "minimum": 1},
+        "capabilities": {
+          "allOf": [
+            {"$ref": "#/$defs/idList"},
+            {"maxItems": 0}
+          ]
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_age_seconds", "bind_to_product_digest", "bind_to_run_id"],
+      "properties": {
+        "max_age_seconds": {"type": "integer", "minimum": 1},
+        "bind_to_product_digest": {"type": "boolean"},
+        "bind_to_run_id": {"type": "boolean"}
+      }
+    },
+    "evidenceRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "capture_class",
+        "provenance_required",
+        "freshness",
+        "substitution_policy",
+        "admission_evaluator_ids"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "statement": {"type": "string", "minLength": 1},
+        "capture_class": {"enum": ["REAL", "OTHER"]},
+        "provenance_required": {"type": "boolean"},
+        "freshness": {"$ref": "#/$defs/freshness"},
+        "substitution_policy": {"const": "FORBIDDEN"},
+        "admission_evaluator_ids": {"$ref": "#/$defs/nonemptyIdList"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["capture_class"],
+            "properties": {"capture_class": {"const": "REAL"}}
+          },
+          "then": {
+            "properties": {
+              "provenance_required": {"const": true},
+              "freshness": {
+                "allOf": [
+                  {"$ref": "#/$defs/freshness"},
+                  {
+                    "properties": {
+                      "bind_to_product_digest": {"const": true},
+                      "bind_to_run_id": {"const": true}
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "capabilityPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "operator_approval_required",
+        "max_uses",
+        "cost_units_per_use"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "operator_approval_required": {"const": true},
+        "max_uses": {"type": "integer", "minimum": 1},
+        "cost_units_per_use": {"type": "integer", "minimum": 1}
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product_roots",
+        "context_roots",
+        "mutable_roots",
+        "immutable_roots",
+        "evaluator_roots",
+        "authority_roots",
+        "evidence_roots",
+        "allowed_tools",
+        "capability_policies",
+        "forbidden_effects"
+      ],
+      "properties": {
+        "product_roots": {"$ref": "#/$defs/nonemptyPathList"},
+        "context_roots": {"$ref": "#/$defs/nonemptyPathList"},
+        "mutable_roots": {"$ref": "#/$defs/nonemptyPathList"},
+        "immutable_roots": {"$ref": "#/$defs/nonemptyPathList"},
+        "evaluator_roots": {"$ref": "#/$defs/nonemptyPathList"},
+        "authority_roots": {"$ref": "#/$defs/nonemptyPathList"},
+        "evidence_roots": {"$ref": "#/$defs/nonemptyPathList"},
+        "allowed_tools": {"$ref": "#/$defs/nonemptyIdList"},
+        "capability_policies": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/capabilityPolicy"}
+        },
+        "forbidden_effects": {"$ref": "#/$defs/nonemptyIdList"}
+      }
+    },
+    "resourceBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_iterations",
+        "max_objective_attempts",
+        "max_planning_rounds_per_iteration",
+        "max_wall_seconds",
+        "max_worker_seconds",
+        "max_evaluator_seconds",
+        "max_cost_units",
+        "max_context_bytes",
+        "max_write_bytes",
+        "max_evidence_bytes",
+        "max_transaction_bytes",
+        "max_capability_runs",
+        "max_operator_runs",
+        "max_diagnostic_iterations"
+      ],
+      "properties": {
+        "max_iterations": {"type": "integer", "minimum": 1},
+        "max_objective_attempts": {"type": "integer", "minimum": 1},
+        "max_planning_rounds_per_iteration": {"type": "integer", "minimum": 1},
+        "max_wall_seconds": {"type": "integer", "minimum": 1},
+        "max_worker_seconds": {"type": "integer", "minimum": 1},
+        "max_evaluator_seconds": {"type": "integer", "minimum": 1},
+        "max_cost_units": {"type": "integer", "minimum": 1},
+        "max_context_bytes": {"type": "integer", "minimum": 1},
+        "max_write_bytes": {"type": "integer", "minimum": 1},
+        "max_evidence_bytes": {"type": "integer", "minimum": 1},
+        "max_transaction_bytes": {"type": "integer", "minimum": 1},
+        "max_capability_runs": {"type": "integer", "minimum": 0},
+        "max_operator_runs": {"type": "integer", "minimum": 0},
+        "max_diagnostic_iterations": {"type": "integer", "minimum": 0}
+      }
+    },
+    "termination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_consecutive_no_material_progress",
+        "max_consecutive_environment_blocked",
+        "max_no_legal_plan_rounds",
+        "integrity_anomaly",
+        "budget_exhaustion",
+        "operator_abort"
+      ],
+      "properties": {
+        "max_consecutive_no_material_progress": {"type": "integer", "minimum": 1},
+        "max_consecutive_environment_blocked": {"type": "integer", "minimum": 1},
+        "max_no_legal_plan_rounds": {"type": "integer", "minimum": 1},
+        "integrity_anomaly": {"const": "FAIL_IMMEDIATE"},
+        "budget_exhaustion": {"const": "FAIL"},
+        "operator_abort": {"const": "FAIL"}
+      }
+    }
+  }
+}

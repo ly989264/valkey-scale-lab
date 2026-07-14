@@ -23,17 +23,16 @@ def _imports(path: Path) -> set[str]:
     return imports
 
 
-def test_product_tree_has_no_controller_or_vpro_material() -> None:
+def test_product_tree_has_no_controller_material() -> None:
     forbidden = [
-        PROJECT_ROOT / "checks/vpro",
-        PROJECT_ROOT / "evaluators/vpro",
-        PROJECT_ROOT / "schemas/vpro",
-        PROJECT_ROOT / "schemas/vpro2",
-        PROJECT_ROOT / "src/valkey_scale_lab/vpro",
-        PROJECT_ROOT / "src/vpro2",
-        PROJECT_ROOT / "tests/vpro",
-        PROJECT_ROOT / "VPRO_LAUNCH.py",
-        PROJECT_ROOT / "VPRO_START.md",
+        PROJECT_ROOT / "checks/controller",
+        PROJECT_ROOT / "evaluators/controller",
+        PROJECT_ROOT / "schemas/controller",
+        PROJECT_ROOT / "src/valkey_scale_lab/controller",
+        PROJECT_ROOT / "src/controller",
+        PROJECT_ROOT / "tests/controller",
+        PROJECT_ROOT / "CONTROLLER_LAUNCH.py",
+        PROJECT_ROOT / "CONTROLLER_START.md",
     ]
     assert not [path for path in forbidden if path.exists()]
     product_files = [
@@ -43,7 +42,7 @@ def test_product_tree_has_no_controller_or_vpro_material() -> None:
         if path.is_file()
     ]
     forbidden_tokens = (
-        "VPRO_",
+        "CONTROLLER_",
         "VSLAB_META_M1_",
         "META_M1",
         "M1_",
@@ -65,21 +64,21 @@ def test_product_tree_has_no_controller_or_vpro_material() -> None:
 
 
 def test_product_source_imports_only_product_and_library_layers() -> None:
-    forbidden_roots = {"tests", "milestones", "verification", "controller", "vpro", "vpro2"}
+    forbidden_roots = {"tests", "milestones", "verification", "controller"}
     offenders: list[str] = []
     for path in (PROJECT_ROOT / "src").rglob("*.py"):
         for imported in _imports(path):
             root = imported.split(".", 1)[0]
             if root in forbidden_roots or any(
                 token in imported.split(".")
-                for token in ("tests", "milestones", "verification", "controller", "vpro", "vpro2")
+                for token in ("tests", "milestones", "verification", "controller")
             ):
                 offenders.append(f"{path.relative_to(PROJECT_ROOT)}: {imported}")
     assert offenders == []
 
 
 def test_product_tests_do_not_import_milestones_or_controller() -> None:
-    forbidden = {"milestones", "controller", "vpro", "vpro2"}
+    forbidden = {"milestones", "controller"}
     offenders: list[str] = []
     for path in (PROJECT_ROOT / "tests").rglob("*.py"):
         for imported in _imports(path):
@@ -93,17 +92,36 @@ def test_milestones_reference_suite_ids_not_test_paths() -> None:
         text = path.read_text(encoding="utf-8")
         assert "tests/" not in text
         assert "pytest" not in text
-        assert "VPRO" not in text
         assert "controller" not in text.lower()
 
 
-def test_active_vpro2_integration_and_vpro1_archive_are_outside_product() -> None:
-    assert (CONTROLLER_ROOT / "vpro2/src/vpro2/service.py").is_file()
+def test_controller_release_is_rooted_directly_under_controller() -> None:
+    assert (CONTROLLER_ROOT / "src/controller/service.py").is_file()
+    assert (CONTROLLER_ROOT / "CONTROLLER_LAUNCH.py").is_file()
+    assert (CONTROLLER_ROOT / "codex/framework_manifest.json").is_file()
     assert (CONTROLLER_ROOT / "integrations/valkey-scale-lab/compile_contract.py").is_file()
     assert (CONTROLLER_ROOT / "integrations/valkey-scale-lab/evaluators/evidence_admission.py").is_file()
-    assert (CONTROLLER_ROOT / "legacy/valkey-scale-lab/vpro1-bundles/milestone1.bundle.json").is_file()
+    assert not (CONTROLLER_ROOT / "controller").exists()
+    assert not (CONTROLLER_ROOT / "legacy").exists()
     assert not (CONTROLLER_ROOT / "bundles/valkey-scale-lab").exists()
-    assert (CONTROLLER_ROOT / "vpro/codex/vpro/framework_release.json").is_file()
+
+
+def test_retired_release_brand_is_absent_from_the_active_tree() -> None:
+    retired_brand = "vp" + "ro"
+    offenders: list[str] = []
+    for path in REPOSITORY_ROOT.rglob("*"):
+        relative = path.relative_to(REPOSITORY_ROOT)
+        if relative.parts[0] in {".git", "loop_evidence"}:
+            continue
+        if any(part in {".pytest_cache", "__pycache__"} for part in relative.parts):
+            continue
+        if retired_brand in relative.as_posix().lower():
+            offenders.append(relative.as_posix())
+        elif path.is_file() and retired_brand in path.read_text(
+            encoding="utf-8", errors="ignore"
+        ).lower():
+            offenders.append(relative.as_posix())
+    assert offenders == []
 
 
 def test_product_wheel_contains_only_the_product_package(tmp_path: Path) -> None:

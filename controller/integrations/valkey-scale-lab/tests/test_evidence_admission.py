@@ -184,7 +184,7 @@ def _write_gate(
     gate_id: str,
     nodes: int,
     *,
-    vpro_run_id: str,
+    controller_run_id: str,
     product_digest: str,
     captured_at: int,
     promotion: str | None = None,
@@ -207,7 +207,7 @@ def _write_gate(
         },
         source_commit="c" * 40,
         promoted_from_admission_digest=promotion,
-        invocation_run_id=vpro_run_id,
+        invocation_run_id=controller_run_id,
     )
 
 
@@ -222,7 +222,7 @@ def _rewrite_candidate(path: Path, mutation) -> dict[str, Any]:
 
 def _prerequisite_completion(root: Path, final_digest: str) -> Path:
     terminal = {
-        "schema_version": "vpro2-terminal-receipt-v1",
+        "schema_version": "controller-terminal-receipt-v1",
         "status": "SUCCESS",
         "milestone_id": "ValkeyScaleLab.m1",
         "product_digest": "9" * 64,
@@ -233,7 +233,7 @@ def _prerequisite_completion(root: Path, final_digest: str) -> Path:
     completion = {
         "schema_version": "valkey-prerequisite-completion-v1",
         "milestone_id": "m1",
-        "vpro_milestone_id": "ValkeyScaleLab.m1",
+        "controller_milestone_id": "ValkeyScaleLab.m1",
         "terminal_status": "SUCCESS",
         "product_digest": terminal["product_digest"],
         "completed_at_unix": 1_999_000_000,
@@ -253,14 +253,14 @@ def _prerequisite_completion(root: Path, final_digest: str) -> Path:
 @pytest.fixture
 def admitted(tmp_path: Path) -> tuple[Path, str, str, int]:
     evidence_root = tmp_path / "run_evidence"
-    run_id = "vpro-run-1"
+    run_id = "controller-run-1"
     product_digest = "a" * 64
     now = 2_000_000_000
     first = _write_gate(
         evidence_root,
         "local.exact.50",
         50,
-        vpro_run_id=run_id,
+        controller_run_id=run_id,
         product_digest=product_digest,
         captured_at=now - 10,
     )
@@ -268,7 +268,7 @@ def admitted(tmp_path: Path) -> tuple[Path, str, str, int]:
         evidence_root,
         "local.exact.200",
         200,
-        vpro_run_id=run_id,
+        controller_run_id=run_id,
         product_digest=product_digest,
         captured_at=now - 5,
         promotion=first["admission_digest"],
@@ -311,7 +311,7 @@ def test_minimal_self_consistent_bundle_is_rejected(tmp_path: Path) -> None:
         "schema_version": "valkey-exact-scale-admission-v1",
         "execution_kind": "REAL_VALKEY_EXACT_SCALE",
         "run_id": "runtime-50",
-        "invocation_run_id": "vpro-run-1",
+        "invocation_run_id": "controller-run-1",
         "run_nonce": "1" * 32,
         "run_started_unix_ms": 1_999_999_000_000,
         "run_ended_unix_ms": 2_000_000_000_000,
@@ -335,7 +335,7 @@ def test_minimal_self_consistent_bundle_is_rejected(tmp_path: Path) -> None:
         product_root=PROJECT_ROOT,
         candidate_schema_path=CANDIDATE_SCHEMA_PATH,
         prerequisite_paths=[],
-        run_id="vpro-run-1",
+        run_id="controller-run-1",
         product_digest="a" * 64,
         now_unix=2_000_000_000,
     )
@@ -407,7 +407,7 @@ def test_cross_product_and_cross_invocation_are_rejected(admitted) -> None:
 
     def update(candidate):
         candidate["product_digest"] = "b" * 64
-        candidate["invocation_run_id"] = "another-vpro-run"
+        candidate["invocation_run_id"] = "another-controller-run"
 
     _rewrite_candidate(path, update)
     errors = _errors(_evaluate(admitted), "local.exact.200")

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:valkey-scale-lab:vpro2:verification-policy:v1",
+  "$id": "urn:valkey-scale-lab:controller:verification-policy:v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "python_executable_sha256", "pytest_version", "pytest_package_digest", "toolchain_digest"],

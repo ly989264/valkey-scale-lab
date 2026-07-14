@@ -53,7 +53,7 @@ def seal(
     terminal_verified: bool,
 ) -> dict[str, Any]:
     if not terminal_verified:
-        raise SealError("operator must first verify the terminal receipt with its VPRO2 run authority")
+        raise SealError("operator must first verify the terminal receipt with its CONTROLLER run authority")
     milestone = load_json(milestone_path)
     terminal = load_json(terminal_path)
     admission = load_json(final_admission_path)
@@ -64,7 +64,7 @@ def seal(
     milestone_id = identity.get("id")
     final_gate = gates[-1]
     if (
-        terminal.get("schema_version") != "vpro2-terminal-receipt-v1"
+        terminal.get("schema_version") != "controller-terminal-receipt-v1"
         or terminal.get("status") != "SUCCESS"
         or terminal.get("milestone_id") != f"ValkeyScaleLab.{milestone_id}"
         or HEX64.fullmatch(str(terminal.get("receipt_tag", ""))) is None
@@ -90,7 +90,7 @@ def seal(
     completion: dict[str, Any] = {
         "schema_version": "valkey-prerequisite-completion-v1",
         "milestone_id": milestone_id,
-        "vpro_milestone_id": f"ValkeyScaleLab.{milestone_id}",
+        "controller_milestone_id": f"ValkeyScaleLab.{milestone_id}",
         "terminal_status": "SUCCESS",
         "product_digest": terminal["product_digest"],
         "completed_at_unix": terminal["created_at_unix"],

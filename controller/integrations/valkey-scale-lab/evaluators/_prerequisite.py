@@ -15,7 +15,7 @@ def load_completion(path: Path, expected_milestone_id: str) -> dict[str, Any]:
     expected = {
         "schema_version": "valkey-prerequisite-completion-v1",
         "milestone_id": expected_milestone_id,
-        "vpro_milestone_id": f"ValkeyScaleLab.{expected_milestone_id}",
+        "controller_milestone_id": f"ValkeyScaleLab.{expected_milestone_id}",
         "terminal_status": "SUCCESS",
     }
     for field, expected_value in expected.items():
@@ -50,7 +50,7 @@ def load_completion(path: Path, expected_milestone_id: str) -> dict[str, Any]:
         )
     terminal = load_json(terminal_path)
     if (
-        terminal.get("schema_version") != "vpro2-terminal-receipt-v1"
+        terminal.get("schema_version") != "controller-terminal-receipt-v1"
         or terminal.get("status") != "SUCCESS"
         or terminal.get("milestone_id") != f"ValkeyScaleLab.{expected_milestone_id}"
         or terminal.get("product_digest") != value.get("product_digest")

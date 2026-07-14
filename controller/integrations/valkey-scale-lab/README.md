@@ -1,11 +1,11 @@
-# Valkey Scale Lab VPRO2 Integration
+# Valkey Scale Lab Controller Integration
 
-This adapter is controller-owned and keeps `controller/vpro2/` free of Valkey
+This adapter is controller-owned and keeps the framework under `controller/src/` free of Valkey
 milestone semantics.
 
 `compile_contract.py` reads a project milestone and verification catalog, then
 maps every product success condition and real evidence gate into an unsigned
-`vpro-milestone-v2` draft. `policy.json` supplies only controller concerns:
+`controller-milestone-v2` draft. `policy.json` supplies only controller concerns:
 budgets, capability approvals, evaluator limits, and termination policy.
 
 The independent evaluators under `evaluators/` do not import
@@ -20,7 +20,7 @@ Generate a draft:
 ```bash
 python3 controller/integrations/valkey-scale-lab/compile_contract.py \
   --milestone m1 \
-  --output /tmp/valkey-m1.vpro2.draft.json
+  --output /tmp/valkey-m1.controller.draft.json
 ```
 
 This command does not sign, bind, or start a run. Before trusted execution, an
@@ -34,7 +34,7 @@ run_evidence/
 ```
 
 The operator reviews the draft, seals all authority and selected acceptance
-inputs read-only, and only then binds the external VPRO2 run. Verification
+inputs read-only, and only then binds the external controller run. Verification
 receipts are not presealed authority: they are regenerated in `run_evidence/`
 for the current run and product digest after each retained product change.
 
@@ -46,7 +46,7 @@ python3 controller/integrations/valkey-scale-lab/tools/run_verification.py finge
   --output /snapshot/authority/verification_policy.json
 ```
 
-After VPRO2 returns its bind challenge, produce current suite receipts outside
+After the controller returns its bind challenge, produce current suite receipts outside
 the worker workspace:
 
 ```bash
@@ -54,7 +54,7 @@ python3 /snapshot/authority/tools/run_verification.py run \
   --python /path/to/hermetic/python \
   --workspace-root /snapshot \
   --milestone m1 \
-  --run-id <vpro2-run-id> \
+  --run-id <controller-run-id> \
   --product-digest <bind-challenge-product-digest> \
   --evidence-root /controller-runs/<run>/evidence \
   --policy /snapshot/authority/verification_policy.json
@@ -65,7 +65,7 @@ product snapshot. The admission evaluator verifies suite definition, command,
 toolchain, producer, log, run, product, timestamps, skips, and all receipt
 digests.
 
-For M2 and M3, first verify the prior VPRO2 terminal receipt with its original
+For M2 and M3, first verify the prior controller terminal receipt with its original
 run authority, then create the immutable prerequisite input:
 
 ```bash

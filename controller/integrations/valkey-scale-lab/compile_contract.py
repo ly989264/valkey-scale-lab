@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile a product milestone into an unsigned VPRO2 review draft."""
+"""Compile a product milestone into an unsigned CONTROLLER review draft."""
 
 from __future__ import annotations
 
@@ -191,7 +191,7 @@ def compile_contract(
     milestone_evaluator_id = "ValkeyMilestoneEvaluator"
     verification_evaluator_id = "ValkeyVerificationAdmissionEvaluator"
     admission_evaluator_id = "ValkeyAdmissionEvaluator"
-    vpro_conditions: list[dict[str, Any]] = []
+    controller_conditions: list[dict[str, Any]] = []
     for condition in conditions:
         condition_id = condition.get("id")
         evidence_ids = condition.get("evidence_gate_ids")
@@ -202,7 +202,7 @@ def compile_contract(
             or any(item not in gate_ids for item in evidence_ids)
         ):
             raise CompileError("success condition references an unknown evidence gate")
-        vpro_conditions.append(
+        controller_conditions.append(
             {
                 "id": condition_id,
                 "statement": condition["statement"],
@@ -416,14 +416,14 @@ def compile_contract(
         for gate in gates
     ]
     return {
-        "schema_version": "vpro-milestone-v2",
+        "schema_version": "controller-milestone-v2",
         "milestone": {
             "id": f"ValkeyScaleLab.{milestone_id}",
             "version": identity["version"],
             "title": identity["title"],
             "final_goal": identity["goal"],
         },
-        "success_conditions": vpro_conditions,
+        "success_conditions": controller_conditions,
         "evaluators": evaluators,
         "evidence_requirements": [*verification_requirements, *real_requirements],
         "safety": {

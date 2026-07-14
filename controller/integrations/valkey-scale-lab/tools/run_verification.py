@@ -156,7 +156,7 @@ def produce(
         raise ProducerError("verification Python does not match the operator-sealed policy")
     before = product_tree_digest(product_root)
     if before != expected_product_digest:
-        raise ProducerError("staged product digest does not match the VPRO2 bind challenge")
+        raise ProducerError("staged product digest does not match the CONTROLLER bind challenge")
     milestone_path = product_root / "milestones" / milestone_id / "milestone.json"
     catalog_path = product_root / "verification" / "catalog.json"
     runner_path = product_root / "verification" / "run.py"

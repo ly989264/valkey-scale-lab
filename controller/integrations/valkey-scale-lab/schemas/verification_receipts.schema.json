@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:valkey-scale-lab:vpro2:verification-receipts:v2",
+  "$id": "urn:valkey-scale-lab:controller:verification-receipts:v2",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "run_id", "product_digest", "milestone_digest", "catalog_digest", "generated_at_unix", "producer_digest", "toolchain_digest", "receipts", "envelope_digest"],

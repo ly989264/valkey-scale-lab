@@ -21,7 +21,7 @@ def _compiler():
     return module
 
 
-def test_vpro2_draft_uses_project_definitions_without_copying_control_policy_back() -> None:
+def test_controller_draft_uses_project_definitions_without_copying_control_policy_back() -> None:
     compiler = _compiler()
     source = json.loads((PROJECT_ROOT / "milestones/m1/milestone.json").read_text())
     draft = compiler.compile_contract("m1")
