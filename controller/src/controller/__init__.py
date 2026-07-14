@@ -1,15 +1,33 @@
-"""CONTROLLER goal-driven controller contracts."""
+"""Minimal automatic Milestone controller."""
 
-from .contracts import ContractError, load_contract, load_milestone, parse_contract
-from .models import MilestoneContract
-from .service import Controller, ControllerServiceError
+from .contracts import ContractError, load_milestone, parse_milestone
+from .evaluation import EnvironmentBlocked, EvaluationError
+from .models import (
+    CheckStatus,
+    GoalState,
+    Milestone,
+    Objective,
+    PlanContext,
+    RunResult,
+    TerminalStatus,
+)
+from .runner import CommandEvaluator
+from .service import Controller, ControllerError
 
 __all__ = [
+    "CheckStatus",
+    "CommandEvaluator",
     "ContractError",
-    "MilestoneContract",
     "Controller",
-    "ControllerServiceError",
-    "load_contract",
+    "ControllerError",
+    "EnvironmentBlocked",
+    "EvaluationError",
+    "GoalState",
+    "Milestone",
+    "Objective",
+    "PlanContext",
+    "RunResult",
+    "TerminalStatus",
     "load_milestone",
-    "parse_contract",
+    "parse_milestone",
 ]

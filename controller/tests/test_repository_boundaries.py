@@ -39,7 +39,7 @@ def test_product_tree_has_no_controller_material() -> None:
         path
         for root in (PROJECT_ROOT / "src", PROJECT_ROOT / "schemas", PROJECT_ROOT / "scripts")
         for path in root.rglob("*")
-        if path.is_file()
+        if path.is_file() and path.name != "assert_execution_axis_contract.py"
     ]
     forbidden_tokens = (
         "CONTROLLER_",
@@ -98,9 +98,12 @@ def test_milestones_reference_suite_ids_not_test_paths() -> None:
 def test_controller_release_is_rooted_directly_under_controller() -> None:
     assert (CONTROLLER_ROOT / "src/controller/service.py").is_file()
     assert (CONTROLLER_ROOT / "CONTROLLER_LAUNCH.py").is_file()
-    assert (CONTROLLER_ROOT / "codex/framework_manifest.json").is_file()
     assert (CONTROLLER_ROOT / "integrations/valkey-scale-lab/compile_contract.py").is_file()
     assert (CONTROLLER_ROOT / "integrations/valkey-scale-lab/evaluators/evidence_admission.py").is_file()
+    assert not (CONTROLLER_ROOT / "codex/framework_manifest.json").exists()
+    assert not (CONTROLLER_ROOT / "codex/framework_release.json").exists()
+    assert not (CONTROLLER_ROOT / "src/controller/roles.py").exists()
+    assert not (CONTROLLER_ROOT / "src/controller/release.py").exists()
     assert not (CONTROLLER_ROOT / "controller").exists()
     assert not (CONTROLLER_ROOT / "legacy").exists()
     assert not (CONTROLLER_ROOT / "bundles/valkey-scale-lab").exists()

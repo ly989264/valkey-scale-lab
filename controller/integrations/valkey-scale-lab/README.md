@@ -1,86 +1,56 @@
-# Valkey Scale Lab Controller Integration
+# Valkey Scale Lab Integration
 
-This adapter is controller-owned and keeps the framework under `controller/src/` free of Valkey
-milestone semantics.
+This directory adapts product Milestones and their existing acceptance checks
+to the minimal Controller. It does not add objectives, ordering, or reduced
+completion rules.
 
-`compile_contract.py` reads a project milestone and verification catalog, then
-maps every product success condition and real evidence requirement into an
-unsigned `controller-milestone-v2` draft. `policy.json` supplies only controller
-concerns: budgets, capability approvals, evaluator limits, and termination
-policy.
-
-The independent evaluators under `evaluators/` do not import
-`valkey_scale_lab`. The milestone evaluator checks the sealed milestone,
-catalog, and prerequisite completion authority. Separate admission evaluators
-validate dynamic capability-suite receipts and complete raw real-run bundles.
-The real evaluator reconstructs the required raw capture and provenance graph
-from the sealed scenario definition rather than trusting a candidate's list.
-
-Generate a draft:
+Compile the immutable Milestone definition:
 
 ```bash
 python3 controller/integrations/valkey-scale-lab/compile_contract.py \
   --milestone m1 \
-  --output /tmp/valkey-m1.controller.draft.json
+  --output /tmp/valkey-m1.milestone.json
 ```
 
-This command does not sign, bind, or start a run. Before trusted execution, an
-operator must stage the paths named by the draft in this layout outside all
-worker write roots:
+The result contains only the product goal, success conditions, real evidence
+requirements, and Controller termination conditions. Worker path settings and
+Evaluator wiring remain ordinary run configuration in `policy.json` and the
+Controller constructor.
 
-```text
-product/     selected product snapshot, milestones, catalog, and acceptance tests
-authority/   evaluators, producer, toolchain policy, schemas, prerequisites
-run_evidence/
-```
+## Complete Evaluation
 
-The operator stores the reviewed contract outside the Worker workspace, seals
-all in-workspace authority and selected acceptance inputs read-only, and only
-then binds the external controller run. Verification
-receipts are not presealed authority: they are regenerated in `run_evidence/`
-for the current run and product digest after each retained product change.
+`full_evaluator.py` is the single callable/command used by Controller. On every
+call it runs the selected verification suites, admits their structured results,
+admits real evidence, and returns every condition and evidence result in the
+minimal Controller format:
 
-Fingerprint the operator-approved Python/pytest closure before binding:
+- `verification_admission.py` admits only current structured verification
+  results with successful commands, no forbidden skips, and matching logs.
+- `evidence_admission.py` admits real captures only when exact scale,
+  provenance, freshness, product/run binding, lifecycle coverage, and cleanup
+all match the Milestone.
+
+Run the complete evaluator directly:
 
 ```bash
-python3 controller/integrations/valkey-scale-lab/tools/run_verification.py fingerprint \
-  --python /path/to/hermetic/python \
-  --output /snapshot/authority/verification_policy.json
+PYTHONPATH=controller/src python3 \
+  controller/integrations/valkey-scale-lab/full_evaluator.py \
+  --milestone /tmp/valkey-m1.milestone.json \
+  --project-root project \
+  --evidence-root /tmp/controller-run/evidence \
+  --run-id m1-run
 ```
 
-After the controller returns its bind challenge, produce current suite receipts outside
-the worker workspace:
+The command exits successfully when it produced a complete result, even when
+some checks are `FAIL` or `MISSING`; those statuses are gaps for Planner.
 
-```bash
-python3 /snapshot/authority/tools/run_verification.py run \
-  --python /path/to/hermetic/python \
-  --workspace-root /snapshot \
-  --milestone m1 \
-  --run-id <controller-run-id> \
-  --product-digest <bind-challenge-product-digest> \
-  --evidence-root /controller-runs/<run>/evidence \
-  --policy /snapshot/authority/verification_policy.json
-```
+The verification result files are acceptance evidence, not Controller
+completion claims. Missing, stale, substituted, downscaled, malformed, or
+unadmitted data must produce a non-`PASS` evidence result.
 
-The producer refuses a stale product digest or a test run that mutates the
-product snapshot. The admission evaluator verifies suite definition, command,
-toolchain, producer, log, run, product, timestamps, skips, and all receipt
-digests.
+## Prerequisites
 
-For M2 and M3, first verify the prior controller terminal receipt with its original
-run authority, then create the immutable prerequisite input:
-
-```bash
-python3 controller/integrations/valkey-scale-lab/tools/seal_prerequisite.py \
-  --milestone project/milestones/m1/milestone.json \
-  --terminal /controller-runs/<m1-run>/terminal.json \
-  --final-admission /controller-runs/<m1-run>/evidence/local.exact.200/admission.json \
-  --output-dir /snapshot/authority/prerequisites/m1 \
-  --terminal-verified
-```
-
-`schemas/verification_receipts.schema.json` defines the dynamic receipt
-envelope. `schemas/prerequisite_completion.schema.json` defines the sealed
-cross-milestone promotion authority. Distributed real evidence requirements
-remain fail-closed until their milestone supplies a sealed scenario definition
-and complete distributed evidence profile.
+Later Milestones may consume a prior plain `SUCCESS` result plus its admitted
+evidence. Prerequisite validation must recompute referenced content digests and
+must not treat a summary string as proof. Historical evidence under
+`loop_evidence/` remains read-only.

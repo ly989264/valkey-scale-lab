@@ -1,141 +1,36 @@
 {
-  "schema_version": "controller-milestone-v2",
+  "schema_version": "controller-milestone-v1",
   "milestone": {
     "id": "ReplaceMilestoneId",
-    "version": "1.0.0",
     "title": "REPLACE: milestone title",
-    "final_goal": "REPLACE: immutable final goal"
+    "goal": "REPLACE: immutable final goal"
   },
   "success_conditions": [
     {
-      "id": "ReplaceSuccessCondition",
+      "id": "ReplaceConditionId",
       "statement": "REPLACE: executable success condition",
-      "evaluator_ids": [
-        "ReplaceMilestoneEvaluator"
-      ],
-      "evidence_requirement_ids": [
-        "ReplaceRealEvidence"
-      ],
-      "required": true
-    }
-  ],
-  "evaluators": [
-    {
-      "id": "ReplaceMilestoneEvaluator",
-      "mode": "milestone",
-      "authority": "independent_evaluator",
-      "trust_mode": "sealed_local",
-      "argv": [
-        "python3",
-        "evaluators/milestone_evaluator.py"
-      ],
-      "cwd": ".",
-      "timeout_seconds": 300,
-      "inputs": [
-        "evaluators/milestone_evaluator.py",
-        "schemas/evaluator_result.schema.json",
-        "product"
-      ],
-      "output_schema": "schemas/evaluator_result.schema.json",
-      "cost": "normal",
-      "cost_units": 1,
-      "capabilities": []
-    },
-    {
-      "id": "ReplaceEvidenceAdmissionEvaluator",
-      "mode": "admission",
-      "authority": "independent_evaluator",
-      "trust_mode": "sealed_local",
-      "argv": [
-        "python3",
-        "evaluators/evidence_admission.py"
-      ],
-      "cwd": ".",
-      "timeout_seconds": 300,
-      "inputs": [
-        "evaluators/evidence_admission.py",
-        "schemas/evaluator_result.schema.json",
-        "product"
-      ],
-      "output_schema": "schemas/evaluator_result.schema.json",
-      "cost": "normal",
-      "cost_units": 1,
-      "capabilities": []
+      "evidence_requirement_ids": ["ReplaceEvidenceId"]
     }
   ],
   "evidence_requirements": [
     {
-      "id": "ReplaceRealEvidence",
-      "statement": "REPLACE: real evidence and provenance requirement",
-      "capture_class": "REAL",
+      "id": "ReplaceEvidenceId",
+      "statement": "REPLACE: real evidence, freshness, provenance, and scale requirements",
+      "kind": "REAL",
+      "source_id": "ReplaceEvidenceSourceId",
+      "freshness_seconds": 86400,
       "provenance_required": true,
-      "freshness": {
-        "max_age_seconds": 86400,
-        "bind_to_product_digest": true,
-        "bind_to_run_id": true
-      },
       "substitution_policy": "FORBIDDEN",
-      "admission_evaluator_ids": [
-        "ReplaceEvidenceAdmissionEvaluator"
-      ]
+      "parameters": {
+        "nodes": 200
+      }
     }
   ],
-  "safety": {
-    "product_roots": [
-      "product"
-    ],
-    "context_roots": [
-      "product"
-    ],
-    "mutable_roots": [
-      "product"
-    ],
-    "immutable_roots": [
-      "evaluators",
-      "schemas"
-    ],
-    "evaluator_roots": [
-      "evaluators"
-    ],
-    "authority_roots": [
-      "evaluators",
-      "schemas"
-    ],
-    "evidence_roots": [
-      "run_evidence"
-    ],
-    "allowed_tools": [
-      "python3"
-    ],
-    "capability_policies": [],
-    "forbidden_effects": [
-      "ModifyHostNetwork",
-      "ModifyAcceptanceAuthority",
-      "ModifyControllerState"
-    ]
-  },
-  "resource_budget": {
-    "max_iterations": 12,
-    "max_objective_attempts": 24,
-    "max_planning_rounds_per_iteration": 3,
-    "max_wall_seconds": 86400,
-    "max_worker_seconds": 43200,
-    "max_evaluator_seconds": 3600,
-    "max_cost_units": 100,
-    "max_context_bytes": 100000,
-    "max_write_bytes": 100000000,
-    "max_evidence_bytes": 1000000000,
-    "max_transaction_bytes": 1000000000,
-    "max_capability_runs": 0,
-    "max_operator_runs": 0,
-    "max_diagnostic_iterations": 3
-  },
   "termination": {
-    "max_consecutive_no_material_progress": 3,
-    "max_consecutive_environment_blocked": 3,
-    "max_no_legal_plan_rounds": 3,
-    "integrity_anomaly": "FAIL_IMMEDIATE",
-    "budget_exhaustion": "FAIL",
-    "operator_abort": "FAIL"
+    "max_iterations": 12,
+    "max_stagnant_iterations": 3,
+    "max_environment_retries": 3,
+    "max_no_plan_rounds": 3,
+    "max_wall_seconds": 86400
   }
 }

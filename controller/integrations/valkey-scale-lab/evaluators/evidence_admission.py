@@ -11,10 +11,8 @@ from typing import Any, Mapping, Sequence
 
 from _common import (
     EvaluationError,
-    environment_bindings,
     load_json,
     safe_file,
-    write_result,
 )
 from _evidence_contract import validate_exact_evidence
 from _prerequisite import load_completion
@@ -30,7 +28,7 @@ def _definition_for_requirement(
     path = safe_file(product_root, relative)
     if path is None:
         errors.append(
-            "real evidence requirement has no sealed, supported scenario definition"
+            "real evidence requirement has no declared, supported scenario definition"
         )
         return None
     try:
@@ -119,7 +117,7 @@ def _evaluate_requirement(
             errors.append("cross-milestone promotion chain is ambiguous")
         elif promotion != prerequisites[0].get("final_admission_digest"):
             errors.append(
-                "first real evidence requirement does not bind the sealed prerequisite admission"
+                "first real evidence requirement does not bind the prerequisite admission"
             )
     elif promotion is not None:
         errors.append(
@@ -193,7 +191,7 @@ def evaluate(
         )
     prerequisite_ids = milestone.get("prerequisite_milestone_ids")
     if not isinstance(prerequisite_ids, list) or len(prerequisite_ids) != len(prerequisite_paths):
-        raise EvaluationError("sealed prerequisite inputs do not match the milestone")
+        raise EvaluationError("prerequisite inputs do not match the milestone")
     prerequisites = [
         load_completion(Path(path), prerequisite_id)
         for prerequisite_id, path in zip(prerequisite_ids, prerequisite_paths)
@@ -222,32 +220,27 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--product-root", type=Path, required=True)
     parser.add_argument("--candidate-schema", type=Path, required=True)
     parser.add_argument("--prerequisite", action="append", type=Path, default=[])
+    parser.add_argument("--evidence-root", type=Path, required=True)
+    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--product-digest", required=True)
+    parser.add_argument("--max-age-seconds", type=int, default=86400)
     return parser
 
 
 def main() -> int:
     args = _parser().parse_args()
-    evaluator_id, run_id, product_digest, input_digest, result_path, evidence_root = (
-        environment_bindings()
-    )
     evidence = evaluate(
         milestone_path=args.milestone,
-        evidence_root=evidence_root,
+        evidence_root=args.evidence_root,
         product_root=args.product_root,
         candidate_schema_path=args.candidate_schema,
         prerequisite_paths=args.prerequisite,
-        run_id=run_id,
-        product_digest=product_digest,
+        run_id=args.run_id,
+        product_digest=args.product_digest,
+        max_age_seconds=args.max_age_seconds,
     )
-    return write_result(
-        evaluator_id=evaluator_id,
-        run_id=run_id,
-        product_digest=product_digest,
-        input_digest=input_digest,
-        result_path=result_path,
-        condition_results=[],
-        evidence_results=evidence,
-    )
+    print(json.dumps(evidence, indent=2, sort_keys=True))
+    return 0
 
 
 if __name__ == "__main__":

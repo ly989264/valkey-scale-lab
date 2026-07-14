@@ -88,25 +88,25 @@ def validate_exact_evidence(
 
     artifacts = definition.get("artifacts")
     if not isinstance(artifacts, list) or not artifacts:
-        errors.append("sealed scenario definition has no artifact contract")
+        errors.append("declared scenario definition has no artifact contract")
         return errors
     raw_specs: dict[str, dict[str, Any]] = {}
     admission_specs: dict[str, dict[str, Any]] = {}
     for row in artifacts:
         if not isinstance(row, dict) or not isinstance(row.get("raw_name"), str):
-            errors.append("sealed scenario definition has an invalid artifact row")
+            errors.append("declared scenario definition has an invalid artifact row")
             continue
         raw_name = row["raw_name"]
         if raw_name in raw_specs:
-            errors.append(f"sealed scenario definition repeats raw artifact {raw_name}")
+            errors.append(f"declared scenario definition repeats raw artifact {raw_name}")
         raw_specs[raw_name] = row
         for admission in row.get("admissions", []):
             if not isinstance(admission, dict) or not isinstance(admission.get("kind"), str):
-                errors.append(f"sealed scenario definition has an invalid admission for {raw_name}")
+                errors.append(f"declared scenario definition has an invalid admission for {raw_name}")
                 continue
             kind = admission["kind"]
             if kind in admission_specs:
-                errors.append(f"sealed scenario definition repeats admitted artifact {kind}")
+                errors.append(f"declared scenario definition repeats admitted artifact {kind}")
             admission_specs[kind] = {
                 "format": row.get("format"),
                 "source_raw_name": raw_name,
@@ -136,7 +136,7 @@ def validate_exact_evidence(
             expected_capture["run_owner"] = capture["run_owner"]
             expected_capture["capture_digest"] = canonical_digest(expected_capture)
         if capture != expected_capture:
-            errors.append("capture manifest does not match the complete sealed scenario capture")
+            errors.append("capture manifest does not match the complete declared scenario capture")
         if candidate.get("capture_digest") != expected_capture.get("capture_digest"):
             errors.append("admission capture digest does not match the complete capture manifest")
 
@@ -202,7 +202,7 @@ def _load_raw_artifacts(
                     raise ValueError("JSONL must contain non-empty object rows")
                 streams[name] = values
             else:
-                errors.append(f"sealed scenario has unsupported format for runtime/{name}")
+                errors.append(f"declared scenario has unsupported format for runtime/{name}")
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
             errors.append(f"runtime/{name} is invalid: {exc}")
     return objects, streams, hashes
@@ -307,7 +307,7 @@ def _validate_raw_semantics(
     lifecycle = definition.get("lifecycle", [])
     lifecycle_ids = [row.get("id") for row in lifecycle if isinstance(row, dict)]
     if set(lifecycle_by_id) != set(lifecycle_ids):
-        errors.append("runtime/lifecycle_timeline.json does not cover the sealed lifecycle")
+        errors.append("runtime/lifecycle_timeline.json does not cover the declared lifecycle")
     for step_id in lifecycle_ids:
         row = lifecycle_by_id.get(str(step_id), {})
         start, end = row.get("started_monotonic_ms"), row.get("ended_monotonic_ms")
@@ -342,7 +342,7 @@ def _validate_raw_semantics(
         str(row.get("id")): row for row in scenario_rows if isinstance(row, dict)
     } if isinstance(scenario_rows, list) else {}
     if set(scenario_by_id) != set(declared):
-        errors.append("runtime/scenario_results.json does not cover every sealed scenario")
+        errors.append("runtime/scenario_results.json does not cover every declared scenario")
     operation_owner: dict[str, str] = {}
     for scenario_id, group in declared.items():
         row = scenario_by_id.get(scenario_id, {})
@@ -456,7 +456,7 @@ def _validate_admitted_artifacts(
                 errors.append(f"duplicate admitted artifact {row['kind']}")
             by_kind[row["kind"]] = row
     if set(by_kind) != set(admission_specs):
-        errors.append("admission artifact kinds do not match the complete sealed scenario")
+        errors.append("admission artifact kinds do not match the complete declared scenario")
     records: list[dict[str, Any]] = []
     for kind, spec in admission_specs.items():
         row = by_kind.get(kind)
@@ -478,7 +478,7 @@ def _validate_admitted_artifacts(
         if row.get("source_sha256") != source_digest or source_digest != file_digest(source):
             errors.append(f"{kind} raw source digest mismatch")
         if row.get("transform_id") != spec.get("transform_id"):
-            errors.append(f"{kind} transform does not match the sealed scenario")
+            errors.append(f"{kind} transform does not match the declared scenario")
         node_id = f"artifact-{canonical_digest([run_id, kind, source_digest])[:24]}"
         if row.get("provenance_node_id") != node_id:
             errors.append(f"{kind} provenance node id mismatch")

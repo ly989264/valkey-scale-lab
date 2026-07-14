@@ -1,33 +1,57 @@
-# Controller
+# Minimal Milestone Controller
 
-This tree is the active AI controller release and owns operator policy. It is outside the
-Valkey product workspace.
+This package runs one automatic loop for one Codex Goal session in one
+controlled Git workspace:
 
-- `src/controller/` contains the milestone-neutral controller package.
-- `CONTROLLER_LAUNCH.py` is the protected verify-before-import launcher.
-- `integrations/valkey-scale-lab/` converts product milestone definitions into
-  unsigned controller review drafts and supplies independent Valkey evaluators.
-
-Product goals and capability suite IDs originate in `project/milestones/` and
-`project/verification/`. Budgets, capability approvals, write boundaries, and
-termination policy originate here. The integration never writes controller
-policy back into a project milestone.
-
-Create an unsigned controller draft for operator review:
-
-```bash
-python3 controller/integrations/valkey-scale-lab/compile_contract.py \
-  --milestone m1 \
-  --output /tmp/valkey-m1.controller.draft.json
+```text
+full evaluation -> one objective -> Git checkpoint -> Worker
+-> full evaluation -> commit progress or roll back -> repeat
 ```
 
-The operator must copy the selected project milestone, catalog, acceptance
-tests, contract, evaluator code, receipt producer, toolchain policy, and
-schemas into a snapshot outside worker write authority before binding a
-trusted run. Capability receipts are generated afterward as run evidence for
-the current product digest; they are not static acceptance-authority files.
-Draft generation neither signs nor binds a run.
+The Milestone contains only the immutable goal, success conditions, evidence
+requirements, and termination conditions. Evaluator and Worker path settings
+are ordinary Controller startup inputs, not Milestone policy.
 
-Controller development starts at `CONTROLLER_START.md`. Retired controller
-release directories are not part of the active tree; historical run evidence
-remains under `../loop_evidence/` and must not be rewritten.
+The Python API is the runtime entry point:
+
+```python
+import sys
+from pathlib import Path
+from controller import CommandEvaluator, Controller
+
+evaluator = CommandEvaluator([
+    sys.executable,
+    "controller/integrations/valkey-scale-lab/full_evaluator.py",
+    "--milestone", "/tmp/valkey-m1.milestone.json",
+    "--project-root", "project",
+    "--evidence-root", "/tmp/controller-run/evidence",
+    "--run-id", "m1-run",
+], cwd=Path.cwd())
+
+controller = Controller(
+    milestone_path="/tmp/valkey-m1.milestone.json",
+    project_root="project",
+    allowed_write_paths=("src", "templates", "docs"),
+    protected_paths=("milestones", "verification", "tests"),
+    evaluator=evaluator,
+    state_path="/tmp/controller-run/state.json",
+)
+result = controller.run(plan_one_objective, execute_objective)  # Goal-session callbacks
+```
+
+`evaluate_all(milestone, project_root)` must return every success-condition
+result and every evidence-requirement result. Missing, stale, substituted,
+untrusted, blocked, or failed evidence remains a gap. Planner and Worker return
+values never count as acceptance evidence.
+
+Validate a Milestone or inspect a run:
+
+```bash
+python3 controller/CONTROLLER_LAUNCH.py milestone-validate \
+  --milestone controller/templates/milestone.template.json
+python3 controller/CONTROLLER_LAUNCH.py status --state /tmp/controller-run/state.json
+```
+
+The Valkey integration keeps its real verification and evidence-admission
+checks. Those artifacts are product acceptance facts; the Controller simply
+uses their complete current result when deriving Goal State.

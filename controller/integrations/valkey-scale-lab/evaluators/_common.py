@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -63,51 +62,3 @@ def safe_file(root: Path, raw: Any) -> Path | None:
     if not path.is_file() or path.is_symlink():
         return None
     return path
-
-
-def environment_bindings() -> tuple[str, str, str, str, Path, Path]:
-    names = (
-        "CONTROLLER_EVALUATOR_ID",
-        "CONTROLLER_RUN_ID",
-        "CONTROLLER_PRODUCT_DIGEST",
-        "CONTROLLER_INPUT_DIGEST",
-        "CONTROLLER_RESULT_PATH",
-        "CONTROLLER_EVIDENCE_ROOT",
-    )
-    missing = [name for name in names if not os.environ.get(name)]
-    if missing:
-        raise EvaluationError(f"missing evaluator environment: {missing}")
-    return (
-        os.environ[names[0]],
-        os.environ[names[1]],
-        os.environ[names[2]],
-        os.environ[names[3]],
-        Path(os.environ[names[4]]).resolve(),
-        Path(os.environ[names[5]]).resolve(),
-    )
-
-
-def write_result(
-    *,
-    evaluator_id: str,
-    run_id: str,
-    product_digest: str,
-    input_digest: str,
-    result_path: Path,
-    condition_results: list[dict[str, Any]],
-    evidence_results: list[dict[str, Any]],
-) -> int:
-    value = {
-        "schema_version": "controller-evaluator-result-v1",
-        "evaluator_id": evaluator_id,
-        "run_id": run_id,
-        "product_digest": product_digest,
-        "input_digest": input_digest,
-        "condition_results": condition_results,
-        "evidence_results": evidence_results,
-        "facts": [],
-    }
-    result_path.parent.mkdir(parents=True, exist_ok=True)
-    result_path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    statuses = [item["status"] for item in (*condition_results, *evidence_results)]
-    return 0 if statuses and all(status == "PASS" for status in statuses) else 1

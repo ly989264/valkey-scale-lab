@@ -1,155 +1,139 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Iterable, Mapping
+from collections.abc import Mapping
+from typing import Any
 
-from .gap_graph import ConditionEvaluation, EvaluatorFact, GoalState
-from .integrity import canonical_digest
-from .models import MilestoneContract
-from .runner import EvaluatorRun
+from .models import CheckResult, CheckStatus, Gap, GoalState, Milestone
 
 
-STATUS_PRIORITY = {
-    "PASS": 0,
-    "FAIL": 1,
-    "MISSING": 2,
-    "STALE": 3,
-    "BLOCKED_ENV": 4,
-    "ERROR": 5,
-}
+class EvaluationError(RuntimeError):
+    pass
 
 
-def build_goal_state(
-    contract: MilestoneContract,
-    runs: Iterable[EvaluatorRun],
-    *,
-    iteration: int,
-    evidence_root: Path,
-) -> GoalState:
-    by_id = {run.evaluator_id: run for run in runs}
-    expected = {evaluator.id for evaluator in contract.evaluators}
-    if set(by_id) != expected:
-        raise ValueError(f"evaluation run set mismatch: missing={sorted(expected - set(by_id))}")
-
-    evidence_status: dict[str, tuple[str, str | None]] = {}
-    for requirement in contract.evidence_requirements:
-        observations = []
-        for evaluator_id in requirement.admission_evaluator_ids:
-            run = by_id[evaluator_id]
-            item = next(
-                value
-                for value in run.report["evidence_results"]
-                if value["requirement_id"] == requirement.id
-            )
-            artifact_digest = None
-            if item["status"] == "PASS":
-                artifact = next(
-                    value
-                    for value in run.evidence_artifacts
-                    if value["requirement_id"] == requirement.id
-                )
-                artifact_digest = artifact["sha256"]
-            observations.append((item["status"], artifact_digest))
-        status = max((item[0] for item in observations), key=lambda item: _evidence_priority(item))
-        artifact_digests = sorted(item[1] for item in observations if item[1] is not None)
-        if status == "PASS" and len(set(artifact_digests)) != 1:
-            status = "UNTRUSTED"
-        evidence_status[requirement.id] = (status, artifact_digests[0] if artifact_digests else None)
-
-    evaluations: list[ConditionEvaluation] = []
-    for condition in contract.success_conditions:
-        result_statuses: list[str] = []
-        report_digests: list[str] = []
-        for evaluator_id in condition.evaluator_ids:
-            run = by_id[evaluator_id]
-            result = next(
-                value
-                for value in run.report["condition_results"]
-                if value["condition_id"] == condition.id
-            )
-            result_statuses.append(result["status"])
-            report_digests.append(
-                canonical_digest(
-                    {
-                        "evaluator_id": run.evaluator_id,
-                        "input_digest": run.input_digest,
-                        "condition_id": condition.id,
-                        "status": result["status"],
-                    }
-                )
-            )
-        requirement_digests: list[str] = []
-        for requirement_id in condition.evidence_requirement_ids:
-            status, digest = evidence_status[requirement_id]
-            result_statuses.append("PASS" if status == "PASS" else "STALE" if status == "STALE" else "MISSING")
-            if digest is not None:
-                requirement_digests.append(digest)
-        status = max(result_statuses, key=lambda item: STATUS_PRIORITY[item])
-        evaluations.append(
-            ConditionEvaluation(
-                condition_id=condition.id,
-                status=status,
-                evaluator_ids=condition.evaluator_ids,
-                evidence_digests=tuple(sorted((*report_digests, *requirement_digests))),
-                trusted=True,
-                current=status != "STALE",
-                required=condition.required,
-            )
-        )
-
-    facts: list[EvaluatorFact] = []
-    for run in by_id.values():
-        for fact in run.report["facts"]:
-            facts.append(
-                EvaluatorFact(
-                    evaluator_id=run.evaluator_id,
-                    relation=fact["relation"],
-                    source_condition_id=fact["source_condition_id"],
-                    target_condition_id=fact["target_condition_id"],
-                    evidence_digest=canonical_digest(
-                        {
-                            "evaluator_id": run.evaluator_id,
-                            "input_digest": run.input_digest,
-                            "relation": fact["relation"],
-                            "source_condition_id": fact["source_condition_id"],
-                            "target_condition_id": fact["target_condition_id"],
-                        }
-                    ),
-                    trusted=True,
-                    current=True,
-                )
-            )
-    return GoalState(iteration=iteration, evaluations=tuple(evaluations), evaluator_facts=tuple(facts))
+class EnvironmentBlocked(EvaluationError):
+    pass
 
 
-def goal_state_to_dict(state: GoalState) -> dict[str, Any]:
-    return {
-        "iteration": state.iteration,
-        "state_digest": state.state_digest,
-        "evidence_basis_digest": state.evidence_basis_digest,
-        "completion_eligible": all(item.is_proven_pass for item in state.evaluations if item.required),
-        "evaluations": [item.__dict__ for item in state.evaluations],
-        "evaluator_facts": [item.__dict__ for item in state.evaluator_facts],
-    }
+def build_goal_state(milestone: Milestone, raw: Any, *, iteration: int) -> GoalState:
+    """Validate one complete evaluator result and derive the complete gap list."""
 
-
-def goal_state_from_dict(value: Mapping[str, Any]) -> GoalState:
-    state = GoalState(
-        iteration=int(value["iteration"]),
-        evaluations=tuple(ConditionEvaluation(**item) for item in value["evaluations"]),
-        evaluator_facts=tuple(EvaluatorFact(**item) for item in value["evaluator_facts"]),
+    if not isinstance(raw, Mapping):
+        raise EvaluationError("evaluator result must be an object")
+    allowed = {"condition_results", "evidence_results"}
+    if set(raw) - allowed:
+        raise EvaluationError(f"unknown evaluator result fields: {sorted(set(raw) - allowed)}")
+    conditions = _results(raw.get("condition_results"), "condition_results")
+    evidence = _results(
+        raw.get("evidence_results"), "evidence_results", require_artifact=True
     )
-    if value.get("state_digest") != state.state_digest:
-        raise ValueError("stored Goal State digest mismatch")
-    return state
+
+    expected_conditions = {item.id for item in milestone.success_conditions}
+    expected_evidence = {item.id for item in milestone.evidence_requirements}
+    _require_exact_ids(conditions, expected_conditions, "condition")
+    _require_exact_ids(evidence, expected_evidence, "evidence")
+
+    condition_by_id = {item.id: item for item in conditions}
+    evidence_by_id = {item.id: item for item in evidence}
+    gaps: list[Gap] = []
+    for definition in milestone.success_conditions:
+        result = condition_by_id[definition.id]
+        if result.status is not CheckStatus.PASS:
+            gaps.append(
+                Gap(definition.id, "condition", definition.statement, result.status, result.summary)
+            )
+    for definition in milestone.evidence_requirements:
+        result = evidence_by_id[definition.id]
+        if result.status is not CheckStatus.PASS:
+            gaps.append(
+                Gap(definition.id, "evidence", definition.statement, result.status, result.summary)
+            )
+
+    # A condition linked to missing evidence cannot be complete even if its
+    # functional check passes. The evidence gap remains explicit for Planner.
+    for definition in milestone.success_conditions:
+        if condition_by_id[definition.id].status is not CheckStatus.PASS:
+            continue
+        missing = [
+            requirement_id
+            for requirement_id in definition.evidence_requirement_ids
+            if evidence_by_id[requirement_id].status is not CheckStatus.PASS
+        ]
+        if missing:
+            result = condition_by_id[definition.id]
+            gaps.append(
+                Gap(
+                    definition.id,
+                    "condition",
+                    definition.statement,
+                    CheckStatus.MISSING,
+                    "required evidence is not accepted: " + ", ".join(sorted(missing)),
+                )
+            )
+            condition_by_id[definition.id] = CheckResult(
+                id=result.id,
+                status=CheckStatus.MISSING,
+                summary="required evidence is not accepted: " + ", ".join(sorted(missing)),
+            )
+
+    return GoalState(
+        iteration=iteration,
+        condition_results=tuple(condition_by_id[item.id] for item in milestone.success_conditions),
+        evidence_results=tuple(evidence_by_id[item.id] for item in milestone.evidence_requirements),
+        gaps=tuple(gaps),
+    )
 
 
-def _evidence_priority(status: str) -> int:
-    return {
-        "PASS": 0,
-        "MISSING": 1,
-        "STALE": 2,
-        "UNTRUSTED": 3,
-        "SUBSTITUTED": 4,
-        "ERROR": 5,
-    }[status]
+def _results(
+    raw: Any, label: str, *, require_artifact: bool = False
+) -> tuple[CheckResult, ...]:
+    if not isinstance(raw, list):
+        raise EvaluationError(f"{label} must be an array")
+    values: list[CheckResult] = []
+    for index, item in enumerate(raw):
+        location = f"{label}[{index}]"
+        if not isinstance(item, Mapping):
+            raise EvaluationError(f"{location} must be an object")
+        required = {"id", "status", "summary"}
+        optional = {"artifact", "provenance"}
+        unknown = set(item) - required - optional
+        missing = required - set(item)
+        if unknown or missing:
+            raise EvaluationError(
+                f"{location} fields differ: missing={sorted(missing)}, unknown={sorted(unknown)}"
+            )
+        identifier = item["id"]
+        summary = item["summary"]
+        if not isinstance(identifier, str) or not identifier:
+            raise EvaluationError(f"{location}.id must be nonempty text")
+        if not isinstance(summary, str) or not summary:
+            raise EvaluationError(f"{location}.summary must be nonempty text")
+        try:
+            status = CheckStatus(item["status"])
+        except (TypeError, ValueError) as exc:
+            raise EvaluationError(f"{location}.status is invalid") from exc
+        artifact = item.get("artifact")
+        provenance = item.get("provenance", {})
+        if artifact is not None and not isinstance(artifact, str):
+            raise EvaluationError(f"{location}.artifact must be text")
+        if not isinstance(provenance, Mapping):
+            raise EvaluationError(f"{location}.provenance must be an object")
+        if require_artifact and status is CheckStatus.PASS and (
+            not artifact or not provenance
+        ):
+            status = CheckStatus.UNTRUSTED
+            summary = "PASS evidence requires a nonempty artifact and provenance"
+        values.append(CheckResult(identifier, status, summary, artifact, dict(provenance)))
+    return tuple(values)
+
+
+def _require_exact_ids(
+    results: tuple[CheckResult, ...], expected: set[str], label: str
+) -> None:
+    actual = [item.id for item in results]
+    if len(actual) != len(set(actual)):
+        raise EvaluationError(f"duplicate {label} result id")
+    if set(actual) != expected:
+        raise EvaluationError(
+            f"{label} result set mismatch: missing={sorted(expected - set(actual))}, "
+            f"unknown={sorted(set(actual) - expected)}"
+        )

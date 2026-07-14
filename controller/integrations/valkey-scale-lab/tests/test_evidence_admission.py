@@ -222,29 +222,40 @@ def _rewrite_candidate(path: Path, mutation) -> dict[str, Any]:
 
 def _prerequisite_completion(root: Path, final_digest: str) -> Path:
     terminal = {
-        "schema_version": "controller-terminal-receipt-v1",
+        "schema_version": "controller-run-result-v1",
         "status": "SUCCESS",
-        "milestone_id": "ValkeyScaleLab.m1",
-        "product_digest": "9" * 64,
-        "receipt_tag": "8" * 64,
+        "milestone_id": "m1",
+        "goal_state": {
+            "complete": True,
+            "evidence_results": [
+                {
+                    "id": "evidence.local.exact.200",
+                    "status": "PASS",
+                    "provenance": {
+                        "admission_digest": final_digest,
+                        "product_digest": "9" * 64,
+                        "run_id": "prior-run",
+                    },
+                }
+            ],
+        },
     }
     terminal_path = root / "terminal.json"
     _write_json(terminal_path, terminal)
     completion = {
-        "schema_version": "valkey-prerequisite-completion-v2",
+        "schema_version": "valkey-prerequisite-completion-v1",
         "milestone_id": "m1",
-        "controller_milestone_id": "ValkeyScaleLab.m1",
         "terminal_status": "SUCCESS",
-        "product_digest": terminal["product_digest"],
+        "product_digest": "9" * 64,
         "completed_at_unix": 1_999_000_000,
         "final_evidence_requirement_id": "local.exact.200",
         "final_admission_digest": final_digest,
-        "terminal_receipt": {
+        "terminal_result": {
             "path": "terminal.json",
             "sha256": COMMON.file_digest(terminal_path),
         },
     }
-    completion["attestation_digest"] = COMMON.canonical_digest(completion)
+    completion["completion_digest"] = COMMON.canonical_digest(completion)
     path = root / "completion.json"
     _write_json(path, completion)
     return path
@@ -442,7 +453,7 @@ def test_missing_raw_artifact_and_empty_provenance_are_rejected(admitted) -> Non
     assert any("complete canonical" in error for error in errors)
 
 
-def test_first_requirement_binds_sealed_cross_milestone_admission(
+def test_first_requirement_binds_cross_milestone_admission(
     admitted, tmp_path: Path
 ) -> None:
     evidence_root, run_id, product_digest, now = admitted
@@ -453,7 +464,7 @@ def test_first_requirement_binds_sealed_cross_milestone_admission(
     _write_json(milestone_path, milestone)
     prerequisite_digest = "7" * 64
     completion_path = _prerequisite_completion(
-        tmp_path / "authority/prerequisites/m1", prerequisite_digest
+        tmp_path / "prerequisites/m1", prerequisite_digest
     )
     first_path = evidence_root / "local.exact.50/admission.json"
     first = _rewrite_candidate(
@@ -498,6 +509,6 @@ def test_first_requirement_binds_sealed_cross_milestone_admission(
         now_unix=now,
     )
     assert any(
-        "sealed prerequisite" in error
+        "prerequisite" in error
         for error in _errors(results, "local.exact.50")
     )
