@@ -16,7 +16,7 @@ from valkey_scale_lab.evidence import (
     validate_candidate_admission,
     validate_raw_sources,
 )
-from valkey_scale_lab.scenarios import load_milestone1_definition
+from valkey_scale_lab.scenarios import load_local_full_flow_definition
 
 
 STARTED = 1_800_000_000_000
@@ -28,10 +28,11 @@ PROBE = {
     "slots_ok": 16384,
 }
 ROOT = Path(__file__).resolve().parents[2]
+DEFINITION = load_local_full_flow_definition()
 
 
 def _support_module():
-    path = ROOT / "tests/provenance/test_milestone1_gate_measured_sources.py"
+    path = ROOT / "tests/provenance/test_exact_gate_measured_sources.py"
     spec = importlib.util.spec_from_file_location("evidence_measured_support", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -53,6 +54,7 @@ def _candidate(base: Path) -> dict:
         base,
         50,
         PRODUCT_DIGEST,
+        definition=DEFINITION,
         run_started_unix_ms=STARTED,
         run_ended_unix_ms=STARTED + 1000,
         valkey_versions=["9.1.0"],
@@ -67,8 +69,8 @@ def _write_json(path: Path, value: dict) -> None:
 
 
 def test_bundle_spec_is_an_immutable_projection_of_the_scenario_definition() -> None:
-    definition = load_milestone1_definition()
-    spec = canonical_bundle_spec()
+    definition = DEFINITION
+    spec = canonical_bundle_spec(definition)
 
     assert isinstance(spec, EvidenceBundleSpec)
     assert spec.definition_digest == definition.digest
@@ -87,7 +89,7 @@ def test_raw_validation_rejects_duplicate_nodes_cross_run_and_relabelling(
     run_state = json.loads(run_state_path.read_text(encoding="utf-8"))
     run_state["nodes"][1]["logical_id"] = run_state["nodes"][0]["logical_id"]
     _write_json(run_state_path, run_state)
-    assert any("unique logical_id" in error for error in validate_raw_sources(base, 50))
+    assert any("unique logical_id" in error for error in validate_raw_sources(base, 50, DEFINITION))
 
     run_state["nodes"][1]["logical_id"] = "node-1"
     _write_json(run_state_path, run_state)
@@ -95,7 +97,7 @@ def test_raw_validation_rejects_duplicate_nodes_cross_run_and_relabelling(
     metric = json.loads(metrics_path.read_text(encoding="utf-8"))
     metric["run_id"] = "another-run"
     metrics_path.write_text(json.dumps(metric) + "\n", encoding="utf-8")
-    assert any("another run" in error for error in validate_raw_sources(base, 50))
+    assert any("another run" in error for error in validate_raw_sources(base, 50, DEFINITION))
 
     metric["run_id"] = run_state["run_id"]
     metrics_path.write_text(json.dumps(metric) + "\n", encoding="utf-8")
@@ -103,7 +105,7 @@ def test_raw_validation_rejects_duplicate_nodes_cross_run_and_relabelling(
     events = [json.loads(line) for line in events_path.read_text(encoding="utf-8").splitlines()]
     events[0]["scenario_id"] = "replica_stop"
     events_path.write_text("".join(json.dumps(row) + "\n" for row in events), encoding="utf-8")
-    assert any("event provenance" in error for error in validate_raw_sources(base, 50))
+    assert any("event provenance" in error for error in validate_raw_sources(base, 50, DEFINITION))
 
 
 def test_candidate_validation_binds_raw_hashes_paths_and_product_digest(
@@ -112,7 +114,7 @@ def test_candidate_validation_binds_raw_hashes_paths_and_product_digest(
     base = _capture(tmp_path)
     admission = _candidate(base)
     validated = validate_candidate_admission(
-        base, 50, expected_product_digest=PRODUCT_DIGEST, admission=admission
+        base, 50, expected_product_digest=PRODUCT_DIGEST, admission=admission, definition=DEFINITION
     )
     assert validated.product_digest == PRODUCT_DIGEST
     assert all(record.source_sha256 for record in validated.artifacts)
@@ -122,7 +124,7 @@ def test_candidate_validation_binds_raw_hashes_paths_and_product_digest(
 
     (base / "runtime/analysis_summary.json").write_text("{}\n", encoding="utf-8")
     with pytest.raises(EvidenceValidationError) as excinfo:
-        validate_candidate_admission(base, 50, PRODUCT_DIGEST, admission=admission)
+        validate_candidate_admission(base, 50, PRODUCT_DIGEST, admission=admission, definition=DEFINITION)
     assert any("source hash mismatch" in error for error in excinfo.value.errors)
 
 
@@ -135,7 +137,7 @@ def test_candidate_validation_rejects_escaping_artifact_and_stale_product(
     admission["product_digest"] = "c" * 64
 
     with pytest.raises(EvidenceValidationError) as excinfo:
-        validate_candidate_admission(base, 50, PRODUCT_DIGEST, admission=admission)
+        validate_candidate_admission(base, 50, PRODUCT_DIGEST, admission=admission, definition=DEFINITION)
     joined = "; ".join(excinfo.value.errors)
     assert "escapes evidence root" in joined
     assert "product_digest mismatch" in joined
@@ -153,7 +155,7 @@ def test_candidate_validation_rejects_cross_run_and_admission_source_relabelling
     first["source_sha256"] = hashlib.sha256(false_source.read_bytes()).hexdigest()
 
     with pytest.raises(EvidenceValidationError) as excinfo:
-        validate_candidate_admission(base, 50, PRODUCT_DIGEST, admission=admission)
+        validate_candidate_admission(base, 50, PRODUCT_DIGEST, admission=admission, definition=DEFINITION)
     joined = "; ".join(excinfo.value.errors)
     assert "raw capture run_id" in joined
     assert "canonical raw artifact" in joined
@@ -182,7 +184,7 @@ def test_candidate_validation_recomputes_capture_and_provenance_documents(
     ).hexdigest()
 
     with pytest.raises(EvidenceValidationError) as excinfo:
-        validate_candidate_admission(base, 50, PRODUCT_DIGEST, admission=admission)
+        validate_candidate_admission(base, 50, PRODUCT_DIGEST, admission=admission, definition=DEFINITION)
     joined = "; ".join(excinfo.value.errors)
     assert "capture_manifest does not match" in joined
     assert "provenance document does not match" in joined

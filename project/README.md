@@ -1,102 +1,78 @@
 # valkey-scale-lab
 
-`valkey-scale-lab` is a local-first harness for Valkey 9.1.x cluster experiments. Its product roadmap progresses from complete local execution through native multi-ECS execution to 500/1000/2000-node multi-ECS scale. See [docs/MILESTONES.md](docs/MILESTONES.md) for milestone boundaries, dependencies, and acceptance criteria.
-
-## Milestone 1 Scope
-
-In scope:
-
-- local Docker/process-backed Valkey cluster runs on Mac/Linux;
-- an exact-node trigger interface for 30 through 2000 nodes, with no silent
-  downscaling;
-- required real Milestone 1 gates at 50 and resource-preflight-gated 200 nodes;
-- retained but non-required real-run support for 30 and 100 nodes;
-- non-automatic, explicitly approved and resource-gated real execution above
-  200 nodes;
-- run-scoped artifacts under `runs/<run_id>/artifacts|logs|reports|state`;
-- schema-validated metadata, metrics, timelines, management/fault artifacts, analysis, and reports;
-- stability and bounded soak runs with explicit health and convergence criteria;
-- offline report generation from local artifacts only.
-
-Out of scope for milestone1:
-
-- ECS multi-host native runtime;
-- 500, 1000, or 2000 real-node execution;
-- unbounded or production-duration stability soak stages;
-- reports that depend on external services, network access, or LLMs.
-
-## Quick Start
-
-Create a run directory and metadata:
-
-```bash
-python3 -m valkey_scale_lab.cli run init --run-id m1-local
-```
-
-This creates product runtime output (ignored by Git):
+`valkey-scale-lab` is a local-first Valkey 9.1.x experiment product. Its source,
+tests, verification catalog, and delivery milestones are deliberately separate:
 
 ```text
-runs/m1-local/artifacts/
-runs/m1-local/logs/
-runs/m1-local/reports/
-runs/m1-local/state/run_metadata.json
-runs/m1-local/state/run_manifest.json
+src/valkey_scale_lab/   product library and CLI
+tests/                  product behavior tests
+verification/           capability-suite catalog and runner
+milestones/             product goals and acceptance composition
 ```
 
-Validate a config and create a plan:
+Product code does not load tests, verification policy, or milestones. Tests use
+product APIs directly. Milestones refer only to stable verification suite IDs;
+the catalog owns their executable pytest paths and commands.
+
+## Product Commands
+
+Create a run and validate a configuration:
 
 ```bash
-python3 -m valkey_scale_lab.cli config validate --config config/example.yaml --out runs/m1-local/artifacts/config_validation_report.json
-python3 -m valkey_scale_lab.cli plan --config config/example.yaml --out runs/m1-local/artifacts/cluster_plan.json --dry-run
-```
-
-Run a supported gate scenario with explicit run-scoped outputs:
-
-```bash
-python3 -m valkey_scale_lab.cli gate scenario \
-  --phase P03_LOCAL_DOCKER_VALKEY \
-  --scenario cluster_smoke \
+python3 -m valkey_scale_lab.cli run init --run-id local-run
+python3 -m valkey_scale_lab.cli config validate \
   --config config/example.yaml \
-  --artifacts-dir runs/m1-local/artifacts \
-  --state-out runs/m1-local/state/run_state.json
+  --out runs/local-run/artifacts/config_validation_report.json
 ```
 
-Cleanup:
+Execute an exact-scale real scenario with explicit, product-neutral context:
 
 ```bash
-python3 -m valkey_scale_lab.cli gate cleanup \
-  --state runs/m1-local/state/run_state.json \
-  --artifacts-dir runs/m1-local/artifacts \
-  --out runs/m1-local/state/cleanup_report.json
+python3 -m valkey_scale_lab.cli gate execute \
+  --definition src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json \
+  --nodes 50 \
+  --config templates/configs/scale_50.yaml \
+  --run-id local-run \
+  --ownership-id local-owner \
+  --provenance-id local-provenance \
+  --artifacts-dir runs/local-run/artifacts \
+  --product-digest "$(python3 -c 'from valkey_scale_lab.gates.real import product_tree_digest; print(product_tree_digest())')"
 ```
 
-## Reports
+Real execution preserves the exact requested scale, performs resource
+preflight, and never turns a smaller run, dry run, or fixture into real
+evidence. Large runs additionally require the explicit authorization flags
+defined by the product safety policy.
 
-Analysis and reports read schema artifacts. New milestone1 paths prefer `run_manifest.json`; legacy explicit artifact directories remain supported for compatibility.
+Offline analysis and reporting consume validated artifacts:
 
 ```bash
-python3 -m valkey_scale_lab.cli analyze --input runs/m1-local --out runs/m1-local/artifacts/analysis_summary.json
+python3 -m valkey_scale_lab.cli analyze \
+  --input runs/local-run \
+  --out runs/local-run/artifacts/analysis_summary.json
 python3 -m valkey_scale_lab.cli report \
-  --analysis runs/m1-local/artifacts/analysis_summary.json \
-  --out-dir runs/m1-local/reports \
-  --index-out runs/m1-local/reports/report_index.json
+  --analysis runs/local-run/artifacts/analysis_summary.json \
+  --out-dir runs/local-run/reports \
+  --index-out runs/local-run/reports/report_index.json
 ```
 
-The report index records references back to `state/run_metadata.json` and `state/run_manifest.json`.
+## Verification
 
-## Harness Gates
-
-Milestone1 stages use strong gates. M1-S01 includes:
+Validate the catalog and milestone composition without running real resources:
 
 ```bash
-python3 scripts/assert_run_metadata_contract.py
+python3 verification/run.py catalog validate
+python3 verification/run.py milestone validate --id m1
+python3 verification/run.py milestone validate --id m2
+python3 verification/run.py milestone validate --id m3
 ```
 
-Common checks:
+Run a capability suite by stable ID:
 
 ```bash
-PYTHONPYCACHEPREFIX=/private/tmp/vslab-pyc python3 -m compileall -q scripts src
-python3 -m pytest -q tests/unit tests/integration
+python3 verification/run.py suite --id scenario.contract
 ```
 
-If real Docker/Valkey resources are unavailable, gates must emit `BLOCKED_WITH_REASON`; fake real evidence is not allowed.
+`PLANNED` suites return `BLOCKED`; required skips fail. Real suites require
+operator-approved capabilities and explicit parameters. The machine-readable
+milestone definitions and completion conditions are under `milestones/`.

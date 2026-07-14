@@ -25,7 +25,7 @@ from valkey_scale_lab.scenarios import (
     ReportSurface,
     ScenarioSpec,
     compile_gate_plan,
-    load_milestone1_definition,
+    load_local_full_flow_definition,
 )
 
 
@@ -118,7 +118,7 @@ class RecordingAdapters:
 
 
 def _plan(nodes: int = 50):
-    return compile_gate_plan(load_milestone1_definition(), nodes)
+    return compile_gate_plan(load_local_full_flow_definition(), nodes)
 
 
 def _request(tmp_path: Path, nodes: int = 50, **overrides: Any) -> GateRequest:

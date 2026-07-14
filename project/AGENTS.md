@@ -10,16 +10,14 @@ Build `valkey-scale-lab`, a local-first Mac/Linux harness for real Valkey 9.1.x
 cluster experiments. Machine-readable experiment artifacts are product output;
 analysis and reports are derived views over validated artifacts.
 
-## Frozen Scale Contract
+## Product Safety Contract
 
 - Provide an exact-node trigger for every requested size from 30 through 2000.
-- The required real completion gates are exactly 50 and 200 nodes.
-- Keep 30 and 100 runnable, but do not require them as completion gates.
 - Never silently downscale.
 - Real runs above 200 are never automatic. They require explicit operator
   opt-in, resource preflight, and cost acknowledgement.
-- Normal development remains capped at 100 nodes. The required 200-node gate is
-  a preflight-gated bounded exception.
+- Completion scales, promotion chains, and required suites belong only in
+  `milestones/`; they are not product-library policy.
 
 ## Safety Rules
 
@@ -45,6 +43,7 @@ families:
 python3 -m valkey_scale_lab.cli config validate ...
 python3 -m valkey_scale_lab.cli plan ...
 python3 -m valkey_scale_lab.cli gate scenario ...
+python3 -m valkey_scale_lab.cli gate execute --definition ... --nodes ...
 python3 -m valkey_scale_lab.cli gate cleanup ...
 python3 -m valkey_scale_lab.cli fault apply ...
 python3 -m valkey_scale_lab.cli fault clear ...
@@ -52,8 +51,8 @@ python3 -m valkey_scale_lab.cli analyze ...
 python3 -m valkey_scale_lab.cli report ...
 ```
 
-Existing commands remain backward compatible. New commands may be added when
-they improve the exact-node trigger or full lifecycle.
+All scenario, evidence, and analysis APIs receive their definition explicitly;
+they must not load a milestone or controller context implicitly.
 
 ## Evidence Contract
 
@@ -77,5 +76,7 @@ a bounded failure excerpt and paths/digests.
 - Never weaken or delete a failing check to obtain a pass.
 - Keep product regression tests hermetic. They must not read current or
   historical controller state from `../loop_evidence/`.
+- Product tests must not import milestones. Milestone/catalog contract tests
+  belong under `verification/tests/`.
 - Do not add AI controller packages, prompts, state machines, or controller
   output links to this product tree.

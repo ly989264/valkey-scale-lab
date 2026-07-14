@@ -6,7 +6,8 @@ from typing import Any
 
 import pytest
 
-from valkey_scale_lab import cli, milestone1_gate
+from valkey_scale_lab import cli
+from valkey_scale_lab.gates import real as real_gate
 from valkey_scale_lab.gates import (
     ExecutionContext,
     FaultTargetKind,
@@ -29,7 +30,7 @@ from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 from valkey_scale_lab.scenarios import (
     ArtifactSpec,
     compile_gate_plan,
-    load_milestone1_definition,
+    load_local_full_flow_definition,
 )
 from valkey_scale_lab.scenarios.validation import LIFECYCLE_IDS
 
@@ -49,7 +50,7 @@ def _context(
     run_id: str = "gate-run",
     ownership_id: str = "owner-1",
 ) -> ExecutionContext:
-    definition = load_milestone1_definition()
+    definition = load_local_full_flow_definition()
     plan = compile_gate_plan(definition, 50)
     return ExecutionContext(
         run_id=run_id,
@@ -106,7 +107,7 @@ def test_service_delegates_once_with_legacy_arguments_and_confined_paths(
 ) -> None:
     artifact_root = tmp_path / "gate-artifacts"
     calls: list[tuple[str, dict[str, Any]]] = []
-    plan = compile_gate_plan(load_milestone1_definition(), 50)
+    plan = compile_gate_plan(load_local_full_flow_definition(), 50)
     request = GateRequest(
         run_id="gate-run",
         ownership_id="owner-1",
@@ -214,7 +215,7 @@ def test_adapter_rejects_cross_run_cleanup_and_escaping_artifact_paths(
     assert [name for name, _ in calls] == ["create"]
 
 
-def test_existing_cli_and_real_gate_facades_remain_bound_to_legacy_behavior() -> None:
+def test_cli_exposes_product_neutral_exact_gate_execution() -> None:
     gate_args = cli.build_parser().parse_args(
         [
             "gate",
@@ -232,11 +233,20 @@ def test_existing_cli_and_real_gate_facades_remain_bound_to_legacy_behavior() ->
         ]
     )
     real_args = cli.build_parser().parse_args(
-        ["milestone1", "real-gate", "--scale", "50", "--evidence-dir", "out"]
+        [
+            "gate", "execute",
+            "--definition", "src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
+            "--nodes", "50",
+            "--config", "templates/configs/scale_50.yaml",
+            "--run-id", "run-50",
+            "--ownership-id", "owner-50",
+            "--provenance-id", "capture-50",
+            "--artifacts-dir", "out",
+        ]
     )
 
     assert gate_args.func is cli._gate_scenario
-    assert real_args.func is cli._milestone1_real_gate
+    assert real_args.func is cli._gate_execute
     assert cli.create_scenario is docker_runtime.create_scenario
     assert cli.cleanup_scenario is docker_runtime.cleanup_scenario
-    assert cli.run_real_gate is milestone1_gate.run_real_gate
+    assert cli.run_exact_gate is real_gate.run_exact_gate

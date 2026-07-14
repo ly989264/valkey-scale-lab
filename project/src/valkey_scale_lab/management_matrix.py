@@ -191,7 +191,7 @@ def build_management_operation_result(
     operation_status: str = "PASS",
     status_reason: str = "Management operation fixture completed with traceable command, topology, workload, and cleanup evidence.",
 ) -> dict[str, Any]:
-    operation_id = f"m1-s04-{operation_index:02d}-{operation_name}"
+    operation_id = f"management-{operation_index:02d}-{operation_name}"
     diff = diff_topology(before_snapshot, after_snapshot)
     duration = float(40 + operation_index * 7)
     result: dict[str, Any] = {
@@ -342,7 +342,7 @@ def write_management_matrix_artifacts(
     snapshots: list[dict[str, Any]] = []
     diffs: list[dict[str, Any]] = []
     for index, operation_name in enumerate(REQUIRED_MANAGEMENT_OPERATIONS, start=1):
-        operation_id = f"m1-s04-{index:02d}-{operation_name}"
+        operation_id = f"management-{index:02d}-{operation_name}"
         before = build_topology_snapshot(phase_id=phase_id, run_id=run_id, operation_id=operation_id, label="before", nodes=nodes)
         after = build_topology_snapshot(phase_id=phase_id, run_id=run_id, operation_id=operation_id, label="after", nodes=nodes)
         command_id = f"cmd-{index:06d}"
@@ -380,7 +380,7 @@ def write_management_matrix_artifacts(
             before_snapshot=before,
             after_snapshot=after,
             operation_status=operation_status,
-            status_reason="Fixture operation carries the full M1-S04 evidence contract.",
+            status_reason="Fixture operation carries the full management evidence contract.",
         )
         snapshots.extend([before, after])
         results.append(result)

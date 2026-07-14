@@ -1,0 +1,57 @@
+{
+  "schema_version": "valkey-milestone-v1",
+  "milestone": {
+    "id": "m1",
+    "version": "1.0.0",
+    "title": "Complete local cluster lifecycle",
+    "goal": "Deliver the complete local Mac/Linux Valkey lifecycle with exact 50-node and 200-node real evidence without weakening safety, provenance, diagnostics, or cleanup."
+  },
+  "prerequisite_milestone_ids": [],
+  "success_conditions": [
+    {
+      "id": "local.lifecycle",
+      "statement": "The reusable local lifecycle, scenario, management, fault, recovery, and cleanup contracts pass hermetic verification.",
+      "suite_ids": ["scenario.contract", "runtime.local.lifecycle"],
+      "evidence_gate_ids": ["local.exact.50", "local.exact.200"]
+    },
+    {
+      "id": "evidence.provenance",
+      "statement": "Evidence validation rejects incomplete, substituted, relabelled, stale, or fabricated captures.",
+      "suite_ids": ["evidence.provenance"],
+      "evidence_gate_ids": ["local.exact.50", "local.exact.200"]
+    },
+    {
+      "id": "offline.report",
+      "statement": "Offline analysis and reporting derive complete views only from validated artifacts.",
+      "suite_ids": ["report.offline", "regression.hermetic"],
+      "evidence_gate_ids": ["local.exact.50", "local.exact.200"]
+    }
+  ],
+  "evidence_gates": [
+    {
+      "id": "local.exact.50",
+      "suite_id": "real.local.full-flow",
+      "parameters": {
+        "definition": "src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
+        "nodes": 50,
+        "config": "templates/configs/scale_50.yaml"
+      },
+      "depends_on": [],
+      "capture_class": "REAL",
+      "operator_approval_required": true
+    },
+    {
+      "id": "local.exact.200",
+      "suite_id": "real.local.full-flow",
+      "parameters": {
+        "definition": "src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
+        "nodes": 200,
+        "config": "templates/configs/scale_200.yaml",
+        "prior_gate": "local.exact.50"
+      },
+      "depends_on": ["local.exact.50"],
+      "capture_class": "REAL",
+      "operator_approval_required": true
+    }
+  ]
+}

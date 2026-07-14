@@ -476,7 +476,7 @@ def create_scenario(
                 scenario,
                 run_id,
                 nodes,
-                lifecycle_windows=_m1_system_metric_windows_for_artifacts(artifacts),
+                lifecycle_windows=_system_metric_windows_for_artifacts(artifacts),
             )
         _write_state(Path(state_out), state)
         return state
@@ -1043,7 +1043,7 @@ def _create_process_scenario(
             scenario,
             run_id,
             nodes,
-            lifecycle_windows=_m1_system_metric_windows_for_artifacts(artifacts),
+            lifecycle_windows=_system_metric_windows_for_artifacts(artifacts),
         )
         return state
     except Exception:
@@ -4815,7 +4815,7 @@ def write_observability_artifacts(
     events_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in event_lines) + "\n", encoding="utf-8")
 
 
-M1_SYSTEM_PROCESS_METRICS = [
+SYSTEM_PROCESS_METRICS = [
     "process_pid",
     "process_uptime",
     "cpu_user_percent",
@@ -4829,7 +4829,7 @@ M1_SYSTEM_PROCESS_METRICS = [
     "restart_count",
     "log_error_count",
 ]
-M1_SYSTEM_NETWORK_METRICS = [
+SYSTEM_NETWORK_METRICS = [
     "rx_bytes",
     "tx_bytes",
     "rx_packets",
@@ -4837,7 +4837,7 @@ M1_SYSTEM_NETWORK_METRICS = [
     "tcp_retransmits",
     "cluster_bus_connections",
 ]
-M1_SYSTEM_VALKEY_METRICS = [
+SYSTEM_VALKEY_METRICS = [
     "connected_clients",
     "blocked_clients",
     "used_memory",
@@ -4863,7 +4863,7 @@ M1_SYSTEM_VALKEY_METRICS = [
 ]
 
 
-def _m1_system_metric_windows_for_artifacts(artifacts: Path) -> list[str]:
+def _system_metric_windows_for_artifacts(artifacts: Path) -> list[str]:
     windows = ["setup", "cleanup"]
     if (artifacts / "management_ops_matrix.json").exists() or (artifacts / "management_operation_results.jsonl").exists():
         windows.append("management")
@@ -4883,14 +4883,14 @@ def write_system_metrics_artifacts(
     *,
     lifecycle_windows: list[str] | None = None,
 ) -> None:
-    """Emit M1-S07 process/network/Valkey metrics from the owned runtime only."""
+    """Emit process, network, and Valkey metrics from the owned runtime only."""
     if not nodes:
         return
     telemetry = TelemetryRun(
         phase_id=phase,
         scenario_name=scenario,
         run_id=run_id,
-        coverage_id="m1-s07.system_metrics.runtime_collection",
+        coverage_id="system_metrics.runtime_collection",
         scale=len(nodes),
         node_count=len(nodes),
     )
@@ -4922,13 +4922,13 @@ def write_system_metrics_artifacts(
                         metric_name="system_metric_sample",
                         metric_value=MISSING,
                         metric_unit="status",
-                        labels=_m1_system_node_labels(node, window_name),
+                        labels=_system_node_labels(node, window_name),
                         missing_reason_text=f"system metric sample failed: {exc!r}",
                     )
                 )
     write_jsonl(artifacts / "system_metrics_timeseries.jsonl", rows)
     _append_jsonl_artifact(artifacts / "metrics_timeseries.jsonl", rows)
-    report = _m1_system_metrics_report(phase, scenario, run_id, nodes, windows, rows, sample_errors)
+    report = _system_metrics_report(phase, scenario, run_id, nodes, windows, rows, sample_errors)
     (artifacts / "system_metrics_report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
@@ -4940,7 +4940,7 @@ def _system_metric_rows_for_node(
     docker_stats: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     logical_id = str(node.get("logical_id", "MISSING"))
-    labels = _m1_system_node_labels(node, window_name)
+    labels = _system_node_labels(node, window_name)
     rows: list[dict[str, Any]] = []
     info: dict[str, str] = {}
     cluster_info: dict[str, str] = {}
@@ -4979,14 +4979,14 @@ def _system_metric_rows_for_node(
         cluster_nodes_raw = ""
     if docker_stats is None:
         docker_stats = _docker_stats(str(node.get("container_name") or node.get("nodehost_container_name") or "MISSING"))
-    log_error_count = _m1_count_log_errors(node)
+    log_error_count = _count_log_errors(node)
     rows.append(
-        _m1_system_metric(
+        _system_metric(
             telemetry,
             "docker_stats",
             logical_id,
             "container_cpu_percent",
-            _m1_docker_cpu_percent(docker_stats),
+            _docker_cpu_percent(docker_stats),
             "percent",
             labels,
             "docker stats did not expose parseable aggregate container CPU percent",
@@ -4997,30 +4997,30 @@ def _system_metric_rows_for_node(
         "process_uptime": (_int_or_missing(info.get("uptime_in_seconds")), "seconds", "Valkey INFO did not include uptime_in_seconds"),
         "cpu_user_percent": (MISSING, "percent", "Docker stats exposes aggregate CPU percent, not per-process user CPU percent"),
         "cpu_system_percent": (MISSING, "percent", "Docker stats exposes aggregate CPU percent, not per-process system CPU percent"),
-        "rss_bytes": (_m1_memory_usage_bytes(docker_stats), "bytes", "docker stats did not expose parseable memory usage"),
+        "rss_bytes": (_memory_usage_bytes(docker_stats), "bytes", "docker stats did not expose parseable memory usage"),
         "vms_bytes": (MISSING, "bytes", "container-scoped VMS is not exposed by Docker stats"),
         "fd_count": (MISSING, "count", "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path"),
         "thread_count": (_int_or_missing(docker_stats.get("pids")) if docker_stats.get("status") == "PASS" else MISSING, "count", "docker stats did not expose PIDs/thread count"),
-        "tcp_connection_count": (_m1_cluster_connected_count(cluster_nodes_raw), "count", "CLUSTER NODES did not include connected peer rows"),
+        "tcp_connection_count": (_cluster_connected_count(cluster_nodes_raw), "count", "CLUSTER NODES did not include connected peer rows"),
         "client_connection_count": (_int_or_missing(info.get("connected_clients")), "count", "Valkey INFO did not include connected_clients"),
         "restart_count": (0, "count", "owned runtime does not restart nodes before rolling-restart stages"),
         "log_error_count": (log_error_count, "count", "log file was unavailable for error counting"),
     }
-    for name in M1_SYSTEM_PROCESS_METRICS:
+    for name in SYSTEM_PROCESS_METRICS:
         value, unit, reason = process_values[name]
-        rows.append(_m1_system_metric(telemetry, "system_process", logical_id, name, value, unit, labels, reason))
-    rx_bytes, tx_bytes, net_reason = _m1_docker_net_bytes(docker_stats)
+        rows.append(_system_metric(telemetry, "system_process", logical_id, name, value, unit, labels, reason))
+    rx_bytes, tx_bytes, net_reason = _docker_net_bytes(docker_stats)
     network_values: dict[str, tuple[Any, str, str]] = {
         "rx_bytes": (rx_bytes, "bytes", net_reason or "docker stats did not expose NetIO receive bytes"),
         "tx_bytes": (tx_bytes, "bytes", net_reason or "docker stats did not expose NetIO transmit bytes"),
         "rx_packets": (MISSING, "count", "Docker stats NetIO does not expose packet counters"),
         "tx_packets": (MISSING, "count", "Docker stats NetIO does not expose packet counters"),
         "tcp_retransmits": (MISSING, "count", "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector"),
-        "cluster_bus_connections": (_m1_cluster_connected_count(cluster_nodes_raw), "count", "CLUSTER NODES did not include connected peer rows"),
+        "cluster_bus_connections": (_cluster_connected_count(cluster_nodes_raw), "count", "CLUSTER NODES did not include connected peer rows"),
     }
-    for name in M1_SYSTEM_NETWORK_METRICS:
+    for name in SYSTEM_NETWORK_METRICS:
         value, unit, reason = network_values[name]
-        rows.append(_m1_system_metric(telemetry, "system_network", logical_id, name, value, unit, labels, reason))
+        rows.append(_system_metric(telemetry, "system_network", logical_id, name, value, unit, labels, reason))
     labels["cluster_state_raw"] = cluster_info.get("cluster_state", MISSING)
     valkey_values: dict[str, tuple[Any, str, str]] = {
         "connected_clients": (_int_or_missing(info.get("connected_clients")), "count", "Valkey INFO did not include connected_clients"),
@@ -5050,14 +5050,14 @@ def _system_metric_rows_for_node(
         "cluster_slots_ok": (_int_or_missing(cluster_info.get("cluster_slots_ok")), "count", "CLUSTER INFO did not include cluster_slots_ok"),
         "cluster_slots_fail": (_int_or_missing(cluster_info.get("cluster_slots_fail")), "count", "CLUSTER INFO did not include cluster_slots_fail"),
     }
-    for name in M1_SYSTEM_VALKEY_METRICS:
+    for name in SYSTEM_VALKEY_METRICS:
         value, unit, reason = valkey_values[name]
         source_type = "cluster_info" if name.startswith("cluster_") else "valkey_info"
-        rows.append(_m1_system_metric(telemetry, source_type, logical_id, name, value, unit, labels, reason))
+        rows.append(_system_metric(telemetry, source_type, logical_id, name, value, unit, labels, reason))
     return rows
 
 
-def _m1_system_node_labels(node: dict[str, Any], window_name: str) -> dict[str, Any]:
+def _system_node_labels(node: dict[str, Any], window_name: str) -> dict[str, Any]:
     return {
         "logical_node_id": node.get("logical_id", MISSING),
         "node_id": node.get("logical_id", MISSING),
@@ -5072,7 +5072,7 @@ def _m1_system_node_labels(node: dict[str, Any], window_name: str) -> dict[str, 
     }
 
 
-def _m1_system_metric(
+def _system_metric(
     telemetry: TelemetryRun,
     source_type: str,
     source_id: str,
@@ -5094,7 +5094,7 @@ def _m1_system_metric(
     )
 
 
-def _m1_system_metrics_report(
+def _system_metrics_report(
     phase: str,
     scenario: str,
     run_id: str,
@@ -5103,7 +5103,7 @@ def _m1_system_metrics_report(
     rows: list[dict[str, Any]],
     sample_errors: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    required = M1_SYSTEM_PROCESS_METRICS + M1_SYSTEM_NETWORK_METRICS + M1_SYSTEM_VALKEY_METRICS
+    required = SYSTEM_PROCESS_METRICS + SYSTEM_NETWORK_METRICS + SYSTEM_VALKEY_METRICS
     observed = {str(row.get("metric_name")) for row in rows}
     missing_rows = [row for row in rows if row.get("metric_value") == MISSING]
     by_window: dict[str, int] = {}
@@ -5163,7 +5163,7 @@ def _append_jsonl_artifact(path: Path, rows: list[dict[str, Any]]) -> None:
     path.write_text(prefix + "\n".join(json.dumps(row, sort_keys=True, allow_nan=False) for row in rows) + "\n", encoding="utf-8")
 
 
-def _m1_count_log_errors(node: dict[str, Any]) -> int | str:
+def _count_log_errors(node: dict[str, Any]) -> int | str:
     log_path = Path(str(node.get("log_file", "")))
     if not log_path.exists() or not log_path.is_file():
         return MISSING
@@ -5171,21 +5171,21 @@ def _m1_count_log_errors(node: dict[str, Any]) -> int | str:
     return text.count("error") + text.count("panic") + text.count("fatal")
 
 
-def _m1_cluster_connected_count(cluster_nodes_raw: str) -> int | str:
+def _cluster_connected_count(cluster_nodes_raw: str) -> int | str:
     if not cluster_nodes_raw.strip():
         return MISSING
     return sum(1 for line in cluster_nodes_raw.splitlines() if " connected" in line)
 
 
-def _m1_memory_usage_bytes(stats: dict[str, Any]) -> int | str:
+def _memory_usage_bytes(stats: dict[str, Any]) -> int | str:
     if stats.get("status") != "PASS":
         return MISSING
     text = str(stats.get("memory_usage", ""))
     first = text.split("/", 1)[0].strip()
-    return _m1_size_to_bytes(first)
+    return _size_to_bytes(first)
 
 
-def _m1_docker_cpu_percent(stats: dict[str, Any]) -> float | str:
+def _docker_cpu_percent(stats: dict[str, Any]) -> float | str:
     if stats.get("status") != "PASS":
         return MISSING
     raw = str(stats.get("cpu_percent", "")).strip()
@@ -5198,17 +5198,17 @@ def _m1_docker_cpu_percent(stats: dict[str, Any]) -> float | str:
     return value if value >= 0.0 else MISSING
 
 
-def _m1_docker_net_bytes(stats: dict[str, Any]) -> tuple[int | str, int | str, str]:
+def _docker_net_bytes(stats: dict[str, Any]) -> tuple[int | str, int | str, str]:
     if stats.get("status") != "PASS":
         return MISSING, MISSING, str(stats.get("reason", "docker stats unavailable"))
     text = str(stats.get("net_io", ""))
     if "/" not in text:
         return MISSING, MISSING, "docker stats NetIO was not parseable"
     rx_raw, tx_raw = [part.strip() for part in text.split("/", 1)]
-    return _m1_size_to_bytes(rx_raw), _m1_size_to_bytes(tx_raw), ""
+    return _size_to_bytes(rx_raw), _size_to_bytes(tx_raw), ""
 
 
-def _m1_size_to_bytes(value: str) -> int | str:
+def _size_to_bytes(value: str) -> int | str:
     match = re.match(r"^\s*([0-9.]+)\s*([KMGTPE]?i?B|B|kB|MB|GB|TB)?\s*$", value, flags=re.IGNORECASE)
     if not match:
         return MISSING
@@ -5844,7 +5844,7 @@ def _write_p29_coverage_ledger(path: Path) -> None:
             "stage_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
-            "source_spec_refs": ["docs/MILESTONES.md"],
+            "source_spec_refs": ["schemas/scenario/gate_scenario.schema.json"],
             "summary": {
                 "total_rows": 1,
                 "expected_total_rows": 1,
@@ -7074,7 +7074,7 @@ def write_p18_management_reshard_rebalance_artifacts(
     write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
     write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
     write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_m1_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
+    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
     write_jsonl(artifacts / "management_command_log.jsonl", command_log)
     write_jsonl(artifacts / "reshard_slot_movements.jsonl", slot_movements)
 
@@ -7748,7 +7748,7 @@ def write_p19_management_rolling_restart_artifacts(
     write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
     write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
     write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_m1_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
+    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
     write_jsonl(artifacts / "management_command_log.jsonl", command_log)
     write_jsonl(artifacts / "rolling_restart_results.jsonl", restart_results)
 
@@ -8368,11 +8368,7 @@ def _write_strict_management_blocked_artifact(artifacts: Path, preflight: dict[s
 
 
 def _write_strict_full_flow_blocked_artifact(artifacts: Path, preflight: dict[str, Any], profile: StrictFullFlowProfile) -> None:
-    blocked_dir = (
-        artifacts / "blocked"
-        if os.environ.get("VSLAB_META_M1_CONTROLLER_OWNED") == "1"
-        else Path("artifacts/goal_loop_strict") / profile.stage
-    )
+    blocked_dir = artifacts / "blocked"
     blocked_dir.mkdir(parents=True, exist_ok=True)
     failed = [item for item in preflight.get("checks", []) if item.get("status") != "PASS"]
     lines = [
@@ -9666,7 +9662,9 @@ def _p36_coverage_ledger(parent: Path, scale_rows: list[dict[str, Any]]) -> dict
     ledger.pop("status", None)
     ledger["created_at"] = ledger.get("created_at") or "2026-06-28T00:00:00Z"
     ledger["producer"] = ledger.get("producer") or {"name": "valkey-scale-lab", "version": __version__}
-    ledger["source_spec_refs"] = ledger.get("source_spec_refs") or ["docs/MILESTONES.md"]
+    ledger["source_spec_refs"] = ledger.get("source_spec_refs") or [
+        "schemas/scenario/gate_scenario.schema.json"
+    ]
     rows = ledger.setdefault("rows", [])
     by_scale = {int(row["scale"]): row for row in scale_rows}
     for row in rows:
@@ -9698,13 +9696,8 @@ def _p36_coverage_ledger(parent: Path, scale_rows: list[dict[str, Any]]) -> dict
 
 
 def _p36_update_global_coverage_registry(scale_rows: list[dict[str, Any]]) -> None:
-    if os.environ.get("VSLAB_META_M1_CONTROLLER_OWNED") == "1":
-        return
-    path = Path("artifacts/coverage/strict_coverage_registry.json")
-    if not path.exists():
-        return
-    ledger = _p36_coverage_ledger(Path(f"artifacts/phases/{P36_STAGE}"), scale_rows)
-    path.write_text(json.dumps(_p30_encode_missing(ledger), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    # Exact-gate runs are self-contained and never mutate a repository-global ledger.
+    return
 
 
 def _p36_parent_cleanup_report(parent: Path, scale_rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -9978,7 +9971,7 @@ def write_p30_management_matrix_artifacts(
     write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
     write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
     write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_m1_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
+    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
     write_jsonl(artifacts / "management_command_log.jsonl", command_log)
     if slot_movements:
         write_jsonl(artifacts / "reshard_slot_movements.jsonl", slot_movements)
@@ -10105,17 +10098,17 @@ def write_p04_management_matrix_contract_artifacts(
     run_id: str,
     nodes: list[dict[str, Any]],
 ) -> None:
-    """Emit the M1-S04 matrix contract from the legacy P04 real smoke path.
+    """Emit the management matrix contract from the legacy P04 real smoke path.
 
     P04 remains a compatibility smoke gate; destructive rows are not silently
-    claimed as executed here. Strict real execution lives in the M1 management
+    claimed as executed here. Strict real execution lives in the management
     stages, while this path proves that a real P04 run emits the same artifact
     families and explicit skip reasons.
     """
     telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id, coverage_id="p04.management_contract", scale=len(nodes), node_count=len(nodes))
     node_count = len(nodes)
     health = _p17_cluster_health(nodes)
-    command_refs = _m1_command_refs_by_kind(artifacts / "command_log.jsonl")
+    command_refs = _command_refs_by_kind(artifacts / "command_log.jsonl")
     topology_rows: list[dict[str, Any]] = []
     operation_rows: list[dict[str, Any]] = []
     workload_windows: list[dict[str, Any]] = []
@@ -10133,13 +10126,13 @@ def write_p04_management_matrix_contract_artifacts(
         reason = (
             "Legacy P04 smoke observed this setup operation through live cluster state and setup command audit refs."
             if status == "PASS_NOOP_VERIFIED"
-            else "Legacy P04 smoke does not execute destructive or long-running management matrix rows; strict M1 stages execute them."
+            else "Legacy P04 smoke does not execute destructive or long-running management matrix rows; strict management stages execute them."
         )
         if setup_observed and not row_refs:
             reason = "Legacy P04 smoke observed live setup state, but command refs were unavailable; encoded as skipped rather than inventing evidence."
         window = _p04_contract_workload_window(telemetry, operation_id, operation_name, status, reason)
         workload_windows.append(window)
-        diff = _m1_management_diff_from_health(health, status)
+        diff = _management_diff_from_health(health, status)
         missing_fields = [] if status == "PASS_NOOP_VERIFIED" else [_p30_skipped(operation_name, reason)]
         row = _p30_encode_missing(
             {
@@ -10220,7 +10213,7 @@ def write_p04_management_matrix_contract_artifacts(
 
     write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
     write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
-    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_m1_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
+    write_jsonl(artifacts / "management_topology_diffs.jsonl", [_management_topology_diff_row(phase, run_id, row) for row in operation_rows])
     workload_artifact = _p04_contract_workload_artifact(phase, scenario, run_id, workload_windows)
     (artifacts / "workload_windows.json").write_text(json.dumps(_p30_encode_missing(workload_artifact), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     matrix_status = "SKIPPED_WITH_REASON" if any(row["operation_status"] == "SKIPPED_WITH_REASON" for row in operation_rows) else "PASS"
@@ -10290,7 +10283,7 @@ def _p04_setup_command_refs(operation_name: str, refs_by_kind: dict[str, list[st
 
 def _p04_skipped_rolling_restart_result(phase: str, run_id: str, operation_name: str, node_count: int) -> dict[str, Any]:
     operation_id = f"p04-contract-{P30_REQUIRED_ROWS.index(operation_name) + 1:02d}-{operation_name}"
-    reason = "Legacy P04 smoke does not execute rolling restart rows; strict M1 management stages execute them."
+    reason = "Legacy P04 smoke does not execute rolling restart rows; strict management stages execute them."
     return {
         "schema_version": "v1",
         "phase_id": phase,
@@ -10318,7 +10311,7 @@ def _p04_skipped_rolling_restart_result(phase: str, run_id: str, operation_name:
     }
 
 
-def _m1_command_refs_by_kind(path: Path) -> dict[str, list[str]]:
+def _command_refs_by_kind(path: Path) -> dict[str, list[str]]:
     refs: dict[str, list[str]] = {}
     if not path.exists():
         return refs
@@ -10338,7 +10331,7 @@ def _m1_command_refs_by_kind(path: Path) -> dict[str, list[str]]:
 
 
 def _p30_attach_setup_command_refs(operation_rows: list[dict[str, Any]], artifacts: Path) -> None:
-    refs_by_kind = _m1_command_refs_by_kind(artifacts / "command_log.jsonl")
+    refs_by_kind = _command_refs_by_kind(artifacts / "command_log.jsonl")
     for row in operation_rows:
         operation_name = str(row.get("operation_name", ""))
         if operation_name not in {"create_cluster", "meet_nodes", "add_replica"}:
@@ -10364,7 +10357,7 @@ def _p30_skipped(field: str, reason: str) -> dict[str, str]:
     return {"status": "SKIPPED_WITH_REASON", "field": field, "reason": reason, "impact": "Encoded explicitly; no metric value was invented."}
 
 
-def _m1_management_diff_from_health(health: dict[str, Any], status: str) -> dict[str, Any]:
+def _management_diff_from_health(health: dict[str, Any], status: str) -> dict[str, Any]:
     return {
         "slot_diff": {"slots_assigned_delta": 0, "slots_ok_delta": 0},
         "role_diff": {"primary": 0, "replica": 0},
@@ -10376,7 +10369,7 @@ def _m1_management_diff_from_health(health: dict[str, Any], status: str) -> dict
     }
 
 
-def _m1_management_topology_diff_row(phase: str, run_id: str, row: dict[str, Any]) -> dict[str, Any]:
+def _management_topology_diff_row(phase: str, run_id: str, row: dict[str, Any]) -> dict[str, Any]:
     topology = row.get("topology_diff") if isinstance(row.get("topology_diff"), dict) else {}
     status = str(row.get("operation_status", "FAIL"))
     return _p30_encode_missing(
@@ -11873,7 +11866,7 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
             "stage_id": phase,
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
-            "source_spec_refs": ["docs/MILESTONES.md"],
+            "source_spec_refs": ["schemas/scenario/gate_scenario.schema.json"],
             "summary": {},
             "rows": [],
         }
@@ -11883,7 +11876,9 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
     ledger["created_at"] = ledger.get("created_at") or "2026-06-28T00:00:00Z"
     ledger.setdefault("producer", {})["name"] = ledger.get("producer", {}).get("name", "valkey-scale-lab")
     ledger.setdefault("producer", {})["version"] = ledger.get("producer", {}).get("version", __version__)
-    ledger.setdefault("source_spec_refs", ["docs/MILESTONES.md"])
+    ledger.setdefault(
+        "source_spec_refs", ["schemas/scenario/gate_scenario.schema.json"]
+    )
     by_id = {row["coverage_id"]: row for row in operation_rows}
     rows = ledger.setdefault("rows", [])
     if not rows:
@@ -11930,39 +11925,8 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
 
 
 def _p30_update_global_coverage_registry(operation_rows: list[dict[str, Any]]) -> None:
-    if os.environ.get("VSLAB_META_M1_CONTROLLER_OWNED") == "1":
-        return
-    if not operation_rows:
-        return
-    phase = str(operation_rows[0]["phase_id"])
-    node_count = int(operation_rows[0]["node_count"])
-    path = Path("artifacts/coverage/strict_coverage_registry.json")
-    if not path.exists():
-        return
-    registry = json.loads(path.read_text(encoding="utf-8"))
-    registry["stage_id"] = phase
-    registry.pop("phase_id", None)
-    registry.pop("status", None)
-    by_id = {row["coverage_id"]: row for row in operation_rows}
-    for row in registry.get("rows", []):
-        coverage_id = row.get("coverage_id")
-        if coverage_id not in by_id:
-            continue
-        result = by_id[coverage_id]
-        row["status"] = result["operation_status"]
-        row["status_reason"] = f"Real exact-{node_count} management operation executed and verified." if result["operation_status"] == "PASS" else f"Real exact-{node_count} management operation failed verification."
-        row["source_artifacts"] = result["source_evidence_refs"]
-        row["validation_artifacts"] = [
-            f"artifacts/phases/{phase}/management_ops_matrix.json",
-            f"artifacts/phases/{phase}/management_operation_results.jsonl",
-            f"artifacts/phases/{phase}/management_workload_impact.json",
-        ]
-        row["metric_refs"] = [f"artifacts/phases/{phase}/metrics_timeseries.jsonl"]
-        row["cleanup_ref"] = f"artifacts/phases/{phase}/cleanup_report.json"
-        row["review_ref"] = f"artifacts/goal_loop_strict/{phase}/REVIEW.md"
-        row["commit_sha"] = "PENDING_REVIEW_AND_COMMIT"
-    _p30_refresh_registry_summary(registry, phase)
-    path.write_text(json.dumps(_p30_encode_missing(registry), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    # Product executions emit run-scoped coverage only.
+    return
 
 
 def _p30_refresh_registry_summary(registry: dict[str, Any], stage: str) -> None:

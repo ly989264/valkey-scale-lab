@@ -113,7 +113,7 @@ def _check_fixtures(root: Path, schema: dict, summary_schema: dict) -> list[str]
 
 def _check_artifacts(artifacts_dir: Path, schema: dict, summary_schema: dict, analysis_path: Path | None, report_index_path: Path | None) -> list[str]:
     errors: list[str] = []
-    blocked = artifacts_dir / "goal_loop" / "M1-S03" / "real_heavy_gate_blocked.json"
+    blocked = artifacts_dir / "blocked" / "real_heavy_gate_blocked.json"
     if blocked.exists():
         blocked_data = json.loads(blocked.read_text(encoding="utf-8"))
         if blocked_data.get("status") != "BLOCKED_WITH_REASON":

@@ -39,7 +39,7 @@ def test_management_event_window_exercises_workload_during_operation(monkeypatch
     monkeypatch.setattr(docker_runtime, "run_node_cluster_cli", workload_command)
 
     telemetry = TelemetryRun(
-        phase_id="P36_MILESTONE1_FULL_FLOW",
+        phase_id="P36_LOCAL_FULL_FLOW",
         scenario_name="full_flow_50",
         run_id="review-o3-round2",
         coverage_id="50.management.reshard_slot_range",
@@ -48,7 +48,7 @@ def test_management_event_window_exercises_workload_during_operation(monkeypatch
     )
     docker_runtime._p30_run_operation_with_workload(
         telemetry=telemetry,
-        phase="P36_MILESTONE1_FULL_FLOW",
+        phase="P36_LOCAL_FULL_FLOW",
         run_id="review-o3-round2",
         scenario="full_flow_50",
         operation_name="reshard_slot_range",

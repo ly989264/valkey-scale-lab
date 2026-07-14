@@ -34,7 +34,7 @@ LAYER_SOURCE_FIELDS = {
     "level_3": "clean_gate",
 }
 
-M1_REQUIRED_TIMELINE_EVENTS = [
+FULL_FLOW_TIMELINE_EVENTS = [
     "fault_planned",
     "fault_apply_started",
     "fault_apply_completed",
@@ -49,7 +49,7 @@ M1_REQUIRED_TIMELINE_EVENTS = [
     "cleanup_verified",
 ]
 
-M1_REQUIRED_TIMELINE_METRICS = [
+FULL_FLOW_TIMELINE_METRICS = [
     "apply_duration_ms",
     "effect_observed_delay_ms",
     "cluster_impact_ms",
@@ -63,7 +63,7 @@ M1_REQUIRED_TIMELINE_METRICS = [
     "cluster_down_window_ms",
 ]
 
-M1_REQUIRED_FAULT_TYPES = [
+FULL_FLOW_FAULT_TYPES = [
     "primary_stop_failover",
     "replica_stop",
     "node_host_stop",
@@ -78,8 +78,8 @@ M1_REQUIRED_FAULT_TYPES = [
     "fault_period_workload_impact",
 ]
 
-M1_REQUIRED_SCALE_RUNGS = ["small", "30", "50", "100", "200"]
-M1_EVENT_STATUSES = {"OBSERVED", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON", "FAIL"}
+FULL_FLOW_SCALE_RUNGS = ["small", "30", "50", "100", "200"]
+FAULT_EVENT_STATUSES = {"OBSERVED", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON", "FAIL"}
 
 
 class FailoverTimelineError(ValueError):
@@ -117,10 +117,10 @@ def make_fault_timeline_event(
     execution_mode: str = "fake",
     details: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if event_name not in M1_REQUIRED_TIMELINE_EVENTS:
-        raise FailoverTimelineError(f"unsupported M1-S06 event: {event_name}")
-    if event_status not in M1_EVENT_STATUSES:
-        raise FailoverTimelineError(f"unsupported M1-S06 event status: {event_status}")
+    if event_name not in FULL_FLOW_TIMELINE_EVENTS:
+        raise FailoverTimelineError(f"unsupported fault timeline event: {event_name}")
+    if event_status not in FAULT_EVENT_STATUSES:
+        raise FailoverTimelineError(f"unsupported fault timeline event status: {event_status}")
     if event_status != "OBSERVED" and not reason:
         raise FailoverTimelineError(f"{event_name} with {event_status} requires reason")
     if event_status == "OBSERVED" and not isinstance(timestamp_unix_ms, int):
@@ -156,7 +156,7 @@ def make_fault_timeline_event(
 
 def derive_fault_timeline_metrics(events: list[dict[str, Any]], workload_windows: dict[str, Any] | None = None) -> dict[str, Any]:
     by_name = {str(event.get("event_name")): event for event in events}
-    missing_events = [name for name in M1_REQUIRED_TIMELINE_EVENTS if name not in by_name]
+    missing_events = [name for name in FULL_FLOW_TIMELINE_EVENTS if name not in by_name]
     if missing_events:
         raise FailoverTimelineError(f"timeline is missing required events: {', '.join(missing_events)}")
     observed = {
@@ -164,7 +164,7 @@ def derive_fault_timeline_metrics(events: list[dict[str, Any]], workload_windows
         for name, event in by_name.items()
         if event.get("event_status") == "OBSERVED" and isinstance(event.get("monotonic_ms"), (int, float))
     }
-    ordered = [observed[name] for name in M1_REQUIRED_TIMELINE_EVENTS if name in observed]
+    ordered = [observed[name] for name in FULL_FLOW_TIMELINE_EVENTS if name in observed]
     if any(left > right for left, right in zip(ordered, ordered[1:])):
         raise FailoverTimelineError("observed timeline events must be monotonic")
 
@@ -205,7 +205,7 @@ def build_failover_latency_sample_from_timeline(row: dict[str, Any]) -> dict[str
         raise FailoverTimelineError("timeline row metrics must be an object")
     return {
         "schema_version": "v1",
-        "phase_id": row.get("phase_id", "M1-S06"),
+        "phase_id": row.get("phase_id", "P44_FAULT_TIMELINE"),
         "node_count": row.get("node_count", 0),
         "sample_id": row.get("sample_id", "MISSING"),
         "target_primary_logical_id": row.get("target_logical_id", row.get("subject_id", "MISSING")),
@@ -268,9 +268,9 @@ def build_fault_timeline_report(
             "real_valkey": bool(first.get("real_valkey") is True),
             "execution_mode": first.get("execution_mode", "MISSING"),
             "metrics": metrics,
-            "metric_sources": {name: "fault_timeline_events.jsonl+workload_windows.json" for name in M1_REQUIRED_TIMELINE_METRICS},
+            "metric_sources": {name: "fault_timeline_events.jsonl+workload_windows.json" for name in FULL_FLOW_TIMELINE_METRICS},
             "timeline_ref": f"fault_timeline_events.jsonl#{sample_id}",
-            "timeline_event_refs": [f"fault_timeline_events.jsonl#{sample_id}:{event}" for event in M1_REQUIRED_TIMELINE_EVENTS],
+            "timeline_event_refs": [f"fault_timeline_events.jsonl#{sample_id}:{event}" for event in FULL_FLOW_TIMELINE_EVENTS],
             "event_timestamps": event_timestamps,
             "workload_window_refs": _workload_refs(workload_windows, sample_id),
             "cleanup_ref": "cleanup_report.json",
@@ -288,9 +288,9 @@ def build_fault_timeline_report(
         "timeline_events_ref": "fault_timeline_events.jsonl",
         "failover_latency_samples_ref": "failover_latency_samples.jsonl",
         "fault_workload_impact_ref": "fault_workload_impact.json",
-        "required_fault_types": M1_REQUIRED_FAULT_TYPES,
+        "required_fault_types": FULL_FLOW_FAULT_TYPES,
         "observed_fault_types": sorted({str(row.get("fault_type")) for row in rows}),
-        "required_scale_rungs": M1_REQUIRED_SCALE_RUNGS,
+        "required_scale_rungs": FULL_FLOW_SCALE_RUNGS,
         "observed_scale_rungs": sorted({str(row.get("scale_rung")) for row in rows}),
         "missing_metrics": missing_metrics,
     }
@@ -481,7 +481,6 @@ def build_rto_summary(
         "nodehost_strategy": nodehost_strategy,
         "node_count": node_counts[-1] if node_counts else "MISSING",
         "scale": scale,
-        "required_real_scales": [30, 50, 100, 200],
         "observed_real_scales": node_counts,
         "derived_series": derived_series,
     }
@@ -571,7 +570,6 @@ def build_layered_recovery_summary(
         "status": "PASS" if pass_samples and len(pass_samples) == len(samples) else "FAIL",
         "sample_count": len(pass_samples),
         "sample_refs": [str(sample.get("sample_id")) for sample in pass_samples],
-        "required_real_scales": [30, 50, 100, 200],
         "observed_real_scales": sorted({int(sample["node_count"]) for sample in pass_samples if isinstance(sample.get("node_count"), int)}),
         "per_sample": per_sample,
         **_summary_series(pass_samples),

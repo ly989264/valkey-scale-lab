@@ -25,8 +25,6 @@ def compile_gate_plan(
     if not policy.exact_requested_nodes or not policy.no_silent_downscale:
         raise GatePlanError("definition does not preserve exact requested node counts")
 
-    required_completion_gate = requested_nodes in policy.required_real_scales
-    runnable_not_gated = requested_nodes in policy.runnable_not_required_scales
     normal_development_eligible = requested_nodes <= policy.normal_development_cap
     bounded_200_exception = requested_nodes == policy.bounded_exception_scale
     above_200 = requested_nodes > policy.bounded_exception_scale
@@ -65,8 +63,6 @@ def compile_gate_plan(
         "requested_nodes": requested_nodes,
         "exact": True,
         "execution_mode": execution_mode,
-        "required_completion_gate": required_completion_gate,
-        "runnable_not_gated": runnable_not_gated,
         "normal_development_eligible": normal_development_eligible,
         "automatic_execution_allowed": automatic_execution_allowed,
         "bounded_200_exception": bounded_200_exception,
@@ -108,8 +104,6 @@ def compile_gate_plan(
         exact=True,
         legacy_profile=legacy_profile,
         execution_mode=execution_mode,
-        required_completion_gate=required_completion_gate,
-        runnable_not_gated=runnable_not_gated,
         normal_development_eligible=normal_development_eligible,
         automatic_execution_allowed=automatic_execution_allowed,
         bounded_200_exception=bounded_200_exception,

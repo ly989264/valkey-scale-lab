@@ -17,6 +17,7 @@ from valkey_scale_lab.report import (
     ValidatedReportError,
     render_validated_report,
 )
+from valkey_scale_lab.scenarios import load_local_full_flow_definition
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,10 +29,11 @@ PROBE = {
     "slots_assigned": 16384,
     "slots_ok": 16384,
 }
+DEFINITION = load_local_full_flow_definition()
 
 
 def _provenance_fixture_module():
-    path = ROOT / "tests/provenance/test_milestone1_gate_measured_sources.py"
+    path = ROOT / "tests/provenance/test_exact_gate_measured_sources.py"
     spec = importlib.util.spec_from_file_location("report_provenance_support", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -51,6 +53,7 @@ def _validated_bundle(tmp_path: Path):
         base,
         50,
         PRODUCT_DIGEST,
+        definition=DEFINITION,
         run_started_unix_ms=STARTED,
         run_ended_unix_ms=STARTED + 1000,
         valkey_versions=["9.1.0"],
@@ -63,6 +66,7 @@ def _validated_bundle(tmp_path: Path):
         50,
         expected_product_digest=PRODUCT_DIGEST,
         admission=admission,
+        definition=DEFINITION,
     )
 
 

@@ -14,7 +14,6 @@
     "nodehost_strategy",
     "node_count",
     "scale",
-    "required_real_scales",
     "observed_real_scales",
     "derived_series"
   ],
@@ -30,7 +29,6 @@
     "nodehost_strategy": {"type": "string", "minLength": 1},
     "node_count": {"type": ["integer", "string"]},
     "scale": {"type": "string", "minLength": 1},
-    "required_real_scales": {"type": "array", "items": {"type": "integer"}},
     "observed_real_scales": {"type": "array", "items": {"type": "integer"}},
     "derived_series": {"type": "object"}
   },

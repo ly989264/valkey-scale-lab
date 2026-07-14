@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://valkey-scale-lab.local/verification/catalog.schema.json",
+  "title": "Valkey Scale Lab Verification Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "suites"],
+  "properties": {
+    "schema_version": {"const": "verification-catalog-v1"},
+    "suites": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/suite"}
+    }
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+    "safePath": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[A-Za-z0-9_.{}-]+(?:/[A-Za-z0-9_.{}-]+)*$"
+    },
+    "suite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "kind", "status", "argv", "timeout_seconds", "capabilities", "outputs", "skip_policy"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "title": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["pytest", "command", "real"]},
+        "status": {"enum": ["READY", "PLANNED"]},
+        "argv": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "timeout_seconds": {"type": "integer", "minimum": 1},
+        "capabilities": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
+        "outputs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}},
+        "skip_policy": {"enum": ["FAIL", "ALLOW"]}
+      }
+    }
+  }
+}

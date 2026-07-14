@@ -16,7 +16,7 @@ def _base_required_artifacts(path: Path) -> None:
     (path / "cleanup_report.json").write_text(json.dumps({"status": "PASS", "resources_remaining": []}), encoding="utf-8")
 
 
-def test_management_writer_emits_required_m1_contract(tmp_path: Path) -> None:
+def test_management_writer_emits_required_contract(tmp_path: Path) -> None:
     write_management_matrix_artifacts(tmp_path, phase_id="M1-S04", run_id="m1-s04-test", scenario="fixture", node_count=6)
 
     matrix = json.loads((tmp_path / "management_ops_matrix.json").read_text(encoding="utf-8"))
@@ -49,7 +49,7 @@ def test_management_analysis_and_report_rendering(tmp_path: Path) -> None:
     assert "管理操作矩阵" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
 
 
-def test_p04_real_smoke_emits_m1_matrix_contract_without_fake_destructive_pass(tmp_path: Path, monkeypatch) -> None:
+def test_p04_real_smoke_emits_matrix_contract_without_fake_destructive_pass(tmp_path: Path, monkeypatch) -> None:
     command_rows = [
         {"command_id": "cmd-meet", "command_kind": "cluster_meet", "command": ["CLUSTER", "MEET"]},
         {"command_id": "cmd-slots", "command_kind": "cluster_addslots", "command": ["CLUSTER", "ADDSLOTS"]},

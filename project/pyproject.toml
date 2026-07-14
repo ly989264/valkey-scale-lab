@@ -16,6 +16,9 @@ valkey-scale-lab = "valkey_scale_lab.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"valkey_scale_lab.scenarios" = ["definitions/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

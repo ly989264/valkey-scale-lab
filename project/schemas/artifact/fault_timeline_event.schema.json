@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "M1 Fault Timeline Event",
+  "title": "Fault Timeline Event",
   "type": "object",
   "required": [
     "schema_version",
@@ -27,7 +27,7 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "fault_timeline_event"},
-    "phase_id": {"type": "string", "pattern": "^(M1-S[0-9]{2}|P[0-9]{2}_[A-Z0-9_]+)$"},
+    "phase_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
     "run_id": {"type": "string", "minLength": 1},
     "scenario_name": {"type": "string", "minLength": 1},
     "sample_id": {"type": "string", "minLength": 1},

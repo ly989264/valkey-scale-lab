@@ -4,8 +4,13 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from valkey_scale_lab import milestone1_gate
+from valkey_scale_lab.gates import real as exact_gate
+from valkey_scale_lab.evidence import canonical_bundle_spec
 from valkey_scale_lab.runtime import docker_runtime
+from valkey_scale_lab.scenarios import load_local_full_flow_definition
+
+
+LIFECYCLE = list(canonical_bundle_spec(load_local_full_flow_definition()).lifecycle_ids)
 
 
 def test_management_operations_map_to_observed_matrix_scenarios() -> None:
@@ -58,15 +63,21 @@ def test_lifecycle_artifact_uses_positive_measured_spans(tmp_path: Path) -> None
     runtime = tmp_path / "runtime"
     runtime.mkdir()
     (runtime / "events.jsonl").write_text("", encoding="utf-8")
-    names = ["resource_preflight", "runtime_component", "cluster_component", *milestone1_gate.LIFECYCLE[3:]]
-    categories = ["resource_preflight", "process_start", "cluster_formation", *milestone1_gate.LIFECYCLE[3:]]
+    names = ["resource_preflight", "runtime_component", "cluster_component", *LIFECYCLE[3:]]
+    categories = ["resource_preflight", "process_start", "cluster_formation", *LIFECYCLE[3:]]
     segments = [
         {"name": name, "category": category, "kind": "span", "status": "PASS", "start_monotonic": float(index + 1), "end_monotonic": float(index + 1.5)}
         for index, (name, category) in enumerate(zip(names, categories))
     ]
-    milestone1_gate._write_measured_lifecycle(runtime, "run-1", 50, SimpleNamespace(segments=segments))  # type: ignore[arg-type]
+    exact_gate._write_measured_lifecycle(
+        runtime,
+        "run-1",
+        50,
+        SimpleNamespace(segments=segments),  # type: ignore[arg-type]
+        LIFECYCLE,
+    )
     artifact = json.loads((runtime / "lifecycle_timeline.json").read_text(encoding="utf-8"))
     by_id = {row["id"]: row for row in artifact["steps"]}
-    assert set(by_id) == set(milestone1_gate.LIFECYCLE)
+    assert set(by_id) == set(LIFECYCLE)
     assert all(row["duration_ms"] > 0 for row in by_id.values())
     assert by_id["resource_preflight"]["ended_monotonic_ms"] <= by_id["runtime_start"]["started_monotonic_ms"]

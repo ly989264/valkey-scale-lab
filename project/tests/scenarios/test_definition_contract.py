@@ -8,35 +8,37 @@ import pytest
 
 from valkey_scale_lab.scenarios import (
     HANDLER_REGISTRY,
-    MILESTONE1_DEFINITION_DIGEST,
-    MILESTONE1_DEFINITION_PATH,
+    LOCAL_FULL_FLOW_DEFINITION_DIGEST,
+    LOCAL_FULL_FLOW_DEFINITION_PATH,
     SCENARIO_SCHEMA_PATH,
     TRANSFORM_REGISTRY,
     ScenarioDefinitionError,
     definition_digest,
-    load_milestone1_definition,
+    load_local_full_flow_definition,
     load_scenario_definition,
     validate_scenario_definition,
 )
 
 
 def _document() -> dict:
-    return json.loads(MILESTONE1_DEFINITION_PATH.read_text(encoding="utf-8"))
+    return json.loads(LOCAL_FULL_FLOW_DEFINITION_PATH.read_text(encoding="utf-8"))
 
 
 def test_canonical_definition_is_schema_backed_typed_and_immutable() -> None:
     schema = json.loads(SCENARIO_SCHEMA_PATH.read_text(encoding="utf-8"))
-    definition = load_milestone1_definition()
+    definition = load_local_full_flow_definition()
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-    assert definition.digest == MILESTONE1_DEFINITION_DIGEST
+    assert definition.digest == LOCAL_FULL_FLOW_DEFINITION_DIGEST
     assert definition.digest == definition_digest(_document())
     assert definition.lifecycle_steps[-1].id == "cleanup"
     assert definition.lifecycle_steps[-1].terminal is True
     assert definition.lifecycle_steps[-1].always_run is True
     assert all(not step.terminal for step in definition.lifecycle_steps[:-1])
-    assert definition.scale_policy.required_real_scales == (50, 200)
-    assert definition.scale_policy.runnable_not_required_scales == (30, 100)
+    assert definition.schema_version == "gate-scenario-v2"
+    assert definition.definition_id == "local_full_flow"
+    assert definition.scale_policy.min_nodes == 30
+    assert definition.scale_policy.max_nodes == 2000
     assert definition.raw_json_artifacts[-1].raw_name == "full_flow_result.json"
     assert definition.raw_json_artifacts[-1].admitted_kinds == ()
 
@@ -81,7 +83,7 @@ def test_semantic_validator_rejects_unsafe_or_noncanonical_content(
 
 def test_loader_rejects_duplicate_json_object_keys(tmp_path) -> None:
     path = tmp_path / "duplicate.json"
-    path.write_text('{"schema_version":"gate-scenario-v1","schema_version":"v2"}', encoding="utf-8")
+    path.write_text('{"schema_version":"gate-scenario-v2","schema_version":"v3"}', encoding="utf-8")
     with pytest.raises(ScenarioDefinitionError, match="duplicate JSON object keys"):
         load_scenario_definition(path)
 

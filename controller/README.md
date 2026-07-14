@@ -1,47 +1,36 @@
 # Controller
 
-This directory holds reusable control frameworks and project-specific control
-policy. It is deliberately outside every product workspace.
+This tree owns AI control frameworks and operator policy. It is outside the
+Valkey product workspace.
 
-- `vpro/` is the frozen, standalone and milestone-agnostic VPRO framework
-  release. Its manifest, release receipt, historical package namespace, and
-  relative layout are unchanged.
-- `vpro2/` is the separately governed goal-driven successor. It evaluates the
-  complete Milestone before and after each dynamically planned temporary
-  Objective, retains work only for an independently proven material Goal
-  Delta, and emits authenticated success or failure receipts. It never loads
-  or migrates a v1 run in place.
-- `bundles/valkey-scale-lab/` contains repository authoring copies of the
-  Valkey milestone bundles. An operator must copy a selected bundle and the
-  VPRO release outside the worker workspace before a trusted run.
-- `legacy/` preserves retired Goal/Meta controller sources and control
-  material. It is archive material, not part of the product package.
+- `vpro/` is the frozen VPRO1 release. It is not modified, resealed, or upgraded
+  in place.
+- `vpro2/` is the milestone-neutral successor framework.
+- `integrations/valkey-scale-lab/` converts product milestone definitions into
+  unsigned VPRO2 review drafts and supplies independent Valkey evaluators.
+- `legacy/valkey-scale-lab/vpro1-bundles/` preserves the retired VPRO1 bundle
+  authoring copies as read-only historical material.
 
-The sealed `vpro/AGENTS.md` and `valkey_scale_lab` package marker are release
-provenance and bootstrap ABI. They do not make the framework depend on the
-Valkey product; product semantics enter only through an external bundle and an
-explicit `--project-root`.
+Product goals and capability suite IDs originate in `project/milestones/` and
+`project/verification/`. Budgets, capability approvals, write boundaries, and
+termination policy originate here. The integration never writes controller
+policy back into a project milestone.
 
-Validate the extracted framework from the repository root:
+Create an unsigned VPRO2 draft for operator review:
 
 ```bash
-VPRO_FRAMEWORK_ANCHOR="$PWD/controller/vpro/codex/vpro/framework_release.json" \
-  python3 -I -S -B controller/vpro/VPRO_LAUNCH.py framework-verify
+python3 controller/integrations/valkey-scale-lab/compile_contract.py \
+  --milestone m1 \
+  --output /tmp/valkey-m1.vpro2.draft.json
 ```
 
-Validate a Valkey bundle against the product tree:
+The operator must copy the selected project milestone, catalog, acceptance
+tests, contract, evaluator code, receipt producer, toolchain policy, and
+schemas into a snapshot outside worker write authority before binding a
+trusted run. Capability receipts are generated afterward as run evidence for
+the current product digest; they are not static acceptance-authority files.
+Draft generation neither signs nor binds a run.
 
-```bash
-VPRO_FRAMEWORK_ANCHOR="$PWD/controller/vpro/codex/vpro/framework_release.json" \
-  python3 -I -S -B controller/vpro/VPRO_LAUNCH.py \
-  --project-root "$PWD/project" \
-  --bundle "$PWD/controller/bundles/valkey-scale-lab/milestone1.bundle.json" \
-  milestone-validate
-```
-
-The repository release receipt is suitable for development verification only;
-it is not a production trust root.
-
-VPRO2 development and deployment start at `vpro2/VPRO2_START.md`. Its final
-release receipt must likewise be copied outside every Worker and controller
-write root before use.
+VPRO2 development starts at `vpro2/VPRO2_START.md`. The frozen VPRO1 framework
+can still be verified independently with its existing launch instructions, but
+its archived Valkey bundles are not the active control path.

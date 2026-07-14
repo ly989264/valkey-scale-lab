@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 import pytest
 
-from valkey_scale_lab import cli, cli_compat, milestone1_gate
+from valkey_scale_lab import cli, cli_compat
 from valkey_scale_lab.planner.plan import PlannerError
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
@@ -78,7 +78,6 @@ _SETUP_TIMELINE = object()
             ("input", "reports"),
             {"phase_id": "P26"},
         ),
-        (cli_compat.milestone1_gate, "run_real_gate", lambda: cli_compat.run_real_gate(50, "evidence"), (50, "evidence"), {}),
     ],
 )
 def test_compatibility_wrappers_preserve_arguments_returns_and_exceptions(
@@ -114,7 +113,6 @@ def test_compatibility_wrappers_preserve_arguments_returns_and_exceptions(
 def test_cli_keeps_legacy_symbols_bound_for_import_compatibility() -> None:
     assert cli.create_scenario is docker_runtime.create_scenario
     assert cli.cleanup_scenario is docker_runtime.cleanup_scenario
-    assert cli.run_real_gate is milestone1_gate.run_real_gate
 
 
 def test_config_and_plan_handlers_use_compatibility_boundary(
@@ -195,16 +193,30 @@ def test_analyze_and_report_handlers_use_compatibility_boundary(
     assert [name for name, _, _ in calls] == ["create_analysis_summary", "build_workload_impact_analysis", "render_report", "build_final_goal_loop_report"]
 
 
-def test_milestone1_real_gate_handler_uses_compatibility_boundary(
+def test_exact_gate_handler_uses_product_neutral_arguments(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    calls: list[tuple[int, str]] = []
+    calls: list[dict[str, Any]] = []
+    definition = object()
 
-    def fail(scale: int, evidence_dir: str) -> None:
-        calls.append((scale, evidence_dir))
-        raise DockerRuntimeError("controller denied")
+    def fail(**kwargs: Any) -> None:
+        calls.append(kwargs)
+        raise DockerRuntimeError("runtime denied")
 
-    monkeypatch.setattr(cli_compat, "run_real_gate", fail)
-    assert cli.main(["milestone1", "real-gate", "--scale", "50", "--evidence-dir", "evidence"]) == 1
-    assert calls == [(50, "evidence")]
-    assert "ERROR: milestone1 real-gate: controller denied" in capsys.readouterr().err
+    monkeypatch.setattr(cli, "load_scenario_definition", lambda _path: definition)
+    monkeypatch.setattr(cli, "run_exact_gate", fail)
+    assert cli.main([
+        "gate", "execute",
+        "--definition", "flow.json",
+        "--nodes", "50",
+        "--config", "scale-50.yaml",
+        "--run-id", "run-50",
+        "--ownership-id", "owner-50",
+        "--provenance-id", "capture-50",
+        "--artifacts-dir", "evidence",
+        "--product-digest", "a" * 64,
+    ]) == 1
+    assert calls[0]["definition"] is definition
+    assert calls[0]["scale"] == 50
+    assert calls[0]["ownership_id"] == "owner-50"
+    assert "ERROR: gate execute: runtime denied" in capsys.readouterr().err

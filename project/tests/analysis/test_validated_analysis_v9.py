@@ -18,6 +18,7 @@ from valkey_scale_lab.evidence import (
     build_candidate_admission,
     validate_candidate_admission,
 )
+from valkey_scale_lab.scenarios import load_local_full_flow_definition
 
 
 STARTED = 1_800_000_000_000
@@ -29,10 +30,11 @@ PROBE = {
     "slots_ok": 16384,
 }
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFINITION = load_local_full_flow_definition()
 
 
 def _support_module():
-    path = PROJECT_ROOT / "tests/provenance/test_milestone1_gate_measured_sources.py"
+    path = PROJECT_ROOT / "tests/provenance/test_exact_gate_measured_sources.py"
     spec = importlib.util.spec_from_file_location("validated_analysis_support", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -52,6 +54,7 @@ def _bundle(tmp_path: Path):
         base,
         50,
         PRODUCT_DIGEST,
+        definition=DEFINITION,
         run_started_unix_ms=STARTED,
         run_ended_unix_ms=STARTED + 1000,
         valkey_versions=["9.1.0"],
@@ -63,6 +66,7 @@ def _bundle(tmp_path: Path):
         50,
         expected_product_digest=PRODUCT_DIGEST,
         admission=admission,
+        definition=DEFINITION,
     )
 
 

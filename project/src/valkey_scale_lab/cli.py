@@ -12,13 +12,14 @@ from valkey_scale_lab.analysis import AnalysisError, WorkloadImpactError, build_
 from valkey_scale_lab.artifacts import build_run_metadata, create_run_context, write_run_manifest, write_run_metadata
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
-from valkey_scale_lab.milestone1_gate import run_real_gate
+from valkey_scale_lab.gates.real import product_tree_digest, run_exact_gate
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import FinalReportError, ReportError, build_final_goal_loop_report, render_report
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import CommandRecorder, command_recorder_context
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, build_setup_telemetry_artifact, write_setup_telemetry_artifact
+from valkey_scale_lab.scenarios import ScenarioDefinitionError, load_scenario_definition
 
 
 UNIMPLEMENTED = (
@@ -355,11 +356,30 @@ def _run_init(args: argparse.Namespace) -> int:
     return 0
 
 
-def _milestone1_real_gate(args: argparse.Namespace) -> int:
+def _gate_execute(args: argparse.Namespace) -> int:
     try:
-        cli_compat.run_real_gate(args.scale, args.evidence_dir)
-    except (DockerRuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
-        print(f"ERROR: milestone1 real-gate: {exc}", file=sys.stderr)
+        definition = load_scenario_definition(args.definition)
+        run_exact_gate(
+            definition=definition,
+            scale=args.nodes,
+            config_path=args.config,
+            evidence_dir=args.artifacts_dir,
+            run_id=args.run_id,
+            ownership_id=args.ownership_id,
+            provenance_id=args.provenance_id,
+            product_digest=args.product_digest or product_tree_digest(),
+            prior_admission_digest=args.prior_admission_digest,
+            operator_opt_in=args.operator_opt_in,
+            cost_acknowledged=args.cost_acknowledged,
+        )
+    except (
+        DockerRuntimeError,
+        OSError,
+        ValueError,
+        json.JSONDecodeError,
+        ScenarioDefinitionError,
+    ) as exc:
+        print(f"ERROR: gate execute: {exc}", file=sys.stderr)
         return 1
     return 0
 
@@ -466,6 +486,22 @@ def build_parser() -> argparse.ArgumentParser:
     cleanup.add_argument("--artifacts-dir", required=True)
     cleanup.add_argument("--out", required=True)
     cleanup.set_defaults(func=_gate_cleanup)
+    execute = gate_sub.add_parser(
+        "execute",
+        help="Execute an exact-scale full-flow definition and emit raw evidence.",
+    )
+    execute.add_argument("--definition", required=True)
+    execute.add_argument("--nodes", required=True, type=int)
+    execute.add_argument("--config", required=True)
+    execute.add_argument("--run-id", required=True)
+    execute.add_argument("--ownership-id", required=True)
+    execute.add_argument("--provenance-id", required=True)
+    execute.add_argument("--artifacts-dir", required=True)
+    execute.add_argument("--product-digest")
+    execute.add_argument("--prior-admission-digest")
+    execute.add_argument("--operator-opt-in", action="store_true")
+    execute.add_argument("--cost-acknowledged", action="store_true")
+    execute.set_defaults(func=_gate_execute)
     _add_unimplemented(gate, "gate")
 
     fault = sub.add_parser("fault", help="Apply and clear sandboxed faults.")
@@ -523,14 +559,6 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--status", default="PASS", choices=["PASS", "FAIL", "PARTIAL", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"])
     init.set_defaults(func=_run_init)
     _add_unimplemented(run, "run")
-
-    milestone1 = sub.add_parser("milestone1", help="Run controller-owned Milestone 1 admission gates.")
-    milestone1_sub = milestone1.add_subparsers(dest="milestone1_command", metavar="<milestone1-command>")
-    real_gate = milestone1_sub.add_parser("real-gate", help="Run an exact-scale real Milestone 1 lifecycle.")
-    real_gate.add_argument("--scale", required=True, type=int, choices=[50, 200])
-    real_gate.add_argument("--evidence-dir", required=True)
-    real_gate.set_defaults(func=_milestone1_real_gate)
-    _add_unimplemented(milestone1, "milestone1")
 
     return parser
 

@@ -187,7 +187,6 @@ def populate(base: Path, samples: list[dict]) -> None:
             "nodehost_strategy": "configured_plan",
             "node_count": max(row["node_count"] for row in samples),
             "scale": "30,50,100,200",
-            "required_real_scales": [30, 50, 100, 200],
             "observed_real_scales": sorted({row["node_count"] for row in samples}),
             "derived_series": {
                 metric: {

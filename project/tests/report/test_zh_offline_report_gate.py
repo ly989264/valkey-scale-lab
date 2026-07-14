@@ -19,7 +19,7 @@ def test_zh_offline_report_gate_accepts_canonical_layout(tmp_path: Path) -> None
     result = subprocess.run(
         [
             sys.executable,
-            str(ROOT / "scripts" / "assert_zh_offline_report_m1.py"),
+            str(ROOT / "scripts" / "assert_zh_offline_report_contract.py"),
             "--reports-dir",
             str(reports_dir),
         ],
@@ -47,7 +47,7 @@ def test_zh_offline_report_gate_rejects_external_url(tmp_path: Path) -> None:
     result = subprocess.run(
         [
             sys.executable,
-            str(ROOT / "scripts" / "assert_zh_offline_report_m1.py"),
+            str(ROOT / "scripts" / "assert_zh_offline_report_contract.py"),
             "--reports-dir",
             str(reports_dir),
         ],

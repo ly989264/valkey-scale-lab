@@ -20,8 +20,8 @@
   ],
   "properties": {
     "$schema": {"type": "string", "minLength": 1},
-    "schema_version": {"const": "gate-scenario-v1"},
-    "definition_id": {"const": "milestone1_full_flow"},
+    "schema_version": {"const": "gate-scenario-v2"},
+    "definition_id": {"const": "local_full_flow"},
     "version": {"const": 1},
     "lifecycle": {
       "type": "array",
@@ -155,8 +155,6 @@
       "required": [
         "min_nodes",
         "max_nodes",
-        "required_real_scales",
-        "runnable_not_required_scales",
         "normal_development_cap",
         "bounded_exception_scale",
         "exact_requested_nodes",
@@ -169,8 +167,6 @@
       "properties": {
         "min_nodes": {"const": 30},
         "max_nodes": {"const": 2000},
-        "required_real_scales": {"const": [50, 200]},
-        "runnable_not_required_scales": {"const": [30, 100]},
         "normal_development_cap": {"const": 100},
         "bounded_exception_scale": {"const": 200},
         "exact_requested_nodes": {"const": true},

@@ -8,7 +8,7 @@ from pathlib import Path
 
 def test_fault_timeline_fixtures_pass_contract_gate() -> None:
     proc = subprocess.run(
-        [sys.executable, "scripts/assert_fault_timeline_m1.py", "--fixtures", "tests/fixtures/fault_timeline"],
+        [sys.executable, "scripts/assert_fault_timeline_contract.py", "--fixtures", "tests/fixtures/fault_timeline"],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

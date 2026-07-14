@@ -7,7 +7,6 @@ from valkey_scale_lab.analysis import summary as analysis_summary
 from valkey_scale_lab.analysis import workload_impact
 from valkey_scale_lab.config import validation as config_validation
 from valkey_scale_lab.fault import sandbox as fault_sandbox
-from valkey_scale_lab import milestone1_gate
 from valkey_scale_lab.planner import plan as planner
 from valkey_scale_lab.report import final as final_report
 from valkey_scale_lab.report import render as summary_report
@@ -157,10 +156,6 @@ def build_final_goal_loop_report(
     )
 
 
-def run_real_gate(scale: int, evidence_dir: str | Path) -> dict[str, Any]:
-    return milestone1_gate.run_real_gate(scale, evidence_dir)
-
-
 __all__ = [
     "apply_fault",
     "build_final_goal_loop_report",
@@ -172,6 +167,5 @@ __all__ = [
     "create_scenario",
     "emit_schema_report",
     "render_report",
-    "run_real_gate",
     "validate_config_file",
 ]

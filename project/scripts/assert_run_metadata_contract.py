@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main() -> int:
     errors: list[str] = []
-    with tempfile.TemporaryDirectory(prefix="vslab-m1-s01-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="vslab-run-metadata-") as tmp:
         tmp_path = Path(tmp)
         _exercise_contract(tmp_path, errors)
     if errors:
@@ -33,7 +33,7 @@ def _exercise_contract(tmp_path: Path, errors: list[str]) -> None:
     from valkey_scale_lab.artifacts import build_run_metadata, create_run_context, load_run_manifest, write_run_manifest, write_run_metadata
     from valkey_scale_lab.report import render_report
 
-    context = create_run_context("m1-s01-gate", tmp_path / "runs")
+    context = create_run_context("run-metadata-gate", tmp_path / "runs")
     _write_source_artifacts(context.artifact_root)
     metadata = build_run_metadata(context, runtime_provider="fake", runtime_mode="gate")
     write_run_metadata(context, metadata)
@@ -44,18 +44,18 @@ def _exercise_contract(tmp_path: Path, errors: list[str]) -> None:
     _require_dirs(context, errors)
 
     loaded = load_run_manifest(context.manifest_path)
-    if loaded.get("run_id") != "m1-s01-gate":
+    if loaded.get("run_id") != "run-metadata-gate":
         errors.append("manifest reader did not preserve run_id")
 
     analysis = create_analysis_summary(context.run_root, context.artifact_root / "analysis_summary.json")
     index = render_report(context.artifact_root / "analysis_summary.json", context.report_root, context.artifact_root / "report_index.json")
     if analysis.get("source", {}).get("input_kind") != "run_manifest":
         errors.append("analysis did not prefer run manifest for run-root input")
-    if not isinstance(analysis.get("run_metadata"), dict) or analysis["run_metadata"].get("run_id") != "m1-s01-gate":
+    if not isinstance(analysis.get("run_metadata"), dict) or analysis["run_metadata"].get("run_id") != "run-metadata-gate":
         errors.append("analysis did not attach run metadata")
-    if analysis.get("run_id") != "m1-s01-gate" or analysis.get("created_at") != metadata.get("created_at"):
+    if analysis.get("run_id") != "run-metadata-gate" or analysis.get("created_at") != metadata.get("created_at"):
         errors.append("analysis did not derive run_id/created_at from run metadata")
-    if index.get("run_id") != "m1-s01-gate" or index.get("created_at") != metadata.get("created_at"):
+    if index.get("run_id") != "run-metadata-gate" or index.get("created_at") != metadata.get("created_at"):
         errors.append("report index did not derive run_id/created_at from analysis/run metadata")
     if not isinstance(index.get("run_metadata_ref"), dict) or "path" not in index["run_metadata_ref"]:
         errors.append("report_index did not reference run metadata")

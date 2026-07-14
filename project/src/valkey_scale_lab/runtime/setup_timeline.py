@@ -386,7 +386,7 @@ def build_setup_telemetry_artifact(
     source_artifacts: list[dict[str, Any]] | None = None,
     blocked_reason: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build the common M1 setup telemetry artifact from runtime evidence."""
+    """Build the common setup telemetry artifact from runtime evidence."""
     normalized_segments = _normalize_segments(segments or []) if segments else []
     timings_by_name = {
         str(item.get("name")): dict(item)

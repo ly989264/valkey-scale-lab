@@ -230,10 +230,10 @@ def validate_scenario_definition(document: Any) -> tuple[str, ...]:
     _check_keys(document, _TOP_LEVEL_KEYS, _TOP_LEVEL_KEYS, "$", errors)
     if document.get("$schema") != "../../../../schemas/scenario/gate_scenario.schema.json":
         errors.append("$.$schema: unexpected schema path")
-    if document.get("schema_version") != "gate-scenario-v1":
-        errors.append("$.schema_version: expected 'gate-scenario-v1'")
-    if document.get("definition_id") != "milestone1_full_flow":
-        errors.append("$.definition_id: expected 'milestone1_full_flow'")
+    if document.get("schema_version") != "gate-scenario-v2":
+        errors.append("$.schema_version: expected 'gate-scenario-v2'")
+    if document.get("definition_id") != "local_full_flow":
+        errors.append("$.definition_id: expected 'local_full_flow'")
     if isinstance(document.get("version"), bool) or document.get("version") != 1:
         errors.append("$.version: expected integer 1")
 
@@ -450,8 +450,6 @@ def _validate_scale_policy(value: Any, errors: list[str]) -> None:
     expected = {
         "min_nodes": 30,
         "max_nodes": 2000,
-        "required_real_scales": [50, 200],
-        "runnable_not_required_scales": [30, 100],
         "normal_development_cap": 100,
         "bounded_exception_scale": 200,
         "exact_requested_nodes": True,

@@ -7,14 +7,14 @@ import pytest
 
 from valkey_scale_lab.scenarios import (
     ADMISSION_COMPATIBILITY,
-    MILESTONE1_DEFINITION_PATH,
+    LOCAL_FULL_FLOW_DEFINITION_PATH,
     TRANSFORM_COMPATIBILITY,
     validate_scenario_definition,
 )
 
 
 def _document() -> dict:
-    return json.loads(MILESTONE1_DEFINITION_PATH.read_text(encoding="utf-8"))
+    return json.loads(LOCAL_FULL_FLOW_DEFINITION_PATH.read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize(

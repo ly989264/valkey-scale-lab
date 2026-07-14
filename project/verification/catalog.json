@@ -1,0 +1,110 @@
+{
+  "schema_version": "verification-catalog-v1",
+  "suites": [
+    {
+      "id": "scenario.contract",
+      "title": "Scenario and plan contracts",
+      "kind": "pytest",
+      "status": "READY",
+      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/scenarios"],
+      "timeout_seconds": 1200,
+      "capabilities": [],
+      "outputs": [],
+      "skip_policy": "FAIL"
+    },
+    {
+      "id": "runtime.local.lifecycle",
+      "title": "Local lifecycle and ownership",
+      "kind": "pytest",
+      "status": "READY",
+      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/gates", "tests/integration/test_gate_orchestration.py", "tests/real_valkey/test_exact_gate.py"],
+      "timeout_seconds": 1800,
+      "capabilities": [],
+      "outputs": [],
+      "skip_policy": "FAIL"
+    },
+    {
+      "id": "evidence.provenance",
+      "title": "Evidence and provenance contracts",
+      "kind": "pytest",
+      "status": "READY",
+      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/evidence", "tests/provenance"],
+      "timeout_seconds": 1800,
+      "capabilities": [],
+      "outputs": [],
+      "skip_policy": "FAIL"
+    },
+    {
+      "id": "report.offline",
+      "title": "Validated offline analysis and reports",
+      "kind": "pytest",
+      "status": "READY",
+      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/analysis", "tests/report"],
+      "timeout_seconds": 1800,
+      "capabilities": [],
+      "outputs": [],
+      "skip_policy": "FAIL"
+    },
+    {
+      "id": "regression.hermetic",
+      "title": "Hermetic product regression",
+      "kind": "pytest",
+      "status": "READY",
+      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--ignore=tests/fault/test_network_proxy.py", "--ignore=tests/real_valkey/test_gate_small_real_parity.py", "tests"],
+      "timeout_seconds": 3600,
+      "capabilities": [],
+      "outputs": [],
+      "skip_policy": "FAIL"
+    },
+    {
+      "id": "real.local.full-flow",
+      "title": "Exact local real full flow",
+      "kind": "real",
+      "status": "READY",
+      "argv": ["python3", "-m", "valkey_scale_lab.cli", "gate", "execute", "--definition", "{definition}", "--nodes", "{nodes}", "--config", "{config}", "--run-id", "{run_id}", "--ownership-id", "{ownership_id}", "--provenance-id", "{provenance_id}", "--artifacts-dir", "{artifacts_dir}", "--product-digest", "{product_digest}"],
+      "timeout_seconds": 14400,
+      "capabilities": ["docker", "host_resource"],
+      "outputs": ["{artifacts_dir}"],
+      "skip_policy": "FAIL"
+    },
+    {
+      "id": "distributed.runtime.parity", "title": "Distributed runtime parity", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "distributed.inventory.placement", "title": "Distributed inventory and placement", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "distributed.process.journal", "title": "Native process journal", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "distributed.lifecycle.safety", "title": "Distributed lifecycle safety", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "distributed.clock.evidence", "title": "Clock-aware distributed evidence", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "distributed.analysis.cost", "title": "Distributed analysis, cost, and teardown", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "real.distributed.full-flow", "title": "Exact distributed real full flow", "kind": "real", "status": "PLANNED", "argv": [], "timeout_seconds": 14400, "capabilities": ["cloud", "host_resource"], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "scale.profiles.preflight", "title": "Scale profiles and preflight", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "scale.orchestration", "title": "Scalable orchestration", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "scale.telemetry.transfer", "title": "Scalable telemetry transfer", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "scale.hierarchical.safety", "title": "Hierarchical scale safety", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "scale.comparison.report", "title": "Scale comparison report", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+    },
+    {
+      "id": "real.distributed.scale-flow", "title": "Exact distributed scale flow", "kind": "real", "status": "PLANNED", "argv": [], "timeout_seconds": 21600, "capabilities": ["cloud", "host_resource"], "outputs": [], "skip_policy": "FAIL"
+    }
+  ]
+}

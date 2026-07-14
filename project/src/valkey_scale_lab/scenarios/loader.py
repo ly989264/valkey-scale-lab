@@ -21,12 +21,12 @@ from .validation import validate_scenario_definition
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SCENARIO_SCHEMA_PATH = PROJECT_ROOT / "schemas" / "scenario" / "gate_scenario.schema.json"
-MILESTONE1_DEFINITION_PATH = (
-    Path(__file__).resolve().parent / "definitions" / "milestone1_full_flow_v1.json"
+LOCAL_FULL_FLOW_DEFINITION_PATH = (
+    Path(__file__).resolve().parent / "definitions" / "local_full_flow_v1.json"
 )
-CANONICAL_DEFINITION_PATH = MILESTONE1_DEFINITION_PATH
-MILESTONE1_DEFINITION_ID = "milestone1_full_flow"
-MILESTONE1_DEFINITION_VERSION = 1
+CANONICAL_DEFINITION_PATH = LOCAL_FULL_FLOW_DEFINITION_PATH
+LOCAL_FULL_FLOW_DEFINITION_ID = "local_full_flow"
+LOCAL_FULL_FLOW_DEFINITION_VERSION = 1
 
 
 class ScenarioDefinitionError(ValueError):
@@ -64,12 +64,12 @@ def load_scenario_definition(path: str | Path) -> ScenarioDefinition:
 
 
 @lru_cache(maxsize=1)
-def load_milestone1_definition() -> ScenarioDefinition:
-    definition = load_scenario_definition(MILESTONE1_DEFINITION_PATH)
-    if definition.digest != MILESTONE1_DEFINITION_DIGEST:
+def load_local_full_flow_definition() -> ScenarioDefinition:
+    definition = load_scenario_definition(LOCAL_FULL_FLOW_DEFINITION_PATH)
+    if definition.digest != LOCAL_FULL_FLOW_DEFINITION_DIGEST:
         raise ScenarioDefinitionError(
             (
-                "canonical milestone1 definition digest changed without updating its versioned digest",
+                "canonical local full-flow definition digest changed without updating its versioned digest",
             )
         )
     return definition
@@ -124,8 +124,6 @@ def _parse_definition(document: Mapping[str, Any]) -> ScenarioDefinition:
     scale_policy = ScalePolicy(
         min_nodes=policy["min_nodes"],
         max_nodes=policy["max_nodes"],
-        required_real_scales=tuple(policy["required_real_scales"]),
-        runnable_not_required_scales=tuple(policy["runnable_not_required_scales"]),
         normal_development_cap=policy["normal_development_cap"],
         bounded_exception_scale=policy["bounded_exception_scale"],
         exact_requested_nodes=policy["exact_requested_nodes"],
@@ -181,5 +179,5 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return value
 
 
-MILESTONE1_DEFINITION_DIGEST = "5125cb1bf601794d03913216e4af959793634d9ea783828fe77e289de7a16255"
-CANONICAL_DEFINITION_DIGEST = MILESTONE1_DEFINITION_DIGEST
+LOCAL_FULL_FLOW_DEFINITION_DIGEST = "02660b42dce250ccf8b64ea244d6673e3450eeceb45cba9568b46c9f4ee51921"
+CANONICAL_DEFINITION_DIGEST = LOCAL_FULL_FLOW_DEFINITION_DIGEST

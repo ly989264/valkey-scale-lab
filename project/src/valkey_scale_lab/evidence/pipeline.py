@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Mapping
 
-from valkey_scale_lab.scenarios import ScenarioDefinition, load_milestone1_definition
+from valkey_scale_lab.scenarios import ScenarioDefinition
 
 from .contracts import (
     ArtifactRecord,
@@ -27,16 +27,14 @@ from .provenance import build_provenance_document, provenance_node_id
 from .validation import load_raw_documents, validate_digest, validate_raw_sources
 
 
-ADMISSION_SCHEMA_VERSION = "meta-m1-admission-v2"
+ADMISSION_SCHEMA_VERSION = "valkey-exact-scale-admission-v1"
 CANDIDATE_SCHEMA_VERSION = ADMISSION_SCHEMA_VERSION
 
 
 def canonical_bundle_spec(
-    definition: ScenarioDefinition | None = None,
+    definition: ScenarioDefinition,
 ) -> EvidenceBundleSpec:
-    return EvidenceBundleSpec.from_definition(
-        definition or load_milestone1_definition()
-    )
+    return EvidenceBundleSpec.from_definition(definition)
 
 
 def build_candidate_admission(
@@ -47,15 +45,17 @@ def build_candidate_admission(
     versions: list[str] | tuple[str, ...] | None = None,
     probe: Mapping[str, Any] | None = None,
     *,
+    definition: ScenarioDefinition,
     run_started_unix_ms: int | None = None,
     run_ended_unix_ms: int | None = None,
     valkey_versions: list[str] | tuple[str, ...] | None = None,
     independent_probe: Mapping[str, Any] | None = None,
     source_commit: str | None = None,
     run_owner: str | None = None,
+    promoted_from_admission_digest: str | None = None,
+    invocation_run_id: str | None = None,
 ) -> dict[str, Any]:
     root = Path(base).resolve()
-    definition = load_milestone1_definition()
     errors = list(validate_raw_sources(root, scale, definition))
     validate_digest(product_digest, "product_digest", errors)
     selected_versions = list(valkey_versions if valkey_versions is not None else versions or ())
@@ -224,6 +224,20 @@ def build_candidate_admission(
         },
         "artifacts": artifact_rows,
     }
+    if promoted_from_admission_digest is not None:
+        promotion_errors: list[str] = []
+        validate_digest(
+            promoted_from_admission_digest,
+            "promoted_from_admission_digest",
+            promotion_errors,
+        )
+        if promotion_errors:
+            raise EvidenceValidationError(tuple(promotion_errors))
+        admission["promoted_from_admission_digest"] = promoted_from_admission_digest
+    if invocation_run_id is not None:
+        if not invocation_run_id.strip():
+            raise EvidenceValidationError(("invocation_run_id must be non-empty",))
+        admission["invocation_run_id"] = invocation_run_id
     admission["admission_digest"] = canonical_json_digest(admission)
     _write_json(root / "admission.json", admission)
     return admission
@@ -238,10 +252,9 @@ def validate_candidate_admission(
     expected_product_digest: str | None = None,
     *,
     admission: Mapping[str, Any] | None = None,
-    definition: ScenarioDefinition | None = None,
+    definition: ScenarioDefinition,
 ) -> ValidatedEvidenceBundle:
     root = Path(base).resolve()
-    definition = definition or load_milestone1_definition()
     value = dict(admission) if admission is not None else load_candidate_admission(root)
     errors = list(validate_raw_sources(root, scale, definition))
     expected = {

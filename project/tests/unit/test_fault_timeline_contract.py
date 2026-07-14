@@ -4,7 +4,7 @@ import pytest
 
 from valkey_scale_lab.observer.failover_timeline import (
     FailoverTimelineError,
-    M1_REQUIRED_TIMELINE_EVENTS,
+    FULL_FLOW_TIMELINE_EVENTS,
     build_failover_latency_sample_from_timeline,
     build_fault_timeline_report,
     derive_fault_timeline_metrics,
@@ -61,7 +61,7 @@ def test_unobserved_event_without_reason_is_rejected() -> None:
 
 def _events(missing_event: str | None = None) -> list[dict]:
     rows = []
-    for index, event_name in enumerate(M1_REQUIRED_TIMELINE_EVENTS):
+    for index, event_name in enumerate(FULL_FLOW_TIMELINE_EVENTS):
         status = "MISSING" if event_name == missing_event else "OBSERVED"
         rows.append(
             make_fault_timeline_event(

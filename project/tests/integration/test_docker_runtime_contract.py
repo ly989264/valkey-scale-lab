@@ -1749,7 +1749,7 @@ def test_system_metrics_expose_numeric_container_cpu_and_cluster_source(monkeypa
         raise AssertionError(args)
 
     monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
-    monkeypatch.setattr(docker_runtime, "_m1_count_log_errors", lambda _node: 0)
+    monkeypatch.setattr(docker_runtime, "_count_log_errors", lambda _node: 0)
     rows = docker_runtime._system_metric_rows_for_node(
         telemetry,
         node,
@@ -1775,7 +1775,7 @@ def test_p36_posthoc_metrics_do_not_claim_unsampled_management_or_fault_windows(
     for name in ["management_sequence.json", "workload_windows.json", "fault_sequence.json"]:
         (tmp_path / name).write_text("{}\n", encoding="utf-8")
 
-    assert docker_runtime._m1_system_metric_windows_for_artifacts(tmp_path) == ["setup", "cleanup", "workload"]
+    assert docker_runtime._system_metric_windows_for_artifacts(tmp_path) == ["setup", "cleanup", "workload"]
 
 
 def test_cleanup_process_scan_parsing_and_zombie_exit(monkeypatch: pytest.MonkeyPatch) -> None:

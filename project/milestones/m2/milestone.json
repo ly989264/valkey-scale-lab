@@ -1,0 +1,46 @@
+{
+  "schema_version": "valkey-milestone-v1",
+  "milestone": {
+    "id": "m2",
+    "version": "1.0.0",
+    "title": "Native multi-ECS lifecycle",
+    "goal": "Run the complete lifecycle on multiple ECS hosts with directly managed Valkey processes and compatible evidence through exact 200 nodes."
+  },
+  "prerequisite_milestone_ids": ["m1"],
+  "success_conditions": [
+    {
+      "id": "distributed.runtime",
+      "statement": "Runtime parity, inventory placement, native process ownership, and distributed cleanup are implemented.",
+      "suite_ids": ["distributed.runtime.parity", "distributed.inventory.placement", "distributed.process.journal", "distributed.lifecycle.safety"],
+      "evidence_gate_ids": ["distributed.exact.50", "distributed.exact.200"]
+    },
+    {
+      "id": "distributed.evidence",
+      "statement": "Clock-aware evidence, analysis, transfer, cost, and teardown remain attributable across hosts.",
+      "suite_ids": ["distributed.clock.evidence", "distributed.analysis.cost"],
+      "evidence_gate_ids": ["distributed.exact.50", "distributed.exact.200"]
+    }
+  ],
+  "evidence_gates": [
+    {
+      "id": "distributed.exact.50",
+      "suite_id": "real.distributed.full-flow",
+      "parameters": {"nodes": 50, "runtime": "native_multi_ecs"},
+      "depends_on": [],
+      "capture_class": "REAL",
+      "operator_approval_required": true
+    },
+    {
+      "id": "distributed.exact.200",
+      "suite_id": "real.distributed.full-flow",
+      "parameters": {
+        "nodes": 200,
+        "runtime": "native_multi_ecs",
+        "prior_gate": "distributed.exact.50"
+      },
+      "depends_on": ["distributed.exact.50"],
+      "capture_class": "REAL",
+      "operator_approval_required": true
+    }
+  ]
+}

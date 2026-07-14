@@ -104,8 +104,6 @@ class ReportSurface:
 class ScalePolicy:
     min_nodes: int
     max_nodes: int
-    required_real_scales: Tuple[int, ...]
-    runnable_not_required_scales: Tuple[int, ...]
     normal_development_cap: int
     bounded_exception_scale: int
     exact_requested_nodes: bool
@@ -215,8 +213,6 @@ class GatePlan:
     exact: bool
     legacy_profile: Optional[LegacyProfileBinding]
     execution_mode: str
-    required_completion_gate: bool
-    runnable_not_gated: bool
     normal_development_eligible: bool
     automatic_execution_allowed: bool
     bounded_200_exception: bool
@@ -248,14 +244,6 @@ class GatePlan:
     @property
     def config_template(self) -> Optional[str]:
         return self.legacy_profile.config_template if self.legacy_profile else None
-
-    @property
-    def required_real_completion(self) -> bool:
-        return self.required_completion_gate
-
-    @property
-    def runnable_not_required(self) -> bool:
-        return self.runnable_not_gated
 
     @property
     def bounded_exception(self) -> bool:

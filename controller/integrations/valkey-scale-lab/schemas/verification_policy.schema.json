@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:valkey-scale-lab:vpro2:verification-policy:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "python_executable_sha256", "pytest_version", "pytest_package_digest", "toolchain_digest"],
+  "properties": {
+    "schema_version": {"const": "valkey-verification-policy-v1"},
+    "python_executable_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "pytest_version": {"type": "string", "minLength": 1},
+    "pytest_package_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "toolchain_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": "valkey-milestone-v1",
+  "milestone": {
+    "id": "m3",
+    "version": "1.0.0",
+    "title": "Multi-ECS scale-out",
+    "goal": "Promote the proven native multi-ECS lifecycle through exact real 500, 1000, and 2000 node runs without weakening evidence or safety."
+  },
+  "prerequisite_milestone_ids": ["m2"],
+  "success_conditions": [
+    {
+      "id": "scale.control-plane",
+      "statement": "Scale profiles, preflight, bounded orchestration, telemetry transfer, and hierarchical safety work at every rung.",
+      "suite_ids": ["scale.profiles.preflight", "scale.orchestration", "scale.telemetry.transfer", "scale.hierarchical.safety"],
+      "evidence_gate_ids": ["scale.exact.500", "scale.exact.1000", "scale.exact.2000"]
+    },
+    {
+      "id": "scale.comparison",
+      "statement": "Validated reports compare each promoted rung against the admitted 200-node baseline and prior rung.",
+      "suite_ids": ["scale.comparison.report"],
+      "evidence_gate_ids": ["scale.exact.500", "scale.exact.1000", "scale.exact.2000"]
+    }
+  ],
+  "evidence_gates": [
+    {
+      "id": "scale.exact.500",
+      "suite_id": "real.distributed.scale-flow",
+      "parameters": {"nodes": 500, "runtime": "native_multi_ecs"},
+      "depends_on": [],
+      "capture_class": "REAL",
+      "operator_approval_required": true
+    },
+    {
+      "id": "scale.exact.1000",
+      "suite_id": "real.distributed.scale-flow",
+      "parameters": {
+        "nodes": 1000,
+        "runtime": "native_multi_ecs",
+        "prior_gate": "scale.exact.500"
+      },
+      "depends_on": ["scale.exact.500"],
+      "capture_class": "REAL",
+      "operator_approval_required": true
+    },
+    {
+      "id": "scale.exact.2000",
+      "suite_id": "real.distributed.scale-flow",
+      "parameters": {
+        "nodes": 2000,
+        "runtime": "native_multi_ecs",
+        "prior_gate": "scale.exact.1000"
+      },
+      "depends_on": ["scale.exact.1000"],
+      "capture_class": "REAL",
+      "operator_approval_required": true
+    }
+  ]
+}

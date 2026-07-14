@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Any, Mapping
 
-from valkey_scale_lab.scenarios import ScenarioDefinition, load_milestone1_definition
+from valkey_scale_lab.scenarios import ScenarioDefinition
 
 from .contracts import MISSING_STATUSES
 
@@ -46,9 +46,8 @@ def load_raw_documents(
 def validate_raw_sources(
     base: Path,
     scale: int,
-    definition: ScenarioDefinition | None = None,
+    definition: ScenarioDefinition,
 ) -> tuple[str, ...]:
-    definition = definition or load_milestone1_definition()
     errors: list[str] = []
     if isinstance(scale, bool) or not isinstance(scale, int):
         return ("requested scale must be an integer",)
@@ -327,4 +326,3 @@ def _validate_missing_taxonomy(
 def validate_digest(value: Any, label: str, errors: list[str]) -> None:
     if not isinstance(value, str) or not _HEX64.fullmatch(value):
         errors.append(f"{label} must be a 64-character lowercase SHA-256 digest")
-

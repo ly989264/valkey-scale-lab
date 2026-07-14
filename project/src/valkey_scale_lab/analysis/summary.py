@@ -8,7 +8,11 @@ from typing import Any
 from valkey_scale_lab import __version__
 from valkey_scale_lab.artifacts import artifact_record, load_json as load_artifact_json, resolve_artifact_input
 from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS
-from valkey_scale_lab.observer.failover_timeline import M1_REQUIRED_FAULT_TYPES, M1_REQUIRED_SCALE_RUNGS, M1_REQUIRED_TIMELINE_METRICS
+from valkey_scale_lab.observer.failover_timeline import (
+    FULL_FLOW_FAULT_TYPES,
+    FULL_FLOW_SCALE_RUNGS,
+    FULL_FLOW_TIMELINE_METRICS,
+)
 
 PHASE_ID = "P09_ANALYSIS_REPORTING"
 RUN_ID = "P09_ANALYSIS_REPORTING-analysis-20260628"
@@ -539,8 +543,8 @@ def _fault_timeline_aggregates(
             "reason": "Input artifacts did not include fault_timeline_report.json or fault_timeline_events.jsonl.",
             "row_count": 0,
             "event_count": 0,
-            "fault_type_coverage": {"required": M1_REQUIRED_FAULT_TYPES, "observed": [], "missing": M1_REQUIRED_FAULT_TYPES},
-            "scale_coverage": {"required": M1_REQUIRED_SCALE_RUNGS, "observed": [], "missing": M1_REQUIRED_SCALE_RUNGS},
+            "fault_type_coverage": {"required": FULL_FLOW_FAULT_TYPES, "observed": [], "missing": FULL_FLOW_FAULT_TYPES},
+            "scale_coverage": {"required": FULL_FLOW_SCALE_RUNGS, "observed": [], "missing": FULL_FLOW_SCALE_RUNGS},
             "missing_metrics": [
                 {
                     "metric": "row_count",
@@ -564,7 +568,7 @@ def _fault_timeline_aggregates(
         metrics = row.get("metrics", {})
         if not isinstance(metrics, dict):
             continue
-        for name in M1_REQUIRED_TIMELINE_METRICS:
+        for name in FULL_FLOW_TIMELINE_METRICS:
             value = metrics.get(name)
             if isinstance(value, dict) and value.get("status") in {"MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"}:
                 missing_metrics.append(
@@ -621,14 +625,14 @@ def _fault_timeline_aggregates(
         "latency_sample_count": len(latency_samples),
         "workload_impact_status": workload_impact.get("status", "SKIPPED_WITH_REASON") if isinstance(workload_impact, dict) else "SKIPPED_WITH_REASON",
         "fault_type_coverage": {
-            "required": M1_REQUIRED_FAULT_TYPES,
+            "required": FULL_FLOW_FAULT_TYPES,
             "observed": observed_fault_types,
-            "missing": [name for name in M1_REQUIRED_FAULT_TYPES if name not in observed_fault_types],
+            "missing": [name for name in FULL_FLOW_FAULT_TYPES if name not in observed_fault_types],
         },
         "scale_coverage": {
-            "required": M1_REQUIRED_SCALE_RUNGS,
+            "required": FULL_FLOW_SCALE_RUNGS,
             "observed": observed_scales,
-            "missing": [name for name in M1_REQUIRED_SCALE_RUNGS if name not in observed_scales],
+            "missing": [name for name in FULL_FLOW_SCALE_RUNGS if name not in observed_scales],
         },
         "event_completeness": completeness,
         "non_observed_event_count": bad_event_status_count,
@@ -838,7 +842,7 @@ def _management_aggregates(
                 "metric": "required_operations",
                 "status": "MISSING",
                 "reason": f"Missing required management operations: {', '.join(missing_required)}",
-                "impact": "Milestone1 management matrix coverage is incomplete.",
+                "impact": "Management matrix coverage is incomplete.",
             }
         )
     for row in results:

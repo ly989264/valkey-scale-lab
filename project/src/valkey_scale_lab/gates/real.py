@@ -1,0 +1,461 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import time
+from collections.abc import Mapping, Sequence
+from dataclasses import replace
+from pathlib import Path
+from typing import Any
+
+from valkey_scale_lab.evidence import (
+    ADMISSION_SCHEMA_VERSION,
+    EvidenceValidationError,
+    build_candidate_admission as _build_candidate_admission,
+    canonical_bundle_spec,
+    validate_raw_sources,
+)
+from valkey_scale_lab.gates import (
+    FaultTargetKind,
+    GateRequest,
+    GateService,
+    GateStatus,
+    LegacyGateAdapter,
+    LegacyRuntimeEntrypoints,
+    OwnedFaultScope,
+)
+from valkey_scale_lab.resource import run_resource_preflight
+from valkey_scale_lab.runtime.docker_runtime import (
+    DockerRuntimeError,
+    _node_command,
+    _p17_cluster_health,
+    cleanup_scenario,
+    create_scenario,
+)
+from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
+from valkey_scale_lab.scenarios import (
+    LegacyProfileBinding,
+    ScenarioDefinition,
+    compile_gate_plan,
+)
+
+
+def product_tree_digest(project_root: str | Path | None = None) -> str:
+    """Digest the complete product snapshot using the controller-neutral tree contract."""
+    root = (
+        Path(__file__).resolve().parents[3]
+        if project_root is None
+        else Path(project_root).resolve()
+    )
+    if not root.is_dir() or root.is_symlink():
+        raise DockerRuntimeError(f"product root must be a real directory: {root}")
+    manifest: dict[str, dict[str, Any]] = {}
+    for current, directories, files in os.walk(root, topdown=True, followlinks=False):
+        current_path = Path(current)
+        for name in sorted((*directories, *files)):
+            path = current_path / name
+            relative = path.relative_to(root).as_posix()
+            info = path.lstat()
+            mode = stat.S_IMODE(info.st_mode)
+            if stat.S_ISLNK(info.st_mode):
+                raise DockerRuntimeError(
+                    f"symlinks are not permitted in a product snapshot: {relative}"
+                )
+            if stat.S_ISDIR(info.st_mode):
+                manifest[relative] = {"kind": "directory", "mode": mode}
+            elif stat.S_ISREG(info.st_mode):
+                manifest[relative] = {
+                    "kind": "file",
+                    "mode": mode,
+                    "size": info.st_size,
+                    "sha256": _file_sha256(path),
+                }
+            else:
+                raise DockerRuntimeError(
+                    f"special files are not permitted in a product snapshot: {relative}"
+                )
+    value = {
+        "product": {
+            "kind": "directory",
+            "manifest": dict(sorted(manifest.items())),
+        }
+    }
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def run_exact_gate(
+    *,
+    definition: ScenarioDefinition,
+    scale: int,
+    config_path: str | Path,
+    evidence_dir: str | Path,
+    run_id: str,
+    ownership_id: str,
+    provenance_id: str,
+    product_digest: str,
+    prior_admission_digest: str | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
+) -> dict[str, Any]:
+    if not re.fullmatch(r"[0-9a-f]{64}", product_digest):
+        raise DockerRuntimeError("exact gate requires a 64-character product digest")
+    _require_docker_daemon()
+
+    base = Path(evidence_dir).resolve()
+    runtime_dir = base / "runtime"
+    if runtime_dir.exists():
+        shutil.rmtree(runtime_dir)
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    state_path = runtime_dir / "state.json"
+    cleanup_path = runtime_dir / "cleanup_report.json"
+    plan = compile_gate_plan(definition, scale)
+    if not plan.exact or plan.downscale_allowed:
+        raise DockerRuntimeError("compiled plan does not preserve the exact requested scale")
+    if plan.legacy_profile is None:
+        profile = LegacyProfileBinding(
+            requested_nodes=scale,
+            runtime_phase="P36_FULL_FLOW_E2E_50_100_200_REAL",
+            runtime_scenario=f"strict_full_flow_{scale}",
+            config_template=str(config_path),
+        )
+    else:
+        profile = LegacyProfileBinding(
+            requested_nodes=scale,
+            runtime_phase=plan.legacy_profile.runtime_phase,
+            runtime_scenario=plan.legacy_profile.runtime_scenario,
+            config_template=str(config_path),
+        )
+    plan = replace(plan, legacy_profile=profile)
+    fault_scope = OwnedFaultScope(
+        run_id=run_id,
+        ownership_id=ownership_id,
+        kind=FaultTargetKind.CONTAINER,
+        resource_ids=(f"exact-{scale}-sandbox",),
+    )
+    request = GateRequest(
+        run_id=run_id,
+        ownership_id=ownership_id,
+        provenance_id=provenance_id,
+        requested_nodes=scale,
+        artifact_root=base,
+        fault_scope=fault_scope,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
+        metadata={"product_digest": product_digest},
+    )
+    adapter = LegacyGateAdapter(
+        LegacyRuntimeEntrypoints(
+            create=create_scenario,
+            cleanup=cleanup_scenario,
+            preflight=_run_exact_preflight,
+            live_probe=_run_live_exact_probe,
+        )
+    )
+    run_started = _unix_ms()
+    result = GateService().execute(plan, request, adapter.adapter_bundle())
+    snapshot = adapter.execution_snapshot(
+        run_id=run_id,
+        ownership_id=ownership_id,
+        provenance_id=provenance_id,
+    )
+    if result.status is not GateStatus.PASS:
+        raise DockerRuntimeError(_gate_failure_message(result))
+    if snapshot.state is None or snapshot.live_probe_result is None:
+        raise DockerRuntimeError("exact-scale Gate completed without owned state or a live probe")
+    state = snapshot.state
+    probe = snapshot.live_probe_result
+    health_value = probe.get("independent_probe")
+    versions_value = probe.get("valkey_versions")
+    if (
+        not isinstance(health_value, Mapping)
+        or isinstance(versions_value, (str, bytes))
+        or not isinstance(versions_value, Sequence)
+    ):
+        raise DockerRuntimeError("exact-scale Gate live probe result is incomplete")
+    health = dict(health_value)
+    versions = [str(value) for value in versions_value]
+    runtime = state.get("runtime")
+    runtime_run_id = runtime.get("run_id") if isinstance(runtime, Mapping) else None
+    if not isinstance(runtime_run_id, str) or not runtime_run_id:
+        runtime_run_id = state.get("cluster_id")
+    if not isinstance(runtime_run_id, str) or not runtime_run_id:
+        raise DockerRuntimeError("exact-scale Gate state has no attributable runtime run_id")
+    _write_measured_lifecycle(
+        runtime_dir,
+        runtime_run_id,
+        scale,
+        snapshot.setup_segments,
+        canonical_bundle_spec(definition).lifecycle_ids,
+    )
+    run_ended = _unix_ms()
+    source_errors = validate_admission_sources(base, scale, definition)
+    if source_errors:
+        raise DockerRuntimeError("real gate source evidence is invalid: " + "; ".join(source_errors))
+    return build_admission_from_sources(
+        base,
+        scale,
+        product_digest,
+        definition=definition,
+        run_started_unix_ms=run_started,
+        run_ended_unix_ms=run_ended,
+        valkey_versions=versions,
+        independent_probe=health,
+        promoted_from_admission_digest=prior_admission_digest,
+        invocation_run_id=run_id,
+    )
+
+
+def _require_docker_daemon() -> None:
+    docker_info = subprocess.run(
+        ["docker", "info", "--format", "{{.ServerVersion}}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if docker_info.returncode != 0 or not docker_info.stdout.strip():
+        raise DockerRuntimeError(
+            f"real gate requires an available Docker daemon: {docker_info.stderr.strip()}"
+        )
+
+
+def _run_exact_preflight(
+    *,
+    phase: str,
+    scenario: str,
+    config_path: str,
+    out_path: Path,
+    requested_nodes: int,
+) -> dict[str, Any]:
+    report = run_resource_preflight(
+        config_path,
+        out_path,
+        phase_id=phase,
+        scenario=scenario,
+    )
+    observed = report.get("nodes_requested", report.get("node_count"))
+    if observed != requested_nodes:
+        raise DockerRuntimeError(
+            "resource preflight changed the exact requested node count: "
+            f"requested={requested_nodes}, observed={observed}"
+        )
+    return report
+
+
+def _run_live_exact_probe(
+    *,
+    state: dict[str, Any],
+    requested_nodes: int,
+) -> dict[str, Any]:
+    nodes = list(state.get("nodes", []))
+    if len(nodes) != requested_nodes:
+        raise DockerRuntimeError(
+            f"real gate requested {requested_nodes} nodes but runtime returned {len(nodes)}"
+        )
+    health = _p17_cluster_health(nodes)
+    required_health = {
+        "cluster_state": "ok",
+        "known_nodes": requested_nodes,
+        "slots_assigned": 16384,
+        "slots_ok": 16384,
+    }
+    if any(health.get(key) != value for key, value in required_health.items()):
+        raise DockerRuntimeError(f"independent exact-scale probe failed: {health}")
+    versions = _observed_versions(nodes)
+    if not versions or any(
+        not re.fullmatch(r"9\.1(?:\.\d+)?", version) for version in versions
+    ):
+        raise DockerRuntimeError(
+            "independent version probe did not observe only Valkey 9.1.x: "
+            f"{versions}"
+        )
+    return {
+        "status": "PASS",
+        "observed_nodes": len(nodes),
+        "independent_probe": health,
+        "valkey_versions": versions,
+    }
+
+
+def _gate_failure_message(result: Any) -> str:
+    parts = [f"exact-scale Gate status={result.status.value}"]
+    if result.primary_failure is not None:
+        parts.append(
+            "primary="
+            f"{result.primary_failure.code}:{result.primary_failure.reason}"
+        )
+    if result.cleanup_failure is not None:
+        parts.append(
+            "cleanup="
+            f"{result.cleanup_failure.code}:{result.cleanup_failure.reason}"
+        )
+    return "; ".join(parts)
+
+
+def validate_admission_sources(
+    base: Path,
+    scale: int,
+    definition: ScenarioDefinition,
+) -> list[str]:
+    return list(validate_raw_sources(Path(base), scale, definition))
+
+
+def build_admission_from_sources(
+    base: Path,
+    scale: int,
+    product_digest: str,
+    *,
+    definition: ScenarioDefinition,
+    run_started_unix_ms: int | None = None,
+    run_ended_unix_ms: int | None = None,
+    valkey_versions: list[str] | None = None,
+    independent_probe: dict[str, Any] | None = None,
+    promoted_from_admission_digest: str | None = None,
+    invocation_run_id: str | None = None,
+) -> dict[str, Any]:
+    base = Path(base).resolve()
+    errors = validate_admission_sources(base, scale, definition)
+    if errors:
+        raise DockerRuntimeError("cannot build admission from invalid sources: " + "; ".join(errors))
+    if not valkey_versions or any(not re.fullmatch(r"9\.1(?:\.\d+)?", version) for version in valkey_versions):
+        raise DockerRuntimeError("admission requires independently observed Valkey 9.1.x versions")
+    if not isinstance(independent_probe, dict):
+        raise DockerRuntimeError("admission requires an independent exact-scale cluster probe")
+    required_probe = {"cluster_state": "ok", "known_nodes": scale, "slots_assigned": 16384, "slots_ok": 16384}
+    if any(independent_probe.get(key) != value for key, value in required_probe.items()):
+        raise DockerRuntimeError(f"independent exact-scale cluster probe is not admissible: {independent_probe}")
+    try:
+        return _build_candidate_admission(
+            base,
+            scale,
+            product_digest,
+            definition=definition,
+            run_started_unix_ms=run_started_unix_ms,
+            run_ended_unix_ms=run_ended_unix_ms,
+            valkey_versions=valkey_versions,
+            independent_probe=independent_probe,
+            promoted_from_admission_digest=promoted_from_admission_digest,
+            invocation_run_id=invocation_run_id,
+        )
+    except EvidenceValidationError as exc:
+        raise DockerRuntimeError(str(exc)) from exc
+
+
+def _write_measured_lifecycle(
+    runtime: Path,
+    run_id: str,
+    scale: int,
+    timeline: SetupTimeline | Sequence[Mapping[str, Any]],
+    lifecycle_ids: Sequence[str],
+) -> None:
+    lifecycle = tuple(lifecycle_ids)
+    source_segments = getattr(timeline, "segments", timeline)
+    segments = [
+        dict(row)
+        for row in source_segments
+        if row.get("kind") == "span" and row.get("status") == "PASS"
+    ]
+    resource_index = next((index for index, row in enumerate(segments) if row.get("name") == "resource_preflight"), -1)
+    cluster_index = next((index for index, row in enumerate(segments) if row.get("category") == "cluster_formation"), -1)
+    if resource_index < 0 or cluster_index <= resource_index:
+        raise DockerRuntimeError("measured lifecycle is missing ordered preflight/runtime/cluster spans")
+    groups: dict[str, list[dict[str, Any]]] = {
+        "resource_preflight": [segments[resource_index]],
+        "runtime_start": segments[resource_index + 1 : cluster_index],
+        "cluster_form": [row for row in segments if row.get("category") == "cluster_formation"],
+    }
+    for step in lifecycle[3:]:
+        groups[step] = [row for row in segments if row.get("name") == step]
+    missing = [step for step in lifecycle if not groups.get(step)]
+    if missing:
+        raise DockerRuntimeError(f"measured lifecycle spans are missing: {missing}")
+    now_ms = _unix_ms()
+    lifecycle_events: list[dict[str, Any]] = []
+    steps: list[dict[str, Any]] = []
+    for step in lifecycle:
+        rows = groups[step]
+        started_ms = min(float(row["start_monotonic"]) for row in rows) * 1000.0
+        ended_ms = max(float(row["end_monotonic"]) for row in rows) * 1000.0
+        if ended_ms <= started_ms:
+            raise DockerRuntimeError(f"measured lifecycle step {step} has no positive duration")
+        event_id = f"lifecycle-{step}-measured"
+        lifecycle_events.append(
+            {
+                "schema_version": "v1",
+                "run_id": run_id,
+                "event_id": event_id,
+                "event_type": "lifecycle_step_measured",
+                "operation_id": f"lifecycle:{step}",
+                "scenario_id": "lifecycle",
+                "step_id": step,
+                "timestamp_unix_ms": now_ms,
+                "monotonic_ms": ended_ms,
+                "status": "PASS",
+            }
+        )
+        steps.append(
+            {
+                "id": step,
+                "run_id": run_id,
+                "status": "PASS",
+                "started_monotonic_ms": round(started_ms, 6),
+                "ended_monotonic_ms": round(ended_ms, 6),
+                "duration_ms": round(ended_ms - started_ms, 6),
+                "event_ids": [event_id],
+                "source_segments": [str(row["name"]) for row in rows],
+            }
+        )
+    existing_events = _load_jsonl(runtime / "events.jsonl")
+    _write_jsonl(runtime / "events.jsonl", [*existing_events, *lifecycle_events])
+    _write(
+        runtime / "lifecycle_timeline.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "lifecycle_timeline",
+            "run_id": run_id,
+            "status": "PASS",
+            "scale": scale,
+            "node_count": scale,
+            "created_at_unix_ms": now_ms,
+            "steps": steps,
+        },
+    )
+
+
+def _observed_versions(nodes: list[dict[str, Any]]) -> list[str]:
+    versions: set[str] = set()
+    for node in nodes[: min(3, len(nodes))]:
+        match = re.search(r"^valkey_version:([^\r\n]+)", _node_command(node, "INFO", "server", timeout=10), re.MULTILINE)
+        if match:
+            versions.add(match.group(1).strip())
+    return sorted(versions)
+
+
+def _load_jsonl(path: Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _write(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+
+
+def _unix_ms() -> int:
+    return time.time_ns() // 1_000_000
