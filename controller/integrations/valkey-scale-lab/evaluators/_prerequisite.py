@@ -13,7 +13,7 @@ HEX64 = re.compile(r"[0-9a-f]{64}", re.ASCII)
 def load_completion(path: Path, expected_milestone_id: str) -> dict[str, Any]:
     value = load_json(path)
     expected = {
-        "schema_version": "valkey-prerequisite-completion-v1",
+        "schema_version": "valkey-prerequisite-completion-v2",
         "milestone_id": expected_milestone_id,
         "controller_milestone_id": f"ValkeyScaleLab.{expected_milestone_id}",
         "terminal_status": "SUCCESS",
@@ -32,8 +32,13 @@ def load_completion(path: Path, expected_milestone_id: str) -> dict[str, Any]:
         raise EvaluationError(
             f"prerequisite {expected_milestone_id} has no completion timestamp"
         )
-    if not isinstance(value.get("final_gate_id"), str) or not value["final_gate_id"]:
-        raise EvaluationError(f"prerequisite {expected_milestone_id} has no final gate")
+    if (
+        not isinstance(value.get("final_evidence_requirement_id"), str)
+        or not value["final_evidence_requirement_id"]
+    ):
+        raise EvaluationError(
+            f"prerequisite {expected_milestone_id} has no final evidence requirement"
+        )
     reference = value.get("terminal_receipt")
     if not isinstance(reference, dict) or reference.get("path") != "terminal.json":
         raise EvaluationError(

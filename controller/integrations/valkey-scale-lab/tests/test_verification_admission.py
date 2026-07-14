@@ -46,18 +46,24 @@ def _stage(tmp_path: Path) -> tuple[Path, Path, Path, Path, str]:
     catalog_path = product / "verification/catalog.json"
     runner_path = product / "verification/run.py"
     milestone = {
-        "schema_version": "valkey-milestone-v1",
-        "milestone": {"id": "m1", "version": "1.0.0", "title": "sample", "goal": "sample"},
+        "schema_version": "valkey-milestone-v2",
+        "milestone": {
+            "id": "m1",
+            "version": "2.0.0",
+            "title": "sample",
+            "final_goal": "sample",
+        },
         "prerequisite_milestone_ids": [],
         "success_conditions": [
             {
                 "id": "sample.condition",
                 "statement": "sample",
                 "suite_ids": ["sample.contract"],
-                "evidence_gate_ids": [],
+                "evidence_requirement_ids": [],
+                "required": True,
             }
         ],
-        "evidence_gates": [],
+        "real_evidence_requirements": [],
     }
     catalog = {
         "schema_version": "verification-catalog-v1",

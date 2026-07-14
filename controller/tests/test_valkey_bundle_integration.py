@@ -30,7 +30,9 @@ def test_controller_draft_uses_project_definitions_without_copying_control_polic
     ]
     assert draft["resource_budget"]
     assert "resource_budget" not in source
-    assert all("argv" not in row for row in source["evidence_gates"])
+    assert all(
+        "argv" not in row for row in source["real_evidence_requirements"]
+    )
 
 
 def test_project_milestone_states_are_ready_then_explicitly_blocked() -> None:

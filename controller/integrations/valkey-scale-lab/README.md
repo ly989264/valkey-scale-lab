@@ -4,9 +4,10 @@ This adapter is controller-owned and keeps the framework under `controller/src/`
 milestone semantics.
 
 `compile_contract.py` reads a project milestone and verification catalog, then
-maps every product success condition and real evidence gate into an unsigned
-`controller-milestone-v2` draft. `policy.json` supplies only controller concerns:
-budgets, capability approvals, evaluator limits, and termination policy.
+maps every product success condition and real evidence requirement into an
+unsigned `controller-milestone-v2` draft. `policy.json` supplies only controller
+concerns: budgets, capability approvals, evaluator limits, and termination
+policy.
 
 The independent evaluators under `evaluators/` do not import
 `valkey_scale_lab`. The milestone evaluator checks the sealed milestone,
@@ -29,12 +30,13 @@ worker write roots:
 
 ```text
 product/     selected product snapshot, milestones, catalog, and acceptance tests
-authority/   contract, evaluators, producer, toolchain policy, schemas, prerequisites
+authority/   evaluators, producer, toolchain policy, schemas, prerequisites
 run_evidence/
 ```
 
-The operator reviews the draft, seals all authority and selected acceptance
-inputs read-only, and only then binds the external controller run. Verification
+The operator stores the reviewed contract outside the Worker workspace, seals
+all in-workspace authority and selected acceptance inputs read-only, and only
+then binds the external controller run. Verification
 receipts are not presealed authority: they are regenerated in `run_evidence/`
 for the current run and product digest after each retained product change.
 
@@ -79,6 +81,6 @@ python3 controller/integrations/valkey-scale-lab/tools/seal_prerequisite.py \
 
 `schemas/verification_receipts.schema.json` defines the dynamic receipt
 envelope. `schemas/prerequisite_completion.schema.json` defines the sealed
-cross-milestone promotion authority. Distributed gates remain fail-closed
-until their milestone supplies a sealed scenario definition and complete
-distributed evidence profile.
+cross-milestone promotion authority. Distributed real evidence requirements
+remain fail-closed until their milestone supplies a sealed scenario definition
+and complete distributed evidence profile.

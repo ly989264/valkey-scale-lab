@@ -179,9 +179,9 @@ def _raw_bundle(root: Path, nodes: int, captured_at: int) -> None:
     )
 
 
-def _write_gate(
+def _write_requirement_capture(
     evidence_root: Path,
-    gate_id: str,
+    requirement_id: str,
     nodes: int,
     *,
     controller_run_id: str,
@@ -189,7 +189,7 @@ def _write_gate(
     captured_at: int,
     promotion: str | None = None,
 ) -> dict[str, Any]:
-    root = evidence_root / gate_id
+    root = evidence_root / requirement_id
     _raw_bundle(root, nodes, captured_at)
     return build_candidate_admission(
         root,
@@ -231,13 +231,13 @@ def _prerequisite_completion(root: Path, final_digest: str) -> Path:
     terminal_path = root / "terminal.json"
     _write_json(terminal_path, terminal)
     completion = {
-        "schema_version": "valkey-prerequisite-completion-v1",
+        "schema_version": "valkey-prerequisite-completion-v2",
         "milestone_id": "m1",
         "controller_milestone_id": "ValkeyScaleLab.m1",
         "terminal_status": "SUCCESS",
         "product_digest": terminal["product_digest"],
         "completed_at_unix": 1_999_000_000,
-        "final_gate_id": "local.exact.200",
+        "final_evidence_requirement_id": "local.exact.200",
         "final_admission_digest": final_digest,
         "terminal_receipt": {
             "path": "terminal.json",
@@ -256,7 +256,7 @@ def admitted(tmp_path: Path) -> tuple[Path, str, str, int]:
     run_id = "controller-run-1"
     product_digest = "a" * 64
     now = 2_000_000_000
-    first = _write_gate(
+    first = _write_requirement_capture(
         evidence_root,
         "local.exact.50",
         50,
@@ -264,7 +264,7 @@ def admitted(tmp_path: Path) -> tuple[Path, str, str, int]:
         product_digest=product_digest,
         captured_at=now - 10,
     )
-    _write_gate(
+    _write_requirement_capture(
         evidence_root,
         "local.exact.200",
         200,
@@ -290,8 +290,12 @@ def _evaluate(admitted: tuple[Path, str, str, int]) -> list[dict[str, Any]]:
     )
 
 
-def _errors(results: list[dict[str, Any]], gate_id: str) -> list[str]:
-    row = next(item for item in results if item["requirement_id"] == f"evidence.{gate_id}")
+def _errors(results: list[dict[str, Any]], requirement_id: str) -> list[str]:
+    row = next(
+        item
+        for item in results
+        if item["requirement_id"] == f"evidence.{requirement_id}"
+    )
     assert row["status"] != "PASS"
     return row["provenance"]["errors"]
 
@@ -438,7 +442,9 @@ def test_missing_raw_artifact_and_empty_provenance_are_rejected(admitted) -> Non
     assert any("complete canonical" in error for error in errors)
 
 
-def test_first_gate_binds_sealed_cross_milestone_admission(admitted, tmp_path: Path) -> None:
+def test_first_requirement_binds_sealed_cross_milestone_admission(
+    admitted, tmp_path: Path
+) -> None:
     evidence_root, run_id, product_digest, now = admitted
     milestone = json.loads(MILESTONE_PATH.read_text(encoding="utf-8"))
     milestone["milestone"]["id"] = "m2"

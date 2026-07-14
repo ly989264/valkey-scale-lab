@@ -44,6 +44,47 @@ def load_json(path: Path) -> dict[str, Any]:
     return value
 
 
+def final_requirement(requirements: Any) -> dict[str, Any]:
+    if not isinstance(requirements, list) or not requirements:
+        raise SealError("milestone has no final real evidence requirement")
+    requirement_by_id: dict[str, dict[str, Any]] = {}
+    promotion_sources: set[str] = set()
+    for requirement in requirements:
+        if not isinstance(requirement, dict):
+            raise SealError("real evidence requirement must be an object")
+        requirement_id = requirement.get("id")
+        if (
+            not isinstance(requirement_id, str)
+            or not requirement_id
+            or requirement_id in requirement_by_id
+        ):
+            raise SealError("real evidence requirement ids must be unique strings")
+        requirement_by_id[requirement_id] = requirement
+    for requirement in requirements:
+        source = requirement.get("promotion_source_id")
+        if source is not None:
+            if not isinstance(source, str) or source not in requirement_by_id:
+                raise SealError("real evidence promotion source is invalid")
+            promotion_sources.add(source)
+    terminal_ids = set(requirement_by_id) - promotion_sources
+    if len(terminal_ids) != 1:
+        raise SealError(
+            "real evidence promotion chain must have exactly one terminal requirement"
+        )
+    terminal_id = terminal_ids.pop()
+    chain: set[str] = set()
+    current: str | None = terminal_id
+    while current is not None:
+        if current in chain:
+            raise SealError("real evidence promotion chain contains a cycle")
+        chain.add(current)
+        source = requirement_by_id[current].get("promotion_source_id")
+        current = source if isinstance(source, str) else None
+    if chain != set(requirement_by_id):
+        raise SealError("real evidence requirements do not form one promotion chain")
+    return requirement_by_id[terminal_id]
+
+
 def seal(
     *,
     milestone_path: Path,
@@ -58,11 +99,14 @@ def seal(
     terminal = load_json(terminal_path)
     admission = load_json(final_admission_path)
     identity = milestone.get("milestone")
-    gates = milestone.get("evidence_gates")
-    if not isinstance(identity, dict) or not isinstance(gates, list) or not gates:
-        raise SealError("milestone has no final evidence gate")
+    requirements = milestone.get("real_evidence_requirements")
+    if (
+        milestone.get("schema_version") != "valkey-milestone-v2"
+        or not isinstance(identity, dict)
+    ):
+        raise SealError("milestone has no final real evidence requirement")
     milestone_id = identity.get("id")
-    final_gate = gates[-1]
+    terminal_requirement = final_requirement(requirements)
     if (
         terminal.get("schema_version") != "controller-terminal-receipt-v1"
         or terminal.get("status") != "SUCCESS"
@@ -74,7 +118,8 @@ def seal(
     claimed_admission = unsigned_admission.pop("admission_digest", None)
     if claimed_admission != canonical_digest(unsigned_admission):
         raise SealError("final admission digest is invalid")
-    expected_nodes = final_gate.get("parameters", {}).get("nodes")
+    parameters = terminal_requirement.get("parameters")
+    expected_nodes = parameters.get("nodes") if isinstance(parameters, dict) else None
     if (
         admission.get("status") != "PASS"
         or admission.get("requested_nodes") != expected_nodes
@@ -82,19 +127,21 @@ def seal(
         or admission.get("product_digest") != terminal.get("product_digest")
         or admission.get("invocation_run_id") != terminal.get("run_id")
     ):
-        raise SealError("final admission does not bind the terminal product, run, and exact gate")
+        raise SealError(
+            "final admission does not bind the terminal product, run, and exact evidence requirement"
+        )
     output = Path(output_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
     copied_terminal = output / "terminal.json"
     shutil.copy2(terminal_path, copied_terminal)
     completion: dict[str, Any] = {
-        "schema_version": "valkey-prerequisite-completion-v1",
+        "schema_version": "valkey-prerequisite-completion-v2",
         "milestone_id": milestone_id,
         "controller_milestone_id": f"ValkeyScaleLab.{milestone_id}",
         "terminal_status": "SUCCESS",
         "product_digest": terminal["product_digest"],
         "completed_at_unix": terminal["created_at_unix"],
-        "final_gate_id": final_gate["id"],
+        "final_evidence_requirement_id": terminal_requirement["id"],
         "final_admission_digest": claimed_admission,
         "terminal_receipt": {
             "path": "terminal.json",

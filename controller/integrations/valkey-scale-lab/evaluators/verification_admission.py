@@ -8,7 +8,15 @@ import time
 from pathlib import Path
 from typing import Any, Mapping
 
-from _common import canonical_digest, environment_bindings, file_digest, load_json, safe_file, write_result
+from _common import (
+    EvaluationError,
+    canonical_digest,
+    environment_bindings,
+    file_digest,
+    load_json,
+    safe_file,
+    write_result,
+)
 from _schema import validate as validate_schema
 
 
@@ -38,6 +46,8 @@ def evaluate(
 ) -> list[dict[str, Any]]:
     milestone = load_json(milestone_path)
     catalog = load_json(catalog_path)
+    if milestone.get("schema_version") != "valkey-milestone-v2":
+        raise EvaluationError("unsupported milestone schema")
     schema = load_json(receipts_schema_path)
     policy = load_json(verification_policy_path)
     policy_schema = load_json(verification_policy_schema_path)

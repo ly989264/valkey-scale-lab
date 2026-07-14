@@ -19,7 +19,7 @@ def evaluate(
 ) -> list[dict[str, Any]]:
     milestone = load_json(milestone_path)
     catalog = load_json(catalog_path)
-    if milestone.get("schema_version") != "valkey-milestone-v1":
+    if milestone.get("schema_version") != "valkey-milestone-v2":
         raise EvaluationError("unsupported milestone schema")
     if catalog.get("schema_version") != "verification-catalog-v1":
         raise EvaluationError("unsupported catalog schema")

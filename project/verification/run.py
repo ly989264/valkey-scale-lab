@@ -143,6 +143,9 @@ def _validate_prerequisites(
             errors.append(f"unknown prerequisite milestone {current}: {exc}")
             return
         identity = prerequisite.get("milestone")
+        if prerequisite.get("schema_version") != "valkey-milestone-v2":
+            errors.append(f"prerequisite milestone {current} has an unsupported schema")
+            return
         if not isinstance(identity, dict) or identity.get("id") != current:
             errors.append(f"prerequisite milestone identity mismatch: {current}")
             return
@@ -163,34 +166,37 @@ def validate_milestone(milestone_id: str) -> dict[str, Any]:
     path = MILESTONE_ROOT / milestone_id / "milestone.json"
     document = _load(path)
     errors: list[str] = []
-    if document.get("schema_version") != "valkey-milestone-v1":
-        errors.append("milestone.schema_version must be 'valkey-milestone-v1'")
+    if document.get("schema_version") != "valkey-milestone-v2":
+        errors.append("milestone.schema_version must be 'valkey-milestone-v2'")
     identity = document.get("milestone")
     if not isinstance(identity, dict) or identity.get("id") != milestone_id:
         errors.append("milestone identity does not match its directory")
+    elif not isinstance(identity.get("final_goal"), str) or not identity["final_goal"].strip():
+        errors.append("milestone.final_goal must be nonempty text")
     _validate_prerequisites(milestone_id, document, errors)
     forbidden = sorted(FORBIDDEN_MILESTONE_FIELDS.intersection(_walk_keys(document)))
     if forbidden:
         errors.append(f"milestone contains controller or executable fields: {forbidden}")
     conditions = document.get("success_conditions")
-    gates = document.get("evidence_gates")
+    requirements = document.get("real_evidence_requirements")
     if not isinstance(conditions, list) or not conditions:
         errors.append("success_conditions must be a non-empty array")
         conditions = []
-    if not isinstance(gates, list):
-        errors.append("evidence_gates must be an array")
-        gates = []
-    gate_by_id: dict[str, dict[str, Any]] = {}
-    for gate in gates:
-        if not isinstance(gate, dict) or not isinstance(gate.get("id"), str):
-            errors.append("every evidence gate requires an id")
+    if not isinstance(requirements, list):
+        errors.append("real_evidence_requirements must be an array")
+        requirements = []
+    requirement_by_id: dict[str, dict[str, Any]] = {}
+    for requirement in requirements:
+        if not isinstance(requirement, dict) or not isinstance(requirement.get("id"), str):
+            errors.append("every real evidence requirement requires an id")
             continue
-        if gate["id"] in gate_by_id:
-            errors.append(f"duplicate evidence gate id: {gate['id']}")
-        gate_by_id[gate["id"]] = gate
+        if requirement["id"] in requirement_by_id:
+            errors.append(f"duplicate real evidence requirement id: {requirement['id']}")
+        requirement_by_id[requirement["id"]] = requirement
     referenced_suites: set[str] = set()
-    referenced_gates: set[str] = set()
+    referenced_requirements: set[str] = set()
     condition_ids: set[str] = set()
+    acceptance_source_owners: dict[tuple[str, str], str] = {}
     for condition in conditions:
         if not isinstance(condition, dict) or not isinstance(condition.get("id"), str):
             errors.append("every success condition requires an id")
@@ -199,40 +205,103 @@ def validate_milestone(milestone_id: str) -> dict[str, Any]:
             errors.append(f"duplicate success condition id: {condition['id']}")
         condition_ids.add(condition["id"])
         suite_ids = condition.get("suite_ids")
-        gate_ids = condition.get("evidence_gate_ids")
+        requirement_ids = condition.get("evidence_requirement_ids")
         if not isinstance(suite_ids, list) or any(not isinstance(item, str) for item in suite_ids):
             errors.append(f"{condition['id']}.suite_ids must be a string array")
+            suite_ids = []
         else:
             referenced_suites.update(suite_ids)
-        if not isinstance(gate_ids, list) or any(not isinstance(item, str) for item in gate_ids):
-            errors.append(f"{condition['id']}.evidence_gate_ids must be a string array")
+        if not isinstance(requirement_ids, list) or any(
+            not isinstance(item, str) for item in requirement_ids
+        ):
+            errors.append(f"{condition['id']}.evidence_requirement_ids must be a string array")
+            requirement_ids = []
         else:
-            referenced_gates.update(gate_ids)
-    for gate_id, gate in gate_by_id.items():
-        suite_id = gate.get("suite_id")
+            referenced_requirements.update(requirement_ids)
+        if condition.get("required") is not True:
+            errors.append(f"{condition['id']}.required must be true")
+        if len(suite_ids) + len(requirement_ids) != 1:
+            errors.append(
+                f"{condition['id']} must bind exactly one verification suite or real evidence requirement"
+            )
+        else:
+            source = (
+                ("suite", suite_ids[0])
+                if suite_ids
+                else ("real_evidence", requirement_ids[0])
+            )
+            owner = acceptance_source_owners.get(source)
+            if owner is not None:
+                errors.append(
+                    f"acceptance source {source[1]} is shared by {owner} and {condition['id']}"
+                )
+            acceptance_source_owners[source] = condition["id"]
+    for requirement_id, requirement in requirement_by_id.items():
+        suite_id = requirement.get("suite_id")
         if isinstance(suite_id, str):
             referenced_suites.add(suite_id)
+            suite = suites.get(suite_id)
+            if isinstance(suite, dict) and suite.get("kind") != "real":
+                errors.append(
+                    f"{requirement_id}.suite_id must reference a real suite"
+                )
         else:
-            errors.append(f"{gate_id}.suite_id is required")
-        dependencies = gate.get("depends_on")
-        if not isinstance(dependencies, list) or any(item not in gate_by_id for item in dependencies):
-            errors.append(f"{gate_id}.depends_on references an unknown gate")
-        parameters = gate.get("parameters")
-        prior_gate = parameters.get("prior_gate") if isinstance(parameters, dict) else None
-        if dependencies:
-            if len(dependencies) != 1 or prior_gate != dependencies[0]:
-                errors.append(f"{gate_id}.parameters.prior_gate must bind its single dependency")
-        elif prior_gate is not None:
-            errors.append(f"{gate_id}.parameters.prior_gate is not allowed without a dependency")
-        serialized = json.dumps(gate, sort_keys=True)
+            errors.append(f"{requirement_id}.suite_id is required")
+        parameters = requirement.get("parameters")
+        if not isinstance(parameters, dict):
+            errors.append(f"{requirement_id}.parameters must be an object")
+            parameters = {}
+        nodes = parameters.get("nodes")
+        if isinstance(nodes, bool) or not isinstance(nodes, int) or nodes < 1:
+            errors.append(
+                f"{requirement_id}.parameters.nodes must be a positive exact node count"
+            )
+        source = requirement.get("promotion_source_id")
+        if source is not None and source not in requirement_by_id:
+            errors.append(
+                f"{requirement_id}.promotion_source_id references an unknown real evidence requirement"
+            )
+        if requirement.get("capture_class") != "REAL":
+            errors.append(f"{requirement_id}.capture_class must be REAL")
+        if requirement.get("provenance_required") is not True:
+            errors.append(f"{requirement_id}.provenance_required must be true")
+        if requirement.get("substitution_policy") != "FORBIDDEN":
+            errors.append(f"{requirement_id}.substitution_policy must be FORBIDDEN")
+        if requirement.get("operator_approval_required") is not True:
+            errors.append(f"{requirement_id}.operator_approval_required must be true")
+        serialized = json.dumps(requirement, sort_keys=True)
         if "tests/" in serialized or "pytest" in serialized:
-            errors.append(f"{gate_id} directly references test implementation")
+            errors.append(f"{requirement_id} directly references test implementation")
+
+    for requirement_id in requirement_by_id:
+        seen: set[str] = set()
+        current: str | None = requirement_id
+        while current is not None and current in requirement_by_id:
+            if current in seen:
+                errors.append(f"real evidence promotion cycle includes {current}")
+                break
+            seen.add(current)
+            source = requirement_by_id[current].get("promotion_source_id")
+            current = source if isinstance(source, str) else None
+    promotion_sources = {
+        source
+        for requirement in requirement_by_id.values()
+        if isinstance(source := requirement.get("promotion_source_id"), str)
+    }
+    terminal_requirements = sorted(set(requirement_by_id) - promotion_sources)
+    if requirement_by_id and len(terminal_requirements) != 1:
+        errors.append(
+            "real evidence promotion chain must have exactly one terminal requirement"
+        )
     unknown_suites = sorted(referenced_suites - set(suites))
-    unknown_gates = sorted(referenced_gates - set(gate_by_id))
+    unknown_requirements = sorted(referenced_requirements - set(requirement_by_id))
+    unused_requirements = sorted(set(requirement_by_id) - referenced_requirements)
     if unknown_suites:
         errors.append(f"unknown suite ids: {unknown_suites}")
-    if unknown_gates:
-        errors.append(f"unknown evidence gate ids: {unknown_gates}")
+    if unknown_requirements:
+        errors.append(f"unknown real evidence requirement ids: {unknown_requirements}")
+    if unused_requirements:
+        errors.append(f"unused real evidence requirement ids: {unused_requirements}")
     planned = sorted(
         suite_id
         for suite_id in referenced_suites.intersection(suites)
@@ -240,12 +309,13 @@ def validate_milestone(milestone_id: str) -> dict[str, Any]:
     )
     status = "INVALID" if errors else "BLOCKED" if planned else "READY"
     return {
-        "schema_version": "milestone-validation-v1",
+        "schema_version": "milestone-validation-v2",
         "milestone_id": milestone_id,
         "status": status,
         "errors": errors,
         "planned_suite_ids": planned,
         "referenced_suite_ids": sorted(referenced_suites),
+        "referenced_evidence_requirement_ids": sorted(referenced_requirements),
     }
 
 

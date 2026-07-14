@@ -9,9 +9,12 @@ library:
 | M2 native multi-ECS | `milestones/m2/milestone.json` | `BLOCKED` on planned suites |
 | M3 multi-ECS scale-out | `milestones/m3/milestone.json` | `BLOCKED` on planned suites |
 
-Each definition states the product goal, success conditions, stable capability
-suite IDs, real evidence parameters, and promotion prerequisites. The matching
-README is the human-readable explanation; JSON is authoritative.
+Each definition states one immutable final product goal, required atomic
+success conditions, stable capability suite IDs, real evidence requirements,
+and promotion prerequisites. Every success condition binds exactly one
+verification suite or one real evidence requirement so the Controller can
+derive a precise Goal State and Gap Graph. The matching README is the
+human-readable explanation; JSON is authoritative.
 
 Executable test paths and commands live in `verification/catalog.json`, not in
 milestone files. `verification/run.py` resolves suite IDs and fails closed for

@@ -60,7 +60,10 @@ def test_compiler_maps_project_conditions_and_evidence_one_to_one() -> None:
         row["id"] for row in source["success_conditions"]
     ]
     evidence_ids = {row["id"] for row in draft["evidence_requirements"]}
-    assert {f"evidence.{row['id']}" for row in source["evidence_gates"]} <= evidence_ids
+    assert {
+        f"evidence.{row['id']}"
+        for row in source["real_evidence_requirements"]
+    } <= evidence_ids
     assert {
         f"verification.{suite_id}"
         for condition in source["success_conditions"]
@@ -80,10 +83,21 @@ def test_compiled_draft_is_accepted_by_the_controller_contract_parser(monkeypatc
     monkeypatch.syspath_prepend(str(REPOSITORY_ROOT / "controller/src"))
     from controller.contracts import parse_contract
 
+    source = json.loads(
+        (PROJECT_ROOT / "milestones/m1/milestone.json").read_text()
+    )
     contract = parse_contract(COMPILER.compile_contract("m1"), project_root=REPOSITORY_ROOT)
     assert contract.milestone.id == "ValkeyScaleLab.m1"
-    assert len(contract.success_conditions) == 3
-    assert len(contract.evidence_requirements) == 7
+    assert len(contract.success_conditions) == len(source["success_conditions"])
+    expected_evidence = {
+        f"verification.{suite_id}"
+        for condition in source["success_conditions"]
+        for suite_id in condition["suite_ids"]
+    } | {
+        f"evidence.{requirement['id']}"
+        for requirement in source["real_evidence_requirements"]
+    }
+    assert {item.id for item in contract.evidence_requirements} == expected_evidence
 
 
 def test_planned_milestones_compile_without_pretending_suites_are_ready() -> None:
@@ -110,16 +124,32 @@ def test_milestone_evaluator_only_checks_sealed_structure_and_prerequisites() ->
     assert {row["status"] for row in results} == {"PASS"}
 
 
-def test_product_digest_matches_the_controller_product_root_contract(monkeypatch) -> None:
+def test_product_digest_matches_the_controller_product_root_contract(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.syspath_prepend(str(REPOSITORY_ROOT / "controller/src"))
     monkeypatch.syspath_prepend(str(PROJECT_ROOT / "src"))
     from valkey_scale_lab.gates.real import product_tree_digest
     from controller.integrity import canonical_digest, tree_manifest
 
-    expected = canonical_digest(
-        {"product": {"kind": "directory", "manifest": tree_manifest(PROJECT_ROOT)}}
+    staged_product = tmp_path / "product"
+    shutil.copytree(
+        PROJECT_ROOT,
+        staged_product,
+        ignore=shutil.ignore_patterns(
+            ".pytest_cache",
+            "__pycache__",
+            "*.pyc",
+            "*.pyo",
+            "artifacts",
+            "audit",
+            "runs",
+        ),
     )
-    assert product_tree_digest(PROJECT_ROOT) == expected
+    expected = canonical_digest(
+        {"product": {"kind": "directory", "manifest": tree_manifest(staged_product)}}
+    )
+    assert product_tree_digest(staged_product) == expected
 
 
 def test_compiled_dynamic_receipt_path_runs_through_the_controller_evaluator_runner(
@@ -129,18 +159,24 @@ def test_compiled_dynamic_receipt_path_runs_through_the_controller_evaluator_run
     product = workspace / "product"
     authority = workspace / "authority"
     milestone = {
-        "schema_version": "valkey-milestone-v1",
-        "milestone": {"id": "m1", "version": "1.0.0", "title": "sample", "goal": "sample"},
+        "schema_version": "valkey-milestone-v2",
+        "milestone": {
+            "id": "m1",
+            "version": "2.0.0",
+            "title": "sample",
+            "final_goal": "sample",
+        },
         "prerequisite_milestone_ids": [],
         "success_conditions": [
             {
                 "id": "sample.condition",
                 "statement": "sample passes",
                 "suite_ids": ["sample.contract"],
-                "evidence_gate_ids": [],
+                "evidence_requirement_ids": [],
+                "required": True,
             }
         ],
-        "evidence_gates": [],
+        "real_evidence_requirements": [],
     }
     catalog = {
         "schema_version": "verification-catalog-v1",
@@ -254,7 +290,12 @@ def test_compiled_dynamic_receipt_path_runs_through_the_controller_evaluator_run
 
 
 def test_operator_seals_a_prior_terminal_and_final_admission(tmp_path: Path) -> None:
-    milestone_path = PROJECT_ROOT / "milestones/m1/milestone.json"
+    milestone = json.loads(
+        (PROJECT_ROOT / "milestones/m1/milestone.json").read_text()
+    )
+    milestone["real_evidence_requirements"].reverse()
+    milestone_path = tmp_path / "milestone.json"
+    milestone_path.write_text(json.dumps(milestone), encoding="utf-8")
     terminal = {
         "schema_version": "controller-terminal-receipt-v1",
         "status": "SUCCESS",
@@ -286,4 +327,5 @@ def test_operator_seals_a_prior_terminal_and_final_admission(tmp_path: Path) -> 
     )
     loaded = PREREQUISITE.load_completion(output / "completion.json", "m1")
     assert loaded == completion
+    assert loaded["final_evidence_requirement_id"] == "local.exact.200"
     assert loaded["final_admission_digest"] == admission["admission_digest"]

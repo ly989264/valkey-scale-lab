@@ -1,57 +1,111 @@
 {
-  "schema_version": "valkey-milestone-v1",
+  "schema_version": "valkey-milestone-v2",
   "milestone": {
     "id": "m3",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "title": "Multi-ECS scale-out",
-    "goal": "Promote the proven native multi-ECS lifecycle through exact real 500, 1000, and 2000 node runs without weakening evidence or safety."
+    "final_goal": "Promote the proven native multi-ECS lifecycle through exact real 500, 1000, and 2000 node runs without weakening safety, evidence quality, cleanup, or comparison against the admitted 200-node baseline."
   },
   "prerequisite_milestone_ids": ["m2"],
   "success_conditions": [
     {
-      "id": "scale.control-plane",
-      "statement": "Scale profiles, preflight, bounded orchestration, telemetry transfer, and hierarchical safety work at every rung.",
-      "suite_ids": ["scale.profiles.preflight", "scale.orchestration", "scale.telemetry.transfer", "scale.hierarchical.safety"],
-      "evidence_gate_ids": ["scale.exact.500", "scale.exact.1000", "scale.exact.2000"]
+      "id": "scale.profiles.preflight",
+      "statement": "Every supported scale has explicit profiles and a fail-closed resource and cost preflight.",
+      "suite_ids": ["scale.profiles.preflight"],
+      "evidence_requirement_ids": [],
+      "required": true
     },
     {
-      "id": "scale.comparison",
-      "statement": "Validated reports compare each promoted rung against the admitted 200-node baseline and prior rung.",
+      "id": "scale.orchestration",
+      "statement": "Scale orchestration is bounded, ownership-aware, restartable, and deterministic at every required rung.",
+      "suite_ids": ["scale.orchestration"],
+      "evidence_requirement_ids": [],
+      "required": true
+    },
+    {
+      "id": "scale.telemetry.transfer",
+      "statement": "Telemetry and evidence transfer remain complete, bounded, attributable, and product-digest bound at scale.",
+      "suite_ids": ["scale.telemetry.transfer"],
+      "evidence_requirement_ids": [],
+      "required": true
+    },
+    {
+      "id": "scale.hierarchical.safety",
+      "statement": "Hierarchical control preserves exact scale, fault containment, deterministic cleanup, and operator approval boundaries.",
+      "suite_ids": ["scale.hierarchical.safety"],
+      "evidence_requirement_ids": [],
+      "required": true
+    },
+    {
+      "id": "scale.comparison.report",
+      "statement": "Validated reports compare each admitted scale with the sealed 200-node baseline and the immediately preceding admitted scale.",
       "suite_ids": ["scale.comparison.report"],
-      "evidence_gate_ids": ["scale.exact.500", "scale.exact.1000", "scale.exact.2000"]
+      "evidence_requirement_ids": [],
+      "required": true
+    },
+    {
+      "id": "scale.real.500",
+      "statement": "A current trusted capture promoted from M2 proves the complete distributed flow at exactly 500 observed Valkey nodes.",
+      "suite_ids": [],
+      "evidence_requirement_ids": ["scale.exact.500"],
+      "required": true
+    },
+    {
+      "id": "scale.real.1000",
+      "statement": "A current trusted capture promoted from the admitted 500-node result proves the complete distributed flow at exactly 1000 observed Valkey nodes.",
+      "suite_ids": [],
+      "evidence_requirement_ids": ["scale.exact.1000"],
+      "required": true
+    },
+    {
+      "id": "scale.real.2000",
+      "statement": "A current trusted capture promoted from the admitted 1000-node result proves the complete distributed flow at exactly 2000 observed Valkey nodes.",
+      "suite_ids": [],
+      "evidence_requirement_ids": ["scale.exact.2000"],
+      "required": true
     }
   ],
-  "evidence_gates": [
+  "real_evidence_requirements": [
     {
       "id": "scale.exact.500",
+      "statement": "Admit an operator-approved native multi-ECS scale-flow capture at exactly 500 requested and observed nodes, promoted from the sealed M2 completion.",
       "suite_id": "real.distributed.scale-flow",
-      "parameters": {"nodes": 500, "runtime": "native_multi_ecs"},
-      "depends_on": [],
+      "parameters": {
+        "nodes": 500,
+        "runtime": "native_multi_ecs"
+      },
+      "promotion_source_id": null,
       "capture_class": "REAL",
+      "provenance_required": true,
+      "substitution_policy": "FORBIDDEN",
       "operator_approval_required": true
     },
     {
       "id": "scale.exact.1000",
+      "statement": "Admit an operator-approved native multi-ECS scale-flow capture at exactly 1000 requested and observed nodes, promoted from the admitted 500-node capture.",
       "suite_id": "real.distributed.scale-flow",
       "parameters": {
         "nodes": 1000,
-        "runtime": "native_multi_ecs",
-        "prior_gate": "scale.exact.500"
+        "runtime": "native_multi_ecs"
       },
-      "depends_on": ["scale.exact.500"],
+      "promotion_source_id": "scale.exact.500",
       "capture_class": "REAL",
+      "provenance_required": true,
+      "substitution_policy": "FORBIDDEN",
       "operator_approval_required": true
     },
     {
       "id": "scale.exact.2000",
+      "statement": "Admit an operator-approved native multi-ECS scale-flow capture at exactly 2000 requested and observed nodes, promoted from the admitted 1000-node capture.",
       "suite_id": "real.distributed.scale-flow",
       "parameters": {
         "nodes": 2000,
-        "runtime": "native_multi_ecs",
-        "prior_gate": "scale.exact.1000"
+        "runtime": "native_multi_ecs"
       },
-      "depends_on": ["scale.exact.1000"],
+      "promotion_source_id": "scale.exact.1000",
       "capture_class": "REAL",
+      "provenance_required": true,
+      "substitution_policy": "FORBIDDEN",
       "operator_approval_required": true
     }
   ]

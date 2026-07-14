@@ -90,7 +90,7 @@ def _prerequisites(project_root: Path, milestone_id: str, milestone: dict[str, A
         document = _load(path)
         identity = document.get("milestone")
         if (
-            document.get("schema_version") != "valkey-milestone-v1"
+            document.get("schema_version") != "valkey-milestone-v2"
             or not isinstance(identity, dict)
             or identity.get("id") != current_id
         ):
@@ -109,18 +109,20 @@ def _prerequisites(project_root: Path, milestone_id: str, milestone: dict[str, A
     return list(raw)
 
 
-def _scenario_inputs(project_root: Path, gates: list[dict[str, Any]]) -> list[str]:
+def _scenario_inputs(
+    project_root: Path, requirements: list[dict[str, Any]]
+) -> list[str]:
     values: set[str] = set()
-    for gate in gates:
-        parameters = gate.get("parameters")
+    for requirement in requirements:
+        parameters = requirement.get("parameters")
         definition = parameters.get("definition") if isinstance(parameters, dict) else None
         if definition is None:
             continue
         if not isinstance(definition, str):
-            raise CompileError(f"{gate['id']} scenario definition path is invalid")
+            raise CompileError(f"{requirement['id']} scenario definition path is invalid")
         path = PurePosixPath(definition)
         if path.is_absolute() or ".." in path.parts or not (project_root / definition).is_file():
-            raise CompileError(f"{gate['id']} scenario definition is missing or unsafe")
+            raise CompileError(f"{requirement['id']} scenario definition is missing or unsafe")
         values.add(f"product/{definition}")
     return sorted(values)
 
@@ -137,17 +139,21 @@ def compile_contract(
     milestone = _load(milestone_path)
     catalog = _load(catalog_path)
     policy = _load(Path(policy_path).resolve())
-    if milestone.get("schema_version") != "valkey-milestone-v1":
+    if milestone.get("schema_version") != "valkey-milestone-v2":
         raise CompileError("unsupported project milestone")
     identity = milestone.get("milestone")
     conditions = milestone.get("success_conditions")
-    gates = milestone.get("evidence_gates")
+    source_requirements = milestone.get("real_evidence_requirements")
     if not isinstance(identity, dict) or identity.get("id") != milestone_id:
         raise CompileError("milestone identity does not match its directory")
     if not isinstance(conditions, list) or not conditions:
         raise CompileError("project milestone needs success conditions")
-    if not isinstance(gates, list) or any(not isinstance(gate, dict) for gate in gates):
-        raise CompileError("project milestone evidence_gates must be an object array")
+    if not isinstance(source_requirements, list) or any(
+        not isinstance(requirement, dict) for requirement in source_requirements
+    ):
+        raise CompileError(
+            "project milestone real_evidence_requirements must be an object array"
+        )
     prerequisites = _prerequisites(project_root, milestone_id, milestone)
 
     suites = _catalog_by_id(catalog)
@@ -161,29 +167,90 @@ def compile_contract(
         ):
             raise CompileError("success condition suite_ids must be a string array")
         condition_suite_ids.update(suite_values)
+    requirement_suite_ids = [
+        requirement.get("suite_id") for requirement in source_requirements
+    ]
+    if any(not isinstance(item, str) or not item for item in requirement_suite_ids):
+        raise CompileError(
+            "real evidence requirements must reference a nonempty suite id"
+        )
     all_suite_ids = set(condition_suite_ids)
-    all_suite_ids.update(gate.get("suite_id") for gate in gates)
+    all_suite_ids.update(requirement_suite_ids)
     unknown = sorted(item for item in all_suite_ids if item not in suites)
     if unknown:
         raise CompileError(f"milestone references unknown suite ids: {unknown}")
 
-    gate_ids: set[str] = set()
-    for gate in gates:
-        gate_id = gate.get("id")
-        if not isinstance(gate_id, str) or not gate_id or gate_id in gate_ids:
-            raise CompileError("evidence gate ids must be nonempty and unique")
-        gate_ids.add(gate_id)
-    for gate in gates:
-        dependencies = gate.get("depends_on")
-        parameters = gate.get("parameters")
-        prior_gate = parameters.get("prior_gate") if isinstance(parameters, dict) else None
-        if not isinstance(dependencies, list) or any(item not in gate_ids for item in dependencies):
-            raise CompileError(f"{gate['id']} references an unknown evidence dependency")
-        if dependencies and (len(dependencies) != 1 or prior_gate != dependencies[0]):
-            raise CompileError(f"{gate['id']} does not bind its promotion dependency")
-        if not dependencies and prior_gate is not None:
-            raise CompileError(f"{gate['id']} declares an unexpected prior gate")
-    gate_requirement_id = {gate_id: f"evidence.{gate_id}" for gate_id in gate_ids}
+    requirement_ids: set[str] = set()
+    for requirement in source_requirements:
+        requirement_id = requirement.get("id")
+        if (
+            not isinstance(requirement_id, str)
+            or not requirement_id
+            or requirement_id in requirement_ids
+        ):
+            raise CompileError(
+                "real evidence requirement ids must be nonempty and unique"
+            )
+        requirement_ids.add(requirement_id)
+    for requirement in source_requirements:
+        source = requirement.get("promotion_source_id")
+        if source is not None and source not in requirement_ids:
+            raise CompileError(
+                f"{requirement['id']} references an unknown promotion source"
+            )
+        suite = suites.get(requirement.get("suite_id"))
+        if not isinstance(suite, dict) or suite.get("kind") != "real":
+            raise CompileError(
+                f"{requirement['id']} must reference a real verification suite"
+            )
+        parameters = requirement.get("parameters")
+        if not isinstance(parameters, dict):
+            raise CompileError(
+                f"{requirement['id']} must declare object parameters"
+            )
+        nodes = parameters.get("nodes")
+        if isinstance(nodes, bool) or not isinstance(nodes, int) or nodes < 1:
+            raise CompileError(
+                f"{requirement['id']} must declare a positive exact node count"
+            )
+        if (
+            requirement.get("capture_class") != "REAL"
+            or requirement.get("provenance_required") is not True
+            or requirement.get("substitution_policy") != "FORBIDDEN"
+            or requirement.get("operator_approval_required") is not True
+        ):
+            raise CompileError(
+                f"{requirement['id']} weakens the real evidence trust contract"
+            )
+
+    requirement_by_id = {
+        requirement["id"]: requirement for requirement in source_requirements
+    }
+    for requirement_id in requirement_ids:
+        seen: set[str] = set()
+        current: str | None = requirement_id
+        while current is not None:
+            if current in seen:
+                raise CompileError(
+                    f"real evidence promotion cycle includes {current}"
+                )
+            seen.add(current)
+            source = requirement_by_id[current].get("promotion_source_id")
+            current = source if isinstance(source, str) else None
+    promotion_sources = {
+        source
+        for requirement in source_requirements
+        if isinstance(source := requirement.get("promotion_source_id"), str)
+    }
+    terminal_requirements = requirement_ids - promotion_sources
+    if source_requirements and len(terminal_requirements) != 1:
+        raise CompileError(
+            "real evidence promotion chain must have exactly one terminal requirement"
+        )
+    evidence_requirement_id = {
+        requirement_id: f"evidence.{requirement_id}"
+        for requirement_id in requirement_ids
+    }
     suite_requirement_id = {
         suite_id: f"verification.{suite_id}" for suite_id in condition_suite_ids
     }
@@ -192,16 +259,37 @@ def compile_contract(
     verification_evaluator_id = "ValkeyVerificationAdmissionEvaluator"
     admission_evaluator_id = "ValkeyAdmissionEvaluator"
     controller_conditions: list[dict[str, Any]] = []
+    acceptance_source_owners: dict[tuple[str, str], str] = {}
+    referenced_real_requirements: set[str] = set()
     for condition in conditions:
         condition_id = condition.get("id")
-        evidence_ids = condition.get("evidence_gate_ids")
+        evidence_ids = condition.get("evidence_requirement_ids")
         suite_ids = condition.get("suite_ids")
         if (
             not isinstance(condition_id, str)
             or not isinstance(evidence_ids, list)
-            or any(item not in gate_ids for item in evidence_ids)
+            or any(item not in requirement_ids for item in evidence_ids)
         ):
-            raise CompileError("success condition references an unknown evidence gate")
+            raise CompileError(
+                "success condition references an unknown real evidence requirement"
+            )
+        if condition.get("required") is not True:
+            raise CompileError("every product success condition must be required")
+        if len(suite_ids) + len(evidence_ids) != 1:
+            raise CompileError(
+                "every product success condition must bind exactly one acceptance source"
+            )
+        source = (
+            ("suite", suite_ids[0])
+            if suite_ids
+            else ("real_evidence", evidence_ids[0])
+        )
+        if source in acceptance_source_owners:
+            raise CompileError(
+                f"acceptance source {source[1]} is shared by multiple success conditions"
+            )
+        acceptance_source_owners[source] = condition_id
+        referenced_real_requirements.update(evidence_ids)
         controller_conditions.append(
             {
                 "id": condition_id,
@@ -209,10 +297,17 @@ def compile_contract(
                 "evaluator_ids": [milestone_evaluator_id],
                 "evidence_requirement_ids": [
                     *[suite_requirement_id[item] for item in suite_ids],
-                    *[gate_requirement_id[item] for item in evidence_ids],
+                    *[evidence_requirement_id[item] for item in evidence_ids],
                 ],
-                "required": True,
+                "required": condition["required"],
             }
+        )
+    unused_real_requirements = sorted(
+        requirement_ids - referenced_real_requirements
+    )
+    if unused_real_requirements:
+        raise CompileError(
+            f"unused real evidence requirements: {unused_real_requirements}"
         )
 
     capabilities = sorted(
@@ -261,7 +356,7 @@ def compile_contract(
         )
     ]
     selected_tests = _selected_test_inputs(condition_suite_ids, suites)
-    scenario_inputs = _scenario_inputs(project_root, gates)
+    scenario_inputs = _scenario_inputs(project_root, source_requirements)
     timeout = int(policy["evaluator_timeout_seconds"])
 
     evaluators = [
@@ -340,7 +435,7 @@ def compile_contract(
             "capabilities": [],
         },
     ]
-    if gates:
+    if source_requirements:
         evaluators.append(
             {
                 "id": admission_evaluator_id,
@@ -396,24 +491,21 @@ def compile_contract(
         }
         for suite_id in sorted(condition_suite_ids)
     ]
-    real_requirements = [
+    controller_real_requirements = [
         {
-            "id": gate_requirement_id[gate["id"]],
-            "statement": (
-                f"Admit operator-approved REAL evidence for {gate['id']} at exact "
-                f"{gate.get('parameters', {}).get('nodes')} nodes."
-            ),
+            "id": evidence_requirement_id[requirement["id"]],
+            "statement": requirement["statement"],
             "capture_class": "REAL",
-            "provenance_required": True,
+            "provenance_required": requirement["provenance_required"],
             "freshness": {
                 "max_age_seconds": policy["evidence_freshness_seconds"],
                 "bind_to_product_digest": True,
                 "bind_to_run_id": True,
             },
-            "substitution_policy": "FORBIDDEN",
+            "substitution_policy": requirement["substitution_policy"],
             "admission_evaluator_ids": [admission_evaluator_id],
         }
-        for gate in gates
+        for requirement in source_requirements
     ]
     return {
         "schema_version": "controller-milestone-v2",
@@ -421,11 +513,14 @@ def compile_contract(
             "id": f"ValkeyScaleLab.{milestone_id}",
             "version": identity["version"],
             "title": identity["title"],
-            "final_goal": identity["goal"],
+            "final_goal": identity["final_goal"],
         },
         "success_conditions": controller_conditions,
         "evaluators": evaluators,
-        "evidence_requirements": [*verification_requirements, *real_requirements],
+        "evidence_requirements": [
+            *verification_requirements,
+            *controller_real_requirements,
+        ],
         "safety": {
             "product_roots": ["product"],
             "context_roots": ["product"],

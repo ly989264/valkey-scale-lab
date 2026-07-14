@@ -100,11 +100,11 @@ def test_milestone_rejects_unknown_suite_id(tmp_path: Path, monkeypatch) -> None
     assert any("unknown suite" in error for error in report["errors"])
 
 
-def test_milestone_rejects_an_unbound_promotion_chain(tmp_path: Path, monkeypatch) -> None:
+def test_milestone_rejects_an_unknown_promotion_source(tmp_path: Path, monkeypatch) -> None:
     source = json.loads(
         (PROJECT_ROOT / "milestones/m1/milestone.json").read_text(encoding="utf-8")
     )
-    source["evidence_gates"][1]["parameters"]["prior_gate"] = "wrong.gate"
+    source["real_evidence_requirements"][1]["promotion_source_id"] = "wrong.requirement"
     root = tmp_path / "milestones"
     path = root / "m1/milestone.json"
     path.parent.mkdir(parents=True)
@@ -114,7 +114,66 @@ def test_milestone_rejects_an_unbound_promotion_chain(tmp_path: Path, monkeypatc
     report = run.validate_milestone("m1")
 
     assert report["status"] == "INVALID"
-    assert any("prior_gate" in error for error in report["errors"])
+    assert any("promotion_source_id" in error for error in report["errors"])
+
+
+def test_milestone_rejects_multiple_promotion_terminals(
+    tmp_path: Path, monkeypatch
+) -> None:
+    source = json.loads(
+        (PROJECT_ROOT / "milestones/m1/milestone.json").read_text(encoding="utf-8")
+    )
+    source["real_evidence_requirements"][1]["promotion_source_id"] = None
+    root = tmp_path / "milestones"
+    path = root / "m1/milestone.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(source), encoding="utf-8")
+    monkeypatch.setattr(run, "MILESTONE_ROOT", root)
+
+    report = run.validate_milestone("m1")
+
+    assert report["status"] == "INVALID"
+    assert any("terminal requirement" in error for error in report["errors"])
+
+
+def test_milestones_use_atomic_required_acceptance_sources() -> None:
+    for milestone_id in ("m1", "m2", "m3"):
+        milestone = json.loads(
+            (PROJECT_ROOT / f"milestones/{milestone_id}/milestone.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        sources = []
+        for condition in milestone["success_conditions"]:
+            assert condition["required"] is True
+            assert len(condition["suite_ids"]) + len(
+                condition["evidence_requirement_ids"]
+            ) == 1
+            sources.extend(("suite", value) for value in condition["suite_ids"])
+            sources.extend(
+                ("real_evidence", value)
+                for value in condition["evidence_requirement_ids"]
+            )
+        assert len(sources) == len(set(sources))
+
+
+def test_milestone_rejects_shared_acceptance_source(tmp_path: Path, monkeypatch) -> None:
+    source = json.loads(
+        (PROJECT_ROOT / "milestones/m1/milestone.json").read_text(encoding="utf-8")
+    )
+    source["success_conditions"][1]["suite_ids"] = source["success_conditions"][0][
+        "suite_ids"
+    ]
+    root = tmp_path / "milestones"
+    path = root / "m1/milestone.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(source), encoding="utf-8")
+    monkeypatch.setattr(run, "MILESTONE_ROOT", root)
+
+    report = run.validate_milestone("m1")
+
+    assert report["status"] == "INVALID"
+    assert any("shared" in error for error in report["errors"])
 
 
 def test_milestone_rejects_missing_and_cyclic_prerequisites(

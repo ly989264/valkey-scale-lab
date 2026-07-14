@@ -20,32 +20,34 @@ from _evidence_contract import validate_exact_evidence
 from _prerequisite import load_completion
 
 
-def _definition_for_gate(
+def _definition_for_requirement(
     product_root: Path,
-    gate: Mapping[str, Any],
+    requirement: Mapping[str, Any],
     errors: list[str],
 ) -> dict[str, Any] | None:
-    parameters = gate.get("parameters")
+    parameters = requirement.get("parameters")
     relative = parameters.get("definition") if isinstance(parameters, Mapping) else None
     path = safe_file(product_root, relative)
     if path is None:
-        errors.append("gate has no sealed, supported scenario definition")
+        errors.append(
+            "real evidence requirement has no sealed, supported scenario definition"
+        )
         return None
     try:
         value = load_json(path)
     except EvaluationError as exc:
         errors.append(str(exc))
         return None
-    if value.get("schema_version") != "gate-scenario-v2":
-        errors.append("gate scenario definition uses an unsupported schema")
+    if value.get("schema_version") != "gate-scenario-v3":
+        errors.append("scenario definition uses an unsupported schema")
         return None
     return value
 
 
-def _evaluate_gate(
+def _evaluate_requirement(
     *,
-    gate: dict[str, Any],
-    gate_by_id: dict[str, dict[str, Any]],
+    requirement: dict[str, Any],
+    requirement_by_id: dict[str, dict[str, Any]],
     evidence_root: Path,
     product_root: Path,
     candidate_schema: dict[str, Any],
@@ -55,10 +57,10 @@ def _evaluate_gate(
     now_unix: int,
     max_age_seconds: int,
 ) -> dict[str, Any]:
-    gate_id = gate["id"]
-    requirement_id = f"evidence.{gate_id}"
-    artifact = f"{gate_id}/admission.json"
-    root = (evidence_root / gate_id).resolve()
+    source_id = requirement["id"]
+    requirement_id = f"evidence.{source_id}"
+    artifact = f"{source_id}/admission.json"
+    root = (evidence_root / source_id).resolve()
     errors: list[str] = []
     candidate_path = safe_file(evidence_root, artifact)
     candidate: dict[str, Any] = {}
@@ -70,10 +72,11 @@ def _evaluate_gate(
             candidate = load_json(candidate_path)
         except EvaluationError as exc:
             errors.append(str(exc))
-    scale = gate.get("parameters", {}).get("nodes")
+    parameters = requirement.get("parameters")
+    scale = parameters.get("nodes") if isinstance(parameters, Mapping) else None
     if not isinstance(scale, int) or isinstance(scale, bool):
-        errors.append("milestone gate has no exact node count")
-    definition = _definition_for_gate(product_root, gate, errors)
+        errors.append("real evidence requirement has no exact node count")
+    definition = _definition_for_requirement(product_root, requirement, errors)
     if isinstance(scale, int) and not isinstance(scale, bool) and definition is not None and candidate:
         errors.extend(
             validate_exact_evidence(
@@ -94,31 +97,34 @@ def _evaluate_gate(
     if captured_at > now_unix + 60 or now_unix - captured_at > max_age_seconds:
         errors.append("admission evidence is stale")
 
-    dependencies = gate.get("depends_on", [])
+    promotion_source_id = requirement.get("promotion_source_id")
     promotion = candidate.get("promoted_from_admission_digest")
-    if dependencies:
-        declared_prior = gate.get("parameters", {}).get("prior_gate")
-        if (
-            len(dependencies) != 1
-            or dependencies[0] not in gate_by_id
-            or declared_prior != dependencies[0]
-        ):
-            errors.append("gate promotion chain is ambiguous")
+    if promotion_source_id is not None:
+        if promotion_source_id not in requirement_by_id:
+            errors.append("real evidence promotion source is unknown")
         else:
-            prior_path = safe_file(evidence_root, f"{dependencies[0]}/admission.json")
+            prior_path = safe_file(
+                evidence_root, f"{promotion_source_id}/admission.json"
+            )
             try:
                 prior = load_json(prior_path) if prior_path is not None else {}
             except EvaluationError:
                 prior = {}
             if promotion != prior.get("admission_digest"):
-                errors.append("promotion does not bind the admitted prior gate")
+                errors.append(
+                    "promotion does not bind the admitted source requirement"
+                )
     elif prerequisites:
         if len(prerequisites) != 1:
             errors.append("cross-milestone promotion chain is ambiguous")
         elif promotion != prerequisites[0].get("final_admission_digest"):
-            errors.append("first gate does not bind the sealed prerequisite admission")
+            errors.append(
+                "first real evidence requirement does not bind the sealed prerequisite admission"
+            )
     elif promotion is not None:
-        errors.append("first gate must not claim an unrequested promotion")
+        errors.append(
+            "first real evidence requirement must not claim an unrequested promotion"
+        )
 
     status = "PASS"
     if errors:
@@ -167,14 +173,24 @@ def evaluate(
 ) -> list[dict[str, Any]]:
     milestone = load_json(milestone_path)
     candidate_schema = load_json(candidate_schema_path)
-    if milestone.get("schema_version") != "valkey-milestone-v1":
+    if milestone.get("schema_version") != "valkey-milestone-v2":
         raise EvaluationError("unsupported milestone schema")
-    gates = milestone.get("evidence_gates")
-    if not isinstance(gates, list):
-        raise EvaluationError("milestone evidence_gates must be an array")
-    gate_by_id = {gate.get("id"): gate for gate in gates if isinstance(gate, dict)}
-    if len(gate_by_id) != len(gates) or any(not isinstance(key, str) for key in gate_by_id):
-        raise EvaluationError("milestone evidence gate ids must be unique strings")
+    requirements = milestone.get("real_evidence_requirements")
+    if not isinstance(requirements, list):
+        raise EvaluationError(
+            "milestone real_evidence_requirements must be an array"
+        )
+    requirement_by_id = {
+        requirement.get("id"): requirement
+        for requirement in requirements
+        if isinstance(requirement, dict)
+    }
+    if len(requirement_by_id) != len(requirements) or any(
+        not isinstance(key, str) for key in requirement_by_id
+    ):
+        raise EvaluationError(
+            "milestone real evidence requirement ids must be unique strings"
+        )
     prerequisite_ids = milestone.get("prerequisite_milestone_ids")
     if not isinstance(prerequisite_ids, list) or len(prerequisite_ids) != len(prerequisite_paths):
         raise EvaluationError("sealed prerequisite inputs do not match the milestone")
@@ -184,9 +200,9 @@ def evaluate(
     ]
     current = int(time.time()) if now_unix is None else now_unix
     return [
-        _evaluate_gate(
-            gate=gate,
-            gate_by_id=gate_by_id,
+        _evaluate_requirement(
+            requirement=requirement,
+            requirement_by_id=requirement_by_id,
             evidence_root=Path(evidence_root).resolve(),
             product_root=Path(product_root).resolve(),
             candidate_schema=candidate_schema,
@@ -196,7 +212,7 @@ def evaluate(
             now_unix=current,
             max_age_seconds=max_age_seconds,
         )
-        for gate in gates
+        for requirement in requirements
     ]
 
 
