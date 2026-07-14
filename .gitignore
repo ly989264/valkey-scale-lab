@@ -1,6 +1,11 @@
 .DS_Store
+.pytest_cache/
+.pycache/
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
 loop_evidence/meta_runs/
+project/artifacts/
+project/audit/
+project/runs/

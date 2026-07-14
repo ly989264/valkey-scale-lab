@@ -2,7 +2,7 @@
   "schema_version": "vpro-bundle-v1",
   "milestone": {
     "id": "Milestone1LocalLifecycle",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "title": "Complete local cluster lifecycle",
     "goal": "Deliver the complete local Mac/Linux Valkey lifecycle through exact 50-node and 200-node real admission without weakening safety, evidence, or diagnostic depth."
   },
@@ -49,7 +49,7 @@
       "id": "m1-evidence-contract", "tier": "normal",
       "argv": ["python3", "checks/vpro/milestone_check.py", "suite", "--id", "m1-evidence"],
       "cwd": ".", "timeout_seconds": 1800,
-      "inputs": ["checks/vpro/milestone_check.py", "src/valkey_scale_lab/evidence", "src/valkey_scale_lab/artifacts", "src/valkey_scale_lab/observer", "src/valkey_scale_lab/metrics", "schemas/artifact", "tests/evidence", "tests/provenance/test_evidence_pipeline_v9.py", "tests/provenance/test_meta_m1_evidence_gate_v9.py"], "outputs": [],
+      "inputs": ["checks/vpro/milestone_check.py", "src/valkey_scale_lab/evidence", "src/valkey_scale_lab/artifacts", "src/valkey_scale_lab/observer", "src/valkey_scale_lab/metrics", "schemas/artifact", "tests/evidence", "tests/provenance/test_milestone1_gate_measured_sources.py", "tests/provenance/test_milestone1_gate_scenario_provenance.py"], "outputs": [],
       "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
     },
     {

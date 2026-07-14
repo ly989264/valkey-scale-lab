@@ -12,9 +12,10 @@ from valkey_scale_lab.vpro.contracts import load_bundle
 from valkey_scale_lab.vpro.milestone import validate_milestone
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-BUNDLE_ROOT = PROJECT_ROOT / "milestones/vpro"
-SCHEMA_PATH = PROJECT_ROOT / "schemas/vpro/milestone_bundle.schema.json"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = REPO_ROOT / "project"
+BUNDLE_ROOT = REPO_ROOT / "controller/bundles/valkey-scale-lab"
+SCHEMA_PATH = REPO_ROOT / "controller/vpro/schemas/vpro/milestone_bundle.schema.json"
 ADAPTER_PATH = PROJECT_ROOT / "checks/vpro/milestone_check.py"
 
 
@@ -99,7 +100,11 @@ def test_all_milestones_report_missing_independent_authority_as_blocked() -> Non
         project_root=PROJECT_ROOT,
         schema_path=SCHEMA_PATH,
     )["execution_readiness"]["missing_authority_paths"]
-    assert "tests/vpro_milestones/test_milestone1_sandbox_network_proxy.py" in m1
+    assert set(m1) == {
+        "evaluators/vpro/milestone1_evidence_policy.py",
+        "tests/vpro_milestones/test_milestone1_evidence_policy.py",
+        "tests/vpro_milestones/test_milestone1_sandbox_network_proxy.py",
+    }
 
     m2 = validate_milestone(
         BUNDLE_ROOT / "milestone2.bundle.json",

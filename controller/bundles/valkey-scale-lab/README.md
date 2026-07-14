@@ -1,7 +1,7 @@
 # VPRO Product Milestone Bundles
 
 These are the source descriptions for the three product milestones in
-`docs/MILESTONES.md`:
+`project/docs/MILESTONES.md`:
 
 - `milestone1.bundle.json`: local lifecycle with required exact 50 and 200 gates;
 - `milestone2.bundle.json`: native multi-ECS lifecycle with representative 50
@@ -11,12 +11,19 @@ These are the source descriptions for the three product milestones in
 Validate an authoring copy with:
 
 ```text
-vpro --project-root <project> --bundle <bundle> milestone-validate
+VPRO_FRAMEWORK_ANCHOR=<anchor> python3 -I -S -B controller/vpro/VPRO_LAUNCH.py \
+  --project-root project --bundle <bundle> milestone-validate
 ```
 
-The repository copies are authoring artifacts, not production authority. Before
+The repository copies are controller-policy authoring sources, not production
+authority. Before
 `bind`, an operator must copy the selected bundle outside the worker workspace
 and protect it from worker writes. The external run must use that copied path.
+
+The Valkey-specific executable adapter and evaluator remain under
+`project/checks/vpro/` and `project/evaluators/vpro/`. They implement product
+acceptance only; the generic controller kernel, schema, state machine, and
+controller tests are all rooted under `controller/vpro/`.
 
 `status: PASS` means the bundle is structurally and semantically valid.
 `execution_readiness.status` is a static check of external acceptance/evaluator

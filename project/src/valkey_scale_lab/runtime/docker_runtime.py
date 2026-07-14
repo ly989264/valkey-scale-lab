@@ -5844,7 +5844,7 @@ def _write_p29_coverage_ledger(path: Path) -> None:
             "stage_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
-            "source_spec_refs": ["docs/codex/goal-loop-strict/06_COVERAGE_REGISTRY_SPEC.md"],
+            "source_spec_refs": ["docs/MILESTONES.md"],
             "summary": {
                 "total_rows": 1,
                 "expected_total_rows": 1,
@@ -5954,8 +5954,8 @@ def _write_p29_telemetry_completeness_report(
         "coverage_id": "p29.telemetry.strict_telemetry_small_real",
         "source_type_coverage": source_type_coverage,
         "schema_validations": [
-            {"artifact": "events.jsonl", "schema": "schemas/artifact/goal_loop_event.schema.json", "status": "PASS", "line_count": len(events)},
-            {"artifact": "metrics_timeseries.jsonl", "schema": "schemas/artifact/goal_loop_metric_sample.schema.json", "status": "PASS", "line_count": len(metric_rows)},
+            {"artifact": "events.jsonl", "schema": "schemas/artifact/scenario_event.schema.json", "status": "PASS", "line_count": len(events)},
+            {"artifact": "metrics_timeseries.jsonl", "schema": "schemas/artifact/scenario_metric_sample.schema.json", "status": "PASS", "line_count": len(metric_rows)},
             {"artifact": "workload_windows.json", "schema": "schemas/artifact/workload_windows.schema.json", "status": "PASS", "window_count": len(workload_windows)},
         ],
         "missing_data": {
@@ -9666,7 +9666,7 @@ def _p36_coverage_ledger(parent: Path, scale_rows: list[dict[str, Any]]) -> dict
     ledger.pop("status", None)
     ledger["created_at"] = ledger.get("created_at") or "2026-06-28T00:00:00Z"
     ledger["producer"] = ledger.get("producer") or {"name": "valkey-scale-lab", "version": __version__}
-    ledger["source_spec_refs"] = ledger.get("source_spec_refs") or ["docs/codex/goal-loop-strict/06_COVERAGE_REGISTRY_SPEC.md"]
+    ledger["source_spec_refs"] = ledger.get("source_spec_refs") or ["docs/MILESTONES.md"]
     rows = ledger.setdefault("rows", [])
     by_scale = {int(row["scale"]): row for row in scale_rows}
     for row in rows:
@@ -11873,7 +11873,7 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
             "stage_id": phase,
             "created_at": "2026-06-28T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": __version__},
-            "source_spec_refs": ["docs/codex/goal-loop-strict/06_COVERAGE_REGISTRY_SPEC.md"],
+            "source_spec_refs": ["docs/MILESTONES.md"],
             "summary": {},
             "rows": [],
         }
@@ -11883,7 +11883,7 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
     ledger["created_at"] = ledger.get("created_at") or "2026-06-28T00:00:00Z"
     ledger.setdefault("producer", {})["name"] = ledger.get("producer", {}).get("name", "valkey-scale-lab")
     ledger.setdefault("producer", {})["version"] = ledger.get("producer", {}).get("version", __version__)
-    ledger.setdefault("source_spec_refs", ["docs/codex/goal-loop-strict/06_COVERAGE_REGISTRY_SPEC.md"])
+    ledger.setdefault("source_spec_refs", ["docs/MILESTONES.md"])
     by_id = {row["coverage_id"]: row for row in operation_rows}
     rows = ledger.setdefault("rows", [])
     if not rows:

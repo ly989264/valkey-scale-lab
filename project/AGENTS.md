@@ -1,60 +1,14 @@
-# AGENTS.md - Valkey Scale Lab
+# AGENTS.md - Valkey Scale Lab Product
 
-This `project/` directory is the runnable repository root. Historical evidence
-lives in `../loop_evidence/`; never rewrite historical runs.
+This directory is the runnable `valkey-scale-lab` product root. AI controller
+kernels, controller policy, prompts, state, and generated controller evidence
+belong in the sibling `../controller/` and `../loop_evidence/` trees, not here.
 
 ## Mission
 
 Build `valkey-scale-lab`, a local-first Mac/Linux harness for real Valkey 9.1.x
-cluster experiments. Machine-readable artifacts are the product; analysis and
-reports are derived views over validated artifacts.
-
-## Milestone 1 Goal Mode
-
-New Codex App Goal-mode work for Milestone 1 starts at `META_M1_V9_START.md` and is
-scheduled only by:
-
-```bash
-PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop_v9 next
-```
-
-V9 is anchored to the sealed v8 and v7 kernel-gap runs, which are in turn
-anchored to the completed v6 run. Do not edit any version's controller kernel,
-control block, manifest, state, reviewer evidence, or historical evidence
-after migration.
-
-The four authorities are deliberately separate:
-
-- Codex owns how to solve the current objective. It may inspect, design, edit,
-  test, and refactor freely within the frozen Milestone 1 scope.
-- The controller owns what happens next, the current objective, attempt counts,
-  stagnation routing, review budgets, and validation level ordering.
-- Executable program checks own pass/fail. Prose, self-reported success, and
-  hand-edited state are never completion evidence.
-- A fresh reviewer looks only for a requirement gap not covered by the current
-  program checks. A blocking finding must cite an exact frozen clause and add
-  one level 0-2 check that demonstrably fails before the fix. Review may not
-  broaden Milestone 1 or fail work for taste.
-
-The Controller Kernel and Goal Contract are immutable in a run. The evidence
-evaluator is separately versioned: a reproduced `EVALUATOR_GAP` must use the
-controller-owned `EVALUATOR_REPAIR` transition. Direct evaluator edits are
-rejected. Product capture and evaluator admission digests are separate.
-Strengthening an evaluator invalidates admission and reruns it against the
-preserved raw capture without forcing another real cluster run.
-
-Do not recreate the historical design/worker/review ceremony for each stage.
-Do not manually edit controller state. Do not rerun unchanged failing or
-expensive commands outside the controller. Follow the work item returned by
-`next`, then use `evaluate` or `review` as instructed.
-
-Repository regression tests must be hermetic and must not read current
-`loop_evidence/meta_runs` data. Dynamic real-evidence checks belong in the
-versioned evaluator. A real gate must not modify historical `loop_evidence/artifacts`.
-
-The old P/M1-S/H stage documents and evidence remain useful product history,
-but their fixed stage order, mandatory document reload, per-stage subagents,
-and per-stage commit protocol are not the current Milestone 1 controller.
+cluster experiments. Machine-readable experiment artifacts are product output;
+analysis and reports are derived views over validated artifacts.
 
 ## Frozen Scale Contract
 
@@ -109,8 +63,8 @@ sub-stage timing, management and fault matrices, workload windows, resource
 telemetry, command logs, cleanup, provenance, analysis, and report references.
 
 Schema/provenance checks must reject incomplete, fixture-derived, stale, or
-fabricated evidence. Full logs stay on disk; Goal-mode context receives only a
-bounded failure excerpt and paths/digests.
+fabricated evidence. Full logs stay on disk; automated consumers receive only
+a bounded failure excerpt and paths/digests.
 
 ## Engineering Rules
 
@@ -120,20 +74,8 @@ bounded failure excerpt and paths/digests.
 - Keep edits scoped to the active objective and preserve unrelated user work.
 - Add focused tests proportional to the behavioral risk.
 - Run cheap/impacted checks before real or full-regression checks.
-- Never weaken or delete a failing check to obtain a pass. A missing evaluator
-  check must use `EVALUATOR_GAP` and the controlled repair transition; Goal
-  Contract or Kernel defects require a new controller version.
-
-
-Future milestone work must be supplied only through a new externally authored
-bundle outside the sealed framework roots and a new controller-owned run root.
-Milestone goals, objective selection, checks, gates, and acceptance policy must
-remain external to VPRO. Evaluator changes are allowed only through the fixed
-controller-issued `EVALUATOR_REPAIR` transition and the bundle's declared
-repair paths.
-
-The repository release receipt is not the production trust root. Before a real
-VPRO run, an external operator must copy it outside the worker workspace and
-use OS, container, or protected-CI controls to keep the framework, bundle,
-state, isolated launcher, anchor, approval identity, and signing material out
-of the worker's write authority.
+- Never weaken or delete a failing check to obtain a pass.
+- Keep product regression tests hermetic. They must not read current or
+  historical controller state from `../loop_evidence/`.
+- Do not add AI controller packages, prompts, state machines, or controller
+  output links to this product tree.

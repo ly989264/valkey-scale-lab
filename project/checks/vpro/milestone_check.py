@@ -67,8 +67,8 @@ SUITES = {
     ),
     "m1-evidence": (
         "tests/evidence",
-        "tests/provenance/test_evidence_pipeline_v9.py",
-        "tests/provenance/test_meta_m1_evidence_gate_v9.py",
+        "tests/provenance/test_milestone1_gate_measured_sources.py",
+        "tests/provenance/test_milestone1_gate_scenario_provenance.py",
     ),
     "m1-report": ("tests/analysis", "tests/report"),
     "m1-compatibility": (
@@ -161,10 +161,6 @@ def _closure() -> int:
     return _pytest(
         "--ignore=tests/real_valkey",
         "--ignore=tests/fault/test_network_proxy.py",
-        "--ignore=tests/vpro",
-        "--ignore=tests/vpro_milestones",
-        "--ignore=tests/meta_loop_v7/test_o1_retry_budget_gap.py",
-        "--deselect=tests/meta_loop_v8/test_contract.py::test_v8_kernel_manifest_seals_v7_reproduction_and_v8_successor",
         "tests",
     )
 

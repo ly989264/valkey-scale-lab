@@ -2,12 +2,7 @@
 
 `valkey-scale-lab` is a local-first harness for Valkey 9.1.x cluster experiments. Its product roadmap progresses from complete local execution through native multi-ECS execution to 500/1000/2000-node multi-ECS scale. See [docs/MILESTONES.md](docs/MILESTONES.md) for milestone boundaries, dependencies, and acceptance criteria.
 
-## Milestone1 Scope
-
-New milestone1 work is controlled by the bounded objective loop documented in
-[`META_M1_START.md`](META_M1_START.md). Older M1-S, P, and H stages are retained
-as implementation and audit history, not as the current milestone completion
-authority.
+## Milestone 1 Scope
 
 In scope:
 
@@ -38,7 +33,7 @@ Create a run directory and metadata:
 python3 -m valkey_scale_lab.cli run init --run-id m1-local
 ```
 
-This creates:
+This creates product runtime output (ignored by Git):
 
 ```text
 runs/m1-local/artifacts/

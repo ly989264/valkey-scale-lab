@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "valkey-scale-lab"
 version = "0.0.0"
-description = "Local-first Valkey scale lab harness built through Codex phases."
+description = "Local-first harness for reproducible Valkey cluster experiments."
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "UNLICENSED"}

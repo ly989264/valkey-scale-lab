@@ -7,6 +7,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
 from valkey_scale_lab.observer.failover_timeline import M1_REQUIRED_FAULT_TYPES, M1_REQUIRED_SCALE_RUNGS, M1_REQUIRED_TIMELINE_EVENTS, M1_REQUIRED_TIMELINE_METRICS
 
 

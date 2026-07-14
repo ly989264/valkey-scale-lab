@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small JSON Schema subset validator used by the Codex harness.
+"""Small JSON Schema subset validator used by the local Valkey harness.
 
 This avoids making the bootstrap gate depend on external packages. It supports the
 subset used by schemas/ in this repository: type, required, properties,

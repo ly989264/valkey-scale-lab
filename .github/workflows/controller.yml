@@ -1,0 +1,25 @@
+name: controller
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+jobs:
+  vpro:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: python3 -m pip install -r project/requirements-dev.txt
+      - name: Verify frozen framework
+        run: |
+          VPRO_FRAMEWORK_ANCHOR="$PWD/controller/vpro/codex/vpro/framework_release.json" \
+            python3 -I -S -B controller/vpro/VPRO_LAUNCH.py framework-verify
+      - name: VPRO core tests
+        run: PYTHONPATH=controller/vpro/src python3 -m pytest -q controller/vpro/tests/vpro
+      - name: Product boundary and bundle integration tests
+        run: PYTHONPATH=controller/vpro/src python3 -m pytest -q controller/tests

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Goal Loop Event",
+  "title": "Valkey Scenario Metric Sample",
   "type": "object",
   "required": [
     "schema_version",
@@ -8,17 +8,15 @@
     "phase_id",
     "scenario_name",
     "sample_id",
-    "event_id",
-    "event_type",
     "timestamp_unix_ms",
     "monotonic_ms",
-    "severity",
-    "subject_type",
-    "subject_id",
-    "operation_id",
-    "fault_id",
-    "message",
-    "metadata"
+    "source_type",
+    "source_id",
+    "metric_name",
+    "metric_value",
+    "metric_unit",
+    "labels",
+    "missing_reason"
   ],
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
@@ -26,17 +24,15 @@
     "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
     "scenario_name": {"type": "string", "minLength": 1},
     "sample_id": {"type": "string", "minLength": 1},
-    "event_id": {"type": "string", "minLength": 1},
-    "event_type": {"type": "string", "minLength": 1},
     "timestamp_unix_ms": {"type": ["integer", "string"]},
     "monotonic_ms": {"type": ["number", "string"]},
-    "severity": {"type": "string", "enum": ["DEBUG", "INFO", "WARN", "ERROR"]},
-    "subject_type": {"type": "string", "minLength": 1},
-    "subject_id": {"type": "string"},
-    "operation_id": {"type": "string"},
-    "fault_id": {"type": "string"},
-    "message": {"type": "string", "minLength": 1},
-    "metadata": {"type": "object"}
+    "source_type": {"type": "string", "enum": ["valkey_info", "cluster_info", "cluster_nodes", "docker_stats", "workload", "harness", "system_process", "system_network"]},
+    "source_id": {"type": "string", "minLength": 1},
+    "metric_name": {"type": "string", "minLength": 1},
+    "metric_value": {"type": ["number", "string", "boolean"]},
+    "metric_unit": {"type": "string"},
+    "labels": {"type": "object"},
+    "missing_reason": {"type": "string"}
   },
   "additionalProperties": true
 }
