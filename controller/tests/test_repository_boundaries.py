@@ -22,7 +22,9 @@ def test_product_tree_has_no_controller_kernels_or_control_material() -> None:
         PROJECT_ROOT / "src/valkey_scale_lab/meta_loop_v8",
         PROJECT_ROOT / "src/valkey_scale_lab/meta_loop_v9",
         PROJECT_ROOT / "src/valkey_scale_lab/vpro",
+        PROJECT_ROOT / "src/vpro2",
         PROJECT_ROOT / "schemas/vpro",
+        PROJECT_ROOT / "schemas/vpro2",
         PROJECT_ROOT / "templates/vpro",
         PROJECT_ROOT / "tests/vpro",
         PROJECT_ROOT / "VPRO_LAUNCH.py",
@@ -52,9 +54,19 @@ def test_framework_and_valkey_policy_live_outside_product() -> None:
     assert not (PROJECT_ROOT / "milestones/vpro").exists()
 
 
+def test_vpro2_successor_is_separate_from_the_frozen_v1_release() -> None:
+    assert (CONTROLLER_ROOT / "vpro2/src/vpro2/service.py").is_file()
+    assert (CONTROLLER_ROOT / "vpro2/schemas/vpro2/milestone.schema.json").is_file()
+    assert (CONTROLLER_ROOT / "vpro2/codex/vpro2/framework_manifest.json").is_file()
+    assert (CONTROLLER_ROOT / "vpro2/codex/vpro2/framework_release.json").is_file()
+    assert (CONTROLLER_ROOT / "vpro/codex/vpro/framework_release.json").is_file()
+    assert not (CONTROLLER_ROOT / "vpro2/codex/vpro/framework_release.json").exists()
+
+
 def test_product_package_has_no_imports_of_controller_packages() -> None:
     forbidden = (
         "valkey_scale_lab.vpro",
+        "import vpro2",
         "valkey_scale_lab.goal",
         "valkey_scale_lab.meta_loop",
     )
