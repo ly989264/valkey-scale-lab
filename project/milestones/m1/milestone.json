@@ -1,107 +1,80 @@
 {
-  "schema_version": "valkey-milestone-v2",
-  "milestone": {
-    "id": "m1",
-    "version": "2.0.0",
-    "title": "Complete local cluster lifecycle",
-    "final_goal": "Deliver the complete local Mac/Linux Valkey lifecycle with exact 50-node and 200-node real evidence without weakening safety, provenance, diagnostics, or cleanup."
-  },
-  "prerequisite_milestone_ids": [],
-  "success_conditions": [
+  "id": "m1",
+  "goal": "Deliver the complete local Mac/Linux Valkey lifecycle with exact real 50-node and 200-node execution, attributable evidence, deterministic cleanup, and validated offline reporting.",
+  "criteria": [
     {
-      "id": "scenario.contract",
-      "statement": "Sealed scenario definitions and plan compilation contracts pass hermetic verification.",
-      "suite_ids": ["scenario.contract"],
-      "evidence_requirement_ids": [],
-      "required": true
+      "id": "local.definition-and-planning",
+      "statement": "Local scenarios, configuration, scale selection, and plans are schema-backed, deterministic, exact, and fail closed instead of silently downscaling.",
+      "check": [
+        {"id": "product.config"},
+        {"id": "product.planner"},
+        {"id": "product.scenarios"}
+      ]
     },
     {
       "id": "local.lifecycle",
-      "statement": "Local cluster creation, ownership, lifecycle transitions, and deterministic cleanup pass hermetic verification.",
-      "suite_ids": ["runtime.local.lifecycle"],
-      "evidence_requirement_ids": [],
-      "required": true
+      "statement": "The local runtime creates owned Valkey resources, executes the complete lifecycle, preserves exact topology, and cleans every owned resource deterministically.",
+      "check": [
+        {"id": "product.cli"},
+        {"id": "product.gates"},
+        {"id": "product.integration"},
+        {"id": "product.orchestrator"},
+        {"id": "product.real_valkey"},
+        {"id": "product.scale"},
+        {"id": "product.unit"}
+      ]
     },
     {
-      "id": "fake.full-flow",
-      "statement": "The fake backend exercises the complete flow without being admitted as real evidence.",
-      "suite_ids": ["runtime.fake.full-flow"],
-      "evidence_requirement_ids": [],
-      "required": true
+      "id": "local.operations-and-recovery",
+      "statement": "Management, workload, fault, failover, recovery, and stability behavior remains bounded, observable, and confined to project-owned resources.",
+      "check": [
+        {"id": "product.failover"},
+        {"id": "product.fault"},
+        {"id": "product.stability"}
+      ]
     },
     {
-      "id": "small-real.parity",
-      "statement": "The small-real backend preserves the required full-flow semantics and safety boundaries.",
-      "suite_ids": ["runtime.small-real.parity"],
-      "evidence_requirement_ids": [],
-      "required": true
+      "id": "local.evidence-and-provenance",
+      "statement": "Lifecycle artifacts and provenance are complete and reject missing, substituted, relabelled, stale, or fabricated evidence.",
+      "check": [
+        {"id": "product.artifacts"},
+        {"id": "product.evidence"},
+        {"id": "product.provenance"}
+      ]
     },
     {
-      "id": "evidence.provenance",
-      "statement": "Evidence validation rejects incomplete, substituted, relabelled, stale, or fabricated captures.",
-      "suite_ids": ["evidence.provenance"],
-      "evidence_requirement_ids": [],
-      "required": true
+      "id": "local.analysis-and-reporting",
+      "statement": "Offline analysis and reports derive only from validated artifacts and preserve missing-data and workload-impact semantics.",
+      "check": [
+        {"id": "product.analysis"},
+        {"id": "product.report"}
+      ]
     },
-    {
-      "id": "offline.report",
-      "statement": "Offline analysis and reporting derive their views only from validated artifacts.",
-      "suite_ids": ["report.offline"],
-      "evidence_requirement_ids": [],
-      "required": true
-    },
-    {
-      "id": "regression.hermetic",
-      "statement": "The complete product regression suite remains hermetic and independent of external orchestration state.",
-      "suite_ids": ["regression.hermetic"],
-      "evidence_requirement_ids": [],
-      "required": true
-    },
-    {
-      "id": "local.real.50",
-      "statement": "A current trusted capture proves the complete local lifecycle at exactly 50 observed Valkey nodes.",
-      "suite_ids": [],
-      "evidence_requirement_ids": ["local.exact.50"],
-      "required": true
-    },
-    {
-      "id": "local.real.200",
-      "statement": "A current trusted capture promoted from the admitted 50-node result proves the complete local lifecycle at exactly 200 observed Valkey nodes.",
-      "suite_ids": [],
-      "evidence_requirement_ids": ["local.exact.200"],
-      "required": true
-    }
-  ],
-  "real_evidence_requirements": [
     {
       "id": "local.exact.50",
-      "statement": "Admit an operator-approved real local full-flow capture at exactly 50 requested and observed nodes.",
-      "suite_id": "real.local.full-flow",
-      "parameters": {
-        "definition": "src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
-        "nodes": 50,
-        "config": "templates/configs/scale_50.yaml"
-      },
-      "promotion_source_id": null,
-      "capture_class": "REAL",
-      "provenance_required": true,
-      "substitution_policy": "FORBIDDEN",
-      "operator_approval_required": true
+      "statement": "A real local full-flow run requests and independently observes exactly 50 healthy Valkey 9.1.x nodes and completes cleanup.",
+      "check": [
+        {
+          "id": "real.local.full-flow",
+          "parameters": {
+            "nodes": 50,
+            "config": "templates/configs/scale_50.yaml"
+          }
+        }
+      ]
     },
     {
       "id": "local.exact.200",
-      "statement": "Admit an operator-approved real local full-flow capture at exactly 200 requested and observed nodes, promoted from the admitted 50-node capture.",
-      "suite_id": "real.local.full-flow",
-      "parameters": {
-        "definition": "src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
-        "nodes": 200,
-        "config": "templates/configs/scale_200.yaml"
-      },
-      "promotion_source_id": "local.exact.50",
-      "capture_class": "REAL",
-      "provenance_required": true,
-      "substitution_policy": "FORBIDDEN",
-      "operator_approval_required": true
+      "statement": "A real local full-flow run requests and independently observes exactly 200 healthy Valkey 9.1.x nodes and completes cleanup.",
+      "check": [
+        {
+          "id": "real.local.full-flow",
+          "parameters": {
+            "nodes": 200,
+            "config": "templates/configs/scale_200.yaml"
+          }
+        }
+      ]
     }
   ]
 }

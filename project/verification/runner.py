@@ -68,8 +68,8 @@ def _read_json_result(path: Path) -> tuple[str, str]:
         raise ValueError(f"cannot read JSON result: {exc}") from exc
     if not isinstance(value, dict) or set(value) - {"status", "summary"}:
         raise ValueError("JSON result must contain only status and optional summary")
-    if value.get("status") not in {"PASS", "FAIL"}:
-        raise ValueError("JSON result status must be PASS or FAIL")
+    if value.get("status") not in {"PASS", "FAIL", "BLOCKED"}:
+        raise ValueError("JSON result status must be PASS, FAIL, or BLOCKED")
     summary = value.get("summary", "")
     if not isinstance(summary, str):
         raise ValueError("JSON result summary must be text")

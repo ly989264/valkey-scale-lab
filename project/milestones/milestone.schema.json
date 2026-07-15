@@ -4,120 +4,42 @@
   "title": "Valkey Scale Lab Product Milestone",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schema_version",
-    "milestone",
-    "prerequisite_milestone_ids",
-    "success_conditions",
-    "real_evidence_requirements"
-  ],
+  "required": ["id", "goal", "criteria"],
   "properties": {
-    "schema_version": {"const": "valkey-milestone-v2"},
-    "milestone": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "version", "title", "final_goal"],
-      "properties": {
-        "id": {"type": "string", "pattern": "^m[1-9][0-9]*$"},
-        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
-        "title": {"type": "string", "minLength": 1},
-        "final_goal": {"type": "string", "minLength": 1}
-      }
-    },
-    "prerequisite_milestone_ids": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {"type": "string", "pattern": "^m[1-9][0-9]*$"}
-    },
-    "success_conditions": {
+    "id": {"type": "string", "pattern": "^m[1-9][0-9]*$"},
+    "goal": {"type": "string", "minLength": 1},
+    "criteria": {
       "type": "array",
       "minItems": 1,
-      "items": {"$ref": "#/$defs/successCondition"}
-    },
-    "real_evidence_requirements": {
-      "type": "array",
-      "items": {"$ref": "#/$defs/realEvidenceRequirement"}
+      "items": {"$ref": "#/$defs/criterion"}
     }
   },
   "$defs": {
-    "identifier": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
-    "suiteIds": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {"$ref": "#/$defs/identifier"}
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]*$"
     },
-    "successCondition": {
+    "criterion": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "statement",
-        "suite_ids",
-        "evidence_requirement_ids",
-        "required"
-      ],
+      "required": ["id", "statement"],
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
         "statement": {"type": "string", "minLength": 1},
-        "suite_ids": {
-          "allOf": [
-            {"$ref": "#/$defs/suiteIds"},
-            {"maxItems": 1}
-          ]
-        },
-        "evidence_requirement_ids": {
-          "allOf": [
-            {"$ref": "#/$defs/suiteIds"},
-            {"maxItems": 1}
-          ]
-        },
-        "required": {"const": true}
-      },
-      "oneOf": [
-        {
-          "properties": {
-            "suite_ids": {"minItems": 1},
-            "evidence_requirement_ids": {"maxItems": 0}
-          }
-        },
-        {
-          "properties": {
-            "suite_ids": {"maxItems": 0},
-            "evidence_requirement_ids": {"minItems": 1}
-          }
+        "check": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/check"}
         }
-      ]
+      }
     },
-    "nullableIdentifier": {
-      "oneOf": [
-        {"$ref": "#/$defs/identifier"},
-        {"type": "null"}
-      ]
-    },
-    "realEvidenceRequirement": {
+    "check": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "statement",
-        "suite_id",
-        "parameters",
-        "promotion_source_id",
-        "capture_class",
-        "provenance_required",
-        "substitution_policy",
-        "operator_approval_required"
-      ],
+      "required": ["id"],
       "properties": {
         "id": {"$ref": "#/$defs/identifier"},
-        "statement": {"type": "string", "minLength": 1},
-        "suite_id": {"$ref": "#/$defs/identifier"},
-        "parameters": {"type": "object"},
-        "promotion_source_id": {"$ref": "#/$defs/nullableIdentifier"},
-        "capture_class": {"const": "REAL"},
-        "provenance_required": {"const": true},
-        "substitution_policy": {"const": "FORBIDDEN"},
-        "operator_approval_required": {"const": true}
+        "parameters": {"type": "object"}
       }
     }
   }

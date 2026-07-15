@@ -273,6 +273,8 @@ def load_catalog(path: Path) -> Catalog:
         suite_id = _identifier(raw_suite["suite_id"], f"{location}.suite_id")
         if suite_id in suites:
             raise GateError(f"duplicate suite id: {suite_id}")
+        if suite_id in tests:
+            raise GateError(f"test and suite ids must be globally unique: {suite_id}")
         test_ids = raw_suite["test_ids"]
         if not isinstance(test_ids, list) or not test_ids or any(
             not isinstance(item, str) for item in test_ids

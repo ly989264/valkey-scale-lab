@@ -864,7 +864,7 @@ class MetricCoverageBuilder:
                 name=f"fake.{surface}.coverage_placeholder",
                 surface=surface,
                 unit="status",
-                source_artifact="verification/catalog.json",
+                source_artifact="catalog.json",
                 source_pointer=f"$.suites.{surface}",
                 value=None,
                 value_status="SKIPPED_WITH_REASON",

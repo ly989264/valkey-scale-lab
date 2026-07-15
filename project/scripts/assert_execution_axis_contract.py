@@ -127,14 +127,14 @@ def audit() -> list[str]:
                 f"{rel}:{line_number}: scenario semantics encode scale; use profile_id/node count"
             )
 
-    catalog = json.loads((ROOT / "verification" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
     if catalog.get("schema_version") != "verification-catalog-v2":
-        errors.append("verification/catalog.json: executable catalog must use v2")
+        errors.append("catalog.json: executable catalog must use v2")
     for test in catalog.get("tests", []):
         runner = test.get("runner", {})
         if runner.get("type") == "pytest" and runner.get("result") != "junit":
             errors.append(
-                f"verification/catalog.json: pytest Test {test.get('test_id')} must use JUnit"
+                f"catalog.json: pytest Test {test.get('test_id')} must use JUnit"
             )
 
     definition = json.loads(

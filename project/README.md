@@ -6,7 +6,8 @@ tests, verification catalog, and delivery milestones are deliberately separate:
 ```text
 src/valkey_scale_lab/   product library and CLI
 tests/                  product behavior tests
-verification/           executable Test/Suite catalog and generic Gate engine
+catalog.json            the single executable Test/Suite catalog
+verification/           generic Gate engine and contract tests
 milestones/             product goals and acceptance composition
 ```
 
@@ -59,7 +60,7 @@ python3 -m valkey_scale_lab.cli report \
 ## Verification
 
 `gate` is the project-level entry point for executable checks. It loads the
-flat registry in `verification/catalog.json`, validates all parameters before
+flat registry in `catalog.json`, validates all parameters before
 starting a process, runs the selected checks, and writes complete logs and a
 summary under `artifacts/gate-runs/`.
 
@@ -102,4 +103,16 @@ Suite parameters come only from a JSON file grouped by Test ID:
 
 Registered pytest skips fail closed. `repository.all` includes all product and
 Gate pytest files but deliberately excludes the resource-consuming real run.
-Milestone execution is not implemented by Gate.
+
+Milestones compose registered Tests and Suites into observable product
+acceptance. Parameters for a parameterized Test live on its Milestone Check,
+so one Test can be executed repeatedly with different values:
+
+```bash
+./gate milestone m1
+```
+
+M1 expands every product pytest Test once, then executes the real local full
+flow at exactly 50 and 200 nodes. M2 and M3 remain `DEFINED`: Gate runs their
+currently attached Checks, but cannot report `PASS` while any Criterion has no
+Check.

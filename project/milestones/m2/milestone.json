@@ -1,98 +1,33 @@
 {
-  "schema_version": "valkey-milestone-v2",
-  "milestone": {
-    "id": "m2",
-    "version": "2.0.0",
-    "title": "Native multi-ECS lifecycle",
-    "final_goal": "Run the complete lifecycle on multiple ECS hosts with directly managed Valkey processes and compatible evidence through exact 200 nodes, building only on a sealed successful M1 completion."
-  },
-  "prerequisite_milestone_ids": ["m1"],
-  "success_conditions": [
+  "id": "m2",
+  "goal": "Run the complete Valkey lifecycle with directly managed native processes on multiple ECS hosts through exact real 50-node and 200-node executions.",
+  "criteria": [
     {
-      "id": "distributed.runtime.parity",
-      "statement": "The distributed native-process runtime preserves the admitted local lifecycle semantics.",
-      "suite_ids": ["distributed.runtime.parity"],
-      "evidence_requirement_ids": [],
-      "required": true
+      "id": "distributed.inventory-and-placement",
+      "statement": "Host inventory accepts explicit local and SSH endpoints, rejects duplicate hosts, assigns nodes deterministically, and preserves host identity in orchestration artifacts.",
+      "check": [
+        {"id": "product.orchestrator"}
+      ]
     },
     {
-      "id": "distributed.inventory.placement",
-      "statement": "Host inventory and Valkey process placement are explicit, deterministic, and independently verifiable.",
-      "suite_ids": ["distributed.inventory.placement"],
-      "evidence_requirement_ids": [],
-      "required": true
+      "id": "distributed.native-runtime",
+      "statement": "The native_multi_ecs backend starts and owns directly managed Valkey processes on at least two ECS hosts without using the local Docker runtime as a substitute."
     },
-    {
-      "id": "distributed.process.journal",
-      "statement": "Every directly managed Valkey process has attributable lifecycle and ownership journal records.",
-      "suite_ids": ["distributed.process.journal"],
-      "evidence_requirement_ids": [],
-      "required": true
-    },
-    {
-      "id": "distributed.lifecycle.safety",
-      "statement": "Distributed startup, fault handling, recovery, teardown, and cleanup preserve the global safety contract.",
-      "suite_ids": ["distributed.lifecycle.safety"],
-      "evidence_requirement_ids": [],
-      "required": true
-    },
-    {
-      "id": "distributed.clock.evidence",
-      "statement": "Cross-host evidence has attributable clocks, ordering, provenance, and product bindings.",
-      "suite_ids": ["distributed.clock.evidence"],
-      "evidence_requirement_ids": [],
-      "required": true
-    },
-    {
-      "id": "distributed.analysis.cost",
-      "statement": "Distributed analysis, resource cost, evidence transfer, and teardown are complete and attributable.",
-      "suite_ids": ["distributed.analysis.cost"],
-      "evidence_requirement_ids": [],
-      "required": true
-    },
-    {
-      "id": "distributed.real.50",
-      "statement": "A current trusted capture promoted from M1 proves the complete native multi-ECS lifecycle at exactly 50 observed Valkey nodes.",
-      "suite_ids": [],
-      "evidence_requirement_ids": ["distributed.exact.50"],
-      "required": true
-    },
-    {
-      "id": "distributed.real.200",
-      "statement": "A current trusted capture promoted from the admitted distributed 50-node result proves the complete native multi-ECS lifecycle at exactly 200 observed Valkey nodes.",
-      "suite_ids": [],
-      "evidence_requirement_ids": ["distributed.exact.200"],
-      "required": true
-    }
-  ],
-  "real_evidence_requirements": [
     {
       "id": "distributed.exact.50",
-      "statement": "Admit an operator-approved native multi-ECS full-flow capture at exactly 50 requested and observed nodes, promoted from the sealed M1 completion.",
-      "suite_id": "real.distributed.full-flow",
-      "parameters": {
-        "nodes": 50,
-        "runtime": "native_multi_ecs"
-      },
-      "promotion_source_id": null,
-      "capture_class": "REAL",
-      "provenance_required": true,
-      "substitution_policy": "FORBIDDEN",
-      "operator_approval_required": true
+      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 50 healthy Valkey nodes without downscaling."
     },
     {
       "id": "distributed.exact.200",
-      "statement": "Admit an operator-approved native multi-ECS full-flow capture at exactly 200 requested and observed nodes, promoted from the admitted distributed 50-node capture.",
-      "suite_id": "real.distributed.full-flow",
-      "parameters": {
-        "nodes": 200,
-        "runtime": "native_multi_ecs"
-      },
-      "promotion_source_id": "distributed.exact.50",
-      "capture_class": "REAL",
-      "provenance_required": true,
-      "substitution_policy": "FORBIDDEN",
-      "operator_approval_required": true
+      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 200 healthy Valkey nodes without downscaling."
+    },
+    {
+      "id": "distributed.evidence",
+      "statement": "Cross-host clocks, process journals, command logs, evidence transfer, provenance, and product bindings are complete and attributable."
+    },
+    {
+      "id": "distributed.safety-and-cleanup",
+      "statement": "Distributed fault handling, recovery, teardown, cost accounting, and cleanup preserve ownership and leave no managed process or host resource behind."
     }
   ]
 }

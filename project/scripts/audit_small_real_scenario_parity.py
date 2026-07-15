@@ -503,7 +503,7 @@ class SmallRealParityAudit:
 
     def add_fake_metrics(self, spec: SurfaceSpec) -> dict[str, Any]:
         metric_names = FAKE_METRICS[spec.surface]
-        source = "verification/catalog.json"
+        source = "catalog.json"
         for idx, name in enumerate(metric_names):
             self.add_metric(
                 name=name,

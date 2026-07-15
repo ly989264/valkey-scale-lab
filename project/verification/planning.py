@@ -15,19 +15,32 @@ from verification.catalog import (
     TestSpec,
     load_json_object,
 )
+from verification.milestone import Milestone
 
 
 INTEGER_PATTERN = re.compile(r"^[+-]?[0-9]+$", re.ASCII)
 
 
 @dataclass(frozen=True)
+class SelectedTest:
+    test: TestSpec
+    raw_parameters: Mapping[str, Any]
+    criterion_id: str | None = None
+    check_id: str | None = None
+
+
+@dataclass(frozen=True)
 class PlannedTest:
     test: TestSpec
+    instance_id: str
     argv: tuple[str, ...]
     cwd: Path
     run_id: str
     artifacts_dir: Path
     result_path: Path
+    parameters: Mapping[str, Any]
+    criterion_id: str | None = None
+    check_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -37,6 +50,7 @@ class ExecutionPlan:
     selection_id: str
     artifacts_dir: Path
     tests: tuple[PlannedTest, ...]
+    definition_status: str | None = None
 
 
 def select_test(catalog: Catalog, test_id: str) -> tuple[TestSpec, ...]:
@@ -52,6 +66,54 @@ def select_suite(catalog: Catalog, suite_id: str) -> tuple[TestSpec, ...]:
     except KeyError as exc:
         raise GateError(f"unknown suite id: {suite_id}") from exc
     return tuple(catalog.tests[test_id] for test_id in suite.test_ids)
+
+
+def select_milestone(
+    catalog: Catalog, milestone: Milestone
+) -> tuple[SelectedTest, ...]:
+    selected: list[SelectedTest] = []
+    for criterion in milestone.criteria:
+        for check in criterion.checks or ():
+            if check.id in catalog.tests:
+                selected.append(
+                    SelectedTest(
+                        catalog.tests[check.id],
+                        check.parameters,
+                        criterion.id,
+                        check.id,
+                    )
+                )
+                continue
+            if check.id not in catalog.suites:
+                raise GateError(f"unknown milestone check id: {check.id}")
+            if check.parameters_declared:
+                raise GateError(
+                    f"milestone suite check {check.id} cannot declare parameters"
+                )
+            suite = catalog.suites[check.id]
+            parameterized = [
+                test_id
+                for test_id in suite.test_ids
+                if any(
+                    spec.required
+                    for spec in catalog.tests[test_id].parameters.values()
+                )
+            ]
+            if parameterized:
+                raise GateError(
+                    f"milestone suite check {check.id} contains parameterized tests "
+                    f"that must be referenced directly: {parameterized}"
+                )
+            selected.extend(
+                SelectedTest(
+                    catalog.tests[test_id],
+                    {},
+                    criterion.id,
+                    check.id,
+                )
+                for test_id in suite.test_ids
+            )
+    return tuple(selected)
 
 
 def parse_cli_parameters(values: Sequence[str]) -> dict[str, str]:
@@ -201,16 +263,59 @@ def build_plan(
     cli_source: bool,
     invocation_id: str | None = None,
 ) -> ExecutionPlan:
+    selected = tuple(
+        SelectedTest(test, parameters_by_test.get(test.test_id, {}))
+        for test in tests
+    )
+    return _build_selected_plan(
+        selected,
+        project_root,
+        selection_kind=selection_kind,
+        selection_id=selection_id,
+        cli_source=cli_source,
+        invocation_id=invocation_id,
+    )
+
+
+def build_milestone_plan(
+    catalog: Catalog,
+    milestone: Milestone,
+    project_root: Path,
+    *,
+    invocation_id: str | None = None,
+) -> ExecutionPlan:
+    return _build_selected_plan(
+        select_milestone(catalog, milestone),
+        project_root,
+        selection_kind="milestone",
+        selection_id=milestone.id,
+        cli_source=False,
+        invocation_id=invocation_id,
+        definition_status=milestone.definition_status,
+    )
+
+
+def _build_selected_plan(
+    selected: Sequence[SelectedTest],
+    project_root: Path,
+    *,
+    selection_kind: str,
+    selection_id: str,
+    cli_source: bool,
+    invocation_id: str | None,
+    definition_status: str | None = None,
+) -> ExecutionPlan:
     project_root = project_root.resolve()
     invocation = invocation_id or _invocation_id()
     invocation_dir = project_root / "artifacts" / "gate-runs" / invocation
     planned: list[PlannedTest] = []
-    for index, test in enumerate(tests, start=1):
-        raw_values = parameters_by_test.get(test.test_id, {})
+    for index, selection in enumerate(selected, start=1):
+        test = selection.test
         values = validate_parameters(
-            test, raw_values, project_root, cli_source=cli_source
+            test, selection.raw_parameters, project_root, cli_source=cli_source
         )
-        test_dir = invocation_dir / test.test_id
+        instance_id = f"{index:03d}-{test.test_id}"
+        test_dir = invocation_dir / instance_id
         suffix = "xml" if test.runner.result == "junit" else "json"
         result_path = test_dir / f"result.{suffix}"
         run_id = f"{invocation}-{index}"
@@ -230,7 +335,21 @@ def build_plan(
             raise GateError(f"{test.test_id} runner cwd is not a directory: {cwd}")
         argv = tuple(_render(argument, templates) for argument in test.runner.argv)
         planned.append(
-            PlannedTest(test, argv, cwd, run_id, test_dir, result_path)
+            PlannedTest(
+                test,
+                instance_id,
+                argv,
+                cwd,
+                run_id,
+                test_dir,
+                result_path,
+                {
+                    name: str(value) if isinstance(value, Path) else value
+                    for name, value in values.items()
+                },
+                selection.criterion_id,
+                selection.check_id,
+            )
         )
     return ExecutionPlan(
         invocation,
@@ -238,6 +357,7 @@ def build_plan(
         selection_id,
         invocation_dir,
         tuple(planned),
+        definition_status,
     )
 
 

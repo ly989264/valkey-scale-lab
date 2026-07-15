@@ -69,6 +69,26 @@ def _summaries(root: Path) -> list[dict[str, object]]:
     ]
 
 
+def _milestone(
+    root: Path,
+    milestone_id: str,
+    criteria: list[dict[str, object]],
+) -> Path:
+    path = root / "milestones" / milestone_id / "milestone.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "id": milestone_id,
+                "goal": f"Observe {milestone_id} behavior.",
+                "criteria": criteria,
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
 def test_outer_gate_help_is_runnable() -> None:
     completed = subprocess.run(
         [str(PROJECT_ROOT / "gate"), "help"],
@@ -81,6 +101,7 @@ def test_outer_gate_help_is_runnable() -> None:
     assert completed.returncode == 0
     assert "./gate test <test-id>" in completed.stdout
     assert "./gate suite <suite-id>" in completed.stdout
+    assert "./gate milestone <milestone-id>" in completed.stdout
 
 
 def test_single_command_test_passes_and_writes_summary(tmp_path: Path, capsys) -> None:
@@ -97,7 +118,7 @@ def test_single_command_test_passes_and_writes_summary(tmp_path: Path, capsys) -
     assert "1/1 passed" in output
     summary = _summaries(tmp_path)[0]
     assert summary["status"] == "PASS"
-    log = next((tmp_path / "artifacts/gate-runs").glob("*/sample.pass/stdout.log"))
+    log = next((tmp_path / "artifacts/gate-runs").glob("*/001-sample.pass/stdout.log"))
     assert log.read_text(encoding="utf-8").strip() == "ok"
 
 
@@ -118,6 +139,7 @@ def test_suite_continues_after_failure_and_summarizes_every_test(
     output = capsys.readouterr().out
     assert "sample.fail" in output
     assert "sample.pass" in output
+    assert "Status: FAIL" in output
     summary = _summaries(tmp_path)[0]
     assert [row["status"] for row in summary["tests"]] == ["FAIL", "PASS"]
 
@@ -168,7 +190,9 @@ def test_suite_parameter_errors_abort_before_any_process_starts(tmp_path: Path) 
     assert not marker.exists()
 
 
-@pytest.mark.parametrize(("status", "expected"), [("PASS", 0), ("FAIL", 1)])
+@pytest.mark.parametrize(
+    ("status", "expected"), [("PASS", 0), ("FAIL", 1), ("BLOCKED", 1)]
+)
 def test_command_json_result_contract(
     tmp_path: Path, status: str, expected: int
 ) -> None:
@@ -281,7 +305,7 @@ def test_failure_output_is_bounded_but_full_log_is_kept(
     output = capsys.readouterr().out
     assert "line-99" in output
     assert "line-0\n" not in output
-    log = next((tmp_path / "artifacts/gate-runs").glob("*/sample.noisy/stdout.log"))
+    log = next((tmp_path / "artifacts/gate-runs").glob("*/001-sample.noisy/stdout.log"))
     assert len(log.read_text(encoding="utf-8").splitlines()) == 100
 
 
@@ -299,3 +323,230 @@ def test_selection_and_parameter_errors_return_two(tmp_path: Path) -> None:
         project_root=tmp_path,
         catalog_path=catalog,
     ) == 2
+
+
+def test_milestone_expands_suite_and_repeated_parameterized_test(
+    tmp_path: Path, capsys
+) -> None:
+    marker = tmp_path / "values.txt"
+    parameterized = _test(
+        "sample.parameter",
+        [
+            sys.executable,
+            "-c",
+            "import sys; open(sys.argv[1], 'a').write(sys.argv[2] + ',')",
+            str(marker),
+            "{param.nodes}",
+        ],
+        parameters={"nodes": {"type": "integer", "required": True}},
+    )
+    suite_test = _test("sample.suite-test", [sys.executable, "-c", "print('suite')"])
+    catalog = _catalog(tmp_path, [suite_test, parameterized], ["sample.suite-test"])
+    _milestone(
+        tmp_path,
+        "m1",
+        [
+            {
+                "id": "sample.suite-criterion",
+                "statement": "The Suite passes.",
+                "check": [{"id": "sample.suite"}],
+            },
+            {
+                "id": "sample.parameters",
+                "statement": "Both scales pass.",
+                "check": [
+                    {"id": "sample.parameter", "parameters": {"nodes": 50}},
+                    {"id": "sample.parameter", "parameters": {"nodes": 200}},
+                ],
+            },
+        ],
+    )
+
+    assert main(["milestone", "m1"], project_root=tmp_path, catalog_path=catalog) == 0
+    assert marker.read_text(encoding="utf-8") == "50,200,"
+    output = capsys.readouterr().out
+    assert "Definition: READY" in output
+    summary = _summaries(tmp_path)[0]
+    assert summary["definition_status"] == "READY"
+    assert summary["status"] == "PASS"
+    assert [row["instance_id"] for row in summary["tests"]] == [
+        "001-sample.suite-test",
+        "002-sample.parameter",
+        "003-sample.parameter",
+    ]
+    assert [row["parameters"] for row in summary["tests"]] == [
+        {},
+        {"nodes": 50},
+        {"nodes": 200},
+    ]
+    assert [row["criterion_id"] for row in summary["tests"]] == [
+        "sample.suite-criterion",
+        "sample.parameters",
+        "sample.parameters",
+    ]
+    assert [row["check_id"] for row in summary["tests"]] == [
+        "sample.suite",
+        "sample.parameter",
+        "sample.parameter",
+    ]
+
+
+def test_milestone_parameter_errors_abort_before_any_process_starts(
+    tmp_path: Path,
+) -> None:
+    marker = tmp_path / "started"
+    first = _test(
+        "sample.first",
+        [sys.executable, "-c", f"from pathlib import Path; Path({str(marker)!r}).touch()"],
+    )
+    second = _test(
+        "sample.second",
+        [sys.executable, "-c", "print('{param.nodes}')"],
+        parameters={"nodes": {"type": "integer", "required": True}},
+    )
+    catalog = _catalog(tmp_path, [first, second])
+    _milestone(
+        tmp_path,
+        "m1",
+        [
+            {
+                "id": "sample.atomic",
+                "statement": "Planning is atomic.",
+                "check": [{"id": "sample.first"}, {"id": "sample.second"}],
+            }
+        ],
+    )
+
+    assert main(["milestone", "m1"], project_root=tmp_path, catalog_path=catalog) == 2
+    assert not marker.exists()
+
+
+def test_defined_milestone_runs_attached_checks_but_cannot_pass(
+    tmp_path: Path,
+) -> None:
+    catalog = _catalog(
+        tmp_path,
+        [_test("sample.pass", [sys.executable, "-c", "print('ok')"])],
+    )
+    _milestone(
+        tmp_path,
+        "m2",
+        [
+            {
+                "id": "sample.ready-part",
+                "statement": "The implemented part passes.",
+                "check": [{"id": "sample.pass"}],
+            },
+            {
+                "id": "sample.future-part",
+                "statement": "The future part is observable.",
+            },
+        ],
+    )
+
+    assert main(["milestone", "m2"], project_root=tmp_path, catalog_path=catalog) == 1
+    summary = _summaries(tmp_path)[0]
+    assert summary["definition_status"] == "DEFINED"
+    assert summary["status"] == "DEFINED"
+    assert [row["status"] for row in summary["tests"]] == ["PASS"]
+
+
+def test_defined_milestone_with_no_checks_writes_empty_summary(
+    tmp_path: Path,
+) -> None:
+    catalog = _catalog(
+        tmp_path,
+        [_test("sample.pass", [sys.executable, "-c", "print('unused')"])],
+    )
+    _milestone(
+        tmp_path,
+        "m2",
+        [{"id": "sample.future", "statement": "Future behavior is observable."}],
+    )
+
+    assert main(["milestone", "m2"], project_root=tmp_path, catalog_path=catalog) == 1
+    summary = _summaries(tmp_path)[0]
+    assert summary["status"] == "DEFINED"
+    assert summary["tests"] == []
+
+
+def test_milestone_blocked_status_and_failure_precedence(tmp_path: Path) -> None:
+    blocked_code = (
+        "from pathlib import Path; import json,sys; "
+        "Path(sys.argv[1]).write_text(json.dumps(dict(status='BLOCKED', summary='environment')))"
+    )
+    blocked = _test(
+        "sample.blocked",
+        [sys.executable, "-c", blocked_code, "{gate.result_path}"],
+        result="json",
+    )
+    failed = _test("sample.fail", [sys.executable, "-c", "raise SystemExit(4)"])
+    catalog = _catalog(tmp_path, [blocked, failed])
+    _milestone(
+        tmp_path,
+        "m1",
+        [
+            {
+                "id": "sample.blocked-only",
+                "statement": "The environment is available.",
+                "check": [{"id": "sample.blocked"}],
+            }
+        ],
+    )
+    assert main(["milestone", "m1"], project_root=tmp_path, catalog_path=catalog) == 1
+    assert _summaries(tmp_path)[0]["status"] == "BLOCKED"
+
+    _milestone(
+        tmp_path,
+        "m2",
+        [
+            {
+                "id": "sample.mixed",
+                "statement": "Known failures take precedence.",
+                "check": [{"id": "sample.blocked"}, {"id": "sample.fail"}],
+            }
+        ],
+    )
+    assert main(["milestone", "m2"], project_root=tmp_path, catalog_path=catalog) == 1
+    summaries = _summaries(tmp_path)
+    m2_summary = next(row for row in summaries if row["selection"]["id"] == "m2")
+    assert m2_summary["status"] == "FAIL"
+
+
+def test_milestone_timeout_is_blocked(tmp_path: Path) -> None:
+    catalog = _catalog(
+        tmp_path,
+        [_test("sample.timeout", [sys.executable, "-c", "import time; time.sleep(5)"], timeout=1)],
+    )
+    _milestone(
+        tmp_path,
+        "m1",
+        [
+            {
+                "id": "sample.timeout",
+                "statement": "The check finishes.",
+                "check": [{"id": "sample.timeout"}],
+            }
+        ],
+    )
+
+    assert main(["milestone", "m1"], project_root=tmp_path, catalog_path=catalog) == 1
+    assert _summaries(tmp_path)[0]["status"] == "BLOCKED"
+
+
+def test_unknown_or_mismatched_milestone_returns_two(tmp_path: Path) -> None:
+    catalog = _catalog(
+        tmp_path,
+        [_test("sample.pass", [sys.executable, "-c", "pass"])],
+    )
+    assert main(["milestone", "unknown"], project_root=tmp_path, catalog_path=catalog) == 2
+    _milestone(
+        tmp_path,
+        "m1",
+        [{"id": "sample.pass", "statement": "The sample passes."}],
+    )
+    document_path = tmp_path / "milestones/m1/milestone.json"
+    document = json.loads(document_path.read_text(encoding="utf-8"))
+    document["id"] = "m2"
+    document_path.write_text(json.dumps(document), encoding="utf-8")
+    assert main(["milestone", "m1"], project_root=tmp_path, catalog_path=catalog) == 2

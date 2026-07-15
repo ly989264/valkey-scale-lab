@@ -1,7 +1,10 @@
 # M3 - Multi-ECS Scale-Out
 
-M3 promotes the native multi-ECS runtime through exact 500, 1000, and 2000
-node real runs. The 500-node requirement binds the sealed M2 completion, and
-every later requirement consumes the previous admitted decision. The suites
-are currently `PLANNED`, so validation reports `BLOCKED` rather than treating a
-dry run or reduced scale as completion.
+M3 promotes the native multi-ECS runtime through exact real 500, 1000, and
+2000 node runs. Current config, planner, definition, and plan-compiler Tests
+prove only the implemented dry-run and fail-closed scale policy, so only that
+Criterion has Checks. Real distributed scale, telemetry transfer, fault
+containment, comparison reporting, and cleanup remain unimplemented Criteria.
+
+The definition is `DEFINED`; dry-run planning never substitutes for real
+scale evidence.

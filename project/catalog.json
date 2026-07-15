@@ -2240,6 +2240,8 @@
       "runner": {
         "type": "command",
         "argv": [
+          "/usr/bin/env",
+          "PYTHONPATH={gate.project_root}/src",
           "python3",
           "-m",
           "valkey_scale_lab.cli",
@@ -2260,7 +2262,7 @@
           "--artifacts-dir",
           "{gate.artifacts_dir}"
         ],
-        "cwd": "{gate.project_root}/src",
+        "cwd": "{gate.project_root}",
         "timeout_seconds": 14400,
         "result": "exit_code"
       }
