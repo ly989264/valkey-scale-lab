@@ -128,9 +128,14 @@ def audit() -> list[str]:
             )
 
     catalog = json.loads((ROOT / "verification" / "catalog.json").read_text(encoding="utf-8"))
-    for suite in catalog.get("suites", []):
-        if suite.get("skip_policy") != "FAIL":
-            errors.append(f"verification/catalog.json: suite {suite.get('id')} does not fail on skip")
+    if catalog.get("schema_version") != "verification-catalog-v2":
+        errors.append("verification/catalog.json: executable catalog must use v2")
+    for test in catalog.get("tests", []):
+        runner = test.get("runner", {})
+        if runner.get("type") == "pytest" and runner.get("result") != "junit":
+            errors.append(
+                f"verification/catalog.json: pytest Test {test.get('test_id')} must use JUnit"
+            )
 
     definition = json.loads(
         (ROOT / "src" / "valkey_scale_lab" / "scenarios" / "definitions" / "local_full_flow_v1.json").read_text(

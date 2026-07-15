@@ -1,132 +1,2269 @@
 {
-  "schema_version": "verification-catalog-v1",
+  "schema_version": "verification-catalog-v2",
   "suites": [
     {
-      "id": "scenario.contract",
-      "title": "Scenario and plan contracts",
-      "kind": "pytest",
-      "status": "READY",
-      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/scenarios"],
-      "timeout_seconds": 1200,
-      "capabilities": [],
-      "outputs": [],
-      "skip_policy": "FAIL"
+      "suite_id": "product.analysis",
+      "description": "All product analysis tests.",
+      "test_ids": [
+        "product.analysis.analysis_summary",
+        "product.analysis.o5_admission_digest_binding",
+        "product.analysis.o5_source_artifact_completeness",
+        "product.analysis.system_metrics_summary",
+        "product.analysis.validated_analysis_v9",
+        "product.analysis.workload_impact_analysis"
+      ]
     },
     {
-      "id": "runtime.local.lifecycle",
-      "title": "Local lifecycle and ownership",
-      "kind": "pytest",
-      "status": "READY",
-      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/gates", "tests/integration/test_gate_orchestration.py", "tests/real_valkey/test_exact_gate.py", "tests/real_valkey/test_gate_small_real_parity.py"],
-      "timeout_seconds": 1800,
-      "capabilities": [],
-      "outputs": [],
-      "skip_policy": "FAIL"
+      "suite_id": "product.artifacts",
+      "description": "All product artifacts tests.",
+      "test_ids": [
+        "product.artifacts.command_log",
+        "product.artifacts.fault_timeline_artifacts",
+        "product.artifacts.management_add_node_gap",
+        "product.artifacts.management_matrix",
+        "product.artifacts.run_metadata",
+        "product.artifacts.setup_telemetry",
+        "product.artifacts.system_metrics_artifacts",
+        "product.artifacts.workload_benchmark_artifacts"
+      ]
     },
     {
-      "id": "runtime.fake.full-flow",
-      "title": "Fake backend full-flow contract",
-      "kind": "pytest",
-      "status": "READY",
-      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/scenarios/test_execution_axes.py"],
-      "timeout_seconds": 1200,
-      "capabilities": [],
-      "outputs": [],
-      "skip_policy": "FAIL"
+      "suite_id": "product.cli",
+      "description": "All product cli tests.",
+      "test_ids": [
+        "product.cli.compatibility_wrappers"
+      ]
     },
     {
-      "id": "runtime.small-real.parity",
-      "title": "Small-real backend semantic parity",
-      "kind": "pytest",
-      "status": "READY",
-      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/real_valkey/test_gate_small_real_parity.py"],
-      "timeout_seconds": 1200,
-      "capabilities": [],
-      "outputs": [],
-      "skip_policy": "FAIL"
+      "suite_id": "product.config",
+      "description": "All product config tests.",
+      "test_ids": [
+        "product.config.config_validation"
+      ]
     },
     {
-      "id": "evidence.provenance",
-      "title": "Evidence and provenance contracts",
-      "kind": "pytest",
-      "status": "READY",
-      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/evidence", "tests/provenance"],
-      "timeout_seconds": 1800,
-      "capabilities": [],
-      "outputs": [],
-      "skip_policy": "FAIL"
+      "suite_id": "product.evidence",
+      "description": "All product evidence tests.",
+      "test_ids": [
+        "product.evidence.evidence_contract"
+      ]
     },
     {
-      "id": "report.offline",
-      "title": "Validated offline analysis and reports",
-      "kind": "pytest",
-      "status": "READY",
-      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/analysis", "tests/report"],
-      "timeout_seconds": 1800,
-      "capabilities": [],
-      "outputs": [],
-      "skip_policy": "FAIL"
+      "suite_id": "product.failover",
+      "description": "All product failover tests.",
+      "test_ids": [
+        "product.failover.clean_gate_layered_assertions",
+        "product.failover.failover_contract",
+        "product.failover.failover_timeline_assertions",
+        "product.failover.fault_failover_scale_audit",
+        "product.failover.full_flow_fault_workload_measurement",
+        "product.failover.full_flow_unprobed_fault_rejection",
+        "product.failover.partition_group_semantics_gap"
+      ]
     },
     {
-      "id": "regression.hermetic",
-      "title": "Hermetic product regression",
-      "kind": "pytest",
-      "status": "READY",
-      "argv": ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--ignore=tests/fault/test_network_proxy.py", "tests"],
-      "timeout_seconds": 3600,
-      "capabilities": [],
-      "outputs": [],
-      "skip_policy": "FAIL"
+      "suite_id": "product.fault",
+      "description": "All product fault tests.",
+      "test_ids": [
+        "product.fault.network_proxy",
+        "product.fault.owned_runtime_guard_gap",
+        "product.fault.sandbox_fault"
+      ]
     },
     {
-      "id": "real.local.full-flow",
-      "title": "Exact local real full flow",
-      "kind": "real",
-      "status": "READY",
-      "argv": ["python3", "-m", "valkey_scale_lab.cli", "gate", "execute", "--definition", "{definition}", "--nodes", "{nodes}", "--config", "{config}", "--run-id", "{run_id}", "--ownership-id", "{ownership_id}", "--provenance-id", "{provenance_id}", "--artifacts-dir", "{artifacts_dir}", "--product-digest", "{product_digest}"],
-      "timeout_seconds": 14400,
-      "capabilities": ["docker", "host_resource"],
-      "outputs": ["{artifacts_dir}"],
-      "skip_policy": "FAIL"
+      "suite_id": "product.gates",
+      "description": "All product gates tests.",
+      "test_ids": [
+        "product.gates.cross_instance_collision",
+        "product.gates.fault_resource_collision",
+        "product.gates.nested_artifact_root_collision",
+        "product.gates.orchestrator"
+      ]
     },
     {
-      "id": "distributed.runtime.parity", "title": "Distributed runtime parity", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.integration",
+      "description": "All product integration tests.",
+      "test_ids": [
+        "product.integration.cleanup_discovery_gap",
+        "product.integration.cleanup_missing_ownership_gap",
+        "product.integration.docker_runtime_contract",
+        "product.integration.failover_timeline_artifacts",
+        "product.integration.fault_timeline_pipeline",
+        "product.integration.full_flow_fault_command_diagnostics",
+        "product.integration.full_flow_resource_telemetry",
+        "product.integration.gate_orchestration",
+        "product.integration.rolling_restart_scaling"
+      ]
     },
     {
-      "id": "distributed.inventory.placement", "title": "Distributed inventory and placement", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.orchestrator",
+      "description": "All product orchestrator tests.",
+      "test_ids": [
+        "product.orchestrator.local_orchestrator"
+      ]
     },
     {
-      "id": "distributed.process.journal", "title": "Native process journal", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.planner",
+      "description": "All product planner tests.",
+      "test_ids": [
+        "product.planner.planner"
+      ]
     },
     {
-      "id": "distributed.lifecycle.safety", "title": "Distributed lifecycle safety", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.provenance",
+      "description": "All product provenance tests.",
+      "test_ids": [
+        "product.provenance.exact_gate_measured_sources",
+        "product.provenance.exact_gate_scenario_provenance"
+      ]
     },
     {
-      "id": "distributed.clock.evidence", "title": "Clock-aware distributed evidence", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.real_valkey",
+      "description": "All product real valkey tests.",
+      "test_ids": [
+        "product.real_valkey.exact_gate",
+        "product.real_valkey.gate_small_real_parity"
+      ]
     },
     {
-      "id": "distributed.analysis.cost", "title": "Distributed analysis, cost, and teardown", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.report",
+      "description": "All product report tests.",
+      "test_ids": [
+        "product.report.final_report",
+        "product.report.report_rendering",
+        "product.report.system_metrics_report",
+        "product.report.validated_evidence_pipeline_v9",
+        "product.report.zh_offline_report_gate"
+      ]
     },
     {
-      "id": "real.distributed.full-flow", "title": "Exact distributed real full flow", "kind": "real", "status": "PLANNED", "argv": [], "timeout_seconds": 14400, "capabilities": ["cloud", "host_resource"], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.scale",
+      "description": "All product scale tests.",
+      "test_ids": [
+        "product.scale.review_o1_process_cleanup_missing_identity",
+        "product.scale.review_o1_process_cleanup_ownership",
+        "product.scale.scale_ladder"
+      ]
     },
     {
-      "id": "scale.profiles.preflight", "title": "Scale profiles and preflight", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.scenarios",
+      "description": "All product scenarios tests.",
+      "test_ids": [
+        "product.scenarios.admission_source_compatibility",
+        "product.scenarios.definition_contract",
+        "product.scenarios.execution_axes",
+        "product.scenarios.execution_axis_contract",
+        "product.scenarios.gate_plan_compiler",
+        "product.scenarios.transform_compatibility"
+      ]
     },
     {
-      "id": "scale.orchestration", "title": "Scalable orchestration", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.stability",
+      "description": "All product stability tests.",
+      "test_ids": [
+        "product.stability.full_flow_bounded_stability",
+        "product.stability.full_flow_management_workload_impact_status",
+        "product.stability.full_flow_management_workload_overlap",
+        "product.stability.stability_health_criteria_gap",
+        "product.stability.stability_soak",
+        "product.stability.stability_soak_multistage"
+      ]
     },
     {
-      "id": "scale.telemetry.transfer", "title": "Scalable telemetry transfer", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.unit",
+      "description": "All product unit tests.",
+      "test_ids": [
+        "product.unit.clean_gate_diagnostics",
+        "product.unit.cli_contract",
+        "product.unit.cluster_timeout",
+        "product.unit.command_recorder_runtime",
+        "product.unit.failover_timeline_observer",
+        "product.unit.fault_sandbox",
+        "product.unit.fault_timeline_contract",
+        "product.unit.full_flow_complete_matrix",
+        "product.unit.nodehost_density",
+        "product.unit.nodehost_density_assertions",
+        "product.unit.process_bootstrap_batching",
+        "product.unit.server_profile",
+        "product.unit.server_profile_assertions",
+        "product.unit.setup_exhaustive_timeline",
+        "product.unit.setup_timing_accounting",
+        "product.unit.system_metrics_runtime",
+        "product.unit.valkey_probe_lib",
+        "product.unit.workload_benchmark",
+        "product.unit.workload_key_generator"
+      ]
     },
     {
-      "id": "scale.hierarchical.safety", "title": "Hierarchical scale safety", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "product.all",
+      "description": "All product pytest tests, including environment-sensitive checks.",
+      "test_ids": [
+        "product.analysis.analysis_summary",
+        "product.analysis.o5_admission_digest_binding",
+        "product.analysis.o5_source_artifact_completeness",
+        "product.analysis.system_metrics_summary",
+        "product.analysis.validated_analysis_v9",
+        "product.analysis.workload_impact_analysis",
+        "product.artifacts.command_log",
+        "product.artifacts.fault_timeline_artifacts",
+        "product.artifacts.management_add_node_gap",
+        "product.artifacts.management_matrix",
+        "product.artifacts.run_metadata",
+        "product.artifacts.setup_telemetry",
+        "product.artifacts.system_metrics_artifacts",
+        "product.artifacts.workload_benchmark_artifacts",
+        "product.cli.compatibility_wrappers",
+        "product.config.config_validation",
+        "product.evidence.evidence_contract",
+        "product.failover.clean_gate_layered_assertions",
+        "product.failover.failover_contract",
+        "product.failover.failover_timeline_assertions",
+        "product.failover.fault_failover_scale_audit",
+        "product.failover.full_flow_fault_workload_measurement",
+        "product.failover.full_flow_unprobed_fault_rejection",
+        "product.failover.partition_group_semantics_gap",
+        "product.fault.network_proxy",
+        "product.fault.owned_runtime_guard_gap",
+        "product.fault.sandbox_fault",
+        "product.gates.cross_instance_collision",
+        "product.gates.fault_resource_collision",
+        "product.gates.nested_artifact_root_collision",
+        "product.gates.orchestrator",
+        "product.integration.cleanup_discovery_gap",
+        "product.integration.cleanup_missing_ownership_gap",
+        "product.integration.docker_runtime_contract",
+        "product.integration.failover_timeline_artifacts",
+        "product.integration.fault_timeline_pipeline",
+        "product.integration.full_flow_fault_command_diagnostics",
+        "product.integration.full_flow_resource_telemetry",
+        "product.integration.gate_orchestration",
+        "product.integration.rolling_restart_scaling",
+        "product.orchestrator.local_orchestrator",
+        "product.planner.planner",
+        "product.provenance.exact_gate_measured_sources",
+        "product.provenance.exact_gate_scenario_provenance",
+        "product.real_valkey.exact_gate",
+        "product.real_valkey.gate_small_real_parity",
+        "product.report.final_report",
+        "product.report.report_rendering",
+        "product.report.system_metrics_report",
+        "product.report.validated_evidence_pipeline_v9",
+        "product.report.zh_offline_report_gate",
+        "product.scale.review_o1_process_cleanup_missing_identity",
+        "product.scale.review_o1_process_cleanup_ownership",
+        "product.scale.scale_ladder",
+        "product.scenarios.admission_source_compatibility",
+        "product.scenarios.definition_contract",
+        "product.scenarios.execution_axes",
+        "product.scenarios.execution_axis_contract",
+        "product.scenarios.gate_plan_compiler",
+        "product.scenarios.transform_compatibility",
+        "product.stability.full_flow_bounded_stability",
+        "product.stability.full_flow_management_workload_impact_status",
+        "product.stability.full_flow_management_workload_overlap",
+        "product.stability.stability_health_criteria_gap",
+        "product.stability.stability_soak",
+        "product.stability.stability_soak_multistage",
+        "product.unit.clean_gate_diagnostics",
+        "product.unit.cli_contract",
+        "product.unit.cluster_timeout",
+        "product.unit.command_recorder_runtime",
+        "product.unit.failover_timeline_observer",
+        "product.unit.fault_sandbox",
+        "product.unit.fault_timeline_contract",
+        "product.unit.full_flow_complete_matrix",
+        "product.unit.nodehost_density",
+        "product.unit.nodehost_density_assertions",
+        "product.unit.process_bootstrap_batching",
+        "product.unit.server_profile",
+        "product.unit.server_profile_assertions",
+        "product.unit.setup_exhaustive_timeline",
+        "product.unit.setup_timing_accounting",
+        "product.unit.system_metrics_runtime",
+        "product.unit.valkey_probe_lib",
+        "product.unit.workload_benchmark",
+        "product.unit.workload_key_generator"
+      ]
     },
     {
-      "id": "scale.comparison.report", "title": "Scale comparison report", "kind": "pytest", "status": "PLANNED", "argv": [], "timeout_seconds": 1800, "capabilities": [], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "gate.self",
+      "description": "Catalog contracts and Gate executor self-tests.",
+      "test_ids": [
+        "gate.contracts",
+        "gate.executor"
+      ]
     },
     {
-      "id": "real.distributed.scale-flow", "title": "Exact distributed scale flow", "kind": "real", "status": "PLANNED", "argv": [], "timeout_seconds": 21600, "capabilities": ["cloud", "host_resource"], "outputs": [], "skip_policy": "FAIL"
+      "suite_id": "repository.all",
+      "description": "Every product and Gate pytest test; real resource runs are excluded.",
+      "test_ids": [
+        "product.analysis.analysis_summary",
+        "product.analysis.o5_admission_digest_binding",
+        "product.analysis.o5_source_artifact_completeness",
+        "product.analysis.system_metrics_summary",
+        "product.analysis.validated_analysis_v9",
+        "product.analysis.workload_impact_analysis",
+        "product.artifacts.command_log",
+        "product.artifacts.fault_timeline_artifacts",
+        "product.artifacts.management_add_node_gap",
+        "product.artifacts.management_matrix",
+        "product.artifacts.run_metadata",
+        "product.artifacts.setup_telemetry",
+        "product.artifacts.system_metrics_artifacts",
+        "product.artifacts.workload_benchmark_artifacts",
+        "product.cli.compatibility_wrappers",
+        "product.config.config_validation",
+        "product.evidence.evidence_contract",
+        "product.failover.clean_gate_layered_assertions",
+        "product.failover.failover_contract",
+        "product.failover.failover_timeline_assertions",
+        "product.failover.fault_failover_scale_audit",
+        "product.failover.full_flow_fault_workload_measurement",
+        "product.failover.full_flow_unprobed_fault_rejection",
+        "product.failover.partition_group_semantics_gap",
+        "product.fault.network_proxy",
+        "product.fault.owned_runtime_guard_gap",
+        "product.fault.sandbox_fault",
+        "product.gates.cross_instance_collision",
+        "product.gates.fault_resource_collision",
+        "product.gates.nested_artifact_root_collision",
+        "product.gates.orchestrator",
+        "product.integration.cleanup_discovery_gap",
+        "product.integration.cleanup_missing_ownership_gap",
+        "product.integration.docker_runtime_contract",
+        "product.integration.failover_timeline_artifacts",
+        "product.integration.fault_timeline_pipeline",
+        "product.integration.full_flow_fault_command_diagnostics",
+        "product.integration.full_flow_resource_telemetry",
+        "product.integration.gate_orchestration",
+        "product.integration.rolling_restart_scaling",
+        "product.orchestrator.local_orchestrator",
+        "product.planner.planner",
+        "product.provenance.exact_gate_measured_sources",
+        "product.provenance.exact_gate_scenario_provenance",
+        "product.real_valkey.exact_gate",
+        "product.real_valkey.gate_small_real_parity",
+        "product.report.final_report",
+        "product.report.report_rendering",
+        "product.report.system_metrics_report",
+        "product.report.validated_evidence_pipeline_v9",
+        "product.report.zh_offline_report_gate",
+        "product.scale.review_o1_process_cleanup_missing_identity",
+        "product.scale.review_o1_process_cleanup_ownership",
+        "product.scale.scale_ladder",
+        "product.scenarios.admission_source_compatibility",
+        "product.scenarios.definition_contract",
+        "product.scenarios.execution_axes",
+        "product.scenarios.execution_axis_contract",
+        "product.scenarios.gate_plan_compiler",
+        "product.scenarios.transform_compatibility",
+        "product.stability.full_flow_bounded_stability",
+        "product.stability.full_flow_management_workload_impact_status",
+        "product.stability.full_flow_management_workload_overlap",
+        "product.stability.stability_health_criteria_gap",
+        "product.stability.stability_soak",
+        "product.stability.stability_soak_multistage",
+        "product.unit.clean_gate_diagnostics",
+        "product.unit.cli_contract",
+        "product.unit.cluster_timeout",
+        "product.unit.command_recorder_runtime",
+        "product.unit.failover_timeline_observer",
+        "product.unit.fault_sandbox",
+        "product.unit.fault_timeline_contract",
+        "product.unit.full_flow_complete_matrix",
+        "product.unit.nodehost_density",
+        "product.unit.nodehost_density_assertions",
+        "product.unit.process_bootstrap_batching",
+        "product.unit.server_profile",
+        "product.unit.server_profile_assertions",
+        "product.unit.setup_exhaustive_timeline",
+        "product.unit.setup_timing_accounting",
+        "product.unit.system_metrics_runtime",
+        "product.unit.valkey_probe_lib",
+        "product.unit.workload_benchmark",
+        "product.unit.workload_key_generator",
+        "gate.contracts",
+        "gate.executor"
+      ]
+    },
+    {
+      "suite_id": "real.local.full-suite",
+      "description": "Operator-invoked local real full-flow checks.",
+      "test_ids": [
+        "real.local.full-flow"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "test_id": "product.analysis.analysis_summary",
+      "description": "Analysis analysis summary checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/analysis/test_analysis_summary.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.analysis.o5_admission_digest_binding",
+      "description": "Analysis o5 admission digest binding checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/analysis/test_o5_admission_digest_binding.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.analysis.o5_source_artifact_completeness",
+      "description": "Analysis o5 source artifact completeness checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/analysis/test_o5_source_artifact_completeness.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.analysis.system_metrics_summary",
+      "description": "Analysis system metrics summary checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/analysis/test_system_metrics_summary.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.analysis.validated_analysis_v9",
+      "description": "Analysis validated analysis v9 checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/analysis/test_validated_analysis_v9.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.analysis.workload_impact_analysis",
+      "description": "Analysis workload impact analysis checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/analysis/test_workload_impact_analysis.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.artifacts.command_log",
+      "description": "Artifacts command log checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/artifacts/test_command_log.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.artifacts.fault_timeline_artifacts",
+      "description": "Artifacts fault timeline artifacts checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/artifacts/test_fault_timeline_artifacts.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.artifacts.management_add_node_gap",
+      "description": "Artifacts management add node gap checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/artifacts/test_management_add_node_gap.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.artifacts.management_matrix",
+      "description": "Artifacts management matrix checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/artifacts/test_management_matrix.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.artifacts.run_metadata",
+      "description": "Artifacts run metadata checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/artifacts/test_run_metadata.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.artifacts.setup_telemetry",
+      "description": "Artifacts setup telemetry checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/artifacts/test_setup_telemetry.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.artifacts.system_metrics_artifacts",
+      "description": "Artifacts system metrics artifacts checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/artifacts/test_system_metrics_artifacts.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.artifacts.workload_benchmark_artifacts",
+      "description": "Artifacts workload benchmark artifacts checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/artifacts/test_workload_benchmark_artifacts.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.cli.compatibility_wrappers",
+      "description": "Cli compatibility wrappers checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/cli/test_compatibility_wrappers.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.config.config_validation",
+      "description": "Config config validation checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/config/test_config_validation.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.evidence.evidence_contract",
+      "description": "Evidence evidence contract checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/evidence/test_evidence_contract.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.failover.clean_gate_layered_assertions",
+      "description": "Failover clean gate layered assertions checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/failover/test_clean_gate_layered_assertions.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.failover.failover_contract",
+      "description": "Failover failover contract checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/failover/test_failover_contract.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.failover.failover_timeline_assertions",
+      "description": "Failover failover timeline assertions checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/failover/test_failover_timeline_assertions.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.failover.fault_failover_scale_audit",
+      "description": "Failover fault failover scale audit checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/failover/test_fault_failover_scale_audit.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.failover.full_flow_fault_workload_measurement",
+      "description": "Failover full flow fault workload measurement checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/failover/test_full_flow_fault_workload_measurement.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.failover.full_flow_unprobed_fault_rejection",
+      "description": "Failover full flow unprobed fault rejection checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/failover/test_full_flow_unprobed_fault_rejection.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.failover.partition_group_semantics_gap",
+      "description": "Failover partition group semantics gap checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/failover/test_partition_group_semantics_gap.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.fault.network_proxy",
+      "description": "Fault network proxy checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/fault/test_network_proxy.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.fault.owned_runtime_guard_gap",
+      "description": "Fault owned runtime guard gap checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/fault/test_owned_runtime_guard_gap.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.fault.sandbox_fault",
+      "description": "Fault sandbox fault checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/fault/test_sandbox_fault.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.gates.cross_instance_collision",
+      "description": "Gates cross instance collision checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/gates/test_cross_instance_collision.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.gates.fault_resource_collision",
+      "description": "Gates fault resource collision checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/gates/test_fault_resource_collision.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.gates.nested_artifact_root_collision",
+      "description": "Gates nested artifact root collision checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/gates/test_nested_artifact_root_collision.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.gates.orchestrator",
+      "description": "Gates orchestrator checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/gates/test_orchestrator.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.cleanup_discovery_gap",
+      "description": "Integration cleanup discovery gap checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_cleanup_discovery_gap.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.cleanup_missing_ownership_gap",
+      "description": "Integration cleanup missing ownership gap checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_cleanup_missing_ownership_gap.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.docker_runtime_contract",
+      "description": "Integration docker runtime contract checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_docker_runtime_contract.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.failover_timeline_artifacts",
+      "description": "Integration failover timeline artifacts checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_failover_timeline_artifacts.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.fault_timeline_pipeline",
+      "description": "Integration fault timeline pipeline checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_fault_timeline_pipeline.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.full_flow_fault_command_diagnostics",
+      "description": "Integration full flow fault command diagnostics checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_full_flow_fault_command_diagnostics.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.full_flow_resource_telemetry",
+      "description": "Integration full flow resource telemetry checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_full_flow_resource_telemetry.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.gate_orchestration",
+      "description": "Integration gate orchestration checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_gate_orchestration.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.integration.rolling_restart_scaling",
+      "description": "Integration rolling restart scaling checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_rolling_restart_scaling.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.orchestrator.local_orchestrator",
+      "description": "Orchestrator local orchestrator checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/orchestrator/test_local_orchestrator.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.planner.planner",
+      "description": "Planner planner checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/planner/test_planner.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.provenance.exact_gate_measured_sources",
+      "description": "Provenance exact gate measured sources checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/provenance/test_exact_gate_measured_sources.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.provenance.exact_gate_scenario_provenance",
+      "description": "Provenance exact gate scenario provenance checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/provenance/test_exact_gate_scenario_provenance.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.real_valkey.exact_gate",
+      "description": "Real Valkey exact gate checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/real_valkey/test_exact_gate.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.real_valkey.gate_small_real_parity",
+      "description": "Real Valkey gate small real parity checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/real_valkey/test_gate_small_real_parity.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.report.final_report",
+      "description": "Report final report checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/report/test_final_report.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.report.report_rendering",
+      "description": "Report report rendering checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/report/test_report_rendering.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.report.system_metrics_report",
+      "description": "Report system metrics report checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/report/test_system_metrics_report.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.report.validated_evidence_pipeline_v9",
+      "description": "Report validated evidence pipeline v9 checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/report/test_validated_evidence_pipeline_v9.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.report.zh_offline_report_gate",
+      "description": "Report zh offline report gate checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/report/test_zh_offline_report_gate.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scale.review_o1_process_cleanup_missing_identity",
+      "description": "Scale review o1 process cleanup missing identity checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scale/test_review_o1_process_cleanup_missing_identity.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scale.review_o1_process_cleanup_ownership",
+      "description": "Scale review o1 process cleanup ownership checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scale/test_review_o1_process_cleanup_ownership.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scale.scale_ladder",
+      "description": "Scale scale ladder checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scale/test_scale_ladder.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scenarios.admission_source_compatibility",
+      "description": "Scenarios admission source compatibility checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scenarios/test_admission_source_compatibility.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scenarios.definition_contract",
+      "description": "Scenarios definition contract checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scenarios/test_definition_contract.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scenarios.execution_axes",
+      "description": "Scenarios execution axes checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scenarios/test_execution_axes.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scenarios.execution_axis_contract",
+      "description": "Scenarios execution axis contract checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scenarios/test_execution_axis_contract.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scenarios.gate_plan_compiler",
+      "description": "Scenarios gate plan compiler checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scenarios/test_gate_plan_compiler.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.scenarios.transform_compatibility",
+      "description": "Scenarios transform compatibility checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/scenarios/test_transform_compatibility.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.stability.full_flow_bounded_stability",
+      "description": "Stability full flow bounded stability checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/stability/test_full_flow_bounded_stability.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.stability.full_flow_management_workload_impact_status",
+      "description": "Stability full flow management workload impact status checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/stability/test_full_flow_management_workload_impact_status.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.stability.full_flow_management_workload_overlap",
+      "description": "Stability full flow management workload overlap checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/stability/test_full_flow_management_workload_overlap.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.stability.stability_health_criteria_gap",
+      "description": "Stability stability health criteria gap checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/stability/test_stability_health_criteria_gap.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.stability.stability_soak",
+      "description": "Stability stability soak checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/stability/test_stability_soak.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.stability.stability_soak_multistage",
+      "description": "Stability stability soak multistage checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/stability/test_stability_soak_multistage.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.clean_gate_diagnostics",
+      "description": "Unit clean gate diagnostics checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_clean_gate_diagnostics.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.cli_contract",
+      "description": "Unit cli contract checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_cli_contract.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.cluster_timeout",
+      "description": "Unit cluster timeout checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_cluster_timeout.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.command_recorder_runtime",
+      "description": "Unit command recorder runtime checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_command_recorder_runtime.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.failover_timeline_observer",
+      "description": "Unit failover timeline observer checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_failover_timeline_observer.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.fault_sandbox",
+      "description": "Unit fault sandbox checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_fault_sandbox.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.fault_timeline_contract",
+      "description": "Unit fault timeline contract checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_fault_timeline_contract.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.full_flow_complete_matrix",
+      "description": "Unit full flow complete matrix checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_full_flow_complete_matrix.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.nodehost_density",
+      "description": "Unit nodehost density checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_nodehost_density.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.nodehost_density_assertions",
+      "description": "Unit nodehost density assertions checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_nodehost_density_assertions.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.process_bootstrap_batching",
+      "description": "Unit process bootstrap batching checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_process_bootstrap_batching.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.server_profile",
+      "description": "Unit server profile checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_server_profile.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.server_profile_assertions",
+      "description": "Unit server profile assertions checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_server_profile_assertions.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.setup_exhaustive_timeline",
+      "description": "Unit setup exhaustive timeline checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_setup_exhaustive_timeline.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.setup_timing_accounting",
+      "description": "Unit setup timing accounting checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_setup_timing_accounting.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.system_metrics_runtime",
+      "description": "Unit system metrics runtime checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_system_metrics_runtime.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.valkey_probe_lib",
+      "description": "Unit valkey probe lib checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_valkey_probe_lib.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.workload_benchmark",
+      "description": "Unit workload benchmark checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_workload_benchmark.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.workload_key_generator",
+      "description": "Unit workload key generator checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_workload_key_generator.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "gate.contracts",
+      "description": "Gate contracts checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "verification/tests/test_contracts.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "gate.executor",
+      "description": "Gate executor checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "verification/tests/test_executor.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "real.local.full-flow",
+      "description": "Execute the exact local real full flow for 30 through 200 nodes.",
+      "parameters": {
+        "nodes": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 200,
+          "required": true
+        },
+        "config": {
+          "type": "path",
+          "required": true
+        }
+      },
+      "runner": {
+        "type": "command",
+        "argv": [
+          "python3",
+          "-m",
+          "valkey_scale_lab.cli",
+          "gate",
+          "execute",
+          "--definition",
+          "{gate.project_root}/src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
+          "--nodes",
+          "{param.nodes}",
+          "--config",
+          "{param.config}",
+          "--run-id",
+          "{gate.run_id}",
+          "--ownership-id",
+          "{gate.run_id}",
+          "--provenance-id",
+          "{gate.run_id}",
+          "--artifacts-dir",
+          "{gate.artifacts_dir}"
+        ],
+        "cwd": "{gate.project_root}/src",
+        "timeout_seconds": 14400,
+        "result": "exit_code"
+      }
     }
   ]
 }

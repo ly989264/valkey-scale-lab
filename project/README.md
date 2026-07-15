@@ -6,13 +6,13 @@ tests, verification catalog, and delivery milestones are deliberately separate:
 ```text
 src/valkey_scale_lab/   product library and CLI
 tests/                  product behavior tests
-verification/           capability-suite catalog and runner
+verification/           executable Test/Suite catalog and generic Gate engine
 milestones/             product goals and acceptance composition
 ```
 
 Product code does not load tests, verification policy, or milestones. Tests use
-product APIs directly. Milestones refer only to stable verification suite IDs;
-the catalog owns their executable pytest paths and commands.
+product APIs directly. The executable verification catalog is separate from
+the milestone roadmap and owns every registered pytest path and command.
 
 ## Product Commands
 
@@ -58,21 +58,48 @@ python3 -m valkey_scale_lab.cli report \
 
 ## Verification
 
-Validate the catalog and milestone composition without running real resources:
+`gate` is the project-level entry point for executable checks. It loads the
+flat registry in `verification/catalog.json`, validates all parameters before
+starting a process, runs the selected checks, and writes complete logs and a
+summary under `artifacts/gate-runs/`.
+
+Show the command contract and run one registered test:
 
 ```bash
-python3 verification/run.py catalog validate
-python3 verification/run.py milestone validate --id m1
-python3 verification/run.py milestone validate --id m2
-python3 verification/run.py milestone validate --id m3
+./gate help
+./gate test product.unit.cli_contract
 ```
 
-Run a capability suite by stable ID:
+Run a domain suite or the complete pytest registry:
 
 ```bash
-python3 verification/run.py suite --id scenario.contract
+./gate suite product.unit
+./gate suite repository.all
 ```
 
-`PLANNED` suites return `BLOCKED`; required skips fail. Real suites require
-operator-approved capabilities and explicit parameters. The machine-readable
-milestone definitions and completion conditions are under `milestones/`.
+Single-Test parameters come only from repeated `--param NAME=VALUE` arguments:
+
+```bash
+./gate test real.local.full-flow \
+  --param nodes=50 \
+  --param config=templates/configs/scale_50.yaml
+```
+
+Suite parameters come only from a JSON file grouped by Test ID:
+
+```json
+{
+  "real.local.full-flow": {
+    "nodes": 50,
+    "config": "templates/configs/scale_50.yaml"
+  }
+}
+```
+
+```bash
+./gate suite real.local.full-suite --params-file suite-params.json
+```
+
+Registered pytest skips fail closed. `repository.all` includes all product and
+Gate pytest files but deliberately excludes the resource-consuming real run.
+Milestone execution is not implemented by Gate.
