@@ -1,8 +1,9 @@
 # AGENTS.md - Valkey Scale Lab Product
 
 This directory is the runnable `valkey-scale-lab` product root. AI controller
-kernels, controller policy, prompts, state, and generated controller evidence
-belong in the sibling `../controller/` and `../loop_evidence/` trees, not here.
+kernels, policy, prompts, runtime state, and generated evidence are not product
+components and must not be restored here. Historical controller artifacts in
+the sibling `../loop_evidence/` tree are read-only.
 
 ## Mission
 
