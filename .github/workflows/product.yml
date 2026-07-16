@@ -21,9 +21,5 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements-dev.txt
           python3 -m pip install -e .
-      - name: Compile product
-        run: python3 -m compileall -q src scripts
-      - name: Product CLI
-        run: python3 -m valkey_scale_lab.cli --help
-      - name: Product tests
-        run: python3 -m pytest -q
+      - name: Milestone 1 checks (excluding real cluster runs)
+        run: ./gate suite repository.all
