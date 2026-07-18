@@ -17,7 +17,7 @@
           "title": {"type": ["string", "null"], "maxLength": 240},
           "description": {"type": ["string", "null"], "maxLength": 12000},
           "criterion": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
-          "depends_on": {"type": "array", "maxItems": 8, "uniqueItems": true, "items": {"type": "integer", "minimum": 1}},
+          "depends_on": {"type": "array", "maxItems": 8, "items": {"type": "integer", "minimum": 1}},
           "check": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
           "status": {"enum": ["ready", "in-progress", "blocked", "review", "completed", "superseded"]}
         }

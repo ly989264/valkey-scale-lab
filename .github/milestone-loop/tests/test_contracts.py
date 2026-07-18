@@ -94,6 +94,31 @@ class ContractTests(unittest.TestCase):
                 json.dumps({"ready": False, "summary": "not ready", "failure_kind": None})
             )
 
+    def test_planner_dependency_uniqueness_is_enforced_after_schema_output(self) -> None:
+        schema = json.loads(
+            (ROOT / ".github/milestone-loop/schemas/planner-output.schema.json").read_text()
+        )
+        depends_on = schema["properties"]["operations"]["items"]["properties"]["depends_on"]
+        self.assertNotIn("uniqueItems", depends_on)
+        duplicate = {
+            "operations": [
+                {
+                    "kind": "create",
+                    "issue": None,
+                    "title": "Bounded work",
+                    "description": "Implement the criterion.",
+                    "criterion": "criterion.one",
+                    "depends_on": [3, 3],
+                    "check": "product.unit",
+                    "status": "ready",
+                }
+            ],
+            "ready_issue": None,
+            "summary": "duplicate dependency",
+        }
+        with self.assertRaisesRegex(ContractError, "contains duplicates"):
+            parse_planner_output(json.dumps(duplicate))
+
     def test_status_transitions_and_dependency_cycles_fail_closed(self) -> None:
         validate_transition("ready", "in-progress")
         validate_transition("review", "completed")
