@@ -1,6 +1,6 @@
 # valkey-scale-lab 方案四：GitHub 控制面 + 本地 Mac Codex 执行与真实验证
 
-状态：讨论基线
+状态：实施基线（单 runner）
 更新日期：2026-07-18
 
 ## 硬约束
@@ -18,9 +18,12 @@
 * 需要真实环境的 Check 必须自行执行 Authorization Lease 预检；没有有效
   lease 时返回 `BLOCKED`，Loop 立即停止，不能降级或改用 fixture。
 * 当前威胁模型防止错误计划、错误代码、残留污染、凭据意外继承、状态撕裂和
-  未验证结果冒充 PASS；不假设多个 Agent 会互相攻击，也不把恶意内核攻陷列为
-  P0。因此不强制第二台物理 Mac、macOS VM 或通用安全策略平台，只使用同一台
-  Mac 上三个最小职责本地账号形成明确边界。
+  未验证结果冒充 PASS；不假设 Agent、候选代码或宿主机进程会主动攻击同一
+  macOS 用户，也不把恶意内核或宿主账号攻陷列为 P0。因此不强制第二台物理
+  Mac、macOS VM、多个本地账号或通用安全策略平台；同一 `allgood` 用户下的
+  单 runner 通过串行 Job、角色标签、独立 checkout/runtime root、进程环境清洗
+  和受保护 Environment/OIDC 形成当前威胁模型内的职责边界。角色标签只用于
+  调度，不能被表述为 macOS 用户级安全隔离。
 * 普通功能 PR 在受信准入通过后默认自动合并；合同、授权和 Milestone 最终
   关闭仍由人工审批，以保证长期运行不在每个普通工作项处等待。
 * 仓库只有一个 workflow：`.github/workflows/milestone-loop.yml`。
@@ -104,12 +107,12 @@ Codex App Scheduled Tasks 也不作为主调度器。它适合本地定时运行
 
 新增运行组件：
 
-* 同一台本地 Mac 上安装三个以 `launchd` 运行的 GitHub Actions self-hosted
-  runner，分别使用独立 macOS 服务账号和标签：
-  `[self-hosted, macOS, valkey-codex]` 只运行 Planner/Worker；
-  `[self-hosted, macOS, valkey-verify]` 只验证候选 PR，并且没有真实环境凭据；
-  `[self-hosted, macOS, valkey-real]` 只对已经合并到默认分支的代码运行需要真实
-  环境的 Milestone Check。
+* 同一台本地 Mac 的 `allgood` 用户下安装一个以 `launchd` 运行的 GitHub
+  Actions self-hosted runner：名称固定为 `valkey-local`，根目录固定为
+  `/Users/allgood/actions-runner-valkey`，版本固定为 `2.335.1`，同时配置
+  `valkey-codex`、`valkey-verify`、`valkey-real` 三个角色标签。workflow 仍按
+  `[self-hosted, macOS, <role-label>]` 静态路由 Planner/Worker、候选验证和真实
+  Milestone Check；仓库级 concurrency 使这些 Job 在单 runner 上串行领取。
 * 唯一的 GitHub Actions workflow
   `.github/workflows/milestone-loop.yml`，负责普通 PR baseline，以及在手工启动
   后决定本轮运行 Planner、Worker、Check 还是最终验收。
@@ -274,7 +277,8 @@ workflow 约束：
   auto-merge 并标记 PR；不存在需保留的人工修改时关闭该 PR。
 * `milestone-loop.selftest` 必须覆盖输入枚举、固定 Milestone 路径、三行 Work
   Item 合同、受信 Catalog ID 拒绝规则、Agent JSON 上限、状态迁移、依赖无环、
-  单一 ready、实时状态复核、lease 耗尽、三账号 runner 路由、recovery cleanup、
+  单一 ready、实时状态复核、lease 耗尽、单 runner 三角色标签路由、recovery
+  cleanup、
   无 Work Item 时的 Criterion 绑定检查、固定 Gate 命令、结论映射和
   `verified_tree` 失效；首次启用和每个 `contract-change` PR 必跑。
 * PR 合并后立即重新运行 Planner，而不是直接沿用旧队列。
@@ -298,10 +302,11 @@ workflow 约束：
 * Planner/Worker 的 checkout 使用 `persist-credentials: false`，其进程只
   获得 OpenAI 认证和隔离 worktree 权限，不能读取 GitHub 写 token 或
   Milestone Check 的真实环境凭据。
-* `valkey-verify` 不运行 Codex，也不获得真实环境凭据；它只验证普通候选 PR，
-  候选新增的 Check 或代码不能改变这一边界。
-* `valkey-real` 不验证候选 PR，只对已经合并到默认分支的代码运行需要真实环境的
-  Milestone Check。Check 必须先自行校验并消费 Authorization Lease，之后才通过
+* `valkey-verify` 角色 Job 不运行 Codex，也不注入真实环境凭据；它只验证普通
+  候选 PR。执行候选 Gate 的子进程必须删除 GitHub、Codex/OpenAI、SSH agent、
+  云服务和真实环境变量，候选新增的 Check 或代码不能改变受信 base 中的验证器。
+* `valkey-real` 角色 Job 不验证候选 PR，只对已经合并到默认分支的代码运行需要
+  真实环境的 Milestone Check。Check 必须先自行校验并消费 Authorization Lease，之后才通过
   受保护 Environment/OIDC 取得合同要求的短期凭据；临时凭据文件只在该 Job
   创建，收紧权限，并且无论结果如何都在 cleanup 中删除。
 * 普通功能 PR 的受信准入计划和断言来自验证开始时的默认分支 `base_sha`；
@@ -311,16 +316,22 @@ workflow 约束：
   cleanup，并在运行后验证零残留。
 * 需要远端资源的 Check 必须按自己的合同维护可发现的 ownership 标识；相关
   资源明细不写入 Control Issue，也不进入 Loop 状态。
-* Milestone Check 凭据、Codex 登录状态和本地工具凭据只保存在各自 Mac 账号，
-  不跨 `valkey-codex`、`valkey-verify` 和 `valkey-real` 共享。
+* 三个角色共用 `allgood` 宿主账号和 runner 安装，因此不宣称 Home、Keychain
+  或 uid 隔离。GitHub `GITHUB_TOKEN` 按 Job 权限注入，Codex/OpenAI 认证只传给
+  Planner/Worker 子进程，真实凭据只由 `valkey-real` Environment/OIDC 在真实
+  Check Job 内短期注入；候选 Gate 子进程清洗上述变量。宿主账号或同 uid
+  恶意进程可读取本地凭据的风险超出当前威胁模型，不能用角色 label 掩盖。
 * 最终有效性由固定 Gate 命令和 Check 结论决定，而不是 Agent 的自然语言结论。
 
 运维要求：
 
 * Mac 必须开机、保持唤醒，并保证 GitHub runner 服务在线。
-* 三个 runner 分别使用 `valkey-codex`、`valkey-verify` 和 `valkey-real` 专用
-  macOS 用户，避免共享 `CODEX_HOME`、个人工作目录、凭据文件和环境变量；不
-  增加第二台 Mac、VM 或通用安全平台。
+* 单 runner 固定为 `allgood` 用户下的 `valkey-local`，根目录
+  `/Users/allgood/actions-runner-valkey`，版本 `2.335.1`，并同时具有
+  `valkey-codex`、`valkey-verify` 和 `valkey-real` 标签；不得把标签当作账号
+  隔离。使用全局 concurrency、独立 checkout/runtime root、Job 权限、受保护
+  Environment 和子进程环境清洗避免跨角色的非预期继承；不增加第二台 Mac、
+  VM、额外 macOS 账号或通用安全平台。
 * 固定 Codex CLI、GitHub runner 和项目依赖版本。
 * Codex 使用本地账户认证，或只在单次 `codex exec` 调用范围内提供
   `CODEX_API_KEY`。
@@ -453,23 +464,29 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
 1. 建立唯一 workflow `.github/workflows/milestone-loop.yml`，以及
    `.github/milestone-loop/` 控制面目录、受保护合同集合和
    `milestone-loop.selftest`；不在 `project/` 恢复 Controller。
-2. 在同一台 Mac 上配置 `valkey-codex`、`valkey-verify` 和 `valkey-real` 三个
-   最小职责账号及 runner，固定版本并由人工确认 allowed-environment
-   fingerprint。
+2. 在同一台 Mac 的 `allgood` 用户下配置单 runner `valkey-local`，根目录为
+   `/Users/allgood/actions-runner-valkey`，固定版本 `2.335.1`，同时配置
+   `valkey-codex`、`valkey-verify` 和 `valkey-real` 标签，并由人工确认
+   allowed-environment fingerprint。
 3. 实现有界 context builder、`--output-schema` Agent 输出校验、三行 Work Item
    和受信 Catalog ID 校验、coordinator、blocker/reconcile、verifier 与 recovery
    cleanup；不实现 Work Item JSON Schema、工作图快照或新状态机。
-4. 在唯一 workflow 中固定两个 dispatch 输入、Milestone JSON 路径、普通 PR
-   baseline 和 Milestone 最终 Gate；配置分支保护、分级合并和受保护
-   Environment/OIDC。
-5. 为目标 Milestone 创建 Control Issue，只初始化 Authorization Lease 和
+4. 首次激活时把控制面作为独立 `contract-change` PR 人工审阅；此时不得先把
+   `milestone-loop / candidate` 设为 required，因为可信 `base_sha` 尚不包含
+   `.github/milestone-loop/loop.py`。首次 candidate 因该文件不存在而失败是预期
+   bootstrap 结果，不能误判为 runner 缺失。
+5. 人工审阅通过后，在 candidate 尚未 required 时合并控制面；确认控制面已进入
+   默认分支后，才启用 strict/up-to-date 的 required
+   `milestone-loop / candidate` Check。随后配置分级合并和受保护
+   Environment/OIDC；不得为绕过后续失败而关闭 required Check。
+6. 为目标 Milestone 创建 Control Issue，只初始化 Authorization Lease 和
    no-progress count；禁用 Goal、gh-aw scheduler 及其他会修改同一组
    Issues/PR 的调度器。
-6. 在不启用自动合并的情况下手工运行至少 3 轮，验证同一 Work Item PR、动态
+7. 在不启用自动合并的情况下手工运行至少 3 轮，验证同一 Work Item PR、动态
    调整、幂等 dispatch、实时状态拒绝和 Agent 输出失败处理。
-7. 演练 `BLOCKED`/`resume`、Mac/runner 中断、recovery cleanup、lease 耗尽和
+8. 演练 `BLOCKED`/`resume`、Mac/runner 中断、recovery cleanup、lease 耗尽和
    Check 返回 `BLOCKED`；所有演练通过后才启用普通功能 PR 自动合并。
-8. 验证 Planner 无可执行 Work Item 时的唯一分支：Criterion 未全部绑定 Check
+9. 验证 Planner 无可执行 Work Item 时的唯一分支：Criterion 未全部绑定 Check
    就返回 `BLOCKED`；全部已绑定则直接执行 `./gate milestone <milestone>`，并按
    Gate 的 `PASS` / `FAIL` / `BLOCKED` 规则收敛。
 
@@ -493,9 +510,15 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
   无环、操作数量和实时 GitHub 状态，JSON 使用后删除且不进入 Issue 或状态存储。
 * Control Issue 只记录 Authorization Lease 和 no-progress count；其他状态直接
   读取 Issues、Labels、PR 和 Checks，不保存完整工作图或额外运行状态机。
-* `valkey-codex` 只运行 Planner/Worker；`valkey-verify` 只运行无真实凭据的候选
-  PR 检查；`valkey-real` 只对已合并默认分支运行需要真实环境的 Milestone
-  Check，并且只有自行校验及消费 lease 后才取得短期凭据，结束后 cleanup。
+* GitHub 只登记一个在线 `valkey-local` runner，运行于 `allgood`，根目录为
+  `/Users/allgood/actions-runner-valkey`，版本 `2.335.1`，并同时具有三个角色
+  label。workflow 用 `valkey-codex` 路由 Planner/Worker、用 `valkey-verify` 路由
+  无真实凭据的候选 PR 检查、用 `valkey-real` 路由已合并默认分支的真实
+  Milestone Check；label 是调度职责而非 uid 隔离。真实 Check 只有自行校验及
+  消费 lease 后才取得短期凭据，结束后 cleanup。
+* 首次 `contract-change` PR 在 required candidate 尚未启用时完成人工审核和
+  bootstrap 合并；控制面进入默认分支后再启用 strict required candidate，之后
+  的合同或普通 PR 均不得使用 bootstrap 例外。
 * 每个普通 PR 都固定执行 `./gate suite repository.all` 并叠加 Work Item
   Check；候选不能修改自己的受信合同。
 * blocked、superseded、PR/Check 变化或 commit/tree 失效都能阻止旧 Job push、

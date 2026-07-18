@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class BoundaryTests(unittest.TestCase):
-    def test_repository_has_one_workflow_and_static_runner_routing(self) -> None:
+    def test_repository_has_one_workflow_and_single_runner_role_routing(self) -> None:
         workflows = sorted((ROOT / ".github" / "workflows").glob("*"))
         self.assertEqual([path.name for path in workflows], ["milestone-loop.yml"])
         text = workflows[0].read_text()
@@ -27,12 +27,32 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[self-hosted, macOS, valkey-verify]", text)
         self.assertIn("[self-hosted, macOS, valkey-real]", text)
         self.assertNotIn("ubuntu-latest", text)
+        self.assertIn("group: valkey-scale-lab-milestone-loop", text)
+        self.assertIn("cancel-in-progress: false", text)
         dispatch_block = text.split("  workflow_dispatch:", 1)[1].split("\n\n", 1)[0]
         self.assertEqual(dispatch_block.count("      action:"), 1)
         self.assertEqual(dispatch_block.count("      milestone:"), 1)
         self.assertIn("options: [start, resume]", dispatch_block)
         self.assertIn("options: [m1, m2, m3]", dispatch_block)
         self.assertIn("[\"./gate\", \"milestone\", milestone]", (ROOT / ".github/milestone-loop/milestone_runner.py").read_text())
+
+    def test_single_runner_contract_and_bootstrap_order_are_documented(self) -> None:
+        readme = (ROOT / ".github/milestone-loop/README.md").read_text()
+        plan = (ROOT / "miletone_loop/plan.md").read_text()
+        for text in (readme, plan):
+            self.assertIn("valkey-local", text)
+            self.assertIn("/Users/allgood/actions-runner-valkey", text)
+            self.assertIn("2.335.1", text)
+            self.assertIn("valkey-codex", text)
+            self.assertIn("valkey-verify", text)
+            self.assertIn("valkey-real", text)
+        self.assertIn("routing labels, not separate runners", readme)
+        self.assertIn("trusted base does not yet contain", readme)
+        self.assertLess(
+            readme.index("Human-review the first `contract-change` PR"),
+            readme.index("enable the strict\n   required `milestone-loop / candidate` Check"),
+        )
+        self.assertNotIn("three separate standard macOS service accounts", readme)
 
     def test_control_plane_does_not_enter_product_or_read_archive(self) -> None:
         control_text = "\n".join(
