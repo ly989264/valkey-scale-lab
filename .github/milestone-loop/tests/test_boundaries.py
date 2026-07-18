@@ -28,6 +28,8 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[self-hosted, macOS, valkey-verify]", text)
         self.assertIn("[self-hosted, macOS, valkey-real]", text)
         self.assertNotIn("ubuntu-latest", text)
+        self.assertIn("  candidate:\n    name: milestone-loop / candidate", text)
+        self.assertIn('run: test "${{ steps.verify.outcome }}" = "success"', text)
         self.assertIn("group: valkey-scale-lab-milestone-loop", text)
         self.assertIn("cancel-in-progress: false", text)
         dispatch_block = text.split("  workflow_dispatch:", 1)[1].split("\n\n", 1)[0]
