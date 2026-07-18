@@ -11,6 +11,7 @@ from unittest.mock import patch
 from context_builder import MAX_CONTEXT_BYTES, build_context
 from contracts import ContractError
 from coordinator import CONTROL_LABEL, LoopBlocked, empty_lease, render_control
+from github_api import GitHubClient
 from milestone_runner import _lease_fingerprint, _validate_consumed_lease
 from recovery import cleanup_owned_docker, cleanup_runtime_root
 
@@ -64,6 +65,14 @@ class BoundaryTests(unittest.TestCase):
         )
         self.assertNotIn("loop_evidence/", control_text)
         self.assertFalse(any((ROOT / "project").rglob("*milestone_loop*")))
+
+    def test_repository_api_does_not_append_an_empty_path_segment(self) -> None:
+        completed = subprocess.CompletedProcess(
+            [], 0, b'{"default_branch":"main"}', b""
+        )
+        with patch("github_api.subprocess.run", return_value=completed) as run:
+            self.assertEqual(GitHubClient("owner/repo").repository()["default_branch"], "main")
+        self.assertEqual(run.call_args.args[0][2], "repos/owner/repo")
 
     def test_context_overflow_blocks_without_truncation(self) -> None:
         milestone = json.loads(
