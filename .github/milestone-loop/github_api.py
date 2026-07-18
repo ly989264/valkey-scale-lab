@@ -34,7 +34,9 @@ class GitHubClient:
         fields: Mapping[str, str] | None = None,
         input_value: Any | None = None,
     ) -> Any:
-        argv = [self.gh, "api", f"repos/{self.repo}/{endpoint.lstrip('/')}", "--method", method]
+        suffix = endpoint.lstrip("/")
+        target = f"repos/{self.repo}" + (f"/{suffix}" if suffix else "")
+        argv = [self.gh, "api", target, "--method", method]
         if fields:
             for key, value in fields.items():
                 argv.extend(["-f", f"{key}={value}"])

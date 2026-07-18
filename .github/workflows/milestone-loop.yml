@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   candidate:
-    name: candidate-workflow
+    name: milestone-loop / candidate
     if: >-
       github.event_name == 'pull_request' &&
       github.event.action != 'closed'
@@ -109,6 +109,9 @@ jobs:
           --milestone "${{ steps.metadata.outputs.milestone }}"
           --contract-change "${{ steps.metadata.outputs.contract_change }}"
           --result "$RUNNER_TEMP/milestone-loop-verification.json"
+      - name: Enforce candidate admission conclusion
+        if: always() && steps.metadata.outcome == 'success'
+        run: test "${{ steps.verify.outcome }}" = "success"
       - name: Final cleanup
         if: always()
         run: >-

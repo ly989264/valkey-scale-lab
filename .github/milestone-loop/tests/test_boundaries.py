@@ -11,6 +11,7 @@ from unittest.mock import patch
 from context_builder import MAX_CONTEXT_BYTES, build_context
 from contracts import ContractError
 from coordinator import CONTROL_LABEL, LoopBlocked, empty_lease, render_control
+from github_api import GitHubClient
 from milestone_runner import _lease_fingerprint, _validate_consumed_lease
 from recovery import cleanup_owned_docker, cleanup_runtime_root
 
@@ -27,6 +28,8 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[self-hosted, macOS, valkey-verify]", text)
         self.assertIn("[self-hosted, macOS, valkey-real]", text)
         self.assertNotIn("ubuntu-latest", text)
+        self.assertIn("  candidate:\n    name: milestone-loop / candidate", text)
+        self.assertIn('run: test "${{ steps.verify.outcome }}" = "success"', text)
         self.assertIn("group: valkey-scale-lab-milestone-loop", text)
         self.assertIn("cancel-in-progress: false", text)
         dispatch_block = text.split("  workflow_dispatch:", 1)[1].split("\n\n", 1)[0]
@@ -64,6 +67,14 @@ class BoundaryTests(unittest.TestCase):
         )
         self.assertNotIn("loop_evidence/", control_text)
         self.assertFalse(any((ROOT / "project").rglob("*milestone_loop*")))
+
+    def test_repository_api_does_not_append_an_empty_path_segment(self) -> None:
+        completed = subprocess.CompletedProcess(
+            [], 0, b'{"default_branch":"main"}', b""
+        )
+        with patch("github_api.subprocess.run", return_value=completed) as run:
+            self.assertEqual(GitHubClient("owner/repo").repository()["default_branch"], "main")
+        self.assertEqual(run.call_args.args[0][2], "repos/owner/repo")
 
     def test_context_overflow_blocks_without_truncation(self) -> None:
         milestone = json.loads(
