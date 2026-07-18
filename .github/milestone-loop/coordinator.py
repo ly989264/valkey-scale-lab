@@ -1202,6 +1202,7 @@ def coordinate(
                 return {"status": "BLOCKED", "milestone": milestone, "reason": "no-progress"}
         return {"status": result, "milestone": milestone, "issue": selected}
 
+    # Work Item labels are planning state; the fixed Milestone Gate remains authoritative.
     criteria = milestone_criteria(milestone_document, milestone)
     unbound = sorted(criterion for criterion, checks in criteria.items() if not checks)
     if unbound:
