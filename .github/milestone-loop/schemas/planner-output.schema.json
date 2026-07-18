@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operations", "ready_issue", "summary"],
+  "properties": {
+    "operations": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "issue", "title", "description", "criterion", "depends_on", "check", "status"],
+        "properties": {
+          "kind": {"enum": ["create", "update"]},
+          "issue": {"type": ["integer", "null"], "minimum": 1},
+          "title": {"type": ["string", "null"], "maxLength": 240},
+          "description": {"type": ["string", "null"], "maxLength": 12000},
+          "criterion": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+          "depends_on": {"type": "array", "maxItems": 8, "uniqueItems": true, "items": {"type": "integer", "minimum": 1}},
+          "check": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+          "status": {"enum": ["ready", "in-progress", "blocked", "review", "completed", "superseded"]}
+        }
+      }
+    },
+    "ready_issue": {"type": ["integer", "null"], "minimum": 1},
+    "summary": {"type": "string", "maxLength": 2000}
+  }
+}

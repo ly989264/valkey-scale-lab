@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ready", "summary", "failure_kind"],
+  "properties": {
+    "ready": {"type": "boolean"},
+    "summary": {"type": "string", "maxLength": 4000},
+    "failure_kind": {"enum": [null, "code", "blocked", "infrastructure"]}
+  }
+}
