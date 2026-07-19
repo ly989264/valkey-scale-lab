@@ -42,7 +42,7 @@ CONTRACT_CHANGE_LABEL = "contract-change"
 CONTROL_TITLE_PREFIX = "[milestone-loop]"
 WORK_ITEM_MARKER_RE = re.compile(r"<!-- milestone-loop-key: ([0-9a-f]{64}) -->")
 PR_WORK_ITEM_RE = re.compile(r"(?m)^Work-Item: #([1-9][0-9]*)$")
-PR_MILESTONE_RE = re.compile(r"(?m)^Milestone: (m[123])$")
+PR_MILESTONE_RE = re.compile(r"(?m)^Milestone: (m[1-4])$")
 CONTROL_RE = re.compile(
     r"\AAuthorization Lease: (`[^\r\n]+`)\r?\nNo-progress count: ([0-9]+)\Z"
 )

@@ -1,10 +1,10 @@
-# M3 - Multi-ECS Scale-Out
+# M3 - Native Multi-ECS Lifecycle
 
-M3 promotes the native multi-ECS runtime through exact real 500, 1000, and
-2000 node runs. Current config, planner, definition, and plan-compiler Tests
-prove only the implemented dry-run and fail-closed scale policy, so only that
-Criterion has Checks. Real distributed scale, telemetry transfer, fault
-containment, comparison reporting, and cleanup remain unimplemented Criteria.
+M3 moves the lifecycle to directly managed Valkey processes on multiple ECS
+hosts. The existing inventory and deterministic placement behavior is attached
+to `product.orchestrator`. Native remote execution, exact real 50/200 runs,
+cross-host evidence, and distributed cleanup remain observable Criteria with
+no placeholder Checks.
 
-The definition is `DEFINED`; dry-run planning never substitutes for real
-scale evidence.
+The definition is therefore `DEFINED`. Gate can run the attached inventory
+Check, but M3 cannot pass until every Criterion has executable acceptance.

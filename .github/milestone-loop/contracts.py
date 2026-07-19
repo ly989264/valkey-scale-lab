@@ -370,8 +370,8 @@ def verified_tree(base_sha: str, head_sha: str, tree_sha: str) -> str:
 
 
 def fixed_milestone_path(repo_root: Path, milestone: str) -> Path:
-    if milestone not in {"m1", "m2", "m3"}:
-        raise ContractError("milestone must be m1, m2, or m3")
+    if milestone not in {"m1", "m2", "m3", "m4"}:
+        raise ContractError("milestone must be m1, m2, m3, or m4")
     return repo_root / "project" / "milestones" / milestone / "milestone.json"
 
 

@@ -10,7 +10,13 @@ from unittest.mock import patch
 
 from context_builder import MAX_CONTEXT_BYTES, build_context
 from contracts import ContractError
-from coordinator import CONTROL_LABEL, LoopBlocked, empty_lease, render_control
+from coordinator import (
+    CONTROL_LABEL,
+    PR_MILESTONE_RE,
+    LoopBlocked,
+    empty_lease,
+    render_control,
+)
 from github_api import GitHubClient
 from milestone_runner import _lease_fingerprint, _validate_consumed_lease
 from recovery import cleanup_owned_docker, cleanup_runtime_root
@@ -36,8 +42,15 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(dispatch_block.count("      action:"), 1)
         self.assertEqual(dispatch_block.count("      milestone:"), 1)
         self.assertIn("options: [start, resume]", dispatch_block)
-        self.assertIn("options: [m1, m2, m3]", dispatch_block)
+        self.assertIn("options: [m1, m2, m3, m4]", dispatch_block)
+        self.assertIn(
+            "(inputs.milestone == 'm1' || inputs.milestone == 'm2' || "
+            "inputs.milestone == 'm3' || inputs.milestone == 'm4')",
+            text,
+        )
         self.assertIn("[\"./gate\", \"milestone\", milestone]", (ROOT / ".github/milestone-loop/milestone_runner.py").read_text())
+        self.assertEqual(PR_MILESTONE_RE.search("Milestone: m4").group(1), "m4")
+        self.assertIsNone(PR_MILESTONE_RE.search("Milestone: m5"))
 
     def test_single_runner_contract_and_bootstrap_order_are_documented(self) -> None:
         readme = (ROOT / ".github/milestone-loop/README.md").read_text()

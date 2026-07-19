@@ -37,7 +37,11 @@ class ContractTests(unittest.TestCase):
             fixed_milestone_path(ROOT, "m1"),
             ROOT / "project" / "milestones" / "m1" / "milestone.json",
         )
-        for invalid in ("M1", "m4", "../m1", "m1/check"):
+        self.assertEqual(
+            fixed_milestone_path(ROOT, "m4"),
+            ROOT / "project" / "milestones" / "m4" / "milestone.json",
+        )
+        for invalid in ("M1", "m5", "../m1", "m1/check"):
             with self.assertRaises(ContractError):
                 fixed_milestone_path(ROOT, invalid)
 
