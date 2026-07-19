@@ -23,6 +23,12 @@ credentials, lease values, and SSH agents. Planner is read-only; Worker writes
 only in an isolated worktree. The coordinator performs every GitHub write only
 after a fresh state comparison.
 
+For interactive Codex work, prefer the connected GitHub Connector. A sandboxed
+`gh auth status` may not be able to read the host macOS Keychain and must not,
+by itself, be treated as proof that the user's host GitHub login has expired.
+Use `gh` only when Connector coverage is insufficient, and confirm host CLI
+authentication from the user's normal terminal when it matters.
+
 ## Required GitHub Configuration
 
 1. Create open GitHub Milestones titled exactly `m1`, `m2`, `m3`, and `m4`.
