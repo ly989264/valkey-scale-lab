@@ -265,11 +265,12 @@ def test_milestone_schema_and_current_definitions_are_valid() -> None:
             PROJECT_ROOT / f"milestones/{milestone_id}/milestone.json",
             expected_id=milestone_id,
         )
-        for milestone_id in ("m1", "m2", "m3")
+        for milestone_id in ("m1", "m2", "m3", "m4")
     }
     assert milestones["m1"].definition_status == "READY"
     assert milestones["m2"].definition_status == "DEFINED"
     assert milestones["m3"].definition_status == "DEFINED"
+    assert milestones["m4"].definition_status == "DEFINED"
 
 
 def test_milestone_rejects_duplicate_criteria_empty_check_and_directory_mismatch(
@@ -360,7 +361,7 @@ def test_m1_expands_every_product_test_once_and_real_check_twice() -> None:
     assert len({planned.instance_id for planned in plan.tests}) == 87
 
 
-def test_m2_and_m3_attach_only_currently_executable_checks() -> None:
+def test_m2_m3_and_m4_attach_only_currently_executable_checks() -> None:
     catalog = load_catalog(PROJECT_ROOT / "catalog.json")
     m2 = load_milestone(
         PROJECT_ROOT / "milestones/m2/milestone.json", expected_id="m2"
@@ -368,11 +369,15 @@ def test_m2_and_m3_attach_only_currently_executable_checks() -> None:
     m3 = load_milestone(
         PROJECT_ROOT / "milestones/m3/milestone.json", expected_id="m3"
     )
+    m4 = load_milestone(
+        PROJECT_ROOT / "milestones/m4/milestone.json", expected_id="m4"
+    )
 
-    assert [selected.test.test_id for selected in select_milestone(catalog, m2)] == [
+    assert select_milestone(catalog, m2) == ()
+    assert [selected.test.test_id for selected in select_milestone(catalog, m3)] == [
         "product.orchestrator.local_orchestrator"
     ]
-    assert [selected.test.test_id for selected in select_milestone(catalog, m3)] == [
+    assert [selected.test.test_id for selected in select_milestone(catalog, m4)] == [
         "product.config.config_validation",
         "product.planner.planner",
         "product.scenarios.definition_contract",

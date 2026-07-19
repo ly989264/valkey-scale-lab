@@ -113,6 +113,8 @@ so one Test can be executed repeatedly with different values:
 ```
 
 M1 expands every product pytest Test once, then executes the real local full
-flow at exactly 50 and 200 nodes. M2 and M3 remain `DEFINED`: Gate runs their
-currently attached Checks, but cannot report `PASS` while any Criterion has no
+flow at exactly 50 and 200 nodes. M2 defines local cluster-formation and
+automatic-failover performance tuning; M3 defines the native multi-ECS
+lifecycle; M4 defines multi-ECS scale-out. All three remain `DEFINED`: Gate
+runs any attached Checks, but cannot report `PASS` while a Criterion has no
 Check.

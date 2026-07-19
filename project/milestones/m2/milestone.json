@@ -1,33 +1,34 @@
 {
   "id": "m2",
-  "goal": "Run the complete Valkey lifecycle with directly managed native processes on multiple ECS hosts through exact real 50-node and 200-node executions.",
+  "goal": "Make exact local 50-node and 200-node Valkey cluster formation and automatic failover materially faster, reproducible, and bounded without weakening topology correctness, availability evidence, safety, or cleanup.",
   "criteria": [
     {
-      "id": "distributed.inventory-and-placement",
-      "statement": "Host inventory accepts explicit local and SSH endpoints, rejects duplicate hosts, assigns nodes deterministically, and preserves host identity in orchestration artifacts.",
-      "check": [
-        {"id": "product.orchestrator"}
-      ]
+      "id": "performance.measurement-contract",
+      "statement": "Product-owned monotonic telemetry attributes cluster formation and automatic failover end to end, including process readiness, membership, slot assignment, replica synchronization, PFAIL and FAIL detection, election, promotion, slot recovery, client read/write recovery, convergence, resource use, and cleanup, with no inferred timestamps or unexplained wall-time gaps; all trial-distribution percentiles use the nearest-rank estimator."
     },
     {
-      "id": "distributed.native-runtime",
-      "statement": "The native_multi_ecs backend starts and owns directly managed Valkey processes on at least two ECS hosts without using the local Docker runtime as a substitute."
+      "id": "performance.cluster-formation-experiment",
+      "statement": "After an exact-50 discovery screen rejects losing variants, paired real A/B experiments at exactly 50, 100, and 200 nodes compare the current valkey-cli cluster-create path with each promotable bounded tree-MEET and native ADDSLOTSRANGE alternative for at least seven independent runs per arm and scale, alternating run order and holding the Valkey build, configuration, topology, placement, host, and workload constant."
     },
     {
-      "id": "distributed.exact.50",
-      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 50 healthy Valkey nodes without downscaling."
+      "id": "performance.cluster-formation-budget",
+      "statement": "Measured from the last process answering PING through every-node clean convergence and a successful cluster-aware data-path probe, the promoted cluster-formation strategy reduces median formation time by at least 20 percent at exact 50 and at least 30 percent at exact 100 and 200, keeps observed p95 at or below 60 seconds at every required scale, and preserves exact membership, full slot coverage, replica synchronization, and successful data-path probes."
     },
     {
-      "id": "distributed.exact.200",
-      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 200 healthy Valkey nodes without downscaling."
+      "id": "performance.automatic-failover-experiment",
+      "statement": "Paired real automatic-failover experiments compare each candidate with the current 30000 ms timeout using fresh exact clusters, owned-process SIGKILL rather than CLUSTER FAILOVER or TAKEOVER, one, 10 percent, and 33 percent simultaneous primary failures rounded to the nearest primary with halves rounded up at exact 50 and 200 nodes, at least ten independent trials per arm and cell, a persistent cluster-aware read/write workload, and independent provenance for every physical fault; stable client recovery is the later endpoint across every affected shard, where each shard endpoint closes only after its earliest one-second window containing at least ten consecutive write/read pairs in which the write succeeds and the following read returns the expected value, with no error or timeout."
     },
     {
-      "id": "distributed.evidence",
-      "statement": "Cross-host clocks, process journals, command logs, evidence transfer, provenance, and product bindings are complete and attributable."
+      "id": "performance.automatic-failover-budget",
+      "statement": "At both required scales and every failure-rate cell, the candidate reduces both median and observed p95 SIGKILL-to-stable-read/write-recovery across all affected shards by at least 20 percent versus its paired 30000 ms baseline; candidate p95 is at most 35 seconds for one primary, 45 seconds for 10 percent of primaries, and 55 seconds for 33 percent, while p95 first-PFAIL-to-cluster-ok-with-all-slots is at most 10, 15, and 25 seconds respectively, process-gone-to-first-PFAIL p95 is at most 25 seconds, cluster-OK-to-stable-client recovery is at most 2 seconds, and multi-process injection skew is at most 500 ms."
     },
     {
-      "id": "distributed.safety-and-cleanup",
-      "statement": "Distributed fault handling, recovery, teardown, cost accounting, and cleanup preserve ownership and leave no managed process or host resource behind."
+      "id": "performance.stability-and-resource-safety",
+      "statement": "Across equal-duration paired bootstrap and fault observation windows and a 30-minute exact-200 steady-state soak, the selected settings produce no unexpected PFAIL, FAIL, promotion, split brain, slot loss, cluster-link error, or buffer overflow; peak RSS, CPU time, file-descriptor use, connection count, and cluster-bus bytes regress by no more than 10 percent, while paired steady-state 512-byte SET throughput regresses by no more than 5 percent, p99 latency by no more than 10 percent, and workload errors remain zero."
+    },
+    {
+      "id": "performance.promotion-and-regression",
+      "statement": "An optimization becomes the default only from validated paired evidence with complete build, configuration, environment, command, workload, topology, and cleanup provenance; the optimized defaults then pass the complete M1 exact-50 and exact-200 acceptance without downscaling, fabricated samples, relaxed health gates, or residual owned resources."
     }
   ]
 }

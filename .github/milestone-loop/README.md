@@ -9,7 +9,7 @@ Issue on every round.
 ## Fixed Interfaces
 
 - The only workflow is `.github/workflows/milestone-loop.yml`.
-- Dispatch accepts only `action=start|resume` and `milestone=m1|m2|m3`.
+- Dispatch accepts only `action=start|resume` and `milestone=m1|m2|m3|m4`.
 - Candidate admission always runs `./gate suite repository.all`, then one
   Test/Suite selected from the trusted base SHA's `project/catalog.json`.
 - Final acceptance always runs `./gate milestone <milestone>` on the merged
@@ -25,7 +25,7 @@ after a fresh state comparison.
 
 ## Required GitHub Configuration
 
-1. Create open GitHub Milestones titled exactly `m1`, `m2`, and `m3`.
+1. Create open GitHub Milestones titled exactly `m1`, `m2`, `m3`, and `m4`.
 2. Register one repository-level self-hosted runner as the `allgood` user:
 
    ```text

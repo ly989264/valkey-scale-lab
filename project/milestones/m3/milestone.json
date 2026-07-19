@@ -1,40 +1,33 @@
 {
   "id": "m3",
-  "goal": "Scale the proven native multi-ECS lifecycle through exact real 500-node, 1000-node, and 2000-node runs without weakening safety, evidence quality, or cleanup.",
+  "goal": "Run the complete Valkey lifecycle with directly managed native processes on multiple ECS hosts through exact real 50-node and 200-node executions.",
   "criteria": [
     {
-      "id": "scale.definition-and-preflight",
-      "statement": "Exact scale requests through 2000 compile without downscaling, while execution above 200 remains dry-run or explicitly guarded until real distributed execution is implemented.",
+      "id": "distributed.inventory-and-placement",
+      "statement": "Host inventory accepts explicit local and SSH endpoints, rejects duplicate hosts, assigns nodes deterministically, and preserves host identity in orchestration artifacts.",
       "check": [
-        {"id": "product.config.config_validation"},
-        {"id": "product.planner.planner"},
-        {"id": "product.scenarios.definition_contract"},
-        {"id": "product.scenarios.gate_plan_compiler"}
+        {"id": "product.orchestrator"}
       ]
     },
     {
-      "id": "scale.exact.500",
-      "statement": "A real native multi-ECS run requests and independently observes exactly 500 healthy Valkey nodes."
+      "id": "distributed.native-runtime",
+      "statement": "The native_multi_ecs backend starts and owns directly managed Valkey processes on at least two ECS hosts without using the local Docker runtime as a substitute."
     },
     {
-      "id": "scale.exact.1000",
-      "statement": "A real native multi-ECS run requests and independently observes exactly 1000 healthy Valkey nodes."
+      "id": "distributed.exact.50",
+      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 50 healthy Valkey nodes without downscaling."
     },
     {
-      "id": "scale.exact.2000",
-      "statement": "A real native multi-ECS run requests and independently observes exactly 2000 healthy Valkey nodes."
+      "id": "distributed.exact.200",
+      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 200 healthy Valkey nodes without downscaling."
     },
     {
-      "id": "scale.telemetry-and-transfer",
-      "statement": "Telemetry, command logs, process journals, and evidence transfer remain complete, bounded, and attributable at every required scale."
+      "id": "distributed.evidence",
+      "statement": "Cross-host clocks, process journals, command logs, evidence transfer, provenance, and product bindings are complete and attributable."
     },
     {
-      "id": "scale.fault-safety-and-cleanup",
-      "statement": "Fault containment, recovery, restart, teardown, and deterministic cleanup remain bounded and ownership-safe at every required scale."
-    },
-    {
-      "id": "scale.comparison-report",
-      "statement": "Validated reports compare every admitted scale with the 200-node baseline and the immediately preceding admitted scale."
+      "id": "distributed.safety-and-cleanup",
+      "statement": "Distributed fault handling, recovery, teardown, cost accounting, and cleanup preserve ownership and leave no managed process or host resource behind."
     }
   ]
 }

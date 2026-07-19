@@ -14,7 +14,7 @@ on:
         description: Product Milestone
         required: true
         type: choice
-        options: [m1, m2, m3]
+        options: [m1, m2, m3, m4]
 
 concurrency:
   group: valkey-scale-lab-milestone-loop
@@ -154,7 +154,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       (inputs.action == 'start' || inputs.action == 'resume') &&
-      (inputs.milestone == 'm1' || inputs.milestone == 'm2' || inputs.milestone == 'm3')
+      (inputs.milestone == 'm1' || inputs.milestone == 'm2' || inputs.milestone == 'm3' || inputs.milestone == 'm4')
     runs-on: [self-hosted, macOS, valkey-codex]
     timeout-minutes: 120
     permissions:

@@ -28,7 +28,7 @@
   关闭仍由人工审批，以保证长期运行不在每个普通工作项处等待。
 * 仓库只有一个 workflow：`.github/workflows/milestone-loop.yml`。
   `workflow_dispatch` 只接受 `action`（`start | resume`）和 `milestone`
-  （`m1 | m2 | m3`）两个输入；启动后固定读取
+  （`m1 | m2 | m3 | m4`）两个输入；启动后固定读取
   `project/milestones/<milestone>/milestone.json`。
 * 普通 PR baseline 固定执行 `./gate suite repository.all`；Work Item 的 `Check:`
   只能由受信 `base_sha` 的 Catalog 解析为固定 `./gate test` 或 `./gate suite`；
@@ -188,7 +188,7 @@ workflow 约束：
 * 仓库中只有 `.github/workflows/milestone-loop.yml`；不增加 baseline、Check、
   watchdog 或 recovery 专用 workflow。
 * `workflow_dispatch` 只声明两个必填输入：`action` 的枚举是 `start | resume`，
-  `milestone` 的枚举是 `m1 | m2 | m3`。其他值必须在运行任何本地代码前拒绝。
+  `milestone` 的枚举是 `m1 | m2 | m3 | m4`。其他值必须在运行任何本地代码前拒绝。
 * `start` 和 `resume` 都固定读取
   `project/milestones/<milestone>/milestone.json`，不能接受路径、Check、命令、
   backend、规模、版本或证据字段作为输入。
@@ -269,7 +269,7 @@ workflow 约束：
   校验通过后自动合并；`contract-change`、授权租约签发或变更、受保护合同
   路径和 Milestone 最终关闭必须人工审批。
 * `BLOCKED` 的唯一恢复入口是
-  `workflow_dispatch(action=resume, milestone=<m1|m2|m3>)`。resume 先执行
+  `workflow_dispatch(action=resume, milestone=<m1|m2|m3|m4>)`。resume 先执行
   recovery cleanup，并重新读取 Milestone JSON、Issues、Labels、PR、Checks
   和 Authorization Lease；仍有 blocker 时保持 `BLOCKED`。通过后只 dispatch
   一轮，不创建新的运行状态对象。
@@ -353,7 +353,7 @@ workflow 约束：
 1. 在 GitHub 创建 Milestone，并确保默认分支存在
    `project/milestones/<milestone>/milestone.json`。
 2. 手工运行 `.github/workflows/milestone-loop.yml`，只选择
-   `action=start` 和 `milestone=m1|m2|m3`。
+   `action=start` 和 `milestone=m1|m2|m3|m4`。
 3. workflow 固定读取对应 Milestone JSON，GitHub 把 Planner Job 排队到本地
    Mac。
 4. Planner 读取实时 Issues、Labels、PR 和 Checks，通过 `--output-schema` JSON
@@ -493,8 +493,8 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
 ## 8. 验收场景
 
 * Goal/gh-aw scheduler 被禁用；仓库只有
-  `.github/workflows/milestone-loop.yml`，同时支持 `m1`、`m2`、`m3`。
-* `workflow_dispatch` 只有 `action=start|resume` 和 `milestone=m1|m2|m3` 两个
+  `.github/workflows/milestone-loop.yml`，同时支持 `m1`、`m2`、`m3`、`m4`。
+* `workflow_dispatch` 只有 `action=start|resume` 和 `milestone=m1|m2|m3|m4` 两个
   输入；启动后只读取固定的
   `project/milestones/<milestone>/milestone.json`。
 * Planner 无可执行 Work Item 时不创建修改或 PR：Criterion 未全部绑定 Check
