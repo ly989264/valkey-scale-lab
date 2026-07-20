@@ -3,6 +3,9 @@
 /project/catalog.json @ly989264
 /project/gate @ly989264
 /project/milestones/ @ly989264
+/project/scripts/m2_candidate_discovery.py @ly989264
+/project/scripts/m2_performance_capture.py @ly989264
+/project/scripts/m2_performance_gate.py @ly989264
 /project/verification/ @ly989264
 /project/src/valkey_scale_lab/cli.py @ly989264
 /project/src/valkey_scale_lab/gates/ @ly989264

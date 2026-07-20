@@ -230,6 +230,7 @@ jobs:
       default_sha: ${{ steps.authorize.outputs.default_sha }}
       milestone: ${{ steps.authorize.outputs.milestone }}
       lease_sha256: ${{ steps.authorize.outputs.lease_sha256 }}
+      entrypoint: ${{ steps.authorize.outputs.entrypoint }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -253,7 +254,9 @@ jobs:
 
   milestone:
     needs: authorize-real
-    if: needs.authorize-real.result == 'success'
+    if: >-
+      needs.authorize-real.result == 'success' &&
+      needs.authorize-real.outputs.entrypoint == 'milestone'
     runs-on: [self-hosted, macOS, valkey-real]
     timeout-minutes: 7200
     environment: valkey-real
@@ -308,9 +311,72 @@ jobs:
           --role real
           --runtime-root "$RUNNER_TEMP/milestone-loop-real"
 
+  m2-discovery:
+    needs: authorize-real
+    if: >-
+      needs.authorize-real.result == 'success' &&
+      needs.authorize-real.outputs.entrypoint == 'discovery'
+    runs-on: [self-hosted, macOS, valkey-real]
+    timeout-minutes: 7200
+    environment: valkey-real
+    permissions:
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+      id-token: write
+    outputs:
+      status: ${{ steps.discovery.outputs.status }}
+      result: ${{ steps.discovery.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.authorize-real.outputs.default_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Validate real runner environment
+        run: python3 .github/milestone-loop/loop.py fingerprint --role real
+      - name: Run authorized M2 candidate discovery
+        id: discovery
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: >-
+          python3 .github/milestone-loop/loop.py run-m2-discovery
+          --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
+          --expected-lease-sha256 "${{ needs.authorize-real.outputs.lease_sha256 }}"
+      - name: Upload bounded M2 discovery result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2-discovery-result-${{ github.run_id }}
+          path: ${{ runner.temp }}/m2-discovery-result.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload M2 discovery evidence
+        if: always() && steps.discovery.outputs.artifacts != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2-discovery-evidence-${{ github.run_id }}
+          path: ${{ steps.discovery.outputs.artifacts }}
+          if-no-files-found: error
+          retention-days: 30
+      - name: Final real-resource cleanup
+        if: always()
+        run: >-
+          python3 .github/milestone-loop/loop.py recover
+          --role real
+          --runtime-root "$RUNNER_TEMP/milestone-loop-real"
+      - name: Enforce completed discovery
+        if: always()
+        run: test "${{ steps.discovery.outputs.status }}" = "PASS"
+
   record-milestone:
     needs: [authorize-real, milestone]
-    if: always() && needs.milestone.result == 'success'
+    if: >-
+      always() &&
+      needs.authorize-real.outputs.entrypoint == 'milestone' &&
+      needs.milestone.result == 'success'
     runs-on: [self-hosted, macOS, valkey-codex]
     timeout-minutes: 30
     permissions:

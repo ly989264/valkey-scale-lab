@@ -585,13 +585,15 @@ def _metric_values(
     return values
 
 
-def _validate_formation(
+def _validate_formation_discovery(
     report: Mapping[str, Any],
     trials_by_id: Mapping[str, Mapping[str, Any]],
     pairs_by_cell: Mapping[str, list[Mapping[str, Any]]],
     cells_by_id: Mapping[str, Mapping[str, Any]],
     errors: list[str],
-) -> None:
+    *,
+    require_selected: bool,
+) -> set[tuple[Any, ...]]:
     _add(errors, _treatment_key(report.get("baseline")) == _treatment_key(BASELINE_FORMATION), "formation baseline must force the current valkey-cli primary-create path")
     candidates = [_object(item) for item in _array(report.get("candidates"))]
     _add(errors, bool(candidates), "formation discovery candidates are missing")
@@ -605,10 +607,30 @@ def _validate_formation(
     _add(errors, len(manual) == 1, "formation discovery must include the existing manual-tree diagnostic")
     _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == {4, 8, 16}, "formation discovery must include bounded ADDSLOTSRANGE parallelism 4, 8, and 16")
     candidate_keys = [_treatment_key(item) for item in candidates]
+    expected_candidate_keys = {
+        ("cluster_create_strategy", "manual_tree_meet_parallel_slots", None, None, None),
+        *{
+            (
+                "cluster_create_strategy",
+                "tree_meet_addslotsrange",
+                parallelism,
+                None,
+                None,
+            )
+            for parallelism in (4, 8, 16)
+        },
+    }
+    _add(
+        errors,
+        len(candidate_keys) == len(expected_candidate_keys)
+        and set(candidate_keys) == expected_candidate_keys,
+        "formation discovery must contain exactly the fixed manual-tree and ADDSLOTSRANGE candidates",
+    )
     _add(errors, _all_unique(candidate_keys), "formation candidate treatments must be unique")
     selected = _object(report.get("selected_candidate"))
-    _add(errors, _treatment_key(selected) in set(candidate_keys), "selected formation candidate was not in the discovery screen")
-    _add(errors, _treatment_key(selected) != _treatment_key(report.get("baseline")), "formation candidate must differ from the baseline")
+    if require_selected:
+        _add(errors, _treatment_key(selected) in set(candidate_keys), "selected formation candidate was not in the discovery screen")
+        _add(errors, _treatment_key(selected) != _treatment_key(report.get("baseline")), "formation candidate must differ from the baseline")
 
     discovery = [cell for cell in cells_by_id.values() if cell.get("campaign_step") == "discovery"]
     _add(errors, len(discovery) == len(candidates), "formation requires one exact-50 discovery cell per candidate")
@@ -648,10 +670,29 @@ def _validate_formation(
             _add(errors, discovery_cell.get("status") == expected_status, f"formation discovery cell {discovery_cell_id} status does not match measured screen result")
             if passed:
                 survivor_keys.add(_treatment_key(candidate))
-            if _treatment_key(candidate) == _treatment_key(selected):
+            if require_selected and _treatment_key(candidate) == _treatment_key(selected):
                 _add(errors, passed, "selected formation candidate did not beat baseline in discovery")
 
-    _add(errors, _treatment_key(selected) in survivor_keys, "selected formation candidate is not a discovery survivor")
+    if require_selected:
+        _add(errors, _treatment_key(selected) in survivor_keys, "selected formation candidate is not a discovery survivor")
+    return survivor_keys
+
+
+def _validate_formation(
+    report: Mapping[str, Any],
+    trials_by_id: Mapping[str, Mapping[str, Any]],
+    pairs_by_cell: Mapping[str, list[Mapping[str, Any]]],
+    cells_by_id: Mapping[str, Mapping[str, Any]],
+    errors: list[str],
+) -> None:
+    survivor_keys = _validate_formation_discovery(
+        report,
+        trials_by_id,
+        pairs_by_cell,
+        cells_by_id,
+        errors,
+        require_selected=True,
+    )
     promotion = [cell for cell in cells_by_id.values() if cell.get("campaign_step") == "promotion"]
     expected_promotion = {
         (candidate_key, scale)
@@ -687,7 +728,13 @@ def _validate_formation(
             _add(errors, improvement is not None and improvement >= threshold, f"formation exact-{scale} median improvement is below {threshold:.0%}")
             _add(errors, nearest_rank(candidate_values, 0.95) <= 60.0, f"formation exact-{scale} observed p95 exceeds 60 seconds")
 
-    for trial in trials_by_id.values():
+    _validate_formation_trials(trials_by_id.values(), errors)
+
+
+def _validate_formation_trials(
+    trials: Iterable[Mapping[str, Any]], errors: list[str]
+) -> None:
+    for trial in trials:
         _validate_marker_order(trial, FORMATION_MARKERS, errors)
         markers = _object(trial.get("monotonic_markers"))
         interval = _number(_object(trial.get("derived_intervals")).get("formation_seconds"))
@@ -826,13 +873,15 @@ def _failover_discovery_passed(
     )
 
 
-def _validate_failover(
+def _validate_failover_discovery(
     report: Mapping[str, Any],
     trials_by_id: Mapping[str, Mapping[str, Any]],
     pairs_by_cell: Mapping[str, list[Mapping[str, Any]]],
     cells_by_id: Mapping[str, Mapping[str, Any]],
     errors: list[str],
-) -> None:
+    *,
+    require_selected: bool,
+) -> set[tuple[Any, ...]]:
     defaults = _object(report.get("current_defaults"))
     current_strategy = defaults.get("cluster_create_strategy")
     _add(
@@ -857,14 +906,18 @@ def _validate_failover(
         ("cluster_node_timeout_ms", 10000, None, current_strategy, None),
         ("cluster_node_timeout_ms", 15000, None, current_strategy, None),
     }
+    candidate_keys = [_treatment_key(item) for item in candidates]
     _add(
         errors,
-        {_treatment_key(item) for item in candidates} == expected_candidates,
+        len(candidate_keys) == len(expected_candidates)
+        and _all_unique(candidate_keys)
+        and set(candidate_keys) == expected_candidates,
         "failover screen must contain 5000, 10000, and 15000 ms with one current formation strategy",
     )
     selected = _object(report.get("selected_candidate"))
-    _add(errors, _treatment_key(selected) in expected_candidates, "selected failover timeout was not screened")
-    _add(errors, _treatment_key(selected) != _treatment_key(report.get("baseline")), "failover candidate must differ from 30000 ms")
+    if require_selected:
+        _add(errors, _treatment_key(selected) in expected_candidates, "selected failover timeout was not screened")
+        _add(errors, _treatment_key(selected) != _treatment_key(report.get("baseline")), "failover candidate must differ from 30000 ms")
 
     discovery = [cell for cell in cells_by_id.values() if cell.get("campaign_step") == "discovery"]
     _add(errors, len(discovery) == 3, "failover requires three exact-50 single-failure discovery cells")
@@ -889,10 +942,29 @@ def _validate_failover(
             _add(errors, discovery_cell.get("status") == expected_status, f"failover discovery cell {discovery_cell_id} status does not match measured screen result")
             if passed:
                 survivor_keys.add(_treatment_key(candidate))
-            if _treatment_key(candidate) == _treatment_key(selected):
+            if require_selected and _treatment_key(candidate) == _treatment_key(selected):
                 _add(errors, passed, "selected failover timeout did not pass discovery")
 
-    _add(errors, _treatment_key(selected) in survivor_keys, "selected failover timeout is not a discovery survivor")
+    if require_selected:
+        _add(errors, _treatment_key(selected) in survivor_keys, "selected failover timeout is not a discovery survivor")
+    return survivor_keys
+
+
+def _validate_failover(
+    report: Mapping[str, Any],
+    trials_by_id: Mapping[str, Mapping[str, Any]],
+    pairs_by_cell: Mapping[str, list[Mapping[str, Any]]],
+    cells_by_id: Mapping[str, Mapping[str, Any]],
+    errors: list[str],
+) -> None:
+    survivor_keys = _validate_failover_discovery(
+        report,
+        trials_by_id,
+        pairs_by_cell,
+        cells_by_id,
+        errors,
+        require_selected=True,
+    )
     matrix = [cell for cell in cells_by_id.values() if cell.get("campaign_step") == "matrix"]
     observed_cells = {
         (_treatment_key(cell.get("candidate")), cell.get("scale"), cell.get("failure_rate"))
@@ -1067,35 +1139,15 @@ def _validate_stability(
             _add(errors, workload.get("errors") == 0, "exact-200 soak workload has errors")
 
 
-def validate_report(
-    report: Mapping[str, Any],
-    *,
-    expected_kind: str | None = None,
-    expected_invocation_run_id: str | None = None,
-) -> list[str]:
-    """Validate M2 schema, pairing, estimators, budgets, and safety semantics."""
-    errors = _validate_required_shape(report)
+def _validate_trials_and_pairs(
+    report: Mapping[str, Any], errors: list[str]
+) -> tuple[
+    dict[str, Mapping[str, Any]],
+    dict[str, Mapping[str, Any]],
+    dict[str, list[Mapping[str, Any]]],
+]:
     kind = report.get("experiment_kind")
-    if expected_kind is not None:
-        _add(errors, kind == expected_kind, f"report experiment_kind must be {expected_kind!r}")
     invocation_run_id = report.get("invocation_run_id")
-    if expected_invocation_run_id is not None:
-        _add(errors, invocation_run_id == expected_invocation_run_id, "report invocation_run_id does not match this Gate invocation")
-    _add(errors, report.get("campaign_id") == invocation_run_id, "campaign_id must equal invocation_run_id")
-    _add(errors, report.get("real_valkey") is True, "real admission report is not real Valkey")
-    _add(errors, report.get("execution_mode") == "valkey-real", "real admission report execution_mode is not valkey-real")
-    _add(errors, report.get("invalid_samples") == [], "invalid samples are present; they cannot be replaced or ignored")
-    _add(errors, report.get("errors") == [], "report contains producer errors")
-    digest = report.get("report_digest")
-    try:
-        expected_digest = report_digest(report)
-    except (TypeError, ValueError):
-        expected_digest = ""
-        errors.append("report is not canonical finite JSON")
-    _add(errors, digest == expected_digest, "report_digest does not match canonical report content")
-    _validate_protocol(report, errors)
-    _validate_criterion_results(report, errors)
-
     trials = [_object(row) for row in _array(report.get("trials"))]
     trial_ids = [row.get("trial_id") for row in trials]
     run_ids = [row.get("run_id") for row in trials]
@@ -1129,6 +1181,39 @@ def validate_report(
             cell=cells_by_id.get(str(trial.get("cell_id"))),
             errors=errors,
         )
+    return trials_by_id, cells_by_id, pairs_by_cell
+
+
+def validate_report(
+    report: Mapping[str, Any],
+    *,
+    expected_kind: str | None = None,
+    expected_invocation_run_id: str | None = None,
+) -> list[str]:
+    """Validate M2 schema, pairing, estimators, budgets, and safety semantics."""
+    errors = _validate_required_shape(report)
+    kind = report.get("experiment_kind")
+    if expected_kind is not None:
+        _add(errors, kind == expected_kind, f"report experiment_kind must be {expected_kind!r}")
+    invocation_run_id = report.get("invocation_run_id")
+    if expected_invocation_run_id is not None:
+        _add(errors, invocation_run_id == expected_invocation_run_id, "report invocation_run_id does not match this Gate invocation")
+    _add(errors, report.get("campaign_id") == invocation_run_id, "campaign_id must equal invocation_run_id")
+    _add(errors, report.get("real_valkey") is True, "real admission report is not real Valkey")
+    _add(errors, report.get("execution_mode") == "valkey-real", "real admission report execution_mode is not valkey-real")
+    _add(errors, report.get("invalid_samples") == [], "invalid samples are present; they cannot be replaced or ignored")
+    _add(errors, report.get("errors") == [], "report contains producer errors")
+    digest = report.get("report_digest")
+    try:
+        expected_digest = report_digest(report)
+    except (TypeError, ValueError):
+        expected_digest = ""
+        errors.append("report is not canonical finite JSON")
+    _add(errors, digest == expected_digest, "report_digest does not match canonical report content")
+    _validate_protocol(report, errors)
+    _validate_criterion_results(report, errors)
+
+    trials_by_id, cells_by_id, pairs_by_cell = _validate_trials_and_pairs(report, errors)
 
     if kind == "formation":
         _validate_formation(report, trials_by_id, pairs_by_cell, cells_by_id, errors)
@@ -1140,6 +1225,82 @@ def validate_report(
         errors.append(f"unsupported experiment_kind {kind!r}")
     if not errors:
         _add(errors, report.get("status") == "PASS", "fully valid report status must be PASS")
+    return list(dict.fromkeys(errors))
+
+
+def validate_discovery_campaign(
+    report: Mapping[str, Any],
+    *,
+    expected_kind: str,
+    expected_invocation_run_id: str,
+) -> list[str]:
+    """Validate one selection-only exact-50 discovery campaign."""
+    errors: list[str] = []
+    required = {
+        "campaign_id",
+        "invocation_run_id",
+        "experiment_kind",
+        "status",
+        "real_valkey",
+        "execution_mode",
+        "baseline",
+        "candidates",
+        "current_defaults",
+        "protocol",
+        "started_trial_ids",
+        "trials",
+        "pairs",
+        "cells",
+        "invalid_samples",
+        "source_refs",
+        "errors",
+    }
+    _add(errors, set(report) == required, "discovery campaign fields are incomplete or unexpected")
+    _add(errors, expected_kind in {"formation", "failover"}, "discovery campaign kind is unsupported")
+    _add(errors, report.get("experiment_kind") == expected_kind, "discovery campaign kind does not match")
+    _add(errors, report.get("campaign_id") == expected_invocation_run_id, "discovery campaign id does not match this invocation")
+    _add(errors, report.get("invocation_run_id") == expected_invocation_run_id, "discovery invocation id does not match")
+    _add(errors, report.get("real_valkey") is True, "discovery campaign is not real Valkey")
+    _add(errors, report.get("execution_mode") == "valkey-real", "discovery campaign execution mode is not valkey-real")
+    _add(errors, report.get("invalid_samples") == [], "discovery campaign contains invalid samples")
+    _add(errors, report.get("errors") == [], "discovery campaign contains producer errors")
+    _validate_protocol(report, errors)
+
+    trials_by_id, cells_by_id, pairs_by_cell = _validate_trials_and_pairs(report, errors)
+    cells = list(cells_by_id.values())
+    _add(errors, bool(cells) and all(cell.get("campaign_step") == "discovery" for cell in cells), "discovery campaign contains a non-discovery cell")
+    for cell in cells:
+        cell_id = str(cell.get("cell_id"))
+        _add(errors, cell.get("required_pairs") == 1, f"discovery cell {cell_id} must require exactly one pair")
+        _add(errors, len(pairs_by_cell.get(cell_id, [])) == 1, f"discovery cell {cell_id} must contain exactly one pair")
+
+    if expected_kind == "formation":
+        _validate_formation_discovery(
+            report,
+            trials_by_id,
+            pairs_by_cell,
+            cells_by_id,
+            errors,
+            require_selected=False,
+        )
+        _validate_formation_trials(trials_by_id.values(), errors)
+    elif expected_kind == "failover":
+        _validate_failover_discovery(
+            report,
+            trials_by_id,
+            pairs_by_cell,
+            cells_by_id,
+            errors,
+            require_selected=False,
+        )
+        physical_fault_ids: set[str] = set()
+        for trial in trials_by_id.values():
+            cell = cells_by_id.get(str(trial.get("cell_id")), {})
+            _validate_marker_order(trial, FAILOVER_MARKERS, errors)
+            _validate_fault(trial, cell, physical_fault_ids, errors)
+            _validate_failover_intervals(trial, errors)
+    if not errors:
+        _add(errors, report.get("status") == "PASS", "valid discovery campaign status must be PASS")
     return list(dict.fromkeys(errors))
 
 

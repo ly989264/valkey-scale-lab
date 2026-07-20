@@ -28,7 +28,7 @@ from coordinator import (
     record_milestone_result,
 )
 from github_api import GitHubClient, GitHubError, collect_snapshot
-from milestone_runner import authorize, run_gate
+from milestone_runner import authorize, run_gate, run_m2_discovery
 from recovery import recover
 
 
@@ -183,6 +183,9 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--milestone", required=True)
     run.add_argument("--expected-sha", required=True)
     run.add_argument("--expected-lease-sha256", required=True)
+    discovery = commands.add_parser("run-m2-discovery")
+    discovery.add_argument("--expected-sha", required=True)
+    discovery.add_argument("--expected-lease-sha256", required=True)
     record = commands.add_parser("record-milestone")
     record.add_argument("--milestone", required=True)
     record.add_argument("--expected-sha", required=True)
@@ -247,6 +250,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             result_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "milestone-result.json"
             result["tested_sha"] = args.expected_sha
             result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            _write_output({**result, "result": str(result_path)})
+            return 0
+        if args.command == "run-m2-discovery":
+            result = run_m2_discovery(
+                client=client,
+                repo_root=REPO_ROOT,
+                expected_sha=args.expected_sha,
+                expected_lease_sha256=args.expected_lease_sha256,
+            )
+            result_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "m2-discovery-result.json"
+            result["tested_sha"] = args.expected_sha
+            result_path.write_text(
+                json.dumps(result, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
             _write_output({**result, "result": str(result_path)})
             return 0
         if args.command == "record-milestone":

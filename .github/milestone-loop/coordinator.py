@@ -60,6 +60,9 @@ PROTECTED_PREFIXES = (
     "project/verification/",
     "project/catalog.json",
     "project/gate",
+    "project/scripts/m2_candidate_discovery.py",
+    "project/scripts/m2_performance_capture.py",
+    "project/scripts/m2_performance_gate.py",
     "project/src/valkey_scale_lab/cli.py",
     "project/src/valkey_scale_lab/gates/",
     "project/src/valkey_scale_lab/runtime/docker_runtime.py",
@@ -541,6 +544,41 @@ def m2_candidate_blockers(
             if selected[experiment] != selected[stability]:
                 blockers.add(f"{stability[0]}.{stability[1]}")
     return tuple(sorted(blockers))
+
+
+def m2_discovery_eligible(
+    milestone_document: Mapping[str, Any], milestone: str
+) -> bool:
+    """Recognize only the reviewed, unresolved M2 candidate binding."""
+    if milestone != "m2":
+        return False
+    expected: dict[tuple[str, str], dict[str, str]] = {}
+    for criterion_id, check_id, parameter, _candidates in M2_RELATIVE_CANDIDATE_PARAMETERS:
+        expected.setdefault((criterion_id, check_id), {})[parameter] = "current-default"
+
+    observed: dict[tuple[str, str], Mapping[str, Any]] = {}
+    target_check_ids = {check_id for _criterion_id, check_id in expected}
+    criteria = milestone_document.get("criteria")
+    if not isinstance(criteria, list):
+        return False
+    for criterion in criteria:
+        if not isinstance(criterion, Mapping):
+            continue
+        criterion_id = criterion.get("id")
+        checks = criterion.get("check")
+        if not isinstance(checks, list):
+            continue
+        for check in checks:
+            if not isinstance(check, Mapping) or check.get("id") not in target_check_ids:
+                continue
+            key = (criterion_id, check.get("id"))
+            parameters = check.get("parameters")
+            if key not in expected or key in observed or not isinstance(parameters, Mapping):
+                return False
+            observed[key] = parameters
+    return set(observed) == set(expected) and all(
+        dict(observed[key]) == parameters for key, parameters in expected.items()
+    )
 
 
 def run_planner(
@@ -1312,6 +1350,8 @@ def coordinate(
             resolve_check(catalog_document, check_id)
     candidate_blockers = m2_candidate_blockers(milestone_document, milestone)
     if candidate_blockers:
+        if m2_discovery_eligible(milestone_document, milestone):
+            return {"status": "MILESTONE", "milestone": milestone}
         client.comment(
             control.issue_number,
             "M2 Milestone BLOCKED before real authorization because relative-performance "

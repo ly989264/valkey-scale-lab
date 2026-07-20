@@ -23,8 +23,10 @@ from milestone_runner import (
     _gate_environment,
     _gate_result_summary,
     _lease_fingerprint,
+    _m2_discovery_run_id,
     _validate_consumed_lease,
     authorize,
+    run_m2_discovery,
 )
 from recovery import cleanup_owned_docker, cleanup_runtime_root
 
@@ -45,6 +47,24 @@ class BoundaryTests(unittest.TestCase):
             authorize_real.count("if: needs.coordinate.outputs.status == 'MILESTONE'"),
             1,
         )
+        self.assertIn("entrypoint: ${{ steps.authorize.outputs.entrypoint }}", authorize_real)
+        milestone_job = text.split("\n  milestone:", 1)[1].split("\n  m2-discovery:", 1)[0]
+        self.assertIn("needs.authorize-real.outputs.entrypoint == 'milestone'", milestone_job)
+        discovery_job = text.split("\n  m2-discovery:", 1)[1].split(
+            "\n  record-milestone:", 1
+        )[0]
+        self.assertIn("needs.authorize-real.outputs.entrypoint == 'discovery'", discovery_job)
+        self.assertIn("environment: valkey-real", discovery_job)
+        self.assertIn("run-m2-discovery", discovery_job)
+        self.assertIn("m2-discovery-result-${{ github.run_id }}", discovery_job)
+        self.assertIn("m2-discovery-evidence-${{ github.run_id }}", discovery_job)
+        self.assertIn('test "${{ steps.discovery.outputs.status }}" = "PASS"', discovery_job)
+        record_job = text.split("\n  record-milestone:", 1)[1]
+        self.assertIn("needs: [authorize-real, milestone]", record_job)
+        self.assertIn(
+            "needs.authorize-real.outputs.entrypoint == 'milestone'", record_job
+        )
+        self.assertNotIn("m2-discovery", record_job)
         self.assertNotIn("ubuntu-latest", text)
         self.assertIn("  candidate:\n    name: milestone-loop / candidate", text)
         self.assertIn('run: test "${{ steps.verify.outcome }}" = "success"', text)
@@ -187,6 +207,20 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(m2_environment["VSLAB_M2_REAL_AUTHORIZATION"], "1")
         self.assertNotIn("VSLAB_M2_REAL_AUTHORIZATION", m1_environment)
 
+    def test_m2_discovery_run_identity_is_validated_or_fresh(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            first = _m2_discovery_run_id()
+            second = _m2_discovery_run_id()
+        self.assertNotEqual(first, second)
+        self.assertRegex(first, r"^m2-discovery-local-[0-9a-f]{32}$")
+        with patch.dict(
+            os.environ,
+            {"GITHUB_RUN_ID": "../unsafe", "GITHUB_RUN_ATTEMPT": "1"},
+            clear=True,
+        ):
+            with self.assertRaises(ContractError):
+                _m2_discovery_run_id()
+
     def test_authorize_rechecks_m2_candidate_before_consuming_lease(self) -> None:
         snapshot = {
             "default_sha": "a" * 40,
@@ -224,6 +258,7 @@ class BoundaryTests(unittest.TestCase):
         ):
             result = authorize(client, ROOT, "m1")
         self.assertEqual(result["default_sha"], "a" * 40)
+        self.assertEqual(result["entrypoint"], "milestone")
         consume.assert_called_once_with(client, snapshot)
         run.assert_not_called()
 
@@ -245,7 +280,189 @@ class BoundaryTests(unittest.TestCase):
         ):
             result = authorize(client, ROOT, "m2")
         self.assertEqual(result["default_sha"], "a" * 40)
+        self.assertEqual(result["entrypoint"], "milestone")
         consume.assert_called_once_with(client, snapshot)
+
+    def test_authorize_routes_only_canonical_m2_state_to_discovery(self) -> None:
+        snapshot = {
+            "default_sha": "a" * 40,
+            "milestone": "m2",
+            "issues": [],
+        }
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        consumed = ControlState(7, empty_lease("m2"), 0)
+        client = object()
+        with (
+            patch("milestone_runner.collect_snapshot", return_value=snapshot),
+            patch("milestone_runner.subprocess.run", return_value=checkout),
+            patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+            patch("milestone_runner.m2_candidate_blockers", return_value=("unresolved",)),
+            patch("milestone_runner.m2_discovery_eligible", return_value=True),
+            patch("milestone_runner.consume_lease", return_value=consumed) as consume,
+        ):
+            result = authorize(client, ROOT, "m2")
+        self.assertEqual(result["entrypoint"], "discovery")
+        consume.assert_called_once_with(client, snapshot)
+
+    def _run_discovery_fixture(
+        self,
+        *,
+        include_admission_report: bool = False,
+        status: str = "PASS",
+        report_overrides: dict[str, object] | None = None,
+    ) -> tuple[dict, list[tuple[list[str], dict]], int]:
+        expected_sha = "a" * 40
+        with tempfile.TemporaryDirectory() as temporary:
+            repo_root = Path(temporary) / "repo"
+            script = repo_root / "project" / "scripts" / "m2_candidate_discovery.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("# fixed test producer\n", encoding="utf-8")
+            (repo_root / "project" / "src").mkdir()
+            runner_temp = Path(temporary) / "runner"
+            runner_temp.mkdir()
+            calls: list[tuple[list[str], dict]] = []
+
+            def run(argv, **kwargs):
+                command = list(argv)
+                calls.append((command, kwargs))
+                if command[:3] == ["git", "rev-parse", "HEAD"]:
+                    return subprocess.CompletedProcess(command, 0, expected_sha + "\n", "")
+                artifacts = Path(command[command.index("--artifacts-dir") + 1])
+                result_path = Path(command[command.index("--result-path") + 1])
+                run_id = command[command.index("--run-id") + 1]
+                artifacts.mkdir()
+                report = {
+                    "schema_version": "m2-candidate-discovery-v1",
+                    "artifact_type": "m2_candidate_discovery",
+                    "purpose": "candidate-selection-only",
+                    "admission_evidence": False,
+                    "current_invocation": True,
+                    "tested_sha": expected_sha,
+                    "invocation_run_id": run_id,
+                    "campaign_id": run_id,
+                    "status": status,
+                    "report_digest": "c" * 64,
+                }
+                report.update(report_overrides or {})
+                (artifacts / "m2_candidate_discovery.json").write_text(
+                    json.dumps(report), encoding="utf-8"
+                )
+                if include_admission_report:
+                    (artifacts / "m2_performance_report.json").write_text(
+                        "{}", encoding="utf-8"
+                    )
+                result_path.write_text(
+                    json.dumps({"status": status, "summary": "selection screen complete"}),
+                    encoding="utf-8",
+                )
+                return subprocess.CompletedProcess(command, 0, "producer output\n", None)
+
+            snapshot = {
+                "default_sha": expected_sha,
+                "milestone": "m2",
+                "issues": [],
+            }
+            with (
+                patch.dict(
+                    os.environ,
+                    {
+                        "RUNNER_TEMP": str(runner_temp),
+                        "GITHUB_RUN_ID": "12345",
+                        "GITHUB_RUN_ATTEMPT": "2",
+                        "GH_TOKEN": "must-not-leak",
+                        "GITHUB_TOKEN": "must-not-leak",
+                        "CODEX_API_KEY": "must-not-leak",
+                    },
+                ),
+                patch("milestone_runner.collect_snapshot", return_value=snapshot),
+                patch("milestone_runner._validate_consumed_lease") as validate_lease,
+                patch("milestone_runner.subprocess.run", side_effect=run),
+                patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+                patch("milestone_runner.m2_discovery_eligible", return_value=True),
+                patch("milestone_runner.cleanup_owned_docker") as cleanup,
+            ):
+                result = run_m2_discovery(
+                    client=object(),
+                    repo_root=repo_root,
+                    expected_sha=expected_sha,
+                    expected_lease_sha256="b" * 64,
+                )
+            validate_lease.assert_called_once_with(snapshot, "b" * 64)
+            return result, calls, cleanup.call_count
+
+    def test_m2_discovery_rechecks_authorization_and_uses_fixed_sanitized_command(self) -> None:
+        result, calls, cleanup_count = self._run_discovery_fixture()
+        self.assertEqual(result["status"], "PASS")
+        self.assertTrue(result["report"].endswith("/m2_candidate_discovery.json"))
+        self.assertEqual(cleanup_count, 2)
+        self.assertEqual(calls[0][0], ["git", "rev-parse", "HEAD"])
+        producer, kwargs = calls[1]
+        self.assertEqual(producer[:2], ["python3", "scripts/m2_candidate_discovery.py"])
+        self.assertEqual(producer[producer.index("--tested-sha") + 1], "a" * 40)
+        self.assertEqual(
+            producer[producer.index("--run-id") + 1],
+            "m2-discovery-gh-12345-attempt-2",
+        )
+        environment = kwargs["env"]
+        self.assertEqual(environment["VSLAB_M2_REAL_AUTHORIZATION"], "1")
+        self.assertTrue(environment["PYTHONPATH"].endswith("/project/src"))
+        for key in ("GH_TOKEN", "GITHUB_TOKEN", "CODEX_API_KEY"):
+            self.assertNotIn(key, environment)
+
+    def test_m2_discovery_rejects_any_admission_report(self) -> None:
+        result, _calls, cleanup_count = self._run_discovery_fixture(
+            include_admission_report=True
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("forbidden admission report", result["summary"])
+        self.assertEqual(cleanup_count, 2)
+
+    def test_m2_discovery_rejects_admission_fields_and_weak_envelope(self) -> None:
+        invalid_reports = (
+            {"criterion_results": []},
+            {"selected_candidate": {}},
+            {"current_invocation": False},
+            {"report_digest": "C" * 64},
+            {"report_digest": "c" * 63},
+        )
+        for overrides in invalid_reports:
+            with self.subTest(overrides=overrides):
+                result, _calls, cleanup_count = self._run_discovery_fixture(
+                    report_overrides=overrides
+                )
+                self.assertEqual(result["status"], "FAIL")
+                self.assertIn("selection-only artifact", result["summary"])
+                self.assertEqual(cleanup_count, 2)
+
+    def test_m2_discovery_preserves_bounded_blocked_result_for_upload(self) -> None:
+        result, _calls, cleanup_count = self._run_discovery_fixture(status="BLOCKED")
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertTrue(result["artifacts"].endswith("/m2-discovery-evidence"))
+        self.assertEqual(cleanup_count, 2)
+
+    def test_m2_discovery_blocks_if_candidate_state_is_no_longer_canonical(self) -> None:
+        snapshot = {
+            "default_sha": "a" * 40,
+            "milestone": "m2",
+            "issues": [],
+        }
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        with (
+            patch("milestone_runner.collect_snapshot", return_value=snapshot),
+            patch("milestone_runner._validate_consumed_lease"),
+            patch("milestone_runner.subprocess.run", return_value=checkout),
+            patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+            patch("milestone_runner.m2_discovery_eligible", return_value=False),
+            patch("milestone_runner.cleanup_owned_docker") as cleanup,
+        ):
+            with self.assertRaises(LoopBlocked):
+                run_m2_discovery(
+                    client=object(),
+                    repo_root=ROOT,
+                    expected_sha="a" * 40,
+                    expected_lease_sha256="b" * 64,
+                )
+        cleanup.assert_not_called()
 
     def test_m2_failure_diagnostic_reaches_context_without_raw_evidence(self) -> None:
         sentinel = "RAW-EVIDENCE-MUST-NOT-ENTER-CONTEXT"
@@ -376,11 +593,17 @@ class BoundaryTests(unittest.TestCase):
 
         paths = (
             ".github/CODEOWNERS",
+            "project/scripts/m2_candidate_discovery.py",
+            "project/scripts/m2_performance_capture.py",
+            "project/scripts/m2_performance_gate.py",
             "project/src/valkey_scale_lab/cli.py",
             "project/src/valkey_scale_lab/gates/real.py",
             "project/src/valkey_scale_lab/runtime/docker_runtime.py",
         )
         self.assertEqual(protected_changes(paths), paths)
+        codeowners = (ROOT / ".github" / "CODEOWNERS").read_text(encoding="utf-8")
+        for path in paths[1:4]:
+            self.assertIn(f"/{path} @ly989264", codeowners.splitlines())
 
 
 if __name__ == "__main__":
