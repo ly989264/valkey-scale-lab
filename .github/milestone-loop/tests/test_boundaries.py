@@ -21,6 +21,7 @@ from coordinator import (
 from github_api import GitHubClient
 from milestone_runner import (
     _gate_environment,
+    _gate_result_summary,
     _lease_fingerprint,
     _validate_consumed_lease,
     authorize,
@@ -245,6 +246,130 @@ class BoundaryTests(unittest.TestCase):
             result = authorize(client, ROOT, "m2")
         self.assertEqual(result["default_sha"], "a" * 40)
         consume.assert_called_once_with(client, snapshot)
+
+    def test_m2_failure_diagnostic_reaches_context_without_raw_evidence(self) -> None:
+        sentinel = "RAW-EVIDENCE-MUST-NOT-ENTER-CONTEXT"
+        gate_summary = {
+            "status": "FAIL",
+            "tests": [
+                {
+                    "instance_id": "001-passing-check",
+                    "criterion_id": "passing.criterion",
+                    "check_id": "passing.check",
+                    "test_id": "passing.test",
+                    "status": "PASS",
+                    "detail": sentinel,
+                },
+                {
+                    "instance_id": "002-real.local.m2-cluster-formation",
+                    "criterion_id": "performance.cluster-formation-experiment",
+                    "check_id": "real.local.m2-cluster-formation",
+                    "test_id": "real.local.m2-cluster-formation",
+                    "status": "FAIL",
+                    "exit_code": 0,
+                    "detail": (
+                        f"candidate did not improve at /private/tmp/{sentinel}\n"
+                        "@mention <unsafe>"
+                    ),
+                    "parameters": {"secret": sentinel},
+                    "artifacts_dir": f"/private/tmp/{sentinel}",
+                    "extra": sentinel,
+                },
+            ],
+        }
+        with patch.dict(os.environ, {"GITHUB_RUN_ID": "12345"}):
+            result = _gate_result_summary(
+                milestone="m2",
+                gate_status="FAIL",
+                summary=gate_summary,
+                exit_code=1,
+                expected_sha="a" * 40,
+                invocation_id="gate-20260720T095023Z-02167ee1",
+            )
+
+        self.assertLessEqual(len(result), 3800)
+        self.assertNotIn("\n", result)
+        self.assertIn("not Criterion or admission evidence", result)
+        self.assertIn("performance.cluster-formation-experiment", result)
+        self.assertIn("candidate did not improve", result)
+        self.assertIn("[absolute-path]", result)
+        self.assertIn("milestone-evidence-12345", result)
+        self.assertNotIn("passing.criterion", result)
+        self.assertNotIn(sentinel, result)
+        self.assertNotIn("@mention", result)
+        self.assertNotIn("<unsafe>", result)
+
+        snapshot = {
+            "repository": "owner/repo",
+            "default_branch": "main",
+            "default_sha": "a" * 40,
+            "issues": [
+                {
+                    "number": 7,
+                    "title": "M2 Control",
+                    "body": "control",
+                    "state": "open",
+                    "labels": [CONTROL_LABEL],
+                    "comments": [
+                        {
+                            "author": "github-actions[bot]",
+                            "body": result,
+                        }
+                    ],
+                }
+            ],
+            "pull_requests": [],
+        }
+        context = build_context(
+            repo_root=ROOT,
+            snapshot=snapshot,
+            milestone_document=json.loads(
+                (ROOT / "project/milestones/m2/milestone.json").read_text()
+            ),
+        )
+        encoded = json.dumps(context)
+        self.assertIn("gate-20260720T095023Z-02167ee1", encoded)
+        self.assertIn("real.local.m2-cluster-formation", encoded)
+        self.assertNotIn(sentinel, encoded)
+
+    def test_m2_failure_diagnostic_is_bounded_and_other_milestones_are_unchanged(self) -> None:
+        tests = [
+            {
+                "instance_id": f"{index:03d}-real.local.m2-check",
+                "criterion_id": "performance.test",
+                "check_id": "real.local.m2-check",
+                "test_id": "real.local.m2-check",
+                "status": "FAIL",
+                "detail": "x" * 10_000,
+            }
+            for index in range(100)
+        ]
+        summary = {"status": "FAIL", "tests": tests}
+        result = _gate_result_summary(
+            milestone="m2",
+            gate_status="FAIL",
+            summary=summary,
+            exit_code=1,
+            expected_sha="a" * 40,
+            invocation_id="gate-current",
+        )
+        self.assertLessEqual(len(result), 3800)
+        self.assertNotIn("\n", result)
+        self.assertIn('"non_pass_total":100', result)
+        self.assertRegex(result, r'"omitted_non_pass":[1-9][0-9]*')
+
+        for milestone in ("m1", "m3", "m4"):
+            self.assertEqual(
+                _gate_result_summary(
+                    milestone=milestone,
+                    gate_status="FAIL",
+                    summary=summary,
+                    exit_code=1,
+                    expected_sha="a" * 40,
+                    invocation_id="gate-current",
+                ),
+                "Gate exit=1; summary status=FAIL",
+            )
 
     def test_current_real_admission_chain_is_protected(self) -> None:
         from coordinator import protected_changes

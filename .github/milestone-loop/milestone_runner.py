@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,96 @@ from coordinator import (
 )
 from github_api import GitHubClient, collect_snapshot
 from recovery import cleanup_owned_docker
+
+
+_GATE_DIAGNOSTIC_MAX_CHARS = 3800
+_GATE_DIAGNOSTIC_MAX_ROWS = 8
+_GATE_DIAGNOSTIC_DETAIL_MAX_CHARS = 400
+_GATE_DIAGNOSTIC_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,159}")
+
+
+def _diagnostic_identifier(value: Any) -> str:
+    if isinstance(value, str) and _GATE_DIAGNOSTIC_ID_RE.fullmatch(value):
+        return value
+    return "invalid"
+
+
+def _diagnostic_detail(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    safe = "".join(
+        " " if character in "@<>`" or not character.isprintable() else character
+        for character in value
+    )
+    safe = re.sub(r"(?<![A-Za-z0-9])/(?:[^\s,;]+)", "[absolute-path]", safe)
+    return " ".join(safe.split())[:_GATE_DIAGNOSTIC_DETAIL_MAX_CHARS]
+
+
+def _gate_result_summary(
+    *,
+    milestone: str,
+    gate_status: str,
+    summary: dict[str, Any],
+    exit_code: int,
+    expected_sha: str,
+    invocation_id: str,
+) -> str:
+    raw_status = summary.get("status")
+    result = f"Gate exit={exit_code}; summary status={raw_status}"
+    if milestone != "m2" or gate_status != "FAIL":
+        return result
+
+    tests = summary.get("tests")
+    non_pass = []
+    if isinstance(tests, list):
+        non_pass = [
+            row
+            for row in tests
+            if isinstance(row, dict) and row.get("status") != "PASS"
+        ]
+    diagnostic: dict[str, Any] = {
+        "diagnostic_only": True,
+        "tested_sha": (
+            expected_sha
+            if re.fullmatch(r"[0-9a-f]{40}", expected_sha)
+            else "invalid"
+        ),
+        "invocation_id": _diagnostic_identifier(invocation_id),
+        "non_pass_total": len(non_pass),
+        "failures": [],
+    }
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    if re.fullmatch(r"[0-9]{1,20}", run_id):
+        diagnostic["evidence_artifact"] = f"milestone-evidence-{run_id}"
+        diagnostic["evidence_summary"] = "summary.json"
+
+    prefix = result + "; diagnostic only, not Criterion or admission evidence: "
+    for row in non_pass[:_GATE_DIAGNOSTIC_MAX_ROWS]:
+        failure: dict[str, Any] = {
+            "instance_id": _diagnostic_identifier(row.get("instance_id")),
+            "criterion_id": _diagnostic_identifier(row.get("criterion_id")),
+            "check_id": _diagnostic_identifier(row.get("check_id")),
+            "test_id": _diagnostic_identifier(row.get("test_id")),
+            "status": _diagnostic_identifier(row.get("status")),
+        }
+        if isinstance(row.get("exit_code"), int):
+            failure["exit_code"] = row["exit_code"]
+        detail = _diagnostic_detail(row.get("detail"))
+        if detail:
+            failure["detail"] = detail
+        diagnostic["failures"].append(failure)
+        diagnostic["omitted_non_pass"] = len(non_pass) - len(diagnostic["failures"])
+        rendered = prefix + json.dumps(
+            diagnostic, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+        )
+        if len(rendered) > _GATE_DIAGNOSTIC_MAX_CHARS:
+            diagnostic["failures"].pop()
+            break
+
+    diagnostic["omitted_non_pass"] = len(non_pass) - len(diagnostic["failures"])
+    return prefix + json.dumps(
+        diagnostic, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    )
 
 
 def authorize(client: GitHubClient, repo_root: Path, milestone: str) -> dict[str, Any]:
@@ -181,7 +272,14 @@ def run_gate(
             status = "BLOCKED"
         return {
             "status": status,
-            "summary": f"Gate exit={process.returncode}; summary status={summary.get('status') if isinstance(summary, dict) else 'invalid'}",
+            "summary": _gate_result_summary(
+                milestone=milestone,
+                gate_status=status,
+                summary=summary,
+                exit_code=process.returncode,
+                expected_sha=expected_sha,
+                invocation_id=artifacts.name,
+            ),
             "exit_code": process.returncode,
             "artifacts": str(artifacts),
         }
