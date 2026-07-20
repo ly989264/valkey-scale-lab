@@ -202,6 +202,29 @@ def test_cluster_create_strategy_defaults_to_valkey_cli(monkeypatch: pytest.Monk
     assert docker_runtime._cluster_create_strategy() == docker_runtime.CLUSTER_CREATE_STRATEGY_DEFAULT
 
 
+def test_m2_measurement_hooks_are_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
+    timeline = SetupTimeline(clock=lambda: 10.0)
+    monkeypatch.delenv(docker_runtime.M2_MEASUREMENT_ENV, raising=False)
+    monkeypatch.setenv(docker_runtime.M2_RUN_ID_ENV, "m2-explicit-run")
+    monkeypatch.setenv(docker_runtime.M2_BOOTSTRAP_RESOURCE_SECONDS_ENV, "120")
+
+    docker_runtime._m2_setup_event(timeline, "last_process_ping")
+    assert timeline.events == []
+    assert docker_runtime._m2_bootstrap_resource_seconds() is None
+    assert docker_runtime._run_id("failover_timeline", "failover_timeline") == "failover_timeline-failover_timeline-20260628"
+
+    monkeypatch.setenv(docker_runtime.M2_MEASUREMENT_ENV, "1")
+    docker_runtime._m2_setup_event(timeline, "last_process_ping", {"node_count": 50})
+    assert timeline.events[0]["name"] == "last_process_ping"
+    assert timeline.events[0]["details"] == {"node_count": 50}
+    assert docker_runtime._m2_bootstrap_resource_seconds() == 120.0
+    assert docker_runtime._run_id("failover_timeline", "failover_timeline") == "m2-explicit-run"
+
+    monkeypatch.setenv(docker_runtime.M2_BOOTSTRAP_RESOURCE_SECONDS_ENV, "not-a-duration")
+    with pytest.raises(DockerRuntimeError, match="must be numeric"):
+        docker_runtime._m2_bootstrap_resource_seconds()
+
+
 def test_cluster_create_strategy_accepts_manual_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", docker_runtime.CLUSTER_CREATE_STRATEGY_MANUAL)
     assert docker_runtime._cluster_create_strategy() == docker_runtime.CLUSTER_CREATE_STRATEGY_MANUAL

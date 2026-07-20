@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import math
 import os
 import re
 import shutil
@@ -128,6 +129,9 @@ SETUP_TIMING_NAMES = [
 ]
 
 T = TypeVar("T")
+M2_MEASUREMENT_ENV = "VSLAB_M2_MEASUREMENT"
+M2_RUN_ID_ENV = "VSLAB_M2_RUN_ID"
+M2_BOOTSTRAP_RESOURCE_SECONDS_ENV = "VSLAB_M2_BOOTSTRAP_RESOURCE_SECONDS"
 
 
 class DockerRuntimeError(RuntimeError):
@@ -193,6 +197,34 @@ def _timeline_call(
 ) -> T:
     with _timeline_span(timeline, name, category, details):
         return func()
+
+
+def _m2_measurement_enabled() -> bool:
+    return os.environ.get(M2_MEASUREMENT_ENV, "").strip() == "1"
+
+
+def _m2_bootstrap_resource_seconds() -> float | None:
+    if not _m2_measurement_enabled():
+        return None
+    raw = os.environ.get(M2_BOOTSTRAP_RESOURCE_SECONDS_ENV, "").strip()
+    if not raw:
+        return None
+    try:
+        seconds = float(raw)
+    except ValueError as exc:
+        raise DockerRuntimeError(f"{M2_BOOTSTRAP_RESOURCE_SECONDS_ENV} must be numeric") from exc
+    if not math.isfinite(seconds) or seconds <= 0:
+        raise DockerRuntimeError(f"{M2_BOOTSTRAP_RESOURCE_SECONDS_ENV} must be finite and positive")
+    return seconds
+
+
+def _m2_setup_event(
+    timeline: SetupTimeline | None,
+    name: str,
+    details: dict[str, Any] | None = None,
+) -> None:
+    if timeline is not None and _m2_measurement_enabled():
+        timeline.mark_event(name, "m2_cluster_formation", details)
 
 
 def run_docker(
@@ -924,6 +956,11 @@ def _create_process_scenario(
             ),
             {"node_count": len(nodes)},
         )
+        _m2_setup_event(
+            setup_timeline,
+            "last_process_ping",
+            {"node_count": len(nodes), "observation": "all owned processes answered PING"},
+        )
         state = _process_runtime_state(
             capability_id,
             scenario,
@@ -940,7 +977,38 @@ def _create_process_scenario(
         _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", capability_id, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_before_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
-        operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
+        resource_seconds = _m2_bootstrap_resource_seconds()
+        if resource_seconds is None:
+            operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
+        else:
+            from valkey_scale_lab.metrics.m2_resource import collect_m2_resource_window
+
+            first_resource_sample = threading.Event()
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                resource_future = executor.submit(
+                    collect_m2_resource_window,
+                    state,
+                    window_name="m2-formation-bootstrap",
+                    duration_seconds=resource_seconds,
+                    interval_seconds=min(5.0, resource_seconds),
+                    command=run_docker,
+                    first_complete_sample_event=first_resource_sample,
+                )
+                if not first_resource_sample.wait(timeout=60.0):
+                    if resource_future.done():
+                        resource_future.result()
+                    raise DockerRuntimeError(
+                        "M2 bootstrap resource window did not capture every owned process before cluster formation"
+                    )
+                operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
+                resource_report = resource_future.result()
+            resource_path = artifacts / "resource_window.json"
+            resource_path.write_text(
+                json.dumps(resource_report, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            if resource_report.get("status") != "PASS":
+                raise DockerRuntimeError("M2 formation bootstrap resource window is incomplete")
         snapshots_path = artifacts / f"cluster_snapshots_{scenario}.json"
         with _timeline_span(setup_timeline, "cluster_snapshot_write", "artifact_write", {"path": snapshots_path.as_posix()}):
             snapshots_path.write_text(json.dumps(snapshots, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -2655,9 +2723,11 @@ def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str
                 return str(_node_host_command(node, *args, timeout=timeout)).strip()
             argv = ["valkey-cli", "-h", str(node.get("host", "127.0.0.1")), "-p", str(node["client_port"]), *[str(arg) for arg in args]]
             started = int(time.time() * 1000)
+            started_monotonic_ms = time.monotonic() * 1000.0
             try:
                 value = str(_node_host_command(node, *args, timeout=timeout)).strip()
             except Exception as exc:
+                ended_monotonic_ms = time.monotonic() * 1000.0
                 recorder.record_result(
                     operation_id="cluster_setup",
                     step_id=classify_command_kind(argv),
@@ -2672,8 +2742,11 @@ def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str
                     status="FAIL",
                     error_type=type(exc).__name__,
                     node=node,
+                    started_at_monotonic_ms=started_monotonic_ms,
+                    ended_at_monotonic_ms=ended_monotonic_ms,
                 )
                 raise
+            ended_monotonic_ms = time.monotonic() * 1000.0
             recorder.record_result(
                 operation_id="cluster_setup",
                 step_id=classify_command_kind(argv),
@@ -2688,6 +2761,8 @@ def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str
                 status="PASS",
                 error_type="",
                 node=node,
+                started_at_monotonic_ms=started_monotonic_ms,
+                ended_at_monotonic_ms=ended_monotonic_ms,
             )
             return value
         except Exception:
@@ -3153,6 +3228,33 @@ def _configure_large_process_cluster(
         create_output = _create_large_cluster(primaries, replicas, timeout=timeout, setup_timeline=setup_timeline)
     else:
         create_output = _create_large_cluster(primaries, replicas, timeout=timeout, timings=timings, setup_timeline=setup_timeline)
+    if _m2_measurement_enabled():
+        _m2_setup_event(
+            setup_timeline,
+            "all_replicas_attached",
+            {"replica_count": len(replicas), "observation": "replica role convergence"},
+        )
+        primary_by_shard = {str(primary["shard_id"]): primary for primary in primaries}
+        sync_rows = _bounded_parallel(
+            replicas,
+            lambda replica: _management_matrix_wait_replica_sync_ready(
+                replica,
+                primary_by_shard[str(replica["shard_id"])],
+                timeout=min(timeout, 120.0),
+            ),
+            parallelism=_replica_replicate_parallelism(),
+            timeout=timeout,
+            label="M2 replica synchronization observation",
+        ) if replicas else []
+        _m2_setup_event(
+            setup_timeline,
+            "all_replicas_synchronized",
+            {
+                "replica_count": len(replicas),
+                "observed_count": len(sync_rows),
+                "observation": "replication link and offset full probe",
+            },
+        )
     with _timeline_span(
         setup_timeline,
         "cluster_convergence_wait",
@@ -3220,6 +3322,23 @@ def _configure_large_process_cluster(
             timings=timings,
         )
         snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
+    _m2_setup_event(
+        setup_timeline,
+        "every_node_clean",
+        {"node_count": len(nodes), "observation": "every-node clean topology snapshot"},
+    )
+    if _m2_measurement_enabled():
+        key = f"m2-formation-{nodes[0].get('run_id', 'run')}"
+        value = "m2-cluster-aware-data-path"
+        set_result = run_node_cluster_cli(nodes[0], "SET", key, value, timeout=10)
+        get_result = run_node_cluster_cli(nodes[0], "GET", key, timeout=10)
+        if str(set_result).strip().upper() != "OK" or str(get_result).strip() != value:
+            raise DockerRuntimeError("M2 cluster-aware SET/GET observation failed")
+        _m2_setup_event(
+            setup_timeline,
+            "data_path_probe",
+            {"entry_logical_id": nodes[0]["logical_id"], "key": key},
+        )
     operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
     return operations, snapshots
 
@@ -3672,6 +3791,11 @@ def _create_large_cluster(
     }
 
     def create_primaries() -> None:
+        _m2_setup_event(
+            setup_timeline,
+            "first_membership_command",
+            {"strategy": strategy, "primary_count": len(primaries)},
+        )
         if strategy == CLUSTER_CREATE_STRATEGY_MANUAL:
             create_output, details = _create_primary_cluster_manual_tree_meet_parallel_slots(primaries, timeout=timeout)
         else:
@@ -3691,6 +3815,19 @@ def _create_large_cluster(
         ),
         primary_create_details,
     )
+    if _m2_measurement_enabled():
+        _wait_process_known(primaries, expected=len(primaries), timeout=timeout, timings=timings)
+        _m2_setup_event(
+            setup_timeline,
+            "all_primaries_known",
+            {"primary_count": len(primaries), "observation": "all-primary full probe"},
+        )
+        _wait_process_slots_assigned(primaries, timeout=timeout, timings=timings)
+        _m2_setup_event(
+            setup_timeline,
+            "all_slots_assigned",
+            {"slot_count": 16384, "observation": "all-primary full probe"},
+        )
     if replicas:
         def meet_replicas() -> int:
             meet_commands = _tree_fanout_meet_nodes(primaries[0], replicas, timeout=timeout)
@@ -10772,4 +10909,8 @@ def _check_ports_free(ports: list[int]) -> None:
 
 
 def _run_id(capability_id: str, scenario: str) -> str:
+    if _m2_measurement_enabled():
+        selected = os.environ.get(M2_RUN_ID_ENV, "").strip()
+        if selected:
+            return _safe_process_token(selected, "M2 run_id")
     return f"{capability_id}-{scenario}-{RUN_DATE}"

@@ -4,31 +4,83 @@
   "criteria": [
     {
       "id": "performance.measurement-contract",
-      "statement": "Product-owned monotonic telemetry attributes cluster formation and automatic failover end to end, including process readiness, membership, slot assignment, replica synchronization, PFAIL and FAIL detection, election, promotion, slot recovery, client read/write recovery, convergence, resource use, and cleanup, with no inferred timestamps or unexplained wall-time gaps; all trial-distribution percentiles use the nearest-rank estimator."
+      "statement": "Product-owned monotonic telemetry attributes cluster formation and automatic failover end to end, including process readiness, membership, slot assignment, replica synchronization, PFAIL and FAIL detection, election, promotion, slot recovery, client read/write recovery, convergence, resource use, and cleanup, with no inferred timestamps or unexplained wall-time gaps; all trial-distribution percentiles use the nearest-rank estimator.",
+      "check": [
+        {"id": "gate.m2.contracts"}
+      ]
     },
     {
       "id": "performance.cluster-formation-experiment",
-      "statement": "After an exact-50 discovery screen rejects losing variants, paired real A/B experiments at exactly 50, 100, and 200 nodes compare the current valkey-cli cluster-create path with each promotable bounded tree-MEET and native ADDSLOTSRANGE alternative for at least seven independent runs per arm and scale, alternating run order and holding the Valkey build, configuration, topology, placement, host, and workload constant."
+      "statement": "After an exact-50 discovery screen rejects losing variants, paired real A/B experiments at exactly 50, 100, and 200 nodes compare the current valkey-cli cluster-create path with each promotable bounded tree-MEET and native ADDSLOTSRANGE alternative for at least seven independent runs per arm and scale, alternating run order and holding the Valkey build, configuration, topology, placement, host, and workload constant.",
+      "check": [
+        {
+          "id": "real.local.m2-cluster-formation",
+          "parameters": {
+            "selected_strategy": "current-default"
+          }
+        }
+      ]
     },
     {
       "id": "performance.cluster-formation-budget",
-      "statement": "Measured from the last process answering PING through every-node clean convergence and a successful cluster-aware data-path probe, the promoted cluster-formation strategy reduces median formation time by at least 20 percent at exact 50 and at least 30 percent at exact 100 and 200, keeps observed p95 at or below 60 seconds at every required scale, and preserves exact membership, full slot coverage, replica synchronization, and successful data-path probes."
+      "statement": "Measured from the last process answering PING through every-node clean convergence and a successful cluster-aware data-path probe, the promoted cluster-formation strategy reduces median formation time by at least 20 percent at exact 50 and at least 30 percent at exact 100 and 200, keeps observed p95 at or below 60 seconds at every required scale, and preserves exact membership, full slot coverage, replica synchronization, and successful data-path probes.",
+      "check": [
+        {"id": "gate.m2.contracts"}
+      ]
     },
     {
       "id": "performance.automatic-failover-experiment",
-      "statement": "Paired real automatic-failover experiments compare each candidate with the current 30000 ms timeout using fresh exact clusters, owned-process SIGKILL rather than CLUSTER FAILOVER or TAKEOVER, one, 10 percent, and 33 percent simultaneous primary failures rounded to the nearest primary with halves rounded up at exact 50 and 200 nodes, at least ten independent trials per arm and cell, a persistent cluster-aware read/write workload, and independent provenance for every physical fault; stable client recovery is the later endpoint across every affected shard, where each shard endpoint closes only after its earliest one-second window containing at least ten consecutive write/read pairs in which the write succeeds and the following read returns the expected value, with no error or timeout."
+      "statement": "Paired real automatic-failover experiments compare each candidate with the current 30000 ms timeout using fresh exact clusters, owned-process SIGKILL rather than CLUSTER FAILOVER or TAKEOVER, one, 10 percent, and 33 percent simultaneous primary failures rounded to the nearest primary with halves rounded up at exact 50 and 200 nodes, at least ten independent trials per arm and cell, a persistent cluster-aware read/write workload, and independent provenance for every physical fault; stable client recovery is the later endpoint across every affected shard, where each shard endpoint closes only after its earliest one-second window containing at least ten consecutive write/read pairs in which the write succeeds and the following read returns the expected value, with no error or timeout.",
+      "check": [
+        {
+          "id": "real.local.m2-automatic-failover",
+          "parameters": {
+            "selected_timeout_ms": "current-default"
+          }
+        }
+      ]
     },
     {
       "id": "performance.automatic-failover-budget",
-      "statement": "At both required scales and every failure-rate cell, the candidate reduces both median and observed p95 SIGKILL-to-stable-read/write-recovery across all affected shards by at least 20 percent versus its paired 30000 ms baseline; candidate p95 is at most 35 seconds for one primary, 45 seconds for 10 percent of primaries, and 55 seconds for 33 percent, while p95 first-PFAIL-to-cluster-ok-with-all-slots is at most 10, 15, and 25 seconds respectively, process-gone-to-first-PFAIL p95 is at most 25 seconds, cluster-OK-to-stable-client recovery is at most 2 seconds, and multi-process injection skew is at most 500 ms."
+      "statement": "At both required scales and every failure-rate cell, the candidate reduces both median and observed p95 SIGKILL-to-stable-read/write-recovery across all affected shards by at least 20 percent versus its paired 30000 ms baseline; candidate p95 is at most 35 seconds for one primary, 45 seconds for 10 percent of primaries, and 55 seconds for 33 percent, while p95 first-PFAIL-to-cluster-ok-with-all-slots is at most 10, 15, and 25 seconds respectively, process-gone-to-first-PFAIL p95 is at most 25 seconds, cluster-OK-to-stable-client recovery is at most 2 seconds, and multi-process injection skew is at most 500 ms.",
+      "check": [
+        {"id": "gate.m2.contracts"}
+      ]
     },
     {
       "id": "performance.stability-and-resource-safety",
-      "statement": "Across equal-duration paired bootstrap and fault observation windows and a 30-minute exact-200 steady-state soak, the selected settings produce no unexpected PFAIL, FAIL, promotion, split brain, slot loss, cluster-link error, or buffer overflow; peak RSS, CPU time, file-descriptor use, connection count, and cluster-bus bytes regress by no more than 10 percent, while paired steady-state 512-byte SET throughput regresses by no more than 5 percent, p99 latency by no more than 10 percent, and workload errors remain zero."
+      "statement": "Across equal-duration paired bootstrap and fault observation windows and a 30-minute exact-200 steady-state soak, the selected settings produce no unexpected PFAIL, FAIL, promotion, split brain, slot loss, cluster-link error, or buffer overflow; peak RSS, CPU time, file-descriptor use, connection count, and cluster-bus bytes regress by no more than 10 percent, while paired steady-state 512-byte SET throughput regresses by no more than 5 percent, p99 latency by no more than 10 percent, and workload errors remain zero.",
+      "check": [
+        {
+          "id": "real.local.m2-stability-resource",
+          "parameters": {
+            "selected_strategy": "current-default",
+            "selected_timeout_ms": "current-default"
+          }
+        }
+      ]
     },
     {
       "id": "performance.promotion-and-regression",
-      "statement": "An optimization becomes the default only from validated paired evidence with complete build, configuration, environment, command, workload, topology, and cleanup provenance; the optimized defaults then pass the complete M1 exact-50 and exact-200 acceptance without downscaling, fabricated samples, relaxed health gates, or residual owned resources."
+      "statement": "An optimization becomes the default only from validated paired evidence with complete build, configuration, environment, command, workload, topology, and cleanup provenance; the optimized defaults then pass the complete M1 exact-50 and exact-200 acceptance without downscaling, fabricated samples, relaxed health gates, or residual owned resources.",
+      "check": [
+        {"id": "gate.m2.contracts"},
+        {"id": "product.all"},
+        {
+          "id": "real.local.full-flow",
+          "parameters": {
+            "nodes": 50,
+            "config": "templates/configs/scale_50.yaml"
+          }
+        },
+        {
+          "id": "real.local.full-flow",
+          "parameters": {
+            "nodes": 200,
+            "config": "templates/configs/scale_200.yaml"
+          }
+        }
+      ]
     }
   ]
 }

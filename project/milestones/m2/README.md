@@ -226,7 +226,20 @@ artifacts with complete build, configuration, environment, workload, topology,
 command, timing, resource, and cleanup provenance. The promoted defaults must
 then pass the full M1 exact-50 and exact-200 acceptance unchanged.
 
-M2 is currently `DEFINED`. The Catalog has no executable Test that proves this
-paired repeated-run performance contract, so the Criteria intentionally omit
-`check` rather than attaching a correctness Test that cannot establish the
-performance claim.
+M2 is `READY`: every Criterion now resolves to an executable Catalog Check, but
+READY is not a performance result and does not imply that the current defaults
+pass any M2 budget. `gate.m2.contracts` proves the fail-closed artifact,
+pairing, estimator, provenance, cleanup, and budget-validator contracts. The
+formation and failover budget Criteria attach that fast contract Check while
+their corresponding current-invocation real Test executes the matrix once and
+must fail its own result if either the experiment protocol or budget verdict is
+not PASS. Fixtures used by the fast Check can test rejection and calculation
+paths only; they are never admission evidence.
+
+`real.local.m2-cluster-formation`,
+`real.local.m2-automatic-failover`, and
+`real.local.m2-stability-resource` are operator-invoked real Tests and are not
+members of `repository.all`. Promotion additionally runs `product.all` and the
+unchanged `real.local.full-flow` exact-50 and exact-200 Tests. Missing current
+evidence, samples, provenance, or cleanup proof therefore cannot convert a
+known failure into success.

@@ -73,6 +73,29 @@
         "additionalProperties": true
       }
     },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "at_monotonic",
+          "elapsed_seconds",
+          "details"
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^event_[0-9]{3}$"},
+          "name": {"type": "string", "minLength": 1},
+          "category": {"type": "string", "minLength": 1},
+          "at_monotonic": {"type": "number", "minimum": 0},
+          "elapsed_seconds": {"type": "number", "minimum": 0},
+          "details": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    },
     "stage_hierarchy": {
       "type": "array",
       "minItems": 3,

@@ -1,0 +1,416 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://valkey-scale-lab.local/schemas/m2_performance_report.schema.json",
+  "title": "M2 paired real-performance report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "campaign_id",
+    "invocation_run_id",
+    "experiment_kind",
+    "created_at",
+    "producer",
+    "status",
+    "real_valkey",
+    "execution_mode",
+    "baseline",
+    "candidates",
+    "selected_candidate",
+    "current_defaults",
+    "protocol",
+    "started_trial_ids",
+    "trials",
+    "pairs",
+    "cells",
+    "criterion_results",
+    "invalid_samples",
+    "source_refs",
+    "errors",
+    "report_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "m2-performance-report-v1"},
+    "artifact_type": {"const": "m2_performance_report"},
+    "campaign_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]+$"},
+    "invocation_run_id": {"type": "string", "minLength": 1},
+    "experiment_kind": {"type": "string", "enum": ["formation", "failover", "stability"]},
+    "created_at": {"type": "string", "minLength": 1},
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "valkey-scale-lab"},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]},
+    "real_valkey": {"type": "boolean"},
+    "execution_mode": {"type": "string", "enum": ["valkey-real", "not-run"]},
+    "baseline": {"$ref": "#/$defs/treatment"},
+    "candidates": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/treatment"},
+      "uniqueItems": true
+    },
+    "selected_candidate": {"type": ["object", "null"]},
+    "current_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cluster_create_strategy", "cluster_node_timeout_ms"],
+      "properties": {
+        "cluster_create_strategy": {"type": "string", "minLength": 1},
+        "cluster_node_timeout_ms": {"type": "integer", "minimum": 1}
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "percentile_method",
+        "paired",
+        "arm_order",
+        "fresh_cluster_per_arm",
+        "cleanup_between_arms",
+        "fixture_admission_allowed",
+        "historical_admission_allowed",
+        "downscale_allowed",
+        "takeover_allowed",
+        "formation_pairs_per_scale",
+        "failover_pairs_per_cell",
+        "stable_window_seconds",
+        "stable_window_min_pairs",
+        "affected_shard_max_interval_ms",
+        "soak_seconds"
+      ],
+      "properties": {
+        "percentile_method": {"const": "nearest-rank"},
+        "paired": {"const": true},
+        "arm_order": {"const": "alternating-AB-BA"},
+        "fresh_cluster_per_arm": {"const": true},
+        "cleanup_between_arms": {"const": true},
+        "fixture_admission_allowed": {"const": false},
+        "historical_admission_allowed": {"const": false},
+        "downscale_allowed": {"const": false},
+        "takeover_allowed": {"const": false},
+        "formation_pairs_per_scale": {"type": "integer", "minimum": 7},
+        "failover_pairs_per_cell": {"type": "integer", "minimum": 10},
+        "stable_window_seconds": {"const": 1},
+        "stable_window_min_pairs": {"type": "integer", "minimum": 10},
+        "affected_shard_max_interval_ms": {"type": "integer", "maximum": 100},
+        "soak_seconds": {"type": "integer", "minimum": 1800}
+      }
+    },
+    "started_trial_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "trials": {"type": "array", "items": {"$ref": "#/$defs/trial"}},
+    "pairs": {"type": "array", "items": {"$ref": "#/$defs/pair"}},
+    "cells": {"type": "array", "items": {"$ref": "#/$defs/cell"}},
+    "criterion_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["criterion_id", "status", "errors"],
+        "properties": {
+          "criterion_id": {"type": "string", "pattern": "^performance\\."},
+          "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]},
+          "errors": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "invalid_samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["trial_id", "reason"],
+        "properties": {
+          "trial_id": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/sourceRef"}
+    },
+    "errors": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "report_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "treatment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["cluster_create_strategy", "cluster_node_timeout_ms", "selected_settings"]},
+        "value": {"type": ["string", "integer"]},
+        "bounded_parallelism": {"type": ["integer", "null"], "minimum": 1},
+        "cluster_create_strategy": {"type": "string", "minLength": 1},
+        "cluster_node_timeout_ms": {"type": "integer", "minimum": 1}
+      }
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "path", "sha256"],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": ["attempt", "state", "cleanup", "provenance", "timeline", "command_log", "resource", "workload", "topology", "fault", "preflight"]
+        },
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "trial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trial_id",
+        "pair_id",
+        "cell_id",
+        "arm",
+        "order",
+        "scale",
+        "run_id",
+        "ownership_id",
+        "evidence_root",
+        "real_valkey",
+        "fresh_cluster",
+        "treatment",
+        "timing_source",
+        "unexplained_seconds",
+        "monotonic_markers",
+        "derived_intervals",
+        "correctness",
+        "resource_window",
+        "workload",
+        "fault",
+        "cleanup",
+        "provenance",
+        "source_sha256s",
+        "control_digests"
+      ],
+      "properties": {
+        "trial_id": {"type": "string", "minLength": 1},
+        "pair_id": {"type": "string", "minLength": 1},
+        "cell_id": {"type": "string", "minLength": 1},
+        "arm": {"type": "string", "enum": ["baseline", "candidate"]},
+        "order": {"type": "integer", "minimum": 1, "maximum": 2},
+        "scale": {"type": "integer", "enum": [50, 100, 200]},
+        "run_id": {"type": "string", "minLength": 1},
+        "ownership_id": {"type": "string", "minLength": 1},
+        "evidence_root": {"type": "string", "minLength": 1},
+        "real_valkey": {"const": true},
+        "fresh_cluster": {"const": true},
+        "treatment": {"$ref": "#/$defs/treatment"},
+        "timing_source": {"const": "monotonic-observed"},
+        "unexplained_seconds": {"type": "number", "minimum": 0},
+        "monotonic_markers": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+        "derived_intervals": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+        "correctness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exact_membership",
+            "observed_nodes",
+            "slots_covered",
+            "replicas_synchronized",
+            "clean_topology",
+            "data_path",
+            "split_brain",
+            "unexpected_pfail",
+            "unexpected_fail",
+            "unexpected_promotions",
+            "slot_loss"
+          ],
+          "properties": {
+            "exact_membership": {"type": "boolean"},
+            "observed_nodes": {"type": "integer", "minimum": 0},
+            "slots_covered": {"type": "integer", "minimum": 0, "maximum": 16384},
+            "replicas_synchronized": {"type": "boolean"},
+            "clean_topology": {"type": "boolean"},
+            "data_path": {"type": "boolean"},
+            "split_brain": {"type": "boolean"},
+            "unexpected_pfail": {"type": "integer", "minimum": 0},
+            "unexpected_fail": {"type": "integer", "minimum": 0},
+            "unexpected_promotions": {"type": "integer", "minimum": 0},
+            "slot_loss": {"type": "boolean"}
+          }
+        },
+        "resource_window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "duration_seconds",
+            "peak_rss_bytes",
+            "cpu_time_seconds",
+            "fd_count",
+            "connection_count",
+            "cluster_bus_bytes",
+            "cluster_link_errors",
+            "buffer_overflows"
+          ],
+          "properties": {
+            "duration_seconds": {"type": "number", "minimum": 0},
+            "peak_rss_bytes": {"type": "number", "minimum": 0},
+            "cpu_time_seconds": {"type": "number", "minimum": 0},
+            "fd_count": {"type": "number", "minimum": 0},
+            "connection_count": {"type": "number", "minimum": 0},
+            "cluster_bus_bytes": {"type": "number", "minimum": 0},
+            "cluster_link_errors": {"type": "integer", "minimum": 0},
+            "buffer_overflows": {"type": "integer", "minimum": 0}
+          }
+        },
+        "workload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "duration_seconds",
+            "set_throughput_ops_per_second",
+            "p99_latency_ms",
+            "errors",
+            "persistent_cluster_client",
+            "per_operation_process_spawn",
+            "affected_shard_max_interval_ms",
+            "stable_shards"
+          ],
+          "properties": {
+            "duration_seconds": {"type": "number", "minimum": 0},
+            "set_throughput_ops_per_second": {"type": "number", "minimum": 0},
+            "p99_latency_ms": {"type": "number", "minimum": 0},
+            "errors": {"type": "integer", "minimum": 0},
+            "persistent_cluster_client": {"type": "boolean"},
+            "per_operation_process_spawn": {"type": "boolean"},
+            "affected_shard_max_interval_ms": {"type": "number", "minimum": 0},
+            "stable_shards": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["shard_id", "window_start_monotonic", "window_seconds", "consecutive_pairs", "errors", "timeouts", "endpoint_monotonic", "earliest_qualifying"],
+                "properties": {
+                  "shard_id": {"type": "string", "minLength": 1},
+                  "window_start_monotonic": {"type": "number", "minimum": 0},
+                  "window_seconds": {"type": "number", "minimum": 1},
+                  "consecutive_pairs": {"type": "integer", "minimum": 10},
+                  "errors": {"type": "integer", "minimum": 0},
+                  "timeouts": {"type": "integer", "minimum": 0},
+                  "endpoint_monotonic": {"type": "number", "minimum": 0},
+                  "earliest_qualifying": {"type": "boolean"}
+                }
+              }
+            }
+          }
+        },
+        "fault": {
+          "type": ["object", "null"]
+        },
+        "cleanup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "resources_remaining", "cleanup_errors", "evidence_ref"],
+          "properties": {
+            "status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING"]},
+            "resources_remaining": {"type": "array"},
+            "cleanup_errors": {"type": "array"},
+            "evidence_ref": {"type": "string", "minLength": 1}
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "current_invocation",
+            "invocation_run_id",
+            "product_owned",
+            "fixture",
+            "historical",
+            "valkey_versions",
+            "definition_digest",
+            "valkey_binary_digest",
+            "product_digest",
+            "configuration_digest",
+            "environment_digest",
+            "topology_digest",
+            "placement_digest",
+            "workload_digest",
+            "command_digest",
+            "capture_digest",
+            "resource_preflight_digest",
+            "evidence_ref"
+          ],
+          "properties": {
+            "status": {"const": "PASS"},
+            "current_invocation": {"const": true},
+            "invocation_run_id": {"type": "string", "minLength": 1},
+            "product_owned": {"const": true},
+            "fixture": {"const": false},
+            "historical": {"const": false},
+            "valkey_versions": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^9\\.1\\."}},
+            "definition_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "valkey_binary_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "product_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "configuration_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "environment_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "topology_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "placement_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "workload_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "command_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "capture_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "resource_preflight_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "evidence_ref": {"type": "string", "minLength": 1}
+          }
+        },
+        "source_sha256s": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/sourceRef"}},
+        "control_digests": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+      }
+    },
+    "pair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pair_id",
+        "cell_id",
+        "sequence",
+        "order",
+        "baseline_trial_id",
+        "candidate_trial_id",
+        "equal_observation_seconds",
+        "control_digests"
+      ],
+      "properties": {
+        "pair_id": {"type": "string", "minLength": 1},
+        "cell_id": {"type": "string", "minLength": 1},
+        "sequence": {"type": "integer", "minimum": 1},
+        "order": {"type": "string", "enum": ["AB", "BA"]},
+        "baseline_trial_id": {"type": "string", "minLength": 1},
+        "candidate_trial_id": {"type": "string", "minLength": 1},
+        "equal_observation_seconds": {"type": "number", "minimum": 0},
+        "control_digests": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cell_id", "campaign_step", "scale", "failure_rate", "required_pairs", "candidate", "status"],
+      "properties": {
+        "cell_id": {"type": "string", "minLength": 1},
+        "campaign_step": {"type": "string", "enum": ["discovery", "promotion", "matrix", "stability", "soak"]},
+        "scale": {"type": "integer", "enum": [50, 100, 200]},
+        "failure_rate": {"type": "string", "enum": ["none", "one", "10_percent", "33_percent"]},
+        "required_pairs": {"type": "integer", "minimum": 0},
+        "candidate": {"$ref": "#/$defs/treatment"},
+        "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]}
+      }
+    }
+  }
+}
