@@ -1074,8 +1074,8 @@ def _create_process_scenario(
                 state=state,
                 setup_timeline=setup_timeline,
             )
-        with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
-            if not management_profile and not full_flow_profile:
+        if scenario == "scale_ladder" and not management_profile and not full_flow_profile:
+            with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
                 write_scale_ladder_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
         write_system_metrics_artifacts(
             artifacts,

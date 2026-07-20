@@ -442,6 +442,82 @@ def test_process_bootstrap_records_setup_timeline_child_spans(tmp_path: Path, mo
     assert "pidfile_collect" in names
 
 
+@pytest.mark.parametrize(
+    ("capability_id", "scenario", "expected_scale_writes"),
+    [
+        ("cluster_timeout", "cluster_timeout", 0),
+        ("scale_ladder", "scale_ladder", 1),
+    ],
+)
+def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capability_id: str,
+    scenario: str,
+    expected_scale_writes: int,
+) -> None:
+    nodes = [{"logical_id": "node-1"}]
+    nodehosts = [{"nodehost_id": "host-1"}]
+    scale_writes: list[tuple[str, str]] = []
+
+    monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda **_kwargs: None)
+    monkeypatch.setattr(docker_runtime, "run_docker", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_process_nodehosts", lambda *_args: nodehosts)
+    monkeypatch.setattr(docker_runtime, "_write_nodehost_density_plan_artifact", lambda *_args: None)
+    monkeypatch.setattr(docker_runtime, "_start_nodehost", lambda *_args: "container-1")
+    monkeypatch.setattr(docker_runtime, "_container_ip", lambda *_args: "127.0.0.1")
+    monkeypatch.setattr(
+        docker_runtime,
+        "_bounded_parallel",
+        lambda items, worker, **_kwargs: [worker(item) for item in items],
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_prepare_process_nodehost_bundles",
+        lambda **_kwargs: {"prepared": True},
+    )
+    monkeypatch.setattr(docker_runtime, "_write_generated_valkey_configs_manifest", lambda *_args: None)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_start_process_nodes_batched",
+        lambda **_kwargs: {"started": True},
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_process_bootstrap_batching_details",
+        lambda **_kwargs: {"status": "PASS"},
+    )
+    monkeypatch.setattr(docker_runtime, "_wait_process_nodes_ready", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_process_runtime_state", lambda *_args, **_kwargs: {"runtime": {}})
+    monkeypatch.setattr(docker_runtime, "_write_effective_server_profile_artifact", lambda *_args: None)
+    monkeypatch.setattr(docker_runtime, "_write_effective_cluster_timeout_artifact", lambda *_args: None)
+    monkeypatch.setattr(docker_runtime, "_write_state", lambda *_args: None)
+    monkeypatch.setattr(docker_runtime, "_m2_bootstrap_resource_seconds", lambda: None)
+    monkeypatch.setattr(docker_runtime, "_configure_process_cluster", lambda *_args, **_kwargs: ([], []))
+    monkeypatch.setattr(docker_runtime, "_write_runtime_timing_breakdown", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(docker_runtime, "write_system_metrics_artifacts", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        docker_runtime,
+        "write_scale_ladder_artifacts",
+        lambda _artifacts, selected_capability, selected_scenario, *_args: scale_writes.append(
+            (selected_capability, selected_scenario)
+        ),
+    )
+
+    docker_runtime._create_process_scenario(
+        capability_id=capability_id,
+        scenario=scenario,
+        run_id="real-path-test",
+        config={"runtime": {"valkey_image": "valkey:test"}},
+        artifacts=tmp_path,
+        state_out=tmp_path / "state.json",
+        nodes=nodes,
+        profile_id="exact-50",
+    )
+
+    assert scale_writes == [("scale_ladder", "scale_ladder")] * expected_scale_writes
+
+
 def test_process_runtime_state_records_required_node_fields(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", docker_runtime.CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE)
     monkeypatch.setenv("VSLAB_CLUSTER_CREATE_PARALLELISM", "16")
