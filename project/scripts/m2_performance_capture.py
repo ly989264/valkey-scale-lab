@@ -25,6 +25,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from valkey_scale_lab.runtime.setup_timeline import shared_monotonic
+
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_NAME = "m2_performance_report.json"
@@ -487,7 +489,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
     wrapper_commands = trial_dir / "capture_wrapper_commands.json"
     setup_env = _treatment_environment(spec)
     setup_cmd = _setup_command(spec, trial_dir, state_path)
-    trial_started_at_monotonic = round(time.monotonic(), 6)
+    trial_started_at_monotonic = round(shared_monotonic(), 6)
     _write_json(
         command_ledger,
         {
@@ -646,7 +648,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
             "run_id": spec.trial_id,
             "ownership_id": spec.trial_id,
             "trial_started_at_monotonic": trial_started_at_monotonic,
-            "trial_ended_at_monotonic": round(time.monotonic(), 6),
+            "trial_ended_at_monotonic": round(shared_monotonic(), 6),
             "setup": _command_boundary(setup_result),
             "cleanup": _command_boundary(cleanup_result),
         },
@@ -2676,7 +2678,7 @@ def _base_environment() -> dict[str, str]:
 
 def _run_command(command: list[str], *, env: Mapping[str, str], timeout: int) -> dict[str, Any]:
     started_wall = time.time()
-    started_mono = time.monotonic()
+    started_mono = shared_monotonic()
     try:
         proc = subprocess.run(
             command,
@@ -2701,7 +2703,7 @@ def _run_command(command: list[str], *, env: Mapping[str, str], timeout: int) ->
         "started_at_unix_ms": int(started_wall * 1000),
         "ended_at_unix_ms": int(time.time() * 1000),
         "started_at_monotonic": round(started_mono, 6),
-        "ended_at_monotonic": round(time.monotonic(), 6),
+        "ended_at_monotonic": round(shared_monotonic(), 6),
     }
 
 

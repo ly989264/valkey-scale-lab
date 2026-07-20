@@ -394,9 +394,18 @@ def _write_valid_trial_sources(
     scale = int(trial["scale"])
     duration = float(trial["derived_intervals"]["formation_seconds"])
     segment_rows: list[dict[str, object]] = []
-    for index, name in enumerate(REQUIRED_SETUP_SEGMENTS):
+    required_segment_names = [
+        name
+        for name in REQUIRED_SETUP_SEGMENTS
+        if name != "scale_ladder_artifact_write"
+    ]
+    required_segment_names.insert(
+        required_segment_names.index("cluster_snapshot_write"),
+        "cluster_final_full_snapshot",
+    )
+    for index, name in enumerate(required_segment_names):
         start = float(index)
-        end = duration if index == len(REQUIRED_SETUP_SEGMENTS) - 1 else float(index + 1)
+        end = duration if index == len(required_segment_names) - 1 else float(index + 1)
         segment_rows.append(
             {
                 "id": f"segment_{index + 1:03d}",

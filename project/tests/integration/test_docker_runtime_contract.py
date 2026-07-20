@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 import pytest
 
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
-from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
+from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 
 
 def test_cluster_lifecycle_node_specs_are_deterministic() -> None:
@@ -456,9 +457,23 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     scenario: str,
     expected_scale_writes: int,
 ) -> None:
+    import valkey_scale_lab.metrics.m2_resource as resource_module
+
     nodes = [{"logical_id": "node-1"}]
     nodehosts = [{"nodehost_id": "host-1"}]
     scale_writes: list[tuple[str, str]] = []
+    resource_clocks: list[object] = []
+
+    def fake_collect(
+        _state: dict,
+        *,
+        monotonic_clock: object,
+        first_complete_sample_event: threading.Event,
+        **_kwargs: object,
+    ) -> dict[str, str]:
+        resource_clocks.append(monotonic_clock)
+        first_complete_sample_event.set()
+        return {"status": "PASS"}
 
     monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda **_kwargs: None)
     monkeypatch.setattr(docker_runtime, "run_docker", lambda *_args, **_kwargs: None)
@@ -492,7 +507,12 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     monkeypatch.setattr(docker_runtime, "_write_effective_server_profile_artifact", lambda *_args: None)
     monkeypatch.setattr(docker_runtime, "_write_effective_cluster_timeout_artifact", lambda *_args: None)
     monkeypatch.setattr(docker_runtime, "_write_state", lambda *_args: None)
-    monkeypatch.setattr(docker_runtime, "_m2_bootstrap_resource_seconds", lambda: None)
+    monkeypatch.setattr(resource_module, "collect_m2_resource_window", fake_collect)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_m2_bootstrap_resource_seconds",
+        lambda: 1.0 if scenario == "cluster_timeout" else None,
+    )
     monkeypatch.setattr(docker_runtime, "_configure_process_cluster", lambda *_args, **_kwargs: ([], []))
     monkeypatch.setattr(docker_runtime, "_write_runtime_timing_breakdown", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(docker_runtime, "write_system_metrics_artifacts", lambda *_args, **_kwargs: None)
@@ -516,6 +536,7 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     )
 
     assert scale_writes == [("scale_ladder", "scale_ladder")] * expected_scale_writes
+    assert resource_clocks == ([shared_monotonic] if scenario == "cluster_timeout" else [])
 
 
 def test_process_runtime_state_records_required_node_fields(monkeypatch: pytest.MonkeyPatch) -> None:
