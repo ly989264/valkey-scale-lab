@@ -63,9 +63,13 @@ REPLICA_REPLICATE_PARALLELISM_CHOICES = (8, 16, 32)
 REPLICA_REPLICATE_SLOWEST_COUNT = 5
 CLUSTER_CREATE_STRATEGY_DEFAULT = "valkey_cli_cluster_create_primaries"
 CLUSTER_CREATE_STRATEGY_MANUAL = "manual_tree_meet_parallel_slots"
+CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE = "tree_meet_addslotsrange"
+CLUSTER_CREATE_PARALLELISM_DEFAULT = CLUSTER_ORCHESTRATION_PARALLELISM
+CLUSTER_CREATE_PARALLELISM_CHOICES = (4, 8, 16)
 CLUSTER_CREATE_STRATEGIES = {
     CLUSTER_CREATE_STRATEGY_DEFAULT,
     CLUSTER_CREATE_STRATEGY_MANUAL,
+    CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE,
 }
 PROCESS_BUNDLE_ROOT = "/tmp"
 PROCESS_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -1647,6 +1651,13 @@ def _process_runtime_state(
     density = _runtime_density_from_nodehosts(config, nodehosts, nodes)
     effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodehosts))
     effective_timeout = compute_effective_cluster_timeout(config)
+    cluster_create_strategy = _cluster_create_strategy()
+    cluster_create_details: dict[str, Any] = {}
+    if cluster_create_strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
+        cluster_create_details = {
+            "cluster_create_parallelism": _cluster_create_parallelism(),
+            "cluster_create_parallelism_source": _cluster_create_parallelism_source(),
+        }
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
@@ -1664,7 +1675,8 @@ def _process_runtime_state(
             "run_id": run_id,
             "project": PROJECT,
             "cluster_startup_strategy": _process_cluster_startup_strategy(nodes),
-            "cluster_create_strategy": _cluster_create_strategy(),
+            "cluster_create_strategy": cluster_create_strategy,
+            **cluster_create_details,
             "container_strategy": "density_limited_nodehosts_with_valkey_processes",
             "nodehost_count": len(nodehosts),
             "logical_node_count": len(nodes),
@@ -3175,6 +3187,8 @@ def _process_cluster_startup_strategy(nodes: list[dict[str, Any]]) -> str:
         strategy = _cluster_create_strategy()
         if strategy == CLUSTER_CREATE_STRATEGY_MANUAL:
             return "all_processes_ready_then_manual_tree_meet_parallel_slots_parallel_replicas_two_stage_probe"
+        if strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
+            return "all_processes_ready_then_tree_meet_addslotsrange_parallel_replicas_two_stage_probe"
         return "all_processes_ready_then_valkey_cli_cluster_create_replicas_two_stage_probe"
     return "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe"
 
@@ -3187,6 +3201,27 @@ def _cluster_create_strategy() -> str:
         allowed = ", ".join(sorted(CLUSTER_CREATE_STRATEGIES))
         raise DockerRuntimeError(f"unsupported cluster create strategy {strategy!r}; allowed={allowed}")
     return strategy
+
+
+def _cluster_create_parallelism() -> int:
+    raw = os.environ.get("VSLAB_CLUSTER_CREATE_PARALLELISM", "").strip()
+    if not raw:
+        return CLUSTER_CREATE_PARALLELISM_DEFAULT
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        allowed = ", ".join(str(item) for item in CLUSTER_CREATE_PARALLELISM_CHOICES)
+        raise DockerRuntimeError(f"unsupported cluster create parallelism {raw!r}; allowed={allowed}") from exc
+    if value not in CLUSTER_CREATE_PARALLELISM_CHOICES:
+        allowed = ", ".join(str(item) for item in CLUSTER_CREATE_PARALLELISM_CHOICES)
+        raise DockerRuntimeError(f"unsupported cluster create parallelism {value}; allowed={allowed}")
+    return value
+
+
+def _cluster_create_parallelism_source() -> str:
+    if os.environ.get("VSLAB_CLUSTER_CREATE_PARALLELISM", "").strip():
+        return "env:VSLAB_CLUSTER_CREATE_PARALLELISM"
+    return "default"
 
 
 def _replica_replicate_parallelism() -> int:
@@ -3360,6 +3395,16 @@ def _add_slots_node(node: dict[str, Any], start: int, end: int) -> None:
             batch = []
     if batch:
         _node_command(node, "CLUSTER", "ADDSLOTS", *batch, timeout=60)
+
+
+def _add_slots_range_node(node: dict[str, Any], start: int, end: int) -> None:
+    try:
+        _node_command(node, "CLUSTER", "ADDSLOTSRANGE", start, end, timeout=60)
+    except DockerRuntimeError as exc:
+        logical_id = node.get("logical_id", "MISSING")
+        raise DockerRuntimeError(
+            f"native CLUSTER ADDSLOTSRANGE unavailable or failed for {logical_id}: {exc}"
+        ) from exc
 
 
 def _cluster_node_ids_by_shard(
@@ -3784,11 +3829,24 @@ def _create_large_cluster(
     nodes = [*primaries, *replicas]
     output: list[str] = []
     strategy = _cluster_create_strategy()
+    cluster_create_parallelism = (
+        _cluster_create_parallelism()
+        if strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE
+        else CLUSTER_ORCHESTRATION_PARALLELISM
+    )
     primary_create_details: dict[str, Any] = {
         "primary_count": len(primaries),
-        "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
         "strategy": strategy,
     }
+    primary_timeline_details = dict(primary_create_details)
+    if strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
+        primary_create_details.update({
+            "parallelism": cluster_create_parallelism,
+            "parallelism_source": _cluster_create_parallelism_source(),
+            "supported_parallelism": list(CLUSTER_CREATE_PARALLELISM_CHOICES),
+            "bounded_parallelism": True,
+        })
+        primary_timeline_details["parallelism"] = cluster_create_parallelism
 
     def create_primaries() -> None:
         _m2_setup_event(
@@ -3798,6 +3856,12 @@ def _create_large_cluster(
         )
         if strategy == CLUSTER_CREATE_STRATEGY_MANUAL:
             create_output, details = _create_primary_cluster_manual_tree_meet_parallel_slots(primaries, timeout=timeout)
+        elif strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
+            create_output, details = _create_primary_cluster_tree_meet_addslotsrange(
+                primaries,
+                timeout=timeout,
+                parallelism=cluster_create_parallelism,
+            )
         else:
             create_output, details = _create_primary_cluster_valkey_cli(primaries, timeout=timeout)
         primary_create_details.update(details)
@@ -3811,7 +3875,7 @@ def _create_large_cluster(
             "primary_cluster_create",
             "cluster_formation",
             create_primaries,
-            {"primary_count": len(primaries), "strategy": strategy},
+            primary_timeline_details,
         ),
         primary_create_details,
     )
@@ -3945,6 +4009,62 @@ def _create_primary_cluster_manual_tree_meet_parallel_slots(primaries: list[dict
     details["meet_commands"] = meet_commands
     details["slot_assignment_scope"] = "parallel_cluster_addslots"
     return f"manual tree meet primaries={len(primaries)} meet_commands={meet_commands}", details
+
+
+def _create_primary_cluster_tree_meet_addslotsrange(
+    primaries: list[dict[str, Any]],
+    *,
+    timeout: float,
+    parallelism: int,
+) -> tuple[str, dict[str, Any]]:
+    details: dict[str, Any] = {
+        "cluster_create_command_seconds": 0.0,
+        "parallelism": parallelism,
+        "parallelism_source": _cluster_create_parallelism_source(),
+        "supported_parallelism": list(CLUSTER_CREATE_PARALLELISM_CHOICES),
+        "bounded_parallelism": True,
+    }
+    meet_commands = 0
+    if len(primaries) > 1:
+        first = primaries[0]
+        meet_started = time.monotonic()
+        meet_commands = _tree_fanout_meet_nodes(
+            first,
+            primaries[1:],
+            timeout=timeout,
+            parallelism=parallelism,
+        )
+        _record_substep(details, "primary_meet_seconds", meet_started)
+
+        convergence_started = time.monotonic()
+        _wait_cluster_known(primaries, expected=len(primaries), timeout=min(360.0, timeout), final_check=False)
+        _record_substep(details, "primary_convergence_seconds", convergence_started)
+    else:
+        details.update({
+            "primary_meet_seconds": 0.0,
+            "primary_convergence_seconds": 0.0,
+        })
+
+    slots_started = time.monotonic()
+    primary_slot_ranges = list(zip(primaries, _slot_ranges(len(primaries))))
+    _bounded_parallel(
+        primary_slot_ranges,
+        lambda item: _add_slots_range_node(item[0], item[1][0], item[1][1]),
+        parallelism=parallelism,
+        timeout=timeout,
+        label="parallel primary CLUSTER ADDSLOTSRANGE",
+    )
+    _wait_cluster_slots_assigned(primaries, timeout=min(360.0, timeout), final_check=False)
+    _wait_cluster_ok(primaries, timeout=min(360.0, timeout), final_check=False)
+    _record_substep(details, "slot_assignment_seconds", slots_started)
+
+    details["meet_commands"] = meet_commands
+    details["slot_assignment_commands"] = len(primary_slot_ranges)
+    details["slot_assignment_scope"] = "parallel_cluster_addslotsrange"
+    return (
+        f"tree meet ADDSLOTSRANGE primaries={len(primaries)} meet_commands={meet_commands} parallelism={parallelism}",
+        details,
+    )
 
 
 def _create_primary_cluster(primaries: list[dict[str, Any]], timeout: float) -> str:
