@@ -556,6 +556,8 @@ def test_process_runtime_state_records_large_cluster_create_strategy() -> None:
         state["runtime"]["cluster_startup_strategy"]
         == "all_processes_ready_then_valkey_cli_cluster_create_replicas_two_stage_probe"
     )
+    assert "cluster_create_parallelism" not in state["runtime"]
+    assert "cluster_create_parallelism_source" not in state["runtime"]
 
 
 def test_slot_ranges_cover_all_slots_for_scale_rungs() -> None:
@@ -1181,6 +1183,26 @@ def test_manual_primary_create_uses_tree_meet_and_parallel_slots(monkeypatch: py
     assert len(slot_calls) == 3
 
 
+def test_non_range_strategy_does_not_report_unused_range_parallelism(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", docker_runtime.CLUSTER_CREATE_STRATEGY_MANUAL)
+    monkeypatch.setenv("VSLAB_CLUSTER_CREATE_PARALLELISM", "16")
+    monkeypatch.delenv(docker_runtime.M2_MEASUREMENT_ENV, raising=False)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_create_primary_cluster_manual_tree_meet_parallel_slots",
+        lambda primaries, timeout: ("manual", {"slot_assignment_scope": "parallel_cluster_addslots"}),
+    )
+    timings: dict[str, dict] = {}
+
+    docker_runtime._create_large_cluster([{"logical_id": "p0"}], [], timeout=30, timings=timings)
+
+    details = timings["primary_cluster_create"]["details"]
+    assert details["strategy"] == docker_runtime.CLUSTER_CREATE_STRATEGY_MANUAL
+    assert "parallelism" not in details
+    assert "parallelism_source" not in details
+    assert "bounded_parallelism" not in details
+
+
 def test_addslotsrange_primary_create_uses_selected_bounded_parallelism(monkeypatch: pytest.MonkeyPatch) -> None:
     primaries = [{"logical_id": f"p{idx}"} for idx in range(3)]
     range_calls: list[tuple[str, tuple[object, ...]]] = []
@@ -1226,6 +1248,38 @@ def test_addslotsrange_primary_create_uses_selected_bounded_parallelism(monkeypa
     assert details["parallelism"] == 16
     assert details["bounded_parallelism"] is True
     assert details["slot_assignment_commands"] == 3
+    assert details["slot_assignment_scope"] == "parallel_cluster_addslotsrange"
+
+
+def test_addslotsrange_primary_create_assigns_full_range_to_single_primary(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[object, ...]] = []
+
+    def fake_node_command(node, *args, timeout):
+        calls.append(args)
+        return "OK"
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        return [worker(item) for item in items]
+
+    monkeypatch.setattr(
+        docker_runtime,
+        "_tree_fanout_meet_nodes",
+        lambda *args, **kwargs: pytest.fail("single-primary strategy must not run CLUSTER MEET"),
+    )
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_slots_assigned", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_ok", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+
+    _output, details = docker_runtime._create_primary_cluster_tree_meet_addslotsrange(
+        [{"logical_id": "p0"}],
+        timeout=30,
+        parallelism=4,
+    )
+
+    assert calls == [("CLUSTER", "ADDSLOTSRANGE", 0, 16383)]
+    assert details["meet_commands"] == 0
+    assert details["slot_assignment_commands"] == 1
     assert details["slot_assignment_scope"] == "parallel_cluster_addslotsrange"
 
 

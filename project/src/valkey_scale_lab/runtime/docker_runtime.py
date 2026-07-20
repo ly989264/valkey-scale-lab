@@ -1651,6 +1651,13 @@ def _process_runtime_state(
     density = _runtime_density_from_nodehosts(config, nodehosts, nodes)
     effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodehosts))
     effective_timeout = compute_effective_cluster_timeout(config)
+    cluster_create_strategy = _cluster_create_strategy()
+    cluster_create_details: dict[str, Any] = {}
+    if cluster_create_strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
+        cluster_create_details = {
+            "cluster_create_parallelism": _cluster_create_parallelism(),
+            "cluster_create_parallelism_source": _cluster_create_parallelism_source(),
+        }
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
@@ -1668,9 +1675,8 @@ def _process_runtime_state(
             "run_id": run_id,
             "project": PROJECT,
             "cluster_startup_strategy": _process_cluster_startup_strategy(nodes),
-            "cluster_create_strategy": _cluster_create_strategy(),
-            "cluster_create_parallelism": _cluster_create_parallelism(),
-            "cluster_create_parallelism_source": _cluster_create_parallelism_source(),
+            "cluster_create_strategy": cluster_create_strategy,
+            **cluster_create_details,
             "container_strategy": "density_limited_nodehosts_with_valkey_processes",
             "nodehost_count": len(nodehosts),
             "logical_node_count": len(nodes),
@@ -3823,15 +3829,24 @@ def _create_large_cluster(
     nodes = [*primaries, *replicas]
     output: list[str] = []
     strategy = _cluster_create_strategy()
-    cluster_create_parallelism = _cluster_create_parallelism()
+    cluster_create_parallelism = (
+        _cluster_create_parallelism()
+        if strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE
+        else CLUSTER_ORCHESTRATION_PARALLELISM
+    )
     primary_create_details: dict[str, Any] = {
         "primary_count": len(primaries),
-        "parallelism": cluster_create_parallelism,
-        "parallelism_source": _cluster_create_parallelism_source(),
-        "supported_parallelism": list(CLUSTER_CREATE_PARALLELISM_CHOICES),
-        "bounded_parallelism": True,
         "strategy": strategy,
     }
+    primary_timeline_details = dict(primary_create_details)
+    if strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
+        primary_create_details.update({
+            "parallelism": cluster_create_parallelism,
+            "parallelism_source": _cluster_create_parallelism_source(),
+            "supported_parallelism": list(CLUSTER_CREATE_PARALLELISM_CHOICES),
+            "bounded_parallelism": True,
+        })
+        primary_timeline_details["parallelism"] = cluster_create_parallelism
 
     def create_primaries() -> None:
         _m2_setup_event(
@@ -3860,11 +3875,7 @@ def _create_large_cluster(
             "primary_cluster_create",
             "cluster_formation",
             create_primaries,
-            {
-                "primary_count": len(primaries),
-                "strategy": strategy,
-                "parallelism": cluster_create_parallelism,
-            },
+            primary_timeline_details,
         ),
         primary_create_details,
     )
@@ -4013,30 +4024,26 @@ def _create_primary_cluster_tree_meet_addslotsrange(
         "supported_parallelism": list(CLUSTER_CREATE_PARALLELISM_CHOICES),
         "bounded_parallelism": True,
     }
-    if len(primaries) <= 1:
+    meet_commands = 0
+    if len(primaries) > 1:
+        first = primaries[0]
+        meet_started = time.monotonic()
+        meet_commands = _tree_fanout_meet_nodes(
+            first,
+            primaries[1:],
+            timeout=timeout,
+            parallelism=parallelism,
+        )
+        _record_substep(details, "primary_meet_seconds", meet_started)
+
+        convergence_started = time.monotonic()
+        _wait_cluster_known(primaries, expected=len(primaries), timeout=min(360.0, timeout), final_check=False)
+        _record_substep(details, "primary_convergence_seconds", convergence_started)
+    else:
         details.update({
             "primary_meet_seconds": 0.0,
-            "slot_assignment_seconds": 0.0,
             "primary_convergence_seconds": 0.0,
-            "meet_commands": 0,
-            "slot_assignment_commands": 0,
-            "slot_assignment_scope": "single_primary_no_slots_moved",
         })
-        return "native ADDSLOTSRANGE primary create skipped for single primary", details
-
-    first = primaries[0]
-    meet_started = time.monotonic()
-    meet_commands = _tree_fanout_meet_nodes(
-        first,
-        primaries[1:],
-        timeout=timeout,
-        parallelism=parallelism,
-    )
-    _record_substep(details, "primary_meet_seconds", meet_started)
-
-    convergence_started = time.monotonic()
-    _wait_cluster_known(primaries, expected=len(primaries), timeout=min(360.0, timeout), final_check=False)
-    _record_substep(details, "primary_convergence_seconds", convergence_started)
 
     slots_started = time.monotonic()
     primary_slot_ranges = list(zip(primaries, _slot_ranges(len(primaries))))
