@@ -230,10 +230,34 @@ def test_cluster_create_strategy_accepts_manual_opt_in(monkeypatch: pytest.Monke
     assert docker_runtime._cluster_create_strategy() == docker_runtime.CLUSTER_CREATE_STRATEGY_MANUAL
 
 
+def test_cluster_create_strategy_accepts_addslotsrange_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", docker_runtime.CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE)
+    assert docker_runtime._cluster_create_strategy() == docker_runtime.CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE
+
+
 def test_cluster_create_strategy_rejects_unknown(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", "nodes_conf_fast_bootstrap")
     with pytest.raises(DockerRuntimeError, match="unsupported cluster create strategy"):
         docker_runtime._cluster_create_strategy()
+
+
+def test_cluster_create_parallelism_defaults_to_8(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("VSLAB_CLUSTER_CREATE_PARALLELISM", raising=False)
+    assert docker_runtime._cluster_create_parallelism() == 8
+    assert docker_runtime._cluster_create_parallelism_source() == "default"
+
+
+def test_cluster_create_parallelism_accepts_discovery_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    for value in ("4", "8", "16"):
+        monkeypatch.setenv("VSLAB_CLUSTER_CREATE_PARALLELISM", value)
+        assert docker_runtime._cluster_create_parallelism() == int(value)
+        assert docker_runtime._cluster_create_parallelism_source() == "env:VSLAB_CLUSTER_CREATE_PARALLELISM"
+
+
+def test_cluster_create_parallelism_rejects_unsupported(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VSLAB_CLUSTER_CREATE_PARALLELISM", "32")
+    with pytest.raises(DockerRuntimeError, match="unsupported cluster create parallelism"):
+        docker_runtime._cluster_create_parallelism()
 
 
 def test_replica_replicate_parallelism_defaults_to_8(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -414,7 +438,9 @@ def test_process_bootstrap_records_setup_timeline_child_spans(tmp_path: Path, mo
     assert "pidfile_collect" in names
 
 
-def test_process_runtime_state_records_required_node_fields() -> None:
+def test_process_runtime_state_records_required_node_fields(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", docker_runtime.CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE)
+    monkeypatch.setenv("VSLAB_CLUSTER_CREATE_PARALLELISM", "16")
     nodes = [
         {
             "logical_id": "shard-0000-primary",
@@ -468,6 +494,9 @@ def test_process_runtime_state_records_required_node_fields() -> None:
     assert state["runtime"]["cluster_startup_strategy"] == "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe"
     assert state["runtime"]["cluster_meet_fanout"] == 4
     assert state["runtime"]["cluster_startup_parallelism"] == 8
+    assert state["runtime"]["cluster_create_strategy"] == docker_runtime.CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE
+    assert state["runtime"]["cluster_create_parallelism"] == 16
+    assert state["runtime"]["cluster_create_parallelism_source"] == "env:VSLAB_CLUSTER_CREATE_PARALLELISM"
     recorded = state["nodes"][0]
     for key in ["logical_id", "nodehost_id", "pid", "pid_file", "client_port", "cluster_bus_port", "role", "shard_id", "data_dir", "log_file", "config_file"]:
         assert key in recorded
@@ -1146,6 +1175,69 @@ def test_manual_primary_create_uses_tree_meet_and_parallel_slots(monkeypatch: py
     assert details["slot_assignment_scope"] == "parallel_cluster_addslots"
     assert parallel_labels == ["parallel primary CLUSTER ADDSLOTS"]
     assert len(slot_calls) == 3
+
+
+def test_addslotsrange_primary_create_uses_selected_bounded_parallelism(monkeypatch: pytest.MonkeyPatch) -> None:
+    primaries = [{"logical_id": f"p{idx}"} for idx in range(3)]
+    range_calls: list[tuple[str, tuple[object, ...]]] = []
+    parallel_calls: list[tuple[str, int]] = []
+    meet_parallelism: list[int] = []
+
+    def fake_meet(seed, nodes, *, timeout, fanout=docker_runtime.CLUSTER_MEET_FANOUT, parallelism):
+        meet_parallelism.append(parallelism)
+        return len(nodes)
+
+    def fake_node_command(node, *args, timeout):
+        range_calls.append((node["logical_id"], args))
+        return "OK"
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        parallel_calls.append((label, parallelism))
+        work = list(items)
+        for item in work:
+            worker(item)
+        return []
+
+    monkeypatch.setattr(docker_runtime, "_tree_fanout_meet_nodes", fake_meet)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_known", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_slots_assigned", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_ok", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+
+    output, details = docker_runtime._create_primary_cluster_tree_meet_addslotsrange(
+        primaries,
+        timeout=30,
+        parallelism=16,
+    )
+
+    assert "tree meet ADDSLOTSRANGE" in output
+    assert meet_parallelism == [16]
+    assert parallel_calls == [("parallel primary CLUSTER ADDSLOTSRANGE", 16)]
+    assert [args[:2] for _logical_id, args in range_calls] == [
+        ("CLUSTER", "ADDSLOTSRANGE"),
+        ("CLUSTER", "ADDSLOTSRANGE"),
+        ("CLUSTER", "ADDSLOTSRANGE"),
+    ]
+    assert details["parallelism"] == 16
+    assert details["bounded_parallelism"] is True
+    assert details["slot_assignment_commands"] == 3
+    assert details["slot_assignment_scope"] == "parallel_cluster_addslotsrange"
+
+
+def test_addslotsrange_failure_is_explicit_without_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[object, ...]] = []
+
+    def unavailable(node, *args, timeout):
+        calls.append(args)
+        raise DockerRuntimeError("ERR unknown command")
+
+    monkeypatch.setattr(docker_runtime, "_node_command", unavailable)
+
+    with pytest.raises(DockerRuntimeError, match="native CLUSTER ADDSLOTSRANGE unavailable or failed for p0"):
+        docker_runtime._add_slots_range_node({"logical_id": "p0"}, 0, 100)
+
+    assert calls == [("CLUSTER", "ADDSLOTSRANGE", 0, 100)]
 
 
 def test_port_collision_check_rejects_bound_port(monkeypatch: pytest.MonkeyPatch) -> None:
