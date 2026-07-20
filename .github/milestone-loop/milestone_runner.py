@@ -52,7 +52,7 @@ def _validate_consumed_lease(snapshot: dict[str, Any], expected_sha256: str) -> 
         raise LoopBlocked("consumed Authorization Lease expired before the real Gate started")
 
 
-def _gate_environment() -> dict[str, str]:
+def _gate_environment(milestone: str) -> dict[str, str]:
     blocked = ("GH_", "GITHUB_", "CODEX_", "OPENAI_", "MILESTONE_LOOP_")
     result = {
         key: value
@@ -61,6 +61,9 @@ def _gate_environment() -> dict[str, str]:
     }
     result["NO_COLOR"] = "1"
     result["PYTHONDONTWRITEBYTECODE"] = "1"
+    result.pop("VSLAB_M2_REAL_AUTHORIZATION", None)
+    if milestone == "m2":
+        result["VSLAB_M2_REAL_AUTHORIZATION"] = "1"
     return result
 
 
@@ -98,7 +101,7 @@ def run_gate(
         process = subprocess.run(
             ["./gate", "milestone", milestone],
             cwd=repo_root / "project",
-            env=_gate_environment(),
+            env=_gate_environment(milestone),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,

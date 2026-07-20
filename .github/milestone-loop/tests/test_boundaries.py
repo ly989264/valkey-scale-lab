@@ -18,7 +18,7 @@ from coordinator import (
     render_control,
 )
 from github_api import GitHubClient
-from milestone_runner import _lease_fingerprint, _validate_consumed_lease
+from milestone_runner import _gate_environment, _lease_fingerprint, _validate_consumed_lease
 from recovery import cleanup_owned_docker, cleanup_runtime_root
 
 
@@ -163,6 +163,17 @@ class BoundaryTests(unittest.TestCase):
         snapshot["issues"][0]["body"] = render_control(changed, 0)
         with self.assertRaises(LoopBlocked):
             _validate_consumed_lease(snapshot, _lease_fingerprint(lease))
+
+    def test_consumed_m2_lease_authorizes_only_the_m2_real_gate(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"VSLAB_M2_REAL_AUTHORIZATION": "untrusted-inherited-value"},
+        ):
+            m2_environment = _gate_environment("m2")
+            m1_environment = _gate_environment("m1")
+
+        self.assertEqual(m2_environment["VSLAB_M2_REAL_AUTHORIZATION"], "1")
+        self.assertNotIn("VSLAB_M2_REAL_AUTHORIZATION", m1_environment)
 
     def test_current_real_admission_chain_is_protected(self) -> None:
         from coordinator import protected_changes
