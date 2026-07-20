@@ -233,6 +233,10 @@ def test_cluster_create_strategy_accepts_manual_opt_in(monkeypatch: pytest.Monke
 def test_cluster_create_strategy_accepts_addslotsrange_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", docker_runtime.CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE)
     assert docker_runtime._cluster_create_strategy() == docker_runtime.CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE
+    assert (
+        docker_runtime._process_cluster_startup_strategy([{} for _ in range(31)])
+        == "all_processes_ready_then_tree_meet_addslotsrange_parallel_replicas_two_stage_probe"
+    )
 
 
 def test_cluster_create_strategy_rejects_unknown(monkeypatch: pytest.MonkeyPatch) -> None:
