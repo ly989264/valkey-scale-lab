@@ -42,7 +42,7 @@ from valkey_scale_lab.orchestrator.local import write_run_summary as write_orche
 from valkey_scale_lab.planner.plan import build_cluster_plan
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
-from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
+from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
 from valkey_scale_lab.workload import BENCHMARK_PROFILES, CANONICAL_WINDOWS, run_benchmark_workload, run_windowed_workload
 
@@ -996,6 +996,7 @@ def _create_process_scenario(
                     duration_seconds=resource_seconds,
                     interval_seconds=min(5.0, resource_seconds),
                     command=run_docker,
+                    monotonic_clock=shared_monotonic,
                     first_complete_sample_event=first_resource_sample,
                 )
                 if not first_resource_sample.wait(timeout=60.0):

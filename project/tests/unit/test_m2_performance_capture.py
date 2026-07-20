@@ -539,11 +539,79 @@ def test_cleanup_reuses_only_complete_matching_process_state(tmp_path: Path) -> 
     ) == state_path
 
 
+def test_setup_wrapper_uses_shared_clock_across_real_python_process(
+    tmp_path: Path,
+) -> None:
+    timeline_path = tmp_path / "setup_timeline.json"
+    child = (
+        "import sys, time\n"
+        "from valkey_scale_lab.runtime.setup_timeline import REQUIRED_SETUP_SEGMENTS, SetupTimeline\n"
+        "timeline = SetupTimeline()\n"
+        "for name in REQUIRED_SETUP_SEGMENTS:\n"
+        "    if name == 'scale_ladder_artifact_write':\n"
+        "        continue\n"
+        "    if name == 'cluster_snapshot_write':\n"
+        "        with timeline.span('cluster_final_full_snapshot', 'setup', {}):\n"
+        "            time.sleep(0.001)\n"
+        "    with timeline.span(name, 'setup', {}):\n"
+        "        time.sleep(0.001)\n"
+        "timeline.mark_event('data_path_probe', 'm2_measurement', {})\n"
+        "timeline.write_artifact(\n"
+        "    sys.argv[1], capability_id='cluster_timeout', run_id='trial-1',\n"
+        "    scenario='cluster_timeout', profile_id='exact-50', node_count=1, status='PASS',\n"
+        ")\n"
+    )
+    result = capture._run_command(
+        [sys.executable, "-c", child, str(timeline_path)],
+        env=capture._base_environment(),
+        timeout=10,
+    )
+
+    assert result["returncode"] == 0, result["stderr"]
+    raw = json.loads(timeline_path.read_text(encoding="utf-8"))
+    assert result["started_at_monotonic"] <= raw["segments"][0]["start_monotonic"]
+    assert raw["segments"][-1]["end_monotonic"] <= result["ended_at_monotonic"]
+
+    missing_end = dict(result)
+    missing_end.pop("ended_at_monotonic")
+    with pytest.raises(capture.CaptureError, match="monotonic evidence is missing"):
+        capture._attach_setup_wrapper_timing(
+            timeline_path,
+            missing_end,
+            state={"nodes": [{"role": "primary"}]},
+            topology={"status": "PASS", "versions": ["9.1.0"]},
+        )
+
+    capture._attach_setup_wrapper_timing(
+        timeline_path,
+        result,
+        state={"nodes": [{"role": "primary"}]},
+        topology={"status": "PASS", "versions": ["9.1.0"]},
+    )
+
+    rebuilt = json.loads(timeline_path.read_text(encoding="utf-8"))
+    assert rebuilt["segments"][0]["start_monotonic"] == result["started_at_monotonic"]
+    assert rebuilt["segments"][-1]["end_monotonic"] == result["ended_at_monotonic"]
+    assert rebuilt["status"] == "PASS"
+    assert rebuilt["required_stage_coverage"]["status"] == "PASS"
+    assert rebuilt["setup_timeline_unexplained_seconds"] == 0.0
+    assert rebuilt["setup_timeline_total_seconds"] == rebuilt["setup_command_wall_seconds"]
+
+
 def test_setup_wrapper_accounts_for_sub_millisecond_cli_gaps(tmp_path: Path) -> None:
     outer_start = 100.0
     cursor = 100.0002
     segments = []
-    for index, name in enumerate(REQUIRED_SETUP_SEGMENTS):
+    required_names = [
+        name
+        for name in REQUIRED_SETUP_SEGMENTS
+        if name != "scale_ladder_artifact_write"
+    ]
+    required_names.insert(
+        required_names.index("cluster_snapshot_write"),
+        "cluster_final_full_snapshot",
+    )
+    for index, name in enumerate(required_names):
         if index == 1:
             cursor = round(cursor + 0.0005, 6)
         segment_end = round(cursor + 0.001, 6)
@@ -566,7 +634,7 @@ def test_setup_wrapper_accounts_for_sub_millisecond_cli_gaps(tmp_path: Path) -> 
             {
                 "capability_id": "cluster_timeout",
                 "run_id": "trial-1",
-                "scenario": "m2-formation",
+                "scenario": "cluster_timeout",
                 "profile_id": "exact-50",
                 "node_count": 1,
                 "status": "PASS",
@@ -616,6 +684,12 @@ def test_setup_wrapper_strictly_rejects_overlap_and_out_of_bounds() -> None:
     with pytest.raises(capture.CaptureError, match="outside"):
         capture._exhaustive_setup_wrapper_segments(
             [{"name": "first", "start_monotonic": 9.999999, "end_monotonic": 10.5}],
+            outer_start=10.0,
+            outer_end=11.0,
+        )
+    with pytest.raises(capture.CaptureError, match="invalid monotonic bounds"):
+        capture._exhaustive_setup_wrapper_segments(
+            [{"name": "first", "end_monotonic": 10.5}],
             outer_start=10.0,
             outer_end=11.0,
         )

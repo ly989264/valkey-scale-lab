@@ -5,6 +5,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
+import valkey_scale_lab.runtime.setup_timeline as setup_timeline_module
 from valkey_scale_lab.runtime.setup_timeline import (
     REQUIRED_M2_SETUP_EVENTS,
     REQUIRED_SETUP_SEGMENTS,
@@ -35,17 +38,27 @@ def _evidence() -> dict[str, Any]:
     }
 
 
-def _complete_timeline_artifact() -> dict[str, Any]:
+def _complete_timeline_artifact(
+    *,
+    scenario: str = "scale_ladder",
+    include_scale_ladder_artifact: bool = True,
+) -> dict[str, Any]:
     now = {"value": 1000.0}
     timeline = SetupTimeline(clock=lambda: now["value"], gap_threshold_seconds=0.01)
-    for name in REQUIRED_SETUP_SEGMENTS:
+    names = [
+        name
+        for name in REQUIRED_SETUP_SEGMENTS
+        if include_scale_ladder_artifact or name != "scale_ladder_artifact_write"
+    ]
+    names.insert(names.index("cluster_snapshot_write"), "cluster_final_full_snapshot")
+    for name in names:
         with timeline.span(name, name.split("_", 1)[0], {"test": True}):
             now["value"] += 0.25
     total = sum(float(segment["duration_seconds"]) for segment in timeline.segments)
     return timeline.to_artifact(
-        capability_id="scale_ladder",
+        capability_id=scenario,
         run_id="test-run",
-        scenario="scale_ladder",
+        scenario=scenario,
         profile_id="exact-100",
         node_count=100,
         status="PASS",
@@ -68,6 +81,18 @@ def test_setup_timeline_segments_are_ordered_and_gap_is_explicit() -> None:
     assert segments[0]["end_monotonic"] <= segments[1]["start_monotonic"]
     assert segments[1]["end_monotonic"] <= segments[2]["start_monotonic"]
     assert segments[1]["duration_seconds"] == 2.0
+
+
+def test_shared_monotonic_fails_closed_when_system_clock_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unavailable(_clock_id: int) -> float:
+        raise OSError("CLOCK_MONOTONIC unavailable")
+
+    monkeypatch.setattr(setup_timeline_module.time, "clock_gettime", unavailable)
+
+    with pytest.raises(OSError, match="CLOCK_MONOTONIC unavailable"):
+        SetupTimeline()
 
 
 def test_setup_timeline_records_ordered_m2_monotonic_events_without_changing_spans() -> None:
@@ -146,6 +171,42 @@ def test_missing_required_stage_fails_validation() -> None:
     errors = validate_setup_timeline_artifact(artifact)
 
     assert any("primary_cluster_create" in error for error in errors)
+
+
+@pytest.mark.parametrize("scenario", ["cluster_timeout", "failover_timeline"])
+def test_non_scale_ladder_timeline_does_not_require_scale_artifact_stage(
+    scenario: str,
+) -> None:
+    artifact = _complete_timeline_artifact(
+        scenario=scenario,
+        include_scale_ladder_artifact=False,
+    )
+
+    assert artifact["status"] == "PASS"
+    assert artifact["required_stage_coverage"]["status"] == "PASS"
+    assert "scale_ladder_artifact_write" not in artifact["required_stage_coverage"]["required_segments"]
+    assert validate_setup_timeline_artifact(artifact) == []
+
+
+def test_scale_ladder_timeline_requires_scale_artifact_stage() -> None:
+    artifact = _complete_timeline_artifact(
+        scenario="scale_ladder",
+        include_scale_ladder_artifact=False,
+    )
+
+    assert artifact["status"] == "FAIL"
+    assert artifact["required_stage_coverage"]["required_segments"]["scale_ladder_artifact_write"] == "MISSING"
+    assert "missing required setup timeline segment: scale_ladder_artifact_write" in artifact["errors"]
+
+
+def test_unknown_scenario_cannot_drop_scale_artifact_requirement() -> None:
+    artifact = _complete_timeline_artifact(
+        scenario="cluster-timeout-typo",
+        include_scale_ladder_artifact=False,
+    )
+
+    assert artifact["status"] == "FAIL"
+    assert "missing required setup timeline segment: scale_ladder_artifact_write" in artifact["errors"]
 
 
 def test_unexplained_time_above_two_seconds_fails_validation() -> None:

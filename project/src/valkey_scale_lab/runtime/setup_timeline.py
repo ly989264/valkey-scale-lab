@@ -140,6 +140,26 @@ def _skipped(reason: str) -> dict[str, str]:
     return {"status": "SKIPPED_WITH_REASON", "reason": reason}
 
 
+def shared_monotonic() -> float:
+    """Return the system monotonic clock shared by parent and child processes."""
+    try:
+        clock_gettime = time.clock_gettime
+        clock_id = time.CLOCK_MONOTONIC
+    except AttributeError as exc:
+        raise RuntimeError("shared CLOCK_MONOTONIC is unavailable") from exc
+    return float(clock_gettime(clock_id))
+
+
+def _required_setup_segments(scenario: str) -> list[str]:
+    if scenario not in {"cluster_timeout", "failover_timeline"}:
+        return list(REQUIRED_SETUP_SEGMENTS)
+    return [
+        name
+        for name in REQUIRED_SETUP_SEGMENTS
+        if name != "scale_ladder_artifact_write"
+    ]
+
+
 class SetupTimeline:
     """Sequential, leaf-only setup timeline recorder.
 
@@ -154,7 +174,7 @@ class SetupTimeline:
         clock: Callable[[], float] | None = None,
         gap_threshold_seconds: float = 0.001,
     ) -> None:
-        self._clock = clock or time.monotonic
+        self._clock = clock or shared_monotonic
         self._gap_threshold_seconds = max(float(gap_threshold_seconds), 0.0)
         self._origin = float(self._clock())
         self._last_end = self._origin
@@ -360,9 +380,14 @@ def build_setup_timeline_artifact(
         else ("PASS" if unexplained <= SETUP_TIMELINE_UNEXPLAINED_LIMIT_SECONDS else "FAIL")
     )
     hierarchy = build_stage_hierarchy(normalized_segments)
-    coverage = setup_timeline_coverage(normalized_segments, hierarchy)
+    coverage = setup_timeline_coverage(
+        normalized_segments,
+        hierarchy,
+        scenario=scenario,
+    )
     errors = validate_setup_timeline_artifact_data(
         {
+            "scenario": scenario,
             "segments": normalized_segments,
             "events": normalized_events,
             "stage_hierarchy": hierarchy,
@@ -798,12 +823,14 @@ def build_stage_hierarchy(segments: list[dict[str, Any]]) -> list[dict[str, Any]
 def setup_timeline_coverage(
     segments: list[dict[str, Any]],
     hierarchy: list[dict[str, Any]],
+    *,
+    scenario: str,
 ) -> dict[str, Any]:
     names = {str(segment["name"]) for segment in segments}
     groups = {str(item["name"]): item for item in hierarchy}
     segment_status = {
         name: ("PASS" if name in names else "MISSING")
-        for name in REQUIRED_SETUP_SEGMENTS
+        for name in _required_setup_segments(scenario)
     }
     group_status = {
         name: ("PASS" if groups.get(name, {}).get("status") == "PASS" else "MISSING")
@@ -914,7 +941,7 @@ def validate_setup_timeline_artifact_data(artifact: dict[str, Any], *, require_w
                 errors.append(f"{segment['id']}: silent gap of {delta:.6f}s before non-gap segment")
         previous_end = end
     names = {str(segment.get("name")) for segment in segments if isinstance(segment, dict)}
-    for name in REQUIRED_SETUP_SEGMENTS:
+    for name in _required_setup_segments(str(artifact.get("scenario", ""))):
         if name not in names:
             errors.append(f"missing required setup timeline segment: {name}")
     hierarchy = artifact.get("stage_hierarchy", [])
