@@ -70,6 +70,17 @@ REQUIRED_SETUP_TELEMETRY_METRICS = [
     "total_setup_ms",
 ]
 
+REQUIRED_M2_SETUP_EVENTS = [
+    "last_process_ping",
+    "first_membership_command",
+    "all_primaries_known",
+    "all_slots_assigned",
+    "all_replicas_attached",
+    "all_replicas_synchronized",
+    "every_node_clean",
+    "data_path_probe",
+]
+
 RUNTIME_ONLY_REASON = {
     "status": "SKIPPED_WITH_REASON",
     "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
@@ -148,11 +159,39 @@ class SetupTimeline:
         self._origin = float(self._clock())
         self._last_end = self._origin
         self._segments: list[dict[str, Any]] = []
+        self._events: list[dict[str, Any]] = []
         self._active = False
 
     @property
     def segments(self) -> list[dict[str, Any]]:
         return [dict(segment) for segment in self._segments]
+
+    @property
+    def events(self) -> list[dict[str, Any]]:
+        return [dict(event) for event in self._events]
+
+    def mark_event(
+        self,
+        name: str,
+        category: str,
+        details: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Record an instantaneous monotonic setup marker without changing spans."""
+        at = float(self._clock())
+        if at < self._origin - 1e-9:
+            raise RuntimeError(f"setup timeline event {name!r} precedes timeline origin")
+        if self._events and at < float(self._events[-1]["at_monotonic"]) - 1e-9:
+            raise RuntimeError(f"setup timeline event {name!r} precedes the previous event")
+        event = {
+            "id": f"event_{len(self._events) + 1:03d}",
+            "name": str(name),
+            "category": str(category),
+            "at_monotonic": round(at, 6),
+            "elapsed_seconds": _round_seconds(at - self._origin),
+            "details": dict(details or {}),
+        }
+        self._events.append(event)
+        return dict(event)
 
     @contextmanager
     def span(
@@ -280,6 +319,7 @@ class SetupTimeline:
             node_count=node_count,
             status=status,
             segments=segments,
+            events=self.events or None,
             setup_command_wall_seconds=setup_command_wall_seconds,
             real_valkey_evidence_summary=real_valkey_evidence_summary,
             source_artifacts=source_artifacts,
@@ -303,12 +343,14 @@ def build_setup_timeline_artifact(
     node_count: int,
     status: str,
     segments: list[dict[str, Any]],
+    events: list[dict[str, Any]] | None = None,
     setup_command_wall_seconds: float | None = None,
     real_valkey_evidence_summary: dict[str, Any] | None = None,
     source_artifacts: list[dict[str, Any]] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     normalized_segments = _normalize_segments(segments)
+    normalized_events = _normalize_events(events or [])
     total = _round_seconds(sum(float(segment["duration_seconds"]) for segment in normalized_segments))
     wall = round(float(setup_command_wall_seconds), 6) if setup_command_wall_seconds is not None else None
     unexplained = None if wall is None else round(abs(wall - total), 6)
@@ -322,6 +364,7 @@ def build_setup_timeline_artifact(
     errors = validate_setup_timeline_artifact_data(
         {
             "segments": normalized_segments,
+            "events": normalized_events,
             "stage_hierarchy": hierarchy,
             "setup_command_wall_seconds": wall,
             "setup_timeline_total_seconds": total,
@@ -370,6 +413,9 @@ def build_setup_timeline_artifact(
         "summary": summary,
         "errors": errors,
     }
+    if events is not None:
+        artifact["events"] = normalized_events
+        summary["event_count"] = len(normalized_events)
     if extra:
         artifact.update(extra)
     return artifact
@@ -666,6 +712,57 @@ def _normalize_segments(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return normalized
 
 
+def _normalize_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for idx, raw in enumerate(events, start=1):
+        at = float(raw["at_monotonic"])
+        normalized.append(
+            {
+                "id": str(raw.get("id") or f"event_{idx:03d}"),
+                "name": str(raw["name"]),
+                "category": str(raw["category"]),
+                "at_monotonic": round(at, 6),
+                "elapsed_seconds": _round_seconds(float(raw.get("elapsed_seconds", 0.0))),
+                "details": dict(raw.get("details") or {}),
+            }
+        )
+    return normalized
+
+
+def validate_setup_timeline_events(
+    events: list[dict[str, Any]],
+    *,
+    required_names: list[str] | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    previous_at: float | None = None
+    observed_names: set[str] = set()
+    for idx, event in enumerate(events):
+        if not isinstance(event, dict):
+            errors.append(f"events[{idx}] must be object")
+            continue
+        for field in ["id", "name", "category", "at_monotonic", "elapsed_seconds", "details"]:
+            if field not in event:
+                errors.append(f"events[{idx}] missing {field}")
+        if any(field not in event for field in ["name", "at_monotonic", "elapsed_seconds"]):
+            continue
+        at = event["at_monotonic"]
+        elapsed = event["elapsed_seconds"]
+        if not isinstance(at, (int, float)) or isinstance(at, bool):
+            errors.append(f"events[{idx}].at_monotonic must be numeric")
+            continue
+        if not isinstance(elapsed, (int, float)) or isinstance(elapsed, bool) or float(elapsed) < 0:
+            errors.append(f"events[{idx}].elapsed_seconds must be non-negative numeric")
+        if previous_at is not None and float(at) < previous_at - 1e-9:
+            errors.append(f"events[{idx}] precedes previous monotonic event")
+        previous_at = float(at)
+        observed_names.add(str(event["name"]))
+    for name in required_names or []:
+        if name not in observed_names:
+            errors.append(f"missing required setup timeline event: {name}")
+    return errors
+
+
 def build_stage_hierarchy(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_name: dict[str, list[dict[str, Any]]] = {}
     for segment in segments:
@@ -771,6 +868,11 @@ def validate_setup_timeline_artifact(artifact: dict[str, Any]) -> list[str]:
 
 def validate_setup_timeline_artifact_data(artifact: dict[str, Any], *, require_wall: bool) -> list[str]:
     errors: list[str] = []
+    events = artifact.get("events", [])
+    if not isinstance(events, list):
+        errors.append("setup timeline events must be an array when present")
+    else:
+        errors.extend(validate_setup_timeline_events(events))
     segments = artifact.get("segments", [])
     if not isinstance(segments, list) or not segments:
         return ["setup timeline segments must be a non-empty array"]

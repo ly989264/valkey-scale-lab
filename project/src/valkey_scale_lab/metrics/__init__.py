@@ -5,7 +5,7 @@ import math
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 MISSING = "MISSING"
 SKIPPED_WITH_REASON = "SKIPPED_WITH_REASON"
@@ -152,6 +152,21 @@ def percentile(values: list[float], pct: float) -> float:
     upper = min(lower + 1, len(ordered) - 1)
     weight = rank - lower
     return ordered[lower] * (1 - weight) + ordered[upper] * weight
+
+
+def nearest_rank(values: Sequence[float | int], quantile: float) -> float:
+    """Return x[ceil(q*n)-1] without changing the legacy percentile helper."""
+    if not values:
+        raise ValueError("nearest_rank requires at least one value")
+    if isinstance(quantile, bool) or not math.isfinite(float(quantile)) or not 0 < float(quantile) <= 1:
+        raise ValueError("nearest_rank quantile must be in (0, 1]")
+    normalized: list[float] = []
+    for value in values:
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise ValueError("nearest_rank values must be finite numbers")
+        normalized.append(float(value))
+    ordered = sorted(normalized)
+    return ordered[math.ceil(float(quantile) * len(ordered)) - 1]
 
 
 def workload_metrics(

@@ -6,9 +6,11 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab.runtime.setup_timeline import (
+    REQUIRED_M2_SETUP_EVENTS,
     REQUIRED_SETUP_SEGMENTS,
     SetupTimeline,
     validate_setup_timeline_artifact,
+    validate_setup_timeline_events,
 )
 
 
@@ -68,6 +70,32 @@ def test_setup_timeline_segments_are_ordered_and_gap_is_explicit() -> None:
     assert segments[1]["duration_seconds"] == 2.0
 
 
+def test_setup_timeline_records_ordered_m2_monotonic_events_without_changing_spans() -> None:
+    now = {"value": 10.0}
+    timeline = SetupTimeline(clock=lambda: now["value"])
+    with timeline.span("setup_entry", "setup_lifecycle"):
+        for name in REQUIRED_M2_SETUP_EVENTS:
+            now["value"] += 0.1
+            timeline.mark_event(name, "m2_measurement", {"source": "unit"})
+        now["value"] += 0.1
+
+    artifact = timeline.to_artifact(
+        capability_id="m2_measurement",
+        run_id="unit-events",
+        scenario="m2",
+        profile_id="fake",
+        node_count=0,
+        status="FAIL",
+    )
+
+    assert len(artifact["segments"]) == 1
+    assert [event["name"] for event in artifact["events"]] == REQUIRED_M2_SETUP_EVENTS
+    assert validate_setup_timeline_events(
+        artifact["events"],
+        required_names=REQUIRED_M2_SETUP_EVENTS,
+    ) == []
+
+
 def test_parent_hierarchy_does_not_double_count_children() -> None:
     artifact = _complete_timeline_artifact()
 
@@ -88,6 +116,8 @@ def test_setup_timeline_artifact_conforms_to_schema(tmp_path: Path) -> None:
 
     assert validator.validate(artifact, schema) == []
     assert validate_setup_timeline_artifact(artifact) == []
+    assert "events" not in artifact
+    assert "event_count" not in artifact["summary"]
 
 
 def test_unrecorded_gap_fails_validation() -> None:

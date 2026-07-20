@@ -76,8 +76,11 @@ def test_catalog_v2_loads_and_schema_document_is_current() -> None:
     )
 
     assert schema["properties"]["schema_version"]["const"] == "verification-catalog-v2"
-    assert len(catalog.tests) == 88
+    assert len(catalog.tests) == 93
     assert "real.local.full-flow" in catalog.tests
+    assert "real.local.m2-cluster-formation" in catalog.tests
+    assert "real.local.m2-automatic-failover" in catalog.tests
+    assert "real.local.m2-stability-resource" in catalog.tests
     assert "repository.all" in catalog.suites
 
 
@@ -268,7 +271,7 @@ def test_milestone_schema_and_current_definitions_are_valid() -> None:
         for milestone_id in ("m1", "m2", "m3", "m4")
     }
     assert milestones["m1"].definition_status == "READY"
-    assert milestones["m2"].definition_status == "DEFINED"
+    assert milestones["m2"].definition_status == "READY"
     assert milestones["m3"].definition_status == "DEFINED"
     assert milestones["m4"].definition_status == "DEFINED"
 
@@ -361,7 +364,7 @@ def test_m1_expands_every_product_test_once_and_real_check_twice() -> None:
     assert len({planned.instance_id for planned in plan.tests}) == 87
 
 
-def test_m2_m3_and_m4_attach_only_currently_executable_checks() -> None:
+def test_m2_m3_and_m4_attach_only_executable_checks() -> None:
     catalog = load_catalog(PROJECT_ROOT / "catalog.json")
     m2 = load_milestone(
         PROJECT_ROOT / "milestones/m2/milestone.json", expected_id="m2"
@@ -373,7 +376,7 @@ def test_m2_m3_and_m4_attach_only_currently_executable_checks() -> None:
         PROJECT_ROOT / "milestones/m4/milestone.json", expected_id="m4"
     )
 
-    assert select_milestone(catalog, m2) == ()
+    assert select_milestone(catalog, m2)
     assert [selected.test.test_id for selected in select_milestone(catalog, m3)] == [
         "product.orchestrator.local_orchestrator"
     ]
@@ -383,3 +386,107 @@ def test_m2_m3_and_m4_attach_only_currently_executable_checks() -> None:
         "product.scenarios.definition_contract",
         "product.scenarios.gate_plan_compiler",
     ]
+
+
+def test_m2_check_mapping_runs_each_real_performance_matrix_once() -> None:
+    catalog = load_catalog(PROJECT_ROOT / "catalog.json")
+    milestone = load_milestone(
+        PROJECT_ROOT / "milestones/m2/milestone.json", expected_id="m2"
+    )
+
+    mapping = {
+        criterion.id: [
+            (check.id, dict(check.parameters)) for check in criterion.checks or ()
+        ]
+        for criterion in milestone.criteria
+    }
+    assert mapping == {
+        "performance.measurement-contract": [("gate.m2.contracts", {})],
+        "performance.cluster-formation-experiment": [
+            (
+                "real.local.m2-cluster-formation",
+                {"selected_strategy": "current-default"},
+            )
+        ],
+        "performance.cluster-formation-budget": [("gate.m2.contracts", {})],
+        "performance.automatic-failover-experiment": [
+            (
+                "real.local.m2-automatic-failover",
+                {"selected_timeout_ms": "current-default"},
+            )
+        ],
+        "performance.automatic-failover-budget": [("gate.m2.contracts", {})],
+        "performance.stability-and-resource-safety": [
+            (
+                "real.local.m2-stability-resource",
+                {
+                    "selected_strategy": "current-default",
+                    "selected_timeout_ms": "current-default",
+                },
+            )
+        ],
+        "performance.promotion-and-regression": [
+            ("gate.m2.contracts", {}),
+            ("product.all", {}),
+            (
+                "real.local.full-flow",
+                {
+                    "nodes": 50,
+                    "config": "templates/configs/scale_50.yaml",
+                },
+            ),
+            (
+                "real.local.full-flow",
+                {
+                    "nodes": 200,
+                    "config": "templates/configs/scale_200.yaml",
+                },
+            ),
+        ],
+    }
+
+    plan = build_milestone_plan(
+        catalog,
+        milestone,
+        PROJECT_ROOT,
+        invocation_id="m2-contract-test",
+    )
+    assert plan.definition_status == "READY"
+    real_m2_ids = [
+        planned.test.test_id
+        for planned in plan.tests
+        if planned.test.test_id.startswith("real.local.m2-")
+    ]
+    assert real_m2_ids == [
+        "real.local.m2-cluster-formation",
+        "real.local.m2-automatic-failover",
+        "real.local.m2-stability-resource",
+    ]
+    assert len({planned.instance_id for planned in plan.tests}) == len(plan.tests)
+
+
+def test_m2_real_tests_are_current_invocation_json_runners_not_repository_tests() -> None:
+    catalog = load_catalog(PROJECT_ROOT / "catalog.json")
+    repository_ids = set(catalog.suites["repository.all"].test_ids)
+    expected = {
+        "real.local.m2-cluster-formation": (86400, {"selected_strategy"}),
+        "real.local.m2-automatic-failover": (172800, {"selected_timeout_ms"}),
+        "real.local.m2-stability-resource": (
+            14400,
+            {"selected_strategy", "selected_timeout_ms"},
+        ),
+    }
+
+    for test_id, (timeout, parameters) in expected.items():
+        test = catalog.tests[test_id]
+        assert test_id not in repository_ids
+        assert test.runner.type == "command"
+        assert test.runner.result == "json"
+        assert test.runner.timeout_seconds == timeout
+        assert set(test.parameters) == parameters
+        assert "scripts/m2_performance_gate.py" in test.runner.argv
+        assert "{gate.run_id}" in test.runner.argv
+        assert "{gate.artifacts_dir}" in test.runner.argv
+        assert "{gate.result_path}" in test.runner.argv
+
+    assert "gate.m2.contracts" in repository_ids

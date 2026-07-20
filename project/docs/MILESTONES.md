@@ -6,7 +6,7 @@ library:
 | Milestone | Definition | Definition status |
 | --- | --- | --- |
 | M1 local lifecycle | `milestones/m1/milestone.json` | `READY` |
-| M2 local formation and failover performance | `milestones/m2/milestone.json` | `DEFINED` |
+| M2 local formation and failover performance | `milestones/m2/milestone.json` | `READY` |
 | M3 native multi-ECS | `milestones/m3/milestone.json` | `DEFINED` |
 | M4 multi-ECS scale-out | `milestones/m4/milestone.json` | `DEFINED` |
 
@@ -31,6 +31,7 @@ Run executable verification with:
 `DEFINED` and `READY` describe a definition and are never written back after a
 run. A Milestone invocation reports `PASS`, `FAIL`, or `BLOCKED` in its Gate
 summary. M1 can pass only when all product tests and both exact real 50-node
-and 200-node runs pass. M2, M3, and M4 cannot pass until every Criterion has
-an attached executable Check. M2 intentionally has no Check yet because the
-Catalog does not currently contain a paired repeated-run performance Test.
+and 200-node runs pass. M2 is READY because every Criterion has an executable
+Check; its real performance Tests remain operator-authorized and are excluded
+from `repository.all`. M3 and M4 cannot pass until every Criterion has an
+attached executable Check.

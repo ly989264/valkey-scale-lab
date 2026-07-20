@@ -1,12 +1,21 @@
 from __future__ import annotations
 
+import signal
+
 import pytest
 
+from valkey_scale_lab.metrics import nearest_rank
+from valkey_scale_lab.observer import failover_timeline
 from valkey_scale_lab.observer.failover_timeline import (
     ClientRecoveryAccumulator,
     FailoverTimelineError,
     FailoverTimelineObserver,
     ObserverEndpoint,
+    OwnedProcessTarget,
+    PersistentClusterClient,
+    RespError,
+    StableShardAccumulator,
+    apply_owned_sigkill,
     build_rto_summary,
     derive_rto_metrics,
     percentile,
@@ -80,6 +89,120 @@ def test_percentile_nearest_rank_round_index() -> None:
     assert percentile([10, 20, 30], 0.50) == 20
     assert percentile([10, 20, 30], 0.95) == 30
     assert percentile([10, 20, 30, 40], 0.50) == 30
+
+
+def test_m2_nearest_rank_uses_ceil_rank_without_changing_legacy_percentile() -> None:
+    assert nearest_rank(list(range(1, 8)), 0.95) == 7
+    assert nearest_rank(list(range(1, 11)), 0.50) == 5
+    assert nearest_rank(list(range(1, 11)), 0.95) == 10
+    assert percentile([10, 20, 30, 40], 0.50) == 30
+
+
+def test_owned_multi_pid_sigkill_requires_ownership_and_observes_each_process_gone() -> None:
+    targets = [
+        OwnedProcessTarget("node-1", "nodehost-a", 101, "run-1"),
+        OwnedProcessTarget("node-2", "nodehost-b", 101, "run-1"),
+    ]
+    alive = {target.logical_id: True for target in targets}
+    sent: list[tuple[str, int]] = []
+    lifecycle: list[str] = []
+
+    def signal_sender(target: OwnedProcessTarget, signal_number: int) -> None:
+        lifecycle.append("signal")
+        sent.append((target.logical_id, signal_number))
+        alive[target.logical_id] = False
+
+    result = apply_owned_sigkill(
+        targets,
+        expected_ownership_id="run-1",
+        signal_sender=signal_sender,
+        process_alive=lambda target: alive[target.logical_id],
+        wait_timeout_seconds=1.0,
+        monotonic_clock=lambda: 10.0,
+        wall_clock=lambda: 20.0,
+        sleep=lambda _seconds: None,
+        barrier_callback=lambda: lifecycle.append("barrier"),
+    )
+
+    assert result["status"] == "PASS"
+    assert sorted(sent) == [("node-1", signal.SIGKILL), ("node-2", signal.SIGKILL)]
+    assert lifecycle[0] == "barrier"
+    assert all(row["status"] == "PASS" for row in result["targets"])
+    assert all(isinstance(row["process_gone_at_monotonic_ms"], float) for row in result["targets"])
+
+    with pytest.raises(FailoverTimelineError, match="not owned"):
+        apply_owned_sigkill(
+            [OwnedProcessTarget("node-3", "nodehost-c", 103, "other-run")],
+            expected_ownership_id="run-1",
+            signal_sender=signal_sender,
+            process_alive=lambda _target: True,
+            wait_timeout_seconds=1.0,
+        )
+
+
+def test_persistent_cluster_client_reuses_owned_redirect_connection(monkeypatch) -> None:
+    endpoints = [
+        ObserverEndpoint("node-1", "127.0.0.1", 7000, container_ip="10.0.0.1"),
+        ObserverEndpoint("node-2", "127.0.0.1", 7001, container_ip="10.0.0.2"),
+    ]
+    created: list[str] = []
+
+    class FakePersistentConnection:
+        def __init__(self, endpoint, _timeout_seconds):
+            self.endpoint = endpoint
+            self.calls = 0
+            created.append(endpoint.logical_id)
+
+        def execute(self, *args):
+            self.calls += 1
+            if self.endpoint.logical_id == "node-1":
+                raise RespError("MOVED 1 10.0.0.2:7001")
+            return "OK" if args[0] == "SET" else "value"
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(failover_timeline, "_PersistentRespConnection", FakePersistentConnection)
+
+    with PersistentClusterClient(endpoints) as client:
+        write = client.execute("SET", "key", "value")
+        read = client.execute("GET", "key")
+
+    assert write.value == "OK"
+    assert write.moved_count == 1
+    assert write.endpoint_logical_id == "node-2"
+    assert read.value == "value"
+    assert created == ["node-1", "node-2"]
+
+
+def test_stable_shard_accumulator_requires_full_cadenced_window_for_every_shard() -> None:
+    accumulator = StableShardAccumulator()
+    for index in range(11):
+        for shard_id, offset in [("shard-a", 0.0), ("shard-b", 50.0)]:
+            accumulator.record(
+                shard_id=shard_id,
+                monotonic_ms_value=index * 100.0 + offset,
+                set_succeeded=True,
+                get_succeeded=True,
+                value_matches=True,
+            )
+
+    summary = accumulator.summary(["shard-a", "shard-b"])
+
+    assert summary["status"] == "PASS"
+    assert summary["stable_endpoint_monotonic_ms"] == 1050.0
+    assert summary["stable_window_skew_ms"] == 50.0
+
+    incomplete = StableShardAccumulator()
+    for index in range(10):
+        incomplete.record(
+            shard_id="shard-a",
+            monotonic_ms_value=index * 100.0,
+            set_succeeded=True,
+            get_succeeded=True,
+            value_matches=True,
+        )
+    assert incomplete.summary(["shard-a"])["status"] == "FAIL"
 
 
 def test_client_recovery_accumulator_counts_before_first_success_only() -> None:

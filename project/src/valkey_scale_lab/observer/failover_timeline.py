@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import signal
 import socket
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 REQUIRED_TIMESTAMPS = [
     "fault_apply_at_ms",
@@ -782,6 +783,406 @@ def moved_target(message: str) -> tuple[str, int] | None:
         except ValueError:
             return None
     return None
+
+
+@dataclass(frozen=True)
+class OwnedProcessTarget:
+    logical_id: str
+    nodehost_id: str
+    pid: int
+    ownership_id: str
+
+
+def apply_owned_sigkill(
+    targets: list[OwnedProcessTarget],
+    *,
+    expected_ownership_id: str,
+    signal_sender: Callable[[OwnedProcessTarget, int], None],
+    process_alive: Callable[[OwnedProcessTarget], bool],
+    wait_timeout_seconds: float,
+    poll_interval_seconds: float = 0.01,
+    monotonic_clock: Callable[[], float] = time.monotonic,
+    wall_clock: Callable[[], float] = time.time,
+    sleep: Callable[[float], None] = time.sleep,
+    barrier_callback: Callable[[], None] | None = None,
+) -> dict[str, Any]:
+    """Apply one measured SIGKILL barrier to explicitly owned process targets."""
+    if not targets:
+        raise FailoverTimelineError("owned SIGKILL requires at least one target")
+    if not expected_ownership_id:
+        raise FailoverTimelineError("owned SIGKILL requires expected_ownership_id")
+    if wait_timeout_seconds <= 0:
+        raise FailoverTimelineError("owned SIGKILL wait_timeout_seconds must be positive")
+    if poll_interval_seconds <= 0:
+        raise FailoverTimelineError("owned SIGKILL poll_interval_seconds must be positive")
+
+    logical_ids: set[str] = set()
+    physical_ids: set[tuple[str, int]] = set()
+    for target in targets:
+        if not target.logical_id or not target.nodehost_id or target.pid <= 0:
+            raise FailoverTimelineError("owned SIGKILL targets require logical_id, nodehost_id, and positive pid")
+        if target.ownership_id != expected_ownership_id:
+            raise FailoverTimelineError(f"target {target.logical_id} is not owned by {expected_ownership_id}")
+        physical_id = (target.nodehost_id, target.pid)
+        if target.logical_id in logical_ids or physical_id in physical_ids:
+            raise FailoverTimelineError("owned SIGKILL targets must identify distinct logical and physical processes")
+        logical_ids.add(target.logical_id)
+        physical_ids.add(physical_id)
+
+    not_alive = [target.logical_id for target in targets if not process_alive(target)]
+    if not_alive:
+        raise FailoverTimelineError(f"owned SIGKILL targets were not alive before the barrier: {', '.join(not_alive)}")
+
+    fault_apply_at_ms = int(wall_clock() * 1000.0)
+    barrier_monotonic = float(monotonic_clock())
+    if barrier_callback is not None:
+        barrier_callback()
+    rows: dict[str, dict[str, Any]] = {}
+    for target in targets:
+        rows[target.logical_id] = {
+            "logical_id": target.logical_id,
+            "nodehost_id": target.nodehost_id,
+            "pid": target.pid,
+            "ownership_id": target.ownership_id,
+            "signal": "SIGKILL",
+            "signal_sent_at_monotonic_ms": "MISSING",
+            "signal_completed_at_monotonic_ms": "MISSING",
+            "process_gone_at_monotonic_ms": "MISSING",
+            "status": "PENDING",
+        }
+
+    def send_signal(target: OwnedProcessTarget) -> tuple[str, str]:
+        row = rows[target.logical_id]
+        row["signal_sent_at_monotonic_ms"] = round(float(monotonic_clock()) * 1000.0, 3)
+        try:
+            signal_sender(target, signal.SIGKILL)
+        except Exception as exc:  # noqa: BLE001 - every partial barrier must be reported
+            row["status"] = "FAIL"
+            row["error"] = repr(exc)
+            return target.logical_id, f"{target.logical_id}: {exc!r}"
+        finally:
+            row["signal_completed_at_monotonic_ms"] = round(float(monotonic_clock()) * 1000.0, 3)
+        return target.logical_id, ""
+
+    signal_errors: list[str] = []
+    with ThreadPoolExecutor(max_workers=len(targets)) as executor:
+        futures = [executor.submit(send_signal, target) for target in targets]
+        for future in as_completed(futures):
+            _logical_id, error = future.result()
+            if error:
+                signal_errors.append(error)
+
+    deadline = barrier_monotonic + float(wait_timeout_seconds)
+    pending = {
+        target.logical_id: target
+        for target in targets
+        if rows[target.logical_id]["status"] == "PENDING"
+    }
+    observation_errors: list[str] = []
+    while pending and float(monotonic_clock()) <= deadline:
+        for logical_id, target in list(pending.items()):
+            try:
+                alive = process_alive(target)
+            except Exception as exc:  # noqa: BLE001 - observation failure is evidence failure
+                rows[logical_id]["status"] = "FAIL"
+                rows[logical_id]["error"] = repr(exc)
+                observation_errors.append(f"{logical_id}: {exc!r}")
+                del pending[logical_id]
+                continue
+            if not alive:
+                gone_at = float(monotonic_clock())
+                rows[logical_id]["process_gone_at_monotonic_ms"] = round(gone_at * 1000.0, 3)
+                rows[logical_id]["status"] = "PASS"
+                del pending[logical_id]
+        if pending and float(monotonic_clock()) <= deadline:
+            sleep(float(poll_interval_seconds))
+
+    for logical_id in pending:
+        rows[logical_id]["status"] = "FAIL"
+        rows[logical_id]["error"] = "process remained alive through SIGKILL observation deadline"
+
+    target_rows = [rows[target.logical_id] for target in targets]
+    signal_times = [
+        float(row["signal_sent_at_monotonic_ms"])
+        for row in target_rows
+        if isinstance(row.get("signal_sent_at_monotonic_ms"), (int, float))
+    ]
+    signal_completed_times = [
+        float(row["signal_completed_at_monotonic_ms"])
+        for row in target_rows
+        if isinstance(row.get("signal_completed_at_monotonic_ms"), (int, float))
+    ]
+    gone_times = [
+        float(row["process_gone_at_monotonic_ms"])
+        for row in target_rows
+        if isinstance(row.get("process_gone_at_monotonic_ms"), (int, float))
+    ]
+    status = "PASS" if target_rows and all(row["status"] == "PASS" for row in target_rows) else "FAIL"
+    return {
+        "status": status,
+        "ownership_id": expected_ownership_id,
+        "signal": "SIGKILL",
+        "fault_apply_at_ms": fault_apply_at_ms,
+        "fault_apply_monotonic_ms": round(barrier_monotonic * 1000.0, 3),
+        "target_count": len(target_rows),
+        "signal_send_skew_ms": round(max(signal_times) - min(signal_times), 3) if len(signal_times) == len(target_rows) else "MISSING",
+        "signal_completion_skew_ms": round(max(signal_completed_times) - min(signal_completed_times), 3)
+        if len(signal_completed_times) == len(target_rows)
+        else "MISSING",
+        "signal_barrier_span_ms": round(max(signal_completed_times) - min(signal_times), 3)
+        if len(signal_times) == len(signal_completed_times) == len(target_rows)
+        else "MISSING",
+        "process_gone_skew_ms": round(max(gone_times) - min(gone_times), 3) if len(gone_times) == len(target_rows) else "MISSING",
+        "targets": target_rows,
+        "errors": [*signal_errors, *observation_errors],
+    }
+
+
+@dataclass(frozen=True)
+class ClusterCommandResult:
+    value: Any
+    endpoint_logical_id: str
+    moved_count: int
+    ask_count: int
+
+
+class _PersistentRespConnection:
+    def __init__(self, endpoint: ObserverEndpoint, timeout_seconds: float):
+        self.endpoint = endpoint
+        self.timeout_seconds = timeout_seconds
+        self._socket: socket.socket | None = None
+        self._file: Any = None
+
+    def execute(self, *args: Any) -> Any:
+        self._connect()
+        assert self._socket is not None
+        try:
+            self._socket.sendall(_encode_command(*args))
+            return _read_resp(self._file)
+        except RespError:
+            raise
+        except Exception:
+            self.close()
+            raise
+
+    def _connect(self) -> None:
+        if self._socket is not None:
+            return
+        sock = socket.create_connection(
+            (self.endpoint.host, self.endpoint.port),
+            timeout=self.timeout_seconds,
+        )
+        sock.settimeout(self.timeout_seconds)
+        fp = sock.makefile("rb")
+        try:
+            if self.endpoint.password:
+                sock.sendall(_encode_command("AUTH", self.endpoint.password))
+                _read_resp(fp)
+        except Exception:
+            fp.close()
+            sock.close()
+            raise
+        self._socket = sock
+        self._file = fp
+
+    def close(self) -> None:
+        if self._file is not None:
+            self._file.close()
+        if self._socket is not None:
+            self._socket.close()
+        self._file = None
+        self._socket = None
+
+
+class PersistentClusterClient:
+    """Small persistent RESP client for M2 SET/GET recovery probes."""
+
+    def __init__(
+        self,
+        endpoints: list[ObserverEndpoint],
+        *,
+        timeout_seconds: float = 1.0,
+        max_redirects: int = 8,
+    ) -> None:
+        if not endpoints:
+            raise FailoverTimelineError("persistent cluster client requires at least one endpoint")
+        if timeout_seconds <= 0 or max_redirects < 0:
+            raise FailoverTimelineError("persistent cluster client timeout must be positive and redirects non-negative")
+        self.endpoints = list(endpoints)
+        self.timeout_seconds = float(timeout_seconds)
+        self.max_redirects = int(max_redirects)
+        self._connections: dict[str, _PersistentRespConnection] = {}
+        self._endpoint_by_address: dict[tuple[str, int], ObserverEndpoint] = {}
+        for endpoint in self.endpoints:
+            self._endpoint_by_address[(endpoint.host, endpoint.port)] = endpoint
+            if endpoint.container_ip:
+                self._endpoint_by_address[(endpoint.container_ip, endpoint.port)] = endpoint
+        self._current_endpoint = self.endpoints[0]
+        self._seed_index = 0
+        self._lock = threading.Lock()
+
+    def __enter__(self) -> "PersistentClusterClient":
+        return self
+
+    def __exit__(self, *_args: Any) -> None:
+        self.close()
+
+    def close(self) -> None:
+        with self._lock:
+            for connection in self._connections.values():
+                connection.close()
+            self._connections.clear()
+
+    def execute(self, *args: Any) -> ClusterCommandResult:
+        if not args:
+            raise FailoverTimelineError("persistent cluster client command must not be empty")
+        with self._lock:
+            endpoint = self._current_endpoint
+            moved_count = 0
+            ask_count = 0
+            asking = False
+            for _attempt in range(self.max_redirects + 1):
+                connection = self._connection(endpoint)
+                try:
+                    if asking:
+                        connection.execute("ASKING")
+                    value = connection.execute(*args)
+                except RespError as exc:
+                    target = moved_target(exc.message)
+                    if target is None:
+                        raise
+                    redirected = self._endpoint_by_address.get(target)
+                    if redirected is None:
+                        raise RespError(f"redirect target {target[0]}:{target[1]} is not product-owned") from exc
+                    asking = exc.message.split(maxsplit=1)[0] == "ASK"
+                    ask_count += int(asking)
+                    moved_count += int(not asking)
+                    endpoint = redirected
+                    if not asking:
+                        self._current_endpoint = redirected
+                    continue
+                except (OSError, TimeoutError, ConnectionError):
+                    connection.close()
+                    self._seed_index = (self._seed_index + 1) % len(self.endpoints)
+                    self._current_endpoint = self.endpoints[self._seed_index]
+                    raise
+                if not asking:
+                    self._current_endpoint = endpoint
+                return ClusterCommandResult(
+                    value=value,
+                    endpoint_logical_id=endpoint.logical_id,
+                    moved_count=moved_count,
+                    ask_count=ask_count,
+                )
+            raise RespError(f"too many cluster redirects (limit={self.max_redirects})")
+
+    def _connection(self, endpoint: ObserverEndpoint) -> _PersistentRespConnection:
+        connection = self._connections.get(endpoint.logical_id)
+        if connection is None:
+            connection = _PersistentRespConnection(endpoint, self.timeout_seconds)
+            self._connections[endpoint.logical_id] = connection
+        return connection
+
+
+class StableShardAccumulator:
+    """Find the first fail-closed stable SET/GET window for every affected shard."""
+
+    def __init__(
+        self,
+        *,
+        window_ms: float = 1000.0,
+        min_pairs: int = 10,
+        max_pair_interval_ms: float = 100.0,
+    ) -> None:
+        if window_ms <= 0 or min_pairs <= 0 or max_pair_interval_ms <= 0:
+            raise FailoverTimelineError("stable shard window parameters must be positive")
+        self.window_ms = float(window_ms)
+        self.min_pairs = int(min_pairs)
+        self.max_pair_interval_ms = float(max_pair_interval_ms)
+        self.samples: dict[str, list[dict[str, Any]]] = {}
+        self._streaks: dict[str, list[dict[str, Any]]] = {}
+        self._stable_at: dict[str, float] = {}
+        self._gap_counts: dict[str, int] = {}
+
+    def record(
+        self,
+        *,
+        shard_id: str,
+        monotonic_ms_value: float,
+        set_succeeded: bool,
+        get_succeeded: bool,
+        value_matches: bool,
+        error: str = "",
+        timed_out: bool = False,
+    ) -> dict[str, Any]:
+        if not shard_id:
+            raise FailoverTimelineError("stable shard sample requires shard_id")
+        timestamp = float(monotonic_ms_value)
+        rows = self.samples.setdefault(shard_id, [])
+        if rows and timestamp < float(rows[-1]["monotonic_ms"]):
+            raise FailoverTimelineError(f"stable shard samples for {shard_id} must be monotonic")
+        passed = bool(set_succeeded and get_succeeded and value_matches and not error and not timed_out)
+        row = {
+            "shard_id": shard_id,
+            "monotonic_ms": round(timestamp, 3),
+            "set_succeeded": bool(set_succeeded),
+            "get_succeeded": bool(get_succeeded),
+            "value_matches": bool(value_matches),
+            "timed_out": bool(timed_out),
+            "error": str(error),
+            "status": "PASS" if passed else "FAIL",
+        }
+        rows.append(row)
+        streak = self._streaks.setdefault(shard_id, [])
+        if not passed:
+            streak.clear()
+            return dict(row)
+        if streak and timestamp - float(streak[-1]["monotonic_ms"]) > self.max_pair_interval_ms + 1e-9:
+            streak.clear()
+            self._gap_counts[shard_id] = self._gap_counts.get(shard_id, 0) + 1
+        streak.append(row)
+        if (
+            shard_id not in self._stable_at
+            and len(streak) >= self.min_pairs
+            and timestamp - float(streak[0]["monotonic_ms"]) >= self.window_ms
+        ):
+            self._stable_at[shard_id] = timestamp
+        return dict(row)
+
+    def summary(self, required_shards: list[str]) -> dict[str, Any]:
+        if not required_shards or any(not shard_id for shard_id in required_shards):
+            raise FailoverTimelineError("stable shard summary requires non-empty shard ids")
+        if len(set(required_shards)) != len(required_shards):
+            raise FailoverTimelineError("stable shard summary requires unique shard ids")
+        shard_rows: list[dict[str, Any]] = []
+        stable_values: list[float] = []
+        for shard_id in required_shards:
+            samples = self.samples.get(shard_id, [])
+            stable_at = self._stable_at.get(shard_id)
+            if stable_at is not None:
+                stable_values.append(stable_at)
+            shard_rows.append(
+                {
+                    "shard_id": shard_id,
+                    "status": "PASS" if stable_at is not None else "FAIL",
+                    "stable_at_monotonic_ms": round(stable_at, 3) if stable_at is not None else "MISSING",
+                    "sample_count": len(samples),
+                    "failed_pair_count": sum(1 for row in samples if row["status"] != "PASS"),
+                    "timeout_count": sum(1 for row in samples if row["timed_out"] is True),
+                    "cadence_gap_count": self._gap_counts.get(shard_id, 0),
+                }
+            )
+        status = "PASS" if len(stable_values) == len(required_shards) else "FAIL"
+        return {
+            "status": status,
+            "window_ms": self.window_ms,
+            "min_pairs": self.min_pairs,
+            "max_pair_interval_ms": self.max_pair_interval_ms,
+            "required_shards": list(required_shards),
+            "stable_endpoint_monotonic_ms": round(max(stable_values), 3) if status == "PASS" else "MISSING",
+            "stable_window_skew_ms": round(max(stable_values) - min(stable_values), 3) if status == "PASS" else "MISSING",
+            "shards": shard_rows,
+        }
 
 
 class ClientRecoveryAccumulator:

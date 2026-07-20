@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -20,3 +21,10 @@ def test_run_docker_records_command_with_context(monkeypatch, tmp_path: Path) ->
     assert result.stdout == "ok\n"
     assert summary["total_commands"] == 1
     assert "runtime_command" in summary["by_command_kind"]
+    row = json.loads(recorder.command_log_path.read_text(encoding="utf-8"))
+    assert isinstance(row["started_at_monotonic_ms"], (int, float))
+    assert row["ended_at_monotonic_ms"] >= row["started_at_monotonic_ms"]
+    assert row["monotonic_duration_ms"] == round(
+        row["ended_at_monotonic_ms"] - row["started_at_monotonic_ms"],
+        3,
+    )

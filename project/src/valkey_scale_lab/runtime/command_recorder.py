@@ -118,10 +118,12 @@ class CommandRecorder:
         check: bool = True,
     ) -> subprocess.CompletedProcess[str]:
         started = time.time()
+        started_monotonic_ms = time.monotonic() * 1000.0
         try:
             proc = subprocess.run(argv, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=max(timeout_ms / 1000.0, 0.001))
         except subprocess.TimeoutExpired as exc:
             ended = time.time()
+            ended_monotonic_ms = time.monotonic() * 1000.0
             self.record_result(
                 operation_id=operation_id,
                 step_id=step_id,
@@ -137,16 +139,20 @@ class CommandRecorder:
                 error_type="timeout",
                 node=node,
                 retry_index=retry_index,
+                started_at_monotonic_ms=started_monotonic_ms,
+                ended_at_monotonic_ms=ended_monotonic_ms,
             )
             raise
         status = "PASS" if proc.returncode == 0 else ("RETRY" if retry_index > 0 else "FAIL")
+        ended = time.time()
+        ended_monotonic_ms = time.monotonic() * 1000.0
         self.record_result(
             operation_id=operation_id,
             step_id=step_id,
             command_kind=command_kind,
             argv=argv,
             started_at_unix_ms=int(started * 1000),
-            ended_at_unix_ms=int(time.time() * 1000),
+            ended_at_unix_ms=int(ended * 1000),
             exit_code=int(proc.returncode),
             stdout=proc.stdout,
             stderr=proc.stderr,
@@ -155,6 +161,8 @@ class CommandRecorder:
             error_type="" if proc.returncode == 0 else "nonzero_exit",
             node=node,
             retry_index=retry_index,
+            started_at_monotonic_ms=started_monotonic_ms,
+            ended_at_monotonic_ms=ended_monotonic_ms,
         )
         if check and proc.returncode != 0:
             raise subprocess.CalledProcessError(proc.returncode, argv, output=proc.stdout, stderr=proc.stderr)
@@ -178,6 +186,8 @@ class CommandRecorder:
         node: dict[str, Any] | None = None,
         retry_index: int = 0,
         trace_refs: list[str] | None = None,
+        started_at_monotonic_ms: float | None = None,
+        ended_at_monotonic_ms: float | None = None,
     ) -> dict[str, Any]:
         if status not in COMMAND_STATUSES:
             raise ValueError(f"unsupported command status {status}")
@@ -188,6 +198,10 @@ class CommandRecorder:
         stdout_path, stdout_sha = self._write_stream(command_id, "stdout", stdout)
         stderr_path, stderr_sha = self._write_stream(command_id, "stderr", stderr)
         identity = node_identity(node)
+        monotonic_start, monotonic_end, monotonic_duration = _monotonic_timing(
+            started_at_monotonic_ms,
+            ended_at_monotonic_ms,
+        )
         row = {
             "schema_version": "v1",
             "artifact_type": COMMAND_LOG_ARTIFACT_TYPE,
@@ -204,6 +218,9 @@ class CommandRecorder:
             "started_at_unix_ms": started_at_unix_ms,
             "ended_at_unix_ms": ended_at_unix_ms,
             "duration_ms": max(0, ended_at_unix_ms - started_at_unix_ms),
+            "started_at_monotonic_ms": monotonic_start,
+            "ended_at_monotonic_ms": monotonic_end,
+            "monotonic_duration_ms": monotonic_duration,
             "exit_code": exit_code,
             "stdout_path": stdout_path,
             "stdout_sha256": stdout_sha,
@@ -236,6 +253,7 @@ class CommandRecorder:
         node: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         now = int(time.time() * 1000)
+        now_monotonic_ms = time.monotonic() * 1000.0
         return self.record_result(
             operation_id=operation_id,
             step_id=step_id,
@@ -250,6 +268,8 @@ class CommandRecorder:
             status="SKIPPED_WITH_REASON",
             error_type="",
             node=node,
+            started_at_monotonic_ms=now_monotonic_ms,
+            ended_at_monotonic_ms=now_monotonic_ms,
         )
 
     def close(self, *, status: str | None = None) -> dict[str, Any]:
@@ -353,6 +373,25 @@ def _summary_row(row: dict[str, Any]) -> dict[str, Any]:
         "retry_index": row.get("retry_index", 0),
         "error_type": row.get("error_type", ""),
     }
+
+
+def _monotonic_timing(
+    started_at_monotonic_ms: float | None,
+    ended_at_monotonic_ms: float | None,
+) -> tuple[float | dict[str, str], float | dict[str, str], float | dict[str, str]]:
+    missing = {
+        "status": "MISSING",
+        "reason": "caller did not provide monotonic command bounds",
+    }
+    if started_at_monotonic_ms is None or ended_at_monotonic_ms is None:
+        return dict(missing), dict(missing), dict(missing)
+    started = float(started_at_monotonic_ms)
+    ended = float(ended_at_monotonic_ms)
+    if ended < started:
+        raise ValueError("ended_at_monotonic_ms must not precede started_at_monotonic_ms")
+    rounded_started = round(started, 3)
+    rounded_ended = round(ended, 3)
+    return rounded_started, rounded_ended, round(rounded_ended - rounded_started, 3)
 
 
 def _rel(path: Path) -> str:
