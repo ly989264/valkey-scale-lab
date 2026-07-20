@@ -64,47 +64,45 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
     if fault_type == "node_stop":
         nodehost_container = target.get("nodehost_container_name")
         pid = target.get("pid")
-        if nodehost_container and pid:
-            _require_owned_container(str(nodehost_container), capability_id=str(capability_id), run_id=str(run_id))
-            try:
-                pid_text = str(int(pid))
-            except (TypeError, ValueError) as exc:
-                raise FaultError(f"node_stop requires numeric target pid in state: {pid!r}") from exc
-            result = _run_docker_audited(
-                ["exec", str(nodehost_container), "sh", "-c", f"kill -TERM {pid_text}"],
-                timeout=30,
-                check=False,
-                operation_id=f"fault_apply:{fault_id}",
-                step_id="fault_apply_node_stop",
-                command_kind="fault_apply",
-                node=target,
-            )
-            action = "process_stop"
-            target_fields = {"nodehost_container_name": nodehost_container, "pid": int(pid_text)}
-            failure_target = f"logical process pid={pid_text} in owned container {nodehost_container}"
-        else:
-            container_name = target.get("container_name")
-            if not container_name:
-                raise FaultError("node_stop requires target container_name or nodehost_container_name/pid in state")
-            _require_owned_container(str(container_name), capability_id=str(capability_id), run_id=str(run_id))
-            result = _run_docker_audited(
-                ["stop", "-t", "5", str(container_name)],
-                timeout=30,
-                check=False,
-                operation_id=f"fault_apply:{fault_id}",
-                step_id="fault_apply_node_stop",
-                command_kind="fault_apply",
-                node=target,
-            )
-            action = "container_stop"
-            target_fields = {"container_name": container_name}
-            failure_target = f"owned container {container_name}"
+        if not nodehost_container or pid is None:
+            raise FaultError("node_stop requires owned-process target nodehost_container_name and pid in state")
+        ownership_labels = _require_owned_container(str(nodehost_container), capability_id=str(capability_id), run_id=str(run_id))
+        try:
+            pid_text = str(int(pid))
+        except (TypeError, ValueError) as exc:
+            raise FaultError(f"node_stop requires numeric target pid in state: {pid!r}") from exc
+        _require_process_present(str(nodehost_container), pid_text, target)
+        result = _run_docker_audited(
+            ["exec", str(nodehost_container), "sh", "-c", f"kill -KILL {pid_text}"],
+            timeout=30,
+            check=False,
+            operation_id=f"fault_apply:{fault_id}",
+            step_id="fault_apply_node_stop_sigkill",
+            command_kind="fault_apply",
+            node=target,
+        )
+        action = "process_sigkill"
+        target_fields = {
+            "nodehost_container_name": nodehost_container,
+            "pid": int(pid_text),
+            "signal": "SIGKILL",
+            "signal_number": 9,
+            "ownership_provenance": {
+                "container_labels": ownership_labels,
+                "expected_project": PROJECT,
+                "expected_capability_id": str(capability_id),
+                "expected_run_id": str(run_id),
+            },
+        }
+        failure_target = f"logical process pid={pid_text} in owned container {nodehost_container}"
         if result.returncode != 0:
             raise FaultError(f"node_stop failed for {failure_target}: {result.stderr.strip()}")
+        gone_probe = _wait_for_process_gone(str(nodehost_container), pid_text, target)
         record["observed_impact"] = {
             "status": "PASS",
             "action": action,
             **target_fields,
+            "independent_runtime_state": gone_probe,
             "stderr": result.stderr.strip(),
         }
     else:
@@ -136,7 +134,7 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
     return report
 
 
-def _require_owned_container(container: str, *, capability_id: str, run_id: str) -> None:
+def _require_owned_container(container: str, *, capability_id: str, run_id: str) -> dict[str, Any]:
     result = _run_docker_audited(
         ["inspect", "-f", "{{json .Config.Labels}}", container],
         timeout=30,
@@ -158,6 +156,48 @@ def _require_owned_container(container: str, *, capability_id: str, run_id: str)
     }
     if not isinstance(labels, dict) or any(labels.get(key) != value for key, value in expected.items()):
         raise FaultError(f"container {container} is not an owned runtime resource for capability_id {capability_id} and run {run_id}")
+    return labels
+
+
+def _require_process_present(nodehost: str, pid_text: str, target: dict[str, Any]) -> None:
+    result = _run_docker_audited(
+        ["exec", nodehost, "sh", "-c", f"test -e /proc/{pid_text} && kill -0 {pid_text}"],
+        timeout=10,
+        check=False,
+        operation_id="fault_process_preflight",
+        step_id="fault_process_preflight",
+        command_kind="fault_probe",
+        node=target,
+    )
+    if result.returncode != 0:
+        raise FaultError(f"node_stop target process pid={pid_text} is not present in owned container {nodehost}: {result.stderr.strip()}")
+
+
+def _wait_for_process_gone(nodehost: str, pid_text: str, target: dict[str, Any], *, timeout_seconds: float = 10.0) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout_seconds
+    last_error = ""
+    while time.monotonic() < deadline:
+        result = _run_docker_audited(
+            ["exec", nodehost, "sh", "-c", f"test ! -e /proc/{pid_text}"],
+            timeout=5,
+            check=False,
+            operation_id="fault_process_gone_probe",
+            step_id="fault_process_gone_probe",
+            command_kind="fault_probe",
+            node=target,
+        )
+        if result.returncode == 0:
+            return {
+                "status": "PASS",
+                "probe": "container_proc_absent",
+                "nodehost_container_name": nodehost,
+                "pid": int(pid_text),
+                "stdout": result.stdout.strip(),
+                "stderr": result.stderr.strip(),
+            }
+        last_error = result.stderr.strip()
+        time.sleep(0.1)
+    raise FaultError(f"node_stop process pid={pid_text} remained present in owned container {nodehost}: {last_error}")
 
 
 def clear_fault(*, state_path: str | Path, fault_id: str, out_path: str | Path) -> dict[str, Any]:
@@ -209,7 +249,7 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
         }
     target = existing.get("target") if isinstance(existing.get("target"), dict) else {}
     observed = existing.get("observed_impact") if isinstance(existing.get("observed_impact"), dict) else {}
-    if observed.get("action") == "process_stop":
+    if observed.get("action") in {"process_stop", "process_sigkill"}:
         nodehost = target.get("nodehost_container_name")
         config_file = target.get("config_file")
         if not nodehost or not config_file:
