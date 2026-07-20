@@ -199,27 +199,7 @@ def _capture_formation(ctx: CaptureContext) -> None:
     ]
     if not eligible:
         raise CaptureError("selected formation strategy is not one of the fixed discovery candidates")
-    survivors: list[tuple[dict[str, Any], float]] = []
-    for index, candidate in enumerate(candidates, start=1):
-        cell_id = f"formation-discovery-{index}"
-        ctx.cells.append(_cell(cell_id, "discovery", 50, "none", 1, candidate, "FAIL"))
-        pair = _capture_pair(
-            ctx,
-            cell_id=cell_id,
-            sequence=1,
-            scale=50,
-            scenario="cluster_timeout",
-            baseline=baseline,
-            candidate=candidate,
-            resource_seconds=120.0,
-            workload_seconds=1.0,
-        )
-        ctx.pairs.append(pair)
-        baseline_trial, candidate_trial = _pair_trials(ctx, pair)
-        passed = float(candidate_trial["derived_intervals"]["formation_seconds"]) < float(baseline_trial["derived_intervals"]["formation_seconds"])
-        ctx.cells[-1]["status"] = "PASS" if passed else "FAIL"
-        if passed:
-            survivors.append((candidate, float(candidate_trial["derived_intervals"]["formation_seconds"])))
+    survivors = capture_formation_discovery(ctx, baseline=baseline, candidates=candidates)
     selected_survivors = [row for row in survivors if row[0] in eligible]
     if not selected_survivors:
         raise CaptureError("selected formation candidate did not beat the exact-50 discovery baseline")
@@ -245,6 +225,39 @@ def _capture_formation(ctx: CaptureContext) -> None:
                     )
                 )
             ctx.cells[-1]["status"] = "PASS"
+
+
+def capture_formation_discovery(
+    ctx: CaptureContext,
+    *,
+    baseline: dict[str, Any] | None = None,
+    candidates: list[dict[str, Any]] | None = None,
+) -> list[tuple[dict[str, Any], float]]:
+    """Run only the fixed exact-50 formation screen and return its survivors."""
+    baseline = baseline or {"kind": "cluster_create_strategy", "value": BASELINE_STRATEGY}
+    candidates = candidates or _formation_candidates()
+    survivors: list[tuple[dict[str, Any], float]] = []
+    for index, candidate in enumerate(candidates, start=1):
+        cell_id = f"formation-discovery-{index}"
+        ctx.cells.append(_cell(cell_id, "discovery", 50, "none", 1, candidate, "FAIL"))
+        pair = _capture_pair(
+            ctx,
+            cell_id=cell_id,
+            sequence=1,
+            scale=50,
+            scenario="cluster_timeout",
+            baseline=baseline,
+            candidate=candidate,
+            resource_seconds=120.0,
+            workload_seconds=1.0,
+        )
+        ctx.pairs.append(pair)
+        baseline_trial, candidate_trial = _pair_trials(ctx, pair)
+        passed = float(candidate_trial["derived_intervals"]["formation_seconds"]) < float(baseline_trial["derived_intervals"]["formation_seconds"])
+        ctx.cells[-1]["status"] = "PASS" if passed else "FAIL"
+        if passed:
+            survivors.append((candidate, float(candidate_trial["derived_intervals"]["formation_seconds"])))
+    return survivors
 
 
 def _capture_failover(ctx: CaptureContext) -> None:
@@ -273,27 +286,7 @@ def _capture_failover(ctx: CaptureContext) -> None:
     requested_candidate = next((row for row in candidates if row["value"] == selected), None)
     if requested_candidate is None:
         raise CaptureError("selected failover timeout is not one of 5000, 10000, or 15000 ms")
-    survivors: list[dict[str, Any]] = []
-    for value in candidates:
-        cell_id = f"failover-discovery-{value['value']}"
-        ctx.cells.append(_cell(cell_id, "discovery", 50, "one", 1, value, "FAIL"))
-        pair = _capture_pair(
-                ctx,
-                cell_id=cell_id,
-                sequence=1,
-                scale=50,
-                scenario="failover_timeline",
-                baseline=baseline,
-                candidate=value,
-                resource_seconds=120.0,
-                workload_seconds=120.0,
-                fault_rate="one",
-            )
-        ctx.pairs.append(pair)
-        passed = _failover_discovery_passed(ctx, pair)
-        ctx.cells[-1]["status"] = "PASS" if passed else "FAIL"
-        if passed:
-            survivors.append(value)
+    survivors = capture_failover_discovery(ctx, baseline=baseline, candidates=candidates)
     if requested_candidate not in survivors:
         raise CaptureError("selected failover timeout did not pass exact-50 discovery")
     ctx.selected_candidate = dict(requested_candidate)
@@ -318,6 +311,39 @@ def _capture_failover(ctx: CaptureContext) -> None:
                         )
                     )
                 ctx.cells[-1]["status"] = "PASS"
+
+
+def capture_failover_discovery(
+    ctx: CaptureContext,
+    *,
+    baseline: dict[str, Any] | None = None,
+    candidates: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Run only the fixed exact-50 single-primary failover screen."""
+    baseline = baseline or _timeout_treatment(BASELINE_TIMEOUT_MS)
+    candidates = candidates or [_timeout_treatment(value) for value in (5000, 10000, 15000)]
+    survivors: list[dict[str, Any]] = []
+    for value in candidates:
+        cell_id = f"failover-discovery-{value['value']}"
+        ctx.cells.append(_cell(cell_id, "discovery", 50, "one", 1, value, "FAIL"))
+        pair = _capture_pair(
+                ctx,
+                cell_id=cell_id,
+                sequence=1,
+                scale=50,
+                scenario="failover_timeline",
+                baseline=baseline,
+                candidate=value,
+                resource_seconds=120.0,
+                workload_seconds=120.0,
+                fault_rate="one",
+            )
+        ctx.pairs.append(pair)
+        passed = _failover_discovery_passed(ctx, pair)
+        ctx.cells[-1]["status"] = "PASS" if passed else "FAIL"
+        if passed:
+            survivors.append(value)
+    return survivors
 
 
 def _capture_stability(ctx: CaptureContext) -> None:

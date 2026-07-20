@@ -104,19 +104,20 @@ edit cannot resume the loop; only dispatch with `action=resume` can do that.
 
 ## M2 Candidate Readiness
 
-M2 relative-performance Checks are not ready while a selected strategy or
-timeout is absent, invalid, inconsistent across experiment and stability, is
-`current-default`, or explicitly equals the current M2 baseline. The
-coordinator returns `BLOCKED` before `authorize-real`; the Planner cannot
-choose a candidate or turn that blocker into a product Work Item.
+The exact reviewed M2 definition in which all four candidate bindings are
+`current-default` routes through the existing `start|resume` and `MILESTONE`
+authorization path to candidate discovery. `authorize-real` rechecks that
+canonical definition and the live default SHA, then atomically consumes the
+same Authorization Lease. The discovery job starts only after approval by the
+protected `valkey-real` Environment. Missing, invalid, duplicated, inconsistent,
+or explicit-baseline bindings remain `BLOCKED`; the Planner cannot choose a
+candidate or turn that blocker into a product Work Item.
 
-Discovery and promotion are separate contract decisions. First, a dedicated
-discovery entry must be added through human review and must retain the
-Authorization Lease, `valkey-real` Environment approval, exact topology,
-cleanup, and current-invocation evidence rules. Its fresh evidence is decision
-input only, not reusable M2 admission evidence. Until that entry exists, M2
-remains blocked rather than guessing a strategy or one of the 5000, 10000, and
-15000 ms timeout candidates.
+Discovery and promotion are separate contract decisions. Discovery retains the
+exact-50 topology, cleanup, and current-invocation evidence rules, but emits a
+distinct candidate-selection-only artifact. It never emits or substitutes for
+`m2_performance_report.json`, is never recorded as a Milestone result, and is
+not reusable M2 admission evidence.
 
 After reviewing discovery, a human-reviewed `contract-change` PR must set the
 same explicit candidates on the formation, failover, and stability Checks. If

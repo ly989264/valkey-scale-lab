@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from coordinator import (
     consume_lease,
     load_trusted_documents,
     m2_candidate_blockers,
+    m2_discovery_eligible,
     parse_control,
 )
 from github_api import GitHubClient, collect_snapshot
@@ -26,12 +28,27 @@ _GATE_DIAGNOSTIC_MAX_CHARS = 3800
 _GATE_DIAGNOSTIC_MAX_ROWS = 8
 _GATE_DIAGNOSTIC_DETAIL_MAX_CHARS = 400
 _GATE_DIAGNOSTIC_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,159}")
+_M2_DISCOVERY_REPORT_NAME = "m2_candidate_discovery.json"
+_M2_ADMISSION_REPORT_NAME = "m2_performance_report.json"
 
 
 def _diagnostic_identifier(value: Any) -> str:
     if isinstance(value, str) and _GATE_DIAGNOSTIC_ID_RE.fullmatch(value):
         return value
     return "invalid"
+
+
+def _m2_discovery_run_id() -> str:
+    github_run_id = os.environ.get("GITHUB_RUN_ID", "")
+    github_run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+    if not github_run_id and not github_run_attempt:
+        return f"m2-discovery-local-{uuid.uuid4().hex}"
+    if (
+        re.fullmatch(r"[1-9][0-9]{0,19}", github_run_id) is None
+        or re.fullmatch(r"[1-9][0-9]{0,9}", github_run_attempt) is None
+    ):
+        raise ContractError("GitHub M2 discovery run identity is invalid")
+    return f"m2-discovery-gh-{github_run_id}-attempt-{github_run_attempt}"
 
 
 def _diagnostic_detail(value: Any) -> str:
@@ -115,6 +132,7 @@ def _gate_result_summary(
 def authorize(client: GitHubClient, repo_root: Path, milestone: str) -> dict[str, Any]:
     fixed_milestone_path(repo_root, milestone)
     snapshot = collect_snapshot(client, milestone)
+    entrypoint = "milestone"
     if milestone == "m2":
         actual = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -127,7 +145,9 @@ def authorize(client: GitHubClient, repo_root: Path, milestone: str) -> dict[str
             raise LoopBlocked("authorization checkout does not match the live default SHA")
         milestone_document, _catalog_document = load_trusted_documents(repo_root, milestone)
         candidate_blockers = m2_candidate_blockers(milestone_document, milestone)
-        if candidate_blockers:
+        if m2_discovery_eligible(milestone_document, milestone):
+            entrypoint = "discovery"
+        elif candidate_blockers:
             raise LoopBlocked(
                 "M2 candidate is not ready for real authorization: "
                 + ", ".join(candidate_blockers)
@@ -144,6 +164,7 @@ def authorize(client: GitHubClient, repo_root: Path, milestone: str) -> dict[str
         "default_sha": live["default_sha"],
         "lease_nonce": consumed.lease["nonce"],
         "lease_sha256": _lease_fingerprint(consumed.lease),
+        "entrypoint": entrypoint,
     }
 
 
@@ -185,6 +206,168 @@ def _gate_environment(milestone: str) -> dict[str, str]:
     if milestone == "m2":
         result["VSLAB_M2_REAL_AUTHORIZATION"] = "1"
     return result
+
+
+def run_m2_discovery(
+    *,
+    client: GitHubClient,
+    repo_root: Path,
+    expected_sha: str,
+    expected_lease_sha256: str,
+) -> dict[str, Any]:
+    fixed_milestone_path(repo_root, "m2")
+    snapshot = collect_snapshot(client, "m2")
+    if re.fullmatch(r"[0-9a-f]{40}", expected_sha) is None:
+        raise ContractError("authorized M2 discovery SHA is invalid")
+    if re.fullmatch(r"[0-9a-f]{64}", expected_lease_sha256) is None:
+        raise ContractError("consumed Authorization Lease fingerprint is invalid")
+    _validate_consumed_lease(snapshot, expected_lease_sha256)
+    if snapshot.get("milestone") != "m2" or snapshot.get("default_sha") != expected_sha:
+        raise LoopBlocked("default branch changed after M2 discovery authorization")
+    actual = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if actual.returncode != 0 or actual.stdout.strip() != expected_sha:
+        raise LoopBlocked("valkey-real discovery checkout does not match the authorized default SHA")
+    milestone_document, _catalog_document = load_trusted_documents(repo_root, "m2")
+    if not m2_discovery_eligible(milestone_document, "m2"):
+        raise LoopBlocked("M2 candidate bindings are not the canonical unresolved discovery state")
+
+    runner_temp = Path(os.environ.get("RUNNER_TEMP", "/tmp")).resolve()
+    artifacts = runner_temp / "m2-discovery-evidence"
+    command_result = runner_temp / "m2-discovery-command-result.json"
+    bounded_result = runner_temp / "m2-discovery-result.json"
+    fallback_log = runner_temp / "m2-discovery-control.log"
+    report_path = artifacts / _M2_DISCOVERY_REPORT_NAME
+    for path in (artifacts, command_result, bounded_result, fallback_log):
+        if path.exists():
+            raise LoopBlocked(f"refusing pre-existing M2 discovery output: {path.name}")
+    script = repo_root / "project" / "scripts" / "m2_candidate_discovery.py"
+    if not script.is_file() or script.is_symlink():
+        raise ContractError("fixed M2 candidate discovery producer is missing or is a symlink")
+
+    run_id = _m2_discovery_run_id()
+    environment = _gate_environment("m2")
+    environment["PYTHONPATH"] = str(repo_root / "project" / "src")
+    cleanup_owned_docker()
+    try:
+        process = subprocess.run(
+            [
+                "python3",
+                "scripts/m2_candidate_discovery.py",
+                "--run-id",
+                run_id,
+                "--artifacts-dir",
+                str(artifacts),
+                "--result-path",
+                str(command_result),
+                "--tested-sha",
+                expected_sha,
+            ],
+            cwd=repo_root / "project",
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        fallback_log.write_text(process.stdout, encoding="utf-8")
+        if artifacts.is_symlink() or (artifacts.exists() and not artifacts.is_dir()):
+            return {
+                "status": "FAIL",
+                "summary": "M2 discovery evidence root is not a regular directory",
+                "exit_code": process.returncode,
+                "artifacts": str(fallback_log),
+            }
+        artifacts.mkdir(parents=True, exist_ok=True)
+        (artifacts / "control-plane.log").write_text(process.stdout, encoding="utf-8")
+        if any(path.name == _M2_ADMISSION_REPORT_NAME for path in artifacts.rglob("*")):
+            return {
+                "status": "FAIL",
+                "summary": "M2 discovery produced a forbidden admission report",
+                "exit_code": process.returncode,
+                "artifacts": str(artifacts),
+            }
+        if not command_result.is_file() or command_result.is_symlink():
+            return {
+                "status": "FAIL",
+                "summary": "M2 discovery did not produce its bounded command result",
+                "exit_code": process.returncode,
+                "artifacts": str(artifacts),
+            }
+        if not report_path.is_file() or report_path.is_symlink():
+            return {
+                "status": "FAIL",
+                "summary": f"M2 discovery did not produce {_M2_DISCOVERY_REPORT_NAME}",
+                "exit_code": process.returncode,
+                "artifacts": str(artifacts),
+            }
+        try:
+            command = json.loads(command_result.read_text(encoding="utf-8"))
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            return {
+                "status": "FAIL",
+                "summary": f"M2 discovery output is unreadable: {exc}",
+                "exit_code": process.returncode,
+                "artifacts": str(artifacts),
+            }
+        command_status = command.get("status") if isinstance(command, dict) else None
+        summary = command.get("summary") if isinstance(command, dict) else None
+        if (
+            not isinstance(command, dict)
+            or set(command) != {"status", "summary"}
+            or command_status not in {"PASS", "FAIL", "BLOCKED"}
+            or not isinstance(summary, str)
+        ):
+            return {
+                "status": "FAIL",
+                "summary": "M2 discovery command result violates its bounded contract",
+                "exit_code": process.returncode,
+                "artifacts": str(artifacts),
+            }
+        report_valid = (
+            isinstance(report, dict)
+            and report.get("schema_version") == "m2-candidate-discovery-v1"
+            and report.get("artifact_type") == "m2_candidate_discovery"
+            and report.get("purpose") == "candidate-selection-only"
+            and report.get("admission_evidence") is False
+            and report.get("current_invocation") is True
+            and report.get("tested_sha") == expected_sha
+            and report.get("invocation_run_id") == run_id
+            and report.get("campaign_id") == run_id
+            and report.get("status") == command_status
+            and "criterion_results" not in report
+            and "selected_candidate" not in report
+            and isinstance(report.get("report_digest"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", report["report_digest"]) is not None
+        )
+        if not report_valid:
+            return {
+                "status": "FAIL",
+                "summary": "M2 discovery report is not the authorized selection-only artifact",
+                "exit_code": process.returncode,
+                "artifacts": str(artifacts),
+            }
+        if process.returncode != 0:
+            return {
+                "status": "FAIL",
+                "summary": f"M2 discovery producer exited {process.returncode}",
+                "exit_code": process.returncode,
+                "artifacts": str(artifacts),
+            }
+        return {
+            "status": command_status,
+            "summary": " ".join(summary.split())[:2000],
+            "exit_code": process.returncode,
+            "artifacts": str(artifacts),
+            "report": str(report_path),
+        }
+    finally:
+        cleanup_owned_docker()
 
 
 def run_gate(

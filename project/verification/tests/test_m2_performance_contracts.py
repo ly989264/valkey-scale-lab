@@ -15,6 +15,13 @@ SPEC = importlib.util.spec_from_file_location("m2_performance_gate", SCRIPT_PATH
 assert SPEC is not None and SPEC.loader is not None
 M2 = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(M2)
+DISCOVERY_SCRIPT_PATH = PROJECT_ROOT / "scripts" / "m2_candidate_discovery.py"
+DISCOVERY_SPEC = importlib.util.spec_from_file_location(
+    "m2_candidate_discovery", DISCOVERY_SCRIPT_PATH
+)
+assert DISCOVERY_SPEC is not None and DISCOVERY_SPEC.loader is not None
+DISCOVERY = importlib.util.module_from_spec(DISCOVERY_SPEC)
+DISCOVERY_SPEC.loader.exec_module(DISCOVERY)
 from valkey_scale_lab.runtime.setup_timeline import (  # noqa: E402
     REQUIRED_SETUP_SEGMENTS,
     build_setup_timeline_artifact,
@@ -321,6 +328,55 @@ def _formation_report() -> dict[str, object]:
     }
     report["report_digest"] = M2.report_digest(report)
     return report
+
+
+def _formation_discovery_campaign() -> dict[str, object]:
+    report = _formation_report()
+    discovery_cells = [
+        deepcopy(cell)
+        for cell in report["cells"]
+        if cell["campaign_step"] == "discovery"
+    ]
+    cell_ids = {cell["cell_id"] for cell in discovery_cells}
+    trials = [
+        deepcopy(trial)
+        for trial in report["trials"]
+        if trial["cell_id"] in cell_ids
+    ]
+    trial_ids = {trial["trial_id"] for trial in trials}
+    pairs = [
+        deepcopy(pair)
+        for pair in report["pairs"]
+        if pair["cell_id"] in cell_ids
+    ]
+    source_refs = [
+        deepcopy(ref)
+        for trial in trials
+        for ref in trial["source_sha256s"]
+    ]
+    return {
+        "campaign_id": report["campaign_id"],
+        "invocation_run_id": report["invocation_run_id"],
+        "experiment_kind": "formation",
+        "status": "PASS",
+        "real_valkey": True,
+        "execution_mode": "valkey-real",
+        "baseline": deepcopy(report["baseline"]),
+        "candidates": deepcopy(report["candidates"]),
+        "current_defaults": deepcopy(report["current_defaults"]),
+        "protocol": deepcopy(report["protocol"]),
+        "started_trial_ids": [
+            trial_id
+            for trial_id in report["started_trial_ids"]
+            if trial_id in trial_ids
+        ],
+        "trials": trials,
+        "pairs": pairs,
+        "cells": discovery_cells,
+        "invalid_samples": [],
+        "source_refs": source_refs,
+        "errors": [],
+    }
 
 
 def _write_valid_trial_sources(
@@ -1264,6 +1320,138 @@ def test_complete_formation_report_satisfies_semantic_contract() -> None:
         expected_kind="formation",
         expected_invocation_run_id="m2-contract",
     ) == []
+
+
+def test_selection_only_formation_screen_accepts_zero_survivors() -> None:
+    campaign = _formation_discovery_campaign()
+    passing_cell = next(cell for cell in campaign["cells"] if cell["status"] == "PASS")
+    passing_cell["status"] = "FAIL"
+    pair = next(
+        pair
+        for pair in campaign["pairs"]
+        if pair["cell_id"] == passing_cell["cell_id"]
+    )
+    candidate = next(
+        trial
+        for trial in campaign["trials"]
+        if trial["trial_id"] == pair["candidate_trial_id"]
+    )
+    candidate["derived_intervals"]["formation_seconds"] = 110.0
+    candidate["monotonic_markers"]["data_path_probe"] = 110.0
+
+    assert all(
+        cell["scale"] == 50
+        and cell["failure_rate"] == "none"
+        and cell["required_pairs"] == 1
+        and cell["status"] == "FAIL"
+        for cell in campaign["cells"]
+    )
+    assert M2.validate_discovery_campaign(
+        campaign,
+        expected_kind="formation",
+        expected_invocation_run_id="m2-contract",
+    ) == []
+
+
+def test_discovery_rejects_nonfixed_formation_strategy() -> None:
+    campaign = json.loads(
+        json.dumps(_formation_discovery_campaign()).replace(
+            "tree_meet_addslotsrange", "evil_addslotsrange"
+        )
+    )
+
+    errors = M2.validate_discovery_campaign(
+        campaign,
+        expected_kind="formation",
+        expected_invocation_run_id="m2-contract",
+    )
+
+    assert (
+        "formation discovery must contain exactly the fixed manual-tree and ADDSLOTSRANGE candidates"
+        in errors
+    )
+
+
+def test_discovery_rejects_duplicate_failover_timeout_candidate() -> None:
+    current_strategy = M2._current_formation_strategy()
+    baseline = {
+        **M2.BASELINE_FAILOVER,
+        "cluster_create_strategy": current_strategy,
+    }
+    candidates = [
+        {
+            "kind": "cluster_node_timeout_ms",
+            "value": value,
+            "cluster_create_strategy": current_strategy,
+        }
+        for value in (5000, 10000, 15000, 15000)
+    ]
+    errors: list[str] = []
+
+    M2._validate_failover_discovery(
+        {
+            "baseline": baseline,
+            "candidates": candidates,
+            "current_defaults": {"cluster_create_strategy": current_strategy},
+        },
+        {},
+        {},
+        {},
+        errors,
+        require_selected=False,
+    )
+
+    assert (
+        "failover screen must contain 5000, 10000, and 15000 ms with one current formation strategy"
+        in errors
+    )
+
+
+def test_discovery_report_is_distinct_and_never_admission_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    formation = _formation_discovery_campaign()
+    for cell in formation["cells"]:
+        cell["status"] = "FAIL"
+    campaigns = {
+        "formation": formation,
+        "failover": {"cells": []},
+    }
+    args = type(
+        "Args",
+        (),
+        {"run_id": "m2-contract", "tested_sha": "b" * 40},
+    )()
+    report = DISCOVERY._build_report(
+        args,
+        status="PASS",
+        campaigns=campaigns,
+        survivors={"formation": [], "failover": []},
+        errors=[],
+    )
+    monkeypatch.setattr(
+        DISCOVERY.admission,
+        "validate_discovery_campaign",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        DISCOVERY.admission,
+        "validate_current_invocation_sources",
+        lambda *_args, **_kwargs: [],
+    )
+
+    assert DISCOVERY.validate_discovery_report(
+        report,
+        artifacts_dir=tmp_path,
+        expected_run_id="m2-contract",
+        expected_sha="b" * 40,
+    ) == []
+    assert report["artifact_type"] == "m2_candidate_discovery"
+    assert report["purpose"] == "candidate-selection-only"
+    assert report["admission_evidence"] is False
+    assert report["survivors"] == {"formation": [], "failover": []}
+    assert "criterion_results" not in report
+    assert M2.validate_report(report)
 
 
 def test_formation_relative_absolute_and_resource_budgets_are_enforced() -> None:
@@ -2323,3 +2511,166 @@ def test_authorized_runner_rejects_preexisting_evidence_without_capture(
     payload = json.loads(result.read_text(encoding="utf-8"))
     assert payload["status"] == "FAIL"
     assert "pre-existing" in payload["summary"]
+
+
+def test_discovery_runner_without_authorization_is_blocked_before_capture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    artifacts = tmp_path / "discovery"
+    result = tmp_path / "discovery-result.json"
+    monkeypatch.delenv(DISCOVERY.admission.AUTHORIZATION_ENV, raising=False)
+    monkeypatch.setattr(
+        DISCOVERY,
+        "_capture",
+        lambda _args: pytest.fail("unauthorized discovery reached real capture"),
+    )
+
+    assert DISCOVERY.main(
+        [
+            "--run-id",
+            "discovery-run",
+            "--artifacts-dir",
+            str(artifacts),
+            "--result-path",
+            str(result),
+            "--tested-sha",
+            "c" * 40,
+        ]
+    ) == 0
+
+    payload = json.loads(result.read_text(encoding="utf-8"))
+    assert payload["status"] == "BLOCKED"
+    assert set(payload) == {"status", "summary"}
+    assert not artifacts.exists()
+
+
+@pytest.mark.parametrize(
+    ("tested_sha", "checkout_sha", "summary_fragment"),
+    [
+        ("short", "short", "full lowercase Git SHA"),
+        ("c" * 40, "d" * 40, "checkout does not match"),
+    ],
+)
+def test_discovery_runner_rejects_invalid_or_mismatched_sha_before_capture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tested_sha: str,
+    checkout_sha: str,
+    summary_fragment: str,
+) -> None:
+    result = tmp_path / "discovery-result.json"
+    monkeypatch.setenv(DISCOVERY.admission.AUTHORIZATION_ENV, "discovery-run")
+    monkeypatch.setattr(DISCOVERY, "_checkout_sha", lambda: checkout_sha)
+    monkeypatch.setattr(
+        DISCOVERY,
+        "_capture",
+        lambda _args: pytest.fail("invalid SHA discovery reached real capture"),
+    )
+
+    DISCOVERY.main(
+        [
+            "--run-id",
+            "discovery-run",
+            "--artifacts-dir",
+            str(tmp_path / "discovery"),
+            "--result-path",
+            str(result),
+            "--tested-sha",
+            tested_sha,
+        ]
+    )
+
+    payload = json.loads(result.read_text(encoding="utf-8"))
+    assert payload["status"] == "BLOCKED"
+    assert summary_fragment in payload["summary"]
+    assert set(payload) == {"status", "summary"}
+
+
+def test_discovery_runner_rejects_preexisting_or_forbidden_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(DISCOVERY.admission.AUTHORIZATION_ENV, "discovery-run")
+    monkeypatch.setattr(DISCOVERY, "_checkout_sha", lambda: "c" * 40)
+    monkeypatch.setattr(
+        DISCOVERY,
+        "_capture",
+        lambda _args: pytest.fail("unsafe artifacts reached real discovery"),
+    )
+    preexisting = tmp_path / "discovery"
+    preexisting.mkdir()
+    (preexisting / "old.json").write_text("{}\n", encoding="utf-8")
+
+    preexisting_args = DISCOVERY._parser().parse_args(
+        [
+            "--run-id",
+            "discovery-run",
+            "--artifacts-dir",
+            str(preexisting),
+            "--result-path",
+            str(tmp_path / "preexisting-result.json"),
+            "--tested-sha",
+            "c" * 40,
+        ]
+    )
+    forbidden_args = DISCOVERY._parser().parse_args(
+        [
+            "--run-id",
+            "discovery-run",
+            "--artifacts-dir",
+            str(tmp_path / "fixtures"),
+            "--result-path",
+            str(tmp_path / "forbidden-result.json"),
+            "--tested-sha",
+            "c" * 40,
+        ]
+    )
+
+    assert DISCOVERY.run(preexisting_args) == (
+        "FAIL",
+        "refusing pre-existing M2 discovery artifacts",
+    )
+    forbidden_status, forbidden_summary = DISCOVERY.run(forbidden_args)
+    assert forbidden_status == "FAIL"
+    assert "forbidden" in forbidden_summary
+
+
+def test_discovery_environment_blocker_emits_distinct_blocked_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    artifacts = tmp_path / "discovery"
+    result = tmp_path / "discovery-result.json"
+    monkeypatch.setenv(DISCOVERY.admission.AUTHORIZATION_ENV, "discovery-run")
+    monkeypatch.setattr(DISCOVERY, "_checkout_sha", lambda: "c" * 40)
+    monkeypatch.setattr(DISCOVERY.capture, "_product_digest", lambda: SHA)
+
+    def blocked_environment() -> dict[str, object]:
+        raise DISCOVERY.capture.EnvironmentBlocked("Docker unavailable")
+
+    monkeypatch.setattr(DISCOVERY.capture, "_environment_facts", blocked_environment)
+
+    assert DISCOVERY.main(
+        [
+            "--run-id",
+            "discovery-run",
+            "--artifacts-dir",
+            str(artifacts),
+            "--result-path",
+            str(result),
+            "--tested-sha",
+            "c" * 40,
+        ]
+    ) == 0
+
+    payload = json.loads(result.read_text(encoding="utf-8"))
+    report = json.loads(
+        (artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8")
+    )
+    assert payload["status"] == "BLOCKED"
+    assert set(payload) == {"status", "summary"}
+    assert report["artifact_type"] == "m2_candidate_discovery"
+    assert report["purpose"] == "candidate-selection-only"
+    assert report["admission_evidence"] is False
+    assert report["status"] == "BLOCKED"
+    assert report["real_valkey"] is False
+    assert report["campaigns"] == {}
+    assert report["report_digest"] == DISCOVERY.admission.report_digest(report)

@@ -650,3 +650,102 @@ def test_stability_facts_are_derived_from_full_slots_and_roles() -> None:
     assert bad["status"] == "FAIL"
     assert bad["unexpected_promotion_node_ids"] == ["r1"]
     assert bad["split_brain"] is True
+
+
+def test_formation_discovery_helper_runs_only_fixed_exact_50_pairs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    context = capture.CaptureContext(
+        args=SimpleNamespace(run_id="discovery", mode="formation"),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "m2_candidate_discovery.json",
+    )
+    calls: list[dict] = []
+
+    def fake_pair(ctx, **kwargs):
+        calls.append(kwargs)
+        pair_id = f"{kwargs['cell_id']}-pair-01"
+        baseline_id = f"{pair_id}-baseline"
+        candidate_id = f"{pair_id}-candidate"
+        duration = (
+            80.0
+            if kwargs["candidate"].get("bounded_parallelism") == 8
+            else 110.0
+        )
+        ctx.trials.extend(
+            [
+                {
+                    "trial_id": baseline_id,
+                    "derived_intervals": {"formation_seconds": 100.0},
+                },
+                {
+                    "trial_id": candidate_id,
+                    "derived_intervals": {"formation_seconds": duration},
+                },
+            ]
+        )
+        return {
+            "pair_id": pair_id,
+            "cell_id": kwargs["cell_id"],
+            "baseline_trial_id": baseline_id,
+            "candidate_trial_id": candidate_id,
+        }
+
+    monkeypatch.setattr(capture, "_capture_pair", fake_pair)
+
+    survivors = capture.capture_formation_discovery(context)
+
+    assert len(calls) == 4
+    assert all(
+        call["scale"] == 50
+        and call["sequence"] == 1
+        and call["scenario"] == "cluster_timeout"
+        for call in calls
+    )
+    assert [call["candidate"] for call in calls] == capture._formation_candidates()
+    assert all(cell["required_pairs"] == 1 for cell in context.cells)
+    assert [candidate["bounded_parallelism"] for candidate, _ in survivors] == [8]
+
+
+def test_failover_discovery_helper_runs_only_fixed_single_primary_pairs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    context = capture.CaptureContext(
+        args=SimpleNamespace(run_id="discovery", mode="failover"),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "m2_candidate_discovery.json",
+    )
+    calls: list[dict] = []
+    strategy = "current-formation-strategy"
+    monkeypatch.setattr(capture, "_current_strategy_default", lambda: strategy)
+
+    def fake_pair(_ctx, **kwargs):
+        calls.append(kwargs)
+        return {
+            "pair_id": f"{kwargs['cell_id']}-pair-01",
+            "cell_id": kwargs["cell_id"],
+        }
+
+    monkeypatch.setattr(capture, "_capture_pair", fake_pair)
+    monkeypatch.setattr(
+        capture,
+        "_failover_discovery_passed",
+        lambda _ctx, pair: pair["cell_id"].endswith("10000"),
+    )
+
+    survivors = capture.capture_failover_discovery(context)
+
+    assert len(calls) == 3
+    assert all(
+        call["scale"] == 50
+        and call["sequence"] == 1
+        and call["scenario"] == "failover_timeline"
+        and call["fault_rate"] == "one"
+        for call in calls
+    )
+    assert [call["candidate"]["value"] for call in calls] == [5000, 10000, 15000]
+    assert all(
+        call["candidate"]["cluster_create_strategy"] == strategy for call in calls
+    )
+    assert all(cell["required_pairs"] == 1 for cell in context.cells)
+    assert [candidate["value"] for candidate in survivors] == [10000]

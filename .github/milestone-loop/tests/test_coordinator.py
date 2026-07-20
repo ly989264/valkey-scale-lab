@@ -17,6 +17,7 @@ from coordinator import (
     coordinate,
     empty_lease,
     m2_candidate_blockers,
+    m2_discovery_eligible,
     parse_control,
     pending_failure_diagnosis,
     prepare_planner_transaction,
@@ -217,21 +218,12 @@ class CoordinatorTests(unittest.TestCase):
                 catalog_document=self.catalog,
             )
 
-    def test_m2_current_baselines_block_before_real_authorization(self) -> None:
+    def test_m2_canonical_unresolved_candidates_reach_authorization(self) -> None:
         milestone = m2_milestone()
         result, client = coordinate_m2(milestone, self.catalog)
-        self.assertEqual(result["status"], "BLOCKED")
-        self.assertEqual(result["reason"], "candidate-not-ready")
-        self.assertEqual(
-            set(result["parameters"]),
-            {
-                "real.local.m2-cluster-formation.selected_strategy",
-                "real.local.m2-automatic-failover.selected_timeout_ms",
-                "real.local.m2-stability-resource.selected_strategy",
-                "real.local.m2-stability-resource.selected_timeout_ms",
-            },
-        )
-        self.assertEqual([write[0] for write in client.writes], ["comment"])
+        self.assertTrue(m2_discovery_eligible(milestone, "m2"))
+        self.assertEqual(result, {"status": "MILESTONE", "milestone": "m2"})
+        self.assertEqual(client.writes, [])
 
     def test_m2_explicit_candidates_can_reach_milestone_gate(self) -> None:
         milestone = m2_milestone(
@@ -239,6 +231,7 @@ class CoordinatorTests(unittest.TestCase):
             selected_timeout_ms="10000",
         )
         result, _client = coordinate_m2(milestone, self.catalog)
+        self.assertFalse(m2_discovery_eligible(milestone, "m2"))
         self.assertEqual(result, {"status": "MILESTONE", "milestone": "m2"})
 
     def test_m2_explicit_baseline_values_are_not_candidates(self) -> None:
@@ -262,6 +255,9 @@ class CoordinatorTests(unittest.TestCase):
                         else 30000
                     )
         self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+        self.assertFalse(m2_discovery_eligible(milestone, "m2"))
+        result, _client = coordinate_m2(milestone, self.catalog)
+        self.assertEqual(result["reason"], "candidate-not-ready")
 
     def test_m2_invalid_or_ambiguous_candidates_fail_closed(self) -> None:
         milestone = m2_milestone()
@@ -282,17 +278,41 @@ class CoordinatorTests(unittest.TestCase):
             copy.deepcopy(formation_check)
         )
         self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+        self.assertFalse(m2_discovery_eligible(milestone, "m2"))
 
     def test_m2_extra_candidate_parameters_fail_closed(self) -> None:
-        milestone = m2_milestone(
-            selected_strategy="tree_meet_addslotsrange",
-            selected_timeout_ms="10000",
-        )
+        milestone = m2_milestone()
         for criterion in milestone["criteria"]:
             for check in criterion.get("check", []):
                 if check["id"].startswith("real.local.m2-"):
                     check["parameters"]["unexpected"] = "not-reviewed"
         self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+        self.assertFalse(m2_discovery_eligible(milestone, "m2"))
+
+    def test_m2_discovery_requires_exact_occurrences_and_parameter_maps(self) -> None:
+        duplicate = m2_milestone()
+        formation = next(
+            check
+            for criterion in duplicate["criteria"]
+            for check in criterion.get("check", [])
+            if check["id"] == "real.local.m2-cluster-formation"
+        )
+        duplicate["criteria"][-1].setdefault("check", []).append(copy.deepcopy(formation))
+
+        missing = m2_milestone()
+        stability = next(
+            check
+            for criterion in missing["criteria"]
+            for check in criterion.get("check", [])
+            if check["id"] == "real.local.m2-stability-resource"
+        )
+        del stability["parameters"]["selected_timeout_ms"]
+
+        for malformed in (duplicate, missing):
+            self.assertFalse(m2_discovery_eligible(malformed, "m2"))
+            result, _client = coordinate_m2(malformed, self.catalog)
+            self.assertEqual(result["status"], "BLOCKED")
+            self.assertEqual(result["reason"], "candidate-not-ready")
 
     def test_m2_stability_must_use_the_selected_experiment_candidates(self) -> None:
         milestone = m2_milestone(
@@ -318,6 +338,7 @@ class CoordinatorTests(unittest.TestCase):
         malformed = {"criteria": [{"check": [{"id": "anything"}]}]}
         for milestone in ("m1", "m3", "m4"):
             self.assertEqual(m2_candidate_blockers(malformed, milestone), ())
+            self.assertFalse(m2_discovery_eligible(malformed, milestone))
 
     def test_live_state_change_prevents_all_planner_writes(self) -> None:
         state = snapshot([issue(1, "blocked")])
