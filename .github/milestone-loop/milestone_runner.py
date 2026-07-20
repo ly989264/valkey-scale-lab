@@ -9,7 +9,14 @@ from pathlib import Path
 from typing import Any
 
 from contracts import ContractError, fixed_milestone_path
-from coordinator import CONTROL_LABEL, LoopBlocked, consume_lease, parse_control
+from coordinator import (
+    CONTROL_LABEL,
+    LoopBlocked,
+    consume_lease,
+    load_trusted_documents,
+    m2_candidate_blockers,
+    parse_control,
+)
 from github_api import GitHubClient, collect_snapshot
 from recovery import cleanup_owned_docker
 
@@ -17,11 +24,33 @@ from recovery import cleanup_owned_docker
 def authorize(client: GitHubClient, repo_root: Path, milestone: str) -> dict[str, Any]:
     fixed_milestone_path(repo_root, milestone)
     snapshot = collect_snapshot(client, milestone)
-    consumed = consume_lease(client, snapshot)
+    if milestone == "m2":
+        actual = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if actual.returncode != 0 or actual.stdout.strip() != snapshot["default_sha"]:
+            raise LoopBlocked("authorization checkout does not match the live default SHA")
+        milestone_document, _catalog_document = load_trusted_documents(repo_root, milestone)
+        candidate_blockers = m2_candidate_blockers(milestone_document, milestone)
+        if candidate_blockers:
+            raise LoopBlocked(
+                "M2 candidate is not ready for real authorization: "
+                + ", ".join(candidate_blockers)
+            )
+        live = collect_snapshot(client, milestone)
+        if live["default_sha"] != snapshot["default_sha"]:
+            raise LoopBlocked("default branch changed before Authorization Lease consumption")
+    else:
+        live = snapshot
+    consumed = consume_lease(client, live)
     return {
         "authorized": True,
         "milestone": milestone,
-        "default_sha": snapshot["default_sha"],
+        "default_sha": live["default_sha"],
         "lease_nonce": consumed.lease["nonce"],
         "lease_sha256": _lease_fingerprint(consumed.lease),
     }

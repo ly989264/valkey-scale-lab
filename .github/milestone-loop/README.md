@@ -102,6 +102,35 @@ job protected by the `valkey-real` Environment can start. Expired, exhausted,
 revoked, malformed, or concurrently changed leases produce `BLOCKED`. A label
 edit cannot resume the loop; only dispatch with `action=resume` can do that.
 
+## M2 Candidate Readiness
+
+M2 relative-performance Checks are not ready while a selected strategy or
+timeout is absent, invalid, inconsistent across experiment and stability, is
+`current-default`, or explicitly equals the current M2 baseline. The
+coordinator returns `BLOCKED` before `authorize-real`; the Planner cannot
+choose a candidate or turn that blocker into a product Work Item.
+
+Discovery and promotion are separate contract decisions. First, a dedicated
+discovery entry must be added through human review and must retain the
+Authorization Lease, `valkey-real` Environment approval, exact topology,
+cleanup, and current-invocation evidence rules. Its fresh evidence is decision
+input only, not reusable M2 admission evidence. Until that entry exists, M2
+remains blocked rather than guessing a strategy or one of the 5000, 10000, and
+15000 ms timeout candidates.
+
+After reviewing discovery, a human-reviewed `contract-change` PR must set the
+same explicit candidates on the formation, failover, and stability Checks. If
+the chosen formation candidate needs a bounded parallelism that the current
+parameters cannot express, that PR must extend the Check contract explicitly;
+it must not change the product default first. The complete M2 Gate then
+captures fresh discovery, promotion, stability, and regression evidence. It
+cannot reuse the selection run, and that pre-promotion result is evidence for
+a later reviewed default-promotion Contract Change rather than permission to
+close M2. After promotion, the complete authoritative M2 Gate must run again
+with a new Lease and fresh evidence so its unchanged exact-50 and exact-200 M1
+checks exercise the promoted defaults. Only that post-promotion run can support
+closing M2.
+
 ## Activation And Drills
 
 Run the hermetic contract check first:
