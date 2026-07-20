@@ -7,7 +7,9 @@ the JSON required by the output schema.
 Allowed actions are deliberately narrow:
 
 - Create or update Work Item Issues through `operations`.
-- Set exactly one allowed status for each changed Work Item.
+- Set exactly one allowed status for each changed Work Item: `ready`, `blocked`,
+  or `superseded`. Never set `in-progress`, `review`, or `completed`; only the
+  coordinator may derive those deterministic progress states.
 - Set direct Issue dependencies and one Catalog Test or Suite ID.
 - Select at most one existing executable Work Item in `ready_issue`. When a
   newly created Work Item is the sole `ready` item, leave `ready_issue` null;

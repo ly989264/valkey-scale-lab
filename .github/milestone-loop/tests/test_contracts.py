@@ -8,6 +8,7 @@ from pathlib import Path
 
 from contracts import (
     ContractError,
+    PLANNER_STATUSES,
     PlannerOutput,
     WorkItemContract,
     fixed_milestone_path,
@@ -122,6 +123,26 @@ class ContractTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ContractError, "contains duplicates"):
             parse_planner_output(json.dumps(duplicate))
+
+    def test_planner_cannot_output_coordinator_owned_progress_status(self) -> None:
+        schema = json.loads(
+            (ROOT / ".github/milestone-loop/schemas/planner-output.schema.json").read_text()
+        )
+        status = schema["properties"]["operations"]["items"]["properties"]["status"]
+        self.assertEqual(tuple(status["enum"]), PLANNER_STATUSES)
+        operation = {
+            "kind": "update",
+            "issue": 8,
+            "title": None,
+            "description": None,
+            "criterion": "criterion.one",
+            "depends_on": [],
+            "check": "product.unit",
+            "status": "completed",
+        }
+        output = {"operations": [operation], "ready_issue": None, "summary": "done"}
+        with self.assertRaisesRegex(ContractError, "operation.status is invalid"):
+            parse_planner_output(json.dumps(output))
 
     def test_status_transitions_and_dependency_cycles_fail_closed(self) -> None:
         validate_transition("ready", "in-progress")
