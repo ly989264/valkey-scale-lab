@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -9,10 +10,13 @@ from unittest.mock import patch
 from contracts import ContractError, PlannerOperation, PlannerOutput
 from coordinator import (
     CONTROL_LABEL,
+    ControlState,
     LoopBlocked,
     apply_planner_transaction,
     consume_lease,
+    coordinate,
     empty_lease,
+    m2_candidate_blockers,
     parse_control,
     pending_failure_diagnosis,
     prepare_planner_transaction,
@@ -55,6 +59,27 @@ def snapshot(issues: list[dict]) -> dict:
     }
 
 
+def m2_milestone(
+    selected_strategy: object = "current-default",
+    selected_timeout_ms: object = "current-default",
+) -> dict:
+    milestone = json.loads(
+        (ROOT / "project" / "milestones" / "m2" / "milestone.json").read_text()
+    )
+    for criterion in milestone["criteria"]:
+        for check in criterion.get("check", []):
+            if check["id"] == "real.local.m2-cluster-formation":
+                check["parameters"]["selected_strategy"] = selected_strategy
+            elif check["id"] == "real.local.m2-automatic-failover":
+                check["parameters"]["selected_timeout_ms"] = selected_timeout_ms
+            elif check["id"] == "real.local.m2-stability-resource":
+                check["parameters"].update(
+                    selected_strategy=selected_strategy,
+                    selected_timeout_ms=selected_timeout_ms,
+                )
+    return milestone
+
+
 class FakeClient:
     def __init__(self, control_issue: dict | None = None) -> None:
         self.control_issue = control_issue
@@ -82,6 +107,36 @@ class FakeClient:
         if endpoint == f"issues/{self.control_issue['number']}":
             return dict(self.control_issue)
         raise AssertionError(endpoint)
+
+
+def coordinate_m2(milestone: dict, catalog: dict) -> tuple[dict, FakeClient]:
+    state = {
+        "repository": "owner/repo",
+        "default_branch": "main",
+        "default_sha": "a" * 40,
+        "milestone": "m2",
+        "milestone_number": 2,
+        "issues": [],
+        "pull_requests": [],
+    }
+    control = ControlState(99, empty_lease("m2"), 0)
+    client = FakeClient()
+    with (
+        patch("coordinator.load_trusted_documents", return_value=(milestone, catalog)),
+        patch("coordinator.collect_snapshot", return_value=state),
+        patch("coordinator.ensure_control", return_value=control),
+        patch("coordinator.reconcile_review", return_value=("NONE", control)),
+        patch("coordinator.run_planner", return_value=PlannerOutput((), None, "no work")),
+        patch("coordinator.apply_planner_transaction"),
+    ):
+        result = coordinate(
+            client=client,
+            repo_root=ROOT,
+            runtime_root=ROOT / ".ignored-test-runtime",
+            action="resume",
+            milestone="m2",
+        )
+    return result, client
 
 
 class CoordinatorTests(unittest.TestCase):
@@ -161,6 +216,108 @@ class CoordinatorTests(unittest.TestCase):
                 milestone_document=self.milestone,
                 catalog_document=self.catalog,
             )
+
+    def test_m2_current_baselines_block_before_real_authorization(self) -> None:
+        milestone = m2_milestone()
+        result, client = coordinate_m2(milestone, self.catalog)
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(result["reason"], "candidate-not-ready")
+        self.assertEqual(
+            set(result["parameters"]),
+            {
+                "real.local.m2-cluster-formation.selected_strategy",
+                "real.local.m2-automatic-failover.selected_timeout_ms",
+                "real.local.m2-stability-resource.selected_strategy",
+                "real.local.m2-stability-resource.selected_timeout_ms",
+            },
+        )
+        self.assertEqual([write[0] for write in client.writes], ["comment"])
+
+    def test_m2_explicit_candidates_can_reach_milestone_gate(self) -> None:
+        milestone = m2_milestone(
+            selected_strategy="tree_meet_addslotsrange",
+            selected_timeout_ms="10000",
+        )
+        result, _client = coordinate_m2(milestone, self.catalog)
+        self.assertEqual(result, {"status": "MILESTONE", "milestone": "m2"})
+
+    def test_m2_explicit_baseline_values_are_not_candidates(self) -> None:
+        milestone = m2_milestone()
+        for criterion in milestone["criteria"]:
+            for check in criterion.get("check", []):
+                if check["id"] in {
+                    "real.local.m2-cluster-formation",
+                    "real.local.m2-stability-resource",
+                }:
+                    check["parameters"]["selected_strategy"] = (
+                        "valkey_cli_cluster_create_primaries"
+                    )
+                if check["id"] in {
+                    "real.local.m2-automatic-failover",
+                    "real.local.m2-stability-resource",
+                }:
+                    check["parameters"]["selected_timeout_ms"] = (
+                        "030000"
+                        if check["id"] == "real.local.m2-automatic-failover"
+                        else 30000
+                    )
+        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+
+    def test_m2_invalid_or_ambiguous_candidates_fail_closed(self) -> None:
+        milestone = m2_milestone()
+        formation_check = None
+        for criterion in milestone["criteria"]:
+            for check in criterion.get("check", []):
+                if check["id"] == "real.local.m2-cluster-formation":
+                    formation_check = check
+                    check["parameters"]["selected_strategy"] = "tree_meet_addslotsrange"
+                elif check["id"] == "real.local.m2-automatic-failover":
+                    check["parameters"]["selected_timeout_ms"] = 5000
+                elif check["id"] == "real.local.m2-stability-resource":
+                    check["parameters"].update(
+                        selected_strategy="bogus",
+                        selected_timeout_ms=True,
+                    )
+        milestone["criteria"][-1].setdefault("check", []).append(
+            copy.deepcopy(formation_check)
+        )
+        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+
+    def test_m2_extra_candidate_parameters_fail_closed(self) -> None:
+        milestone = m2_milestone(
+            selected_strategy="tree_meet_addslotsrange",
+            selected_timeout_ms="10000",
+        )
+        for criterion in milestone["criteria"]:
+            for check in criterion.get("check", []):
+                if check["id"].startswith("real.local.m2-"):
+                    check["parameters"]["unexpected"] = "not-reviewed"
+        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+
+    def test_m2_stability_must_use_the_selected_experiment_candidates(self) -> None:
+        milestone = m2_milestone(
+            selected_strategy="tree_meet_addslotsrange",
+            selected_timeout_ms="10000",
+        )
+        for criterion in milestone["criteria"]:
+            for check in criterion.get("check", []):
+                if check["id"] == "real.local.m2-stability-resource":
+                    check["parameters"].update(
+                        selected_strategy="manual_tree_meet_parallel_slots",
+                        selected_timeout_ms="15000",
+                    )
+        self.assertEqual(
+            set(m2_candidate_blockers(milestone, "m2")),
+            {
+                "real.local.m2-stability-resource.selected_strategy",
+                "real.local.m2-stability-resource.selected_timeout_ms",
+            },
+        )
+
+    def test_m2_candidate_check_does_not_apply_to_other_milestones(self) -> None:
+        malformed = {"criteria": [{"check": [{"id": "anything"}]}]}
+        for milestone in ("m1", "m3", "m4"):
+            self.assertEqual(m2_candidate_blockers(malformed, milestone), ())
 
     def test_live_state_change_prevents_all_planner_writes(self) -> None:
         state = snapshot([issue(1, "blocked")])

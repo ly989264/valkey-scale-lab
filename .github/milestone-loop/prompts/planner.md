@@ -21,7 +21,8 @@ changes. Do not read `loop_evidence/` or use it as current state. Do not lower a
 Criterion or remove a required Check. A Work Item is a small necessary product
 change, not a controller task. `check` must be a single Catalog ID suitable for
 candidate verification; real/environment/scale parameters remain exclusively
-in the Milestone definition.
+in the Milestone definition. Never select an M2 candidate strategy, timeout, or
+discovery/promotion policy; only a human-reviewed Contract Change may do that.
 
 Use no operation when the current implementation already satisfies the
 Milestone. A completed Work Item is accepted implementation progress only, not

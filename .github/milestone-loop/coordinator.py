@@ -67,6 +67,32 @@ PROTECTED_PREFIXES = (
     "project/templates/configs/scale_50.yaml",
     "project/templates/configs/scale_200.yaml",
 )
+M2_RELATIVE_CANDIDATE_PARAMETERS = (
+    (
+        "performance.cluster-formation-experiment",
+        "real.local.m2-cluster-formation",
+        "selected_strategy",
+        ("manual_tree_meet_parallel_slots", "tree_meet_addslotsrange"),
+    ),
+    (
+        "performance.automatic-failover-experiment",
+        "real.local.m2-automatic-failover",
+        "selected_timeout_ms",
+        ("5000", "10000", "15000"),
+    ),
+    (
+        "performance.stability-and-resource-safety",
+        "real.local.m2-stability-resource",
+        "selected_strategy",
+        ("manual_tree_meet_parallel_slots", "tree_meet_addslotsrange"),
+    ),
+    (
+        "performance.stability-and-resource-safety",
+        "real.local.m2-stability-resource",
+        "selected_timeout_ms",
+        ("5000", "10000", "15000"),
+    ),
+)
 
 
 class LoopBlocked(RuntimeError):
@@ -450,6 +476,71 @@ def load_trusted_documents(repo_root: Path, milestone: str) -> tuple[dict[str, A
     if not isinstance(milestone_document, dict) or not isinstance(catalog_document, dict):
         raise ContractError("trusted Milestone and Catalog must be JSON objects")
     return milestone_document, catalog_document
+
+
+def m2_candidate_blockers(
+    milestone_document: Mapping[str, Any], milestone: str
+) -> tuple[str, ...]:
+    if milestone != "m2":
+        return ()
+    expected = {
+        (criterion_id, check_id, parameter): candidates
+        for criterion_id, check_id, parameter, candidates in M2_RELATIVE_CANDIDATE_PARAMETERS
+    }
+    expected_parameter_names: dict[str, set[str]] = {}
+    for _criterion_id, check_id, parameter in expected:
+        expected_parameter_names.setdefault(check_id, set()).add(parameter)
+    blockers: set[str] = set()
+    occurrences: list[tuple[Any, Mapping[str, Any]]] = []
+    criteria = milestone_document.get("criteria")
+    if isinstance(criteria, list):
+        for criterion in criteria:
+            if not isinstance(criterion, Mapping):
+                continue
+            checks = criterion.get("check")
+            if not isinstance(checks, list):
+                continue
+            for check in checks:
+                if not isinstance(check, Mapping):
+                    continue
+                occurrences.append((criterion.get("id"), check))
+    selected: dict[tuple[str, str], str] = {}
+    for (criterion_id, check_id, parameter), candidates in expected.items():
+        key = f"{check_id}.{parameter}"
+        matching = [
+            (bound_criterion, check)
+            for bound_criterion, check in occurrences
+            if check.get("id") == check_id
+        ]
+        if len(matching) != 1 or matching[0][0] != criterion_id:
+            blockers.add(key)
+            continue
+        parameters = matching[0][1].get("parameters")
+        value = parameters.get(parameter) if isinstance(parameters, Mapping) else None
+        if (
+            not isinstance(parameters, Mapping)
+            or set(parameters) != expected_parameter_names[check_id]
+            or not isinstance(value, str)
+            or value not in candidates
+        ):
+            blockers.add(key)
+            continue
+        selected[(check_id, parameter)] = value
+    consistency_pairs = (
+        (
+            ("real.local.m2-cluster-formation", "selected_strategy"),
+            ("real.local.m2-stability-resource", "selected_strategy"),
+        ),
+        (
+            ("real.local.m2-automatic-failover", "selected_timeout_ms"),
+            ("real.local.m2-stability-resource", "selected_timeout_ms"),
+        ),
+    )
+    for experiment, stability in consistency_pairs:
+        if experiment in selected and stability in selected:
+            if selected[experiment] != selected[stability]:
+                blockers.add(f"{stability[0]}.{stability[1]}")
+    return tuple(sorted(blockers))
 
 
 def run_planner(
@@ -1219,6 +1310,23 @@ def coordinate(
     for checks in criteria.values():
         for check_id in checks:
             resolve_check(catalog_document, check_id)
+    candidate_blockers = m2_candidate_blockers(milestone_document, milestone)
+    if candidate_blockers:
+        client.comment(
+            control.issue_number,
+            "M2 Milestone BLOCKED before real authorization because relative-performance "
+            "candidate parameters are missing, invalid, inconsistent, or resolve to the "
+            "current baseline: "
+            + ", ".join(candidate_blockers)
+            + ". Select candidates only in a human-reviewed Contract Change after fresh, "
+            "authorized discovery; the Planner cannot select them.",
+        )
+        return {
+            "status": "BLOCKED",
+            "milestone": milestone,
+            "reason": "candidate-not-ready",
+            "parameters": list(candidate_blockers),
+        }
     return {"status": "MILESTONE", "milestone": milestone}
 
 
