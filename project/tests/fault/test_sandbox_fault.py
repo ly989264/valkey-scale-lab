@@ -257,7 +257,10 @@ def test_node_stop_fails_when_sigkill_target_remains_in_runtime_state(tmp_path: 
             self.stdout = stdout
             self.stderr = stderr
 
+    calls: list[list[str]] = []
+
     def fake_run_docker(args: list[str], **kwargs: object) -> Result:
+        calls.append(args)
         if args[0] == "inspect":
             return Result(
                 stdout=json.dumps(
@@ -284,3 +287,18 @@ def test_node_stop_fails_when_sigkill_target_remains_in_runtime_state(tmp_path: 
             fault_json=spec,
             out_path=tmp_path / "fault_apply.json",
         )
+
+    fault_state = tmp_path / "fault_state_fault-primary-stop.json"
+    persisted = json.loads(fault_state.read_text(encoding="utf-8"))
+    assert persisted["status"] == "FAIL"
+    assert persisted["observed_impact"]["action"] == "process_sigkill"
+    assert persisted["observed_impact"]["independent_runtime_state"]["status"] == "FAIL"
+
+    clear_report = clear_fault(state_path=state, fault_id="fault-primary-stop", out_path=tmp_path / "fault_clear.json")
+    assert clear_report["status"] == "PASS"
+    assert clear_report["observed_impact"]["action"] == "process_restart"
+    assert not fault_state.exists()
+    assert calls[-2:] == [
+        ["inspect", "-f", "{{json .Config.Labels}}", "shared-nodehost"],
+        ["exec", "shared-nodehost", "sh", "-c", "valkey-server /tmp/test-run/shard-0000-primary/valkey.conf"],
+    ]

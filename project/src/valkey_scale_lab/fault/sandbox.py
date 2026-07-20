@@ -97,14 +97,37 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
         failure_target = f"logical process pid={pid_text} in owned container {nodehost_container}"
         if result.returncode != 0:
             raise FaultError(f"node_stop failed for {failure_target}: {result.stderr.strip()}")
-        gone_probe = _wait_for_process_gone(str(nodehost_container), pid_text, target)
+        record["status"] = "PENDING"
         record["observed_impact"] = {
-            "status": "PASS",
+            "status": "PENDING",
             "action": action,
             **target_fields,
-            "independent_runtime_state": gone_probe,
+            "independent_runtime_state": {
+                "status": "PENDING",
+                "probe": "container_proc_absent",
+                "nodehost_container_name": nodehost_container,
+                "pid": int(pid_text),
+            },
             "stderr": result.stderr.strip(),
         }
+        _write_json(fault_state, record)
+        try:
+            gone_probe = _wait_for_process_gone(str(nodehost_container), pid_text, target)
+        except Exception as exc:
+            record["status"] = "FAIL"
+            record["observed_impact"]["status"] = "FAIL"
+            record["observed_impact"]["independent_runtime_state"] = {
+                "status": "FAIL",
+                "probe": "container_proc_absent",
+                "nodehost_container_name": nodehost_container,
+                "pid": int(pid_text),
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
+            _write_json(fault_state, record)
+            raise
+        record["status"] = "PASS"
+        record["observed_impact"]["status"] = "PASS"
+        record["observed_impact"]["independent_runtime_state"] = gone_probe
     else:
         record["observed_impact"] = {
             "status": "PASS",
