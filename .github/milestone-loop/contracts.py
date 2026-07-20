@@ -9,6 +9,7 @@ from typing import Any, Iterable, Mapping, Sequence
 
 
 STATUSES = ("ready", "in-progress", "blocked", "review", "completed", "superseded")
+PLANNER_STATUSES = ("ready", "blocked", "superseded")
 STATUS_LABELS = {f"milestone-loop:{status}" for status in STATUSES}
 ID_RE = re.compile(r"^[a-z][a-z0-9_.-]*$", re.ASCII)
 ISSUE_RE = re.compile(r"^#([1-9][0-9]*)$")
@@ -279,7 +280,7 @@ def parse_planner_output(raw: str) -> PlannerOutput:
         if len(set(dependencies)) != len(dependencies):
             raise ContractError("operation.depends_on contains duplicates")
         status = operation["status"]
-        if status not in STATUSES:
+        if status not in PLANNER_STATUSES:
             raise ContractError("operation.status is invalid")
         parsed.append(
             PlannerOperation(kind, issue, title, description, criterion, tuple(dependencies), check, status)
