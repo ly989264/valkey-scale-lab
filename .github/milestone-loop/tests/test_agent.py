@@ -16,6 +16,9 @@ class AgentBoundaryTests(unittest.TestCase):
             "AWS_SECRET_ACCESS_KEY": "real-secret",
             "VALKEY_REAL_CREDENTIAL": "real-secret",
             "MILESTONE_LEASE_NONCE": "lease",
+            "ACTIONS_ID_TOKEN_REQUEST_URL": "https://oidc.invalid",
+            "ACTIONS_ID_TOKEN_REQUEST_TOKEN": "oidc-token",
+            "VSLAB_M2_REAL_AUTHORIZATION": "1",
             "SSH_AUTH_SOCK": "/tmp/agent.sock",
             "CODEX_HOME": "/safe/codex-home",
             "PATH": "/usr/bin",
@@ -24,6 +27,12 @@ class AgentBoundaryTests(unittest.TestCase):
             environment = _agent_environment()
         self.assertEqual(environment["CODEX_HOME"], "/safe/codex-home")
         self.assertEqual(environment["PATH"], "/usr/bin")
+        self.assertEqual(environment["GIT_CONFIG_KEY_0"], "credential.helper")
+        self.assertEqual(environment["GIT_CONFIG_VALUE_0"], "")
+        self.assertEqual(environment["GIT_CONFIG_GLOBAL"], "/dev/null")
+        self.assertEqual(environment["GIT_CONFIG_NOSYSTEM"], "1")
+        self.assertEqual(environment["GIT_TERMINAL_PROMPT"], "0")
+        self.assertEqual(environment["GIT_ASKPASS"], "/usr/bin/false")
         for name in values:
             if name not in {"CODEX_HOME", "PATH"}:
                 self.assertNotIn(name, environment)

@@ -8,7 +8,7 @@ import subprocess
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from contracts import ContractError, fixed_milestone_path
 from coordinator import (
@@ -30,6 +30,750 @@ _GATE_DIAGNOSTIC_DETAIL_MAX_CHARS = 400
 _GATE_DIAGNOSTIC_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,159}")
 _M2_DISCOVERY_REPORT_NAME = "m2_candidate_discovery.json"
 _M2_ADMISSION_REPORT_NAME = "m2_performance_report.json"
+_M2_DISCOVERY_RESULT_SCHEMA = "m2-discovery-result-v1"
+_M2_DISCOVERY_RESULT_MAX_BYTES = 65_536
+_M2_DISCOVERY_REPORT_MAX_BYTES = 256 * 1024 * 1024
+_M2_DISCOVERY_EVIDENCE_MAX_FILES = 10_000
+_M2_DISCOVERY_EVIDENCE_MAX_BYTES = 10 * 1024 * 1024 * 1024
+_M2_DISCOVERY_RESULT_FIELDS = {
+    "schema_version",
+    "milestone",
+    "status",
+    "disposition",
+    "failure_scope",
+    "failure_code",
+    "failure_fingerprint",
+    "tested_sha",
+    "run_id",
+    "run_attempt",
+    "invocation_id",
+    "run_outcome",
+    "cleanup_outcome",
+    "report_digest",
+    "evidence_digest",
+    "summary",
+    "result_digest",
+}
+_M2_DISCOVERY_REPORT_FIELDS = {
+    "schema_version",
+    "artifact_type",
+    "purpose",
+    "admission_evidence",
+    "campaign_id",
+    "invocation_run_id",
+    "current_invocation",
+    "tested_sha",
+    "created_at",
+    "producer",
+    "status",
+    "real_valkey",
+    "execution_mode",
+    "campaigns",
+    "candidate_results",
+    "survivors",
+    "errors",
+    "report_digest",
+}
+_M2_DISCOVERY_CAMPAIGN_FIELDS = {
+    "campaign_id",
+    "invocation_run_id",
+    "experiment_kind",
+    "status",
+    "real_valkey",
+    "execution_mode",
+    "baseline",
+    "candidates",
+    "current_defaults",
+    "protocol",
+    "started_trial_ids",
+    "trials",
+    "pairs",
+    "cells",
+    "invalid_samples",
+    "source_refs",
+    "errors",
+}
+_M2_REPAIRABLE_EXCEPTION_RE = re.compile(
+    r"DISCOVERY_FAILED: "
+    r"(AttributeError|IndexError|KeyError|NameError|TypeError|UnboundLocalError): "
+    r"([^\r\n]{1,4000})"
+)
+
+
+def _canonical_digest(value: Mapping[str, Any], *, omit: str = "") -> str:
+    payload = dict(value)
+    if omit:
+        payload.pop(omit, None)
+    try:
+        encoded = json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        ).encode("ascii")
+    except (TypeError, ValueError, UnicodeError) as exc:
+        raise ContractError(f"M2 discovery JSON is not canonical finite data: {exc}") from exc
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _read_bounded_object(path: Path, maximum: int, description: str) -> dict[str, Any]:
+    if not path.is_file() or path.is_symlink():
+        raise ContractError(f"{description} is missing or is not a regular file")
+    try:
+        size = path.stat().st_size
+        if size > maximum:
+            raise ContractError(f"{description} exceeds {maximum} bytes")
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ContractError(f"cannot read {description}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise ContractError(f"{description} must be a JSON object")
+    return value
+
+
+def _evidence_digest(root: Path) -> str:
+    if not root.is_dir() or root.is_symlink():
+        raise ContractError("M2 discovery evidence artifact is missing or is not a regular directory")
+    files = sorted(root.rglob("*"), key=lambda path: path.relative_to(root).as_posix())
+    regular = [path for path in files if path.is_file() and not path.is_symlink()]
+    if not regular:
+        raise ContractError("M2 discovery evidence artifact is empty")
+    if len(regular) > _M2_DISCOVERY_EVIDENCE_MAX_FILES:
+        raise ContractError("M2 discovery evidence artifact contains too many files")
+    if any(path.is_symlink() or (not path.is_file() and not path.is_dir()) for path in files):
+        raise ContractError("M2 discovery evidence artifact contains an unsafe entry")
+    digest = hashlib.sha256()
+    total = 0
+    for path in regular:
+        relative = path.relative_to(root).as_posix().encode("utf-8")
+        file_digest = hashlib.sha256()
+        try:
+            size = path.stat().st_size
+            total += size
+            if total > _M2_DISCOVERY_EVIDENCE_MAX_BYTES:
+                raise ContractError("M2 discovery evidence artifact is too large")
+            with path.open("rb") as handle:
+                while chunk := handle.read(1024 * 1024):
+                    file_digest.update(chunk)
+        except OSError as exc:
+            raise ContractError(
+                f"cannot hash M2 discovery evidence {relative.decode('utf-8')}: {exc}"
+            ) from exc
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        digest.update(size.to_bytes(8, "big"))
+        digest.update(file_digest.digest())
+    return digest.hexdigest()
+
+
+def _validate_artifact_ref(root: Path, ref: Any) -> tuple[str, str, str]:
+    if not isinstance(ref, dict) or set(ref) != {"category", "path", "sha256"}:
+        raise ContractError("M2 discovery source reference fields are invalid")
+    category = ref.get("category")
+    relative = ref.get("path")
+    expected = ref.get("sha256")
+    if (
+        not isinstance(category, str)
+        or re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", category) is None
+        or not isinstance(relative, str)
+        or not relative
+        or not isinstance(expected, str)
+        or re.fullmatch(r"[0-9a-f]{64}", expected) is None
+    ):
+        raise ContractError("M2 discovery source reference is malformed")
+    relative_path = Path(relative)
+    lowered = {part.lower() for part in relative_path.parts}
+    if (
+        relative_path.is_absolute()
+        or ".." in relative_path.parts
+        or lowered.intersection({"loop_evidence", "fixture", "fixtures", "historical", "retained"})
+    ):
+        raise ContractError("M2 discovery source reference is not current-invocation evidence")
+    candidate = (root / relative_path).resolve()
+    try:
+        candidate.relative_to(root.resolve())
+    except ValueError as exc:
+        raise ContractError("M2 discovery source reference escapes its artifact") from exc
+    if not candidate.is_file() or candidate.is_symlink():
+        raise ContractError("M2 discovery source reference is missing or unsafe")
+    digest = hashlib.sha256()
+    try:
+        with candidate.open("rb") as handle:
+            while chunk := handle.read(1024 * 1024):
+                digest.update(chunk)
+    except OSError as exc:
+        raise ContractError(f"cannot hash M2 discovery source reference: {exc}") from exc
+    if digest.hexdigest() != expected:
+        raise ContractError("M2 discovery source reference digest does not match")
+    return category, relative_path.as_posix(), expected
+
+
+def _validate_discovery_campaign(
+    campaign: Any, *, kind: str, invocation_id: str, evidence_root: Path
+) -> None:
+    if not isinstance(campaign, dict) or set(campaign) != _M2_DISCOVERY_CAMPAIGN_FIELDS:
+        raise ContractError(f"M2 {kind} discovery campaign fields are invalid")
+    if (
+        campaign.get("campaign_id") != invocation_id
+        or campaign.get("invocation_run_id") != invocation_id
+        or campaign.get("experiment_kind") != kind
+        or campaign.get("status") not in {"PASS", "FAIL", "BLOCKED"}
+        or not isinstance(campaign.get("baseline"), dict)
+        or not isinstance(campaign.get("candidates"), list)
+        or not isinstance(campaign.get("current_defaults"), dict)
+        or not isinstance(campaign.get("protocol"), dict)
+        or not isinstance(campaign.get("started_trial_ids"), list)
+        or not isinstance(campaign.get("trials"), list)
+        or not isinstance(campaign.get("pairs"), list)
+        or not isinstance(campaign.get("cells"), list)
+        or not isinstance(campaign.get("invalid_samples"), list)
+        or not isinstance(campaign.get("source_refs"), list)
+        or not isinstance(campaign.get("errors"), list)
+    ):
+        raise ContractError(f"M2 {kind} discovery campaign is malformed")
+    started = campaign["started_trial_ids"]
+    if len(started) != len(set(started)) or any(
+        not isinstance(value, str) or not value for value in started
+    ):
+        raise ContractError(f"M2 {kind} discovery started trials are invalid")
+    invalid_samples = campaign["invalid_samples"]
+    if campaign.get("status") != "FAIL" and invalid_samples:
+        raise ContractError(f"M2 {kind} discovery non-failure contains invalid samples")
+    if len(invalid_samples) > 1:
+        raise ContractError(f"M2 {kind} discovery contains multiple invalid samples")
+    if invalid_samples:
+        sample = invalid_samples[0]
+        if not isinstance(sample, dict) or set(sample) != {"trial_id", "reason"}:
+            raise ContractError(f"M2 {kind} discovery invalid sample fields are malformed")
+        trial_id = sample.get("trial_id")
+        reason = sample.get("reason")
+        if (
+            not isinstance(trial_id, str)
+            or trial_id not in started
+            or re.fullmatch(
+                re.escape(invocation_id) + r"-[A-Za-z0-9][A-Za-z0-9._:-]{0,255}",
+                trial_id,
+            ) is None
+            or not isinstance(reason, str)
+            or not reason
+            or len(reason) > 4000
+            or not reason.isprintable()
+        ):
+            raise ContractError(f"M2 {kind} discovery invalid sample is not current and bounded")
+    if started and (
+        campaign.get("real_valkey") is not True
+        or campaign.get("execution_mode") != "valkey-real"
+        or not campaign["source_refs"]
+    ):
+        raise ContractError(f"M2 {kind} discovery is not bound to real source evidence")
+    references = [
+        _validate_artifact_ref(evidence_root, ref) for ref in campaign["source_refs"]
+    ]
+    if len(references) != len(set(references)):
+        raise ContractError(f"M2 {kind} discovery source references are duplicated")
+    if any(not isinstance(row, dict) for key in ("trials", "pairs", "cells") for row in campaign[key]):
+        raise ContractError(f"M2 {kind} discovery observations are malformed")
+    protocol = campaign["protocol"]
+    if any(
+        protocol.get(key) is not False
+        for key in (
+            "fixture_admission_allowed",
+            "historical_admission_allowed",
+            "downscale_allowed",
+            "takeover_allowed",
+        )
+    ):
+        raise ContractError(f"M2 {kind} discovery protocol permits forbidden evidence")
+    cells = campaign["cells"]
+    cell_ids = [cell.get("cell_id") for cell in cells]
+    if len(cell_ids) != len(set(cell_ids)) or any(
+        set(cell) != {
+            "cell_id",
+            "campaign_step",
+            "scale",
+            "failure_rate",
+            "required_pairs",
+            "candidate",
+            "status",
+        }
+        or not isinstance(cell.get("cell_id"), str)
+        or cell.get("campaign_step") != "discovery"
+        or cell.get("scale") != 50
+        or cell.get("failure_rate") != ("none" if kind == "formation" else "one")
+        or cell.get("required_pairs") != 1
+        or not isinstance(cell.get("candidate"), dict)
+        or cell.get("status") not in {"PASS", "FAIL"}
+        for cell in cells
+    ):
+        raise ContractError(f"M2 {kind} discovery cells violate the fixed exact-50 screen")
+    trials = campaign["trials"]
+    trial_ids = [trial.get("trial_id") for trial in trials]
+    if len(trial_ids) != len(set(trial_ids)) or any(
+        not isinstance(trial_id, str) or not trial_id for trial_id in trial_ids
+    ):
+        raise ContractError(f"M2 {kind} discovery trial identities are invalid")
+    pairs = campaign["pairs"]
+    pair_ids = [pair.get("pair_id") for pair in pairs]
+    if len(pair_ids) != len(set(pair_ids)) or any(
+        not isinstance(pair_id, str) or not pair_id for pair_id in pair_ids
+    ):
+        raise ContractError(f"M2 {kind} discovery pair identities are invalid")
+    if any(
+        pair.get("cell_id") not in cell_ids
+        or pair.get("baseline_trial_id") not in trial_ids
+        or pair.get("candidate_trial_id") not in trial_ids
+        or pair.get("baseline_trial_id") == pair.get("candidate_trial_id")
+        for pair in pairs
+    ):
+        raise ContractError(f"M2 {kind} discovery pair bindings are invalid")
+    if any(
+        trial_id not in started
+        or trial.get("cell_id") not in cell_ids
+        or trial.get("pair_id") not in pair_ids
+        for trial_id, trial in zip(trial_ids, trials)
+    ):
+        raise ContractError(f"M2 {kind} discovery trial bindings are invalid")
+    if campaign.get("status") == "PASS":
+        try:
+            candidate_encodings = {
+                json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+                for value in campaign["candidates"]
+                if isinstance(value, dict)
+            }
+            cell_candidates = {
+                json.dumps(cell["candidate"], sort_keys=True, separators=(",", ":"), allow_nan=False)
+                for cell in cells
+            }
+        except (TypeError, ValueError) as exc:
+            raise ContractError(f"M2 {kind} discovery candidates are invalid") from exc
+        if (
+            campaign.get("errors") != []
+            or not cells
+            or len(candidate_encodings) != len(campaign["candidates"])
+            or cell_candidates != candidate_encodings
+            or len(pairs) != len(cells)
+            or len(trials) != 2 * len(pairs)
+            or set(started) != set(trial_ids)
+            or any(sum(pair.get("cell_id") == cell_id for pair in pairs) != 1 for cell_id in cell_ids)
+        ):
+            raise ContractError(f"M2 {kind} discovery PASS topology is incomplete")
+
+
+def _github_discovery_identity(run_id: str, run_attempt: str) -> tuple[str, int, str]:
+    if re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is None:
+        raise ContractError("GitHub M2 discovery run id is invalid")
+    if re.fullmatch(r"[1-9][0-9]{0,9}", run_attempt) is None:
+        raise ContractError("GitHub M2 discovery run attempt is invalid")
+    return run_id, int(run_attempt), f"m2-discovery-gh-{run_id}-attempt-{run_attempt}"
+
+
+def _discovery_failure_scope(report: Mapping[str, Any]) -> str:
+    campaigns = report.get("campaigns")
+    if not isinstance(campaigns, dict):
+        return ""
+    formation = campaigns.get("formation")
+    failover = campaigns.get("failover")
+    formation_started = (
+        formation.get("started_trial_ids") if isinstance(formation, dict) else None
+    )
+    failover_started = failover.get("started_trial_ids") if isinstance(failover, dict) else None
+    if (
+        isinstance(formation, dict)
+        and formation.get("status") == "FAIL"
+        and isinstance(formation_started, list)
+        and bool(formation_started)
+        and isinstance(failover_started, list)
+        and not failover_started
+    ):
+        return "formation"
+    if (
+        isinstance(formation, dict)
+        and formation.get("status") == "PASS"
+        and isinstance(failover, dict)
+        and failover.get("status") == "FAIL"
+        and isinstance(failover_started, list)
+        and bool(failover_started)
+    ):
+        return "failover"
+    return ""
+
+
+def _validate_discovery_report(
+    report: Mapping[str, Any],
+    *,
+    expected_sha: str,
+    invocation_id: str,
+    evidence_root: Path,
+) -> tuple[str, str, str]:
+    if set(report) != _M2_DISCOVERY_REPORT_FIELDS:
+        raise ContractError("M2 discovery report fields are incomplete or unexpected")
+    if (
+        report.get("schema_version") != "m2-candidate-discovery-v1"
+        or report.get("artifact_type") != "m2_candidate_discovery"
+        or report.get("purpose") != "candidate-selection-only"
+        or report.get("admission_evidence") is not False
+        or report.get("current_invocation") is not True
+        or report.get("tested_sha") != expected_sha
+        or report.get("invocation_run_id") != invocation_id
+        or report.get("campaign_id") != invocation_id
+        or report.get("status") not in {"PASS", "FAIL", "BLOCKED"}
+    ):
+        raise ContractError("M2 discovery report is not bound to this selection-only invocation")
+    report_digest = report.get("report_digest")
+    if (
+        not isinstance(report_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", report_digest) is None
+        or report_digest != _canonical_digest(report, omit="report_digest")
+    ):
+        raise ContractError("M2 discovery report digest does not match its canonical content")
+    status = str(report["status"])
+    campaigns = report.get("campaigns")
+    candidate_results = report.get("candidate_results")
+    survivors = report.get("survivors")
+    if not isinstance(campaigns, dict) or set(campaigns) - {"formation", "failover"}:
+        raise ContractError("M2 discovery campaigns are invalid")
+    if not isinstance(candidate_results, dict) or set(candidate_results) != {
+        "formation",
+        "failover",
+    }:
+        raise ContractError("M2 discovery candidate results are invalid")
+    if not isinstance(survivors, dict) or set(survivors) != {"formation", "failover"}:
+        raise ContractError("M2 discovery survivors are invalid")
+    derived_results: dict[str, list[dict[str, Any]]] = {}
+    for kind in ("formation", "failover"):
+        campaign = campaigns.get(kind)
+        if campaign is None:
+            derived_results[kind] = []
+            continue
+        _validate_discovery_campaign(
+            campaign,
+            kind=kind,
+            invocation_id=invocation_id,
+            evidence_root=evidence_root,
+        )
+        derived_results[kind] = [
+            {"candidate": dict(cell["candidate"]), "status": str(cell["status"])}
+            for cell in campaign["cells"]
+            if isinstance(cell, dict)
+            and isinstance(cell.get("candidate"), dict)
+            and cell.get("status") in {"PASS", "FAIL"}
+        ]
+    if candidate_results != derived_results:
+        raise ContractError("M2 discovery candidate results are not derived from campaign cells")
+    derived_survivors = {
+        kind: [dict(row["candidate"]) for row in derived_results[kind] if row["status"] == "PASS"]
+        for kind in ("formation", "failover")
+    }
+    if survivors != derived_survivors:
+        raise ContractError("M2 discovery survivors are not derived from passing cells")
+    errors = report.get("errors")
+    if (
+        not isinstance(errors, list)
+        or len(errors) > 10
+        or any(not isinstance(value, str) or len(value) > 4000 for value in errors)
+    ):
+        raise ContractError("M2 discovery errors are invalid or unbounded")
+    if status == "PASS":
+        if (
+            set(campaigns) != {"formation", "failover"}
+            or any(campaigns[kind].get("status") != "PASS" for kind in campaigns)
+            or report.get("errors") != []
+            or report.get("real_valkey") is not True
+            or report.get("execution_mode") != "valkey-real"
+        ):
+            raise ContractError("M2 discovery PASS is not a completed real selection screen")
+        return "CANDIDATE_SELECTION_ONLY", "", ""
+    if status == "FAIL" and isinstance(errors, list) and len(errors) == 1 and isinstance(errors[0], str):
+        match = _M2_REPAIRABLE_EXCEPTION_RE.fullmatch(errors[0])
+        scope = _discovery_failure_scope(report)
+        affected = campaigns.get(scope) if scope else None
+        invalid_samples = affected.get("invalid_samples") if isinstance(affected, dict) else None
+        if (
+            match is not None
+            and scope
+            and isinstance(affected, dict)
+            and affected.get("errors") == errors
+            and (
+                invalid_samples == []
+                or (
+                    isinstance(invalid_samples, list)
+                    and len(invalid_samples) == 1
+                    and invalid_samples[0].get("reason") == match.group(2)
+                )
+            )
+            and report.get("real_valkey") is True
+            and report.get("execution_mode") == "valkey-real"
+        ):
+            return "REPAIRABLE_IMPLEMENTATION", scope, f"python-{match.group(1).lower()}"
+    return "HUMAN_REQUIRED", "", "non-repairable-result"
+
+
+def _bounded_summary(value: Any) -> str:
+    if not isinstance(value, str):
+        return "invalid or missing M2 discovery result"
+    safe = "".join(" " if character in "@<>`" or not character.isprintable() else character for character in value)
+    safe = re.sub(r"(?<![A-Za-z0-9])/(?:[^\s,;]+)", "[absolute-path]", safe)
+    return " ".join(safe.split())[:2000] or "M2 discovery produced no summary"
+
+
+def _discovery_failure_fingerprint(
+    *, tested_sha: str, disposition: str, scope: str, code: str, summary: str, invocation_id: str
+) -> str:
+    normalized = summary.replace(invocation_id, "[invocation]")
+    if disposition in {"CANDIDATE_SELECTION_ONLY", "REPAIRABLE_IMPLEMENTATION"}:
+        normalized = ""
+    value = {
+        "milestone": "m2",
+        "tested_sha": tested_sha,
+        "disposition": disposition,
+        "scope": scope,
+        "code": code,
+        "summary": normalized,
+    }
+    return _canonical_digest(value)
+
+
+def _sealed_discovery_result(
+    *,
+    expected_sha: str,
+    run_id: str,
+    run_attempt: str,
+    run_outcome: str,
+    cleanup_outcome: str,
+    status: str,
+    disposition: str,
+    failure_scope: str,
+    failure_code: str,
+    report_digest: str,
+    evidence_digest: str,
+    summary: str,
+) -> dict[str, Any]:
+    run_id, attempt, invocation_id = _github_discovery_identity(run_id, run_attempt)
+    if re.fullmatch(r"[0-9a-f]{40}", expected_sha) is None:
+        raise ContractError("M2 discovery tested SHA is invalid")
+    bounded_summary = _bounded_summary(summary)
+    result: dict[str, Any] = {
+        "schema_version": _M2_DISCOVERY_RESULT_SCHEMA,
+        "milestone": "m2",
+        "status": status,
+        "disposition": disposition,
+        "failure_scope": failure_scope,
+        "failure_code": failure_code,
+        "failure_fingerprint": _discovery_failure_fingerprint(
+            tested_sha=expected_sha,
+            disposition=disposition,
+            scope=failure_scope,
+            code=failure_code,
+            summary=bounded_summary,
+            invocation_id=invocation_id,
+        ),
+        "tested_sha": expected_sha,
+        "run_id": run_id,
+        "run_attempt": attempt,
+        "invocation_id": invocation_id,
+        "run_outcome": run_outcome,
+        "cleanup_outcome": cleanup_outcome,
+        "report_digest": report_digest,
+        "evidence_digest": evidence_digest,
+        "summary": bounded_summary,
+        "result_digest": "",
+    }
+    result["result_digest"] = _canonical_digest(result, omit="result_digest")
+    return result
+
+
+def seal_m2_discovery_result(
+    *,
+    raw_result_path: Path,
+    evidence_root: Path,
+    output_path: Path,
+    expected_sha: str,
+    run_id: str,
+    run_attempt: str,
+    run_outcome: str,
+    cleanup_outcome: str,
+) -> dict[str, Any]:
+    _run_id, _attempt, invocation_id = _github_discovery_identity(run_id, run_attempt)
+    status = "BLOCKED"
+    disposition = "HUMAN_REQUIRED"
+    scope = ""
+    code = "artifact-invalid"
+    report_digest = ""
+    evidence_digest = ""
+    summary = "M2 discovery result or evidence artifact is missing or invalid"
+    try:
+        if run_outcome != "success":
+            raise ContractError(f"M2 discovery command outcome was {run_outcome}")
+        raw = _read_bounded_object(
+            raw_result_path, _M2_DISCOVERY_RESULT_MAX_BYTES, "raw M2 discovery result"
+        )
+        if raw.get("tested_sha") != expected_sha:
+            raise ContractError("raw M2 discovery result tested SHA is stale")
+        raw_status = raw.get("status")
+        if raw_status not in {"PASS", "FAIL", "BLOCKED"}:
+            raise ContractError("raw M2 discovery status is invalid")
+        evidence_digest = _evidence_digest(evidence_root)
+        if any(path.name == _M2_ADMISSION_REPORT_NAME for path in evidence_root.rglob("*")):
+            raise ContractError("M2 discovery evidence contains a forbidden admission report")
+        report = _read_bounded_object(
+            evidence_root / _M2_DISCOVERY_REPORT_NAME,
+            _M2_DISCOVERY_REPORT_MAX_BYTES,
+            "M2 discovery report",
+        )
+        if report.get("status") != raw_status:
+            raise ContractError("raw M2 discovery status differs from the report")
+        disposition, scope, code = _validate_discovery_report(
+            report,
+            expected_sha=expected_sha,
+            invocation_id=invocation_id,
+            evidence_root=evidence_root,
+        )
+        status = str(raw_status)
+        report_digest = str(report["report_digest"])
+        if disposition == "CANDIDATE_SELECTION_ONLY":
+            summary = "Current-invocation M2 candidate-selection screen completed"
+        elif disposition == "REPAIRABLE_IMPLEMENTATION":
+            summary = f"Allowlisted {scope} discovery implementation failure ({code})"
+        else:
+            summary = "M2 discovery result is not safely machine-repairable; inspect the protected artifact"
+        if cleanup_outcome != "success":
+            status = "BLOCKED"
+            disposition = "HUMAN_REQUIRED"
+            scope = ""
+            code = "cleanup-failed"
+            summary = f"M2 discovery cleanup outcome was {cleanup_outcome}"
+    except (ContractError, OSError) as exc:
+        status = "BLOCKED"
+        disposition = "HUMAN_REQUIRED"
+        scope = ""
+        code = "artifact-invalid"
+        summary = f"M2 discovery artifact validation failed: {exc}"
+    result = _sealed_discovery_result(
+        expected_sha=expected_sha,
+        run_id=run_id,
+        run_attempt=run_attempt,
+        run_outcome=run_outcome,
+        cleanup_outcome=cleanup_outcome,
+        status=status,
+        disposition=disposition,
+        failure_scope=scope,
+        failure_code=code,
+        report_digest=report_digest,
+        evidence_digest=evidence_digest,
+        summary=summary,
+    )
+    output_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return result
+
+
+def human_required_m2_discovery_result(
+    *, expected_sha: str, run_id: str, run_attempt: str, summary: str
+) -> dict[str, Any]:
+    return _sealed_discovery_result(
+        expected_sha=expected_sha,
+        run_id=run_id,
+        run_attempt=run_attempt,
+        run_outcome="unknown",
+        cleanup_outcome="unknown",
+        status="BLOCKED",
+        disposition="HUMAN_REQUIRED",
+        failure_scope="",
+        failure_code="record-artifact-invalid",
+        report_digest="",
+        evidence_digest="",
+        summary=summary,
+    )
+
+
+def load_m2_discovery_result(
+    *,
+    result_path: Path,
+    evidence_root: Path,
+    expected_sha: str,
+    run_id: str,
+    run_attempt: str,
+) -> dict[str, Any]:
+    _run_id, attempt, invocation_id = _github_discovery_identity(run_id, run_attempt)
+    result = _read_bounded_object(
+        result_path, _M2_DISCOVERY_RESULT_MAX_BYTES, "sealed M2 discovery result"
+    )
+    if set(result) != _M2_DISCOVERY_RESULT_FIELDS:
+        raise ContractError("sealed M2 discovery result fields are incomplete or unexpected")
+    if (
+        result.get("schema_version") != _M2_DISCOVERY_RESULT_SCHEMA
+        or result.get("milestone") != "m2"
+        or result.get("tested_sha") != expected_sha
+        or result.get("run_id") != run_id
+        or result.get("run_attempt") != attempt
+        or result.get("invocation_id") != invocation_id
+        or result.get("status") not in {"PASS", "FAIL", "BLOCKED"}
+        or result.get("disposition")
+        not in {"CANDIDATE_SELECTION_ONLY", "REPAIRABLE_IMPLEMENTATION", "HUMAN_REQUIRED"}
+        or result.get("cleanup_outcome") not in {"success", "failure", "cancelled", "skipped", "unknown"}
+        or result.get("run_outcome") not in {"success", "failure", "cancelled", "skipped", "unknown"}
+    ):
+        raise ContractError("sealed M2 discovery result identity or status is invalid")
+    digest = result.get("result_digest")
+    if (
+        not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        or digest != _canonical_digest(result, omit="result_digest")
+    ):
+        raise ContractError("sealed M2 discovery result digest does not match")
+    expected_fingerprint = _discovery_failure_fingerprint(
+        tested_sha=expected_sha,
+        disposition=str(result["disposition"]),
+        scope=str(result.get("failure_scope", "")),
+        code=str(result.get("failure_code", "")),
+        summary=_bounded_summary(result.get("summary")),
+        invocation_id=invocation_id,
+    )
+    if result.get("failure_fingerprint") != expected_fingerprint:
+        raise ContractError("M2 discovery failure fingerprint does not match")
+
+    report_digest = result.get("report_digest")
+    evidence_digest = result.get("evidence_digest")
+    if not isinstance(report_digest, str) or not isinstance(evidence_digest, str):
+        raise ContractError("M2 discovery artifact digests are invalid")
+    if report_digest:
+        if re.fullmatch(r"[0-9a-f]{64}", report_digest) is None:
+            raise ContractError("M2 discovery report digest is invalid")
+        if _evidence_digest(evidence_root) != evidence_digest:
+            raise ContractError("M2 discovery evidence digest does not match")
+        report = _read_bounded_object(
+            evidence_root / _M2_DISCOVERY_REPORT_NAME,
+            _M2_DISCOVERY_REPORT_MAX_BYTES,
+            "M2 discovery report",
+        )
+        disposition, scope, code = _validate_discovery_report(
+            report,
+            expected_sha=expected_sha,
+            invocation_id=invocation_id,
+            evidence_root=evidence_root,
+        )
+        if report.get("report_digest") != report_digest:
+            raise ContractError("M2 discovery report artifact digest does not match the result")
+        if result["cleanup_outcome"] == "success":
+            if (
+                result.get("status") != report.get("status")
+                or result.get("disposition") != disposition
+                or result.get("failure_scope") != scope
+                or result.get("failure_code") != code
+            ):
+                raise ContractError("sealed M2 discovery classification differs from its report")
+        elif result.get("status") != "BLOCKED" or result.get("disposition") != "HUMAN_REQUIRED":
+            raise ContractError("M2 discovery cleanup failure was not fail-closed")
+    else:
+        if evidence_digest:
+            if (
+                re.fullmatch(r"[0-9a-f]{64}", evidence_digest) is None
+                or _evidence_digest(evidence_root) != evidence_digest
+            ):
+                raise ContractError("invalid M2 discovery evidence digest does not match")
+        if result.get("status") != "BLOCKED" or result.get("disposition") != "HUMAN_REQUIRED":
+            raise ContractError("missing M2 discovery report was not fail-closed")
+    return result
 
 
 def _diagnostic_identifier(value: Any) -> str:

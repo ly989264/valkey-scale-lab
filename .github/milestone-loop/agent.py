@@ -37,6 +37,8 @@ def _agent_environment() -> dict[str, str]:
         "GOOGLE_",
         "VALKEY_REAL_",
         "MILESTONE_LEASE_",
+        "ACTIONS_ID_TOKEN_",
+        "VSLAB_M2_",
     )
     allowed = {
         key: value
@@ -45,6 +47,15 @@ def _agent_environment() -> dict[str, str]:
     }
     allowed["NO_COLOR"] = "1"
     allowed["PYTHONDONTWRITEBYTECODE"] = "1"
+    allowed["GIT_CONFIG_COUNT"] = "2"
+    allowed["GIT_CONFIG_GLOBAL"] = "/dev/null"
+    allowed["GIT_CONFIG_NOSYSTEM"] = "1"
+    allowed["GIT_CONFIG_KEY_0"] = "credential.helper"
+    allowed["GIT_CONFIG_VALUE_0"] = ""
+    allowed["GIT_CONFIG_KEY_1"] = "credential.interactive"
+    allowed["GIT_CONFIG_VALUE_1"] = "false"
+    allowed["GIT_TERMINAL_PROMPT"] = "0"
+    allowed["GIT_ASKPASS"] = "/usr/bin/false"
     return allowed
 
 

@@ -338,6 +338,7 @@ jobs:
         run: python3 .github/milestone-loop/loop.py fingerprint --role real
       - name: Run authorized M2 candidate discovery
         id: discovery
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -345,31 +346,92 @@ jobs:
           python3 .github/milestone-loop/loop.py run-m2-discovery
           --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
           --expected-lease-sha256 "${{ needs.authorize-real.outputs.lease_sha256 }}"
-      - name: Upload bounded M2 discovery result
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: m2-discovery-result-${{ github.run_id }}
-          path: ${{ runner.temp }}/m2-discovery-result.json
-          if-no-files-found: error
-          retention-days: 30
-      - name: Upload M2 discovery evidence
-        if: always() && steps.discovery.outputs.artifacts != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: m2-discovery-evidence-${{ github.run_id }}
-          path: ${{ steps.discovery.outputs.artifacts }}
-          if-no-files-found: error
-          retention-days: 30
       - name: Final real-resource cleanup
+        id: cleanup
         if: always()
+        continue-on-error: true
         run: >-
           python3 .github/milestone-loop/loop.py recover
           --role real
           --runtime-root "$RUNNER_TEMP/milestone-loop-real"
-      - name: Enforce completed discovery
+      - name: Seal current-invocation discovery result
+        id: seal
         if: always()
-        run: test "${{ steps.discovery.outputs.status }}" = "PASS"
+        run: >-
+          python3 .github/milestone-loop/loop.py seal-m2-discovery
+          --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
+          --run-id "${{ github.run_id }}"
+          --run-attempt "${{ github.run_attempt }}"
+          --run-outcome "${{ steps.discovery.outcome }}"
+          --cleanup-outcome "${{ steps.cleanup.outcome }}"
+          --raw-result "$RUNNER_TEMP/m2-discovery-raw-result.json"
+          --evidence "$RUNNER_TEMP/m2-discovery-evidence"
+          --output "$RUNNER_TEMP/m2-discovery-result.json"
+      - name: Upload bounded M2 discovery result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2-discovery-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/m2-discovery-result.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Upload M2 discovery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2-discovery-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/m2-discovery-evidence
+          if-no-files-found: ignore
+          retention-days: 30
+
+  record-m2-discovery:
+    needs: [authorize-real, m2-discovery]
+    if: >-
+      always() &&
+      needs.authorize-real.outputs.entrypoint == 'discovery'
+    runs-on: [self-hosted, macOS, valkey-codex]
+    timeout-minutes: 30
+    permissions:
+      actions: write
+      checks: write
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.authorize-real.outputs.default_sha }}
+          persist-credentials: false
+      - name: Download bounded discovery result
+        id: result
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: m2-discovery-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/m2-discovery-result
+      - name: Download current-invocation discovery evidence
+        id: evidence
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: m2-discovery-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/m2-discovery-evidence
+      - name: Record, diagnose, or request human action
+        id: record
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: >-
+          python3 .github/milestone-loop/loop.py record-m2-discovery
+          --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
+          --run-id "${{ github.run_id }}"
+          --run-attempt "${{ github.run_attempt }}"
+          --result "$RUNNER_TEMP/m2-discovery-result/m2-discovery-result.json"
+          --evidence "$RUNNER_TEMP/m2-discovery-evidence"
+      - name: Enforce trusted discovery conclusion
+        if: always()
+        run: test "${{ steps.record.outputs.discovery_status }}" = "PASS"
 
   record-milestone:
     needs: [authorize-real, milestone]

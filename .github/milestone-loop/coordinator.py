@@ -7,10 +7,11 @@ import re
 import shutil
 import subprocess
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+from urllib.parse import quote
 
 from agent import AgentError, invoke_with_one_repair
 from context_builder import WORK_ITEM_LABEL, build_context, work_items, write_context
@@ -34,11 +35,14 @@ from contracts import (
     validate_transition,
     verified_tree,
 )
-from github_api import GitHubClient, GitHubError, collect_snapshot
+from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError, collect_snapshot
 
 
 CONTROL_LABEL = "milestone-loop:control"
 CONTRACT_CHANGE_LABEL = "contract-change"
+DISCOVERY_REPAIR_LABEL = "milestone-loop:m2-discovery-repair"
+M2_DISCOVERY_REPAIR_CHECK = "repository.all"
+M2_DISCOVERY_CHECK_NAME = "milestone-loop / m2-discovery"
 CONTROL_TITLE_PREFIX = "[milestone-loop]"
 WORK_ITEM_MARKER_RE = re.compile(r"<!-- milestone-loop-key: ([0-9a-f]{64}) -->")
 PR_WORK_ITEM_RE = re.compile(r"(?m)^Work-Item: #([1-9][0-9]*)$")
@@ -52,6 +56,18 @@ DIAGNOSIS_REQUEST_RE = re.compile(r"<!-- milestone-loop-diagnosis-request: ([0-9
 DIAGNOSIS_COMPLETE_RE = re.compile(r"<!-- milestone-loop-diagnosis-complete: ([0-9a-f]{64}) -->")
 WORKER_RETRY_REQUEST_RE = re.compile(r"<!-- milestone-loop-worker-retry-request: ([0-9a-f]{64}) -->")
 WORKER_RETRY_COMPLETE_RE = re.compile(r"<!-- milestone-loop-worker-retry-complete: ([0-9a-f]{64}) -->")
+M2_DISCOVERY_RECORD_RE = re.compile(r"<!-- milestone-loop-m2-discovery: (\{[^\r\n]+\}) -->")
+M2_DISCOVERY_DIAGNOSIS_COMPLETE_RE = re.compile(
+    r"<!-- milestone-loop-m2-discovery-diagnosis-complete: ([0-9a-f]{64}) -->"
+)
+M2_DISCOVERY_DISPATCH_RE = re.compile(
+    r"<!-- milestone-loop-m2-discovery-dispatch: ([0-9a-f]{64}) -->"
+)
+M2_DISCOVERY_WORK_ITEM_RE = re.compile(r"(?m)^M2-Discovery-Fingerprint: ([0-9a-f]{64})$")
+M2_DISCOVERY_METADATA_RE = re.compile(
+    r"(?m)^M2-Discovery-(?:Fingerprint|Run|Tested-SHA|Failure-Code|Summary): [^\r\n]+$"
+)
+HUMAN_ACTION_RE = re.compile(r"<!-- milestone-loop-human-action: (\{[^\r\n]+\}) -->")
 PROTECTED_PREFIXES = (
     ".github/CODEOWNERS",
     ".github/milestone-loop/",
@@ -70,6 +86,21 @@ PROTECTED_PREFIXES = (
     "project/templates/configs/scale_50.yaml",
     "project/templates/configs/scale_200.yaml",
 )
+M2_DISCOVERY_REPAIR_PROTECTED_PREFIXES = (
+    "project/scripts/m2_candidate_discovery.py",
+    "project/scripts/m2_performance_capture.py",
+    "project/src/valkey_scale_lab/runtime/docker_runtime.py",
+)
+M2_DISCOVERY_REPAIR_ALLOWED_PREFIXES = (
+    "project/scripts/m2_candidate_discovery.py",
+    "project/scripts/m2_performance_capture.py",
+    "project/src/",
+    "project/tests/",
+)
+M2_DISCOVERY_CRITERIA = {
+    "formation": "performance.cluster-formation-experiment",
+    "failover": "performance.automatic-failover-experiment",
+}
 M2_RELATIVE_CANDIDATE_PARAMETERS = (
     (
         "performance.cluster-formation-experiment",
@@ -128,6 +159,7 @@ LABEL_SPECS = {
     WORK_ITEM_LABEL: ("1f6feb", "Managed Milestone Work Item"),
     CONTROL_LABEL: ("5319e7", "Milestone loop control Issue"),
     CONTRACT_CHANGE_LABEL: ("b60205", "Protected contract change requiring human review"),
+    DISCOVERY_REPAIR_LABEL: ("7a3e9d", "Human-reviewed repair for trusted M2 discovery"),
     **{
         f"milestone-loop:{status}": (
             {
@@ -154,6 +186,131 @@ def snapshot_fingerprint(snapshot: Mapping[str, Any]) -> str:
     }
     encoded = json.dumps(selected, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _trusted_comment_payloads(
+    issue: Mapping[str, Any], pattern: re.Pattern[str]
+) -> list[dict[str, Any]]:
+    payloads: list[dict[str, Any]] = []
+    for comment in issue.get("comments", []):
+        body = comment.get("body") if isinstance(comment, dict) else None
+        if not isinstance(body, str) or comment.get("author") != "github-actions[bot]":
+            continue
+        match = pattern.search(body)
+        if match is None:
+            continue
+        try:
+            value = json.loads(match.group(1))
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            payloads.append(value)
+    return payloads
+
+
+def _require_control_comment_capacity(
+    control_issue: Mapping[str, Any], additions: int
+) -> None:
+    comments = control_issue.get("comments")
+    if not isinstance(comments, list) or additions < 0:
+        raise ContractError("Control Issue comment state is invalid")
+    if len(comments) + additions > MAX_ISSUE_COMMENTS:
+        raise LoopBlocked("Control Issue comment capacity is exhausted")
+
+
+def _human_action_value(
+    *, snapshot: Mapping[str, Any], state: str, target: str, sha: str
+) -> dict[str, Any]:
+    if state not in {
+        "PR_REVIEW_REQUIRED",
+        "REAL_AUTHORIZATION_REQUIRED",
+        "HARD_BLOCKED",
+        "M2_COMPLETE",
+    }:
+        raise ContractError("human-action state is invalid")
+    value = {
+        "version": 1,
+        "milestone": str(snapshot.get("milestone")),
+        "state": state,
+        "target": target,
+        "sha": sha,
+    }
+    value["key"] = hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return value
+
+
+def record_human_action_state(
+    *,
+    client: GitHubClient,
+    snapshot: Mapping[str, Any],
+    control: ControlState,
+    state: str,
+    target: str,
+    sha: str,
+    action: str,
+    link: str,
+) -> bool:
+    value = _human_action_value(
+        snapshot=snapshot, state=state, target=target, sha=sha
+    )
+    raw_comments = client.api(
+        f"issues/{control.issue_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
+    )
+    if not isinstance(raw_comments, list):
+        raise GitHubError("cannot read Control Issue before human-action recording")
+    if len(raw_comments) > MAX_ISSUE_COMMENTS:
+        raise LoopBlocked("Control Issue comment history exceeds its authoritative bound")
+    live = {
+        "comments": [
+            {
+                "author": (comment.get("user") or {}).get("login")
+                if isinstance(comment, dict) and isinstance(comment.get("user"), dict)
+                else None,
+                "body": comment.get("body") if isinstance(comment, dict) else None,
+            }
+            for comment in raw_comments
+        ]
+    }
+    if any(
+        payload.get("key") == value["key"]
+        for payload in _trusted_comment_payloads(live, HUMAN_ACTION_RE)
+    ):
+        return False
+    if len(raw_comments) >= MAX_ISSUE_COMMENTS:
+        raise LoopBlocked("Control Issue comment capacity is exhausted")
+    client.comment(
+        control.issue_number,
+        f"Human action required: **{state}**\n\n{action}\n\n{link}\n\n"
+        "<!-- milestone-loop-human-action: "
+        + json.dumps(value, sort_keys=True, separators=(",", ":"))
+        + " -->",
+    )
+    return True
+
+
+def _record_m2_discovery_hard_block(
+    *,
+    client: GitHubClient,
+    snapshot: Mapping[str, Any],
+    control: ControlState,
+    record: Mapping[str, Any],
+    action: str,
+) -> None:
+    repository = str(snapshot.get("repository", ""))
+    run_id = str(record["run_id"])
+    run_attempt = str(record["run_attempt"])
+    record_human_action_state(
+        client=client,
+        snapshot=snapshot,
+        control=control,
+        state="HARD_BLOCKED",
+        target=f"run:{run_id}:attempt:{run_attempt}",
+        sha=str(record["tested_sha"]),
+        action=action,
+        link=f"https://github.com/{repository}/actions/runs/{run_id}/attempts/{run_attempt}",
+    )
 
 
 def _operation_key(milestone: str, operation: PlannerOperation) -> str:
@@ -259,6 +416,11 @@ def prepare_planner_transaction(
         marker = WORK_ITEM_MARKER_RE.search(current.get("body", ""))
         if marker:
             body += f"\n\n{marker.group(0)}"
+        if DISCOVERY_REPAIR_LABEL in current.get("labels", []):
+            metadata = M2_DISCOVERY_METADATA_RE.findall(current.get("body", ""))
+            if len(metadata) != 5:
+                raise ContractError("M2 discovery repair metadata is incomplete")
+            body += "\n\n" + "\n".join(metadata)
         labels = _labels_with_status(current.get("labels", []), operation.status)
         writes.append(PlannedWrite(operation, operation.issue, title, body, labels))
         hypothetical[operation.issue] = {
@@ -589,10 +751,18 @@ def run_planner(
     milestone_document: Mapping[str, Any],
     global_audit: bool = False,
     diagnosis_issue: int | None = None,
+    discovery_record: Mapping[str, Any] | None = None,
 ) -> PlannerOutput:
     runtime_root.mkdir(parents=True, exist_ok=True)
     context_path = runtime_root / "planner-context.json"
     output_path = runtime_root / "planner-output.json"
+    diagnosis_item = (
+        work_items(snapshot).get(diagnosis_issue) if diagnosis_issue is not None else None
+    )
+    discovery_retry = bool(
+        diagnosis_item is not None
+        and DISCOVERY_REPAIR_LABEL in diagnosis_item.get("labels", [])
+    )
     write_context(
         context_path,
         build_context(
@@ -611,16 +781,37 @@ def run_planner(
             wall_timeout=1800,
             silence_timeout=180,
             initial_instruction=(
-                f"This is the one bounded failure diagnosis for Work Item #{diagnosis_issue}. "
-                "Only split that item, create a necessary prerequisite, adjust its dependencies, "
-                "or leave it blocked/superseded. Do not update any other existing Work Item."
-                if diagnosis_issue is not None
+                (
+                    "This trusted M2 discovery result identifies one machine-repairable "
+                    f"{discovery_record['failure_scope']} implementation/collection failure "
+                    f"({discovery_record['failure_code']}). Create exactly one small ready "
+                    f"product Work Item for Criterion {M2_DISCOVERY_CRITERIA[str(discovery_record['failure_scope'])]}. "
+                    f"Use the fixed Check {M2_DISCOVERY_REPAIR_CHECK}. "
+                    "Do not update existing Work Items, select candidates, change thresholds, "
+                    "reinterpret safety/performance results, or modify Milestone acceptance."
+                )
+                if discovery_record is not None
                 else (
-                    "This is the single global no-progress audit at the first threshold. "
-                    "Reassess whether the current Work Items are necessary, correctly split, "
-                    "and dependency-complete without weakening any Criterion or Check."
-                    if global_audit
-                    else ""
+                    (
+                        f"This is a bounded retry diagnosis for M2 discovery repair Work Item "
+                        f"#{diagnosis_issue}. Update only that same Work Item back to ready with "
+                        "the same Criterion and Check. Do not create prerequisites or broaden its "
+                        "scope, and do not change thresholds, candidates, safety rules, or acceptance."
+                        if discovery_retry
+                        else (
+                            f"This is the one bounded failure diagnosis for Work Item #{diagnosis_issue}. "
+                            "Only split that item, create a necessary prerequisite, adjust its dependencies, "
+                            "or leave it blocked/superseded. Do not update any other existing Work Item."
+                        )
+                    )
+                    if diagnosis_issue is not None
+                    else (
+                        "This is the single global no-progress audit at the first threshold. "
+                        "Reassess whether the current Work Items are necessary, correctly split, "
+                        "and dependency-complete without weakening any Criterion or Check."
+                        if global_audit
+                        else ""
+                    )
                 )
             ),
         )
@@ -849,6 +1040,171 @@ def pending_failure_diagnosis(snapshot: Mapping[str, Any]) -> tuple[int, str] | 
     return pending[0] if pending else None
 
 
+def pending_m2_discovery_diagnosis(snapshot: Mapping[str, Any]) -> dict[str, Any] | None:
+    controls = [
+        issue
+        for issue in snapshot.get("issues", [])
+        if CONTROL_LABEL in issue.get("labels", [])
+    ]
+    if len(controls) != 1:
+        raise LoopBlocked("Milestone must have exactly one Control Issue")
+    control = controls[0]
+    completed: set[str] = set()
+    for comment in control.get("comments", []):
+        body = comment.get("body") if isinstance(comment, dict) else None
+        if not isinstance(body, str) or comment.get("author") != "github-actions[bot]":
+            continue
+        completed.update(M2_DISCOVERY_DIAGNOSIS_COMPLETE_RE.findall(body))
+    marked_items: dict[str, int] = {}
+    for number, item in work_items(snapshot).items():
+        if DISCOVERY_REPAIR_LABEL not in item.get("labels", []):
+            continue
+        for fingerprint in M2_DISCOVERY_WORK_ITEM_RE.findall(item.get("body", "")):
+            if fingerprint in marked_items:
+                raise LoopBlocked("multiple Work Items claim one M2 discovery failure")
+            marked_items[fingerprint] = number
+    pending: list[dict[str, Any]] = []
+    for value in _trusted_comment_payloads(control, M2_DISCOVERY_RECORD_RE):
+        if (
+            value.get("version") != 1
+            or value.get("milestone") != "m2"
+            or value.get("disposition") != "REPAIRABLE_IMPLEMENTATION"
+            or value.get("failure_scope") not in M2_DISCOVERY_CRITERIA
+            or re.fullmatch(r"[0-9a-f]{64}", str(value.get("failure_fingerprint", ""))) is None
+            or re.fullmatch(r"[0-9a-f]{40}", str(value.get("tested_sha", ""))) is None
+        ):
+            continue
+        if value["failure_fingerprint"] not in completed:
+            pending_value = dict(value)
+            if value["failure_fingerprint"] in marked_items:
+                pending_value["existing_issue"] = marked_items[value["failure_fingerprint"]]
+            pending.append(pending_value)
+    if len(pending) > 1:
+        raise LoopBlocked("multiple M2 discovery failures request diagnosis")
+    return pending[0] if pending else None
+
+
+def validate_m2_discovery_diagnosis(
+    transaction: PlannerTransaction, *, record: Mapping[str, Any]
+) -> PlannerTransaction:
+    if len(transaction.writes) != 1:
+        raise ContractError("M2 discovery diagnosis must create exactly one Work Item")
+    write = transaction.writes[0]
+    expected_criterion = M2_DISCOVERY_CRITERIA.get(str(record.get("failure_scope")))
+    if (
+        write.operation.kind != "create"
+        or write.number is not None
+        or write.operation.status != "ready"
+        or write.operation.criterion != expected_criterion
+        or write.operation.check != M2_DISCOVERY_REPAIR_CHECK
+        or write.operation.depends_on
+        or transaction.ready_issue is not None
+    ):
+        raise ContractError(
+            "M2 discovery diagnosis must create one ready Work Item for the affected Criterion"
+        )
+    fingerprint = str(record["failure_fingerprint"])
+    diagnostic = (
+        f"\n\nM2-Discovery-Fingerprint: {fingerprint}\n"
+        f"M2-Discovery-Run: {record['run_id']} attempt {record['run_attempt']}\n"
+        f"M2-Discovery-Tested-SHA: {record['tested_sha']}\n"
+        f"M2-Discovery-Failure-Code: {record['failure_code']}\n"
+        f"M2-Discovery-Summary: {str(record.get('summary', ''))[:1000]}"
+    )
+    marked = replace(
+        write,
+        body=write.body + diagnostic,
+        labels=tuple(sorted({*write.labels, DISCOVERY_REPAIR_LABEL})),
+    )
+    return PlannerTransaction((marked,), None)
+
+
+def _validated_m2_discovery_repair(
+    issue: Mapping[str, Any], snapshot: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    if DISCOVERY_REPAIR_LABEL not in issue.get("labels", []):
+        return None
+    matches = M2_DISCOVERY_WORK_ITEM_RE.findall(issue.get("body", ""))
+    if len(matches) != 1 or snapshot.get("milestone") != "m2":
+        raise LoopBlocked("M2 discovery repair Work Item marker is invalid")
+    fingerprint = matches[0]
+    controls = [
+        item
+        for item in snapshot.get("issues", [])
+        if CONTROL_LABEL in item.get("labels", [])
+    ]
+    if len(controls) != 1:
+        raise LoopBlocked("Milestone must have exactly one Control Issue")
+    records = [
+        value
+        for value in _trusted_comment_payloads(controls[0], M2_DISCOVERY_RECORD_RE)
+        if value.get("failure_fingerprint") == fingerprint
+        and value.get("disposition") == "REPAIRABLE_IMPLEMENTATION"
+    ]
+    completed = {
+        marker
+        for comment in controls[0].get("comments", [])
+        if isinstance(comment, dict)
+        and comment.get("author") == "github-actions[bot]"
+        and isinstance(comment.get("body"), str)
+        for marker in M2_DISCOVERY_DIAGNOSIS_COMPLETE_RE.findall(comment["body"])
+    }
+    if (
+        len(records) != 1
+        or records[0].get("tested_sha") != snapshot.get("default_sha")
+        or fingerprint not in completed
+    ):
+        raise LoopBlocked("M2 discovery repair is not bound to a current trusted diagnosis")
+    record = records[0]
+    contract = parse_work_item(issue.get("body", ""))
+    expected_metadata = [
+        f"M2-Discovery-Fingerprint: {record['failure_fingerprint']}",
+        f"M2-Discovery-Run: {record['run_id']} attempt {record['run_attempt']}",
+        f"M2-Discovery-Tested-SHA: {record['tested_sha']}",
+        f"M2-Discovery-Failure-Code: {record['failure_code']}",
+        f"M2-Discovery-Summary: {str(record.get('summary', ''))[:1000]}",
+    ]
+    if (
+        contract.criterion != M2_DISCOVERY_CRITERIA.get(str(record.get("failure_scope")))
+        or contract.check != M2_DISCOVERY_REPAIR_CHECK
+        or contract.depends_on
+        or M2_DISCOVERY_METADATA_RE.findall(issue.get("body", "")) != expected_metadata
+    ):
+        raise LoopBlocked("M2 discovery repair Work Item no longer matches its trusted record")
+    return record
+
+
+def trusted_m2_discovery_repair_pr(
+    snapshot: Mapping[str, Any], *, pr_number: int, head_sha: str
+) -> bool:
+    matches = [
+        pr
+        for pr in snapshot.get("pull_requests", [])
+        if pr.get("number") == pr_number
+        and pr.get("state") == "open"
+        and pr.get("head_sha") == head_sha
+    ]
+    if len(matches) != 1 or snapshot.get("milestone") != "m2":
+        return False
+    pr = matches[0]
+    if (
+        CONTRACT_CHANGE_LABEL not in pr.get("labels", [])
+        or "Contract-Change: true" not in pr.get("body", "")
+    ):
+        return False
+    item_numbers = PR_WORK_ITEM_RE.findall(pr.get("body", ""))
+    fingerprints = M2_DISCOVERY_WORK_ITEM_RE.findall(pr.get("body", ""))
+    if len(item_numbers) != 1 or len(fingerprints) != 1:
+        return False
+    issue = _find_item(snapshot, int(item_numbers[0]))
+    record = _validated_m2_discovery_repair(issue, snapshot)
+    return (
+        record is not None
+        and record.get("failure_fingerprint") == fingerprints[0]
+        and status_from_labels(issue.get("labels", [])) == "review"
+    )
+
+
 def validate_failure_diagnosis(
     transaction: PlannerTransaction,
     *,
@@ -857,6 +1213,20 @@ def validate_failure_diagnosis(
 ) -> None:
     target = _find_item(snapshot, issue_number)
     target_contract = parse_work_item(target["body"])
+    discovery_retry = DISCOVERY_REPAIR_LABEL in target.get("labels", [])
+    if discovery_retry and (
+        len(transaction.writes) != 1
+        or transaction.writes[0].number != issue_number
+        or transaction.writes[0].operation.kind != "update"
+        or transaction.writes[0].operation.status != "ready"
+        or transaction.writes[0].operation.check != M2_DISCOVERY_REPAIR_CHECK
+        or transaction.writes[0].operation.depends_on
+        or DISCOVERY_REPAIR_LABEL not in transaction.writes[0].labels
+        or len(M2_DISCOVERY_WORK_ITEM_RE.findall(transaction.writes[0].body)) != 1
+    ):
+        raise ContractError(
+            "M2 discovery retry diagnosis must return the same marked Work Item to ready"
+        )
     for write in transaction.writes:
         if write.number is not None and write.number != issue_number:
             raise ContractError("failure diagnosis cannot update another existing Work Item")
@@ -876,6 +1246,7 @@ def run_worker(
     issue_number: int,
 ) -> str:
     issue = _find_item(snapshot, issue_number)
+    discovery_record = _validated_m2_discovery_repair(issue, snapshot)
     if status_from_labels(issue.get("labels", [])) != "ready":
         raise LoopBlocked(f"Work Item #{issue_number} is no longer ready")
     base_sha = str(snapshot["default_sha"])
@@ -886,6 +1257,7 @@ def run_worker(
     _set_issue_status(client, live_issue, "in-progress")
     refreshed = collect_snapshot(client, str(snapshot["milestone"]))
     issue = _find_item(refreshed, issue_number)
+    discovery_record = _validated_m2_discovery_repair(issue, refreshed)
     worktree = _worktree(runtime_root, repo_root, base_sha)
     context_path = runtime_root / "worker-context.json"
     output_path = runtime_root / "worker-output.json"
@@ -908,6 +1280,18 @@ def run_worker(
                 parser=parse_worker_output,
                 wall_timeout=3600,
                 silence_timeout=300,
+                initial_instruction=(
+                    "This is a trusted M2 discovery repair that will become a human-reviewed "
+                    "Contract Change. You may change only the smallest necessary files under "
+                    "project/scripts, project/src, and project/tests. The only protected files "
+                    "you may touch are m2_candidate_discovery.py, m2_performance_capture.py, "
+                    "and runtime/docker_runtime.py. Do not change m2_performance_gate.py, "
+                    "Milestone criteria, candidates, thresholds, Gate/Catalog/verification, "
+                    "workflow/control-plane code, or reinterpret a genuine performance or "
+                    "safety failure as an implementation defect."
+                    if discovery_record is not None
+                    else ""
+                ),
             )
         except AgentError as exc:
             client.comment(issue_number, f"Worker protocol or timeout BLOCKED: {str(exc)[:2000]}")
@@ -954,7 +1338,33 @@ def run_worker(
             _set_issue_status(client, issue, "blocked" if stop else "ready")
             return "DIAGNOSE" if stop else "RETRY"
         protected = protected_changes(paths)
-        if protected:
+        if discovery_record is not None:
+            if any(
+                not any(
+                    path.startswith(prefix) if prefix.endswith("/") else path == prefix
+                    for prefix in M2_DISCOVERY_REPAIR_ALLOWED_PREFIXES
+                )
+                for path in paths
+            ):
+                client.comment(issue_number, "M2 discovery repair changed a path outside product code/tests; BLOCKED.")
+                _set_issue_status(client, issue, "blocked")
+                return "BLOCKED"
+            forbidden_protected = tuple(
+                path
+                for path in protected
+                if not any(
+                    path.startswith(prefix) if prefix.endswith("/") else path == prefix
+                    for prefix in M2_DISCOVERY_REPAIR_PROTECTED_PREFIXES
+                )
+            )
+            if forbidden_protected:
+                client.comment(
+                    issue_number,
+                    f"M2 discovery repair touched forbidden protected contracts: {list(forbidden_protected)}",
+                )
+                _set_issue_status(client, issue, "blocked")
+                return "BLOCKED"
+        elif protected:
             client.comment(issue_number, f"Worker candidate touched protected contracts: {list(protected)}")
             _set_issue_status(client, issue, "blocked")
             return "BLOCKED"
@@ -1014,7 +1424,13 @@ def run_worker(
             f"Base-SHA: {base_sha}\n"
             f"Head-SHA: {head_sha}\n"
             f"Check: {contract.check}\n"
-            "Contract-Change: false\n"
+            f"Contract-Change: {'true' if discovery_record is not None else 'false'}\n"
+            + (
+                f"M2-Discovery-Fingerprint: {discovery_record['failure_fingerprint']}\n"
+                f"M2-Discovery-Run: {discovery_record['run_id']} attempt {discovery_record['run_attempt']}\n"
+                if discovery_record is not None
+                else ""
+            )
         )
         existing = _find_pr(live, issue_number)
         if existing is not None and existing.get("state") == "open":
@@ -1029,7 +1445,11 @@ def run_worker(
             )
         client.update_issue(
             pr_number,
-            labels=(WORK_ITEM_LABEL,),
+            labels=(
+                (WORK_ITEM_LABEL, CONTRACT_CHANGE_LABEL)
+                if discovery_record is not None
+                else (WORK_ITEM_LABEL,)
+            ),
         )
         client.api(
             f"issues/{pr_number}",
@@ -1037,6 +1457,19 @@ def run_worker(
             input_value={"milestone": int(snapshot["milestone_number"])},
         )
         _set_issue_status(client, live_issue, "review")
+        if discovery_record is not None:
+            control = ensure_control(client, live)
+            repository = str(live.get("repository", ""))
+            record_human_action_state(
+                client=client,
+                snapshot=live,
+                control=control,
+                state="PR_REVIEW_REQUIRED",
+                target=f"pr:{pr_number}:{head_sha}",
+                sha=head_sha,
+                action="Review and merge this M2 discovery repair Contract Change.",
+                link=f"https://github.com/{repository}/pull/{pr_number}",
+            )
         return "WAIT_PR"
     finally:
         context_path.unlink(missing_ok=True)
@@ -1170,18 +1603,34 @@ def reconcile_review(
             str(record["base_sha"]), str(record["head_sha"]), str(record["tree_sha"])
         )
         contract = parse_work_item(issue["body"])
+        contract_change = (
+            CONTRACT_CHANGE_LABEL in pr.get("labels", [])
+            or "Contract-Change: true" in pr.get("body", "")
+        )
+        expected_work_item_check = "repository.all" if contract_change else contract.check
         if (
             record.get("base_sha") != snapshot.get("default_sha")
             or record.get("head_sha") != pr.get("head_sha")
             or record.get("tree_sha") != pr.get("head_tree_sha")
             or record.get("verified_tree") != expected_tree
             or record.get("baseline") != "repository.all"
-            or record.get("work_item_check") != contract.check
+            or record.get("work_item_check") != expected_work_item_check
         ):
             client.disable_auto_merge(int(pr["number"]))
             _set_issue_status(client, issue, "ready")
             return "RETRY", control
-        if CONTRACT_CHANGE_LABEL in pr.get("labels", []) or "Contract-Change: true" in pr.get("body", ""):
+        if contract_change:
+            repository = str(snapshot.get("repository", ""))
+            record_human_action_state(
+                client=client,
+                snapshot=snapshot,
+                control=control,
+                state="PR_REVIEW_REQUIRED",
+                target=f"pr:{pr['number']}:{pr.get('head_sha', '')}",
+                sha=str(pr.get("head_sha", "")),
+                action="Review and merge this protected Contract Change.",
+                link=f"https://github.com/{repository}/pull/{pr['number']}",
+            )
             return "HUMAN_REVIEW", control
         if os.environ.get("MILESTONE_LOOP_AUTO_MERGE", "false").lower() != "true":
             return "HUMAN_REVIEW", control
@@ -1224,6 +1673,57 @@ def coordinate(
         return {"status": review_action, "milestone": milestone}
     snapshot = collect_snapshot(client, milestone)
     diagnosis = pending_failure_diagnosis(snapshot)
+    discovery_diagnosis = pending_m2_discovery_diagnosis(snapshot)
+    if diagnosis is not None and discovery_diagnosis is not None:
+        raise LoopBlocked("ordinary and M2 discovery diagnoses cannot run in the same round")
+    if (
+        discovery_diagnosis is not None
+        and discovery_diagnosis.get("tested_sha") != snapshot.get("default_sha")
+    ):
+        _record_m2_discovery_hard_block(
+            client=client,
+            snapshot=snapshot,
+            control=control,
+            record=discovery_diagnosis,
+            action="Review the stale M2 discovery diagnosis; it cannot run on the new default SHA.",
+        )
+        return {
+            "status": "BLOCKED",
+            "milestone": milestone,
+            "reason": "stale-discovery-diagnosis",
+        }
+    if discovery_diagnosis is not None and isinstance(
+        discovery_diagnosis.get("existing_issue"), int
+    ):
+        issue_number = int(discovery_diagnosis["existing_issue"])
+        existing = _find_item(snapshot, issue_number)
+        if (
+            discovery_diagnosis.get("tested_sha") != snapshot.get("default_sha")
+            or status_from_labels(existing.get("labels", [])) != "ready"
+            or DISCOVERY_REPAIR_LABEL not in existing.get("labels", [])
+        ):
+            raise LoopBlocked("partial M2 discovery diagnosis cannot be resumed safely")
+        client.comment(
+            control.issue_number,
+            "Recovered the bounded M2 discovery diagnosis Work Item.\n\n"
+            "<!-- milestone-loop-m2-discovery-diagnosis-complete: "
+            f"{discovery_diagnosis['failure_fingerprint']} -->",
+        )
+        snapshot = collect_snapshot(client, milestone)
+        result = run_worker(
+            client=client,
+            repo_root=repo_root,
+            runtime_root=runtime_root,
+            snapshot=snapshot,
+            milestone_document=milestone_document,
+            issue_number=issue_number,
+        )
+        if result in {"WAIT_PR", "RETRY", "DIAGNOSE"}:
+            next_count = control.no_progress_count + 1
+            set_no_progress(client, control, next_count)
+            if next_count >= 10:
+                return {"status": "BLOCKED", "milestone": milestone, "reason": "no-progress"}
+        return {"status": result, "milestone": milestone, "issue": issue_number}
     if review_action == "RETRY":
         ready = [
             number
@@ -1277,18 +1777,51 @@ def coordinate(
             runtime_root=runtime_root,
             snapshot=snapshot,
             milestone_document=milestone_document,
-            global_audit=control.no_progress_count == 5,
-            diagnosis_issue=diagnosis[0] if diagnosis is not None else None,
+            global_audit=control.no_progress_count == 5 and discovery_diagnosis is None,
+            diagnosis_issue=(
+                diagnosis[0]
+                if diagnosis is not None and discovery_diagnosis is None
+                else None
+            ),
+            discovery_record=discovery_diagnosis,
         )
     except AgentError as exc:
         client.comment(control.issue_number, f"Planner protocol or timeout BLOCKED: {str(exc)[:2000]}")
+        if discovery_diagnosis is not None:
+            _record_m2_discovery_hard_block(
+                client=client,
+                snapshot=snapshot,
+                control=control,
+                record=discovery_diagnosis,
+                action="Review the bounded Planner failure for this discovery diagnosis.",
+            )
         return {"status": "BLOCKED", "milestone": milestone, "reason": "planner"}
-    transaction = prepare_planner_transaction(
-        snapshot=snapshot,
-        output=planner_output,
-        milestone_document=milestone_document,
-        catalog_document=catalog_document,
-    )
+    try:
+        transaction = prepare_planner_transaction(
+            snapshot=snapshot,
+            output=planner_output,
+            milestone_document=milestone_document,
+            catalog_document=catalog_document,
+        )
+        if discovery_diagnosis is not None:
+            transaction = validate_m2_discovery_diagnosis(
+                transaction, record=discovery_diagnosis
+            )
+    except ContractError as exc:
+        if discovery_diagnosis is None:
+            raise
+        client.comment(
+            control.issue_number,
+            f"M2 discovery diagnosis BLOCKED by deterministic validation: {str(exc)[:2000]}",
+        )
+        _record_m2_discovery_hard_block(
+            client=client,
+            snapshot=snapshot,
+            control=control,
+            record=discovery_diagnosis,
+            action="Review the rejected M2 discovery diagnosis; it cannot be repaired safely.",
+        )
+        return {"status": "BLOCKED", "milestone": milestone, "reason": "discovery-diagnosis"}
     if diagnosis is not None:
         validate_failure_diagnosis(
             transaction,
@@ -1310,6 +1843,34 @@ def coordinate(
     ]
     if len(live_ready) > 1:
         raise LoopBlocked("Planner writes left multiple live ready Work Items")
+    if discovery_diagnosis is not None and len(live_ready) != 1:
+        _record_m2_discovery_hard_block(
+            client=client,
+            snapshot=snapshot,
+            control=control,
+            record=discovery_diagnosis,
+            action="Review the incomplete M2 discovery diagnosis transaction.",
+        )
+        return {
+            "status": "BLOCKED",
+            "milestone": milestone,
+            "reason": "discovery-diagnosis-live-state",
+        }
+    if discovery_diagnosis is not None:
+        client.comment(
+            control.issue_number,
+            "Bounded M2 discovery diagnosis created one repair Work Item.\n\n"
+            "<!-- milestone-loop-m2-discovery-diagnosis-complete: "
+            f"{discovery_diagnosis['failure_fingerprint']} -->",
+        )
+        snapshot = collect_snapshot(client, milestone)
+        live_ready = [
+            number
+            for number, item in work_items(snapshot).items()
+            if status_from_labels(item.get("labels", [])) == "ready"
+        ]
+        if len(live_ready) != 1:
+            raise LoopBlocked("M2 discovery repair changed before Worker start")
     selected = transaction.ready_issue
     if selected is None and live_ready:
         selected = live_ready[0]
@@ -1379,6 +1940,277 @@ def milestone_from_pr_body(body: str) -> str:
     return match.group(1)
 
 
+def _ensure_m2_discovery_check(
+    *,
+    client: GitHubClient,
+    tested_sha: str,
+    dedup_key: str,
+    status: str,
+    summary: str,
+) -> None:
+    external_id = f"m2-discovery:{dedup_key}"
+    check_name = quote(M2_DISCOVERY_CHECK_NAME, safe="")
+    value = client.api(
+        f"commits/{tested_sha}/check-runs?check_name={check_name}&filter=all&per_page=100"
+    )
+    if (
+        not isinstance(value, dict)
+        or not isinstance(value.get("check_runs"), list)
+        or not isinstance(value.get("total_count"), int)
+        or isinstance(value.get("total_count"), bool)
+        or value["total_count"] < 0
+    ):
+        raise GitHubError("cannot read M2 discovery Checks before recording")
+    if value["total_count"] != len(value["check_runs"]):
+        raise LoopBlocked("M2 discovery Check history exceeds its authoritative page")
+    if any(
+        not isinstance(check, dict)
+        or check.get("name") != M2_DISCOVERY_CHECK_NAME
+        for check in value["check_runs"]
+    ):
+        raise GitHubError("M2 discovery Check history is malformed")
+    matches = [
+        check
+        for check in value["check_runs"]
+        if check.get("external_id") == external_id
+    ]
+    if len(matches) > 1:
+        raise LoopBlocked("M2 discovery Check identity is duplicated")
+    if matches:
+        match = matches[0]
+        app = match.get("app")
+        if (
+            not isinstance(app, dict)
+            or app.get("slug") != "github-actions"
+            or match.get("head_sha") != tested_sha
+            or match.get("status") != "completed"
+            or match.get("conclusion") != github_conclusion(status)
+        ):
+            raise LoopBlocked("M2 discovery Check identity is untrusted or inconsistent")
+        return
+    if value["total_count"] >= 100:
+        raise LoopBlocked("M2 discovery Check history capacity is exhausted")
+    client.create_check_run(
+        name=M2_DISCOVERY_CHECK_NAME,
+        head_sha=tested_sha,
+        conclusion=github_conclusion(status),
+        title=f"M2 candidate-selection-only discovery {status}",
+        summary=(
+            f"{summary}\n\nCandidate selection only; never M2 admission evidence."
+        )[:65000],
+        external_id=external_id,
+    )
+
+
+def _m2_discovery_diagnosis_completed(
+    control_issue: Mapping[str, Any], fingerprint: str
+) -> bool:
+    return any(
+        fingerprint in M2_DISCOVERY_DIAGNOSIS_COMPLETE_RE.findall(comment.get("body", ""))
+        for comment in control_issue.get("comments", [])
+        if isinstance(comment, dict)
+        and comment.get("author") == "github-actions[bot]"
+        and isinstance(comment.get("body"), str)
+    )
+
+
+def record_m2_discovery_result(
+    *, client: GitHubClient, result: Mapping[str, Any]
+) -> str:
+    required = {
+        "schema_version",
+        "milestone",
+        "status",
+        "disposition",
+        "failure_scope",
+        "failure_code",
+        "failure_fingerprint",
+        "tested_sha",
+        "run_id",
+        "run_attempt",
+        "invocation_id",
+        "run_outcome",
+        "cleanup_outcome",
+        "report_digest",
+        "evidence_digest",
+        "summary",
+        "result_digest",
+    }
+    if (
+        set(result) != required
+        or result.get("schema_version") != "m2-discovery-result-v1"
+        or result.get("milestone") != "m2"
+        or result.get("status") not in {"PASS", "FAIL", "BLOCKED"}
+        or result.get("disposition")
+        not in {"CANDIDATE_SELECTION_ONLY", "REPAIRABLE_IMPLEMENTATION", "HUMAN_REQUIRED"}
+        or re.fullmatch(r"[0-9a-f]{40}", str(result.get("tested_sha", ""))) is None
+        or re.fullmatch(r"[0-9a-f]{64}", str(result.get("result_digest", ""))) is None
+        or re.fullmatch(r"[0-9a-f]{64}", str(result.get("failure_fingerprint", ""))) is None
+    ):
+        raise ContractError("sealed M2 discovery record is invalid")
+    snapshot = collect_snapshot(client, "m2")
+    control = ensure_control(client, snapshot)
+    snapshot = collect_snapshot(client, "m2")
+    controls = [
+        issue
+        for issue in snapshot.get("issues", [])
+        if issue.get("number") == control.issue_number
+    ]
+    if len(controls) != 1:
+        raise LoopBlocked("M2 Control Issue disappeared before discovery recording")
+    control_issue = controls[0]
+    effective_status = str(result["status"])
+    effective_disposition = str(result["disposition"])
+    stale = snapshot.get("default_sha") != result["tested_sha"]
+    if stale:
+        effective_status = "BLOCKED"
+        effective_disposition = "HUMAN_REQUIRED"
+    dedup_key = hashlib.sha256(
+        json.dumps(
+            {
+                "milestone": "m2",
+                "tested_sha": result["tested_sha"],
+                "failure_fingerprint": result["failure_fingerprint"],
+                "status": effective_status,
+                "disposition": effective_disposition,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    record_identity = {
+        "version": 1,
+        "milestone": "m2",
+        "run_id": str(result["run_id"]),
+        "run_attempt": int(result["run_attempt"]),
+        "tested_sha": str(result["tested_sha"]),
+        "result_digest": str(result["result_digest"]),
+        "report_digest": str(result["report_digest"]),
+        "evidence_digest": str(result["evidence_digest"]),
+        "cleanup_outcome": str(result["cleanup_outcome"]),
+    }
+    records = _trusted_comment_payloads(control_issue, M2_DISCOVERY_RECORD_RE)
+    existing = [value for value in records if value.get("dedup_key") == dedup_key]
+    if len(existing) > 1:
+        raise LoopBlocked("M2 discovery durable record identity is duplicated")
+    repairable = (
+        effective_disposition == "REPAIRABLE_IMPLEMENTATION"
+        and effective_status == "FAIL"
+    )
+    diagnosis_completed = repairable and _m2_discovery_diagnosis_completed(
+        control_issue, str(result["failure_fingerprint"])
+    )
+    dispatched = repairable and any(
+        dedup_key in M2_DISCOVERY_DISPATCH_RE.findall(comment.get("body", ""))
+        for comment in control_issue.get("comments", [])
+        if isinstance(comment, dict)
+        and comment.get("author") == "github-actions[bot]"
+        and isinstance(comment.get("body"), str)
+    )
+    ambiguous_dispatch = (
+        repairable and bool(existing) and not diagnosis_completed and not dispatched
+    )
+    hard_block_record = existing[0] if ambiguous_dispatch else result
+    human_action_value: dict[str, Any] | None = None
+    if ambiguous_dispatch or (not repairable and effective_status != "PASS"):
+        human_action_value = _human_action_value(
+            snapshot=snapshot,
+            state="HARD_BLOCKED",
+            target=(
+                f"run:{hard_block_record['run_id']}:"
+                f"attempt:{hard_block_record['run_attempt']}"
+            ),
+            sha=str(hard_block_record["tested_sha"]),
+        )
+    human_action_exists = human_action_value is not None and any(
+        payload.get("key") == human_action_value["key"]
+        for payload in _trusted_comment_payloads(control_issue, HUMAN_ACTION_RE)
+    )
+    _require_control_comment_capacity(
+        control_issue,
+        (0 if existing else 1)
+        + (
+            1
+            if repairable
+            and not existing
+            and not diagnosis_completed
+            and not dispatched
+            else 0
+        )
+        + (1 if human_action_value is not None and not human_action_exists else 0),
+    )
+    summary = str(result["summary"])[:4000]
+    if not existing:
+        _ensure_m2_discovery_check(
+            client=client,
+            tested_sha=str(result["tested_sha"]),
+            dedup_key=dedup_key,
+            status=effective_status,
+            summary=summary,
+        )
+    marker = {
+        **record_identity,
+        "dedup_key": dedup_key,
+        "status": effective_status,
+        "disposition": effective_disposition,
+        "failure_scope": str(result["failure_scope"]),
+        "failure_code": str(result["failure_code"]),
+        "failure_fingerprint": str(result["failure_fingerprint"]),
+        "summary": str(result["summary"])[:2000],
+    }
+    qualifier = " (stale default SHA)" if stale else ""
+    if not existing:
+        client.comment(
+            control.issue_number,
+            f"Trusted M2 candidate-selection-only discovery result: **{effective_status}**{qualifier}\n\n"
+            f"{summary}\n\n"
+            "This result is not M2 admission evidence and cannot close M2.\n\n"
+            "<!-- milestone-loop-m2-discovery: "
+            + json.dumps(marker, sort_keys=True, separators=(",", ":"))
+            + " -->",
+        )
+    if repairable:
+        if diagnosis_completed:
+            return "NOOP"
+        if dispatched:
+            return "NOOP"
+        if ambiguous_dispatch:
+            _record_m2_discovery_hard_block(
+                client=client,
+                snapshot=snapshot,
+                control=control,
+                record=hard_block_record,
+                action=(
+                    "Review the M2 discovery run because its prior diagnosis dispatch "
+                    "has no trusted completion marker."
+                ),
+            )
+            return "HUMAN_REQUIRED"
+        client.dispatch("m2")
+        client.comment(
+            control.issue_number,
+            "M2 discovery diagnosis dispatched.\n\n"
+            f"<!-- milestone-loop-m2-discovery-dispatch: {dedup_key} -->",
+        )
+        return "DIAGNOSE"
+    if effective_status == "PASS":
+        return "NOOP" if existing else "RECORDED"
+    repository = str(snapshot.get("repository", ""))
+    run_id = str(result["run_id"])
+    run_attempt = str(result["run_attempt"])
+    record_human_action_state(
+        client=client,
+        snapshot=snapshot,
+        control=control,
+        state="HARD_BLOCKED",
+        target=f"run:{run_id}:attempt:{run_attempt}",
+        sha=str(result["tested_sha"]),
+        action="Review the trusted M2 discovery Check and its current-invocation evidence.",
+        link=f"https://github.com/{repository}/actions/runs/{run_id}/attempts/{run_attempt}",
+    )
+    return "HUMAN_REQUIRED"
+
+
 def record_milestone_result(
     *,
     client: GitHubClient,
@@ -1413,6 +2245,18 @@ def record_milestone_result(
         return "STALE"
     if status == "PASS":
         set_no_progress(client, control, 0)
+        if milestone == "m2":
+            repository = str(snapshot.get("repository", ""))
+            record_human_action_state(
+                client=client,
+                snapshot=snapshot,
+                control=control,
+                state="M2_COMPLETE",
+                target=f"milestone:{milestone}",
+                sha=expected_sha,
+                action="Review the authoritative M2 Gate result and close the Milestone.",
+                link=f"https://github.com/{repository}/issues/{control.issue_number}",
+            )
         return "HUMAN_CLOSE"
     if status == "FAIL":
         return "DIAGNOSE"

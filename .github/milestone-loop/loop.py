@@ -25,10 +25,19 @@ from coordinator import (
     LoopBlocked,
     coordinate,
     milestone_from_pr_body,
+    record_m2_discovery_result,
     record_milestone_result,
+    trusted_m2_discovery_repair_pr,
 )
 from github_api import GitHubClient, GitHubError, collect_snapshot
-from milestone_runner import authorize, run_gate, run_m2_discovery
+from milestone_runner import (
+    authorize,
+    human_required_m2_discovery_result,
+    load_m2_discovery_result,
+    run_gate,
+    run_m2_discovery,
+    seal_m2_discovery_result,
+)
 from recovery import recover
 
 
@@ -125,7 +134,7 @@ def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
         for item in pr.get("labels", [])
         if isinstance(item, dict) and isinstance(item.get("name"), str)
     }
-    contract_change = "contract-change" in labels
+    contract_change = "contract-change" in labels or "Contract-Change: true" in body
     if contract_change:
         check = "repository.all"
     else:
@@ -186,6 +195,21 @@ def _parser() -> argparse.ArgumentParser:
     discovery = commands.add_parser("run-m2-discovery")
     discovery.add_argument("--expected-sha", required=True)
     discovery.add_argument("--expected-lease-sha256", required=True)
+    seal_discovery = commands.add_parser("seal-m2-discovery")
+    seal_discovery.add_argument("--expected-sha", required=True)
+    seal_discovery.add_argument("--run-id", required=True)
+    seal_discovery.add_argument("--run-attempt", required=True)
+    seal_discovery.add_argument("--run-outcome", required=True)
+    seal_discovery.add_argument("--cleanup-outcome", required=True)
+    seal_discovery.add_argument("--raw-result", type=Path, required=True)
+    seal_discovery.add_argument("--evidence", type=Path, required=True)
+    seal_discovery.add_argument("--output", type=Path, required=True)
+    record_discovery = commands.add_parser("record-m2-discovery")
+    record_discovery.add_argument("--expected-sha", required=True)
+    record_discovery.add_argument("--run-id", required=True)
+    record_discovery.add_argument("--run-attempt", required=True)
+    record_discovery.add_argument("--result", type=Path, required=True)
+    record_discovery.add_argument("--evidence", type=Path, required=True)
     record = commands.add_parser("record-milestone")
     record.add_argument("--milestone", required=True)
     record.add_argument("--expected-sha", required=True)
@@ -220,6 +244,19 @@ def main(argv: Sequence[str] | None = None) -> int:
                 require_docker=args.role in {"verify", "real"},
             )
             _write_output({"status": "PASS", "role": args.role})
+            return 0
+        if args.command == "seal-m2-discovery":
+            result = seal_m2_discovery_result(
+                raw_result_path=args.raw_result,
+                evidence_root=args.evidence,
+                output_path=args.output,
+                expected_sha=args.expected_sha,
+                run_id=args.run_id,
+                run_attempt=args.run_attempt,
+                run_outcome=args.run_outcome,
+                cleanup_outcome=args.cleanup_outcome,
+            )
+            _write_output(result)
             return 0
         client = GitHubClient.from_environment()
         if args.command == "coordinate":
@@ -259,13 +296,38 @@ def main(argv: Sequence[str] | None = None) -> int:
                 expected_sha=args.expected_sha,
                 expected_lease_sha256=args.expected_lease_sha256,
             )
-            result_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "m2-discovery-result.json"
+            result_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "m2-discovery-raw-result.json"
             result["tested_sha"] = args.expected_sha
             result_path.write_text(
                 json.dumps(result, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
             _write_output({**result, "result": str(result_path)})
+            return 0
+        if args.command == "record-m2-discovery":
+            try:
+                result = load_m2_discovery_result(
+                    result_path=args.result,
+                    evidence_root=args.evidence,
+                    expected_sha=args.expected_sha,
+                    run_id=args.run_id,
+                    run_attempt=args.run_attempt,
+                )
+            except (ContractError, OSError, json.JSONDecodeError) as exc:
+                result = human_required_m2_discovery_result(
+                    expected_sha=args.expected_sha,
+                    run_id=args.run_id,
+                    run_attempt=args.run_attempt,
+                    summary=f"M2 discovery artifact validation failed: {exc}",
+                )
+            action = record_m2_discovery_result(client=client, result=result)
+            _write_output(
+                {
+                    "status": action,
+                    "discovery_status": result["status"],
+                    "milestone": "m2",
+                }
+            )
             return 0
         if args.command == "record-milestone":
             result = json.loads(args.result.read_text(encoding="utf-8"))
@@ -317,6 +379,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             if status != "BLOCKED" and args.contract_change == "false":
                 client.dispatch(args.milestone)
+            elif status == "FAIL" and args.contract_change == "true":
+                snapshot = collect_snapshot(client, args.milestone)
+                if trusted_m2_discovery_repair_pr(
+                    snapshot,
+                    pr_number=args.pr,
+                    head_sha=args.head_sha,
+                ):
+                    client.dispatch(args.milestone)
             _write_output({"status": status, "milestone": args.milestone})
             return 0
     except (ContractError, GitHubError, LoopBlocked, OSError, json.JSONDecodeError) as exc:
