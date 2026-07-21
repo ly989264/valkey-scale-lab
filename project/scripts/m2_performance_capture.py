@@ -945,16 +945,44 @@ def _load_resource_window(path: Path) -> dict[str, Any]:
 
 
 def _validate_resource_report(report: dict[str, Any]) -> dict[str, Any]:
+    from valkey_scale_lab.metrics.m2_resource import validate_and_aggregate_m2_resource_samples
+
     if report.get("status") != "PASS" or report.get("coverage", {}).get("complete") is not True:
         raise CaptureError("M2 resource window is missing or incomplete")
+    recomputed = validate_and_aggregate_m2_resource_samples(report)
+    if recomputed.get("status") != "PASS" or recomputed.get("errors") != []:
+        raise CaptureError("M2 resource raw samples are incomplete or invalid")
     metrics = report.get("metrics")
-    if not isinstance(metrics, dict):
+    recomputed_metrics = recomputed.get("metrics")
+    if not isinstance(metrics, dict) or not isinstance(recomputed_metrics, dict):
         raise CaptureError("M2 resource metrics are missing")
-    for field in ("peak_rss_bytes", "cpu_time_seconds", "fd_count", "connection_count", "cluster_bus_bytes"):
-        if isinstance(metrics.get(field), bool) or not isinstance(metrics.get(field), (int, float)):
+    metric_fields = (
+        "peak_rss_bytes",
+        "cpu_time_seconds",
+        "fd_count",
+        "connection_count",
+        "cluster_bus_bytes",
+        "cluster_link_errors",
+        "buffer_overflows",
+    )
+    for field in metric_fields:
+        value = metrics.get(field)
+        recomputed_value = recomputed_metrics.get(field)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+        ):
             raise CaptureError(f"M2 resource metric {field} is unavailable")
+        if (
+            isinstance(recomputed_value, bool)
+            or not isinstance(recomputed_value, (int, float))
+            or not math.isfinite(float(recomputed_value))
+            or not math.isclose(float(value), float(recomputed_value), rel_tol=0.0, abs_tol=1e-9)
+        ):
+            raise CaptureError(f"M2 resource metric {field} does not match raw samples")
     for field in ("cluster_link_errors", "buffer_overflows"):
-        if metrics.get(field) != 0:
+        if recomputed_metrics.get(field) != 0:
             raise CaptureError(f"M2 resource safety metric {field} is unavailable or nonzero")
     return report
 

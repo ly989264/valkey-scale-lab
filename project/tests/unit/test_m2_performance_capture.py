@@ -455,6 +455,11 @@ def test_fault_resource_window_samples_all_owned_processes_before_barrier(
     import valkey_scale_lab.runtime.docker_runtime as docker_runtime
 
     monkeypatch.setattr(resource_module, "collect_m2_resource_window", fake_collect)
+    monkeypatch.setattr(
+        resource_module,
+        "validate_and_aggregate_m2_resource_samples",
+        lambda report: {"status": "PASS", "errors": [], "metrics": report["metrics"]},
+    )
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
 
     report = capture._capture_resource_window(
@@ -471,6 +476,51 @@ def test_fault_resource_window_samples_all_owned_processes_before_barrier(
     assert observed_expected_gone == [
         [{"nodehost_id": "a", "container_id": "container-a", "pid": 101}]
     ]
+
+
+def test_resource_report_validation_uses_raw_derived_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import valkey_scale_lab.metrics.m2_resource as resource_module
+
+    report = {
+        "status": "PASS",
+        "coverage": {"complete": True},
+        "metrics": {
+            "peak_rss_bytes": 1,
+            "cpu_time_seconds": 1,
+            "fd_count": 1,
+            "connection_count": 1,
+            "cluster_bus_bytes": 1,
+            "cluster_link_errors": 0,
+            "buffer_overflows": 0,
+        },
+    }
+    recomputed_metrics = dict(report["metrics"])
+    monkeypatch.setattr(
+        resource_module,
+        "validate_and_aggregate_m2_resource_samples",
+        lambda _report: {"status": "PASS", "errors": [], "metrics": recomputed_metrics},
+    )
+
+    assert capture._validate_resource_report(report) is report
+
+    report["metrics"]["cluster_link_errors"] = 1
+    with pytest.raises(capture.CaptureError, match="does not match raw samples"):
+        capture._validate_resource_report(report)
+
+    recomputed_metrics["cluster_link_errors"] = 1
+    with pytest.raises(capture.CaptureError, match="unavailable or nonzero"):
+        capture._validate_resource_report(report)
+
+    report["metrics"]["cluster_link_errors"] = 0
+    monkeypatch.setattr(
+        resource_module,
+        "validate_and_aggregate_m2_resource_samples",
+        lambda _report: {"status": "FAIL", "errors": ["raw links missing"], "metrics": {}},
+    )
+    with pytest.raises(capture.CaptureError, match="raw samples are incomplete or invalid"):
+        capture._validate_resource_report(report)
 
 
 def test_owned_pid_observation_distinguishes_gone_from_probe_failure() -> None:
