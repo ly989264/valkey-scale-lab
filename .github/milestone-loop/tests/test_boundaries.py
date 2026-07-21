@@ -92,6 +92,17 @@ class InvocationClient:
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_environment_rejection_skips_discovery_recorder(self) -> None:
+        workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        recorder_condition = workflow.split("\n  record-m2-discovery:", 1)[1].split(
+            "    runs-on:", 1
+        )[0]
+        self.assertIn("always()", recorder_condition)
+        self.assertIn(
+            "needs.m2-discovery.outputs.lease_sha256 != ''", recorder_condition
+        )
+        self.assertNotIn("needs.m2-discovery.result == 'success'", recorder_condition)
+
     def test_contract_change_body_closes_the_label_event_race(self) -> None:
         event = {
             "action": "opened",

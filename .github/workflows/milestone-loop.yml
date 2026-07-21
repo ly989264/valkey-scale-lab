@@ -419,7 +419,8 @@ jobs:
     needs: [coordinate, m2-discovery]
     if: >-
       always() &&
-      needs.coordinate.outputs.entrypoint == 'discovery'
+      needs.coordinate.outputs.entrypoint == 'discovery' &&
+      needs.m2-discovery.outputs.lease_sha256 != ''
     runs-on: [self-hosted, macOS, valkey-codex]
     timeout-minutes: 30
     permissions:
