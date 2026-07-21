@@ -85,31 +85,47 @@ The coordinator creates exactly one Control Issue per Milestone. Its body may
 contain only these two lines:
 
 ```text
-Authorization Lease: `{"expires_at":"","milestone":"m1","nonce":"","remaining":0,"status":"empty","version":1}`
+Authorization Lease: `{"default_sha":"","entrypoint":"","expires_at":"","milestone":"m1","nonce":"","remaining":0,"run_attempt":"","run_id":"","status":"empty","version":2}`
 No-progress count: 0
 ```
 
-Before an authorized real run, a human edits only the JSON value to a unique,
-short-lived active lease, for example:
+The coordinator performs only read-side readiness preparation and records one
+deduplicated `REAL_AUTHORIZATION_REQUIRED` Control Issue comment with the run
+link. Both real entrypoints then wait directly on the protected `valkey-real`
+Environment. The required reviewer's **Approve and deploy** action is the sole
+normal human authorization for that invocation; approving a PR authorizes only
+code merge and never authorizes a real run.
 
-```text
-Authorization Lease: `{"expires_at":"2026-07-18T16:00:00Z","milestone":"m1","nonce":"m1-20260718-01","remaining":1,"status":"active","version":1}`
-No-progress count: 0
-```
+After Environment approval, the real job checks out the prepared immutable SHA.
+Its first repository-owned command rechecks the Milestone, entrypoint, default
+and checkout SHA, readiness fingerprint, live workflow run ID and attempt, and
+the `valkey-real` required-reviewer rule and Control Issue. It creates a
+short-lived version-2 Lease with `remaining=1` only
+in memory and immediately consumes it. A single Control Issue update persists
+only the invocation-bound `exhausted`, `remaining=0` receipt. Global workflow
+concurrency serializes trusted controller executions; exact observed pre-write
+and post-write changes fail closed, so that controller has one visible Lease
+transition. Canonical legacy version-1 `empty` or `exhausted` state may migrate
+after fresh approval. Active, revoked, malformed, stale, replayed, or changed
+state is `HARD_BLOCKED`; a known non-replaceable Lease is reported before the
+Environment review is requested. Manual Control Issue edits are not an
+authorization or revocation API.
 
-`authorize-real` validates and atomically consumes one execution before the
-job protected by the `valkey-real` Environment can start. Expired, exhausted,
-revoked, malformed, or concurrently changed leases produce `BLOCKED`. A label
-edit cannot resume the loop; only dispatch with `action=resume` can do that.
+Waiting, rejection, or cancellation at the Environment gate executes no step,
+so it cannot generate or consume a Lease. Every new workflow invocation or run
+attempt must receive a new Environment approval and a new Lease; the controller
+never renews, replays, or auto-authorizes one. Direct `workflow_dispatch`
+`start|resume` remains a break-glass recovery interface, not a normal approval
+step. Final real-resource cleanup is eligible only after authorization succeeds.
 
 ## M2 Candidate Readiness
 
 The exact reviewed M2 definition in which all four candidate bindings are
 `current-default` routes through the existing `start|resume` and `MILESTONE`
-authorization path to candidate discovery. `authorize-real` rechecks that
-canonical definition and the live default SHA, then atomically consumes the
-same Authorization Lease. The discovery job starts only after approval by the
-protected `valkey-real` Environment. Missing, invalid, duplicated, inconsistent,
+authorization path to candidate discovery. The discovery job first waits for
+protected `valkey-real` Environment approval, then the invocation authorizer
+rechecks that canonical definition and the live default SHA before generating
+and consuming its one-time Lease. Missing, invalid, duplicated, inconsistent,
 or explicit-baseline bindings remain `BLOCKED`; the Planner cannot choose a
 candidate or turn that blocker into a product Work Item.
 
@@ -182,21 +198,23 @@ The first activation has a one-time trust bootstrap and must use this order:
 With auto-merge still disabled, perform at least three real GitHub dispatch
 rounds. Keep their run URLs in the activation PR or Control Issue comments and
 exercise: repeat dispatch/idempotency, a stale live-state rejection, malformed
-Agent output followed by its single repair, candidate `BLOCKED`, lease
-exhaustion, runner interruption, and recovery cleanup. Do not enable automatic
+Agent output followed by its single repair, candidate `BLOCKED`, Environment
+rejection/cancellation with no Lease change, same-attempt replay rejection,
+runner interruption, and recovery cleanup. Do not enable automatic
 merge until all drills pass and `valkey-local` is online with all three routing
 labels visible in GitHub.
 
 After all drills pass, enable repository auto-merge and set
 `MILESTONE_LOOP_AUTO_MERGE=true` before the full M1 acceptance run.
 
-Normal operation starts with:
+Normal operation continues from the existing post-merge dispatch. Direct
+dispatch is retained only for break-glass start or recovery:
 
 ```bash
 gh workflow run milestone-loop.yml -f action=start -f milestone=m1
 ```
 
-After a blocker is corrected, the only recovery entry is:
+After a hard blocker is corrected, the break-glass recovery entry is:
 
 ```bash
 gh workflow run milestone-loop.yml -f action=resume -f milestone=m1

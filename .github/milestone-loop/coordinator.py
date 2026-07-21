@@ -68,6 +68,9 @@ M2_DISCOVERY_METADATA_RE = re.compile(
     r"(?m)^M2-Discovery-(?:Fingerprint|Run|Tested-SHA|Failure-Code|Summary): [^\r\n]+$"
 )
 HUMAN_ACTION_RE = re.compile(r"<!-- milestone-loop-human-action: (\{[^\r\n]+\}) -->")
+LEASE_TIMESTAMP_RE = re.compile(
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"
+)
 PROTECTED_PREFIXES = (
     ".github/CODEOWNERS",
     ".github/milestone-loop/",
@@ -251,10 +254,51 @@ def record_human_action_state(
     sha: str,
     action: str,
     link: str,
+    action_label: str = "open target",
 ) -> bool:
+    milestone = snapshot.get("milestone")
+    repository = snapshot.get("repository")
+    if (
+        state
+        not in {
+            "PR_REVIEW_REQUIRED",
+            "REAL_AUTHORIZATION_REQUIRED",
+            "HARD_BLOCKED",
+            "M2_COMPLETE",
+        }
+        or not isinstance(milestone, str)
+        or re.fullmatch(r"m[1-4]", milestone) is None
+        or not isinstance(repository, str)
+        or re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository) is None
+        or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9:._-]{0,159}", target) is None
+        or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+        or not isinstance(action, str)
+        or not action
+        or len(action) > 2000
+        or not action.isprintable()
+        or not isinstance(action_label, str)
+        or not action_label
+        or len(action_label) > 80
+        or not action_label.isprintable()
+        or not isinstance(link, str)
+        or len(link) > 2000
+        or not link.startswith(f"https://github.com/{repository}/")
+        or not link.isprintable()
+        or any(character.isspace() for character in link)
+    ):
+        raise ContractError("human-action record is invalid")
     value = _human_action_value(
         snapshot=snapshot, state=state, target=target, sha=sha
     )
+    raw_control = client.api(f"issues/{control.issue_number}")
+    if not isinstance(raw_control, dict) or raw_control.get("number") != control.issue_number:
+        raise LoopBlocked("live Control Issue is missing before human-action recording")
+    live_control = parse_control(raw_control, milestone)
+    if (
+        dict(live_control.lease) != dict(control.lease)
+        or live_control.no_progress_count != control.no_progress_count
+    ):
+        raise LoopBlocked("Control Issue changed before human-action recording")
     raw_comments = client.api(
         f"issues/{control.issue_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
     )
@@ -282,7 +326,8 @@ def record_human_action_state(
         raise LoopBlocked("Control Issue comment capacity is exhausted")
     client.comment(
         control.issue_number,
-        f"Human action required: **{state}**\n\n{action}\n\n{link}\n\n"
+        f"Human action required: **{state}**\n\n{action}\n\n"
+        f"One action: [{action_label}]({link}).\n\n"
         "<!-- milestone-loop-human-action: "
         + json.dumps(value, sort_keys=True, separators=(",", ":"))
         + " -->",
@@ -313,6 +358,186 @@ def _record_m2_discovery_hard_block(
     )
 
 
+def _is_real_authorization_comment(comment: Mapping[str, Any]) -> bool:
+    if not isinstance(comment, Mapping):
+        return False
+    if comment.get("author") != "github-actions[bot]":
+        return False
+    body = comment.get("body")
+    if not isinstance(body, str):
+        return False
+    for match in HUMAN_ACTION_RE.finditer(body):
+        try:
+            record = json.loads(match.group(1))
+        except json.JSONDecodeError:
+            continue
+        if (
+            isinstance(record, dict)
+            and record.get("version") == 1
+            and record.get("state") == "REAL_AUTHORIZATION_REQUIRED"
+        ):
+            return True
+    return False
+
+
+def real_readiness_fingerprint(snapshot: Mapping[str, Any]) -> str:
+    issues: list[dict[str, Any]] = []
+    for raw in snapshot.get("issues", []):
+        issue = dict(raw)
+        if CONTROL_LABEL in issue.get("labels", []):
+            issue["comments"] = [
+                comment
+                for comment in issue.get("comments", [])
+                if not _is_real_authorization_comment(comment)
+            ]
+        issues.append(issue)
+    selected = {
+        "default_sha": snapshot.get("default_sha"),
+        "milestone_number": snapshot.get("milestone_number"),
+        "issues": issues,
+        "pull_requests": snapshot.get("pull_requests"),
+    }
+    encoded = json.dumps(selected, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _record_human_action(
+    client: GitHubClient,
+    snapshot: Mapping[str, Any],
+    control: ControlState,
+    *,
+    state: str,
+    target: str,
+    message: str,
+    action_label: str,
+    action_url: str,
+) -> None:
+    milestone = snapshot.get("milestone")
+    default_sha = snapshot.get("default_sha")
+    repository = snapshot.get("repository")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+    server_url = os.environ.get("GITHUB_SERVER_URL", "")
+    if (
+        state not in {"REAL_AUTHORIZATION_REQUIRED", "HARD_BLOCKED"}
+        or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9:._-]{0,159}", target) is None
+        or not isinstance(milestone, str)
+        or re.fullmatch(r"m[1-4]", milestone) is None
+        or not isinstance(default_sha, str)
+        or re.fullmatch(r"[0-9a-f]{40}", default_sha) is None
+        or not isinstance(repository, str)
+        or re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository) is None
+        or re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is None
+        or re.fullmatch(r"[1-9][0-9]{0,9}", run_attempt) is None
+        or server_url != "https://github.com"
+    ):
+        raise LoopBlocked("workflow run identity is invalid for real authorization")
+    record_human_action_state(
+        client=client,
+        snapshot=snapshot,
+        control=control,
+        state=state,
+        target=target,
+        sha=default_sha,
+        action=message,
+        action_label=action_label,
+        link=action_url,
+    )
+
+
+def record_real_authorization_required(
+    client: GitHubClient,
+    snapshot: Mapping[str, Any],
+    control: ControlState,
+) -> None:
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+    repository = snapshot.get("repository")
+    server_url = os.environ.get("GITHUB_SERVER_URL", "")
+    _record_human_action(
+        client,
+        snapshot,
+        control,
+        state="REAL_AUTHORIZATION_REQUIRED",
+        target=f"run:{run_id}:attempt:{run_attempt}",
+        message=(
+            f"Real authorization is required for `{snapshot.get('milestone')}` at "
+            f"`{snapshot.get('default_sha')}`."
+        ),
+        action_label="approve and deploy `valkey-real`",
+        action_url=f"{server_url}/{repository}/actions/runs/{run_id}",
+    )
+
+
+def record_hard_blocked_lease(
+    client: GitHubClient,
+    snapshot: Mapping[str, Any],
+    control: ControlState,
+) -> None:
+    repository = snapshot.get("repository")
+    server_url = os.environ.get("GITHUB_SERVER_URL", "")
+    status = str(control.lease.get("status"))
+    _record_human_action(
+        client,
+        snapshot,
+        control,
+        state="HARD_BLOCKED",
+        target=f"control:{control.issue_number}:{status}",
+        message=(
+            "Real authorization is blocked before Environment review because the "
+            f"existing Authorization Lease is `{status}`."
+        ),
+        action_label="inspect the Control Issue",
+        action_url=f"{server_url}/{repository}/issues/{control.issue_number}",
+    )
+
+
+def prepare_real_authorization(
+    *,
+    client: GitHubClient,
+    repo_root: Path,
+    milestone: str,
+    entrypoint: str,
+    control: ControlState,
+) -> dict[str, Any]:
+    if entrypoint not in {"milestone", "discovery"}:
+        raise ContractError("real authorization entrypoint is invalid")
+    snapshot = collect_snapshot(client, milestone)
+    if _run(["git", "rev-parse", "HEAD"], cwd=repo_root) != snapshot.get("default_sha"):
+        raise LoopBlocked("coordination checkout changed before real authorization preparation")
+    control_issues = [
+        issue
+        for issue in snapshot.get("issues", [])
+        if issue.get("number") == control.issue_number
+        and CONTROL_LABEL in issue.get("labels", [])
+    ]
+    if len(control_issues) != 1:
+        raise LoopBlocked("live Control Issue is missing before real authorization preparation")
+    live_control = parse_control(control_issues[0], milestone)
+    if live_control.lease.get("status") not in {"empty", "exhausted"}:
+        record_hard_blocked_lease(client, snapshot, live_control)
+        return {
+            "status": "BLOCKED",
+            "milestone": milestone,
+            "reason": "authorization-lease",
+        }
+    readiness_sha256 = real_readiness_fingerprint(snapshot)
+    record_real_authorization_required(client, snapshot, live_control)
+    live = collect_snapshot(client, milestone)
+    if (
+        live.get("default_sha") != snapshot.get("default_sha")
+        or real_readiness_fingerprint(live) != readiness_sha256
+    ):
+        raise LoopBlocked("live state changed while recording real authorization state")
+    if _run(["git", "rev-parse", "HEAD"], cwd=repo_root) != live.get("default_sha"):
+        raise LoopBlocked("coordination checkout is stale before real authorization")
+    return {
+        "status": "MILESTONE",
+        "milestone": milestone,
+        "default_sha": live["default_sha"],
+        "entrypoint": entrypoint,
+        "readiness_sha256": readiness_sha256,
+    }
 def _operation_key(milestone: str, operation: PlannerOperation) -> str:
     value = {
         "milestone": milestone,
@@ -517,12 +742,16 @@ def apply_planner_transaction(
 
 def empty_lease(milestone: str) -> dict[str, Any]:
     return {
-        "version": 1,
+        "version": 2,
         "milestone": milestone,
         "status": "empty",
         "nonce": "",
         "expires_at": "",
         "remaining": 0,
+        "entrypoint": "",
+        "default_sha": "",
+        "run_id": "",
+        "run_attempt": "",
     }
 
 
@@ -546,10 +775,15 @@ def parse_control(issue: Mapping[str, Any], milestone: str) -> ControlState:
         lease = json.loads(raw_lease)
     except json.JSONDecodeError as exc:
         raise ContractError(f"Control Issue Authorization Lease is invalid JSON: {exc}") from exc
-    required = {"version", "milestone", "status", "nonce", "expires_at", "remaining"}
-    if not isinstance(lease, dict) or set(lease) != required:
+    legacy_fields = {"version", "milestone", "status", "nonce", "expires_at", "remaining"}
+    invocation_fields = legacy_fields | {"entrypoint", "default_sha", "run_id", "run_attempt"}
+    if not isinstance(lease, dict) or (
+        (lease.get("version") == 1 and set(lease) != legacy_fields)
+        or (lease.get("version") == 2 and set(lease) != invocation_fields)
+        or lease.get("version") not in {1, 2}
+    ):
         raise ContractError("Authorization Lease has invalid fields")
-    if lease["version"] != 1 or lease["milestone"] != milestone:
+    if lease["milestone"] != milestone:
         raise ContractError("Authorization Lease version or milestone is invalid")
     if lease["status"] not in {"empty", "active", "exhausted", "revoked"}:
         raise ContractError("Authorization Lease status is invalid")
@@ -559,6 +793,45 @@ def parse_control(issue: Mapping[str, Any], milestone: str) -> ControlState:
         raise ContractError("Authorization Lease expires_at is invalid")
     if isinstance(lease["remaining"], bool) or not isinstance(lease["remaining"], int) or not 0 <= lease["remaining"] <= 10:
         raise ContractError("Authorization Lease remaining must be between 0 and 10")
+    status = lease["status"]
+    if status == "empty":
+        if lease["nonce"] or lease["expires_at"] or lease["remaining"] != 0:
+            raise ContractError("empty Authorization Lease has state")
+    else:
+        if (
+            re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", lease["nonce"])
+            is None
+            or LEASE_TIMESTAMP_RE.fullmatch(lease["expires_at"]) is None
+        ):
+            raise ContractError("Authorization Lease nonce or expiration is invalid")
+        try:
+            datetime.fromisoformat(lease["expires_at"].replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ContractError("Authorization Lease expiration is invalid") from exc
+        if (status == "active" and lease["remaining"] < 1) or (
+            status in {"exhausted", "revoked"} and lease["remaining"] != 0
+        ):
+            raise ContractError("Authorization Lease status and remaining count disagree")
+    if lease["version"] == 2:
+        if not all(isinstance(lease[field], str) for field in invocation_fields - legacy_fields):
+            raise ContractError("Authorization Lease invocation fields are invalid")
+        if lease["status"] == "empty":
+            if (
+                any(lease[field] for field in invocation_fields - legacy_fields)
+                or lease["remaining"] != 0
+            ):
+                raise ContractError("empty Authorization Lease has invocation bindings")
+        elif (
+            lease["entrypoint"] not in {"milestone", "discovery"}
+            or (lease["entrypoint"] == "discovery" and milestone != "m2")
+            or re.fullmatch(r"[0-9a-f]{40}", lease["default_sha"]) is None
+            or re.fullmatch(r"[1-9][0-9]{0,19}", lease["run_id"]) is None
+            or re.fullmatch(r"[1-9][0-9]{0,9}", lease["run_attempt"]) is None
+            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", lease["nonce"]) is None
+            or (lease["status"] == "active" and lease["remaining"] != 1)
+            or (lease["status"] in {"exhausted", "revoked"} and lease["remaining"] != 0)
+        ):
+            raise ContractError("Authorization Lease invocation binding is invalid")
     number = issue.get("number")
     if not isinstance(number, int):
         raise ContractError("Control Issue number is invalid")
@@ -587,33 +860,6 @@ def ensure_control(client: GitHubClient, snapshot: Mapping[str, Any]) -> Control
     if len(controls) != 1:
         raise ContractError("Milestone must have exactly one Control Issue")
     return parse_control(controls[0], str(snapshot["milestone"]))
-
-
-def consume_lease(client: GitHubClient, snapshot: Mapping[str, Any]) -> ControlState:
-    state = ensure_control(client, snapshot)
-    lease = dict(state.lease)
-    if lease["status"] != "active" or lease["remaining"] <= 0:
-        raise LoopBlocked("Authorization Lease is not active or has no remaining execution")
-    try:
-        expires = datetime.fromisoformat(lease["expires_at"].replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise LoopBlocked("Authorization Lease expiration is invalid") from exc
-    if expires.tzinfo is None or expires <= datetime.now(timezone.utc):
-        raise LoopBlocked("Authorization Lease is expired")
-    lease["remaining"] -= 1
-    if lease["remaining"] == 0:
-        lease["status"] = "exhausted"
-    live_issue = client.api(f"issues/{state.issue_number}")
-    if not isinstance(live_issue, dict):
-        raise GitHubError("cannot re-read Control Issue before lease consumption")
-    live_state = parse_control(live_issue, str(snapshot["milestone"]))
-    if dict(live_state.lease) != dict(state.lease) or live_state.no_progress_count != state.no_progress_count:
-        raise LoopBlocked("Authorization Lease changed before consumption")
-    client.update_issue(
-        state.issue_number,
-        body=render_control(lease, state.no_progress_count),
-    )
-    return ControlState(state.issue_number, lease, state.no_progress_count)
 
 
 def set_no_progress(client: GitHubClient, state: ControlState, count: int) -> None:
@@ -1912,7 +2158,13 @@ def coordinate(
     candidate_blockers = m2_candidate_blockers(milestone_document, milestone)
     if candidate_blockers:
         if m2_discovery_eligible(milestone_document, milestone):
-            return {"status": "MILESTONE", "milestone": milestone}
+            return prepare_real_authorization(
+                client=client,
+                repo_root=repo_root,
+                milestone=milestone,
+                entrypoint="discovery",
+                control=control,
+            )
         client.comment(
             control.issue_number,
             "M2 Milestone BLOCKED before real authorization because relative-performance "
@@ -1928,7 +2180,13 @@ def coordinate(
             "reason": "candidate-not-ready",
             "parameters": list(candidate_blockers),
         }
-    return {"status": "MILESTONE", "milestone": milestone}
+    return prepare_real_authorization(
+        client=client,
+        repo_root=repo_root,
+        milestone=milestone,
+        entrypoint="milestone",
+        control=control,
+    )
 
 
 def milestone_from_pr_body(body: str) -> str:
@@ -2026,6 +2284,7 @@ def record_m2_discovery_result(
         "failure_code",
         "failure_fingerprint",
         "tested_sha",
+        "lease_sha256",
         "run_id",
         "run_attempt",
         "invocation_id",
@@ -2044,6 +2303,10 @@ def record_m2_discovery_result(
         or result.get("disposition")
         not in {"CANDIDATE_SELECTION_ONLY", "REPAIRABLE_IMPLEMENTATION", "HUMAN_REQUIRED"}
         or re.fullmatch(r"[0-9a-f]{40}", str(result.get("tested_sha", ""))) is None
+        or (
+            result.get("lease_sha256") != ""
+            and re.fullmatch(r"[0-9a-f]{64}", str(result.get("lease_sha256", ""))) is None
+        )
         or re.fullmatch(r"[0-9a-f]{64}", str(result.get("result_digest", ""))) is None
         or re.fullmatch(r"[0-9a-f]{64}", str(result.get("failure_fingerprint", ""))) is None
     ):
@@ -2084,6 +2347,7 @@ def record_m2_discovery_result(
         "run_id": str(result["run_id"]),
         "run_attempt": int(result["run_attempt"]),
         "tested_sha": str(result["tested_sha"]),
+        "lease_sha256": str(result["lease_sha256"]),
         "result_digest": str(result["result_digest"]),
         "report_digest": str(result["report_digest"]),
         "evidence_digest": str(result["evidence_digest"]),
@@ -2240,11 +2504,13 @@ def record_milestone_result(
         client.comment(
             control.issue_number,
             "Milestone result is bound to an older default-branch SHA and cannot close the "
-            "Milestone; issue a new lease and resume to rerun it.",
+            "Milestone; start a fresh loop invocation and approve its new `valkey-real` "
+            "deployment to rerun it.",
         )
         return "STALE"
     if status == "PASS":
         set_no_progress(client, control, 0)
+        control = ControlState(control.issue_number, control.lease, 0)
         if milestone == "m2":
             repository = str(snapshot.get("repository", ""))
             record_human_action_state(

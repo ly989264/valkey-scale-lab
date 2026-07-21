@@ -166,6 +166,9 @@ jobs:
     outputs:
       status: ${{ steps.coordinate.outputs.status }}
       milestone: ${{ steps.coordinate.outputs.milestone }}
+      default_sha: ${{ steps.coordinate.outputs.default_sha }}
+      entrypoint: ${{ steps.coordinate.outputs.entrypoint }}
+      readiness_sha256: ${{ steps.coordinate.outputs.readiness_sha256 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -216,68 +219,51 @@ jobs:
           -f action=start
           -f milestone="${{ inputs.milestone }}"
 
-  authorize-real:
-    needs: coordinate
-    if: needs.coordinate.outputs.status == 'MILESTONE'
-    runs-on: [self-hosted, macOS, valkey-real]
-    timeout-minutes: 30
-    permissions:
-      checks: read
-      contents: read
-      issues: write
-      pull-requests: read
-    outputs:
-      default_sha: ${{ steps.authorize.outputs.default_sha }}
-      milestone: ${{ steps.authorize.outputs.milestone }}
-      lease_sha256: ${{ steps.authorize.outputs.lease_sha256 }}
-      entrypoint: ${{ steps.authorize.outputs.entrypoint }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          persist-credentials: false
-      - name: Validate real runner environment
-        run: python3 .github/milestone-loop/loop.py fingerprint --role real
-      - name: Recovery cleanup before authorization
-        run: >-
-          python3 .github/milestone-loop/loop.py recover
-          --role real
-          --runtime-root "$RUNNER_TEMP/milestone-loop-real"
-      - name: Validate and consume Authorization Lease
-        id: authorize
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: >-
-          python3 .github/milestone-loop/loop.py authorize
-          --milestone "${{ needs.coordinate.outputs.milestone }}"
-
   milestone:
-    needs: authorize-real
+    needs: coordinate
     if: >-
-      needs.authorize-real.result == 'success' &&
-      needs.authorize-real.outputs.entrypoint == 'milestone'
+      needs.coordinate.outputs.status == 'MILESTONE' &&
+      needs.coordinate.outputs.entrypoint == 'milestone'
     runs-on: [self-hosted, macOS, valkey-real]
     timeout-minutes: 7200
     environment: valkey-real
     permissions:
+      actions: read
       checks: read
       contents: read
-      issues: read
+      issues: write
       pull-requests: read
       id-token: write
     outputs:
       status: ${{ steps.gate.outputs.status }}
       result: ${{ steps.gate.outputs.result }}
-      milestone: ${{ needs.authorize-real.outputs.milestone }}
+      milestone: ${{ needs.coordinate.outputs.milestone }}
+      lease_sha256: ${{ steps.authorize.outputs.lease_sha256 }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.authorize-real.outputs.default_sha }}
+          ref: ${{ needs.coordinate.outputs.default_sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Validate real runner environment
-        run: python3 .github/milestone-loop/loop.py fingerprint --role real
+      - name: Generate and consume this approved invocation Lease
+        id: authorize
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: >-
+          env -u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN
+          python3 .github/milestone-loop/loop.py authorize-real-invocation
+          --milestone "${{ needs.coordinate.outputs.milestone }}"
+          --entrypoint "${{ needs.coordinate.outputs.entrypoint }}"
+          --expected-sha "${{ needs.coordinate.outputs.default_sha }}"
+          --expected-readiness-sha256 "${{ needs.coordinate.outputs.readiness_sha256 }}"
+          --run-id "${{ github.run_id }}"
+          --run-attempt "${{ github.run_attempt }}"
+      - name: Recovery cleanup after authorization
+        run: >-
+          python3 .github/milestone-loop/loop.py recover
+          --role real
+          --runtime-root "$RUNNER_TEMP/milestone-loop-real"
       - name: Run the only authoritative Milestone Gate
         id: gate
         env:
@@ -285,14 +271,14 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: >-
           python3 .github/milestone-loop/loop.py run-milestone
-          --milestone "${{ needs.authorize-real.outputs.milestone }}"
-          --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
-          --expected-lease-sha256 "${{ needs.authorize-real.outputs.lease_sha256 }}"
+          --milestone "${{ needs.coordinate.outputs.milestone }}"
+          --expected-sha "${{ steps.authorize.outputs.default_sha }}"
+          --expected-lease-sha256 "${{ steps.authorize.outputs.lease_sha256 }}"
       - name: Upload bounded Milestone Gate result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: milestone-result-${{ github.run_id }}
+          name: milestone-result-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/milestone-result.json
           if-no-files-found: error
           retention-days: 30
@@ -300,42 +286,61 @@ jobs:
         if: always() && steps.gate.outputs.artifacts != ''
         uses: actions/upload-artifact@v4
         with:
-          name: milestone-evidence-${{ github.run_id }}
+          name: milestone-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ steps.gate.outputs.artifacts }}
           if-no-files-found: error
           retention-days: 30
       - name: Final real-resource cleanup
-        if: always()
+        if: always() && steps.authorize.outcome == 'success'
         run: >-
           python3 .github/milestone-loop/loop.py recover
           --role real
           --runtime-root "$RUNNER_TEMP/milestone-loop-real"
 
   m2-discovery:
-    needs: authorize-real
+    needs: coordinate
     if: >-
-      needs.authorize-real.result == 'success' &&
-      needs.authorize-real.outputs.entrypoint == 'discovery'
+      needs.coordinate.outputs.status == 'MILESTONE' &&
+      needs.coordinate.outputs.entrypoint == 'discovery'
     runs-on: [self-hosted, macOS, valkey-real]
     timeout-minutes: 7200
     environment: valkey-real
     permissions:
+      actions: read
       checks: read
       contents: read
-      issues: read
+      issues: write
       pull-requests: read
       id-token: write
     outputs:
       status: ${{ steps.discovery.outputs.status }}
       result: ${{ steps.discovery.outputs.result }}
+      lease_sha256: ${{ steps.authorize.outputs.lease_sha256 }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.authorize-real.outputs.default_sha }}
+          ref: ${{ needs.coordinate.outputs.default_sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Validate real runner environment
-        run: python3 .github/milestone-loop/loop.py fingerprint --role real
+      - name: Generate and consume this approved invocation Lease
+        id: authorize
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: >-
+          env -u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN
+          python3 .github/milestone-loop/loop.py authorize-real-invocation
+          --milestone "${{ needs.coordinate.outputs.milestone }}"
+          --entrypoint "${{ needs.coordinate.outputs.entrypoint }}"
+          --expected-sha "${{ needs.coordinate.outputs.default_sha }}"
+          --expected-readiness-sha256 "${{ needs.coordinate.outputs.readiness_sha256 }}"
+          --run-id "${{ github.run_id }}"
+          --run-attempt "${{ github.run_attempt }}"
+      - name: Recovery cleanup after authorization
+        run: >-
+          python3 .github/milestone-loop/loop.py recover
+          --role real
+          --runtime-root "$RUNNER_TEMP/milestone-loop-real"
       - name: Run authorized M2 candidate discovery
         id: discovery
         continue-on-error: true
@@ -344,11 +349,11 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: >-
           python3 .github/milestone-loop/loop.py run-m2-discovery
-          --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
-          --expected-lease-sha256 "${{ needs.authorize-real.outputs.lease_sha256 }}"
+          --expected-sha "${{ steps.authorize.outputs.default_sha }}"
+          --expected-lease-sha256 "${{ steps.authorize.outputs.lease_sha256 }}"
       - name: Final real-resource cleanup
         id: cleanup
-        if: always()
+        if: always() && steps.authorize.outcome == 'success'
         continue-on-error: true
         run: >-
           python3 .github/milestone-loop/loop.py recover
@@ -359,7 +364,8 @@ jobs:
         if: always()
         run: >-
           python3 .github/milestone-loop/loop.py seal-m2-discovery
-          --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
+          --expected-sha "${{ needs.coordinate.outputs.default_sha }}"
+          --expected-lease-sha256 "${{ steps.authorize.outputs.lease_sha256 }}"
           --run-id "${{ github.run_id }}"
           --run-attempt "${{ github.run_attempt }}"
           --run-outcome "${{ steps.discovery.outcome }}"
@@ -385,10 +391,10 @@ jobs:
           retention-days: 30
 
   record-m2-discovery:
-    needs: [authorize-real, m2-discovery]
+    needs: [coordinate, m2-discovery]
     if: >-
       always() &&
-      needs.authorize-real.outputs.entrypoint == 'discovery'
+      needs.coordinate.outputs.entrypoint == 'discovery'
     runs-on: [self-hosted, macOS, valkey-codex]
     timeout-minutes: 30
     permissions:
@@ -400,7 +406,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.authorize-real.outputs.default_sha }}
+          ref: ${{ needs.coordinate.outputs.default_sha }}
           persist-credentials: false
       - name: Download bounded discovery result
         id: result
@@ -424,7 +430,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: >-
           python3 .github/milestone-loop/loop.py record-m2-discovery
-          --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
+          --expected-sha "${{ needs.coordinate.outputs.default_sha }}"
+          --expected-lease-sha256 "${{ needs.m2-discovery.outputs.lease_sha256 }}"
           --run-id "${{ github.run_id }}"
           --run-attempt "${{ github.run_attempt }}"
           --result "$RUNNER_TEMP/m2-discovery-result/m2-discovery-result.json"
@@ -434,10 +441,10 @@ jobs:
         run: test "${{ steps.record.outputs.discovery_status }}" = "PASS"
 
   record-milestone:
-    needs: [authorize-real, milestone]
+    needs: [coordinate, milestone]
     if: >-
       always() &&
-      needs.authorize-real.outputs.entrypoint == 'milestone' &&
+      needs.coordinate.outputs.entrypoint == 'milestone' &&
       needs.milestone.result == 'success'
     runs-on: [self-hosted, macOS, valkey-codex]
     timeout-minutes: 30
@@ -450,11 +457,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.authorize-real.outputs.default_sha }}
+          ref: ${{ needs.coordinate.outputs.default_sha }}
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: milestone-result-${{ github.run_id }}
+          name: milestone-result-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/milestone-result
       - name: Record only the authoritative Gate conclusion
         env:
@@ -462,6 +469,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: >-
           python3 .github/milestone-loop/loop.py record-milestone
-          --milestone "${{ needs.authorize-real.outputs.milestone }}"
-          --expected-sha "${{ needs.authorize-real.outputs.default_sha }}"
+          --milestone "${{ needs.coordinate.outputs.milestone }}"
+          --expected-sha "${{ needs.coordinate.outputs.default_sha }}"
+          --expected-lease-sha256 "${{ needs.milestone.outputs.lease_sha256 }}"
+          --run-id "${{ github.run_id }}"
+          --run-attempt "${{ github.run_attempt }}"
           --result "$RUNNER_TEMP/milestone-result/milestone-result.json"

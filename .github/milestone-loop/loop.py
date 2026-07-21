@@ -31,12 +31,14 @@ from coordinator import (
 )
 from github_api import GitHubClient, GitHubError, collect_snapshot
 from milestone_runner import (
-    authorize,
+    authorize_real_invocation,
+    bind_real_result,
     human_required_m2_discovery_result,
     load_m2_discovery_result,
     run_gate,
     run_m2_discovery,
     seal_m2_discovery_result,
+    validate_real_result_binding,
 )
 from recovery import recover
 
@@ -59,7 +61,13 @@ def _write_output(values: dict[str, Any]) -> None:
 
 
 def _version(argv: list[str]) -> str:
-    process = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    process = subprocess.run(
+        argv,
+        cwd=CONTROL_ROOT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
     if process.returncode != 0:
         raise LoopBlocked(f"cannot execute environment fingerprint command: {' '.join(argv)}")
     lines = [
@@ -83,7 +91,7 @@ def validate_environment(role: str) -> dict[str, Any]:
         "git": _version(["git", "--version"]),
         "codex": _version(["codex", "--version"]) if role == "codex" else expected["codex"],
         "docker": _version(["docker", "--version"]) if role in {"verify", "real"} else expected["docker"],
-        "pytest": _version(["python3", "-c", "import pytest; print(pytest.__version__)"]),
+        "pytest": _version(["python3", "-I", "-c", "import pytest; print(pytest.__version__)"]),
         "actions_runner": os.environ.get(
             "ACTIONS_RUNNER_VERSION",
             expected["actions_runner"] if os.environ.get("GITHUB_ACTIONS") != "true" else "",
@@ -186,8 +194,13 @@ def _parser() -> argparse.ArgumentParser:
     coordinate_parser.add_argument("--runtime-root", type=Path, required=True)
     metadata = commands.add_parser("pr-metadata")
     metadata.add_argument("--event", type=Path, required=True)
-    auth = commands.add_parser("authorize")
+    auth = commands.add_parser("authorize-real-invocation")
     auth.add_argument("--milestone", required=True)
+    auth.add_argument("--entrypoint", required=True)
+    auth.add_argument("--expected-sha", required=True)
+    auth.add_argument("--expected-readiness-sha256", required=True)
+    auth.add_argument("--run-id", required=True)
+    auth.add_argument("--run-attempt", required=True)
     run = commands.add_parser("run-milestone")
     run.add_argument("--milestone", required=True)
     run.add_argument("--expected-sha", required=True)
@@ -197,6 +210,7 @@ def _parser() -> argparse.ArgumentParser:
     discovery.add_argument("--expected-lease-sha256", required=True)
     seal_discovery = commands.add_parser("seal-m2-discovery")
     seal_discovery.add_argument("--expected-sha", required=True)
+    seal_discovery.add_argument("--expected-lease-sha256", required=True)
     seal_discovery.add_argument("--run-id", required=True)
     seal_discovery.add_argument("--run-attempt", required=True)
     seal_discovery.add_argument("--run-outcome", required=True)
@@ -206,6 +220,7 @@ def _parser() -> argparse.ArgumentParser:
     seal_discovery.add_argument("--output", type=Path, required=True)
     record_discovery = commands.add_parser("record-m2-discovery")
     record_discovery.add_argument("--expected-sha", required=True)
+    record_discovery.add_argument("--expected-lease-sha256", required=True)
     record_discovery.add_argument("--run-id", required=True)
     record_discovery.add_argument("--run-attempt", required=True)
     record_discovery.add_argument("--result", type=Path, required=True)
@@ -213,6 +228,9 @@ def _parser() -> argparse.ArgumentParser:
     record = commands.add_parser("record-milestone")
     record.add_argument("--milestone", required=True)
     record.add_argument("--expected-sha", required=True)
+    record.add_argument("--expected-lease-sha256", required=True)
+    record.add_argument("--run-id", required=True)
+    record.add_argument("--run-attempt", required=True)
     record.add_argument("--result", type=Path, required=True)
     after = commands.add_parser("after-pr")
     after.add_argument("--event", type=Path, required=True)
@@ -251,6 +269,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 evidence_root=args.evidence,
                 output_path=args.output,
                 expected_sha=args.expected_sha,
+                expected_lease_sha256=args.expected_lease_sha256,
                 run_id=args.run_id,
                 run_attempt=args.run_attempt,
                 run_outcome=args.run_outcome,
@@ -273,8 +292,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "pr-metadata":
             _write_output(pr_metadata(client, args.event))
             return 0
-        if args.command == "authorize":
-            _write_output(authorize(client, REPO_ROOT, args.milestone))
+        if args.command == "authorize-real-invocation":
+            validate_environment("real")
+            _write_output(
+                authorize_real_invocation(
+                    client,
+                    REPO_ROOT,
+                    milestone=args.milestone,
+                    entrypoint=args.entrypoint,
+                    expected_sha=args.expected_sha,
+                    expected_readiness_sha256=args.expected_readiness_sha256,
+                    run_id=args.run_id,
+                    run_attempt=args.run_attempt,
+                )
+            )
             return 0
         if args.command == "run-milestone":
             result = run_gate(
@@ -284,8 +315,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 expected_sha=args.expected_sha,
                 expected_lease_sha256=args.expected_lease_sha256,
             )
+            result = bind_real_result(
+                result,
+                milestone=args.milestone,
+                entrypoint="milestone",
+                expected_sha=args.expected_sha,
+                expected_lease_sha256=args.expected_lease_sha256,
+            )
             result_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "milestone-result.json"
-            result["tested_sha"] = args.expected_sha
             result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             _write_output({**result, "result": str(result_path)})
             return 0
@@ -296,8 +333,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 expected_sha=args.expected_sha,
                 expected_lease_sha256=args.expected_lease_sha256,
             )
+            result = bind_real_result(
+                result,
+                milestone="m2",
+                entrypoint="discovery",
+                expected_sha=args.expected_sha,
+                expected_lease_sha256=args.expected_lease_sha256,
+            )
             result_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "m2-discovery-raw-result.json"
-            result["tested_sha"] = args.expected_sha
             result_path.write_text(
                 json.dumps(result, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
@@ -310,12 +353,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                     result_path=args.result,
                     evidence_root=args.evidence,
                     expected_sha=args.expected_sha,
+                    expected_lease_sha256=args.expected_lease_sha256,
                     run_id=args.run_id,
                     run_attempt=args.run_attempt,
                 )
             except (ContractError, OSError, json.JSONDecodeError) as exc:
                 result = human_required_m2_discovery_result(
                     expected_sha=args.expected_sha,
+                    expected_lease_sha256=args.expected_lease_sha256,
                     run_id=args.run_id,
                     run_attempt=args.run_attempt,
                     summary=f"M2 discovery artifact validation failed: {exc}",
@@ -330,9 +375,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 0
         if args.command == "record-milestone":
+            if (
+                not args.result.is_file()
+                or args.result.is_symlink()
+                or args.result.stat().st_size > 32_768
+            ):
+                raise ContractError("Milestone result artifact is missing or exceeds its bound")
             result = json.loads(args.result.read_text(encoding="utf-8"))
-            if result.get("tested_sha") != args.expected_sha:
-                raise ContractError("Milestone result artifact does not match the authorized SHA")
+            validate_real_result_binding(
+                result,
+                milestone=args.milestone,
+                entrypoint="milestone",
+                expected_sha=args.expected_sha,
+                expected_lease_sha256=args.expected_lease_sha256,
+                run_id=args.run_id,
+                run_attempt=args.run_attempt,
+            )
             action = record_milestone_result(
                 client=client,
                 milestone=args.milestone,
