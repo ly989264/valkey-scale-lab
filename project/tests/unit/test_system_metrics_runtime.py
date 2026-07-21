@@ -155,6 +155,7 @@ def _m2_batch_output(
             f"\t{received_bytes + direction * sample * 50 * scale}"
             f"\t{sent_messages + direction * sample * 10 * scale}"
             f"\t{received_messages + direction * sample * 8 * scale}\t0\t2\t{error_claims.get(pid, 0)}"
+            f"\t{len(link_rows.get(pid, []))}"
         )
         rows.extend(
             f"LINK\t{pid}\t{node_id}\t{address}\t{flags}\t{master_id}\t{link_state}"
@@ -287,6 +288,7 @@ def test_m2_resource_window_excludes_only_well_formed_pending_handshake() -> Non
             "link_state": "disconnected",
         }
     ]
+    assert process["non_connected_cluster_link_count"] == 1
     assert validate_and_aggregate_m2_resource_samples(report)["status"] == "PASS"
 
 
@@ -343,6 +345,7 @@ def test_m2_expected_gone_link_exclusion_requires_known_disconnected_target() ->
             {
                 "logical_id": "observer",
                 "cluster_link_errors": 0,
+                "non_connected_cluster_link_count": 1,
                 "non_connected_cluster_links": [link],
             },
             expected_gone_client_ports={7101},
@@ -364,6 +367,7 @@ def test_m2_expected_gone_link_exclusion_requires_known_disconnected_target() ->
             {
                 "logical_id": "observer",
                 "cluster_link_errors": 1,
+                "non_connected_cluster_link_count": 1,
                 "non_connected_cluster_links": [link],
             },
             expected_gone_client_ports={7101},
@@ -379,6 +383,14 @@ def test_m2_resource_window_rejects_missing_raw_links_and_process_summary_mismat
     missing_raw = copy.deepcopy(report)
     del missing_raw["samples"][0]["nodehosts"][0]["processes"][0]["non_connected_cluster_links"]
     assert validate_and_aggregate_m2_resource_samples(missing_raw)["status"] == "FAIL"
+
+    omitted_row = copy.deepcopy(report)
+    process = omitted_row["samples"][0]["nodehosts"][0]["processes"][0]
+    process["non_connected_cluster_links"] = []
+    process["cluster_link_errors"] = 0
+    verdict = validate_and_aggregate_m2_resource_samples(omitted_row)
+    assert verdict["status"] == "FAIL"
+    assert any("non-connected link count does not match raw links" in error for error in verdict["errors"])
 
     mismatched = copy.deepcopy(report)
     mismatched["samples"][0]["nodehosts"][0]["processes"][0]["cluster_link_errors"] = 0
@@ -801,7 +813,7 @@ def test_m2_resource_window_binds_same_pid_in_different_containers() -> None:
                 [
                     f"PID\t101\t{10 + sample}\t2\t5\t4\t2",
                     f"CLUSTER\t101\t{port}\t{1000 + sample * 100}\t{500 + sample * 50}"
-                    f"\t{100 + sample * 10}\t{80 + sample * 8}\t0\t2\t0",
+                    f"\t{100 + sample * 10}\t{80 + sample * 8}\t0\t2\t0\t0",
                 ]
             )
         rows.append(f"NET\t{1000 + sample * 100}\t{2000 + sample * 200}")

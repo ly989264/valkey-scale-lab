@@ -115,18 +115,21 @@ for owned_process in "$@"; do
       port = host_port[count]
       expected = index("," expected_gone_ports ",", "," port ",") > 0
       pending_handshake = ($1 != "" && $2 != "" && $3 == "handshake" && $4 == "-" && $8 == "disconnected")
-      if ($8 != "connected" && !expected && !pending_handshake) errors += 1
+      if ($8 != "connected") {
+        non_connected += 1
+        if (!expected && !pending_handshake) errors += 1
+      }
     }
-    END { if (links < 1) exit 2; printf "%s %s", links, errors + 0 }
+    END { if (links < 1) exit 2; printf "%s %s %s", links, errors + 0, non_connected + 0 }
   '); then
     printf 'ERROR\t%s\tcluster_nodes_links_missing\n' "$pid"
     failed=1
     continue
   fi
   set -- $link_values
-  printf 'CLUSTER\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+  printf 'CLUSTER\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$pid" "$port" "$sent_bytes" "$received_bytes" "$sent_messages" "$received_messages" \
-    "$buffer_exceeded" "$1" "$2"
+    "$buffer_exceeded" "$1" "$2" "$3"
   if ! printf '%s\n' "$cluster_nodes" | awk -v pid="$pid" '
     NF && $8 != "connected" {
       printf "LINK\t%s\t%s\t%s\t%s\t%s\t%s\n", pid, $1, $2, $3, $4, $8
@@ -1159,7 +1162,7 @@ def _parse_batch(
                 "fd_count": values[3],
                 "connection_count": values[4],
             }
-        elif parts[0] == "CLUSTER" and len(parts) == 10:
+        elif parts[0] == "CLUSTER" and len(parts) == 11:
             pid = _positive_int(parts[1], "cluster pid")
             if pid in cluster_counters:
                 raise M2ResourceMeasurementError(f"duplicate cluster sample for pid {pid}")
@@ -1173,6 +1176,7 @@ def _parse_batch(
                 "buffer_overflows": values[5],
                 "cluster_link_count": values[6],
                 "cluster_link_errors": values[7],
+                "non_connected_cluster_link_count": values[8],
             }
         elif parts[0] == "LINK" and len(parts) == 7:
             pid = _positive_int(parts[1], "cluster link pid")
@@ -1269,6 +1273,7 @@ def _parse_batch(
                 "total_cluster_links_buffer_limit_exceeded": cluster_counters[pid]["buffer_overflows"],
                 "cluster_link_count": cluster_counters[pid]["cluster_link_count"],
                 "cluster_link_errors": cluster_counters[pid]["cluster_link_errors"],
+                "non_connected_cluster_link_count": cluster_counters[pid]["non_connected_cluster_link_count"],
                 "non_connected_cluster_links": non_connected_cluster_links.get(pid, []),
             }
             for pid in target.pids
@@ -1293,6 +1298,12 @@ def _cluster_link_errors_from_raw(
     if not isinstance(observations, list):
         raise M2ResourceMeasurementError(
             f"cluster sample for {logical_id} is missing raw non-connected CLUSTER NODES rows"
+        )
+    observed_count = process.get("non_connected_cluster_link_count")
+    if not _valid_nonnegative_int(observed_count) or observed_count != len(observations):
+        raise M2ResourceMeasurementError(
+            f"cluster sample for {logical_id} non-connected link count does not match raw links: "
+            f"claimed={observed_count!r} observed={len(observations)}"
         )
     errors = 0
     for position, observation in enumerate(observations):
@@ -1765,6 +1776,7 @@ def _valid_resource_process(process: dict[str, Any]) -> bool:
     if (
         not _valid_positive_int(process.get("client_port"))
         or not _valid_positive_int(process.get("cluster_link_count"))
+        or not _valid_nonnegative_int(process.get("non_connected_cluster_link_count"))
         or not isinstance(process.get("non_connected_cluster_links"), list)
     ):
         return False

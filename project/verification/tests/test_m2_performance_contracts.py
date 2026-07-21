@@ -595,6 +595,7 @@ def _write_valid_trial_sources(
             "total_cluster_links_buffer_limit_exceeded": 0,
             "cluster_link_count": scale - 1,
             "cluster_link_errors": 0,
+            "non_connected_cluster_link_count": 0,
             "non_connected_cluster_links": [],
         }
 
@@ -1910,6 +1911,9 @@ def test_raw_resource_source_accepts_pre_establishment_handshake_transient(tmp_p
             "link_state": "disconnected",
         }
     ]
+    resource["samples"][0]["nodehosts"][0]["processes"][0][
+        "non_connected_cluster_link_count"
+    ] = 1
     _rewrite_bound_source(report, trial, paths["resource"], "resource", resource)
     refs = {ref["category"]: ref for ref in trial["source_sha256s"]}
     trial["provenance"]["capture_digest"] = M2._canonical_digest(
