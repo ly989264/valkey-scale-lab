@@ -21,7 +21,7 @@ from coordinator import (
     real_readiness_fingerprint,
     render_control,
 )
-from github_api import GitHubClient, collect_snapshot
+from github_api import GitHubClient, GitHubError, collect_snapshot
 from recovery import cleanup_owned_docker
 
 
@@ -87,6 +87,14 @@ _M2_DISCOVERY_REPORT_FIELDS = {
     "errors",
     "report_digest",
 }
+
+
+class LeaseConfirmationBlocked(LoopBlocked):
+    def __init__(self, message: str, receipt: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.receipt = dict(receipt)
+
+
 _M2_DISCOVERY_CAMPAIGN_FIELDS = {
     "campaign_id",
     "invocation_run_id",
@@ -1292,6 +1300,15 @@ def authorize_real_invocation(
         "run_attempt": run_attempt,
     }
     consumed_lease = {**active_lease, "status": "exhausted", "remaining": 0}
+    receipt = {
+        "milestone": milestone,
+        "default_sha": expected_sha,
+        "lease_nonce": consumed_lease["nonce"],
+        "lease_sha256": _lease_fingerprint(consumed_lease),
+        "entrypoint": entrypoint,
+        "run_id": run_id,
+        "run_attempt": run_attempt,
+    }
 
     live = collect_snapshot(client, milestone)
     if (
@@ -1318,25 +1335,22 @@ def authorize_real_invocation(
         state.issue_number,
         body=render_control(consumed_lease, state.no_progress_count),
     )
-    confirmed_issue = client.api(f"issues/{state.issue_number}")
-    if not isinstance(confirmed_issue, dict):
-        raise LoopBlocked("consumed Authorization Lease cannot be confirmed")
-    confirmed = parse_control(confirmed_issue, milestone)
-    if (
-        dict(confirmed.lease) != consumed_lease
-        or confirmed.no_progress_count != state.no_progress_count
-    ):
-        raise LoopBlocked("Authorization Lease consumption was not atomic")
-    return {
-        "authorized": True,
-        "milestone": milestone,
-        "default_sha": expected_sha,
-        "lease_nonce": consumed_lease["nonce"],
-        "lease_sha256": _lease_fingerprint(consumed_lease),
-        "entrypoint": entrypoint,
-        "run_id": run_id,
-        "run_attempt": run_attempt,
-    }
+    try:
+        confirmed_issue = client.api(f"issues/{state.issue_number}")
+        if not isinstance(confirmed_issue, dict):
+            raise LoopBlocked("consumed Authorization Lease cannot be confirmed")
+        confirmed = parse_control(confirmed_issue, milestone)
+        if (
+            dict(confirmed.lease) != consumed_lease
+            or confirmed.no_progress_count != state.no_progress_count
+        ):
+            raise LoopBlocked("Authorization Lease consumption was not atomic")
+    except (ContractError, GitHubError, LoopBlocked, OSError) as exc:
+        raise LeaseConfirmationBlocked(
+            "consumed Authorization Lease could not be confirmed",
+            {"authorized": False, **receipt},
+        ) from exc
+    return {"authorized": True, **receipt}
 
 
 def _lease_fingerprint(lease: Any) -> str:

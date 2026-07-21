@@ -22,8 +22,9 @@ from coordinator import (
     real_readiness_fingerprint,
 )
 from github_api import GitHubClient
-from loop import pr_metadata
+from loop import main as loop_main, pr_metadata
 from milestone_runner import (
+    LeaseConfirmationBlocked,
     _canonical_digest,
     _gate_environment,
     _gate_result_summary,
@@ -65,9 +66,12 @@ class InvocationClient:
         }
         self.updates: list[dict] = []
         self.after_update = None
+        self.confirmation_error: Exception | None = None
 
     def api(self, endpoint: str, **_kwargs):
         if endpoint == f"issues/{self.control['number']}":
+            if self.confirmation_error is not None:
+                raise self.confirmation_error
             return dict(self.control)
         if endpoint == "environments/valkey-real":
             return dict(self.environment)
@@ -161,17 +165,23 @@ class BoundaryTests(unittest.TestCase):
             discovery_record_job,
         )
         self.assertIn("needs: [coordinate, m2-discovery]", discovery_record_job)
-        for real_job, product_command in (
-            (milestone_job, "run-milestone"),
-            (discovery_job, "run-m2-discovery"),
+        for real_job, product_command, product_condition in (
+            (
+                milestone_job,
+                "run-milestone",
+                "if: always() && steps.authorize.outcome == 'success'",
+            ),
+            (
+                discovery_job,
+                "run-m2-discovery",
+                "if: success() && steps.authorize.outcome == 'success'",
+            ),
         ):
             authorize_at = real_job.index("authorize-real-invocation")
             self.assertLess(real_job.index("actions/checkout@v4"), authorize_at)
             self.assertLess(authorize_at, real_job.index("recover\n"))
             self.assertLess(authorize_at, real_job.index(product_command))
-            self.assertIn(
-                "if: always() && steps.authorize.outcome == 'success'", real_job
-            )
+            self.assertIn(product_condition, real_job)
             before_authorize = real_job[:authorize_at]
             self.assertNotIn("fingerprint --role real", before_authorize)
             self.assertIn(
@@ -731,6 +741,94 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(consumed["run_id"], "12345")
         self.assertEqual(consumed["run_attempt"], "1")
         self.assertEqual(result["lease_sha256"], _lease_fingerprint(consumed))
+
+    def test_unconfirmed_consumed_lease_receipt_reaches_blocked_recorders(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        client.confirmation_error = OSError("confirmation unavailable")
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
+            patch("milestone_runner.subprocess.run", return_value=checkout),
+            patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+            self.assertRaises(LeaseConfirmationBlocked) as raised,
+        ):
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        consumed = parse_control(client.control, "m1").lease
+        receipt = raised.exception.receipt
+        self.assertFalse(receipt["authorized"])
+        self.assertEqual(receipt["milestone"], "m1")
+        self.assertEqual(receipt["entrypoint"], "milestone")
+        self.assertEqual(receipt["lease_nonce"], consumed["nonce"])
+        self.assertEqual(receipt["lease_sha256"], _lease_fingerprint(consumed))
+        self.assertEqual(receipt["default_sha"], "a" * 40)
+        self.assertEqual(receipt["run_id"], "12345")
+        self.assertEqual(receipt["run_attempt"], "1")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "github-output"
+            with (
+                patch.dict(
+                    os.environ, {"GITHUB_OUTPUT": str(output)}, clear=True
+                ),
+                patch("loop.validate_environment"),
+                patch("loop.GitHubClient.from_environment", return_value=object()),
+                patch(
+                    "loop.authorize_real_invocation",
+                    side_effect=raised.exception,
+                ),
+            ):
+                exit_code = loop_main(
+                    [
+                        "authorize-real-invocation",
+                        "--milestone",
+                        "m1",
+                        "--entrypoint",
+                        "milestone",
+                        "--expected-sha",
+                        "a" * 40,
+                        "--expected-readiness-sha256",
+                        "b" * 64,
+                        "--run-id",
+                        "12345",
+                        "--run-attempt",
+                        "1",
+                    ]
+                )
+            outputs = dict(
+                line.split("=", 1)
+                for line in output.read_text(encoding="utf-8").splitlines()
+            )
+        self.assertEqual(exit_code, 78)
+        self.assertEqual(outputs["authorized"], "false")
+        self.assertEqual(outputs["lease_sha256"], receipt["lease_sha256"])
+
+        workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        milestone_job = workflow.split("\n  milestone:", 1)[1].split(
+            "\n  m2-discovery:", 1
+        )[0]
+        discovery_job = workflow.split("\n  m2-discovery:", 1)[1].split(
+            "\n  record-m2-discovery:", 1
+        )[0]
+        receipt_condition = (
+            "if: always() && steps.authorize.outputs.lease_sha256 != ''"
+        )
+        self.assertIn("steps.authorize.outcome == 'success'", milestone_job)
+        self.assertGreaterEqual(milestone_job.count(receipt_condition), 3)
+        self.assertIn(
+            "if: success() && steps.authorize.outcome == 'success'",
+            discovery_job,
+        )
+        self.assertGreaterEqual(discovery_job.count(receipt_condition), 1)
 
     def test_same_approved_invocation_cannot_generate_a_second_lease(self) -> None:
         state, client, environment = self._authorization_fixture()

@@ -280,7 +280,7 @@ jobs:
           --expected-lease-sha256 "${{ steps.authorize.outputs.lease_sha256 }}"
       - name: Final real-resource cleanup
         id: cleanup
-        if: always() && steps.authorize.outcome == 'success'
+        if: always() && steps.authorize.outputs.lease_sha256 != ''
         continue-on-error: true
         run: >-
           python3 .github/milestone-loop/loop.py recover
@@ -298,7 +298,7 @@ jobs:
           retention-days: 30
       - name: Seal current-invocation Milestone result
         id: seal
-        if: always() && steps.authorize.outcome == 'success'
+        if: always() && steps.authorize.outputs.lease_sha256 != ''
         run: >-
           python3 .github/milestone-loop/loop.py seal-milestone-result
           --milestone "${{ needs.coordinate.outputs.milestone }}"
@@ -313,7 +313,7 @@ jobs:
           --raw-result "$RUNNER_TEMP/milestone-raw-result.json"
           --output "$RUNNER_TEMP/milestone-result.json"
       - name: Upload bounded Milestone Gate result
-        if: always() && steps.authorize.outcome == 'success'
+        if: always() && steps.authorize.outputs.lease_sha256 != ''
         uses: actions/upload-artifact@v4
         with:
           name: milestone-result-${{ github.run_id }}-${{ github.run_attempt }}
@@ -367,6 +367,7 @@ jobs:
           --runtime-root "$RUNNER_TEMP/milestone-loop-real"
       - name: Run authorized M2 candidate discovery
         id: discovery
+        if: success() && steps.authorize.outcome == 'success'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -377,7 +378,7 @@ jobs:
           --expected-lease-sha256 "${{ steps.authorize.outputs.lease_sha256 }}"
       - name: Final real-resource cleanup
         id: cleanup
-        if: always() && steps.authorize.outcome == 'success'
+        if: always() && steps.authorize.outputs.lease_sha256 != ''
         continue-on-error: true
         run: >-
           python3 .github/milestone-loop/loop.py recover

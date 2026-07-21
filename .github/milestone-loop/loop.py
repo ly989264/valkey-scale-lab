@@ -31,6 +31,7 @@ from coordinator import (
 )
 from github_api import GitHubClient, GitHubError, collect_snapshot
 from milestone_runner import (
+    LeaseConfirmationBlocked,
     authorize_real_invocation,
     bind_real_result,
     blocked_milestone_result,
@@ -324,8 +325,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "authorize-real-invocation":
             validate_environment("real")
-            _write_output(
-                authorize_real_invocation(
+            try:
+                result = authorize_real_invocation(
                     client,
                     REPO_ROOT,
                     milestone=args.milestone,
@@ -335,7 +336,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                     run_id=args.run_id,
                     run_attempt=args.run_attempt,
                 )
-            )
+            except LeaseConfirmationBlocked as exc:
+                _write_output(exc.receipt)
+                raise
+            _write_output(result)
             return 0
         if args.command == "run-milestone":
             result = run_gate(
