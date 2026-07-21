@@ -1331,11 +1331,11 @@ def authorize_real_invocation(
         or live_state.no_progress_count != state.no_progress_count
     ):
         raise LoopBlocked("Control Issue changed before Lease consumption")
-    client.update_issue(
-        state.issue_number,
-        body=render_control(consumed_lease, state.no_progress_count),
-    )
     try:
+        client.update_issue(
+            state.issue_number,
+            body=render_control(consumed_lease, state.no_progress_count),
+        )
         confirmed_issue = client.api(f"issues/{state.issue_number}")
         if not isinstance(confirmed_issue, dict):
             raise LoopBlocked("consumed Authorization Lease cannot be confirmed")
@@ -1347,7 +1347,7 @@ def authorize_real_invocation(
             raise LoopBlocked("Authorization Lease consumption was not atomic")
     except (ContractError, GitHubError, LoopBlocked, OSError) as exc:
         raise LeaseConfirmationBlocked(
-            "consumed Authorization Lease could not be confirmed",
+            "Authorization Lease consumption could not be confirmed",
             {"authorized": False, **receipt},
         ) from exc
     return {"authorized": True, **receipt}

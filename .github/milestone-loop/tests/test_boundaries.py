@@ -8,7 +8,7 @@ import tempfile
 import unittest
 import subprocess
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from context_builder import MAX_CONTEXT_BYTES, build_context
 from contracts import ContractError
@@ -94,14 +94,92 @@ class InvocationClient:
 class BoundaryTests(unittest.TestCase):
     def test_environment_rejection_skips_discovery_recorder(self) -> None:
         workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        discovery_job = workflow.split("\n  m2-discovery:", 1)[1].split(
+            "\n  record-m2-discovery:", 1
+        )[0]
         recorder_condition = workflow.split("\n  record-m2-discovery:", 1)[1].split(
             "    runs-on:", 1
         )[0]
+        self.assertIn(
+            "environment_started: ${{ steps.protected_checkout.outcome }}",
+            discovery_job,
+        )
         self.assertIn("always()", recorder_condition)
         self.assertIn(
             "needs.m2-discovery.outputs.lease_sha256 != ''", recorder_condition
         )
+        self.assertIn(
+            "needs.m2-discovery.outputs.environment_started != ''",
+            recorder_condition,
+        )
         self.assertNotIn("needs.m2-discovery.result == 'success'", recorder_condition)
+
+    def test_started_environment_preflight_records_milestone_blocked(self) -> None:
+        workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        milestone_job = workflow.split("\n  milestone:", 1)[1].split(
+            "\n  m2-discovery:", 1
+        )[0]
+        record_job = workflow.split("\n  record-milestone:", 1)[1]
+        self.assertIn(
+            "environment_started: ${{ steps.protected_checkout.outcome }}",
+            milestone_job,
+        )
+        self.assertLess(
+            milestone_job.index("id: protected_checkout"),
+            milestone_job.index("authorize-real-invocation"),
+        )
+        self.assertIn(
+            "needs.milestone.outputs.environment_started != ''", record_job
+        )
+        self.assertIn("needs.milestone.outputs.lease_sha256 != ''", record_job)
+        self.assertIn("--environment-started", record_job)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "github-output"
+            with (
+                patch.dict(
+                    os.environ,
+                    {
+                        "GITHUB_OUTPUT": str(output),
+                        "GITHUB_RUN_ID": "12345",
+                        "GITHUB_RUN_ATTEMPT": "2",
+                    },
+                    clear=True,
+                ),
+                patch("loop.GitHubClient.from_environment", return_value=object()),
+                patch("loop.record_milestone_result", return_value="BLOCKED") as record,
+                patch("builtins.print"),
+            ):
+                exit_code = loop_main(
+                    [
+                        "record-milestone",
+                        "--milestone",
+                        "m1",
+                        "--expected-sha",
+                        "a" * 40,
+                        "--expected-lease-sha256",
+                        "",
+                        "--environment-started",
+                        "failure",
+                        "--run-id",
+                        "12345",
+                        "--run-attempt",
+                        "2",
+                        "--result",
+                        str(Path(temporary) / "missing.json"),
+                    ]
+                )
+            outputs = dict(
+                line.split("=", 1)
+                for line in output.read_text(encoding="utf-8").splitlines()
+            )
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(outputs["status"], "BLOCKED")
+        self.assertEqual(record.call_args.kwargs["status"], "BLOCKED")
+        self.assertIn(
+            "did not produce a confirmed consumed Lease",
+            record.call_args.kwargs["summary"],
+        )
 
     def test_contract_change_body_closes_the_label_event_race(self) -> None:
         event = {
@@ -840,6 +918,36 @@ class BoundaryTests(unittest.TestCase):
             discovery_job,
         )
         self.assertGreaterEqual(discovery_job.count(receipt_condition), 1)
+
+    def test_patch_response_loss_preserves_unconfirmed_receipt(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        client.after_update = Mock(side_effect=OSError("PATCH response lost"))
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
+            patch("milestone_runner.subprocess.run", return_value=checkout),
+            patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+            self.assertRaises(LeaseConfirmationBlocked) as raised,
+        ):
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        consumed = parse_control(client.control, "m1").lease
+        self.assertEqual(len(client.updates), 1)
+        self.assertEqual(consumed["status"], "exhausted")
+        self.assertEqual(consumed["remaining"], 0)
+        self.assertFalse(raised.exception.receipt["authorized"])
+        self.assertEqual(
+            raised.exception.receipt["lease_sha256"], _lease_fingerprint(consumed)
+        )
 
     def test_same_approved_invocation_cannot_generate_a_second_lease(self) -> None:
         state, client, environment = self._authorization_fixture()

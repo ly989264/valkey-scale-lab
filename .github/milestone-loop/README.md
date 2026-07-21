@@ -116,7 +116,11 @@ so it cannot generate or consume a Lease. Every new workflow invocation or run
 attempt must receive a new Environment approval and a new Lease; the controller
 never renews, replays, or auto-authorizes one. Direct `workflow_dispatch`
 `start|resume` remains a break-glass recovery interface, not a normal approval
-step. Final real-resource cleanup is eligible only after authorization succeeds.
+step. Product commands and OIDC require confirmed authorization. Final
+real-resource cleanup is eligible after the trusted authorizer emits an
+invocation-bound Lease-write-attempt receipt; an `authorized=false` receipt
+permits only cleanup and `BLOCKED` recording, never a product command or OIDC
+request.
 
 ## M2 Candidate Readiness
 

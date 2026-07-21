@@ -239,8 +239,10 @@ jobs:
       result: ${{ steps.gate.outputs.result }}
       milestone: ${{ needs.coordinate.outputs.milestone }}
       lease_sha256: ${{ steps.authorize.outputs.lease_sha256 }}
+      environment_started: ${{ steps.protected_checkout.outcome }}
     steps:
       - uses: actions/checkout@v4
+        id: protected_checkout
         with:
           ref: ${{ needs.coordinate.outputs.default_sha }}
           fetch-depth: 1
@@ -340,8 +342,10 @@ jobs:
       status: ${{ steps.discovery.outputs.status }}
       result: ${{ steps.discovery.outputs.result }}
       lease_sha256: ${{ steps.authorize.outputs.lease_sha256 }}
+      environment_started: ${{ steps.protected_checkout.outcome }}
     steps:
       - uses: actions/checkout@v4
+        id: protected_checkout
         with:
           ref: ${{ needs.coordinate.outputs.default_sha }}
           fetch-depth: 1
@@ -420,7 +424,8 @@ jobs:
     if: >-
       always() &&
       needs.coordinate.outputs.entrypoint == 'discovery' &&
-      needs.m2-discovery.outputs.lease_sha256 != ''
+      (needs.m2-discovery.outputs.environment_started != '' ||
+      needs.m2-discovery.outputs.lease_sha256 != '')
     runs-on: [self-hosted, macOS, valkey-codex]
     timeout-minutes: 30
     permissions:
@@ -471,7 +476,8 @@ jobs:
     if: >-
       always() &&
       needs.coordinate.outputs.entrypoint == 'milestone' &&
-      needs.milestone.outputs.lease_sha256 != ''
+      (needs.milestone.outputs.environment_started != '' ||
+      needs.milestone.outputs.lease_sha256 != '')
     runs-on: [self-hosted, macOS, valkey-codex]
     timeout-minutes: 30
     permissions:
@@ -503,6 +509,7 @@ jobs:
           --milestone "${{ needs.coordinate.outputs.milestone }}"
           --expected-sha "${{ needs.coordinate.outputs.default_sha }}"
           --expected-lease-sha256 "${{ needs.milestone.outputs.lease_sha256 }}"
+          --environment-started "${{ needs.milestone.outputs.environment_started }}"
           --run-id "${{ github.run_id }}"
           --run-attempt "${{ github.run_attempt }}"
           --result "$RUNNER_TEMP/milestone-result/milestone-result.json"

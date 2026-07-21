@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -244,6 +245,11 @@ def _parser() -> argparse.ArgumentParser:
     record.add_argument("--milestone", required=True)
     record.add_argument("--expected-sha", required=True)
     record.add_argument("--expected-lease-sha256", required=True)
+    record.add_argument(
+        "--environment-started",
+        choices=("", "success", "failure", "cancelled", "skipped"),
+        required=True,
+    )
     record.add_argument("--run-id", required=True)
     record.add_argument("--run-attempt", required=True)
     record.add_argument("--result", type=Path, required=True)
@@ -412,24 +418,45 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 0
         if args.command == "record-milestone":
-            try:
-                result = load_milestone_result(
-                    result_path=args.result,
-                    milestone=args.milestone,
-                    expected_sha=args.expected_sha,
-                    expected_lease_sha256=args.expected_lease_sha256,
-                    run_id=args.run_id,
-                    run_attempt=args.run_attempt,
-                )
-            except (ContractError, OSError, json.JSONDecodeError) as exc:
-                result = blocked_milestone_result(
-                    milestone=args.milestone,
-                    expected_sha=args.expected_sha,
-                    expected_lease_sha256=args.expected_lease_sha256,
-                    run_id=args.run_id,
-                    run_attempt=args.run_attempt,
-                    summary=f"Milestone result artifact validation failed: {exc}",
-                )
+            if args.expected_lease_sha256 == "":
+                fixed_milestone_path(REPO_ROOT, args.milestone)
+                if (
+                    args.environment_started == ""
+                    or re.fullmatch(r"[0-9a-f]{40}", args.expected_sha) is None
+                    or re.fullmatch(r"[1-9][0-9]{0,19}", args.run_id) is None
+                    or re.fullmatch(r"[1-9][0-9]{0,9}", args.run_attempt) is None
+                    or args.run_id != os.environ.get("GITHUB_RUN_ID")
+                    or args.run_attempt != os.environ.get("GITHUB_RUN_ATTEMPT")
+                ):
+                    raise ContractError("real authorization preflight identity is invalid")
+                result = {
+                    "status": "BLOCKED",
+                    "summary": (
+                        "Protected valkey-real job started, but authorization preflight did "
+                        "not produce a confirmed consumed "
+                        f"Lease (checkout={args.environment_started}; run={args.run_id}; "
+                        f"attempt={args.run_attempt})"
+                    ),
+                }
+            else:
+                try:
+                    result = load_milestone_result(
+                        result_path=args.result,
+                        milestone=args.milestone,
+                        expected_sha=args.expected_sha,
+                        expected_lease_sha256=args.expected_lease_sha256,
+                        run_id=args.run_id,
+                        run_attempt=args.run_attempt,
+                    )
+                except (ContractError, OSError, json.JSONDecodeError) as exc:
+                    result = blocked_milestone_result(
+                        milestone=args.milestone,
+                        expected_sha=args.expected_sha,
+                        expected_lease_sha256=args.expected_lease_sha256,
+                        run_id=args.run_id,
+                        run_attempt=args.run_attempt,
+                        summary=f"Milestone result artifact validation failed: {exc}",
+                    )
             action = record_milestone_result(
                 client=client,
                 milestone=args.milestone,
