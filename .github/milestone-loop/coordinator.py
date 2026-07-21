@@ -2086,13 +2086,20 @@ def record_m2_discovery_result(
         and comment.get("author") == "github-actions[bot]"
         and isinstance(comment.get("body"), str)
     )
+    ambiguous_dispatch = (
+        repairable and bool(existing) and not diagnosis_completed and not dispatched
+    )
+    hard_block_record = existing[0] if ambiguous_dispatch else result
     human_action_value: dict[str, Any] | None = None
-    if not repairable and effective_status != "PASS":
+    if ambiguous_dispatch or (not repairable and effective_status != "PASS"):
         human_action_value = _human_action_value(
             snapshot=snapshot,
             state="HARD_BLOCKED",
-            target=f"run:{result['run_id']}:attempt:{result['run_attempt']}",
-            sha=str(result["tested_sha"]),
+            target=(
+                f"run:{hard_block_record['run_id']}:"
+                f"attempt:{hard_block_record['run_attempt']}"
+            ),
+            sha=str(hard_block_record["tested_sha"]),
         )
     human_action_exists = human_action_value is not None and any(
         payload.get("key") == human_action_value["key"]
@@ -2101,7 +2108,14 @@ def record_m2_discovery_result(
     _require_control_comment_capacity(
         control_issue,
         (0 if existing else 1)
-        + (1 if repairable and not diagnosis_completed and not dispatched else 0)
+        + (
+            1
+            if repairable
+            and not existing
+            and not diagnosis_completed
+            and not dispatched
+            else 0
+        )
         + (1 if human_action_value is not None and not human_action_exists else 0),
     )
     summary = str(result["summary"])[:4000]
@@ -2139,6 +2153,18 @@ def record_m2_discovery_result(
             return "NOOP"
         if dispatched:
             return "NOOP"
+        if ambiguous_dispatch:
+            _record_m2_discovery_hard_block(
+                client=client,
+                snapshot=snapshot,
+                control=control,
+                record=hard_block_record,
+                action=(
+                    "Review the M2 discovery run because its prior diagnosis dispatch "
+                    "has no trusted completion marker."
+                ),
+            )
+            return "HUMAN_REQUIRED"
         client.dispatch("m2")
         client.comment(
             control.issue_number,

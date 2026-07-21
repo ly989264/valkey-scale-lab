@@ -667,6 +667,54 @@ class CoordinatorTests(unittest.TestCase):
                 record_m2_discovery_result(client=client, result=result)
         self.assertEqual(client.writes, [])
 
+    def test_discovery_replay_never_repeats_an_ambiguous_dispatch(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        result = self._discovery_result()
+        original_comment = client.comment
+
+        def fail_dispatch_receipt(number, body) -> None:
+            if "milestone-loop-m2-discovery-dispatch:" in body:
+                raise RuntimeError("simulated receipt write failure")
+            original_comment(number, body)
+
+        with patch("coordinator.collect_snapshot", return_value=state):
+            with (
+                patch.object(client, "comment", side_effect=fail_dispatch_receipt),
+                self.assertRaises(RuntimeError),
+            ):
+                record_m2_discovery_result(client=client, result=result)
+            replay = {
+                **result,
+                "run_id": "67890",
+                "run_attempt": 2,
+                "invocation_id": "m2-discovery-gh-67890-attempt-2",
+                "result_digest": "e" * 64,
+                "evidence_digest": "1" * 64,
+            }
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=replay),
+                "HUMAN_REQUIRED",
+            )
+
+        self.assertEqual(
+            len([write for write in client.writes if write[0] == "dispatch"]), 1
+        )
+        hard_blocks = [
+            write
+            for write in client.writes
+            if write[0] == "comment" and "HARD_BLOCKED" in write[2]
+        ]
+        self.assertEqual(len(hard_blocks), 1)
+        self.assertIn("/actions/runs/12345/attempts/1", hard_blocks[0][2])
+        self.assertNotIn("/actions/runs/67890", hard_blocks[0][2])
+
     def test_genuine_discovery_failure_never_enters_diagnosis(self) -> None:
         control = {
             "number": 9,
