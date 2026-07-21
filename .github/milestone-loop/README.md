@@ -141,7 +141,10 @@ Durable human-action transitions are trusted, deduplicated Control Issue
 comments. Their key includes Milestone, state, target PR/run, and SHA. The
 defined states are `PR_REVIEW_REQUIRED`, `REAL_AUTHORIZATION_REQUIRED`,
 `HARD_BLOCKED`, and `M2_COMPLETE`; the repository does not contain an email or
-other external notification service.
+other external notification service. Control Issue comment history is bounded
+at 50: readers use a 51st entry only as an overflow sentinel, and the
+human-action recorder refuses a new marker at capacity rather than truncating
+or losing old markers.
 
 After reviewing discovery, a human-reviewed `contract-change` PR must set the
 same explicit candidates on the formation, failover, and stability Checks. If

@@ -34,7 +34,7 @@ from contracts import (
     validate_transition,
     verified_tree,
 )
-from github_api import GitHubClient, GitHubError, collect_snapshot
+from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError, collect_snapshot
 
 
 CONTROL_LABEL = "milestone-loop:control"
@@ -235,9 +235,13 @@ def record_human_action_state(
     value["key"] = hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
-    raw_comments = client.api(f"issues/{control.issue_number}/comments?per_page=51")
+    raw_comments = client.api(
+        f"issues/{control.issue_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
+    )
     if not isinstance(raw_comments, list):
         raise GitHubError("cannot read Control Issue before human-action recording")
+    if len(raw_comments) > MAX_ISSUE_COMMENTS:
+        raise LoopBlocked("Control Issue comment history exceeds its authoritative bound")
     live = {
         "comments": [
             {
@@ -246,7 +250,7 @@ def record_human_action_state(
                 else None,
                 "body": comment.get("body") if isinstance(comment, dict) else None,
             }
-            for comment in raw_comments[:51]
+            for comment in raw_comments
         ]
     }
     if any(
@@ -254,6 +258,8 @@ def record_human_action_state(
         for payload in _trusted_comment_payloads(live, HUMAN_ACTION_RE)
     ):
         return False
+    if len(raw_comments) >= MAX_ISSUE_COMMENTS:
+        raise LoopBlocked("Control Issue comment capacity is exhausted")
     client.comment(
         control.issue_number,
         f"Human action required: **{state}**\n\n{action}\n\n{link}\n\n"
@@ -1125,7 +1131,6 @@ def _validated_m2_discovery_repair(
     }
     if (
         len(records) != 1
-        or records[0].get("disposition") != "REPAIRABLE_IMPLEMENTATION"
         or records[0].get("tested_sha") != snapshot.get("default_sha")
         or fingerprint not in completed
     ):

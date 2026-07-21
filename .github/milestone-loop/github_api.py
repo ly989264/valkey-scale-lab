@@ -10,6 +10,9 @@ from urllib.parse import quote
 from contracts import ContractError
 
 
+MAX_ISSUE_COMMENTS = 50
+
+
 class GitHubError(RuntimeError):
     pass
 
@@ -295,9 +298,9 @@ def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
                 merge_tree = merge_commit.get("tree") if isinstance(merge_commit, dict) else None
                 merge_tree_sha = merge_tree.get("sha") if isinstance(merge_tree, dict) else None
             comments = _bounded_list(
-                client.api(f"issues/{number}/comments?per_page=51"),
+                client.api(f"issues/{number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"),
                 location=f"PR #{number} comments",
-                maximum=50,
+                maximum=MAX_ISSUE_COMMENTS,
             )
             prs.append(
                 {
@@ -334,9 +337,9 @@ def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
         if not isinstance(number, int):
             raise GitHubError("Issue number is invalid")
         comments = _bounded_list(
-            client.api(f"issues/{number}/comments?per_page=51"),
+            client.api(f"issues/{number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"),
             location=f"Issue #{number} comments",
-            maximum=50,
+            maximum=MAX_ISSUE_COMMENTS,
         )
         issues.append(
             {

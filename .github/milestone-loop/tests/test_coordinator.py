@@ -25,6 +25,7 @@ from coordinator import (
     pending_failure_diagnosis,
     pending_m2_discovery_diagnosis,
     prepare_planner_transaction,
+    record_human_action_state,
     record_m2_discovery_result,
     render_control,
     record_milestone_result,
@@ -454,6 +455,49 @@ class CoordinatorTests(unittest.TestCase):
         self.assertEqual(parsed.no_progress_count, 3)
         with self.assertRaises(ContractError):
             parse_control({"number": 9, "body": body + "\nState: running"}, "m1")
+
+    def test_human_action_dedup_stays_within_the_authoritative_comment_bound(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [{"author": "human", "body": "note"} for _ in range(49)],
+        }
+        state = self._m2_record_state(control)
+        parsed = ControlState(9, empty_lease("m2"), 0)
+        client = FakeClient(control)
+        arguments = {
+            "client": client,
+            "snapshot": state,
+            "control": parsed,
+            "state": "HARD_BLOCKED",
+            "target": "run:123:attempt:1",
+            "sha": "a" * 40,
+            "action": "Inspect the protected run.",
+            "link": "https://github.com/owner/repo/actions/runs/123/attempts/1",
+        }
+        self.assertTrue(record_human_action_state(**arguments))
+        self.assertFalse(record_human_action_state(**arguments))
+        self.assertEqual(len(control["comments"]), 50)
+        self.assertEqual(len(client.writes), 1)
+
+        full = copy.deepcopy(control)
+        full["comments"][-1] = {"author": "human", "body": "another note"}
+        full_client = FakeClient(full)
+        with self.assertRaises(LoopBlocked):
+            record_human_action_state(
+                **{**arguments, "client": full_client, "target": "run:124:attempt:1"}
+            )
+        self.assertEqual(full_client.writes, [])
+
+        overflow = copy.deepcopy(full)
+        overflow["comments"].append({"author": "human", "body": "overflow"})
+        overflow_client = FakeClient(overflow)
+        with self.assertRaises(LoopBlocked):
+            record_human_action_state(
+                **{**arguments, "client": overflow_client, "target": "run:125:attempt:1"}
+            )
+        self.assertEqual(overflow_client.writes, [])
 
     def test_lease_is_consumed_once_and_exhausts(self) -> None:
         lease = empty_lease("m1")

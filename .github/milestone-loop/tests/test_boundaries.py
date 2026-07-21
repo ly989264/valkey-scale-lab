@@ -554,6 +554,8 @@ class BoundaryTests(unittest.TestCase):
         malformed_campaign: bool = False,
         run_id: str = "123",
         run_attempt: str = "2",
+        failure_scope: str = "formation",
+        invalid_samples: list[dict[str, str]] | None = None,
     ) -> tuple[dict, Path, Path]:
         root = Path(temporary)
         evidence = root / "evidence"
@@ -570,14 +572,20 @@ class BoundaryTests(unittest.TestCase):
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
         }
 
-        def campaign(kind: str, campaign_status: str, started: list[str], cells: list[dict]) -> dict:
+        def campaign(
+            kind: str,
+            campaign_status: str,
+            started: list[str],
+            cells: list[dict],
+            samples: list[dict[str, str]] | None = None,
+        ) -> dict:
             trials: list[dict] = []
             pairs: list[dict] = []
             if campaign_status == "PASS":
                 for cell in cells:
                     pair_id = f"{cell['cell_id']}-pair-1"
-                    baseline_id = f"{pair_id}-baseline"
-                    candidate_id = f"{pair_id}-candidate"
+                    baseline_id = f"{invocation}-{pair_id}-baseline"
+                    candidate_id = f"{invocation}-{pair_id}-candidate"
                     trials.extend(
                         [
                             {"trial_id": baseline_id, "pair_id": pair_id, "cell_id": cell["cell_id"]},
@@ -617,7 +625,7 @@ class BoundaryTests(unittest.TestCase):
                 "trials": trials,
                 "pairs": pairs,
                 "cells": cells,
-                "invalid_samples": [],
+                "invalid_samples": [dict(sample) for sample in (samples or [])],
                 "source_refs": [dict(source_ref)] if started else [],
                 "errors": [error] if error and campaign_status == "FAIL" else [],
             }
@@ -639,15 +647,44 @@ class BoundaryTests(unittest.TestCase):
         if status == "PASS":
             campaigns = {
                 "formation": campaign(
-                    "formation", "PASS", ["formation-trial"], [formation_losing_cell]
+                    "formation",
+                    "PASS",
+                    [f"{invocation}-formation-trial"],
+                    [formation_losing_cell],
+                    invalid_samples,
                 ),
                 "failover": campaign(
-                    "failover", "PASS", ["failover-trial"], [failover_losing_cell]
+                    "failover",
+                    "PASS",
+                    [f"{invocation}-failover-trial"],
+                    [failover_losing_cell],
+                ),
+            }
+        elif failure_scope == "failover":
+            campaigns = {
+                "formation": campaign(
+                    "formation",
+                    "PASS",
+                    [f"{invocation}-formation-trial"],
+                    [formation_losing_cell],
+                ),
+                "failover": campaign(
+                    "failover",
+                    "FAIL",
+                    [f"{invocation}-failover-trial"],
+                    [],
+                    invalid_samples,
                 ),
             }
         else:
             campaigns = {
-                "formation": campaign("formation", "FAIL", ["formation-trial"], []),
+                "formation": campaign(
+                    "formation",
+                    "FAIL",
+                    [f"{invocation}-formation-trial"],
+                    [],
+                    invalid_samples,
+                ),
                 "failover": campaign("failover", "FAIL", [], []),
             }
         candidate_results = {
@@ -718,24 +755,115 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(loaded["failure_scope"], "")
 
     def test_only_narrow_programming_failure_is_repairable(self) -> None:
+        reason = "formation collector called an invalid API"
         with tempfile.TemporaryDirectory() as temporary:
             repairable, _sealed, _evidence = self._seal_discovery_fixture(
                 temporary,
                 status="FAIL",
-                error="DISCOVERY_FAILED: TypeError: formation collector called an invalid API",
+                error=f"DISCOVERY_FAILED: TypeError: {reason}",
+                invalid_samples=[
+                    {
+                        "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
+                        "reason": reason,
+                    }
+                ],
             )
         self.assertEqual(repairable["disposition"], "REPAIRABLE_IMPLEMENTATION")
         self.assertEqual(repairable["failure_scope"], "formation")
         self.assertEqual(repairable["failure_code"], "python-typeerror")
+
+        failover_reason = "failover collector called an invalid API"
+        with tempfile.TemporaryDirectory() as temporary:
+            failover, _sealed, _evidence = self._seal_discovery_fixture(
+                temporary,
+                status="FAIL",
+                error=f"DISCOVERY_FAILED: TypeError: {failover_reason}",
+                failure_scope="failover",
+                invalid_samples=[
+                    {
+                        "trial_id": "m2-discovery-gh-123-attempt-2-failover-trial",
+                        "reason": failover_reason,
+                    }
+                ],
+            )
+        self.assertEqual(failover["disposition"], "REPAIRABLE_IMPLEMENTATION")
+        self.assertEqual(failover["failure_scope"], "failover")
 
         with tempfile.TemporaryDirectory() as temporary:
             safety, _sealed, _evidence = self._seal_discovery_fixture(
                 temporary,
                 status="FAIL",
                 error="DISCOVERY_FAILED: CaptureError: cluster link safety metric is nonzero",
+                invalid_samples=[
+                    {
+                        "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
+                        "reason": "cluster link safety metric is nonzero",
+                    }
+                ],
             )
         self.assertEqual(safety["status"], "FAIL")
         self.assertEqual(safety["disposition"], "HUMAN_REQUIRED")
+
+    def test_invalid_sample_must_match_the_current_repairable_failure(self) -> None:
+        error = "DISCOVERY_FAILED: TypeError: current implementation failure"
+        cases = (
+            (
+                [
+                    {
+                        "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
+                        "reason": "different failure",
+                    }
+                ],
+                "FAIL",
+            ),
+            (
+                [
+                    {
+                        "trial_id": "m2-discovery-gh-122-attempt-1-formation-trial",
+                        "reason": "current implementation failure",
+                    }
+                ],
+                "BLOCKED",
+            ),
+            (
+                [
+                    {
+                        "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
+                        "reason": "current implementation failure",
+                    },
+                    {
+                        "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
+                        "reason": "current implementation failure",
+                    },
+                ],
+                "BLOCKED",
+            ),
+        )
+        for samples, expected_status in cases:
+            with self.subTest(samples=samples), tempfile.TemporaryDirectory() as temporary:
+                result, _sealed, _evidence = self._seal_discovery_fixture(
+                    temporary,
+                    status="FAIL",
+                    error=error,
+                    invalid_samples=samples,
+                )
+            self.assertEqual(result["status"], expected_status)
+            self.assertEqual(result["disposition"], "HUMAN_REQUIRED")
+
+    def test_pass_cannot_hide_invalid_samples(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            result, _sealed, _evidence = self._seal_discovery_fixture(
+                temporary,
+                status="PASS",
+                invalid_samples=[
+                    {
+                        "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
+                        "reason": "hidden failure",
+                    }
+                ],
+            )
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(result["disposition"], "HUMAN_REQUIRED")
 
     def test_repairable_fingerprint_is_stable_across_real_attempt_envelopes(self) -> None:
         with tempfile.TemporaryDirectory() as first_root:

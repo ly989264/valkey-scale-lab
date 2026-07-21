@@ -94,8 +94,9 @@ _M2_DISCOVERY_CAMPAIGN_FIELDS = {
     "errors",
 }
 _M2_REPAIRABLE_EXCEPTION_RE = re.compile(
-    r"^DISCOVERY_FAILED: "
+    r"DISCOVERY_FAILED: "
     r"(AttributeError|IndexError|KeyError|NameError|TypeError|UnboundLocalError): "
+    r"([^\r\n]{1,4000})"
 )
 
 
@@ -226,7 +227,7 @@ def _validate_discovery_campaign(
         or not isinstance(campaign.get("trials"), list)
         or not isinstance(campaign.get("pairs"), list)
         or not isinstance(campaign.get("cells"), list)
-        or campaign.get("invalid_samples") != []
+        or not isinstance(campaign.get("invalid_samples"), list)
         or not isinstance(campaign.get("source_refs"), list)
         or not isinstance(campaign.get("errors"), list)
     ):
@@ -236,6 +237,30 @@ def _validate_discovery_campaign(
         not isinstance(value, str) or not value for value in started
     ):
         raise ContractError(f"M2 {kind} discovery started trials are invalid")
+    invalid_samples = campaign["invalid_samples"]
+    if campaign.get("status") != "FAIL" and invalid_samples:
+        raise ContractError(f"M2 {kind} discovery non-failure contains invalid samples")
+    if len(invalid_samples) > 1:
+        raise ContractError(f"M2 {kind} discovery contains multiple invalid samples")
+    if invalid_samples:
+        sample = invalid_samples[0]
+        if not isinstance(sample, dict) or set(sample) != {"trial_id", "reason"}:
+            raise ContractError(f"M2 {kind} discovery invalid sample fields are malformed")
+        trial_id = sample.get("trial_id")
+        reason = sample.get("reason")
+        if (
+            not isinstance(trial_id, str)
+            or trial_id not in started
+            or re.fullmatch(
+                re.escape(invocation_id) + r"-[A-Za-z0-9][A-Za-z0-9._:-]{0,255}",
+                trial_id,
+            ) is None
+            or not isinstance(reason, str)
+            or not reason
+            or len(reason) > 4000
+            or not reason.isprintable()
+        ):
+            raise ContractError(f"M2 {kind} discovery invalid sample is not current and bounded")
     if started and (
         campaign.get("real_valkey") is not True
         or campaign.get("execution_mode") != "valkey-real"
@@ -395,8 +420,6 @@ def _validate_discovery_report(
         or report.get("status") not in {"PASS", "FAIL", "BLOCKED"}
     ):
         raise ContractError("M2 discovery report is not bound to this selection-only invocation")
-    if "criterion_results" in report or "selected_candidate" in report:
-        raise ContractError("M2 discovery report contains admission-only fields")
     report_digest = report.get("report_digest")
     if (
         not isinstance(report_digest, str)
@@ -462,14 +485,23 @@ def _validate_discovery_report(
             raise ContractError("M2 discovery PASS is not a completed real selection screen")
         return "CANDIDATE_SELECTION_ONLY", "", ""
     if status == "FAIL" and isinstance(errors, list) and len(errors) == 1 and isinstance(errors[0], str):
-        match = _M2_REPAIRABLE_EXCEPTION_RE.match(errors[0])
+        match = _M2_REPAIRABLE_EXCEPTION_RE.fullmatch(errors[0])
         scope = _discovery_failure_scope(report)
         affected = campaigns.get(scope) if scope else None
+        invalid_samples = affected.get("invalid_samples") if isinstance(affected, dict) else None
         if (
             match is not None
             and scope
             and isinstance(affected, dict)
             and affected.get("errors") == errors
+            and (
+                invalid_samples == []
+                or (
+                    isinstance(invalid_samples, list)
+                    and len(invalid_samples) == 1
+                    and invalid_samples[0].get("reason") == match.group(2)
+                )
+            )
             and report.get("real_valkey") is True
             and report.get("execution_mode") == "valkey-real"
         ):
