@@ -5,7 +5,7 @@
   "python": "Python 3.9.6",
   "gh": "gh version 2.96.0 (2026-07-02)",
   "git": "git version 2.50.1 (Apple Git-155)",
-  "codex": "codex-cli 0.136.0",
+  "codex": "codex-cli 0.144.6",
   "docker": "Docker version 29.2.1, build a5c7197",
   "pytest": "8.4.2",
   "actions_runner": "2.335.1"
