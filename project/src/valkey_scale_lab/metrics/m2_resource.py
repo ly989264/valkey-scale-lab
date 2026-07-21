@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 import json
 import math
 import time
@@ -13,6 +14,10 @@ PROJECT = "valkey-scale-lab"
 MISSING = "MISSING"
 MAX_SCHEDULE_LAG_SECONDS = 0.5
 MAX_SCHEDULE_LAG_FRACTION = 0.1
+_CLUSTER_NODE_FLAGS = frozenset(
+    {"myself", "master", "slave", "fail?", "fail", "handshake", "noaddr", "nofailover", "noflags"}
+)
+_CLUSTER_ROLE_FLAGS = frozenset({"master", "slave"})
 
 
 class M2ResourceMeasurementError(ValueError):
@@ -109,7 +114,8 @@ for owned_process in "$@"; do
       count = split(address_at[1], host_port, ":")
       port = host_port[count]
       expected = index("," expected_gone_ports ",", "," port ",") > 0
-      if ($8 != "connected" && !expected) errors += 1
+      pending_handshake = ($1 != "" && $2 != "" && $3 == "handshake" && $4 == "-" && $8 == "disconnected")
+      if ($8 != "connected" && !expected && !pending_handshake) errors += 1
     }
     END { if (links < 1) exit 2; printf "%s %s", links, errors + 0 }
   '); then
@@ -121,6 +127,15 @@ for owned_process in "$@"; do
   printf 'CLUSTER\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$pid" "$port" "$sent_bytes" "$received_bytes" "$sent_messages" "$received_messages" \
     "$buffer_exceeded" "$1" "$2"
+  if ! printf '%s\n' "$cluster_nodes" | awk -v pid="$pid" '
+    NF && $8 != "connected" {
+      printf "LINK\t%s\t%s\t%s\t%s\t%s\t%s\n", pid, $1, $2, $3, $4, $8
+    }
+  '; then
+    printf 'ERROR\t%s\tcluster_nodes_raw_unreadable\n' "$pid"
+    failed=1
+    continue
+  fi
 done
 rx=0
 tx=0
@@ -732,12 +747,20 @@ def validate_and_aggregate_m2_resource_samples(report: dict[str, Any]) -> dict[s
         or fault_capture.get("binding_status") != "PASS"
     ):
         errors.append("fault target capture claims do not match raw samples")
+    expected_gone_client_ports = {
+        binding["client_port"]
+        for process_key, binding in binding_by_process.items()
+        if process_key in set(expected_gone_processes) and _valid_positive_int(binding.get("client_port"))
+    }
 
     metrics = missing_metrics
     diagnostics = missing_diagnostics
     if not errors:
         try:
-            metrics, diagnostics = _aggregate_samples(samples)
+            metrics, diagnostics = _aggregate_samples(
+                samples,
+                expected_gone_client_ports=expected_gone_client_ports,
+            )
         except (KeyError, TypeError, M2ResourceMeasurementError) as exc:
             errors.append(f"cannot aggregate raw resource samples: {exc}")
     return {
@@ -1113,6 +1136,7 @@ def _parse_batch(
     page_size = 0
     processes: dict[int, dict[str, int]] = {}
     cluster_counters: dict[int, dict[str, int]] = {}
+    non_connected_cluster_links: dict[int, list[dict[str, Any]]] = {}
     gone_pids: set[int] = set()
     rx_bytes: int | None = None
     tx_bytes: int | None = None
@@ -1150,6 +1174,17 @@ def _parse_batch(
                 "cluster_link_count": values[6],
                 "cluster_link_errors": values[7],
             }
+        elif parts[0] == "LINK" and len(parts) == 7:
+            pid = _positive_int(parts[1], "cluster link pid")
+            non_connected_cluster_links.setdefault(pid, []).append(
+                {
+                    "node_id": parts[2],
+                    "address": parts[3],
+                    "flags": parts[4].split(",") if parts[4] else [],
+                    "master_id": parts[5],
+                    "link_state": parts[6],
+                }
+            )
         elif parts[0] == "GONE" and len(parts) == 3:
             pid = _positive_int(parts[1], "gone pid")
             port = _positive_int(parts[2], "gone client_port")
@@ -1181,6 +1216,11 @@ def _parse_batch(
     if set(cluster_counters) != set(processes):
         errors.append(
             f"cluster samples do not match live proc targets: expected={sorted(processes)} observed={sorted(cluster_counters)}"
+        )
+    if set(non_connected_cluster_links) - set(processes):
+        errors.append(
+            "cluster link observations are not bound to live proc targets: "
+            f"{sorted(set(non_connected_cluster_links) - set(processes))}"
         )
     reappeared = {
         _process_identity(target, pid)
@@ -1229,6 +1269,7 @@ def _parse_batch(
                 "total_cluster_links_buffer_limit_exceeded": cluster_counters[pid]["buffer_overflows"],
                 "cluster_link_count": cluster_counters[pid]["cluster_link_count"],
                 "cluster_link_errors": cluster_counters[pid]["cluster_link_errors"],
+                "non_connected_cluster_links": non_connected_cluster_links.get(pid, []),
             }
             for pid in target.pids
             if pid in processes
@@ -1240,6 +1281,113 @@ def _parse_batch(
             "scope": "controlled-window container namespace",
         },
     }
+
+
+def _cluster_link_errors_from_raw(
+    process: Mapping[str, Any],
+    *,
+    expected_gone_client_ports: set[int],
+) -> int:
+    logical_id = process.get("logical_id", MISSING)
+    observations = process.get("non_connected_cluster_links")
+    if not isinstance(observations, list):
+        raise M2ResourceMeasurementError(
+            f"cluster sample for {logical_id} is missing raw non-connected CLUSTER NODES rows"
+        )
+    errors = 0
+    for position, observation in enumerate(observations):
+        if not isinstance(observation, dict):
+            raise M2ResourceMeasurementError(
+                f"cluster sample for {logical_id} raw link {position} must be an object"
+            )
+        node_id = observation.get("node_id")
+        address = observation.get("address")
+        flags = observation.get("flags")
+        master_id = observation.get("master_id")
+        link_state = observation.get("link_state")
+        if (
+            not isinstance(node_id, str)
+            or not node_id
+            or not isinstance(address, str)
+            or not address
+            or not isinstance(flags, list)
+            or not flags
+            or any(not isinstance(flag, str) or not flag for flag in flags)
+            or len(set(flags)) != len(flags)
+            or not isinstance(master_id, str)
+            or not master_id
+            or not isinstance(link_state, str)
+            or not link_state
+        ):
+            raise M2ResourceMeasurementError(
+                f"cluster sample for {logical_id} raw link {position} is incomplete"
+            )
+        if link_state == "connected":
+            raise M2ResourceMeasurementError(
+                f"cluster sample for {logical_id} raw non-connected link {position} is connected"
+            )
+        flag_set = set(flags)
+        client_port = _cluster_link_client_port(address)
+        valid_node_id = _valid_cluster_node_id(node_id)
+        recognized_disconnected = (
+            link_state == "disconnected"
+            and flag_set <= _CLUSTER_NODE_FLAGS
+            and "noaddr" not in flag_set
+            and not ("noflags" in flag_set and len(flag_set) != 1)
+            and valid_node_id
+            and (master_id == "-" or _valid_cluster_node_id(master_id))
+            and client_port is not None
+        )
+        if not recognized_disconnected:
+            errors += 1
+            continue
+        role_flags = flag_set & _CLUSTER_ROLE_FLAGS
+        primary_link = role_flags == {"master"} and master_id == "-"
+        replica_link = role_flags == {"slave"} and _valid_cluster_node_id(master_id)
+        expected_gone_link = (
+            client_port in expected_gone_client_ports
+            and (primary_link or replica_link)
+            and not flag_set.intersection({"myself", "handshake", "noflags"})
+            and not {"fail?", "fail"} <= flag_set
+            and ("nofailover" not in flag_set or replica_link)
+        )
+        if expected_gone_link:
+            continue
+        # A normal role row is ambiguous; only HANDSHAKE proves the first exchange has not completed.
+        pending_handshake = (
+            flag_set == {"handshake"}
+            and master_id == "-"
+        )
+        if not pending_handshake:
+            errors += 1
+    claimed = process.get("cluster_link_errors")
+    if not _valid_nonnegative_int(claimed) or claimed != errors:
+        raise M2ResourceMeasurementError(
+            f"cluster sample for {logical_id} cluster_link_errors does not match raw links: "
+            f"claimed={claimed!r} recomputed={errors}"
+        )
+    return errors
+
+
+def _cluster_link_client_port(address: str) -> int | None:
+    client_address, separator, bus_address = address.partition("@")
+    if not separator or ":" not in client_address:
+        return None
+    host_text, port_text = client_address.rsplit(":", 1)
+    bus_port_text = bus_address.split(",", 1)[0]
+    if not port_text.isdigit() or not bus_port_text.isdigit():
+        return None
+    try:
+        ipaddress.ip_address(host_text)
+    except ValueError:
+        return None
+    port = int(port_text)
+    bus_port = int(bus_port_text)
+    return port if 0 < port <= 65535 and 0 < bus_port <= 65535 else None
+
+
+def _valid_cluster_node_id(value: str) -> bool:
+    return len(value) == 40 and all(character in "0123456789abcdef" for character in value.lower())
 
 
 def _resource_report(
@@ -1260,6 +1408,12 @@ def _resource_report(
     expected_gone = expected_gone_processes or set()
     captured = captured_processes or set()
     observed_gone = observed_gone_processes or set()
+    expected_gone_client_ports = {
+        port
+        for target in targets
+        for pid, port in zip(target.pids, target.client_ports)
+        if _process_identity(target, pid) in expected_gone
+    }
     complete_samples = [sample for sample in samples if sample.get("status") == "PASS"]
     complete = status == "PASS" and len(complete_samples) == expected_samples and expected_samples > 0
     metrics: dict[str, int | float | str] = {
@@ -1277,7 +1431,10 @@ def _resource_report(
     }
     if complete:
         try:
-            metrics, diagnostics = _aggregate_samples(complete_samples)
+            metrics, diagnostics = _aggregate_samples(
+                complete_samples,
+                expected_gone_client_ports=expected_gone_client_ports,
+            )
         except M2ResourceMeasurementError as exc:
             status = "FAIL"
             complete = False
@@ -1346,7 +1503,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum disconnected-link count after excluding only explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived disconnected-link error count after excluding only well-formed pre-establishment handshake rows and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {
@@ -1358,7 +1515,11 @@ def _resource_report(
     }
 
 
-def _aggregate_samples(samples: list[dict[str, Any]]) -> tuple[dict[str, int | float], dict[str, int]]:
+def _aggregate_samples(
+    samples: list[dict[str, Any]],
+    *,
+    expected_gone_client_ports: set[int],
+) -> tuple[dict[str, int | float], dict[str, int]]:
     rss_totals: list[int] = []
     fd_totals: list[int] = []
     connection_totals: list[int] = []
@@ -1383,7 +1544,10 @@ def _aggregate_samples(samples: list[dict[str, Any]]) -> tuple[dict[str, int | f
                 if process_history.get(logical_id) and process_history[logical_id][-1][0]["pid"] != process["pid"]:
                     raise M2ResourceMeasurementError(f"owned pid changed for {logical_id} inside the resource window")
                 process_history.setdefault(logical_id, []).append((process, hz))
-                link_errors += process["cluster_link_errors"]
+                link_errors += _cluster_link_errors_from_raw(
+                    process,
+                    expected_gone_client_ports=expected_gone_client_ports,
+                )
             network += nodehost["namespace_network"]["rx_bytes"] + nodehost["namespace_network"]["tx_bytes"]
         rss_totals.append(rss)
         fd_totals.append(fds)
@@ -1598,7 +1762,11 @@ def _valid_nonnegative_int(value: Any) -> bool:
 
 
 def _valid_resource_process(process: dict[str, Any]) -> bool:
-    if not _valid_positive_int(process.get("client_port")) or not _valid_positive_int(process.get("cluster_link_count")):
+    if (
+        not _valid_positive_int(process.get("client_port"))
+        or not _valid_positive_int(process.get("cluster_link_count"))
+        or not isinstance(process.get("non_connected_cluster_links"), list)
+    ):
         return False
     return all(
         _valid_nonnegative_int(process.get(field))

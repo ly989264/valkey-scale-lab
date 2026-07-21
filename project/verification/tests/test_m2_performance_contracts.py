@@ -595,6 +595,7 @@ def _write_valid_trial_sources(
             "total_cluster_links_buffer_limit_exceeded": 0,
             "cluster_link_count": scale - 1,
             "cluster_link_errors": 0,
+            "non_connected_cluster_links": [],
         }
 
     resource_samples = []
@@ -1817,6 +1818,20 @@ def test_cleanup_source_is_parsed_and_bound_to_the_trial(tmp_path: Path) -> None
         ),
         (
             "resource",
+            lambda value: value["samples"][0]["nodehosts"][0]["processes"][0].pop(
+                "non_connected_cluster_links"
+            ),
+            "raw resource samples are incomplete or invalid",
+        ),
+        (
+            "resource",
+            lambda value: value["samples"][0]["nodehosts"][0]["processes"][0].__setitem__(
+                "cluster_link_errors", 1
+            ),
+            "raw resource samples are incomplete or invalid",
+        ),
+        (
+            "resource",
             lambda value: value["ownership"]["pids"].pop(),
             "resource ownership is not bound to the runtime state",
         ),
@@ -1875,6 +1890,44 @@ def test_raw_source_summary_tampering_is_rejected(
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
 
     assert any(message in error for error in errors)
+
+
+def test_raw_resource_source_accepts_pre_establishment_handshake_transient(tmp_path: Path) -> None:
+    report = _formation_report()
+    trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    resource = json.loads(paths["resource"].read_text(encoding="utf-8"))
+    resource["samples"][0]["nodehosts"][0]["processes"][0][
+        "non_connected_cluster_links"
+    ] = [
+        {
+            "node_id": "a" * 40,
+            "address": "127.0.0.1:7201@17201",
+            "flags": ["handshake"],
+            "master_id": "-",
+            "link_state": "disconnected",
+        }
+    ]
+    _rewrite_bound_source(report, trial, paths["resource"], "resource", resource)
+    refs = {ref["category"]: ref for ref in trial["source_sha256s"]}
+    trial["provenance"]["capture_digest"] = M2._canonical_digest(
+        {
+            category: ref["sha256"]
+            for category, ref in refs.items()
+            if category != "provenance"
+        }
+    )
+    _rewrite_bound_source(
+        report,
+        trial,
+        paths["provenance"],
+        "provenance",
+        trial["provenance"],
+    )
+
+    assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
 
 
 @pytest.mark.parametrize(

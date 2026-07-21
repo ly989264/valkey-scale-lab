@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.metrics.m2_resource import (
+    _cluster_link_errors_from_raw,
     collect_m2_resource_window,
     validate_and_aggregate_m2_resource_samples,
     validate_equal_m2_resource_windows,
@@ -125,9 +126,13 @@ def _m2_batch_output(
     gone_pids: set[int] | None = None,
     omitted_cluster_pids: set[int] | None = None,
     rollback_pid: int | None = None,
+    non_connected_links: dict[int, list[tuple[str, str, str, str, str]]] | None = None,
+    cluster_link_errors: dict[int, int] | None = None,
 ) -> str:
     gone = gone_pids or set()
     omitted = omitted_cluster_pids or set()
+    link_rows = non_connected_links or {}
+    error_claims = cluster_link_errors or {}
     rows = ["META\t100\t4096"]
     process_values = {
         101: (7101, 10, 2, 5, 4, 2, 1000, 500, 100, 80),
@@ -149,10 +154,46 @@ def _m2_batch_output(
             f"CLUSTER\t{pid}\t{port}\t{sent_bytes + direction * sample * 100 * scale}"
             f"\t{received_bytes + direction * sample * 50 * scale}"
             f"\t{sent_messages + direction * sample * 10 * scale}"
-            f"\t{received_messages + direction * sample * 8 * scale}\t0\t2\t0"
+            f"\t{received_messages + direction * sample * 8 * scale}\t0\t2\t{error_claims.get(pid, 0)}"
+        )
+        rows.extend(
+            f"LINK\t{pid}\t{node_id}\t{address}\t{flags}\t{master_id}\t{link_state}"
+            for node_id, address, flags, master_id, link_state in link_rows.get(pid, [])
         )
     rows.append(f"NET\t{1000 + sample * 100}\t{2000 + sample * 200}")
     return "\n".join(rows)
+
+
+def _m2_resource_report_with_link(
+    link: tuple[str, str, str, str, str],
+    *,
+    claimed_errors: int,
+) -> dict:
+    clock = _FakeClock()
+    sample = 0
+
+    def command(args, *, timeout, check):
+        nonlocal sample
+        if args[0] == "inspect":
+            return SimpleNamespace(returncode=0, stdout=_owned_inspect(), stderr="")
+        output = _m2_batch_output(
+            sample,
+            non_connected_links={101: [link]},
+            cluster_link_errors={101: claimed_errors},
+        )
+        sample += 1
+        return SimpleNamespace(returncode=0, stdout=output, stderr="")
+
+    return collect_m2_resource_window(
+        _m2_runtime_state(),
+        window_name="cluster-link-semantics",
+        duration_seconds=1,
+        interval_seconds=1,
+        command=command,
+        monotonic_clock=clock.monotonic,
+        wall_clock=clock.wall,
+        sleep=clock.sleep,
+    )
 
 
 def test_m2_resource_window_batches_owned_pids_and_aggregates_proc_counters() -> None:
@@ -216,10 +257,134 @@ def test_m2_resource_window_batches_owned_pids_and_aggregates_proc_counters() ->
     assert all("/proc/$pid/fd" in args[4] and "/proc/net/dev" in args[4] for args in exec_calls)
     assert all("valkey-cli --raw -p \"$port\" CLUSTER INFO" in args[4] for args in exec_calls)
     assert all("valkey-cli --raw -p \"$port\" CLUSTER NODES" in args[4] for args in exec_calls)
+    assert all('printf "LINK\\t%s' in args[4] and "pending_handshake" in args[4] for args in exec_calls)
     assert report["diagnostics"] == {"cluster_bus_messages": 108, "namespace_network_bytes": 600}
     assert "exact Valkey 9.1 per-node CLUSTER INFO" in report["metric_provenance"]["cluster_bus_bytes"]
     assert "no namespace-traffic fallback" in report["metric_provenance"]["cluster_bus_bytes"]
     assert "diagnostic only" in report["diagnostic_provenance"]["namespace_network_bytes"]
+
+
+def test_m2_resource_window_excludes_only_well_formed_pending_handshake() -> None:
+    link = (
+        "a" * 40,
+        "127.0.0.1:7201@17201",
+        "handshake",
+        "-",
+        "disconnected",
+    )
+
+    report = _m2_resource_report_with_link(link, claimed_errors=0)
+
+    assert report["status"] == "PASS"
+    assert report["metrics"]["cluster_link_errors"] == 0
+    process = report["samples"][0]["nodehosts"][0]["processes"][0]
+    assert process["non_connected_cluster_links"] == [
+        {
+            "node_id": "a" * 40,
+            "address": "127.0.0.1:7201@17201",
+            "flags": ["handshake"],
+            "master_id": "-",
+            "link_state": "disconnected",
+        }
+    ]
+    assert validate_and_aggregate_m2_resource_samples(report)["status"] == "PASS"
+
+
+def test_m2_resource_window_counts_established_disconnected_link() -> None:
+    report = _m2_resource_report_with_link(
+        ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
+        claimed_errors=1,
+    )
+
+    assert report["status"] == "PASS"
+    assert report["metrics"]["cluster_link_errors"] == 1
+    verdict = validate_equal_m2_resource_windows(report, copy.deepcopy(report))
+    assert verdict["status"] == "FAIL"
+    assert any("metric cluster_link_errors must be zero" in error for error in verdict["errors"])
+
+
+def test_m2_resource_window_fails_closed_for_unsafe_or_unknown_link_states() -> None:
+    unsafe_links = [
+        ("c" * 40, "127.0.0.1:7201@17201", "master,fail?", "-", "disconnected"),
+        ("d" * 40, "127.0.0.1:7201@17201", "master,fail", "-", "disconnected"),
+        ("e" * 40, ":0@0", "master,noaddr", "-", "disconnected"),
+        ("f" * 40, "127.0.0.1:7201@17201", "master", "-", "unknown"),
+        ("1" * 40, "127.0.0.1:7201@17201", "handshake,master", "-", "disconnected"),
+        ("2" * 40, "127.0.0.1:7201@17201", "mystery", "-", "disconnected"),
+        ("3" * 40, ":7201@17201", "handshake", "-", "disconnected"),
+        ("4" * 40, "999.999.999.999:7201@17201", "handshake", "-", "disconnected"),
+        ("5" * 40, "127.0.0.1:99999@99999", "handshake", "-", "disconnected"),
+        ("6" * 40, "[2001:db8::1]:7201@17201", "handshake", "-", "disconnected"),
+    ]
+
+    for link in unsafe_links:
+        report = _m2_resource_report_with_link(link, claimed_errors=1)
+        recomputed = validate_and_aggregate_m2_resource_samples(report)
+        assert recomputed["status"] == "PASS"
+        assert recomputed["metrics"]["cluster_link_errors"] == 1
+        assert validate_equal_m2_resource_windows(report, copy.deepcopy(report))["status"] == "FAIL"
+
+
+def test_m2_expected_gone_link_exclusion_requires_known_disconnected_target() -> None:
+    expected_link = {
+        "node_id": "a" * 40,
+        "address": "127.0.0.1:7101@17101",
+        "flags": ["master", "fail?"],
+        "master_id": "-",
+        "link_state": "disconnected",
+    }
+    expected_replica_link = {
+        **expected_link,
+        "flags": ["slave", "fail", "nofailover"],
+        "master_id": "b" * 40,
+    }
+    for link in (expected_link, expected_replica_link):
+        assert _cluster_link_errors_from_raw(
+            {
+                "logical_id": "observer",
+                "cluster_link_errors": 0,
+                "non_connected_cluster_links": [link],
+            },
+            expected_gone_client_ports={7101},
+        ) == 0
+
+    unsafe_expected_links = [
+        {**expected_link, "link_state": "unknown"},
+        {**expected_link, "flags": ["master", "mystery"]},
+        {**expected_link, "flags": ["master", "noaddr"]},
+        {**expected_link, "flags": ["myself", "master"]},
+        {**expected_link, "master_id": "b" * 40},
+        {**expected_link, "flags": ["slave"], "master_id": "-"},
+        {**expected_link, "flags": ["master", "fail?", "fail"]},
+        {**expected_link, "flags": ["master", "nofailover"]},
+        {**expected_link, "address": "127.0.0.1:7102@17102", "flags": ["master"]},
+    ]
+    for link in unsafe_expected_links:
+        assert _cluster_link_errors_from_raw(
+            {
+                "logical_id": "observer",
+                "cluster_link_errors": 1,
+                "non_connected_cluster_links": [link],
+            },
+            expected_gone_client_ports={7101},
+        ) == 1
+
+
+def test_m2_resource_window_rejects_missing_raw_links_and_process_summary_mismatch() -> None:
+    report = _m2_resource_report_with_link(
+        ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
+        claimed_errors=1,
+    )
+
+    missing_raw = copy.deepcopy(report)
+    del missing_raw["samples"][0]["nodehosts"][0]["processes"][0]["non_connected_cluster_links"]
+    assert validate_and_aggregate_m2_resource_samples(missing_raw)["status"] == "FAIL"
+
+    mismatched = copy.deepcopy(report)
+    mismatched["samples"][0]["nodehosts"][0]["processes"][0]["cluster_link_errors"] = 0
+    verdict = validate_and_aggregate_m2_resource_samples(mismatched)
+    assert verdict["status"] == "FAIL"
+    assert any("does not match raw links" in error for error in verdict["errors"])
 
 
 def test_m2_raw_resource_validator_recomputes_and_rejects_coverage_tampering() -> None:
