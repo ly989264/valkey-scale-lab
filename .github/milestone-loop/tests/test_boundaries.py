@@ -32,9 +32,11 @@ from milestone_runner import (
     _validate_consumed_lease,
     authorize_real_invocation,
     bind_real_result,
+    load_milestone_result,
     load_m2_discovery_result,
     run_gate,
     run_m2_discovery,
+    seal_milestone_result,
     seal_m2_discovery_result,
     validate_real_result_binding,
 )
@@ -215,6 +217,61 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[\"./gate\", \"milestone\", milestone]", (ROOT / ".github/milestone-loop/milestone_runner.py").read_text())
         self.assertEqual(PR_MILESTONE_RE.search("Milestone: m4").group(1), "m4")
         self.assertIsNone(PR_MILESTONE_RE.search("Milestone: m5"))
+
+    def test_workflow_pins_queued_coordination_to_the_dispatch_sha(self) -> None:
+        text = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        coordinate_job = text.split("\n  coordinate:", 1)[1].split(
+            "\n  milestone:", 1
+        )[0]
+        self.assertIn("ref: ${{ github.sha }}", coordinate_job)
+        self.assertNotIn(
+            "ref: ${{ github.event.repository.default_branch }}", coordinate_job
+        )
+
+    def test_workflow_seals_cleanup_failure_before_recording_milestone(self) -> None:
+        text = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        milestone_job = text.split("\n  milestone:", 1)[1].split(
+            "\n  m2-discovery:", 1
+        )[0]
+        self.assertIn("id: pre_cleanup", milestone_job)
+        self.assertIn("id: cleanup", milestone_job)
+        self.assertIn("id: evidence", milestone_job)
+        self.assertIn("continue-on-error: true", milestone_job)
+        self.assertIn("seal-milestone-result", milestone_job)
+        self.assertIn(
+            "steps.pre_cleanup.outcome == 'success'", milestone_job
+        )
+        self.assertLess(
+            milestone_job.index("id: pre_cleanup"),
+            milestone_job.index("id: gate"),
+        )
+        self.assertLess(
+            milestone_job.index("id: gate"),
+            milestone_job.index("id: cleanup"),
+        )
+        self.assertLess(
+            milestone_job.index("id: cleanup"),
+            milestone_job.index("id: evidence"),
+        )
+        self.assertLess(
+            milestone_job.index("id: evidence"),
+            milestone_job.index("seal-milestone-result"),
+        )
+        self.assertLess(
+            milestone_job.index("seal-milestone-result"),
+            milestone_job.index("Upload bounded Milestone Gate result"),
+        )
+        record_job = text.split("\n  record-milestone:", 1)[1]
+        self.assertIn("needs.milestone.outputs.lease_sha256 != ''", record_job)
+        self.assertNotIn("needs.milestone.result == 'success'", record_job)
+        self.assertIn("continue-on-error: true", record_job)
+        self.assertIn("id: record\n        if: always()", record_job)
+        self.assertIn(
+            'test "${{ steps.record.outputs.status }}" = "HUMAN_CLOSE"',
+            record_job,
+        )
+        self.assertNotIn("environment: valkey-real", record_job)
+        self.assertNotIn("id-token: write", record_job)
 
     def test_single_runner_contract_and_bootstrap_order_are_documented(self) -> None:
         readme = (ROOT / ".github/milestone-loop/README.md").read_text()
@@ -448,6 +505,116 @@ class BoundaryTests(unittest.TestCase):
                 run_id="12345",
                 run_attempt="2",
             )
+
+    def test_cleanup_or_evidence_failure_seals_milestone_as_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            raw_path = root / "raw.json"
+            sealed_path = root / "sealed.json"
+            with patch.dict(
+                os.environ,
+                {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "1"},
+                clear=True,
+            ):
+                raw = bind_real_result(
+                    {"status": "PASS", "summary": "Gate passed"},
+                    milestone="m1",
+                    entrypoint="milestone",
+                    expected_sha="a" * 40,
+                    expected_lease_sha256="b" * 64,
+                )
+            raw_path.write_text(json.dumps(raw), encoding="utf-8")
+            result = seal_milestone_result(
+                raw_result_path=raw_path,
+                output_path=sealed_path,
+                milestone="m1",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="1",
+                gate_outcome="success",
+                pre_cleanup_outcome="success",
+                cleanup_outcome="failure",
+                evidence_outcome="success",
+            )
+            loaded = load_milestone_result(
+                result_path=sealed_path,
+                milestone="m1",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="1",
+            )
+            evidence_failure = seal_milestone_result(
+                raw_result_path=raw_path,
+                output_path=root / "evidence-failure.json",
+                milestone="m1",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="1",
+                gate_outcome="success",
+                pre_cleanup_outcome="success",
+                cleanup_outcome="success",
+                evidence_outcome="failure",
+            )
+        self.assertEqual(result, loaded)
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertIn("final cleanup outcome was failure", result["summary"])
+        self.assertEqual(evidence_failure["status"], "BLOCKED")
+        self.assertIn("evidence upload outcome was failure", evidence_failure["summary"])
+
+    def test_pre_cleanup_failure_seals_without_running_gate_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            result = seal_milestone_result(
+                raw_result_path=root / "missing-raw.json",
+                output_path=root / "sealed.json",
+                milestone="m2",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="2",
+                gate_outcome="skipped",
+                pre_cleanup_outcome="failure",
+                cleanup_outcome="success",
+                evidence_outcome="skipped",
+            )
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertIn("pre-Gate cleanup outcome was failure", result["summary"])
+
+    def test_successful_cleanup_preserves_current_gate_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            raw_path = root / "raw.json"
+            with patch.dict(
+                os.environ,
+                {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "3"},
+                clear=True,
+            ):
+                raw = bind_real_result(
+                    {"status": "FAIL", "summary": "Criterion did not pass"},
+                    milestone="m2",
+                    entrypoint="milestone",
+                    expected_sha="a" * 40,
+                    expected_lease_sha256="b" * 64,
+                )
+            raw_path.write_text(json.dumps(raw), encoding="utf-8")
+            result = seal_milestone_result(
+                raw_result_path=raw_path,
+                output_path=root / "sealed.json",
+                milestone="m2",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="3",
+                gate_outcome="success",
+                pre_cleanup_outcome="success",
+                cleanup_outcome="success",
+                evidence_outcome="success",
+            )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["summary"], "Criterion did not pass")
 
     def test_invalid_invocation_lease_blocks_before_cleanup_or_product(self) -> None:
         snapshot = {"milestone": "m1", "default_sha": "a" * 40, "issues": []}

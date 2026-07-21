@@ -33,12 +33,14 @@ from github_api import GitHubClient, GitHubError, collect_snapshot
 from milestone_runner import (
     authorize_real_invocation,
     bind_real_result,
+    blocked_milestone_result,
     human_required_m2_discovery_result,
+    load_milestone_result,
     load_m2_discovery_result,
     run_gate,
     run_m2_discovery,
+    seal_milestone_result,
     seal_m2_discovery_result,
-    validate_real_result_binding,
 )
 from recovery import recover
 
@@ -205,6 +207,18 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--milestone", required=True)
     run.add_argument("--expected-sha", required=True)
     run.add_argument("--expected-lease-sha256", required=True)
+    seal_milestone = commands.add_parser("seal-milestone-result")
+    seal_milestone.add_argument("--milestone", required=True)
+    seal_milestone.add_argument("--expected-sha", required=True)
+    seal_milestone.add_argument("--expected-lease-sha256", required=True)
+    seal_milestone.add_argument("--run-id", required=True)
+    seal_milestone.add_argument("--run-attempt", required=True)
+    seal_milestone.add_argument("--gate-outcome", required=True)
+    seal_milestone.add_argument("--pre-cleanup-outcome", required=True)
+    seal_milestone.add_argument("--cleanup-outcome", required=True)
+    seal_milestone.add_argument("--evidence-outcome", required=True)
+    seal_milestone.add_argument("--raw-result", type=Path, required=True)
+    seal_milestone.add_argument("--output", type=Path, required=True)
     discovery = commands.add_parser("run-m2-discovery")
     discovery.add_argument("--expected-sha", required=True)
     discovery.add_argument("--expected-lease-sha256", required=True)
@@ -277,6 +291,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             _write_output(result)
             return 0
+        if args.command == "seal-milestone-result":
+            result = seal_milestone_result(
+                raw_result_path=args.raw_result,
+                output_path=args.output,
+                milestone=args.milestone,
+                expected_sha=args.expected_sha,
+                expected_lease_sha256=args.expected_lease_sha256,
+                run_id=args.run_id,
+                run_attempt=args.run_attempt,
+                gate_outcome=args.gate_outcome,
+                pre_cleanup_outcome=args.pre_cleanup_outcome,
+                cleanup_outcome=args.cleanup_outcome,
+                evidence_outcome=args.evidence_outcome,
+            )
+            _write_output(result)
+            return 0
         client = GitHubClient.from_environment()
         if args.command == "coordinate":
             _write_output(
@@ -322,7 +352,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 expected_sha=args.expected_sha,
                 expected_lease_sha256=args.expected_lease_sha256,
             )
-            result_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "milestone-result.json"
+            result_path = (
+                Path(os.environ.get("RUNNER_TEMP", "/tmp"))
+                / "milestone-raw-result.json"
+            )
             result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             _write_output({**result, "result": str(result_path)})
             return 0
@@ -375,22 +408,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 0
         if args.command == "record-milestone":
-            if (
-                not args.result.is_file()
-                or args.result.is_symlink()
-                or args.result.stat().st_size > 32_768
-            ):
-                raise ContractError("Milestone result artifact is missing or exceeds its bound")
-            result = json.loads(args.result.read_text(encoding="utf-8"))
-            validate_real_result_binding(
-                result,
-                milestone=args.milestone,
-                entrypoint="milestone",
-                expected_sha=args.expected_sha,
-                expected_lease_sha256=args.expected_lease_sha256,
-                run_id=args.run_id,
-                run_attempt=args.run_attempt,
-            )
+            try:
+                result = load_milestone_result(
+                    result_path=args.result,
+                    milestone=args.milestone,
+                    expected_sha=args.expected_sha,
+                    expected_lease_sha256=args.expected_lease_sha256,
+                    run_id=args.run_id,
+                    run_attempt=args.run_attempt,
+                )
+            except (ContractError, OSError, json.JSONDecodeError) as exc:
+                result = blocked_milestone_result(
+                    milestone=args.milestone,
+                    expected_sha=args.expected_sha,
+                    expected_lease_sha256=args.expected_lease_sha256,
+                    run_id=args.run_id,
+                    run_attempt=args.run_attempt,
+                    summary=f"Milestone result artifact validation failed: {exc}",
+                )
             action = record_milestone_result(
                 client=client,
                 milestone=args.milestone,

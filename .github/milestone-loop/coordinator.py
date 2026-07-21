@@ -1912,6 +1912,10 @@ def coordinate(
     fixed_milestone_path(repo_root, milestone)
     milestone_document, catalog_document = load_trusted_documents(repo_root, milestone)
     snapshot = collect_snapshot(client, milestone)
+    if _run(["git", "rev-parse", "HEAD"], cwd=repo_root) != snapshot.get(
+        "default_sha"
+    ):
+        raise LoopBlocked("queued coordination checkout is not the live default SHA")
     control = ensure_control(client, snapshot)
     snapshot = collect_snapshot(client, milestone)
     review_action, control = reconcile_review(client, snapshot, control)

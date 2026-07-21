@@ -277,6 +277,34 @@ class CoordinatorTests(unittest.TestCase):
                 catalog_document=self.catalog,
             )
 
+    def test_queued_dispatch_with_stale_checkout_fails_before_writes(self) -> None:
+        state = snapshot([])
+        state["default_sha"] = "b" * 40
+        client = FakeClient()
+        with (
+            patch(
+                "coordinator.load_trusted_documents",
+                return_value=(self.milestone, self.catalog),
+            ),
+            patch("coordinator.collect_snapshot", return_value=state),
+            patch("coordinator._run", return_value="a" * 40),
+            patch("coordinator.ensure_control") as ensure_control,
+            patch("coordinator.run_planner") as run_planner,
+            self.assertRaisesRegex(
+                LoopBlocked, "queued coordination checkout is not the live default SHA"
+            ),
+        ):
+            coordinate(
+                client=client,
+                repo_root=ROOT,
+                runtime_root=ROOT / ".ignored-test-runtime",
+                action="start",
+                milestone="m1",
+            )
+        ensure_control.assert_not_called()
+        run_planner.assert_not_called()
+        self.assertEqual(client.writes, [])
+
     def test_ready_dependencies_must_be_completed(self) -> None:
         state = snapshot([issue(1, "blocked"), issue(2, "blocked", depends="#1")])
         operation = PlannerOperation(
@@ -1070,6 +1098,7 @@ class CoordinatorTests(unittest.TestCase):
                     side_effect=apply_transaction,
                 ),
                 patch("coordinator.run_worker", return_value="WAIT_PR") as worker,
+                patch("coordinator._run", return_value="a" * 40),
             ):
                 outcome = coordinate(
                     client=client,

@@ -29,6 +29,17 @@ _GATE_DIAGNOSTIC_MAX_CHARS = 3800
 _GATE_DIAGNOSTIC_MAX_ROWS = 8
 _GATE_DIAGNOSTIC_DETAIL_MAX_CHARS = 400
 _GATE_DIAGNOSTIC_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,159}")
+_MILESTONE_RESULT_MAX_BYTES = 32_768
+_MILESTONE_RESULT_FIELDS = {
+    "milestone",
+    "entrypoint",
+    "tested_sha",
+    "lease_sha256",
+    "run_id",
+    "run_attempt",
+    "status",
+    "summary",
+}
 _M2_DISCOVERY_REPORT_NAME = "m2_candidate_discovery.json"
 _M2_ADMISSION_REPORT_NAME = "m2_performance_report.json"
 _M2_DISCOVERY_RESULT_SCHEMA = "m2-discovery-result-v1"
@@ -889,6 +900,152 @@ def validate_real_result_binding(
         or any(result.get(field) != value for field, value in expected.items())
     ):
         raise ContractError("real result artifact does not match this approved invocation")
+
+
+def _milestone_result(
+    *,
+    milestone: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+    status: str,
+    summary: str,
+) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "milestone": milestone,
+        "entrypoint": "milestone",
+        "tested_sha": expected_sha,
+        "lease_sha256": expected_lease_sha256,
+        "run_id": run_id,
+        "run_attempt": run_attempt,
+        "status": status,
+        "summary": summary,
+    }
+    validate_real_result_binding(
+        result,
+        milestone=milestone,
+        entrypoint="milestone",
+        expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
+        run_id=run_id,
+        run_attempt=run_attempt,
+    )
+    return result
+
+
+def seal_milestone_result(
+    *,
+    raw_result_path: Path,
+    output_path: Path,
+    milestone: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+    gate_outcome: str,
+    pre_cleanup_outcome: str,
+    cleanup_outcome: str,
+    evidence_outcome: str,
+) -> dict[str, Any]:
+    outcomes = (
+        ("pre-Gate cleanup", pre_cleanup_outcome),
+        ("gate", gate_outcome),
+        ("final cleanup", cleanup_outcome),
+        ("evidence upload", evidence_outcome),
+    )
+    allowed_outcomes = {"success", "failure", "cancelled", "skipped"}
+    status = "BLOCKED"
+    summary = "Milestone result artifact is missing or invalid"
+    try:
+        invalid = [name for name, value in outcomes if value not in allowed_outcomes]
+        if invalid:
+            raise ContractError("invalid workflow outcome for " + ", ".join(invalid))
+        non_pass = next(
+            ((name, value) for name, value in outcomes if value != "success"),
+            None,
+        )
+        if non_pass is not None:
+            summary = f"Milestone {non_pass[0]} outcome was {non_pass[1]}"
+        else:
+            raw = _read_bounded_object(
+                raw_result_path,
+                _MILESTONE_RESULT_MAX_BYTES,
+                "raw Milestone result",
+            )
+            validate_real_result_binding(
+                raw,
+                milestone=milestone,
+                entrypoint="milestone",
+                expected_sha=expected_sha,
+                expected_lease_sha256=expected_lease_sha256,
+                run_id=run_id,
+                run_attempt=run_attempt,
+            )
+            status = str(raw["status"])
+            summary = str(raw["summary"])
+    except (ContractError, OSError) as exc:
+        status = "BLOCKED"
+        summary = f"Milestone result validation failed: {exc}"
+    result = _milestone_result(
+        milestone=milestone,
+        expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
+        run_id=run_id,
+        run_attempt=run_attempt,
+        status=status,
+        summary=summary,
+    )
+    output_path.write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return result
+
+
+def blocked_milestone_result(
+    *,
+    milestone: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+    summary: str,
+) -> dict[str, Any]:
+    return _milestone_result(
+        milestone=milestone,
+        expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
+        run_id=run_id,
+        run_attempt=run_attempt,
+        status="BLOCKED",
+        summary=summary,
+    )
+
+
+def load_milestone_result(
+    *,
+    result_path: Path,
+    milestone: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+) -> dict[str, Any]:
+    result = _read_bounded_object(
+        result_path, _MILESTONE_RESULT_MAX_BYTES, "sealed Milestone result"
+    )
+    if set(result) != _MILESTONE_RESULT_FIELDS:
+        raise ContractError("sealed Milestone result fields are incomplete or unexpected")
+    validate_real_result_binding(
+        result,
+        milestone=milestone,
+        entrypoint="milestone",
+        expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
+        run_id=run_id,
+        run_attempt=run_attempt,
+    )
+    return result
 
 
 def _diagnostic_detail(value: Any) -> str:
