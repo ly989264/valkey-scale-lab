@@ -121,12 +121,19 @@ class FakeClient:
         self.writes.append(("dispatch", milestone))
 
     def api(self, endpoint, **kwargs):
-        if endpoint.startswith("commits/") and endpoint.endswith("/check-runs?per_page=100"):
+        if endpoint.startswith("commits/") and endpoint.endswith(
+            "/check-runs?check_name=milestone-loop%20%2F%20m2-discovery"
+            "&filter=all&per_page=100"
+        ):
             self.check_reads += 1
             check_runs = [
                 {
                     "name": write[1].get("name"),
                     "external_id": write[1].get("external_id"),
+                    "head_sha": write[1].get("head_sha"),
+                    "status": "completed",
+                    "conclusion": write[1].get("conclusion"),
+                    "app": {"slug": "github-actions"},
                 }
                 for write in self.writes
                 if write[0] == "check"
@@ -666,6 +673,118 @@ class CoordinatorTests(unittest.TestCase):
             with self.assertRaises(LoopBlocked):
                 record_m2_discovery_result(client=client, result=result)
         self.assertEqual(client.writes, [])
+
+    def test_discovery_check_creation_preserves_the_authoritative_page(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        checks = [
+            {
+                "name": "milestone-loop / m2-discovery",
+                "external_id": f"other:{index}",
+                "head_sha": "a" * 40,
+                "status": "completed",
+                "conclusion": "success",
+                "app": {"slug": "github-actions"},
+            }
+            for index in range(100)
+        ]
+        with (
+            patch("coordinator.collect_snapshot", return_value=state),
+            patch.object(
+                client,
+                "api",
+                return_value={"total_count": 100, "check_runs": checks},
+            ),
+        ):
+            with self.assertRaises(LoopBlocked):
+                record_m2_discovery_result(client=client, result=result)
+        self.assertEqual(client.writes, [])
+
+    def test_discovery_reuses_only_a_trusted_consistent_partial_check(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with patch("coordinator.collect_snapshot", return_value=state):
+            with (
+                patch.object(
+                    client,
+                    "comment",
+                    side_effect=RuntimeError("simulated record write failure"),
+                ),
+                self.assertRaises(RuntimeError),
+            ):
+                record_m2_discovery_result(client=client, result=result)
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+        self.assertEqual(
+            len([write for write in client.writes if write[0] == "check"]), 1
+        )
+        self.assertEqual(client.check_reads, 2)
+
+    def test_discovery_rejects_an_untrusted_or_inconsistent_partial_check(self) -> None:
+        for mutation in ("app", "conclusion"):
+            with self.subTest(mutation=mutation):
+                control = {
+                    "number": 9,
+                    "body": render_control(empty_lease("m2"), 0),
+                    "labels": [CONTROL_LABEL],
+                    "comments": [],
+                }
+                state = self._m2_record_state(control)
+                client = FakeClient(control)
+                result = self._discovery_result(
+                    status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+                )
+                with patch("coordinator.collect_snapshot", return_value=state):
+                    with (
+                        patch.object(
+                            client,
+                            "comment",
+                            side_effect=RuntimeError("simulated record write failure"),
+                        ),
+                        self.assertRaises(RuntimeError),
+                    ):
+                        record_m2_discovery_result(client=client, result=result)
+                    check = {
+                        "name": client.writes[0][1]["name"],
+                        "external_id": client.writes[0][1]["external_id"],
+                        "head_sha": client.writes[0][1]["head_sha"],
+                        "status": "completed",
+                        "conclusion": client.writes[0][1]["conclusion"],
+                        "app": {"slug": "github-actions"},
+                    }
+                    if mutation == "app":
+                        check["app"] = {"slug": "untrusted-app"}
+                    else:
+                        check["conclusion"] = "failure"
+                    with (
+                        patch.object(
+                            client,
+                            "api",
+                            return_value={"total_count": 1, "check_runs": [check]},
+                        ),
+                        self.assertRaises(LoopBlocked),
+                    ):
+                        record_m2_discovery_result(client=client, result=result)
+                self.assertEqual(len(client.writes), 1)
 
     def test_discovery_replay_never_repeats_an_ambiguous_dispatch(self) -> None:
         control = {

@@ -11,6 +11,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+from urllib.parse import quote
 
 from agent import AgentError, invoke_with_one_repair
 from context_builder import WORK_ITEM_LABEL, build_context, work_items, write_context
@@ -41,6 +42,7 @@ CONTROL_LABEL = "milestone-loop:control"
 CONTRACT_CHANGE_LABEL = "contract-change"
 DISCOVERY_REPAIR_LABEL = "milestone-loop:m2-discovery-repair"
 M2_DISCOVERY_REPAIR_CHECK = "repository.all"
+M2_DISCOVERY_CHECK_NAME = "milestone-loop / m2-discovery"
 CONTROL_TITLE_PREFIX = "[milestone-loop]"
 WORK_ITEM_MARKER_RE = re.compile(r"<!-- milestone-loop-key: ([0-9a-f]{64}) -->")
 PR_WORK_ITEM_RE = re.compile(r"(?m)^Work-Item: #([1-9][0-9]*)$")
@@ -1947,7 +1949,10 @@ def _ensure_m2_discovery_check(
     summary: str,
 ) -> None:
     external_id = f"m2-discovery:{dedup_key}"
-    value = client.api(f"commits/{tested_sha}/check-runs?per_page=100")
+    check_name = quote(M2_DISCOVERY_CHECK_NAME, safe="")
+    value = client.api(
+        f"commits/{tested_sha}/check-runs?check_name={check_name}&filter=all&per_page=100"
+    )
     if (
         not isinstance(value, dict)
         or not isinstance(value.get("check_runs"), list)
@@ -1958,19 +1963,35 @@ def _ensure_m2_discovery_check(
         raise GitHubError("cannot read M2 discovery Checks before recording")
     if value["total_count"] != len(value["check_runs"]):
         raise LoopBlocked("M2 discovery Check history exceeds its authoritative page")
+    if any(
+        not isinstance(check, dict)
+        or check.get("name") != M2_DISCOVERY_CHECK_NAME
+        for check in value["check_runs"]
+    ):
+        raise GitHubError("M2 discovery Check history is malformed")
     matches = [
         check
         for check in value["check_runs"]
-        if isinstance(check, dict)
-        and check.get("name") == "milestone-loop / m2-discovery"
-        and check.get("external_id") == external_id
+        if check.get("external_id") == external_id
     ]
     if len(matches) > 1:
         raise LoopBlocked("M2 discovery Check identity is duplicated")
     if matches:
+        match = matches[0]
+        app = match.get("app")
+        if (
+            not isinstance(app, dict)
+            or app.get("slug") != "github-actions"
+            or match.get("head_sha") != tested_sha
+            or match.get("status") != "completed"
+            or match.get("conclusion") != github_conclusion(status)
+        ):
+            raise LoopBlocked("M2 discovery Check identity is untrusted or inconsistent")
         return
+    if value["total_count"] >= 100:
+        raise LoopBlocked("M2 discovery Check history capacity is exhausted")
     client.create_check_run(
-        name="milestone-loop / m2-discovery",
+        name=M2_DISCOVERY_CHECK_NAME,
         head_sha=tested_sha,
         conclusion=github_conclusion(status),
         title=f"M2 candidate-selection-only discovery {status}",
