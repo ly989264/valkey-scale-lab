@@ -1,7 +1,7 @@
 # valkey-scale-lab 方案四：GitHub 控制面 + 本地 Mac Codex 执行与真实验证
 
 状态：实施基线（单 runner）
-更新日期：2026-07-18
+更新日期：2026-07-21
 
 ## 硬约束
 
@@ -15,8 +15,11 @@
   准入检查通过并已合并。未绑定 Check 的 Criterion 由协调器直接判为
   `BLOCKED`；实际执行的 Criterion 和 Milestone 结论只由固定的
   `./gate milestone <milestone>` 调用给出。
-* 需要真实环境的 Check 必须自行执行 Authorization Lease 预检；没有有效
-  lease 时返回 `BLOCKED`，Loop 立即停止，不能降级或改用 fixture。
+* 需要真实环境的 Check 必须先等待受保护 `valkey-real` Environment 的 required
+  reviewer 对本次 invocation 执行 **Approve and deploy**。批准后，Check 的第一个
+  受信确定性步骤才生成、校验并立即消费一次性 Authorization Lease；没有匹配
+  本次 run/attempt、SHA 和 entrypoint 的已消费 lease 时返回 `BLOCKED`，Loop
+  立即停止，不能降级或改用 fixture。
 * 当前威胁模型防止错误计划、错误代码、残留污染、凭据意外继承、状态撕裂和
   未验证结果冒充 PASS；不假设 Agent、候选代码或宿主机进程会主动攻击同一
   macOS 用户，也不把恶意内核或宿主账号攻陷列为 P0。因此不强制第二台物理
@@ -24,8 +27,9 @@
   单 runner 通过串行 Job、角色标签、独立 checkout/runtime root、进程环境清洗
   和受保护 Environment/OIDC 形成当前威胁模型内的职责边界。角色标签只用于
   调度，不能被表述为 macOS 用户级安全隔离。
-* 普通功能 PR 在受信准入通过后默认自动合并；合同、授权和 Milestone 最终
-  关闭仍由人工审批，以保证长期运行不在每个普通工作项处等待。
+* 普通功能 PR 在受信准入通过后默认自动合并；合同和 Milestone 最终关闭仍由
+  人工审批。PR 审批只授权代码合入，真实运行授权只能来自本次 `valkey-real`
+  Environment 的 **Approve and deploy**，两者不得互相替代。
 * 仓库只有一个 workflow：`.github/workflows/milestone-loop.yml`。
   `workflow_dispatch` 只接受 `action`（`start | resume`）和 `milestone`
   （`m1 | m2 | m3 | m4`）两个输入；启动后固定读取
@@ -68,7 +72,8 @@ Criterion 就返回 `BLOCKED`；全部 Criterion 已绑定 Check 时直接运行
 同时给出 Criterion 和 Milestone 的权威结论：`PASS` 后等待人工关闭；`FAIL`
 时只允许 Planner 做一次受限诊断并创建必要 Work Item；`BLOCKED` 时立即停止并
 等待 `resume`。需要真实环境的 Check 自己理解执行环境、规模、产品版本、证据
-字段和 cleanup 合同，并自行校验及消费 Authorization Lease，再取得短期凭据；
+字段和 cleanup 合同；Environment 批准后，它先生成、校验并立即消费绑定本次
+invocation 的 Authorization Lease，消费成功后才允许产品命令取得短期凭据；
 Loop 只消费 `PASS`、`FAIL` 或 `BLOCKED`。不新增 Criterion 状态存储或 Gate 命令。
 
 完成工作项 1 后，Planner 可以：
@@ -180,8 +185,10 @@ Agent 输出协议：
   留在隔离 worktree，Worker 不能通过输出直接 push、修改 Issue 或宣布验收结论。
 * 确定性协调器先验证所有引用、Label 状态迁移、依赖无环、操作数量和实时
   GitHub 状态，再执行允许的写操作。校验失败时不做部分写入。
-* JSON 只作为当次调用的临时消息，使用后删除；不写入 Issue，不保存完整工作图，
-  也不增加数据库、运行状态机或新的领域对象。
+* Planner/Worker JSON 只作为当次调用的临时消息，使用后删除；不写入 Issue，
+  不保存完整工作图，也不增加数据库、运行状态机或新的领域对象。唯一例外是下述
+  固定、有界、受信的 Authorization Lease 和 human-action marker；它们不包含
+  Agent prompt/output，也不扩展领域模型。
 
 workflow 约束：
 
@@ -189,6 +196,8 @@ workflow 约束：
   watchdog 或 recovery 专用 workflow。
 * `workflow_dispatch` 只声明两个必填输入：`action` 的枚举是 `start | resume`，
   `milestone` 的枚举是 `m1 | m2 | m3 | m4`。其他值必须在运行任何本地代码前拒绝。
+  控制器内部 self-dispatch 和现有 after-merge dispatch 继续复用该固定接口；人工
+  直接执行 `start|resume` 只作为 break-glass，不是正常真实运行授权步骤。
 * `start` 和 `resume` 都固定读取
   `project/milestones/<milestone>/milestone.json`，不能接受路径、Check、命令、
   backend、规模、版本或证据字段作为输入。
@@ -215,7 +224,9 @@ workflow 约束：
   no-progress count。受信 `github-actions[bot]` comment 可以追加有界的 discovery
   result、diagnosis/dispatch receipt 和 human-action 去重 marker；这些 marker 只绑定
   milestone、state、run/PR、SHA 和 digest/fingerprint，不保存完整工作图、prompt、
-  controller policy 或可恢复的通用 JSON 状态机。
+  controller policy 或可恢复的通用 JSON 状态机。`REAL_AUTHORIZATION_REQUIRED`
+  必须绑定目标 run/attempt，并且只给出一个 **Approve and deploy** 动作及 run
+  直链；该 comment 不是通知平台或授权来源。
 * Check 可以保留自己的有期限 artifacts；它们不是 Loop 状态。Loop 只消费内部
   `PASS`、`FAIL` 或 `BLOCKED`，GitHub 层固定映射为 `success`、`failure` 或
   `action_required`。
@@ -242,8 +253,8 @@ workflow 约束：
   选择固定 Gate 子命令；未知 ID、任何附加参数或命令文本都在执行前拒绝。候选
   PR Check 不使用 Authorization Lease，也不取得真实环境凭据。
 * 候选 Check 返回 `BLOCKED` 时 Loop 立即停止 self-dispatch，不得改跑其他
-  Check、缩小验证范围或使用 fixture。Milestone Check 缺少有效 lease 时遵循
-  同一停止规则。
+  Check、缩小验证范围或使用 fixture。Environment 批准后的真实授权步骤无法
+  生成并确认本次 invocation 的有效已消费 lease 时遵循同一停止规则。
 * 同一失败签名连续 2 次，或同一工作项累计 3 次代码/验证失败时，停止 Worker
   重试并调用 Planner 做一次失败诊断。失败诊断只能拆分当前工作项、新增前置
   工作或依赖，或标记 `BLOCKED`；不得降低 Criterion 或删除所需 Check。
@@ -269,8 +280,9 @@ workflow 约束：
   `head_sha`，且最终 tree 等于 `verified_tree`；任一变化都必须重新验证。
 * 验证失败时 PR 不合并，默认分支不变，因此通常不需要自动回滚。
 * 普通功能 PR 在固定 baseline、Work Item Check 和 `verified_tree`
-  校验通过后自动合并；`contract-change`、授权租约签发或变更、受保护合同
-  路径和 Milestone 最终关闭必须人工审批。
+  校验通过后自动合并；`contract-change`、受保护合同路径和 Milestone 最终关闭
+  必须人工审批。一次真实 Lease 的签发只发生在 required reviewer 已批准对应
+  Environment deployment 之后；PR 审批不签发 Lease。
 * `BLOCKED` 的唯一恢复入口是
   `workflow_dispatch(action=resume, milestone=<m1|m2|m3|m4>)`。resume 先执行
   recovery cleanup，并重新读取 Milestone JSON、Issues、Labels、PR、Checks
@@ -280,7 +292,8 @@ workflow 约束：
   auto-merge 并标记 PR；不存在需保留的人工修改时关闭该 PR。
 * `milestone-loop.selftest` 必须覆盖输入枚举、固定 Milestone 路径、三行 Work
   Item 合同、受信 Catalog ID 拒绝规则、Agent JSON 上限、状态迁移、依赖无环、
-  单一 ready、实时状态复核、lease 耗尽、单 runner 三角色标签路由、recovery
+  单一 ready、实时状态复核、Environment 前 Lease 不变、invocation-bound Lease
+  单次生成和消费、run attempt 不可复用、单 runner 三角色标签路由、recovery
   cleanup、
   无 Work Item 时的 Criterion 绑定检查、固定 Gate 命令、结论映射和
   `verified_tree` 失效；首次启用和每个 `contract-change` PR 必跑。
@@ -320,9 +333,16 @@ workflow 约束：
   候选 PR。执行候选 Gate 的子进程必须删除 GitHub、Codex/OpenAI、SSH agent、
   云服务和真实环境变量，候选新增的 Check 或代码不能改变受信 base 中的验证器。
 * `valkey-real` 角色 Job 不验证候选 PR，只对已经合并到默认分支的代码运行需要
-  真实环境的 Milestone Check。Check 必须先自行校验并消费 Authorization Lease，之后才通过
-  受保护 Environment/OIDC 取得合同要求的短期凭据；临时凭据文件只在该 Job
-  创建，收紧权限，并且无论结果如何都在 cleanup 中删除。
+  真实环境的 Milestone Check。该 Job 直接受 `valkey-real` Environment 保护；
+  required reviewer 批准后，其 checkout 之后的第一个仓库命令重新校验
+  Milestone、entrypoint、default/checkout SHA、readiness、run ID/attempt、
+  `valkey-real` required-reviewer rule 和实时 GitHub 状态，在内存生成
+  `remaining=1` 的短期 Lease 并以一次外显更新立即保存
+  为 `exhausted`、`remaining=0`。全局 concurrency 串行化受信控制器执行，
+  写前和写后观测到的变化一律 fail-closed；Control Issue 的人工编辑不是授权或
+  撤销接口。消费成功前不得运行产品命令、请求 OIDC token
+  或读取/使用真实环境凭据；临时凭据文件只在之后创建，收紧权限，并且无论结果
+  如何都在 cleanup 中删除。
 * 普通功能 PR 的受信准入计划和断言来自验证开始时的默认分支 `base_sha`；
   候选新增的测试可以同时运行，但不能单独证明本 PR PASS。
 * verifier 使用独立 checkout、独立 artifact root 和固定工具链，不复用
@@ -357,8 +377,10 @@ workflow 约束：
   `BLOCKED`。
 * runner 启动以及 `resume` 的第一步执行 recovery cleanup。cleanup 未 PASS
   时转为 `BLOCKED`，不得启动新的 Planner、Worker 或 Check。
-* 需要授权的 Check 在执行前自行校验并消费 Authorization Lease；无效时返回
-  `BLOCKED` 并停止 self-dispatch。
+* 需要授权的 Check 先等待 Environment 审批，再由第一个受信步骤生成并消费
+  invocation-bound Authorization Lease；无效、陈旧、重放、并发变化或旧 attempt
+  均返回 `BLOCKED` 并停止 self-dispatch。控制器不得自动批准 Environment、续租
+  或自动重放真实 invocation。
 * 使用 GitHub concurrency 保证同一 Milestone 只有一个 loop 运行。
 * Mac 离线时 Job 最多排队 24 小时；自托管 Job 单次最长运行 5 天。
 
@@ -385,17 +407,19 @@ workflow 约束：
 9. 候选检查返回 `BLOCKED` 时 Loop 停止；返回 `FAIL` 时保留 PR 并按有限重试规则
    修复；返回 `PASS` 后才允许继续合并判断。GitHub 结论分别映射为
    `action_required`、`failure` 和 `success`。
-10. 合并步骤再次校验默认分支、候选和最终 tree。普通功能 PR 自动合并；合同、
-    lease 和最终关闭等待人工审批。合并后 Planner 重新读取实时状态并调整剩余
-    Work Item。
+10. 合并步骤再次校验默认分支、候选和最终 tree。普通功能 PR 自动合并；合同和
+    最终关闭等待人工审批。合并后 Planner 重新读取实时状态并调整剩余 Work Item；
+    代码审批不构成真实运行授权。
 11. Planner 重新评估后若仍有可执行 Work Item，继续下一轮；若没有，协调器读取
     固定 Milestone JSON。存在未绑定 Check 的 Criterion 时返回 `BLOCKED`；全部
-    Criterion 已绑定时，直接对已合并的默认分支运行
-    `./gate milestone <milestone>`，不等待预先的 Criterion PASS。
+    Criterion 已绑定时，直接把已合并默认分支的固定真实 Job 送入受保护
+    Environment waiting；批准后运行 `./gate milestone <milestone>`，不等待预先
+    的 Criterion PASS。
 12. Milestone Gate 的 `PASS` 同时作为 Criterion 和 Milestone 的权威结论，随后
     等待人工关闭；`FAIL` 只允许 Planner 做一次受限诊断并创建或调整必要 Work
     Item；`BLOCKED` 立即停止并等待 `resume`。需要真实环境时只在 `valkey-real`
-    上由 Check 消费 Authorization Lease、取得短期凭据并执行 cleanup。
+    Environment waiting；required reviewer 批准后由 Check 先生成并消费绑定本次
+    invocation 的 Authorization Lease，再取得短期凭据并执行 cleanup。
 13. 没有确定性进展时只更新 Control Issue 的 no-progress count；达到阈值后返回
     `BLOCKED`。
 14. `BLOCKED` 只通过同一 workflow 的 `action=resume` 和相同 `milestone`
@@ -416,13 +440,15 @@ flowchart TD
     I --> F
     H -->|BLOCKED| Q["停止，等待 resume"]
     H -->|PASS| L["verified_tree 校验后自动合并"]
-    H -->|合同或授权变更| K["人工审批并合并"]
+    H -->|合同变更| K["人工审批并合并"]
     K --> M["重新运行 Mac Planner Codex"]
     L --> M
     M -->|还有工作| D
     M -->|无可执行工作| R{"Criterion 是否全部绑定 Check"}
     R -->|否| Q
-    R -->|是| O["./gate milestone <milestone>（真实 Check 在 valkey-real）"]
+    R -->|是| V["等待 valkey-real Approve and deploy"]
+    V --> W["首个受信步骤生成并消费一次性 Lease"]
+    W --> O["运行固定 Milestone Gate 或 M2 discovery"]
     O -->|FAIL| P["Planner 一次受限诊断并创建必要工作"]
     P --> D
     O -->|BLOCKED| Q
@@ -451,8 +477,12 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
   ownership 标识和下一次恢复时的 recovery cleanup，清理失败仍需人工处理。
 * 默认分支在真实 Milestone 验证后变化，会使昂贵验证失效并需要重跑；候选或
   `base_sha` 变化则使对应的无真实凭据 PR 验证失效。
-* Authorization Lease 到期或额度耗尽时，相关 Check 必须返回 `BLOCKED`；
-  这是 Check 的资源边界，不得通过降级绕过。
+* Environment 等待、拒绝或取消不会生成或消费 Authorization Lease。批准后的
+  Lease 若到期、绑定不符或已被同一 run/attempt 消费，相关 Check 必须返回
+  `BLOCKED`；这是 Check 的资源边界，不得通过降级、续租或重放绕过。
+  可规范解析的旧版 `empty` 或 `exhausted` Lease 只能在新的 Environment 批准后
+  迁移；已知 `active`、`revoked` 或畸形 Lease 在请求审批前进入
+  `HARD_BLOCKED`。
 * 受保护合同变更必须人工审阅并先行合并，因此此类工作项不会完全无人值守。
 * 普通功能 PR 默认自动合并使系统可以连续运行，但错误通过 Gate 后的影响
   更大，因此固定 baseline、分支保护和受保护合同覆盖必须可靠。
@@ -468,10 +498,12 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
 * 普通功能 PR：固定执行 `./gate suite repository.all`，再叠加 Work Item 的
   `Check:` Catalog Test/Suite ID 所对应的固定 Gate 命令；两者和
   `verified_tree` 校验通过后自动合并。
-* `contract-change`、授权租约签发或变更、受保护合同路径、Milestone 最终
-  关闭：必须人工审批。
-* `BLOCKED` 后只通过同一 workflow 的 `action=resume` 恢复；恢复后先重新读取
-  实时 GitHub 状态和 Authorization Lease，再执行 recovery cleanup。
+* `contract-change`、受保护合同路径、Milestone 最终关闭：必须人工审批。真实
+  Lease 只由对应 `valkey-real` deployment 的 required reviewer 批准后签发；
+  PR 审批不能替代该授权。
+* `BLOCKED` 后只通过同一 workflow 的 `action=resume` 恢复；恢复后先执行协调
+  角色 cleanup，再重新读取实时 GitHub 状态和 Authorization Lease。真实资源
+  cleanup 仍在下一次获批 invocation 中、任何产品命令之前执行。
 
 ## 7. 最小落地顺序
 
@@ -498,8 +530,9 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
    Issues/PR 的调度器。
 7. 在不启用自动合并的情况下手工运行至少 3 轮，验证同一 Work Item PR、动态
    调整、幂等 dispatch、实时状态拒绝和 Agent 输出失败处理。
-8. 演练 `BLOCKED`/`resume`、Mac/runner 中断、recovery cleanup、lease 耗尽和
-   Check 返回 `BLOCKED`；所有演练通过后才启用普通功能 PR 自动合并。
+8. 演练 `BLOCKED`/`resume`、Mac/runner 中断、Environment 拒绝/取消时 Lease
+   不变、recovery cleanup、同 run/attempt 重放拒绝和 Check 返回 `BLOCKED`；
+   所有演练通过后才启用普通功能 PR 自动合并。
 9. 验证 Planner 无可执行 Work Item 时的唯一分支：Criterion 未全部绑定 Check
    就返回 `BLOCKED`；全部已绑定则直接执行 `./gate milestone <milestone>`，并按
    Gate 的 `PASS` / `FAIL` / `BLOCKED` 规则收敛。
@@ -529,8 +562,10 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
   `/Users/allgood/actions-runner-valkey`，版本 `2.335.1`，并同时具有三个角色
   label。workflow 用 `valkey-codex` 路由 Planner/Worker、用 `valkey-verify` 路由
   无真实凭据的候选 PR 检查、用 `valkey-real` 路由已合并默认分支的真实
-  Milestone Check；label 是调度职责而非 uid 隔离。真实 Check 只有自行校验及
-  消费 lease 后才取得短期凭据，结束后 cleanup。
+  Milestone Check；label 是调度职责而非 uid 隔离。真实 Check 必须先等待
+  `valkey-real` required reviewer 批准，再在首个受信步骤生成并消费绑定本次
+  invocation 的 lease；消费前不得运行产品命令、请求 OIDC 或使用真实凭据，
+  结束后 cleanup。
 * 首次 `contract-change` PR 在 required candidate 尚未启用时完成人工审核和
   bootstrap 合并；控制面进入默认分支后再启用 strict required candidate，之后
   的合同或普通 PR 均不得使用 bootstrap 例外。
@@ -538,14 +573,17 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
   Check；候选不能修改自己的受信合同。
 * blocked、superseded、PR/Check 变化或 commit/tree 失效都能阻止旧 Job push、
   创建资源、启用 auto-merge 或最终 merge。
-* Mac/runner 在 Check 中断后，下一次 `resume` 先执行 recovery cleanup；残留未
-  清除时不得继续。
+* Mac/runner 在 Check 中断后，下一次 `resume` 先执行协调角色 cleanup；下一次
+  获批真实 Job 在 Lease 消费后、产品命令前执行真实资源 recovery cleanup，残留
+  未清除时不得继续产品运行。
 * 同一失败、连续合并无进展和 Agent 输出失败都在有限次数后停止，不会
   无限消耗 Codex 或真实资源。
 * 普通功能 PR 通过受信检查和 `verified_tree` 校验后自动合并，随后 Planner
   基于新的默认分支动态调整剩余工作。
-* 无有效 lease 或 Milestone Check 的内部预检失败时，Check 返回 `BLOCKED`；
-  Loop 停止，不能降级、使用 fixture 或由自然语言改成 PASS。
+* Environment 未批准时真实 Job 不执行且 Lease 不变化；批准后若无法生成并确认
+  匹配 run/attempt、entrypoint 和 SHA 的已消费 Lease，或 Milestone Check 的内部
+  预检失败，Check 返回 `BLOCKED`。Loop 停止，不能降级、使用 fixture、续租、
+  重放或由自然语言改成 PASS。
 * Loop 不接收也不解析 Milestone Check 的执行环境、规模、产品版本或证据字段；
   这些合同只由 Check 验证，Loop 只消费 `PASS`、`FAIL`、`BLOCKED`。
 * GitHub 层只把内部 `PASS`、`FAIL`、`BLOCKED` 映射为 `success`、`failure`、

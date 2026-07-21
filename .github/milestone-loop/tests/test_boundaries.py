@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -7,39 +8,179 @@ import tempfile
 import unittest
 import subprocess
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from context_builder import MAX_CONTEXT_BYTES, build_context
 from contracts import ContractError
 from coordinator import (
     CONTROL_LABEL,
     PR_MILESTONE_RE,
-    ControlState,
     LoopBlocked,
     empty_lease,
+    parse_control,
     render_control,
+    real_readiness_fingerprint,
 )
 from github_api import GitHubClient
-from loop import pr_metadata
+from loop import main as loop_main, pr_metadata
 from milestone_runner import (
+    LeaseConfirmationBlocked,
     _canonical_digest,
     _gate_environment,
     _gate_result_summary,
     _lease_fingerprint,
     _m2_discovery_run_id,
     _validate_consumed_lease,
-    authorize,
+    authorize_real_invocation,
+    bind_real_result,
+    load_milestone_result,
     load_m2_discovery_result,
+    run_gate,
     run_m2_discovery,
+    seal_milestone_result,
     seal_m2_discovery_result,
+    validate_real_result_binding,
 )
+from loop import _version
 from recovery import cleanup_owned_docker, cleanup_runtime_root
 
 
 ROOT = Path(__file__).resolve().parents[3]
 
 
+class InvocationClient:
+    def __init__(self, control: dict, run: dict) -> None:
+        self.control = control
+        self.run = run
+        self.environment = {
+            "name": "valkey-real",
+            "protection_rules": [
+                {
+                    "type": "required_reviewers",
+                    "prevent_self_review": False,
+                    "reviewers": [
+                        {"type": "User", "reviewer": {"login": "reviewer"}}
+                    ],
+                }
+            ],
+        }
+        self.updates: list[dict] = []
+        self.after_update = None
+        self.confirmation_error: Exception | None = None
+
+    def api(self, endpoint: str, **_kwargs):
+        if endpoint == f"issues/{self.control['number']}":
+            if self.confirmation_error is not None:
+                raise self.confirmation_error
+            return dict(self.control)
+        if endpoint == "environments/valkey-real":
+            return dict(self.environment)
+        if endpoint.startswith("actions/runs/"):
+            return dict(self.run)
+        raise AssertionError(endpoint)
+
+    def update_issue(self, number: int, **kwargs) -> None:
+        self.assert_control(number)
+        self.updates.append(kwargs)
+        self.control.update(kwargs)
+        if self.after_update is not None:
+            self.after_update()
+
+    def assert_control(self, number: int) -> None:
+        if number != self.control["number"]:
+            raise AssertionError(number)
+
+
 class BoundaryTests(unittest.TestCase):
+    def test_environment_rejection_skips_discovery_recorder(self) -> None:
+        workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        discovery_job = workflow.split("\n  m2-discovery:", 1)[1].split(
+            "\n  record-m2-discovery:", 1
+        )[0]
+        recorder_condition = workflow.split("\n  record-m2-discovery:", 1)[1].split(
+            "    runs-on:", 1
+        )[0]
+        self.assertIn(
+            "environment_started: ${{ steps.protected_checkout.outcome }}",
+            discovery_job,
+        )
+        self.assertIn("always()", recorder_condition)
+        self.assertIn(
+            "needs.m2-discovery.outputs.lease_sha256 != ''", recorder_condition
+        )
+        self.assertIn(
+            "needs.m2-discovery.outputs.environment_started != ''",
+            recorder_condition,
+        )
+        self.assertNotIn("needs.m2-discovery.result == 'success'", recorder_condition)
+
+    def test_started_environment_preflight_records_milestone_blocked(self) -> None:
+        workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        milestone_job = workflow.split("\n  milestone:", 1)[1].split(
+            "\n  m2-discovery:", 1
+        )[0]
+        record_job = workflow.split("\n  record-milestone:", 1)[1]
+        self.assertIn(
+            "environment_started: ${{ steps.protected_checkout.outcome }}",
+            milestone_job,
+        )
+        self.assertLess(
+            milestone_job.index("id: protected_checkout"),
+            milestone_job.index("authorize-real-invocation"),
+        )
+        self.assertIn(
+            "needs.milestone.outputs.environment_started != ''", record_job
+        )
+        self.assertIn("needs.milestone.outputs.lease_sha256 != ''", record_job)
+        self.assertIn("--environment-started", record_job)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "github-output"
+            with (
+                patch.dict(
+                    os.environ,
+                    {
+                        "GITHUB_OUTPUT": str(output),
+                        "GITHUB_RUN_ID": "12345",
+                        "GITHUB_RUN_ATTEMPT": "2",
+                    },
+                    clear=True,
+                ),
+                patch("loop.GitHubClient.from_environment", return_value=object()),
+                patch("loop.record_milestone_result", return_value="BLOCKED") as record,
+                patch("builtins.print"),
+            ):
+                exit_code = loop_main(
+                    [
+                        "record-milestone",
+                        "--milestone",
+                        "m1",
+                        "--expected-sha",
+                        "a" * 40,
+                        "--expected-lease-sha256",
+                        "",
+                        "--environment-started",
+                        "failure",
+                        "--run-id",
+                        "12345",
+                        "--run-attempt",
+                        "2",
+                        "--result",
+                        str(Path(temporary) / "missing.json"),
+                    ]
+                )
+            outputs = dict(
+                line.split("=", 1)
+                for line in output.read_text(encoding="utf-8").splitlines()
+            )
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(outputs["status"], "BLOCKED")
+        self.assertEqual(record.call_args.kwargs["status"], "BLOCKED")
+        self.assertIn(
+            "did not produce a confirmed consumed Lease",
+            record.call_args.kwargs["summary"],
+        )
+
     def test_contract_change_body_closes_the_label_event_race(self) -> None:
         event = {
             "action": "opened",
@@ -71,18 +212,18 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[self-hosted, macOS, valkey-codex]", text)
         self.assertIn("[self-hosted, macOS, valkey-verify]", text)
         self.assertIn("[self-hosted, macOS, valkey-real]", text)
-        authorize_real = text.split("  authorize-real:", 1)[1].split("\n  milestone:", 1)[0]
-        self.assertEqual(
-            authorize_real.count("if: needs.coordinate.outputs.status == 'MILESTONE'"),
-            1,
-        )
-        self.assertIn("entrypoint: ${{ steps.authorize.outputs.entrypoint }}", authorize_real)
+        self.assertNotIn("\n  authorize-real:", text)
+        self.assertEqual(text.count("environment: valkey-real"), 2)
+        self.assertEqual(text.count("authorize-real-invocation"), 2)
         milestone_job = text.split("\n  milestone:", 1)[1].split("\n  m2-discovery:", 1)[0]
-        self.assertIn("needs.authorize-real.outputs.entrypoint == 'milestone'", milestone_job)
+        self.assertIn("needs: coordinate", milestone_job)
+        self.assertIn("needs.coordinate.outputs.entrypoint == 'milestone'", milestone_job)
+        self.assertIn("environment: valkey-real", milestone_job)
         discovery_job = text.split("\n  m2-discovery:", 1)[1].split(
             "\n  record-milestone:", 1
         )[0]
-        self.assertIn("needs.authorize-real.outputs.entrypoint == 'discovery'", discovery_job)
+        self.assertIn("needs: coordinate", discovery_job)
+        self.assertIn("needs.coordinate.outputs.entrypoint == 'discovery'", discovery_job)
         self.assertIn("environment: valkey-real", discovery_job)
         self.assertIn("run-m2-discovery", discovery_job)
         self.assertIn(
@@ -104,16 +245,55 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("actions: write", discovery_record_job)
         self.assertNotIn("environment: valkey-real", discovery_record_job)
         self.assertNotIn("id-token: write", discovery_record_job)
+        self.assertIn("--expected-lease-sha256", discovery_record_job)
+        self.assertIn(
+            "needs.m2-discovery.outputs.lease_sha256", discovery_record_job
+        )
         self.assertIn(
             'test "${{ steps.record.outputs.discovery_status }}" = "PASS"',
             discovery_record_job,
         )
+        self.assertIn("needs: [coordinate, m2-discovery]", discovery_record_job)
+        for real_job, product_command, product_condition in (
+            (
+                milestone_job,
+                "run-milestone",
+                "if: always() && steps.authorize.outcome == 'success'",
+            ),
+            (
+                discovery_job,
+                "run-m2-discovery",
+                "if: success() && steps.authorize.outcome == 'success'",
+            ),
+        ):
+            authorize_at = real_job.index("authorize-real-invocation")
+            self.assertLess(real_job.index("actions/checkout@v4"), authorize_at)
+            self.assertLess(authorize_at, real_job.index("recover\n"))
+            self.assertLess(authorize_at, real_job.index(product_command))
+            self.assertIn(product_condition, real_job)
+            before_authorize = real_job[:authorize_at]
+            self.assertNotIn("fingerprint --role real", before_authorize)
+            self.assertIn(
+                "env -u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+                before_authorize,
+            )
         record_job = text.split("\n  record-milestone:", 1)[1]
-        self.assertIn("needs: [authorize-real, milestone]", record_job)
+        self.assertIn("needs: [coordinate, milestone]", record_job)
         self.assertIn(
-            "needs.authorize-real.outputs.entrypoint == 'milestone'", record_job
+            "needs.coordinate.outputs.entrypoint == 'milestone'", record_job
         )
         self.assertNotIn("record-m2-discovery", record_job)
+        self.assertNotIn("m2-discovery", record_job)
+        self.assertIn(
+            "milestone-result-${{ github.run_id }}-${{ github.run_attempt }}",
+            milestone_job,
+        )
+        self.assertIn(
+            "milestone-evidence-${{ github.run_id }}-${{ github.run_attempt }}",
+            milestone_job,
+        )
+        self.assertIn("--expected-lease-sha256", record_job)
+        self.assertIn("--run-attempt", record_job)
         self.assertNotIn("ubuntu-latest", text)
         self.assertIn("  candidate:\n    name: milestone-loop / candidate", text)
         self.assertIn('run: test "${{ steps.verify.outcome }}" = "success"', text)
@@ -121,6 +301,7 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("cancel-in-progress: false", text)
         after_merge = text.split("\n  after-merge:", 1)[1].split("\n  coordinate:", 1)[0]
         self.assertIn("actions: write", after_merge)
+        self.assertIn("github.event.pull_request.merged == true", after_merge)
         self.assertIn("loop.py after-pr", after_merge)
         dispatch_block = text.split("  workflow_dispatch:", 1)[1].split("\n\n", 1)[0]
         self.assertEqual(dispatch_block.count("      action:"), 1)
@@ -135,6 +316,61 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[\"./gate\", \"milestone\", milestone]", (ROOT / ".github/milestone-loop/milestone_runner.py").read_text())
         self.assertEqual(PR_MILESTONE_RE.search("Milestone: m4").group(1), "m4")
         self.assertIsNone(PR_MILESTONE_RE.search("Milestone: m5"))
+
+    def test_workflow_pins_queued_coordination_to_the_dispatch_sha(self) -> None:
+        text = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        coordinate_job = text.split("\n  coordinate:", 1)[1].split(
+            "\n  milestone:", 1
+        )[0]
+        self.assertIn("ref: ${{ github.sha }}", coordinate_job)
+        self.assertNotIn(
+            "ref: ${{ github.event.repository.default_branch }}", coordinate_job
+        )
+
+    def test_workflow_seals_cleanup_failure_before_recording_milestone(self) -> None:
+        text = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        milestone_job = text.split("\n  milestone:", 1)[1].split(
+            "\n  m2-discovery:", 1
+        )[0]
+        self.assertIn("id: pre_cleanup", milestone_job)
+        self.assertIn("id: cleanup", milestone_job)
+        self.assertIn("id: evidence", milestone_job)
+        self.assertIn("continue-on-error: true", milestone_job)
+        self.assertIn("seal-milestone-result", milestone_job)
+        self.assertIn(
+            "steps.pre_cleanup.outcome == 'success'", milestone_job
+        )
+        self.assertLess(
+            milestone_job.index("id: pre_cleanup"),
+            milestone_job.index("id: gate"),
+        )
+        self.assertLess(
+            milestone_job.index("id: gate"),
+            milestone_job.index("id: cleanup"),
+        )
+        self.assertLess(
+            milestone_job.index("id: cleanup"),
+            milestone_job.index("id: evidence"),
+        )
+        self.assertLess(
+            milestone_job.index("id: evidence"),
+            milestone_job.index("seal-milestone-result"),
+        )
+        self.assertLess(
+            milestone_job.index("seal-milestone-result"),
+            milestone_job.index("Upload bounded Milestone Gate result"),
+        )
+        record_job = text.split("\n  record-milestone:", 1)[1]
+        self.assertIn("needs.milestone.outputs.lease_sha256 != ''", record_job)
+        self.assertNotIn("needs.milestone.result == 'success'", record_job)
+        self.assertIn("continue-on-error: true", record_job)
+        self.assertIn("id: record\n        if: always()", record_job)
+        self.assertIn(
+            'test "${{ steps.record.outputs.status }}" = "HUMAN_CLOSE"',
+            record_job,
+        )
+        self.assertNotIn("environment: valkey-real", record_job)
+        self.assertNotIn("id-token: write", record_job)
 
     def test_single_runner_contract_and_bootstrap_order_are_documented(self) -> None:
         readme = (ROOT / ".github/milestone-loop/README.md").read_text()
@@ -200,6 +436,16 @@ class BoundaryTests(unittest.TestCase):
             self.assertEqual(GitHubClient("owner/repo").repository()["default_branch"], "main")
         self.assertEqual(run.call_args.args[0][2], "repos/owner/repo")
 
+    def test_pre_authorization_python_probe_is_isolated_from_repository_imports(self) -> None:
+        completed = subprocess.CompletedProcess([], 0, "8.4.0\n", "")
+        with patch("loop.subprocess.run", return_value=completed) as run:
+            self.assertEqual(
+                _version(["python3", "-I", "-c", "import pytest; print(pytest.__version__)"]),
+                "8.4.0",
+            )
+        self.assertEqual(run.call_args.kwargs["cwd"], ROOT / ".github/milestone-loop")
+        self.assertIn("-I", run.call_args.args[0])
+
     def test_context_overflow_blocks_without_truncation(self) -> None:
         milestone = json.loads(
             (ROOT / "project" / "milestones" / "m1" / "milestone.json").read_text()
@@ -256,6 +502,10 @@ class BoundaryTests(unittest.TestCase):
                 "nonce": "approved-once",
                 "expires_at": "2999-01-01T00:00:00Z",
                 "remaining": 0,
+                "entrypoint": "milestone",
+                "default_sha": "a" * 40,
+                "run_id": "12345",
+                "run_attempt": "1",
             }
         )
         snapshot = {
@@ -268,12 +518,224 @@ class BoundaryTests(unittest.TestCase):
                 }
             ],
         }
-        _validate_consumed_lease(snapshot, _lease_fingerprint(lease))
+        with patch.dict(
+            os.environ,
+            {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "1"},
+            clear=True,
+        ):
+            _validate_consumed_lease(
+                snapshot,
+                _lease_fingerprint(lease),
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+            )
         changed = dict(lease)
         changed["nonce"] = "changed"
         snapshot["issues"][0]["body"] = render_control(changed, 0)
-        with self.assertRaises(LoopBlocked):
-            _validate_consumed_lease(snapshot, _lease_fingerprint(lease))
+        with patch.dict(
+            os.environ,
+            {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "1"},
+            clear=True,
+        ), self.assertRaises(LoopBlocked):
+            _validate_consumed_lease(
+                snapshot,
+                _lease_fingerprint(lease),
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+            )
+
+    def test_consumed_lease_cannot_cross_run_attempts(self) -> None:
+        lease = empty_lease("m2")
+        lease.update(
+            status="exhausted",
+            nonce="m2-gh-12345-attempt-1-discovery-" + "a" * 12,
+            expires_at="2999-01-01T00:00:00Z",
+            remaining=0,
+            entrypoint="discovery",
+            default_sha="a" * 40,
+            run_id="12345",
+            run_attempt="1",
+        )
+        snapshot = {
+            "milestone": "m2",
+            "issues": [
+                {
+                    "number": 7,
+                    "labels": [CONTROL_LABEL],
+                    "body": render_control(lease, 0),
+                }
+            ],
+        }
+        with patch.dict(
+            os.environ,
+            {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "2"},
+            clear=True,
+        ), self.assertRaises(LoopBlocked):
+            _validate_consumed_lease(
+                snapshot,
+                _lease_fingerprint(lease),
+                milestone="m2",
+                entrypoint="discovery",
+                expected_sha="a" * 40,
+            )
+
+    def test_real_result_artifact_cannot_cross_run_attempts(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "1"},
+            clear=True,
+        ):
+            result = bind_real_result(
+                {"status": "PASS", "summary": "ok"},
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+            )
+        with self.assertRaises(ContractError):
+            validate_real_result_binding(
+                result,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="2",
+            )
+
+    def test_cleanup_or_evidence_failure_seals_milestone_as_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            raw_path = root / "raw.json"
+            sealed_path = root / "sealed.json"
+            with patch.dict(
+                os.environ,
+                {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "1"},
+                clear=True,
+            ):
+                raw = bind_real_result(
+                    {"status": "PASS", "summary": "Gate passed"},
+                    milestone="m1",
+                    entrypoint="milestone",
+                    expected_sha="a" * 40,
+                    expected_lease_sha256="b" * 64,
+                )
+            raw_path.write_text(json.dumps(raw), encoding="utf-8")
+            result = seal_milestone_result(
+                raw_result_path=raw_path,
+                output_path=sealed_path,
+                milestone="m1",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="1",
+                gate_outcome="success",
+                pre_cleanup_outcome="success",
+                cleanup_outcome="failure",
+                evidence_outcome="success",
+            )
+            loaded = load_milestone_result(
+                result_path=sealed_path,
+                milestone="m1",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="1",
+            )
+            evidence_failure = seal_milestone_result(
+                raw_result_path=raw_path,
+                output_path=root / "evidence-failure.json",
+                milestone="m1",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="1",
+                gate_outcome="success",
+                pre_cleanup_outcome="success",
+                cleanup_outcome="success",
+                evidence_outcome="failure",
+            )
+        self.assertEqual(result, loaded)
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertIn("final cleanup outcome was failure", result["summary"])
+        self.assertEqual(evidence_failure["status"], "BLOCKED")
+        self.assertIn("evidence upload outcome was failure", evidence_failure["summary"])
+
+    def test_pre_cleanup_failure_seals_without_running_gate_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            result = seal_milestone_result(
+                raw_result_path=root / "missing-raw.json",
+                output_path=root / "sealed.json",
+                milestone="m2",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="2",
+                gate_outcome="skipped",
+                pre_cleanup_outcome="failure",
+                cleanup_outcome="success",
+                evidence_outcome="skipped",
+            )
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertIn("pre-Gate cleanup outcome was failure", result["summary"])
+
+    def test_successful_cleanup_preserves_current_gate_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            raw_path = root / "raw.json"
+            with patch.dict(
+                os.environ,
+                {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "3"},
+                clear=True,
+            ):
+                raw = bind_real_result(
+                    {"status": "FAIL", "summary": "Criterion did not pass"},
+                    milestone="m2",
+                    entrypoint="milestone",
+                    expected_sha="a" * 40,
+                    expected_lease_sha256="b" * 64,
+                )
+            raw_path.write_text(json.dumps(raw), encoding="utf-8")
+            result = seal_milestone_result(
+                raw_result_path=raw_path,
+                output_path=root / "sealed.json",
+                milestone="m2",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="12345",
+                run_attempt="3",
+                gate_outcome="success",
+                pre_cleanup_outcome="success",
+                cleanup_outcome="success",
+                evidence_outcome="success",
+            )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["summary"], "Criterion did not pass")
+
+    def test_invalid_invocation_lease_blocks_before_cleanup_or_product(self) -> None:
+        snapshot = {"milestone": "m1", "default_sha": "a" * 40, "issues": []}
+        with (
+            patch("milestone_runner.collect_snapshot", return_value=snapshot),
+            patch(
+                "milestone_runner._validate_consumed_lease",
+                side_effect=LoopBlocked("old attempt"),
+            ),
+            patch("milestone_runner.cleanup_owned_docker") as cleanup,
+            patch("milestone_runner.subprocess.run") as run,
+            self.assertRaises(LoopBlocked),
+        ):
+            run_gate(
+                client=object(),
+                repo_root=ROOT,
+                milestone="m1",
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+            )
+        cleanup.assert_not_called()
+        run.assert_not_called()
 
     def test_consumed_m2_lease_authorizes_only_the_m2_real_gate(self) -> None:
         with patch.dict(
@@ -300,88 +762,434 @@ class BoundaryTests(unittest.TestCase):
             with self.assertRaises(ContractError):
                 _m2_discovery_run_id()
 
-    def test_authorize_rechecks_m2_candidate_before_consuming_lease(self) -> None:
-        snapshot = {
-            "default_sha": "a" * 40,
-            "milestone": "m2",
-            "issues": [],
+    def _authorization_fixture(self, milestone: str = "m1") -> tuple[dict, InvocationClient, dict]:
+        control = {
+            "number": 7,
+            "title": "control",
+            "body": render_control(empty_lease(milestone), 0),
+            "state": "open",
+            "labels": [CONTROL_LABEL],
+            "comments": [],
         }
+        state = {
+            "repository": "owner/repo",
+            "default_branch": "main",
+            "default_sha": "a" * 40,
+            "milestone": milestone,
+            "milestone_number": int(milestone[1:]),
+            "issues": [control],
+            "pull_requests": [],
+        }
+        run = {
+            "id": 12345,
+            "run_attempt": 1,
+            "event": "workflow_dispatch",
+            "status": "in_progress",
+            "head_sha": "a" * 40,
+            "head_branch": "main",
+            "path": ".github/workflows/milestone-loop.yml@main",
+        }
+        environment = {
+            "GITHUB_ACTIONS": "true",
+            "GITHUB_EVENT_NAME": "workflow_dispatch",
+            "GITHUB_RUN_ID": "12345",
+            "GITHUB_RUN_ATTEMPT": "1",
+            "GITHUB_JOB": "milestone",
+            "GITHUB_SHA": "a" * 40,
+            "GITHUB_REF": "refs/heads/main",
+        }
+        return state, InvocationClient(control, run), environment
+
+    def test_approved_invocation_generates_and_consumes_one_bound_lease(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        readiness = real_readiness_fingerprint(state)
         checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
         with (
-            patch("milestone_runner.collect_snapshot", return_value=snapshot),
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
             patch("milestone_runner.subprocess.run", return_value=checkout),
             patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
-            patch(
-                "milestone_runner.m2_candidate_blockers",
-                return_value=("real.local.m2-cluster-formation.selected_strategy",),
-            ),
-            patch("milestone_runner.consume_lease") as consume,
         ):
+            result = authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=readiness,
+                run_id="12345",
+                run_attempt="1",
+            )
+        self.assertEqual(len(client.updates), 1)
+        consumed = parse_control(client.control, "m1").lease
+        self.assertEqual(consumed["version"], 2)
+        self.assertEqual(consumed["status"], "exhausted")
+        self.assertEqual(consumed["remaining"], 0)
+        self.assertEqual(consumed["entrypoint"], "milestone")
+        self.assertEqual(consumed["default_sha"], "a" * 40)
+        self.assertEqual(consumed["run_id"], "12345")
+        self.assertEqual(consumed["run_attempt"], "1")
+        self.assertEqual(result["lease_sha256"], _lease_fingerprint(consumed))
+
+    def test_unconfirmed_consumed_lease_receipt_reaches_blocked_recorders(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        client.confirmation_error = OSError("confirmation unavailable")
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
+            patch("milestone_runner.subprocess.run", return_value=checkout),
+            patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+            self.assertRaises(LeaseConfirmationBlocked) as raised,
+        ):
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        consumed = parse_control(client.control, "m1").lease
+        receipt = raised.exception.receipt
+        self.assertFalse(receipt["authorized"])
+        self.assertEqual(receipt["milestone"], "m1")
+        self.assertEqual(receipt["entrypoint"], "milestone")
+        self.assertEqual(receipt["lease_nonce"], consumed["nonce"])
+        self.assertEqual(receipt["lease_sha256"], _lease_fingerprint(consumed))
+        self.assertEqual(receipt["default_sha"], "a" * 40)
+        self.assertEqual(receipt["run_id"], "12345")
+        self.assertEqual(receipt["run_attempt"], "1")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "github-output"
+            with (
+                patch.dict(
+                    os.environ, {"GITHUB_OUTPUT": str(output)}, clear=True
+                ),
+                patch("loop.validate_environment"),
+                patch("loop.GitHubClient.from_environment", return_value=object()),
+                patch(
+                    "loop.authorize_real_invocation",
+                    side_effect=raised.exception,
+                ),
+            ):
+                exit_code = loop_main(
+                    [
+                        "authorize-real-invocation",
+                        "--milestone",
+                        "m1",
+                        "--entrypoint",
+                        "milestone",
+                        "--expected-sha",
+                        "a" * 40,
+                        "--expected-readiness-sha256",
+                        "b" * 64,
+                        "--run-id",
+                        "12345",
+                        "--run-attempt",
+                        "1",
+                    ]
+                )
+            outputs = dict(
+                line.split("=", 1)
+                for line in output.read_text(encoding="utf-8").splitlines()
+            )
+        self.assertEqual(exit_code, 78)
+        self.assertEqual(outputs["authorized"], "false")
+        self.assertEqual(outputs["lease_sha256"], receipt["lease_sha256"])
+
+        workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
+        milestone_job = workflow.split("\n  milestone:", 1)[1].split(
+            "\n  m2-discovery:", 1
+        )[0]
+        discovery_job = workflow.split("\n  m2-discovery:", 1)[1].split(
+            "\n  record-m2-discovery:", 1
+        )[0]
+        receipt_condition = (
+            "if: always() && steps.authorize.outputs.lease_sha256 != ''"
+        )
+        self.assertIn("steps.authorize.outcome == 'success'", milestone_job)
+        self.assertGreaterEqual(milestone_job.count(receipt_condition), 3)
+        self.assertIn(
+            "if: success() && steps.authorize.outcome == 'success'",
+            discovery_job,
+        )
+        self.assertGreaterEqual(discovery_job.count(receipt_condition), 1)
+
+    def test_patch_response_loss_preserves_unconfirmed_receipt(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        client.after_update = Mock(side_effect=OSError("PATCH response lost"))
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
+            patch("milestone_runner.subprocess.run", return_value=checkout),
+            patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+            self.assertRaises(LeaseConfirmationBlocked) as raised,
+        ):
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        consumed = parse_control(client.control, "m1").lease
+        self.assertEqual(len(client.updates), 1)
+        self.assertEqual(consumed["status"], "exhausted")
+        self.assertEqual(consumed["remaining"], 0)
+        self.assertFalse(raised.exception.receipt["authorized"])
+        self.assertEqual(
+            raised.exception.receipt["lease_sha256"], _lease_fingerprint(consumed)
+        )
+
+    def test_same_approved_invocation_cannot_generate_a_second_lease(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        readiness = real_readiness_fingerprint(state)
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        arguments = dict(
+            milestone="m1",
+            entrypoint="milestone",
+            expected_sha="a" * 40,
+            expected_readiness_sha256=readiness,
+            run_id="12345",
+            run_attempt="1",
+        )
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
+            patch("milestone_runner.subprocess.run", return_value=checkout),
+            patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+        ):
+            authorize_real_invocation(client, ROOT, **arguments)
             with self.assertRaises(LoopBlocked):
-                authorize(object(), ROOT, "m2")
-        consume.assert_not_called()
+                authorize_real_invocation(client, ROOT, **arguments)
+        self.assertEqual(len(client.updates), 1)
 
-    def test_authorize_preserves_non_m2_flow(self) -> None:
-        snapshot = {
-            "default_sha": "a" * 40,
-            "milestone": "m1",
-            "issues": [],
-        }
-        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
-        consumed = ControlState(7, empty_lease("m1"), 0)
-        client = object()
+    def test_stale_or_unapproved_run_identity_never_changes_lease(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        environment["GITHUB_RUN_ATTEMPT"] = "2"
         with (
-            patch("milestone_runner.collect_snapshot", return_value=snapshot),
-            patch("milestone_runner.subprocess.run", return_value=checkout) as run,
-            patch("milestone_runner.consume_lease", return_value=consumed) as consume,
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
+            self.assertRaises(LoopBlocked),
         ):
-            result = authorize(client, ROOT, "m1")
-        self.assertEqual(result["default_sha"], "a" * 40)
-        self.assertEqual(result["entrypoint"], "milestone")
-        consume.assert_called_once_with(client, snapshot)
-        run.assert_not_called()
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        self.assertEqual(client.updates, [])
 
-    def test_authorize_allows_an_explicit_m2_candidate(self) -> None:
-        snapshot = {
-            "default_sha": "a" * 40,
-            "milestone": "m2",
-            "issues": [],
-        }
-        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
-        consumed = ControlState(7, empty_lease("m2"), 0)
-        client = object()
+    def test_missing_required_environment_reviewer_never_changes_lease(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        client.environment["protection_rules"] = []
         with (
-            patch("milestone_runner.collect_snapshot", return_value=snapshot),
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
+            self.assertRaises(LoopBlocked),
+        ):
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        self.assertEqual(client.updates, [])
+
+    def test_each_invalid_live_run_field_prevents_lease_write(self) -> None:
+        invalid = {
+            "id": 99999,
+            "run_attempt": 2,
+            "event": "push",
+            "status": "completed",
+            "head_sha": "b" * 40,
+            "head_branch": "other",
+            "path": ".github/workflows/other.yml",
+        }
+        for field, value in invalid.items():
+            with self.subTest(field=field):
+                state, client, environment = self._authorization_fixture()
+                client.run[field] = value
+                with (
+                    patch.dict(os.environ, environment, clear=True),
+                    patch("milestone_runner.collect_snapshot", return_value=state),
+                    self.assertRaises(LoopBlocked),
+                ):
+                    authorize_real_invocation(
+                        client,
+                        ROOT,
+                        milestone="m1",
+                        entrypoint="milestone",
+                        expected_sha="a" * 40,
+                        expected_readiness_sha256=real_readiness_fingerprint(state),
+                        run_id="12345",
+                        run_attempt="1",
+                    )
+                self.assertEqual(client.updates, [])
+
+    def test_canonical_legacy_empty_or_exhausted_lease_migrates_once(self) -> None:
+        leases = (
+            {
+                "version": 1,
+                "milestone": "m1",
+                "status": "empty",
+                "nonce": "",
+                "expires_at": "",
+                "remaining": 0,
+            },
+            {
+                "version": 1,
+                "milestone": "m1",
+                "status": "exhausted",
+                "nonce": "previous-invocation",
+                "expires_at": "2026-07-20T00:00:00Z",
+                "remaining": 0,
+            },
+        )
+        for legacy in leases:
+            with self.subTest(status=legacy["status"]):
+                state, client, environment = self._authorization_fixture()
+                client.control["body"] = render_control(legacy, 0)
+                checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+                with (
+                    patch.dict(os.environ, environment, clear=True),
+                    patch("milestone_runner.collect_snapshot", return_value=state),
+                    patch("milestone_runner.subprocess.run", return_value=checkout),
+                    patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+                ):
+                    authorize_real_invocation(
+                        client,
+                        ROOT,
+                        milestone="m1",
+                        entrypoint="milestone",
+                        expected_sha="a" * 40,
+                        expected_readiness_sha256=real_readiness_fingerprint(state),
+                        run_id="12345",
+                        run_attempt="1",
+                    )
+                self.assertEqual(len(client.updates), 1)
+                self.assertEqual(parse_control(client.control, "m1").lease["version"], 2)
+
+    def test_lease_change_before_or_after_write_blocks_product_handoff(self) -> None:
+        state, client, environment = self._authorization_fixture()
+        changed = copy.deepcopy(state)
+        changed["issues"][0]["body"] = render_control(empty_lease("m1"), 1)
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", side_effect=[state, changed]),
             patch("milestone_runner.subprocess.run", return_value=checkout),
             patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
-            patch("milestone_runner.m2_candidate_blockers", return_value=()),
-            patch("milestone_runner.consume_lease", return_value=consumed) as consume,
+            self.assertRaises(LoopBlocked),
         ):
-            result = authorize(client, ROOT, "m2")
-        self.assertEqual(result["default_sha"], "a" * 40)
-        self.assertEqual(result["entrypoint"], "milestone")
-        consume.assert_called_once_with(client, snapshot)
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        self.assertEqual(client.updates, [])
 
-    def test_authorize_routes_only_canonical_m2_state_to_discovery(self) -> None:
-        snapshot = {
-            "default_sha": "a" * 40,
-            "milestone": "m2",
-            "issues": [],
-        }
-        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
-        consumed = ControlState(7, empty_lease("m2"), 0)
-        client = object()
+        state, client, environment = self._authorization_fixture()
+        client.after_update = lambda: client.control.update(
+            body=render_control(parse_control(client.control, "m1").lease, 1)
+        )
         with (
-            patch("milestone_runner.collect_snapshot", return_value=snapshot),
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
+            patch("milestone_runner.subprocess.run", return_value=checkout),
+            patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+            self.assertRaises(LoopBlocked),
+        ):
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        self.assertEqual(len(client.updates), 1)
+
+    def test_active_or_revoked_legacy_lease_is_never_consumed_or_replaced(self) -> None:
+        for status, remaining in (("active", 1), ("revoked", 0)):
+            with self.subTest(status=status):
+                state, client, environment = self._authorization_fixture()
+                legacy = {
+                    "version": 1,
+                    "milestone": "m1",
+                    "status": status,
+                    "nonce": "legacy-human-lease",
+                    "expires_at": "2999-01-01T00:00:00Z",
+                    "remaining": remaining,
+                }
+                client.control["body"] = render_control(legacy, 0)
+                checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+                with (
+                    patch.dict(os.environ, environment, clear=True),
+                    patch("milestone_runner.collect_snapshot", return_value=state),
+                    patch("milestone_runner.subprocess.run", return_value=checkout),
+                    patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
+                    self.assertRaises(LoopBlocked),
+                ):
+                    authorize_real_invocation(
+                        client,
+                        ROOT,
+                        milestone="m1",
+                        entrypoint="milestone",
+                        expected_sha="a" * 40,
+                        expected_readiness_sha256=real_readiness_fingerprint(state),
+                        run_id="12345",
+                        run_attempt="1",
+                    )
+                self.assertEqual(client.updates, [])
+
+    def test_authorization_rechecks_m2_entrypoint_before_lease_write(self) -> None:
+        state, client, environment = self._authorization_fixture("m2")
+        environment["GITHUB_JOB"] = "m2-discovery"
+        checkout = subprocess.CompletedProcess([], 0, "a" * 40 + "\n", "")
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch("milestone_runner.collect_snapshot", return_value=state),
             patch("milestone_runner.subprocess.run", return_value=checkout),
             patch("milestone_runner.load_trusted_documents", return_value=({}, {})),
             patch("milestone_runner.m2_candidate_blockers", return_value=("unresolved",)),
-            patch("milestone_runner.m2_discovery_eligible", return_value=True),
-            patch("milestone_runner.consume_lease", return_value=consumed) as consume,
+            patch("milestone_runner.m2_discovery_eligible", return_value=False),
+            self.assertRaises(LoopBlocked),
         ):
-            result = authorize(client, ROOT, "m2")
-        self.assertEqual(result["entrypoint"], "discovery")
-        consume.assert_called_once_with(client, snapshot)
+            authorize_real_invocation(
+                client,
+                ROOT,
+                milestone="m2",
+                entrypoint="discovery",
+                expected_sha="a" * 40,
+                expected_readiness_sha256=real_readiness_fingerprint(state),
+                run_id="12345",
+                run_attempt="1",
+            )
+        self.assertEqual(client.updates, [])
 
     def _run_discovery_fixture(
         self,
@@ -466,7 +1274,13 @@ class BoundaryTests(unittest.TestCase):
                     expected_sha=expected_sha,
                     expected_lease_sha256="b" * 64,
                 )
-            validate_lease.assert_called_once_with(snapshot, "b" * 64)
+            validate_lease.assert_called_once_with(
+                snapshot,
+                "b" * 64,
+                milestone="m2",
+                entrypoint="discovery",
+                expected_sha=expected_sha,
+            )
             return result, calls, cleanup.call_count
 
     def test_m2_discovery_rechecks_authorization_and_uses_fixed_sanitized_command(self) -> None:
@@ -563,6 +1377,7 @@ class BoundaryTests(unittest.TestCase):
         raw_result = root / "raw.json"
         sealed = root / "sealed.json"
         sha = "a" * 40
+        lease_sha256 = "b" * 64
         invocation = f"m2-discovery-gh-{run_id}-attempt-{run_attempt}"
         source = evidence / "current-source.json"
         source.write_text('{"current":true}\n', encoding="utf-8")
@@ -723,7 +1538,18 @@ class BoundaryTests(unittest.TestCase):
             json.dumps(report), encoding="utf-8"
         )
         raw_result.write_text(
-            json.dumps({"status": status, "summary": error or "selection complete", "tested_sha": sha}),
+            json.dumps(
+                {
+                    "status": status,
+                    "summary": error or "selection complete",
+                    "milestone": "m2",
+                    "entrypoint": "discovery",
+                    "tested_sha": sha,
+                    "lease_sha256": lease_sha256,
+                    "run_id": run_id,
+                    "run_attempt": run_attempt,
+                }
+            ),
             encoding="utf-8",
         )
         result = seal_m2_discovery_result(
@@ -731,6 +1557,7 @@ class BoundaryTests(unittest.TestCase):
             evidence_root=evidence,
             output_path=sealed,
             expected_sha=sha,
+            expected_lease_sha256=lease_sha256,
             run_id=run_id,
             run_attempt=run_attempt,
             run_outcome="success",
@@ -747,6 +1574,7 @@ class BoundaryTests(unittest.TestCase):
                 result_path=sealed,
                 evidence_root=evidence,
                 expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
                 run_id="123",
                 run_attempt="2",
             )
@@ -924,8 +1752,18 @@ class BoundaryTests(unittest.TestCase):
                     result_path=sealed,
                     evidence_root=evidence,
                     expected_sha="a" * 40,
+                    expected_lease_sha256="b" * 64,
                     run_id="123",
                     run_attempt="3",
+                )
+            with self.assertRaises(ContractError):
+                load_m2_discovery_result(
+                    result_path=sealed,
+                    evidence_root=evidence,
+                    expected_sha="a" * 40,
+                    expected_lease_sha256="c" * 64,
+                    run_id="123",
+                    run_attempt="2",
                 )
 
     def test_missing_or_tampered_discovery_artifacts_fail_closed(self) -> None:
@@ -936,6 +1774,7 @@ class BoundaryTests(unittest.TestCase):
                 evidence_root=root / "missing-evidence",
                 output_path=root / "sealed.json",
                 expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
                 run_id="123",
                 run_attempt="2",
                 run_outcome="success",
@@ -956,6 +1795,7 @@ class BoundaryTests(unittest.TestCase):
                     result_path=sealed,
                     evidence_root=evidence,
                     expected_sha="a" * 40,
+                    expected_lease_sha256="b" * 64,
                     run_id="123",
                     run_attempt="2",
                 )
@@ -971,7 +1811,12 @@ class BoundaryTests(unittest.TestCase):
                     {
                         "status": "PASS",
                         "summary": "selection complete",
+                        "milestone": "m2",
+                        "entrypoint": "discovery",
                         "tested_sha": "b" * 40,
+                        "lease_sha256": "b" * 64,
+                        "run_id": "123",
+                        "run_attempt": "2",
                     }
                 ),
                 encoding="utf-8",
@@ -981,6 +1826,7 @@ class BoundaryTests(unittest.TestCase):
                 evidence_root=evidence,
                 output_path=root / "sealed.json",
                 expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
                 run_id="123",
                 run_attempt="2",
                 run_outcome="success",
@@ -1019,7 +1865,10 @@ class BoundaryTests(unittest.TestCase):
                 },
             ],
         }
-        with patch.dict(os.environ, {"GITHUB_RUN_ID": "12345"}):
+        with patch.dict(
+            os.environ,
+            {"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "2"},
+        ):
             result = _gate_result_summary(
                 milestone="m2",
                 gate_status="FAIL",
@@ -1035,7 +1884,7 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("performance.cluster-formation-experiment", result)
         self.assertIn("candidate did not improve", result)
         self.assertIn("[absolute-path]", result)
-        self.assertIn("milestone-evidence-12345", result)
+        self.assertIn("milestone-evidence-12345-2", result)
         self.assertNotIn("passing.criterion", result)
         self.assertNotIn(sentinel, result)
         self.assertNotIn("@mention", result)

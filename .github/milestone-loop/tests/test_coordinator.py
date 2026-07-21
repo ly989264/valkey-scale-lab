@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 import json
 import unittest
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,7 +15,6 @@ from coordinator import (
     ControlState,
     LoopBlocked,
     apply_planner_transaction,
-    consume_lease,
     coordinate,
     empty_lease,
     m2_candidate_blockers,
@@ -25,9 +23,11 @@ from coordinator import (
     pending_failure_diagnosis,
     pending_m2_discovery_diagnosis,
     prepare_planner_transaction,
+    prepare_real_authorization,
     record_human_action_state,
     record_m2_discovery_result,
     render_control,
+    record_real_authorization_required,
     record_milestone_result,
     set_no_progress,
     trusted_m2_discovery_repair_pr,
@@ -174,14 +174,24 @@ def coordinate_m2(milestone: dict, catalog: dict) -> tuple[dict, FakeClient]:
         "pull_requests": [],
     }
     control = ControlState(99, empty_lease("m2"), 0)
-    client = FakeClient()
+    client = FakeClient(control_issue)
     with (
+        patch.dict(
+            "os.environ",
+            {
+                "GITHUB_RUN_ID": "12345",
+                "GITHUB_RUN_ATTEMPT": "1",
+                "GITHUB_SERVER_URL": "https://github.com",
+            },
+            clear=True,
+        ),
         patch("coordinator.load_trusted_documents", return_value=(milestone, catalog)),
         patch("coordinator.collect_snapshot", return_value=state),
         patch("coordinator.ensure_control", return_value=control),
         patch("coordinator.reconcile_review", return_value=("NONE", control)),
         patch("coordinator.run_planner", return_value=PlannerOutput((), None, "no work")),
         patch("coordinator.apply_planner_transaction"),
+        patch("coordinator._run", return_value="a" * 40),
     ):
         result = coordinate(
             client=client,
@@ -220,6 +230,7 @@ class CoordinatorTests(unittest.TestCase):
             "failure_code": "python-typeerror" if disposition == "REPAIRABLE_IMPLEMENTATION" else "",
             "failure_fingerprint": "f" * 64,
             "tested_sha": tested_sha,
+            "lease_sha256": "e" * 64,
             "run_id": "12345",
             "run_attempt": 1,
             "invocation_id": "m2-discovery-gh-12345-attempt-1",
@@ -265,6 +276,34 @@ class CoordinatorTests(unittest.TestCase):
                 milestone_document=self.milestone,
                 catalog_document=self.catalog,
             )
+
+    def test_queued_dispatch_with_stale_checkout_fails_before_writes(self) -> None:
+        state = snapshot([])
+        state["default_sha"] = "b" * 40
+        client = FakeClient()
+        with (
+            patch(
+                "coordinator.load_trusted_documents",
+                return_value=(self.milestone, self.catalog),
+            ),
+            patch("coordinator.collect_snapshot", return_value=state),
+            patch("coordinator._run", return_value="a" * 40),
+            patch("coordinator.ensure_control") as ensure_control,
+            patch("coordinator.run_planner") as run_planner,
+            self.assertRaisesRegex(
+                LoopBlocked, "queued coordination checkout is not the live default SHA"
+            ),
+        ):
+            coordinate(
+                client=client,
+                repo_root=ROOT,
+                runtime_root=ROOT / ".ignored-test-runtime",
+                action="start",
+                milestone="m1",
+            )
+        ensure_control.assert_not_called()
+        run_planner.assert_not_called()
+        self.assertEqual(client.writes, [])
 
     def test_ready_dependencies_must_be_completed(self) -> None:
         state = snapshot([issue(1, "blocked"), issue(2, "blocked", depends="#1")])
@@ -317,8 +356,13 @@ class CoordinatorTests(unittest.TestCase):
         milestone = m2_milestone()
         result, client = coordinate_m2(milestone, self.catalog)
         self.assertTrue(m2_discovery_eligible(milestone, "m2"))
-        self.assertEqual(result, {"status": "MILESTONE", "milestone": "m2"})
-        self.assertEqual(client.writes, [])
+        self.assertEqual(result["status"], "MILESTONE")
+        self.assertEqual(result["milestone"], "m2")
+        self.assertEqual(result["entrypoint"], "discovery")
+        self.assertEqual(result["default_sha"], "a" * 40)
+        self.assertRegex(result["readiness_sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(len(client.writes), 1)
+        self.assertIn("REAL_AUTHORIZATION_REQUIRED", client.writes[0][2])
 
     def test_m2_explicit_candidates_can_reach_milestone_gate(self) -> None:
         milestone = m2_milestone(
@@ -327,7 +371,9 @@ class CoordinatorTests(unittest.TestCase):
         )
         result, _client = coordinate_m2(milestone, self.catalog)
         self.assertFalse(m2_discovery_eligible(milestone, "m2"))
-        self.assertEqual(result, {"status": "MILESTONE", "milestone": "m2"})
+        self.assertEqual(result["status"], "MILESTONE")
+        self.assertEqual(result["milestone"], "m2")
+        self.assertEqual(result["entrypoint"], "milestone")
 
     def test_m2_explicit_baseline_values_are_not_candidates(self) -> None:
         milestone = m2_milestone()
@@ -461,6 +507,30 @@ class CoordinatorTests(unittest.TestCase):
         body = render_control(empty_lease("m1"), 3)
         parsed = parse_control({"number": 9, "body": body}, "m1")
         self.assertEqual(parsed.no_progress_count, 3)
+        legacy = {
+            "version": 1,
+            "milestone": "m1",
+            "status": "exhausted",
+            "nonce": "previous-invocation",
+            "expires_at": "2026-07-20T00:00:00Z",
+            "remaining": 0,
+        }
+        self.assertEqual(
+            parse_control({"number": 9, "body": render_control(legacy, 0)}, "m1").lease,
+            legacy,
+        )
+        malformed = dict(legacy)
+        malformed["expires_at"] = "garbage"
+        with self.assertRaises(ContractError):
+            parse_control(
+                {"number": 9, "body": render_control(malformed, 0)}, "m1"
+            )
+        malformed = dict(empty_lease("m1"))
+        malformed["nonce"] = "unexpected"
+        with self.assertRaises(ContractError):
+            parse_control(
+                {"number": 9, "body": render_control(malformed, 0)}, "m1"
+            )
         with self.assertRaises(ContractError):
             parse_control({"number": 9, "body": body + "\nState: running"}, "m1")
 
@@ -545,30 +615,80 @@ class CoordinatorTests(unittest.TestCase):
                         record_m2_discovery_result(client=client, result=result)
                 self.assertEqual(client.writes, [])
 
-    def test_lease_is_consumed_once_and_exhausts(self) -> None:
-        lease = empty_lease("m1")
-        lease.update(
-            {
-                "status": "active",
-                "nonce": "human-approved-1",
-                "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1))
-                .isoformat()
-                .replace("+00:00", "Z"),
-                "remaining": 1,
-            }
-        )
+    def test_real_authorization_action_is_deduplicated_without_editing_lease(self) -> None:
         control = {
             "number": 9,
-            "body": render_control(lease, 0),
+            "title": "control",
+            "body": render_control(empty_lease("m1"), 0),
+            "state": "open",
             "labels": [CONTROL_LABEL],
+            "comments": [],
         }
         state = snapshot([control])
         client = FakeClient(control)
-        consumed = consume_lease(client, state)
-        self.assertEqual(consumed.lease["status"], "exhausted")
-        self.assertEqual(consumed.lease["remaining"], 0)
-        with self.assertRaises(LoopBlocked):
-            consume_lease(client, state)
+        control_state = parse_control(control, "m1")
+        original_body = control["body"]
+        with patch.dict(
+            "os.environ",
+            {
+                "GITHUB_RUN_ID": "12345",
+                "GITHUB_RUN_ATTEMPT": "2",
+                "GITHUB_SERVER_URL": "https://github.com",
+            },
+            clear=True,
+        ):
+            record_real_authorization_required(client, state, control_state)
+            record_real_authorization_required(client, state, control_state)
+        comments = [write for write in client.writes if write[0] == "comment"]
+        self.assertEqual(len(comments), 1)
+        self.assertIn("REAL_AUTHORIZATION_REQUIRED", comments[0][2])
+        self.assertIn("/owner/repo/actions/runs/12345", comments[0][2])
+        self.assertEqual(control["body"], original_body)
+
+    def test_nonreplaceable_lease_hard_blocks_before_environment_review(self) -> None:
+        active = {
+            "version": 1,
+            "milestone": "m1",
+            "status": "active",
+            "nonce": "legacy-active",
+            "expires_at": "2026-07-21T12:00:00Z",
+            "remaining": 1,
+        }
+        control = {
+            "number": 9,
+            "title": "control",
+            "body": render_control(active, 0),
+            "state": "open",
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = snapshot([control])
+        client = FakeClient(control)
+        with (
+            patch.dict(
+                "os.environ",
+                {
+                    "GITHUB_RUN_ID": "12345",
+                    "GITHUB_RUN_ATTEMPT": "1",
+                    "GITHUB_SERVER_URL": "https://github.com",
+                },
+                clear=True,
+            ),
+            patch("coordinator.collect_snapshot", return_value=state),
+            patch("coordinator._run", return_value="a" * 40),
+        ):
+            result = prepare_real_authorization(
+                client=client,
+                repo_root=ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                control=parse_control(control, "m1"),
+            )
+        self.assertEqual(result["status"], "BLOCKED")
+        comments = [write for write in client.writes if write[0] == "comment"]
+        self.assertEqual(len(comments), 1)
+        self.assertIn("HARD_BLOCKED", comments[0][2])
+        self.assertFalse(any(write[0] == "update" for write in client.writes))
 
     def test_control_update_rejects_a_concurrent_lease_edit(self) -> None:
         original = empty_lease("m1")
@@ -581,7 +701,7 @@ class CoordinatorTests(unittest.TestCase):
         edited = dict(original)
         edited["nonce"] = "human-edit"
         control["body"] = render_control(edited, 0)
-        with self.assertRaises(LoopBlocked):
+        with self.assertRaises((LoopBlocked, ContractError)):
             set_no_progress(FakeClient(control), state, 1)
 
     def test_only_actions_bot_verification_records_are_trusted(self) -> None:
@@ -978,6 +1098,7 @@ class CoordinatorTests(unittest.TestCase):
                     side_effect=apply_transaction,
                 ),
                 patch("coordinator.run_worker", return_value="WAIT_PR") as worker,
+                patch("coordinator._run", return_value="a" * 40),
             ):
                 outcome = coordinate(
                     client=client,
@@ -1090,6 +1211,7 @@ class CoordinatorTests(unittest.TestCase):
             "run_id": result["run_id"],
             "run_attempt": result["run_attempt"],
             "tested_sha": result["tested_sha"],
+            "lease_sha256": result["lease_sha256"],
             "result_digest": result["result_digest"],
             "report_digest": result["report_digest"],
             "evidence_digest": result["evidence_digest"],

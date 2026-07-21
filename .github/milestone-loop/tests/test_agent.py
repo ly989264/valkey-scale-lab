@@ -16,7 +16,7 @@ class AgentBoundaryTests(unittest.TestCase):
             "AWS_SECRET_ACCESS_KEY": "real-secret",
             "VALKEY_REAL_CREDENTIAL": "real-secret",
             "MILESTONE_LEASE_NONCE": "lease",
-            "ACTIONS_ID_TOKEN_REQUEST_URL": "https://oidc.invalid",
+            "ACTIONS_ID_TOKEN_REQUEST_URL": "https://oidc.invalid/request",
             "ACTIONS_ID_TOKEN_REQUEST_TOKEN": "oidc-token",
             "VSLAB_M2_REAL_AUTHORIZATION": "1",
             "SSH_AUTH_SOCK": "/tmp/agent.sock",

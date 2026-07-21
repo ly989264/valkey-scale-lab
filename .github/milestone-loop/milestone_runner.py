@@ -6,7 +6,7 @@ import os
 import re
 import subprocess
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -14,13 +14,14 @@ from contracts import ContractError, fixed_milestone_path
 from coordinator import (
     CONTROL_LABEL,
     LoopBlocked,
-    consume_lease,
     load_trusted_documents,
     m2_candidate_blockers,
     m2_discovery_eligible,
     parse_control,
+    real_readiness_fingerprint,
+    render_control,
 )
-from github_api import GitHubClient, collect_snapshot
+from github_api import GitHubClient, GitHubError, collect_snapshot
 from recovery import cleanup_owned_docker
 
 
@@ -28,6 +29,17 @@ _GATE_DIAGNOSTIC_MAX_CHARS = 3800
 _GATE_DIAGNOSTIC_MAX_ROWS = 8
 _GATE_DIAGNOSTIC_DETAIL_MAX_CHARS = 400
 _GATE_DIAGNOSTIC_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,159}")
+_MILESTONE_RESULT_MAX_BYTES = 32_768
+_MILESTONE_RESULT_FIELDS = {
+    "milestone",
+    "entrypoint",
+    "tested_sha",
+    "lease_sha256",
+    "run_id",
+    "run_attempt",
+    "status",
+    "summary",
+}
 _M2_DISCOVERY_REPORT_NAME = "m2_candidate_discovery.json"
 _M2_ADMISSION_REPORT_NAME = "m2_performance_report.json"
 _M2_DISCOVERY_RESULT_SCHEMA = "m2-discovery-result-v1"
@@ -44,6 +56,7 @@ _M2_DISCOVERY_RESULT_FIELDS = {
     "failure_code",
     "failure_fingerprint",
     "tested_sha",
+    "lease_sha256",
     "run_id",
     "run_attempt",
     "invocation_id",
@@ -74,6 +87,14 @@ _M2_DISCOVERY_REPORT_FIELDS = {
     "errors",
     "report_digest",
 }
+
+
+class LeaseConfirmationBlocked(LoopBlocked):
+    def __init__(self, message: str, receipt: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.receipt = dict(receipt)
+
+
 _M2_DISCOVERY_CAMPAIGN_FIELDS = {
     "campaign_id",
     "invocation_run_id",
@@ -537,6 +558,7 @@ def _discovery_failure_fingerprint(
 def _sealed_discovery_result(
     *,
     expected_sha: str,
+    expected_lease_sha256: str,
     run_id: str,
     run_attempt: str,
     run_outcome: str,
@@ -550,8 +572,14 @@ def _sealed_discovery_result(
     summary: str,
 ) -> dict[str, Any]:
     run_id, attempt, invocation_id = _github_discovery_identity(run_id, run_attempt)
-    if re.fullmatch(r"[0-9a-f]{40}", expected_sha) is None:
-        raise ContractError("M2 discovery tested SHA is invalid")
+    if (
+        re.fullmatch(r"[0-9a-f]{40}", expected_sha) is None
+        or (
+            expected_lease_sha256 != ""
+            and re.fullmatch(r"[0-9a-f]{64}", expected_lease_sha256) is None
+        )
+    ):
+        raise ContractError("M2 discovery SHA or Lease binding is invalid")
     bounded_summary = _bounded_summary(summary)
     result: dict[str, Any] = {
         "schema_version": _M2_DISCOVERY_RESULT_SCHEMA,
@@ -569,6 +597,7 @@ def _sealed_discovery_result(
             invocation_id=invocation_id,
         ),
         "tested_sha": expected_sha,
+        "lease_sha256": expected_lease_sha256,
         "run_id": run_id,
         "run_attempt": attempt,
         "invocation_id": invocation_id,
@@ -589,6 +618,7 @@ def seal_m2_discovery_result(
     evidence_root: Path,
     output_path: Path,
     expected_sha: str,
+    expected_lease_sha256: str,
     run_id: str,
     run_attempt: str,
     run_outcome: str,
@@ -608,8 +638,15 @@ def seal_m2_discovery_result(
         raw = _read_bounded_object(
             raw_result_path, _M2_DISCOVERY_RESULT_MAX_BYTES, "raw M2 discovery result"
         )
-        if raw.get("tested_sha") != expected_sha:
-            raise ContractError("raw M2 discovery result tested SHA is stale")
+        validate_real_result_binding(
+            raw,
+            milestone="m2",
+            entrypoint="discovery",
+            expected_sha=expected_sha,
+            expected_lease_sha256=expected_lease_sha256,
+            run_id=run_id,
+            run_attempt=run_attempt,
+        )
         raw_status = raw.get("status")
         if raw_status not in {"PASS", "FAIL", "BLOCKED"}:
             raise ContractError("raw M2 discovery status is invalid")
@@ -651,6 +688,7 @@ def seal_m2_discovery_result(
         summary = f"M2 discovery artifact validation failed: {exc}"
     result = _sealed_discovery_result(
         expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
         run_id=run_id,
         run_attempt=run_attempt,
         run_outcome=run_outcome,
@@ -668,10 +706,16 @@ def seal_m2_discovery_result(
 
 
 def human_required_m2_discovery_result(
-    *, expected_sha: str, run_id: str, run_attempt: str, summary: str
+    *,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+    summary: str,
 ) -> dict[str, Any]:
     return _sealed_discovery_result(
         expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
         run_id=run_id,
         run_attempt=run_attempt,
         run_outcome="unknown",
@@ -691,6 +735,7 @@ def load_m2_discovery_result(
     result_path: Path,
     evidence_root: Path,
     expected_sha: str,
+    expected_lease_sha256: str,
     run_id: str,
     run_attempt: str,
 ) -> dict[str, Any]:
@@ -704,6 +749,7 @@ def load_m2_discovery_result(
         result.get("schema_version") != _M2_DISCOVERY_RESULT_SCHEMA
         or result.get("milestone") != "m2"
         or result.get("tested_sha") != expected_sha
+        or result.get("lease_sha256") != expected_lease_sha256
         or result.get("run_id") != run_id
         or result.get("run_attempt") != attempt
         or result.get("invocation_id") != invocation_id
@@ -737,7 +783,10 @@ def load_m2_discovery_result(
     if not isinstance(report_digest, str) or not isinstance(evidence_digest, str):
         raise ContractError("M2 discovery artifact digests are invalid")
     if report_digest:
-        if re.fullmatch(r"[0-9a-f]{64}", report_digest) is None:
+        if (
+            re.fullmatch(r"[0-9a-f]{64}", report_digest) is None
+            or re.fullmatch(r"[0-9a-f]{64}", expected_lease_sha256) is None
+        ):
             raise ContractError("M2 discovery report digest is invalid")
         if _evidence_digest(evidence_root) != evidence_digest:
             raise ContractError("M2 discovery evidence digest does not match")
@@ -795,6 +844,218 @@ def _m2_discovery_run_id() -> str:
     return f"m2-discovery-gh-{github_run_id}-attempt-{github_run_attempt}"
 
 
+def bind_real_result(
+    result: dict[str, Any],
+    *,
+    milestone: str,
+    entrypoint: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+) -> dict[str, Any]:
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+    if (
+        re.fullmatch(r"m[1-4]", milestone) is None
+        or entrypoint not in {"milestone", "discovery"}
+        or (entrypoint == "discovery" and milestone != "m2")
+        or re.fullmatch(r"[0-9a-f]{40}", expected_sha) is None
+        or re.fullmatch(r"[0-9a-f]{64}", expected_lease_sha256) is None
+        or re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is None
+        or re.fullmatch(r"[1-9][0-9]{0,9}", run_attempt) is None
+    ):
+        raise ContractError("real result invocation binding is invalid")
+    return {
+        **result,
+        "milestone": milestone,
+        "entrypoint": entrypoint,
+        "tested_sha": expected_sha,
+        "lease_sha256": expected_lease_sha256,
+        "run_id": run_id,
+        "run_attempt": run_attempt,
+    }
+
+
+def validate_real_result_binding(
+    result: Any,
+    *,
+    milestone: str,
+    entrypoint: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+) -> None:
+    expected = {
+        "milestone": milestone,
+        "entrypoint": entrypoint,
+        "tested_sha": expected_sha,
+        "lease_sha256": expected_lease_sha256,
+        "run_id": run_id,
+        "run_attempt": run_attempt,
+    }
+    if (
+        not isinstance(result, dict)
+        or re.fullmatch(r"m[1-4]", milestone) is None
+        or entrypoint not in {"milestone", "discovery"}
+        or (entrypoint == "discovery" and milestone != "m2")
+        or re.fullmatch(r"[0-9a-f]{40}", expected_sha) is None
+        or re.fullmatch(r"[0-9a-f]{64}", expected_lease_sha256) is None
+        or re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is None
+        or re.fullmatch(r"[1-9][0-9]{0,9}", run_attempt) is None
+        or result.get("status") not in {"PASS", "FAIL", "BLOCKED"}
+        or not isinstance(result.get("summary"), str)
+        or len(result["summary"]) > 4000
+        or any(result.get(field) != value for field, value in expected.items())
+    ):
+        raise ContractError("real result artifact does not match this approved invocation")
+
+
+def _milestone_result(
+    *,
+    milestone: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+    status: str,
+    summary: str,
+) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "milestone": milestone,
+        "entrypoint": "milestone",
+        "tested_sha": expected_sha,
+        "lease_sha256": expected_lease_sha256,
+        "run_id": run_id,
+        "run_attempt": run_attempt,
+        "status": status,
+        "summary": summary,
+    }
+    validate_real_result_binding(
+        result,
+        milestone=milestone,
+        entrypoint="milestone",
+        expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
+        run_id=run_id,
+        run_attempt=run_attempt,
+    )
+    return result
+
+
+def seal_milestone_result(
+    *,
+    raw_result_path: Path,
+    output_path: Path,
+    milestone: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+    gate_outcome: str,
+    pre_cleanup_outcome: str,
+    cleanup_outcome: str,
+    evidence_outcome: str,
+) -> dict[str, Any]:
+    outcomes = (
+        ("pre-Gate cleanup", pre_cleanup_outcome),
+        ("gate", gate_outcome),
+        ("final cleanup", cleanup_outcome),
+        ("evidence upload", evidence_outcome),
+    )
+    allowed_outcomes = {"success", "failure", "cancelled", "skipped"}
+    status = "BLOCKED"
+    summary = "Milestone result artifact is missing or invalid"
+    try:
+        invalid = [name for name, value in outcomes if value not in allowed_outcomes]
+        if invalid:
+            raise ContractError("invalid workflow outcome for " + ", ".join(invalid))
+        non_pass = next(
+            ((name, value) for name, value in outcomes if value != "success"),
+            None,
+        )
+        if non_pass is not None:
+            summary = f"Milestone {non_pass[0]} outcome was {non_pass[1]}"
+        else:
+            raw = _read_bounded_object(
+                raw_result_path,
+                _MILESTONE_RESULT_MAX_BYTES,
+                "raw Milestone result",
+            )
+            validate_real_result_binding(
+                raw,
+                milestone=milestone,
+                entrypoint="milestone",
+                expected_sha=expected_sha,
+                expected_lease_sha256=expected_lease_sha256,
+                run_id=run_id,
+                run_attempt=run_attempt,
+            )
+            status = str(raw["status"])
+            summary = str(raw["summary"])
+    except (ContractError, OSError) as exc:
+        status = "BLOCKED"
+        summary = f"Milestone result validation failed: {exc}"
+    result = _milestone_result(
+        milestone=milestone,
+        expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
+        run_id=run_id,
+        run_attempt=run_attempt,
+        status=status,
+        summary=summary,
+    )
+    output_path.write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return result
+
+
+def blocked_milestone_result(
+    *,
+    milestone: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+    summary: str,
+) -> dict[str, Any]:
+    return _milestone_result(
+        milestone=milestone,
+        expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
+        run_id=run_id,
+        run_attempt=run_attempt,
+        status="BLOCKED",
+        summary=summary,
+    )
+
+
+def load_milestone_result(
+    *,
+    result_path: Path,
+    milestone: str,
+    expected_sha: str,
+    expected_lease_sha256: str,
+    run_id: str,
+    run_attempt: str,
+) -> dict[str, Any]:
+    result = _read_bounded_object(
+        result_path, _MILESTONE_RESULT_MAX_BYTES, "sealed Milestone result"
+    )
+    if set(result) != _MILESTONE_RESULT_FIELDS:
+        raise ContractError("sealed Milestone result fields are incomplete or unexpected")
+    validate_real_result_binding(
+        result,
+        milestone=milestone,
+        entrypoint="milestone",
+        expected_sha=expected_sha,
+        expected_lease_sha256=expected_lease_sha256,
+        run_id=run_id,
+        run_attempt=run_attempt,
+    )
+    return result
+
+
 def _diagnostic_detail(value: Any) -> str:
     if not isinstance(value, str):
         return ""
@@ -840,8 +1101,12 @@ def _gate_result_summary(
         "failures": [],
     }
     run_id = os.environ.get("GITHUB_RUN_ID", "")
-    if re.fullmatch(r"[0-9]{1,20}", run_id):
-        diagnostic["evidence_artifact"] = f"milestone-evidence-{run_id}"
+    run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+    if (
+        re.fullmatch(r"[1-9][0-9]{0,19}", run_id)
+        and re.fullmatch(r"[1-9][0-9]{0,9}", run_attempt)
+    ):
+        diagnostic["evidence_artifact"] = f"milestone-evidence-{run_id}-{run_attempt}"
         diagnostic["evidence_summary"] = "summary.json"
 
     prefix = result + "; diagnostic only, not Criterion or admission evidence: "
@@ -873,43 +1138,219 @@ def _gate_result_summary(
     )
 
 
-def authorize(client: GitHubClient, repo_root: Path, milestone: str) -> dict[str, Any]:
-    fixed_milestone_path(repo_root, milestone)
-    snapshot = collect_snapshot(client, milestone)
-    entrypoint = "milestone"
-    if milestone == "m2":
-        actual = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=repo_root,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
+def _control_state(snapshot: dict[str, Any], milestone: str) -> Any:
+    controls = [
+        issue
+        for issue in snapshot.get("issues", [])
+        if CONTROL_LABEL in issue.get("labels", [])
+    ]
+    if len(controls) != 1:
+        raise LoopBlocked("Milestone must retain exactly one Control Issue")
+    return parse_control(controls[0], milestone)
+
+
+def _validate_real_workflow_run(
+    client: GitHubClient,
+    snapshot: dict[str, Any],
+    *,
+    entrypoint: str,
+    expected_sha: str,
+    run_id: str,
+    run_attempt: str,
+) -> None:
+    if (
+        os.environ.get("GITHUB_ACTIONS") != "true"
+        or os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch"
+        or os.environ.get("GITHUB_RUN_ID") != run_id
+        or os.environ.get("GITHUB_RUN_ATTEMPT") != run_attempt
+        or os.environ.get("GITHUB_JOB")
+        != ("m2-discovery" if entrypoint == "discovery" else "milestone")
+        or os.environ.get("GITHUB_SHA") != expected_sha
+        or os.environ.get("GITHUB_REF") != f"refs/heads/{snapshot.get('default_branch')}"
+    ):
+        raise LoopBlocked("real authorization is not bound to this workflow invocation")
+    environment = client.api("environments/valkey-real")
+    rules = environment.get("protection_rules") if isinstance(environment, dict) else None
+    reviewer_rules = [
+        rule
+        for rule in rules or []
+        if isinstance(rule, dict) and rule.get("type") == "required_reviewers"
+    ]
+    reviewers = reviewer_rules[0].get("reviewers") if len(reviewer_rules) == 1 else None
+    if (
+        not isinstance(environment, dict)
+        or environment.get("name") != "valkey-real"
+        or not isinstance(rules, list)
+        or len(rules) > 10
+        or not isinstance(reviewers, list)
+        or not 1 <= len(reviewers) <= 6
+        or any(
+            not isinstance(reviewer, dict)
+            or reviewer.get("type") not in {"User", "Team"}
+            or not isinstance(reviewer.get("reviewer"), dict)
+            for reviewer in reviewers
         )
-        if actual.returncode != 0 or actual.stdout.strip() != snapshot["default_sha"]:
-            raise LoopBlocked("authorization checkout does not match the live default SHA")
-        milestone_document, _catalog_document = load_trusted_documents(repo_root, milestone)
-        candidate_blockers = m2_candidate_blockers(milestone_document, milestone)
-        if m2_discovery_eligible(milestone_document, milestone):
-            entrypoint = "discovery"
-        elif candidate_blockers:
-            raise LoopBlocked(
-                "M2 candidate is not ready for real authorization: "
-                + ", ".join(candidate_blockers)
-            )
-        live = collect_snapshot(client, milestone)
-        if live["default_sha"] != snapshot["default_sha"]:
-            raise LoopBlocked("default branch changed before Authorization Lease consumption")
-    else:
-        live = snapshot
-    consumed = consume_lease(client, live)
-    return {
-        "authorized": True,
+    ):
+        raise LoopBlocked("valkey-real does not retain a required human reviewer")
+    run = client.api(f"actions/runs/{run_id}")
+    if not isinstance(run, dict):
+        raise LoopBlocked("live workflow run is unavailable for real authorization")
+    workflow_path = ".github/workflows/milestone-loop.yml"
+    allowed_paths = {workflow_path, f"{workflow_path}@{snapshot.get('default_branch')}"}
+    if (
+        str(run.get("id")) != run_id
+        or str(run.get("run_attempt")) != run_attempt
+        or run.get("event") != "workflow_dispatch"
+        or run.get("status") != "in_progress"
+        or run.get("head_sha") != expected_sha
+        or run.get("head_branch") != snapshot.get("default_branch")
+        or run.get("path") not in allowed_paths
+    ):
+        raise LoopBlocked("live workflow run does not match the approved real invocation")
+
+
+def _real_entrypoint(repo_root: Path, milestone: str) -> str:
+    milestone_document, _catalog_document = load_trusted_documents(repo_root, milestone)
+    if milestone != "m2":
+        return "milestone"
+    candidate_blockers = m2_candidate_blockers(milestone_document, milestone)
+    if m2_discovery_eligible(milestone_document, milestone):
+        return "discovery"
+    if candidate_blockers:
+        raise LoopBlocked(
+            "M2 candidate is not ready for real authorization: "
+            + ", ".join(candidate_blockers)
+        )
+    return "milestone"
+
+
+def authorize_real_invocation(
+    client: GitHubClient,
+    repo_root: Path,
+    *,
+    milestone: str,
+    entrypoint: str,
+    expected_sha: str,
+    expected_readiness_sha256: str,
+    run_id: str,
+    run_attempt: str,
+) -> dict[str, Any]:
+    fixed_milestone_path(repo_root, milestone)
+    if entrypoint not in {"milestone", "discovery"} or (
+        entrypoint == "discovery" and milestone != "m2"
+    ):
+        raise ContractError("real authorization entrypoint is invalid")
+    if re.fullmatch(r"[0-9a-f]{40}", expected_sha) is None:
+        raise ContractError("real authorization SHA is invalid")
+    if re.fullmatch(r"[0-9a-f]{64}", expected_readiness_sha256) is None:
+        raise ContractError("real authorization readiness binding is invalid")
+    if (
+        re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is None
+        or re.fullmatch(r"[1-9][0-9]{0,9}", run_attempt) is None
+    ):
+        raise ContractError("real authorization run identity is invalid")
+
+    snapshot = collect_snapshot(client, milestone)
+    if (
+        snapshot.get("milestone") != milestone
+        or snapshot.get("default_sha") != expected_sha
+        or real_readiness_fingerprint(snapshot) != expected_readiness_sha256
+    ):
+        raise LoopBlocked("live Milestone readiness changed before real authorization")
+    _validate_real_workflow_run(
+        client,
+        snapshot,
+        entrypoint=entrypoint,
+        expected_sha=expected_sha,
+        run_id=run_id,
+        run_attempt=run_attempt,
+    )
+    actual = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if actual.returncode != 0 or actual.stdout.strip() != expected_sha:
+        raise LoopBlocked("valkey-real authorization checkout does not match the default SHA")
+    if _real_entrypoint(repo_root, milestone) != entrypoint:
+        raise LoopBlocked("real entrypoint changed before authorization")
+
+    state = _control_state(snapshot, milestone)
+    nonce_prefix = f"{milestone}-gh-{run_id}-attempt-{run_attempt}-"
+    if str(state.lease.get("nonce", "")).startswith(nonce_prefix):
+        raise LoopBlocked("this real workflow invocation already consumed its authorization")
+    if state.lease.get("status") not in {"empty", "exhausted"} or state.lease.get("remaining") != 0:
+        raise LoopBlocked("pre-existing Authorization Lease is not safely replaceable")
+
+    active_lease = {
+        "version": 2,
         "milestone": milestone,
-        "default_sha": live["default_sha"],
-        "lease_nonce": consumed.lease["nonce"],
-        "lease_sha256": _lease_fingerprint(consumed.lease),
+        "status": "active",
+        "nonce": f"{nonce_prefix}{entrypoint}-{expected_sha[:12]}",
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=30))
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        "remaining": 1,
         "entrypoint": entrypoint,
+        "default_sha": expected_sha,
+        "run_id": run_id,
+        "run_attempt": run_attempt,
     }
+    consumed_lease = {**active_lease, "status": "exhausted", "remaining": 0}
+    receipt = {
+        "milestone": milestone,
+        "default_sha": expected_sha,
+        "lease_nonce": consumed_lease["nonce"],
+        "lease_sha256": _lease_fingerprint(consumed_lease),
+        "entrypoint": entrypoint,
+        "run_id": run_id,
+        "run_attempt": run_attempt,
+    }
+
+    live = collect_snapshot(client, milestone)
+    if (
+        live.get("milestone") != milestone
+        or live.get("default_sha") != expected_sha
+        or real_readiness_fingerprint(live) != expected_readiness_sha256
+    ):
+        raise LoopBlocked("live Milestone readiness changed before Lease consumption")
+    _validate_real_workflow_run(
+        client,
+        live,
+        entrypoint=entrypoint,
+        expected_sha=expected_sha,
+        run_id=run_id,
+        run_attempt=run_attempt,
+    )
+    live_state = _control_state(live, milestone)
+    if (
+        dict(live_state.lease) != dict(state.lease)
+        or live_state.no_progress_count != state.no_progress_count
+    ):
+        raise LoopBlocked("Control Issue changed before Lease consumption")
+    try:
+        client.update_issue(
+            state.issue_number,
+            body=render_control(consumed_lease, state.no_progress_count),
+        )
+        confirmed_issue = client.api(f"issues/{state.issue_number}")
+        if not isinstance(confirmed_issue, dict):
+            raise LoopBlocked("consumed Authorization Lease cannot be confirmed")
+        confirmed = parse_control(confirmed_issue, milestone)
+        if (
+            dict(confirmed.lease) != consumed_lease
+            or confirmed.no_progress_count != state.no_progress_count
+        ):
+            raise LoopBlocked("Authorization Lease consumption was not atomic")
+    except (ContractError, GitHubError, LoopBlocked, OSError) as exc:
+        raise LeaseConfirmationBlocked(
+            "Authorization Lease consumption could not be confirmed",
+            {"authorized": False, **receipt},
+        ) from exc
+    return {"authorized": True, **receipt}
 
 
 def _lease_fingerprint(lease: Any) -> str:
@@ -918,7 +1359,14 @@ def _lease_fingerprint(lease: Any) -> str:
     ).hexdigest()
 
 
-def _validate_consumed_lease(snapshot: dict[str, Any], expected_sha256: str) -> None:
+def _validate_consumed_lease(
+    snapshot: dict[str, Any],
+    expected_sha256: str,
+    *,
+    milestone: str,
+    entrypoint: str,
+    expected_sha: str,
+) -> None:
     controls = [
         issue
         for issue in snapshot.get("issues", [])
@@ -926,9 +1374,20 @@ def _validate_consumed_lease(snapshot: dict[str, Any], expected_sha256: str) -> 
     ]
     if len(controls) != 1:
         raise LoopBlocked("Milestone must retain exactly one Control Issue")
-    state = parse_control(controls[0], str(snapshot["milestone"]))
+    state = parse_control(controls[0], milestone)
     if _lease_fingerprint(state.lease) != expected_sha256:
         raise LoopBlocked("Authorization Lease changed after consumption")
+    if (
+        state.lease.get("version") != 2
+        or state.lease.get("status") != "exhausted"
+        or state.lease.get("remaining") != 0
+        or state.lease.get("milestone") != milestone
+        or state.lease.get("entrypoint") != entrypoint
+        or state.lease.get("default_sha") != expected_sha
+        or state.lease.get("run_id") != os.environ.get("GITHUB_RUN_ID")
+        or state.lease.get("run_attempt") != os.environ.get("GITHUB_RUN_ATTEMPT")
+    ):
+        raise LoopBlocked("consumed Authorization Lease is not bound to this invocation")
     try:
         expires = datetime.fromisoformat(str(state.lease["expires_at"]).replace("Z", "+00:00"))
     except ValueError as exc:
@@ -965,7 +1424,13 @@ def run_m2_discovery(
         raise ContractError("authorized M2 discovery SHA is invalid")
     if re.fullmatch(r"[0-9a-f]{64}", expected_lease_sha256) is None:
         raise ContractError("consumed Authorization Lease fingerprint is invalid")
-    _validate_consumed_lease(snapshot, expected_lease_sha256)
+    _validate_consumed_lease(
+        snapshot,
+        expected_lease_sha256,
+        milestone="m2",
+        entrypoint="discovery",
+        expected_sha=expected_sha,
+    )
     if snapshot.get("milestone") != "m2" or snapshot.get("default_sha") != expected_sha:
         raise LoopBlocked("default branch changed after M2 discovery authorization")
     actual = subprocess.run(
@@ -1128,7 +1593,13 @@ def run_gate(
         character not in "0123456789abcdef" for character in expected_lease_sha256
     ):
         raise ContractError("consumed Authorization Lease fingerprint is invalid")
-    _validate_consumed_lease(snapshot, expected_lease_sha256)
+    _validate_consumed_lease(
+        snapshot,
+        expected_lease_sha256,
+        milestone=milestone,
+        entrypoint="milestone",
+        expected_sha=expected_sha,
+    )
     if snapshot["default_sha"] != expected_sha:
         raise LoopBlocked("default branch changed after Authorization Lease consumption")
     actual = subprocess.run(
