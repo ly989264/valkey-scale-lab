@@ -8,8 +8,13 @@ weaken checks or acceptance contracts.
 Do not commit, push, create or edit GitHub Issues or pull requests, change
 labels, enable auto-merge, or claim a Criterion or Milestone result. Do not
 modify protected contract paths, the Milestone loop, Milestone definitions,
-Catalog, verification runner, Gate, or workflow. The deterministic coordinator
-will inspect the worktree and perform all GitHub writes after live-state checks.
+Catalog, verification runner, Gate, or workflow unless the deterministic repair
+instruction explicitly identifies a trusted M2 discovery repair. That exception
+is limited to the exact product paths named by the instruction, always becomes a
+human-reviewed Contract Change, and never permits changing acceptance thresholds,
+candidate policy, or interpreting a genuine performance/safety failure as code.
+The deterministic coordinator will inspect the worktree and perform all GitHub
+writes after live-state checks.
 Do not read or derive implementation decisions from `loop_evidence/`.
 
 Return only the JSON required by the output schema. Set `ready=true` only when

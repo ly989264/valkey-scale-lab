@@ -10,6 +10,9 @@ from unittest.mock import patch
 from contracts import ContractError, PlannerOperation, PlannerOutput
 from coordinator import (
     CONTROL_LABEL,
+    DISCOVERY_REPAIR_LABEL,
+    M2_DISCOVERY_REPAIR_ALLOWED_PREFIXES,
+    M2_DISCOVERY_REPAIR_PROTECTED_PREFIXES,
     ControlState,
     LoopBlocked,
     apply_planner_transaction,
@@ -20,10 +23,14 @@ from coordinator import (
     m2_discovery_eligible,
     parse_control,
     pending_failure_diagnosis,
+    pending_m2_discovery_diagnosis,
     prepare_planner_transaction,
+    record_m2_discovery_result,
     render_control,
     record_milestone_result,
     set_no_progress,
+    trusted_m2_discovery_repair_pr,
+    validate_m2_discovery_diagnosis,
     validate_failure_diagnosis,
     verification_record,
 )
@@ -100,24 +107,61 @@ class FakeClient:
 
     def comment(self, number, body) -> None:
         self.writes.append(("comment", number, body))
+        if self.control_issue is not None and number == self.control_issue["number"]:
+            self.control_issue.setdefault("comments", []).append(
+                {"author": "github-actions[bot]", "body": body}
+            )
 
     def create_check_run(self, **kwargs) -> None:
         self.writes.append(("check", kwargs))
 
+    def dispatch(self, milestone) -> None:
+        self.writes.append(("dispatch", milestone))
+
     def api(self, endpoint, **kwargs):
-        if endpoint == f"issues/{self.control_issue['number']}":
+        if endpoint.startswith("commits/") and endpoint.endswith("/check-runs?per_page=100"):
+            return {
+                "check_runs": [
+                    {
+                        "name": write[1].get("name"),
+                        "external_id": write[1].get("external_id"),
+                    }
+                    for write in self.writes
+                    if write[0] == "check"
+                ]
+            }
+        if self.control_issue is not None and endpoint == f"issues/{self.control_issue['number']}":
             return dict(self.control_issue)
+        if (
+            self.control_issue is not None
+            and endpoint == f"issues/{self.control_issue['number']}/comments?per_page=51"
+        ):
+            return [
+                {
+                    "user": {"login": comment.get("author")},
+                    "body": comment.get("body"),
+                }
+                for comment in self.control_issue.get("comments", [])
+            ]
         raise AssertionError(endpoint)
 
 
 def coordinate_m2(milestone: dict, catalog: dict) -> tuple[dict, FakeClient]:
+    control_issue = {
+        "number": 99,
+        "title": "[milestone-loop] m2 control",
+        "body": render_control(empty_lease("m2"), 0),
+        "state": "open",
+        "labels": [CONTROL_LABEL],
+        "comments": [],
+    }
     state = {
         "repository": "owner/repo",
         "default_branch": "main",
         "default_sha": "a" * 40,
         "milestone": "m2",
         "milestone_number": 2,
-        "issues": [],
+        "issues": [control_issue],
         "pull_requests": [],
     }
     control = ControlState(99, empty_lease("m2"), 0)
@@ -147,6 +191,48 @@ class CoordinatorTests(unittest.TestCase):
         cls.milestone = json.loads(
             (ROOT / "project" / "milestones" / "m1" / "milestone.json").read_text()
         )
+        cls.m2_document = json.loads(
+            (ROOT / "project" / "milestones" / "m2" / "milestone.json").read_text()
+        )
+
+    @staticmethod
+    def _discovery_result(
+        *,
+        status: str = "FAIL",
+        disposition: str = "REPAIRABLE_IMPLEMENTATION",
+        tested_sha: str = "a" * 40,
+    ) -> dict:
+        return {
+            "schema_version": "m2-discovery-result-v1",
+            "milestone": "m2",
+            "status": status,
+            "disposition": disposition,
+            "failure_scope": "formation" if disposition == "REPAIRABLE_IMPLEMENTATION" else "",
+            "failure_code": "python-typeerror" if disposition == "REPAIRABLE_IMPLEMENTATION" else "",
+            "failure_fingerprint": "f" * 64,
+            "tested_sha": tested_sha,
+            "run_id": "12345",
+            "run_attempt": 1,
+            "invocation_id": "m2-discovery-gh-12345-attempt-1",
+            "run_outcome": "success",
+            "cleanup_outcome": "success",
+            "report_digest": "b" * 64,
+            "evidence_digest": "c" * 64,
+            "summary": "TypeError in the formation collector",
+            "result_digest": "d" * 64,
+        }
+
+    @staticmethod
+    def _m2_record_state(control: dict, *, default_sha: str = "a" * 40) -> dict:
+        return {
+            "repository": "owner/repo",
+            "default_branch": "main",
+            "default_sha": default_sha,
+            "milestone": "m2",
+            "milestone_number": 2,
+            "issues": [control],
+            "pull_requests": [],
+        }
 
     def test_planner_transaction_leaves_only_one_selected_ready(self) -> None:
         state = snapshot([issue(1, "blocked"), issue(2, "blocked")])
@@ -435,6 +521,394 @@ class CoordinatorTests(unittest.TestCase):
         self.assertEqual(action, "STALE")
         check = next(write for write in client.writes if write[0] == "check")
         self.assertEqual(check[1]["head_sha"], "a" * 40)
+
+    def test_discovery_failure_record_is_idempotent_and_requests_diagnosis(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        result = self._discovery_result()
+        with patch("coordinator.collect_snapshot", return_value=state):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "DIAGNOSE"
+            )
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "NOOP"
+            )
+            replay = {**result, "run_id": "67890", "run_attempt": 2}
+            replay["invocation_id"] = "m2-discovery-gh-67890-attempt-2"
+            replay["result_digest"] = "e" * 64
+            replay["evidence_digest"] = "1" * 64
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=replay), "NOOP"
+            )
+
+        record_comments = [
+            write
+            for write in client.writes
+            if write[0] == "comment" and "milestone-loop-m2-discovery:" in write[2]
+        ]
+        self.assertEqual(len(record_comments), 1)
+        self.assertEqual(len([write for write in client.writes if write[0] == "check"]), 1)
+        self.assertEqual(len([write for write in client.writes if write[0] == "dispatch"]), 1)
+        pending = pending_m2_discovery_diagnosis(state)
+        self.assertIsNotNone(pending)
+        self.assertEqual(pending["failure_fingerprint"], "f" * 64)
+
+    def test_genuine_discovery_failure_never_enters_diagnosis(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        result = self._discovery_result(disposition="HUMAN_REQUIRED")
+        result["summary"] = "candidate exceeded the fixed safety bound"
+        with patch("coordinator.collect_snapshot", return_value=state):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result),
+                "HUMAN_REQUIRED",
+            )
+        self.assertIsNone(pending_m2_discovery_diagnosis(state))
+        human = [
+            write
+            for write in client.writes
+            if write[0] == "comment" and "HARD_BLOCKED" in write[2]
+        ]
+        self.assertEqual(len(human), 1)
+
+    def test_discovery_pass_is_record_only_and_stale_sha_fails_closed(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        passed = self._discovery_result(status="PASS", disposition="CANDIDATE_SELECTION_ONLY")
+        with patch("coordinator.collect_snapshot", return_value=state):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=passed), "RECORDED"
+            )
+        self.assertIsNone(pending_m2_discovery_diagnosis(state))
+
+        stale_control = {
+            "number": 10,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        stale_state = self._m2_record_state(stale_control, default_sha="b" * 40)
+        stale_client = FakeClient(stale_control)
+        with patch("coordinator.collect_snapshot", return_value=stale_state):
+            self.assertEqual(
+                record_m2_discovery_result(client=stale_client, result=passed),
+                "HUMAN_REQUIRED",
+            )
+        stale_check = next(write for write in stale_client.writes if write[0] == "check")
+        self.assertEqual(stale_check[1]["conclusion"], "action_required")
+
+    def test_discovery_diagnosis_creates_one_narrow_ready_work_item(self) -> None:
+        state = self._m2_record_state(
+            {
+                "number": 9,
+                "body": render_control(empty_lease("m2"), 0),
+                "labels": [CONTROL_LABEL],
+                "comments": [],
+            }
+        )
+        operation = PlannerOperation(
+            "create",
+            None,
+            "Repair formation collection",
+            "Fix only the current implementation defect.",
+            "performance.cluster-formation-experiment",
+            (),
+            "repository.all",
+            "ready",
+        )
+        transaction = prepare_planner_transaction(
+            snapshot=state,
+            output=PlannerOutput((operation,), None, "bounded repair"),
+            milestone_document=self.m2_document,
+            catalog_document=self.catalog,
+        )
+        validated = validate_m2_discovery_diagnosis(
+            transaction, record=self._discovery_result()
+        )
+        self.assertEqual(len(validated.writes), 1)
+        self.assertIn(DISCOVERY_REPAIR_LABEL, validated.writes[0].labels)
+        self.assertIn("M2-Discovery-Fingerprint: " + "f" * 64, validated.writes[0].body)
+
+    def test_discovery_failure_enters_existing_planner_worker_path(self) -> None:
+        control = {
+            "number": 9,
+            "title": "[milestone-loop] m2 control",
+            "body": render_control(empty_lease("m2"), 0),
+            "state": "open",
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        operation = PlannerOperation(
+            "create",
+            None,
+            "Repair formation collection",
+            "Fix only the current implementation defect.",
+            "performance.cluster-formation-experiment",
+            (),
+            "repository.all",
+            "ready",
+        )
+
+        def apply_transaction(*, transaction, **_kwargs) -> None:
+            write = transaction.writes[0]
+            state["issues"].append(
+                {
+                    "number": 99,
+                    "title": write.title,
+                    "body": write.body,
+                    "state": "open",
+                    "labels": list(write.labels),
+                    "comments": [],
+                }
+            )
+
+        with patch("coordinator.collect_snapshot", return_value=state):
+            self.assertEqual(
+                record_m2_discovery_result(
+                    client=client, result=self._discovery_result()
+                ),
+                "DIAGNOSE",
+            )
+            with (
+                patch(
+                    "coordinator.load_trusted_documents",
+                    return_value=(self.m2_document, self.catalog),
+                ),
+                patch(
+                    "coordinator.run_planner",
+                    return_value=PlannerOutput((operation,), None, "bounded repair"),
+                ),
+                patch(
+                    "coordinator.apply_planner_transaction",
+                    side_effect=apply_transaction,
+                ),
+                patch("coordinator.run_worker", return_value="WAIT_PR") as worker,
+            ):
+                outcome = coordinate(
+                    client=client,
+                    repo_root=ROOT,
+                    runtime_root=ROOT / ".ignored-test-runtime",
+                    action="resume",
+                    milestone="m2",
+                )
+        self.assertEqual(outcome["status"], "WAIT_PR")
+        worker.assert_called_once()
+        self.assertEqual(worker.call_args.kwargs["issue_number"], 99)
+
+    def test_discovery_repair_protected_exception_is_exact(self) -> None:
+        self.assertEqual(
+            set(M2_DISCOVERY_REPAIR_PROTECTED_PREFIXES),
+            {
+                "project/scripts/m2_candidate_discovery.py",
+                "project/scripts/m2_performance_capture.py",
+                "project/src/valkey_scale_lab/runtime/docker_runtime.py",
+            },
+        )
+        self.assertNotIn(
+            ".github/workflows/milestone-loop.yml",
+            M2_DISCOVERY_REPAIR_PROTECTED_PREFIXES,
+        )
+        self.assertNotIn(
+            "project/scripts/m2_performance_gate.py",
+            M2_DISCOVERY_REPAIR_ALLOWED_PREFIXES,
+        )
+
+    def test_discovery_retry_preserves_identity_and_same_work_item(self) -> None:
+        repair = {
+            "number": 7,
+            "title": "Repair formation collection",
+            "body": (
+                "Fix the implementation defect.\n\n"
+                "Criterion: performance.cluster-formation-experiment\n"
+                "Depends on: none\n"
+                "Check: repository.all\n\n"
+                f"M2-Discovery-Fingerprint: {'f' * 64}\n"
+                "M2-Discovery-Run: 12345 attempt 1\n"
+                f"M2-Discovery-Tested-SHA: {'a' * 40}\n"
+                "M2-Discovery-Failure-Code: python-typeerror\n"
+                "M2-Discovery-Summary: bounded failure"
+            ),
+            "state": "open",
+            "labels": [
+                "milestone-loop:work-item",
+                "milestone-loop:blocked",
+                DISCOVERY_REPAIR_LABEL,
+            ],
+            "comments": [],
+        }
+        state = self._m2_record_state(
+            {
+                "number": 9,
+                "body": render_control(empty_lease("m2"), 0),
+                "labels": [CONTROL_LABEL],
+                "comments": [],
+            }
+        )
+        state["issues"].append(repair)
+        operation = PlannerOperation(
+            "update",
+            7,
+            None,
+            "Retry the same bounded implementation repair.",
+            "performance.cluster-formation-experiment",
+            (),
+            "repository.all",
+            "ready",
+        )
+        transaction = prepare_planner_transaction(
+            snapshot=state,
+            output=PlannerOutput((operation,), 7, "retry"),
+            milestone_document=self.m2_document,
+            catalog_document=self.catalog,
+        )
+        validate_failure_diagnosis(transaction, issue_number=7, snapshot=state)
+        self.assertIn("M2-Discovery-Fingerprint: " + "f" * 64, transaction.writes[0].body)
+        self.assertIn(DISCOVERY_REPAIR_LABEL, transaction.writes[0].labels)
+
+        state["issues"].append(issue(6, "completed"))
+        dependent = PlannerOperation(
+            "update",
+            7,
+            None,
+            "Retry through an unrelated prerequisite.",
+            "performance.cluster-formation-experiment",
+            (6,),
+            "repository.all",
+            "ready",
+        )
+        dependent_transaction = prepare_planner_transaction(
+            snapshot=state,
+            output=PlannerOutput((dependent,), 7, "bad dependency"),
+            milestone_document=self.m2_document,
+            catalog_document=self.catalog,
+        )
+        with self.assertRaises(ContractError):
+            validate_failure_diagnosis(
+                dependent_transaction, issue_number=7, snapshot=state
+            )
+
+    def test_only_trusted_discovery_contract_failure_can_self_dispatch(self) -> None:
+        result = self._discovery_result()
+        record = {
+            "version": 1,
+            "milestone": "m2",
+            "run_id": result["run_id"],
+            "run_attempt": result["run_attempt"],
+            "tested_sha": result["tested_sha"],
+            "result_digest": result["result_digest"],
+            "report_digest": result["report_digest"],
+            "evidence_digest": result["evidence_digest"],
+            "cleanup_outcome": result["cleanup_outcome"],
+            "dedup_key": "2" * 64,
+            "status": "FAIL",
+            "disposition": "REPAIRABLE_IMPLEMENTATION",
+            "failure_scope": "formation",
+            "failure_code": "python-typeerror",
+            "failure_fingerprint": "f" * 64,
+            "summary": result["summary"],
+        }
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [
+                {
+                    "author": "github-actions[bot]",
+                    "body": "<!-- milestone-loop-m2-discovery: "
+                    + json.dumps(record, separators=(",", ":"))
+                    + " -->",
+                },
+                {
+                    "author": "github-actions[bot]",
+                    "body": "<!-- milestone-loop-m2-discovery-diagnosis-complete: "
+                    + "f" * 64
+                    + " -->",
+                },
+            ],
+        }
+        repair = {
+            "number": 7,
+            "title": "Repair formation collection",
+            "body": (
+                "Fix it.\n\nCriterion: performance.cluster-formation-experiment\n"
+                "Depends on: none\nCheck: repository.all\n\n"
+                f"M2-Discovery-Fingerprint: {'f' * 64}\n"
+                "M2-Discovery-Run: 12345 attempt 1\n"
+                f"M2-Discovery-Tested-SHA: {'a' * 40}\n"
+                "M2-Discovery-Failure-Code: python-typeerror\n"
+                f"M2-Discovery-Summary: {result['summary']}"
+            ),
+            "state": "open",
+            "labels": [
+                "milestone-loop:work-item",
+                "milestone-loop:review",
+                DISCOVERY_REPAIR_LABEL,
+            ],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        state["issues"].append(repair)
+        state["pull_requests"] = [
+            {
+                "number": 11,
+                "state": "open",
+                "head_sha": "b" * 40,
+                "labels": ["contract-change"],
+                "body": (
+                    "Milestone: m2\nWork-Item: #7\nContract-Change: true\n"
+                    f"M2-Discovery-Fingerprint: {'f' * 64}"
+                ),
+            }
+        ]
+        self.assertTrue(
+            trusted_m2_discovery_repair_pr(
+                state, pr_number=11, head_sha="b" * 40
+            )
+        )
+        state["pull_requests"][0]["labels"] = []
+        self.assertFalse(
+            trusted_m2_discovery_repair_pr(
+                state, pr_number=11, head_sha="b" * 40
+            )
+        )
+        state["pull_requests"][0]["labels"] = ["contract-change"]
+        original_body = repair["body"]
+        repair["body"] = original_body.replace(
+            "Criterion: performance.cluster-formation-experiment",
+            "Criterion: performance.automatic-failover-experiment",
+        )
+        with self.assertRaises(LoopBlocked):
+            trusted_m2_discovery_repair_pr(
+                state, pr_number=11, head_sha="b" * 40
+            )
+        repair["body"] = original_body.replace(
+            "M2-Discovery-Run: 12345 attempt 1",
+            "M2-Discovery-Run: 99999 attempt 9",
+        )
+        with self.assertRaises(LoopBlocked):
+            trusted_m2_discovery_repair_pr(
+                state, pr_number=11, head_sha="b" * 40
+            )
 
     def test_failure_diagnosis_is_single_and_cannot_rewrite_other_work(self) -> None:
         signature = "b" * 64

@@ -179,17 +179,21 @@ class GitHubClient:
         conclusion: str,
         title: str,
         summary: str,
+        external_id: str | None = None,
     ) -> None:
+        payload: dict[str, Any] = {
+            "name": name,
+            "head_sha": head_sha,
+            "status": "completed",
+            "conclusion": conclusion,
+            "output": {"title": title, "summary": summary[:65000]},
+        }
+        if external_id is not None:
+            payload["external_id"] = external_id
         self.api(
             "check-runs",
             method="POST",
-            input_value={
-                "name": name,
-                "head_sha": head_sha,
-                "status": "completed",
-                "conclusion": conclusion,
-                "output": {"title": title, "summary": summary[:65000]},
-            },
+            input_value=payload,
         )
 
     def default_branch(self) -> str:

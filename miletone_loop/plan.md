@@ -211,8 +211,11 @@ workflow 约束：
   superseded 状态。
 * PR 和 Checks：候选修改、审阅状态和 Check 结果。
 * 默认分支 HEAD：已经接受的代码状态。
-* Milestone Control Issue 只记录 Authorization Lease 和 Milestone 级
-  no-progress count，不保存 JSON 状态机或其他运行状态。
+* Milestone Control Issue **正文**只记录 Authorization Lease 和 Milestone 级
+  no-progress count。受信 `github-actions[bot]` comment 可以追加有界的 discovery
+  result、diagnosis/dispatch receipt 和 human-action 去重 marker；这些 marker 只绑定
+  milestone、state、run/PR、SHA 和 digest/fingerprint，不保存完整工作图、prompt、
+  controller policy 或可恢复的通用 JSON 状态机。
 * Check 可以保留自己的有期限 artifacts；它们不是 Loop 状态。Loop 只消费内部
   `PASS`、`FAIL` 或 `BLOCKED`，GitHub 层固定映射为 `success`、`failure` 或
   `action_required`。
@@ -282,6 +285,17 @@ workflow 约束：
   无 Work Item 时的 Criterion 绑定检查、固定 Gate 命令、结论映射和
   `verified_tree` 失效；首次启用和每个 `contract-change` PR 必跑。
 * PR 合并后立即重新运行 Planner，而不是直接沿用旧队列。
+* M2 candidate discovery 的每次结果必须在 cleanup 后绑定本次 workflow
+  run/attempt、tested SHA、invocation、canonical report digest 和 evidence artifact
+  digest，并由 `if: always()` 的受信记录 Job 写入独立 Check 和 Control Issue
+  comment。该 PASS 只表示 candidate-selection-only，不是 Criterion/M2 admission，
+  不得直接触发完整真实 Gate。
+* Discovery 只有受信静态 allowlist 明确识别、且能唯一绑定 formation 或 failover
+  Criterion 的实现/采集编程错误，才能进入现有一次性 Planner/Worker 诊断。
+  `CaptureError`、真实性/安全/环境结果、stale SHA、artifact/digest/cleanup 错误和
+  未知分类都必须停止为 HUMAN_REQUIRED；完整 screen 中 candidate cell FAIL
+  不能改写为代码缺陷。自动生成的 discovery repair 必须是独立
+  `contract-change` PR 并等待人工审阅，不能 auto-merge。
 * Planner 不得自行修改 Milestone 验收标准；需要修改合同时必须等待人工。
 * Planner 重新评估后没有可执行 Work Item 时，协调器读取固定 Milestone JSON；
   只要一个 Criterion 未绑定 Check 就返回 `BLOCKED`，全部已绑定则立即执行
@@ -508,8 +522,9 @@ GitHub self-hosted runner 采用出站连接领取 Job，不需要给 Mac 配置
 * Planner/Worker 各自只输出一个有大小、条数和操作上限的
   `codex exec --output-schema` JSON；协调器在任何写入前校验引用、状态迁移、依赖
   无环、操作数量和实时 GitHub 状态，JSON 使用后删除且不进入 Issue 或状态存储。
-* Control Issue 只记录 Authorization Lease 和 no-progress count；其他状态直接
-  读取 Issues、Labels、PR 和 Checks，不保存完整工作图或额外运行状态机。
+* Control Issue 正文只记录 Authorization Lease 和 no-progress count；除上一节明确
+  允许的有界受信 append-only comment marker 外，其他状态直接读取 Issues、Labels、
+  PR 和 Checks，不保存完整工作图或额外运行状态机。
 * GitHub 只登记一个在线 `valkey-local` runner，运行于 `allgood`，根目录为
   `/Users/allgood/actions-runner-valkey`，版本 `2.335.1`，并同时具有三个角色
   label。workflow 用 `valkey-codex` 路由 Planner/Worker、用 `valkey-verify` 路由

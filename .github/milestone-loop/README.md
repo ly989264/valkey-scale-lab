@@ -119,6 +119,30 @@ distinct candidate-selection-only artifact. It never emits or substitutes for
 `m2_performance_report.json`, is never recorded as a Milestone result, and is
 not reusable M2 admission evidence.
 
+Every discovery attempt is sealed after cleanup into a bounded result that is
+bound to the workflow run and attempt, tested default SHA, invocation id,
+canonical report digest, and evidence-tree digest. An `always()` recorder then
+publishes the independent `milestone-loop / m2-discovery` Check and a trusted
+Control Issue marker. A PASS means only that the candidate-selection screen
+completed; candidate cell losses, including no surviving candidate, are never
+rewritten as implementation defects and never dispatch the full M2 Gate.
+
+Only a statically allowlisted programming failure with one unambiguous affected
+campaign may request the existing bounded Planner/Worker diagnosis. `CaptureError`,
+environment and safety failures, missing or invalid artifacts, stale SHAs,
+digest mismatches, cleanup failures, and unknown results require human action.
+Replay of the same tested-SHA failure fingerprint, including a new attempt, is
+a no-op after its one diagnosis dispatch. A discovery repair may touch only a
+narrow reviewed product path set and is always opened as a `contract-change` PR;
+it is never auto-merged. After that PR is merged, the existing `after-merge` job
+dispatches a fresh planning round.
+
+Durable human-action transitions are trusted, deduplicated Control Issue
+comments. Their key includes Milestone, state, target PR/run, and SHA. The
+defined states are `PR_REVIEW_REQUIRED`, `REAL_AUTHORIZATION_REQUIRED`,
+`HARD_BLOCKED`, and `M2_COMPLETE`; the repository does not contain an email or
+other external notification service.
+
 After reviewing discovery, a human-reviewed `contract-change` PR must set the
 same explicit candidates on the formation, failover, and stability Checks. If
 the chosen formation candidate needs a bounded parallelism that the current
