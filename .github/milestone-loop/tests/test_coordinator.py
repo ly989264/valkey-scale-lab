@@ -499,6 +499,23 @@ class CoordinatorTests(unittest.TestCase):
             )
         self.assertEqual(overflow_client.writes, [])
 
+    def test_discovery_record_refuses_a_partial_capacity_write(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [{"author": "human", "body": "note"} for _ in range(49)],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        with patch("coordinator.collect_snapshot", return_value=state):
+            with self.assertRaises(LoopBlocked):
+                record_m2_discovery_result(
+                    client=client,
+                    result=self._discovery_result(),
+                )
+        self.assertEqual(client.writes, [])
+
     def test_lease_is_consumed_once_and_exhausts(self) -> None:
         lease = empty_lease("m1")
         lease.update(

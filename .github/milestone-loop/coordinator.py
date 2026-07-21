@@ -206,6 +206,16 @@ def _trusted_comment_payloads(
     return payloads
 
 
+def _require_control_comment_capacity(
+    control_issue: Mapping[str, Any], additions: int
+) -> None:
+    comments = control_issue.get("comments")
+    if not isinstance(comments, list) or additions < 0:
+        raise ContractError("Control Issue comment state is invalid")
+    if len(comments) + additions > MAX_ISSUE_COMMENTS:
+        raise LoopBlocked("Control Issue comment capacity is exhausted")
+
+
 def record_human_action_state(
     *,
     client: GitHubClient,
@@ -2046,6 +2056,25 @@ def record_m2_discovery_result(
     existing = [value for value in records if value.get("dedup_key") == dedup_key]
     if len(existing) > 1:
         raise LoopBlocked("M2 discovery durable record identity is duplicated")
+    repairable = (
+        effective_disposition == "REPAIRABLE_IMPLEMENTATION"
+        and effective_status == "FAIL"
+    )
+    diagnosis_completed = repairable and _m2_discovery_diagnosis_completed(
+        control_issue, str(result["failure_fingerprint"])
+    )
+    dispatched = repairable and any(
+        dedup_key in M2_DISCOVERY_DISPATCH_RE.findall(comment.get("body", ""))
+        for comment in control_issue.get("comments", [])
+        if isinstance(comment, dict)
+        and comment.get("author") == "github-actions[bot]"
+        and isinstance(comment.get("body"), str)
+    )
+    _require_control_comment_capacity(
+        control_issue,
+        (0 if existing else 1)
+        + (1 if repairable and not diagnosis_completed and not dispatched else 0),
+    )
     summary = str(result["summary"])[:4000]
     _ensure_m2_discovery_check(
         client=client,
@@ -2075,18 +2104,9 @@ def record_m2_discovery_result(
             + json.dumps(marker, sort_keys=True, separators=(",", ":"))
             + " -->",
         )
-    if effective_disposition == "REPAIRABLE_IMPLEMENTATION" and effective_status == "FAIL":
-        if _m2_discovery_diagnosis_completed(
-            control_issue, str(result["failure_fingerprint"])
-        ):
+    if repairable:
+        if diagnosis_completed:
             return "NOOP"
-        dispatched = any(
-            dedup_key in M2_DISCOVERY_DISPATCH_RE.findall(comment.get("body", ""))
-            for comment in control_issue.get("comments", [])
-            if isinstance(comment, dict)
-            and comment.get("author") == "github-actions[bot]"
-            and isinstance(comment.get("body"), str)
-        )
         if dispatched:
             return "NOOP"
         client.dispatch("m2")
