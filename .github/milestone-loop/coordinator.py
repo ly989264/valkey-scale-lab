@@ -216,6 +216,29 @@ def _require_control_comment_capacity(
         raise LoopBlocked("Control Issue comment capacity is exhausted")
 
 
+def _human_action_value(
+    *, snapshot: Mapping[str, Any], state: str, target: str, sha: str
+) -> dict[str, Any]:
+    if state not in {
+        "PR_REVIEW_REQUIRED",
+        "REAL_AUTHORIZATION_REQUIRED",
+        "HARD_BLOCKED",
+        "M2_COMPLETE",
+    }:
+        raise ContractError("human-action state is invalid")
+    value = {
+        "version": 1,
+        "milestone": str(snapshot.get("milestone")),
+        "state": state,
+        "target": target,
+        "sha": sha,
+    }
+    value["key"] = hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return value
+
+
 def record_human_action_state(
     *,
     client: GitHubClient,
@@ -227,24 +250,9 @@ def record_human_action_state(
     action: str,
     link: str,
 ) -> bool:
-    if state not in {
-        "PR_REVIEW_REQUIRED",
-        "REAL_AUTHORIZATION_REQUIRED",
-        "HARD_BLOCKED",
-        "M2_COMPLETE",
-    }:
-        raise ContractError("human-action state is invalid")
-    milestone = str(snapshot.get("milestone"))
-    value = {
-        "version": 1,
-        "milestone": milestone,
-        "state": state,
-        "target": target,
-        "sha": sha,
-    }
-    value["key"] = hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    value = _human_action_value(
+        snapshot=snapshot, state=state, target=target, sha=sha
+    )
     raw_comments = client.api(
         f"issues/{control.issue_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
     )
@@ -1940,8 +1948,16 @@ def _ensure_m2_discovery_check(
 ) -> None:
     external_id = f"m2-discovery:{dedup_key}"
     value = client.api(f"commits/{tested_sha}/check-runs?per_page=100")
-    if not isinstance(value, dict) or not isinstance(value.get("check_runs"), list):
+    if (
+        not isinstance(value, dict)
+        or not isinstance(value.get("check_runs"), list)
+        or not isinstance(value.get("total_count"), int)
+        or isinstance(value.get("total_count"), bool)
+        or value["total_count"] < 0
+    ):
         raise GitHubError("cannot read M2 discovery Checks before recording")
+    if value["total_count"] != len(value["check_runs"]):
+        raise LoopBlocked("M2 discovery Check history exceeds its authoritative page")
     matches = [
         check
         for check in value["check_runs"]
@@ -2070,19 +2086,33 @@ def record_m2_discovery_result(
         and comment.get("author") == "github-actions[bot]"
         and isinstance(comment.get("body"), str)
     )
+    human_action_value: dict[str, Any] | None = None
+    if not repairable and effective_status != "PASS":
+        human_action_value = _human_action_value(
+            snapshot=snapshot,
+            state="HARD_BLOCKED",
+            target=f"run:{result['run_id']}:attempt:{result['run_attempt']}",
+            sha=str(result["tested_sha"]),
+        )
+    human_action_exists = human_action_value is not None and any(
+        payload.get("key") == human_action_value["key"]
+        for payload in _trusted_comment_payloads(control_issue, HUMAN_ACTION_RE)
+    )
     _require_control_comment_capacity(
         control_issue,
         (0 if existing else 1)
-        + (1 if repairable and not diagnosis_completed and not dispatched else 0),
+        + (1 if repairable and not diagnosis_completed and not dispatched else 0)
+        + (1 if human_action_value is not None and not human_action_exists else 0),
     )
     summary = str(result["summary"])[:4000]
-    _ensure_m2_discovery_check(
-        client=client,
-        tested_sha=str(result["tested_sha"]),
-        dedup_key=dedup_key,
-        status=effective_status,
-        summary=summary,
-    )
+    if not existing:
+        _ensure_m2_discovery_check(
+            client=client,
+            tested_sha=str(result["tested_sha"]),
+            dedup_key=dedup_key,
+            status=effective_status,
+            summary=summary,
+        )
     marker = {
         **record_identity,
         "dedup_key": dedup_key,

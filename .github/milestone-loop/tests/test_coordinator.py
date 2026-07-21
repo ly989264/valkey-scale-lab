@@ -93,6 +93,7 @@ class FakeClient:
     def __init__(self, control_issue: dict | None = None) -> None:
         self.control_issue = control_issue
         self.writes: list[tuple] = []
+        self.check_reads = 0
 
     def ensure_label(self, *args) -> None:
         return None
@@ -121,16 +122,16 @@ class FakeClient:
 
     def api(self, endpoint, **kwargs):
         if endpoint.startswith("commits/") and endpoint.endswith("/check-runs?per_page=100"):
-            return {
-                "check_runs": [
-                    {
-                        "name": write[1].get("name"),
-                        "external_id": write[1].get("external_id"),
-                    }
-                    for write in self.writes
-                    if write[0] == "check"
-                ]
-            }
+            self.check_reads += 1
+            check_runs = [
+                {
+                    "name": write[1].get("name"),
+                    "external_id": write[1].get("external_id"),
+                }
+                for write in self.writes
+                if write[0] == "check"
+            ]
+            return {"total_count": len(check_runs), "check_runs": check_runs}
         if self.control_issue is not None and endpoint == f"issues/{self.control_issue['number']}":
             return dict(self.control_issue)
         if (
@@ -516,6 +517,27 @@ class CoordinatorTests(unittest.TestCase):
                 )
         self.assertEqual(client.writes, [])
 
+    def test_discovery_hard_block_refuses_a_partial_capacity_write(self) -> None:
+        for result, default_sha in (
+            (self._discovery_result(disposition="HUMAN_REQUIRED"), "a" * 40),
+            (self._discovery_result(), "b" * 40),
+        ):
+            with self.subTest(disposition=result["disposition"], default_sha=default_sha):
+                control = {
+                    "number": 9,
+                    "body": render_control(empty_lease("m2"), 0),
+                    "labels": [CONTROL_LABEL],
+                    "comments": [
+                        {"author": "human", "body": "note"} for _ in range(49)
+                    ],
+                }
+                state = self._m2_record_state(control, default_sha=default_sha)
+                client = FakeClient(control)
+                with patch("coordinator.collect_snapshot", return_value=state):
+                    with self.assertRaises(LoopBlocked):
+                        record_m2_discovery_result(client=client, result=result)
+                self.assertEqual(client.writes, [])
+
     def test_lease_is_consumed_once_and_exhausts(self) -> None:
         lease = empty_lease("m1")
         lease.update(
@@ -616,9 +638,34 @@ class CoordinatorTests(unittest.TestCase):
         self.assertEqual(len(record_comments), 1)
         self.assertEqual(len([write for write in client.writes if write[0] == "check"]), 1)
         self.assertEqual(len([write for write in client.writes if write[0] == "dispatch"]), 1)
+        self.assertEqual(client.check_reads, 1)
         pending = pending_m2_discovery_diagnosis(state)
         self.assertIsNotNone(pending)
         self.assertEqual(pending["failure_fingerprint"], "f" * 64)
+
+    def test_discovery_check_history_must_fit_the_authoritative_page(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with (
+            patch("coordinator.collect_snapshot", return_value=state),
+            patch.object(
+                client,
+                "api",
+                return_value={"total_count": 101, "check_runs": [{}] * 100},
+            ),
+        ):
+            with self.assertRaises(LoopBlocked):
+                record_m2_discovery_result(client=client, result=result)
+        self.assertEqual(client.writes, [])
 
     def test_genuine_discovery_failure_never_enters_diagnosis(self) -> None:
         control = {
