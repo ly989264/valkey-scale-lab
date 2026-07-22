@@ -138,6 +138,65 @@ def test_capture_owned_valkey_logs_before_cleanup(tmp_path: Path, monkeypatch: p
     )
 
 
+def test_capture_arm_preserves_logs_before_cleanup_can_fail(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    trial_id = "m2-discovery-test"
+    trials_dir = tmp_path / capture.TRIALS_DIR
+    trials_dir.mkdir()
+    state_path = trials_dir / trial_id / "state.json"
+    context = capture.CaptureContext(
+        args=SimpleNamespace(),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "report.json",
+    )
+    spec = capture.ArmSpec(
+        trial_id=trial_id,
+        pair_id="pair-01",
+        cell_id="formation-discovery-1",
+        arm="baseline",
+        order=1,
+        scale=50,
+        scenario="formation_50",
+        treatment={"kind": "cluster_create_strategy", "value": "baseline"},
+        resource_seconds=1.0,
+        workload_seconds=1.0,
+    )
+    calls: list[str] = []
+
+    def fake_run(command: list[str], *, env: object, timeout: int) -> dict:
+        calls.append(command[0])
+        if command[0] == "setup":
+            capture._write_json(state_path, {"runtime": {"run_id": trial_id}, "nodes": []})
+            return {"returncode": 0, "stdout": "", "stderr": ""}
+        return {"returncode": 1, "stdout": "", "stderr": "cleanup failed"}
+
+    monkeypatch.setattr(capture, "_ensure_preflight", lambda *args: (tmp_path / "preflight.json", {}))
+    monkeypatch.setattr(capture, "_treatment_environment", lambda spec: {})
+    monkeypatch.setattr(capture, "_setup_command", lambda *args: ["setup"])
+    monkeypatch.setattr(capture, "_cleanup_command", lambda *args: ["cleanup"])
+    monkeypatch.setattr(capture, "_run_command", fake_run)
+    monkeypatch.setattr(capture, "_validate_state", lambda *args: None)
+    monkeypatch.setattr(capture, "_capture_topology", lambda *args, **kwargs: {})
+    monkeypatch.setattr(capture, "_attach_setup_wrapper_timing", lambda *args, **kwargs: None)
+    monkeypatch.setattr(capture, "_uses_setup_resource_window", lambda spec: False)
+    monkeypatch.setattr(capture, "_needs_stability_observation", lambda spec: False)
+    monkeypatch.setattr(capture, "_capture_data_path", lambda *args, **kwargs: {})
+    monkeypatch.setattr(capture, "_capture_resource_window", lambda *args, **kwargs: {})
+    monkeypatch.setattr(
+        capture,
+        "_capture_owned_valkey_logs",
+        lambda *args, **kwargs: calls.append("logs"),
+    )
+    monkeypatch.setattr(capture, "_cleanup_state_for_attempt", lambda *args, **kwargs: state_path)
+    monkeypatch.setattr(capture, "_collect_partial_refs", lambda *args, **kwargs: None)
+
+    with pytest.raises(capture.CaptureError, match="owned cleanup command failed"):
+        capture._capture_arm(context, spec)
+
+    assert calls == ["setup", "logs", "cleanup"]
+
+
 def test_fault_targets_are_half_up_deterministic_and_cross_domain() -> None:
     selected = capture._select_fault_target_nodes(_state(), 50, "10_percent")
 

@@ -620,7 +620,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
         measurement.update({"topology": topology, "workload": workload, "resource": resource})
     except Exception as exc:  # cleanup below remains mandatory
         trial_error = exc
-    if trial_error is not None and state_validated:
+    if state_validated:
         try:
             _capture_owned_valkey_logs(trial_dir, state, expected_run_id=spec.trial_id)
         except Exception:  # diagnostics must never prevent mandatory cleanup
