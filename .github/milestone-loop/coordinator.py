@@ -1891,7 +1891,13 @@ def reconcile_review(
             or status_from_labels(live_issue.get("labels", [])) != "review"
         ):
             raise LoopBlocked("live state changed before auto-merge enablement")
-        client.enable_auto_merge(int(pr["number"]))
+        client.merge_pull_request(
+            int(pr["number"]),
+            expected_head_sha=str(record["head_sha"]),
+        )
+        # GITHUB_TOKEN merges do not emit another workflow run; dispatch the
+        # fresh-default reconciliation explicitly after the merge succeeds.
+        client.dispatch(str(snapshot["milestone"]))
         return "WAIT_MERGE", control
     if progressed:
         set_no_progress(client, control, 0)

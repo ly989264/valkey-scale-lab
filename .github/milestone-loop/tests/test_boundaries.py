@@ -21,7 +21,7 @@ from coordinator import (
     render_control,
     real_readiness_fingerprint,
 )
-from github_api import GitHubClient
+from github_api import GitHubClient, GitHubError
 from loop import main as loop_main, pr_metadata
 from milestone_runner import (
     LeaseConfirmationBlocked,
@@ -435,6 +435,31 @@ class BoundaryTests(unittest.TestCase):
         with patch("github_api.subprocess.run", return_value=completed) as run:
             self.assertEqual(GitHubClient("owner/repo").repository()["default_branch"], "main")
         self.assertEqual(run.call_args.args[0][2], "repos/owner/repo")
+
+    def test_synchronous_merge_is_head_bound_and_squashed(self) -> None:
+        client = GitHubClient("owner/repo")
+        with patch.object(
+            GitHubClient,
+            "api",
+            return_value={"merged": True, "sha": "b" * 40},
+        ) as api:
+            self.assertEqual(
+                client.merge_pull_request(26, expected_head_sha="a" * 40),
+                "b" * 40,
+            )
+        api.assert_called_once_with(
+            "pulls/26/merge",
+            method="PUT",
+            input_value={"sha": "a" * 40, "merge_method": "squash"},
+        )
+
+    def test_synchronous_merge_requires_confirmed_result(self) -> None:
+        client = GitHubClient("owner/repo")
+        with (
+            patch.object(GitHubClient, "api", return_value={"merged": False, "sha": None}),
+            self.assertRaisesRegex(GitHubError, "cannot synchronously merge PR #26"),
+        ):
+            client.merge_pull_request(26, expected_head_sha="a" * 40)
 
     def test_pre_authorization_python_probe_is_isolated_from_repository_imports(self) -> None:
         completed = subprocess.CompletedProcess([], 0, "8.4.0\n", "")
