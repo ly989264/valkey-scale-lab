@@ -763,6 +763,9 @@ def validate_and_aggregate_m2_resource_samples(report: dict[str, Any]) -> dict[s
             metrics, diagnostics = _aggregate_samples(
                 samples,
                 expected_gone_client_ports=expected_gone_client_ports,
+                allow_initial_membership_transitions=(
+                    report.get("window_name") == "m2-formation-bootstrap"
+                ),
             )
         except (KeyError, TypeError, M2ResourceMeasurementError) as exc:
             errors.append(f"cannot aggregate raw resource samples: {exc}")
@@ -1292,6 +1295,8 @@ def _cluster_link_errors_from_raw(
     process: Mapping[str, Any],
     *,
     expected_gone_client_ports: set[int],
+    previous_process: Mapping[str, Any] | None = None,
+    allow_initial_membership_transition: bool = False,
 ) -> int:
     logical_id = process.get("logical_id", MISSING)
     observations = process.get("non_connected_cluster_links")
@@ -1306,6 +1311,7 @@ def _cluster_link_errors_from_raw(
             f"claimed={observed_count!r} observed={len(observations)}"
         )
     errors = 0
+    claimed_errors = 0
     for position, observation in enumerate(observations):
         if not isinstance(observation, dict):
             raise M2ResourceMeasurementError(
@@ -1350,6 +1356,7 @@ def _cluster_link_errors_from_raw(
             and client_port is not None
         )
         if not recognized_disconnected:
+            claimed_errors += 1
             errors += 1
             continue
         role_flags = flag_set & _CLUSTER_ROLE_FLAGS
@@ -1364,18 +1371,36 @@ def _cluster_link_errors_from_raw(
         )
         if expected_gone_link:
             continue
-        # A normal role row is ambiguous; only HANDSHAKE proves the first exchange has not completed.
+        # HANDSHAKE is self-contained proof; role rows need cross-sample topology proof below.
         pending_handshake = (
             flag_set == {"handshake"}
             and master_id == "-"
         )
-        if not pending_handshake:
+        if pending_handshake:
+            continue
+        claimed_errors += 1
+        previous_link_count = (
+            previous_process.get("cluster_link_count")
+            if isinstance(previous_process, Mapping)
+            else None
+        )
+        initial_membership_transition = (
+            allow_initial_membership_transition
+            and previous_link_count == 1
+            and previous_process.get("non_connected_cluster_link_count") == 0
+            and previous_process.get("non_connected_cluster_links") == []
+            and _valid_positive_int(process.get("cluster_link_count"))
+            and process["cluster_link_count"] > previous_link_count
+            and (primary_link or replica_link)
+            and (flag_set == {"master"} or flag_set == {"slave"})
+        )
+        if not initial_membership_transition:
             errors += 1
     claimed = process.get("cluster_link_errors")
-    if not _valid_nonnegative_int(claimed) or claimed != errors:
+    if not _valid_nonnegative_int(claimed) or claimed != claimed_errors:
         raise M2ResourceMeasurementError(
             f"cluster sample for {logical_id} cluster_link_errors does not match raw links: "
-            f"claimed={claimed!r} recomputed={errors}"
+            f"claimed={claimed!r} recomputed={claimed_errors}"
         )
     return errors
 
@@ -1445,6 +1470,9 @@ def _resource_report(
             metrics, diagnostics = _aggregate_samples(
                 complete_samples,
                 expected_gone_client_ports=expected_gone_client_ports,
+                allow_initial_membership_transitions=(
+                    window_name == "m2-formation-bootstrap"
+                ),
             )
         except M2ResourceMeasurementError as exc:
             status = "FAIL"
@@ -1514,7 +1542,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum raw-derived disconnected-link error count after excluding only well-formed pre-establishment handshake rows and explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, the first role-row topology expansion from a singleton observer in the formation-bootstrap window, and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {
@@ -1530,6 +1558,7 @@ def _aggregate_samples(
     samples: list[dict[str, Any]],
     *,
     expected_gone_client_ports: set[int],
+    allow_initial_membership_transitions: bool = False,
 ) -> tuple[dict[str, int | float], dict[str, int]]:
     rss_totals: list[int] = []
     fd_totals: list[int] = []
@@ -1537,6 +1566,7 @@ def _aggregate_samples(
     network_totals: list[int] = []
     link_error_totals: list[int] = []
     process_history: dict[str, list[tuple[dict[str, Any], int]]] = {}
+    previous_processes: dict[str, dict[str, Any]] = {}
     for sample in samples:
         rss = 0
         fds = 0
@@ -1552,13 +1582,24 @@ def _aggregate_samples(
                 fds += process["fd_count"]
                 connections += process["connection_count"]
                 logical_id = process["logical_id"]
-                if process_history.get(logical_id) and process_history[logical_id][-1][0]["pid"] != process["pid"]:
+                prior_history = process_history.setdefault(logical_id, [])
+                if prior_history and prior_history[-1][0]["pid"] != process["pid"]:
                     raise M2ResourceMeasurementError(f"owned pid changed for {logical_id} inside the resource window")
-                process_history.setdefault(logical_id, []).append((process, hz))
                 link_errors += _cluster_link_errors_from_raw(
                     process,
                     expected_gone_client_ports=expected_gone_client_ports,
+                    previous_process=previous_processes.get(logical_id),
+                    allow_initial_membership_transition=(
+                        allow_initial_membership_transitions
+                        and bool(prior_history)
+                        and all(
+                            prior_process.get("cluster_link_count") == 1
+                            for prior_process, _ in prior_history
+                        )
+                    ),
                 )
+                prior_history.append((process, hz))
+                previous_processes[logical_id] = process
             network += nodehost["namespace_network"]["rx_bytes"] + nodehost["namespace_network"]["tx_bytes"]
         rss_totals.append(rss)
         fd_totals.append(fds)
