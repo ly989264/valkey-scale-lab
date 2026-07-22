@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import time
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 from urllib.parse import quote
@@ -47,9 +48,19 @@ class GitHubClient:
         if input_value is not None:
             argv.extend(["--input", "-"])
             encoded = (json.dumps(input_value, separators=(",", ":")) + "\n").encode()
-        process = subprocess.run(argv, input=encoded, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if process.returncode != 0:
+        for attempt in range(2):
+            process = subprocess.run(
+                argv,
+                input=encoded,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            if process.returncode == 0:
+                break
             detail = process.stderr.decode("utf-8", errors="replace")[-2000:].strip()
+            if attempt == 0 and "tls handshake timeout" in detail.lower():
+                time.sleep(1)
+                continue
             raise GitHubError(f"gh api {method} {endpoint} failed: {detail}")
         if not process.stdout.strip():
             return None

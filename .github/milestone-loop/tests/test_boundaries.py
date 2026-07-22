@@ -436,6 +436,35 @@ class BoundaryTests(unittest.TestCase):
             self.assertEqual(GitHubClient("owner/repo").repository()["default_branch"], "main")
         self.assertEqual(run.call_args.args[0][2], "repos/owner/repo")
 
+    def test_github_api_retries_one_tls_handshake_timeout(self) -> None:
+        timed_out = subprocess.CompletedProcess(
+            [], 1, b"", b'Post "https://api.github.com": net/http: TLS handshake timeout'
+        )
+        completed = subprocess.CompletedProcess([], 0, b'{"id":1}', b"")
+        with (
+            patch("github_api.subprocess.run", side_effect=[timed_out, completed]) as run,
+            patch("github_api.time.sleep") as sleep,
+        ):
+            result = GitHubClient("owner/repo").api(
+                "issues/7/comments",
+                method="POST",
+                input_value={"body": "result"},
+            )
+        self.assertEqual(result, {"id": 1})
+        self.assertEqual(run.call_count, 2)
+        sleep.assert_called_once_with(1)
+
+    def test_github_api_does_not_retry_other_failures(self) -> None:
+        failed = subprocess.CompletedProcess([], 1, b"", b"HTTP 422: Validation Failed")
+        with (
+            patch("github_api.subprocess.run", return_value=failed) as run,
+            patch("github_api.time.sleep") as sleep,
+            self.assertRaisesRegex(GitHubError, "HTTP 422"),
+        ):
+            GitHubClient("owner/repo").api("issues", method="POST")
+        run.assert_called_once()
+        sleep.assert_not_called()
+
     def test_synchronous_merge_is_head_bound_and_squashed(self) -> None:
         client = GitHubClient("owner/repo")
         with patch.object(
