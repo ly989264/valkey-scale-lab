@@ -411,6 +411,62 @@ def test_m2_formation_bootstrap_classifies_initial_role_row_as_pre_establishment
     )
 
 
+def test_m2_bootstrap_transition_allows_unrelated_prior_handshake() -> None:
+    role_node_id = "b" * 40
+    previous_process = {
+        "pid": 101,
+        "cluster_link_count": 2,
+        "non_connected_cluster_link_count": 1,
+        "non_connected_cluster_links": [
+            {
+                "node_id": "a" * 40,
+                "address": "127.0.0.1:7202@17202",
+                "flags": ["handshake"],
+                "master_id": "-",
+                "link_state": "disconnected",
+            }
+        ],
+    }
+    process = {
+        "logical_id": "observer",
+        "pid": 101,
+        "cluster_link_count": 25,
+        "cluster_link_errors": 1,
+        "non_connected_cluster_link_count": 1,
+        "non_connected_cluster_links": [
+            {
+                "node_id": role_node_id,
+                "address": "127.0.0.1:7201@17201",
+                "flags": ["master"],
+                "master_id": "-",
+                "link_state": "disconnected",
+            }
+        ],
+    }
+    next_process = {
+        "pid": 101,
+        "cluster_link_count": 25,
+        "non_connected_cluster_links": [],
+    }
+
+    assert _cluster_link_errors_from_raw(
+        process,
+        expected_gone_client_ports=set(),
+        previous_process=previous_process,
+        next_process=next_process,
+        allow_initial_membership_transition=True,
+    ) == 0
+
+    previous_process["non_connected_cluster_links"][0]["node_id"] = role_node_id
+    assert _cluster_link_errors_from_raw(
+        process,
+        expected_gone_client_ports=set(),
+        previous_process=previous_process,
+        next_process=next_process,
+        allow_initial_membership_transition=True,
+    ) == 1
+
+
 def test_m2_resource_window_does_not_self_authorize_bootstrap_transition() -> None:
     report = _m2_resource_report_with_link(
         ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
