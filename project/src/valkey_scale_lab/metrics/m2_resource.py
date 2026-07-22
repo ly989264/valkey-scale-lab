@@ -1417,6 +1417,7 @@ def _cluster_link_errors_from_raw(
     expected_gone_client_ports: set[int],
     previous_process: Mapping[str, Any] | None = None,
     next_process: Mapping[str, Any] | None = None,
+    formation_boundary_process: Mapping[str, Any] | None = None,
     allow_initial_membership_transition: bool = False,
     sample_phase: str | None = None,
 ) -> int:
@@ -1499,137 +1500,40 @@ def _cluster_link_errors_from_raw(
             and master_id == "-"
         )
         if pending_handshake:
+            if sample_phase in {"formation_boundary", "post_formation"}:
+                errors += 1
             continue
         claimed_errors += 1
-        previous_link_count = (
-            previous_process.get("cluster_link_count")
-            if isinstance(previous_process, Mapping)
-            else None
-        )
-        previous_observations = (
-            previous_process.get("non_connected_cluster_links")
-            if isinstance(previous_process, Mapping)
-            else None
-        )
-        next_observations = (
-            next_process.get("non_connected_cluster_links")
-            if isinstance(next_process, Mapping)
-            else None
-        )
-        initial_membership_transition = (
-            allow_initial_membership_transition
-            and _valid_positive_int(previous_link_count)
-            and isinstance(previous_observations, list)
-            and all(
-                isinstance(previous_observation, Mapping)
-                and previous_observation.get("node_id") != node_id
-                for previous_observation in previous_observations
-            )
-            and _valid_positive_int(process.get("cluster_link_count"))
-            and process["cluster_link_count"] > previous_link_count
+        bootstrap_role_row = (
+            sample_phase == "formation_bootstrap"
             and (primary_link or replica_link)
-            and (flag_set == {"master"} or flag_set == {"slave"})
-            and isinstance(next_process, Mapping)
-            and next_process.get("pid") == process.get("pid")
-            and _valid_positive_int(next_process.get("cluster_link_count"))
-            and next_process["cluster_link_count"] >= process["cluster_link_count"]
-            and isinstance(next_observations, list)
-            and all(
-                isinstance(next_observation, Mapping)
-                and next_observation.get("node_id") != node_id
-                for next_observation in next_observations
-            )
+            and flag_set in ({"master"}, {"slave"})
         )
-        previous_link_times = (
-            _directional_link_create_times(previous_process, node_id)
-            if isinstance(previous_process, Mapping)
-            else None
-        )
-        current_link_times = _directional_link_create_times(process, node_id)
-        next_link_times = (
-            _directional_link_create_times(next_process, node_id)
-            if isinstance(next_process, Mapping)
-            else None
-        )
-        previous_directions = (
-            set(previous_link_times) if previous_link_times is not None else None
-        )
-        current_directions = (
-            set(current_link_times) if current_link_times is not None else None
-        )
-        next_directions = set(next_link_times) if next_link_times is not None else None
-        formation_direction_correction = (
+        if (
             allow_initial_membership_transition
-            and sample_phase == "formation_bootstrap"
-            and (primary_link or replica_link)
-            and (flag_set == {"master"} or flag_set == {"slave"})
-            and isinstance(previous_process, Mapping)
-            and previous_process.get("pid") == process.get("pid")
-            and isinstance(next_process, Mapping)
-            and next_process.get("pid") == process.get("pid")
-            and previous_directions is not None
-            and "from" not in previous_directions
-            and current_directions is not None
-            and "from" in current_directions
-            and next_directions == {"to", "from"}
-            and isinstance(next_observations, list)
-            and all(
-                isinstance(next_observation, Mapping)
-                and next_observation.get("node_id") != node_id
-                for next_observation in next_observations
+            and bootstrap_role_row
+            and not all(
+                isinstance(value, Mapping)
+                for value in (
+                    previous_process,
+                    next_process,
+                    formation_boundary_process,
+                )
             )
-        )
-        previous_count = (
-            previous_process.get("cluster_link_count")
-            if isinstance(previous_process, Mapping)
-            else None
-        )
-        current_count = process.get("cluster_link_count")
-        next_count = (
-            next_process.get("cluster_link_count")
-            if isinstance(next_process, Mapping)
-            else None
-        )
-        # CLUSTER NODES is captured before CLUSTER LINKS; require an in-sample
-        # reconnect plus next-sample recovery before classifying bootstrap churn.
-        formation_reconnect_recovery = (
-            allow_initial_membership_transition
-            and sample_phase == "formation_bootstrap"
-            and (primary_link or replica_link)
-            and (flag_set == {"master"} or flag_set == {"slave"})
-            and isinstance(previous_process, Mapping)
-            and previous_process.get("pid") == process.get("pid")
-            and isinstance(next_process, Mapping)
-            and next_process.get("pid") == process.get("pid")
-            and _valid_positive_int(previous_count)
-            and _valid_positive_int(current_count)
-            and _valid_positive_int(next_count)
-            and previous_count <= current_count <= next_count
-            and previous_directions == {"to", "from"}
-            and current_directions == {"to", "from"}
-            and next_directions == {"to", "from"}
-            and previous_link_times is not None
-            and current_link_times is not None
-            and next_link_times is not None
-            and any(
-                current_link_times[direction] > previous_link_times[direction]
-                for direction in ("to", "from")
+        ):
+            raise M2ResourceMeasurementError(
+                f"cluster sample for {logical_id} bootstrap transition lacks complete surrounding evidence"
             )
-            and all(
-                next_link_times[direction] >= current_link_times[direction]
-                for direction in ("to", "from")
-            )
-            and isinstance(next_observations, list)
-            and all(
-                isinstance(next_observation, Mapping)
-                and next_observation.get("node_id") != node_id
-                for next_observation in next_observations
-            )
-        )
         if not (
-            initial_membership_transition
-            or formation_direction_correction
-            or formation_reconnect_recovery
+            allow_initial_membership_transition
+            and _is_proven_bootstrap_transition(
+                observation,
+                process=process,
+                previous_process=previous_process,
+                next_process=next_process,
+                formation_boundary_process=formation_boundary_process,
+                sample_phase=sample_phase,
+            )
         ):
             errors += 1
     claimed = process.get("cluster_link_errors")
@@ -1639,6 +1543,103 @@ def _cluster_link_errors_from_raw(
             f"claimed={claimed!r} recomputed={claimed_errors}"
         )
     return errors
+
+
+def _is_proven_bootstrap_transition(
+    observation: Mapping[str, Any],
+    *,
+    process: Mapping[str, Any],
+    previous_process: Mapping[str, Any] | None,
+    next_process: Mapping[str, Any] | None,
+    formation_boundary_process: Mapping[str, Any] | None,
+    sample_phase: str | None,
+) -> bool:
+    """Classify only complete, converged formation churn as non-failing."""
+    if sample_phase != "formation_bootstrap" or not all(
+        isinstance(value, Mapping)
+        for value in (
+            previous_process,
+            process,
+            next_process,
+            formation_boundary_process,
+        )
+    ):
+        return False
+
+    node_id = observation.get("node_id")
+    flags = observation.get("flags")
+    master_id = observation.get("master_id")
+    role_row = (
+        isinstance(node_id, str)
+        and _valid_cluster_node_id(node_id)
+        and isinstance(observation.get("address"), str)
+        and _cluster_link_client_port(observation["address"]) is not None
+        and observation.get("link_state") == "disconnected"
+        and isinstance(flags, list)
+        and (
+            (flags == ["master"] and master_id == "-")
+            or (
+                flags == ["slave"]
+                and isinstance(master_id, str)
+                and _valid_cluster_node_id(master_id)
+            )
+        )
+    )
+    if not role_row:
+        return False
+
+    evidence = (
+        previous_process,
+        process,
+        next_process,
+        formation_boundary_process,
+    )
+    logical_id = process.get("logical_id")
+    pid = process.get("pid")
+    counts: list[int] = []
+    for candidate in evidence:
+        candidate_observations = candidate.get("non_connected_cluster_links")
+        candidate_observed_count = candidate.get("non_connected_cluster_link_count")
+        count = candidate.get("cluster_link_count")
+        if (
+            not isinstance(logical_id, str)
+            or not logical_id
+            or candidate.get("logical_id") != logical_id
+            or not _valid_positive_int(pid)
+            or candidate.get("pid") != pid
+            or not _valid_positive_int(count)
+            or not _valid_nonnegative_int(candidate.get("cluster_link_errors"))
+            or not isinstance(candidate_observations, list)
+            or not _valid_nonnegative_int(candidate_observed_count)
+            or candidate_observed_count != len(candidate_observations)
+            or not isinstance(candidate.get("directional_cluster_links"), list)
+            or _directional_link_create_times(candidate, "") is None
+        ):
+            return False
+        counts.append(count)
+    if any(current < previous for previous, current in zip(counts, counts[1:])):
+        return False
+
+    next_observations = next_process["non_connected_cluster_links"]
+    if any(
+        not isinstance(next_observation, Mapping)
+        or next_observation.get("node_id") == node_id
+        for next_observation in next_observations
+    ):
+        return False
+    boundary_observations = formation_boundary_process[
+        "non_connected_cluster_links"
+    ]
+    if boundary_observations:
+        return False
+    boundary_link_times = _directional_link_create_times(
+        formation_boundary_process,
+        node_id,
+    )
+    return (
+        boundary_link_times is not None
+        and set(boundary_link_times) == {"to", "from"}
+    )
 
 
 def _directional_link_create_times(
@@ -1818,7 +1819,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, setup-trial-authorized monotonic membership expansion, raw CLUSTER LINKS-proven direction correction or bounded reconnect recovery wholly before full-mesh formation completion with next-sample bidirectional recovery, and explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived stable unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, setup-trial-authorized formation_bootstrap transitions with complete monotonic owned-PID samples, next-sample CLUSTER NODES recovery, and a strict bidirectional formation boundary, and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {
@@ -1836,6 +1837,130 @@ def _aggregate_samples(
     expected_gone_client_ports: set[int],
     allow_initial_membership_transitions: bool = False,
 ) -> tuple[dict[str, int | float], dict[str, int]]:
+    formation_boundary_processes: dict[str, Mapping[str, Any]] = {}
+    if allow_initial_membership_transitions:
+        phases = [sample.get("sample_phase") for sample in samples]
+        phase_order = {
+            "formation_bootstrap": 0,
+            "formation_boundary": 1,
+            "post_formation": 2,
+        }
+        if (
+            not phases
+            or phases[0] != "formation_bootstrap"
+            or any(marker not in phase_order for marker in phases)
+            or any(
+                phase_order[current] < phase_order[previous]
+                for previous, current in zip(phases, phases[1:])
+            )
+            or phases.count("formation_boundary") > 1
+        ):
+            raise M2ResourceMeasurementError(
+                "formation resource samples do not have a monotonic bootstrap boundary"
+            )
+        boundary_index = next(
+            (
+                index
+                for index, marker in enumerate(phases)
+                if marker in {"formation_boundary", "post_formation"}
+            ),
+            None,
+        )
+        if boundary_index is None:
+            raise M2ResourceMeasurementError(
+                "formation resource samples never reached a complete boundary"
+            )
+
+        owned_pids: dict[str, int] | None = None
+        for sample_index, sample in enumerate(samples):
+            sample_processes: list[Mapping[str, Any]] = []
+            nodehosts = sample.get("nodehosts")
+            if not isinstance(nodehosts, list):
+                raise M2ResourceMeasurementError(
+                    f"formation sample {sample_index} is missing nodehost evidence"
+                )
+            for nodehost in nodehosts:
+                processes = nodehost.get("processes") if isinstance(nodehost, Mapping) else None
+                if not isinstance(processes, list) or any(
+                    not isinstance(process, Mapping) for process in processes
+                ):
+                    raise M2ResourceMeasurementError(
+                        f"formation sample {sample_index} is missing owned process evidence"
+                    )
+                sample_processes.extend(processes)
+            sample_pids = {
+                process.get("logical_id"): process.get("pid")
+                for process in sample_processes
+                if isinstance(process.get("logical_id"), str)
+                and process.get("logical_id")
+                and _valid_positive_int(process.get("pid"))
+            }
+            if len(sample_pids) != len(sample_processes):
+                raise M2ResourceMeasurementError(
+                    f"formation sample {sample_index} has incomplete process identity"
+                )
+            if owned_pids is None:
+                owned_pids = sample_pids
+            elif sample_pids != owned_pids:
+                raise M2ResourceMeasurementError(
+                    f"formation sample {sample_index} changed owned PID identity"
+                )
+
+            for process in sample_processes:
+                if _directional_link_create_times(process, "") is None:
+                    raise M2ResourceMeasurementError(
+                        f"formation sample {sample_index} process "
+                        f"{process.get('logical_id', MISSING)} is missing raw CLUSTER LINKS"
+                    )
+
+            if sample_index < boundary_index:
+                continue
+            process_count = len(sample_processes)
+            for process in sample_processes:
+                logical_id = process.get("logical_id", MISSING)
+                raw_observations = process.get("non_connected_cluster_links")
+                if (
+                    process.get("non_connected_cluster_link_count") != 0
+                    or raw_observations != []
+                ):
+                    raise M2ResourceMeasurementError(
+                        f"formation boundary process {logical_id} is disconnected"
+                    )
+                link_count = process.get("cluster_link_count")
+                raw_links = process.get("directional_cluster_links")
+                if link_count != process_count or not isinstance(raw_links, list):
+                    raise M2ResourceMeasurementError(
+                        f"formation boundary process {logical_id} has incomplete membership evidence"
+                    )
+                directions_by_peer: dict[str, set[str]] = {}
+                seen_links: set[tuple[str, str]] = set()
+                for link in raw_links:
+                    node_id = link["node_id"]
+                    direction = link["direction"]
+                    link_key = (node_id, direction)
+                    if "r" not in link["events"] or link_key in seen_links:
+                        raise M2ResourceMeasurementError(
+                            f"formation boundary process {logical_id} has incomplete directional links"
+                        )
+                    seen_links.add(link_key)
+                    directions_by_peer.setdefault(node_id, set()).add(direction)
+                if (
+                    len(directions_by_peer) != link_count - 1
+                    or len(seen_links) != 2 * (link_count - 1)
+                    or any(
+                        directions != {"to", "from"}
+                        for directions in directions_by_peer.values()
+                    )
+                ):
+                    raise M2ResourceMeasurementError(
+                        f"formation boundary process {logical_id} is not bidirectionally complete"
+                    )
+            if sample_index == boundary_index:
+                formation_boundary_processes = {
+                    str(process["logical_id"]): process
+                    for process in sample_processes
+                }
+
     rss_totals: list[int] = []
     fd_totals: list[int] = []
     connection_totals: list[int] = []
@@ -1870,27 +1995,22 @@ def _aggregate_samples(
                 prior_history = process_history.setdefault(logical_id, [])
                 if prior_history and prior_history[-1][0]["pid"] != process["pid"]:
                     raise M2ResourceMeasurementError(f"owned pid changed for {logical_id} inside the resource window")
-                prior_link_counts = [
-                    prior_process.get("cluster_link_count")
-                    for prior_process, _ in prior_history
-                ]
+                if (
+                    allow_initial_membership_transitions
+                    and prior_history
+                    and process.get("cluster_link_count")
+                    < prior_history[-1][0].get("cluster_link_count")
+                ):
+                    raise M2ResourceMeasurementError(
+                        f"cluster membership decreased for {logical_id} during formation"
+                    )
                 link_errors += _cluster_link_errors_from_raw(
                     process,
                     expected_gone_client_ports=expected_gone_client_ports,
                     previous_process=previous_processes.get(logical_id),
                     next_process=next_processes.get(logical_id),
-                    allow_initial_membership_transition=(
-                        allow_initial_membership_transitions
-                        and bool(prior_history)
-                        and all(_valid_positive_int(value) for value in prior_link_counts)
-                        and all(
-                            earlier <= later
-                            for earlier, later in zip(
-                                prior_link_counts,
-                                prior_link_counts[1:],
-                            )
-                        )
-                    ),
+                    formation_boundary_process=formation_boundary_processes.get(logical_id),
+                    allow_initial_membership_transition=allow_initial_membership_transitions,
                     sample_phase=sample.get("sample_phase"),
                 )
                 prior_history.append((process, hz))

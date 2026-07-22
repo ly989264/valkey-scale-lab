@@ -2034,25 +2034,31 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_
         sample["ended_at_monotonic_seconds"] = offset
         sample["sample_phase"] = sample_marker
 
-    peer_id = "b" * 40
+    process_count = len(resource["samples"][0]["nodehosts"][0]["processes"])
+    node_ids = [f"{index + 1:040x}" for index in range(process_count)]
+    peer_id = node_ids[1]
 
-    def directional(direction: str, create_time: int) -> dict[str, object]:
+    def directional(node_id: str, direction: str, create_time: int) -> dict[str, object]:
         return {
             "direction": direction,
-            "node_id": peer_id,
+            "node_id": node_id,
             "create_time": create_time,
             "events": "r",
             "send_buffer_allocated": 0,
             "send_buffer_used": 0,
         }
 
-    observed_processes = [
-        sample["nodehosts"][0]["processes"][0] for sample in resource["samples"]
-    ]
-    observed_processes[0]["directional_cluster_links"] = [
-        directional("to", 1000),
-        directional("from", 1000),
-    ]
+    for sample in resource["samples"]:
+        for process_index, process in enumerate(sample["nodehosts"][0]["processes"]):
+            process["cluster_link_count"] = process_count
+            process["directional_cluster_links"] = [
+                directional(node_id, direction, 1000)
+                for peer_index, node_id in enumerate(node_ids)
+                if peer_index != process_index
+                for direction in ("to", "from")
+            ]
+
+    observed_processes = [sample["nodehosts"][0]["processes"][0] for sample in resource["samples"]]
     observed_processes[1].update(
         {
             "cluster_link_errors": 1,
@@ -2067,14 +2073,26 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_
                 }
             ],
             "directional_cluster_links": [
-                directional("to", 2000),
-                directional("from", 1000),
+                directional(
+                    node_id,
+                    direction,
+                    2000 if node_id == peer_id and direction == "to" else 1000,
+                )
+                for peer_index, node_id in enumerate(node_ids)
+                if peer_index != 0
+                for direction in ("to", "from")
             ],
         }
     )
     observed_processes[2]["directional_cluster_links"] = [
-        directional("to", 2000),
-        directional("from", 1000),
+        directional(
+            node_id,
+            direction,
+            2000 if node_id == peer_id and direction == "to" else 1000,
+        )
+        for peer_index, node_id in enumerate(node_ids)
+        if peer_index != 0
+        for direction in ("to", "from")
     ]
     resource["coverage"].update(
         {
@@ -2106,6 +2124,17 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_
 
     assert verdict["status"] == "PASS", verdict["errors"]
     assert verdict["metrics"]["cluster_link_errors"] == 0
+    missing_boundary = deepcopy(resource)
+    missing_boundary["samples"][-1]["sample_phase"] = "formation_bootstrap"
+    missing_boundary_verdict = M2.validate_and_aggregate_m2_resource_samples(
+        missing_boundary,
+        allow_initial_membership_transitions=True,
+    )
+    assert missing_boundary_verdict["status"] == "FAIL"
+    assert any(
+        "never reached a complete boundary" in error
+        for error in missing_boundary_verdict["errors"]
+    )
     resource["metrics"] = verdict["metrics"]
     resource["diagnostics"] = verdict["diagnostics"]
     trial["resource_window"].update(verdict["metrics"])
