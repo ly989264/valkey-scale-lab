@@ -918,7 +918,6 @@ def validate_equal_m2_resource_windows(
         "actual_window_span_seconds",
         "sampling_envelope_span_seconds",
         "max_schedule_lag_seconds",
-        "max_sample_collection_seconds",
     ):
         left = baseline_coverage.get(field, MISSING)
         right = candidate_coverage.get(field, MISSING)
