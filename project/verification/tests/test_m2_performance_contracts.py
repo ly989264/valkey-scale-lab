@@ -1364,6 +1364,35 @@ def test_selection_only_formation_screen_accepts_zero_survivors() -> None:
     ) == []
 
 
+def test_selection_only_formation_screen_rejects_unsafe_candidate_without_failing_campaign() -> None:
+    campaign = _formation_discovery_campaign()
+    cell = next(cell for cell in campaign["cells"] if cell["status"] == "PASS")
+    pair = next(pair for pair in campaign["pairs"] if pair["cell_id"] == cell["cell_id"])
+    candidate = next(
+        trial
+        for trial in campaign["trials"]
+        if trial["trial_id"] == pair["candidate_trial_id"]
+    )
+    candidate["resource_window"]["cluster_link_errors"] = 1
+    cell["status"] = "FAIL"
+
+    assert M2.validate_discovery_campaign(
+        campaign,
+        expected_kind="formation",
+        expected_invocation_run_id="m2-contract",
+    ) == []
+
+    cell["status"] = "PASS"
+    assert any(
+        "status does not match measured screen result" in error
+        for error in M2.validate_discovery_campaign(
+            campaign,
+            expected_kind="formation",
+            expected_invocation_run_id="m2-contract",
+        )
+    )
+
+
 def test_discovery_rejects_nonfixed_formation_strategy() -> None:
     campaign = json.loads(
         json.dumps(_formation_discovery_campaign()).replace(
@@ -2074,6 +2103,84 @@ def test_pair_source_validation_rejects_unequal_actual_resource_windows(tmp_path
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
 
     assert any("resource windows have unequal actual_window_span_seconds" in error for error in errors)
+
+
+def test_discovery_source_validation_preserves_candidate_safety_rejection(tmp_path: Path) -> None:
+    report = _formation_discovery_campaign()
+    cell = next(cell for cell in report["cells"] if cell["status"] == "PASS")
+    pair = deepcopy(next(pair for pair in report["pairs"] if pair["cell_id"] == cell["cell_id"]))
+    trial_ids = {pair["baseline_trial_id"], pair["candidate_trial_id"]}
+    report["trials"] = [
+        deepcopy(trial)
+        for trial in report["trials"]
+        if trial["trial_id"] in trial_ids
+    ]
+    report["pairs"] = [pair]
+    report["cells"] = [cell]
+    roots = {str(trial["evidence_root"]) for trial in report["trials"]}
+    report["source_refs"] = [
+        ref
+        for ref in report["source_refs"]
+        if any(str(ref["path"]).startswith(f"{root}/") for root in roots)
+    ]
+    paths_by_arm = {
+        str(trial["arm"]): _write_valid_trial_sources(report, trial, tmp_path)
+        for trial in report["trials"]
+    }
+    candidate = next(trial for trial in report["trials"] if trial["arm"] == "candidate")
+    resource_path = paths_by_arm["candidate"]["resource"]
+    resource = json.loads(resource_path.read_text(encoding="utf-8"))
+    process = resource["samples"][0]["nodehosts"][0]["processes"][0]
+    process["cluster_link_errors"] = 1
+    process["non_connected_cluster_link_count"] = 1
+    process["non_connected_cluster_links"] = [
+        {
+            "node_id": "b" * 40,
+            "address": "127.0.0.1:7201@17201",
+            "flags": ["master"],
+            "master_id": "-",
+            "link_state": "disconnected",
+        }
+    ]
+    resource["metrics"]["cluster_link_errors"] = 1
+    candidate["resource_window"]["cluster_link_errors"] = 1
+    cell["status"] = "FAIL"
+    _rewrite_bound_source(report, candidate, resource_path, "resource", resource)
+    refs = {ref["category"]: ref for ref in candidate["source_sha256s"]}
+    candidate["provenance"]["capture_digest"] = M2._canonical_digest(
+        {
+            category: ref["sha256"]
+            for category, ref in refs.items()
+            if category != "provenance"
+        }
+    )
+    _rewrite_bound_source(
+        report,
+        candidate,
+        paths_by_arm["candidate"]["provenance"],
+        "provenance",
+        candidate["provenance"],
+    )
+    report["source_refs"] = list(
+        {
+            (ref["category"], ref["sha256"]): ref
+            for ref in report["source_refs"]
+        }.values()
+    )
+
+    assert any(
+        "candidate metric cluster_link_errors must be zero" in error
+        for error in M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+    )
+    errors = M2.validate_current_invocation_sources(
+        report,
+        artifacts_dir=tmp_path,
+        allow_discovery_safety_rejections=True,
+    )
+    assert not any(
+        "candidate metric cluster_link_errors must be zero" in error
+        for error in errors
+    )
 
 
 def test_fault_raw_source_binds_markers_intervals_stability_and_sigkill_targets(

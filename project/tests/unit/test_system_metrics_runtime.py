@@ -316,6 +316,29 @@ def test_m2_resource_window_counts_established_disconnected_link() -> None:
     assert any("metric cluster_link_errors must be zero" in error for error in verdict["errors"])
 
 
+def test_m2_resource_comparison_can_preserve_candidate_safety_rejection() -> None:
+    baseline = _m2_resource_report_with_link(
+        ("a" * 40, "127.0.0.1:7201@17201", "handshake", "-", "disconnected"),
+        claimed_errors=0,
+    )
+    candidate = _m2_resource_report_with_link(
+        ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
+        claimed_errors=1,
+    )
+
+    assert validate_equal_m2_resource_windows(baseline, candidate)["status"] == "FAIL"
+    assert validate_equal_m2_resource_windows(
+        baseline,
+        candidate,
+        allow_candidate_safety_failure=True,
+    )["status"] == "PASS"
+    assert validate_equal_m2_resource_windows(
+        candidate,
+        baseline,
+        allow_candidate_safety_failure=True,
+    )["status"] == "FAIL"
+
+
 def test_m2_formation_bootstrap_classifies_initial_role_row_as_pre_establishment() -> None:
     link = ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected")
     report = _m2_resource_report_with_link(

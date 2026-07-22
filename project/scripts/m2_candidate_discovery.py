@@ -252,6 +252,7 @@ def validate_discovery_report(
             admission.validate_current_invocation_sources(
                 campaign,
                 artifacts_dir=artifacts_dir,
+                allow_discovery_safety_rejections=True,
             )
         )
 
@@ -328,7 +329,9 @@ def _capture(args: argparse.Namespace) -> tuple[str, str]:
         )
         formation_errors.extend(
             admission.validate_current_invocation_sources(
-                campaigns["formation"], artifacts_dir=artifacts_dir
+                campaigns["formation"],
+                artifacts_dir=artifacts_dir,
+                allow_discovery_safety_rejections=True,
             )
         )
         if formation_errors:
@@ -354,7 +357,9 @@ def _capture(args: argparse.Namespace) -> tuple[str, str]:
         )
         failover_errors.extend(
             admission.validate_current_invocation_sources(
-                campaigns["failover"], artifacts_dir=artifacts_dir
+                campaigns["failover"],
+                artifacts_dir=artifacts_dir,
+                allow_discovery_safety_rejections=True,
             )
         )
         if failover_errors:

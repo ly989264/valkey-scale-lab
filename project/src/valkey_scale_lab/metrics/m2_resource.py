@@ -804,6 +804,7 @@ def validate_equal_m2_resource_windows(
     candidate: dict[str, Any],
     *,
     allow_initial_membership_transitions: bool = False,
+    allow_candidate_safety_failure: bool = False,
 ) -> dict[str, Any]:
     """Fail closed unless both arms have complete, equal resource windows."""
     errors: list[str] = []
@@ -847,7 +848,9 @@ def validate_equal_m2_resource_windows(
             elif not _same_number(value, recomputed_metrics.get(name)):
                 errors.append(f"{arm_name} metric {name} does not match raw samples")
         for name in ("cluster_link_errors", "buffer_overflows"):
-            if metrics.get(name) != 0:
+            if metrics.get(name) != 0 and not (
+                arm_name == "candidate" and allow_candidate_safety_failure
+            ):
                 errors.append(f"{arm_name} metric {name} must be zero")
 
     contract_fields = ("duration_seconds", "interval_seconds")

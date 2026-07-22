@@ -255,7 +255,11 @@ def capture_formation_discovery(
         )
         ctx.pairs.append(pair)
         baseline_trial, candidate_trial = _pair_trials(ctx, pair)
-        passed = float(candidate_trial["derived_intervals"]["formation_seconds"]) < float(baseline_trial["derived_intervals"]["formation_seconds"])
+        passed = (
+            _discovery_safety_clean(candidate_trial)
+            and float(candidate_trial["derived_intervals"]["formation_seconds"])
+            < float(baseline_trial["derived_intervals"]["formation_seconds"])
+        )
         ctx.cells[-1]["status"] = "PASS" if passed else "FAIL"
         if passed:
             survivors.append((candidate, float(candidate_trial["derived_intervals"]["formation_seconds"])))
@@ -509,6 +513,10 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
     state_validated = False
     trial_error: Exception | None = None
     measurement: dict[str, Any] = {}
+    allow_candidate_safety_rejection = (
+        spec.arm == "candidate"
+        and spec.cell_id.startswith(("formation-discovery-", "failover-discovery-"))
+    )
     try:
         if setup_result["returncode"] != 0 or not state_path.is_file():
             raise CaptureError(f"setup failed for {spec.trial_id}: {setup_result['stderr'][-1000:]}")
@@ -547,6 +555,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
                     ],
                     first_sample_event=first_resource_sample,
                     window_start_event=fault_window_start,
+                    allow_safety_failure_evidence=allow_candidate_safety_rejection,
                 )
                 _wait_for_resource_start(resource_future, first_resource_sample)
                 measurement = _capture_fault_window(
@@ -562,7 +571,10 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
                 resource = resource_future.result()
         else:
             if _uses_setup_resource_window(spec):
-                resource = _load_resource_window(trial_dir / "resource_window.json")
+                resource = _load_resource_window(
+                    trial_dir / "resource_window.json",
+                    allow_safety_failure_evidence=allow_candidate_safety_rejection,
+                )
                 if _needs_stability_observation(spec):
                     with ThreadPoolExecutor(max_workers=2) as executor:
                         workload_future = executor.submit(
@@ -601,6 +613,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
                         trial_dir,
                         state,
                         spec.resource_seconds,
+                        allow_safety_failure_evidence=allow_candidate_safety_rejection,
                     )
                     stability_future = (
                         executor.submit(
@@ -926,6 +939,7 @@ def _capture_resource_window(
     expected_gone_processes: list[dict[str, Any]] | None = None,
     first_sample_event: threading.Event | None = None,
     window_start_event: threading.Event | None = None,
+    allow_safety_failure_evidence: bool = False,
 ) -> dict[str, Any]:
     from valkey_scale_lab.metrics.m2_resource import collect_m2_resource_window
     from valkey_scale_lab.runtime.docker_runtime import run_docker
@@ -942,15 +956,23 @@ def _capture_resource_window(
         window_start_event=window_start_event,
     )
     _write_json(trial_dir / "resource_window.json", report)
-    return _validate_resource_report(report)
+    return _validate_resource_report(
+        report,
+        allow_safety_failure_evidence=allow_safety_failure_evidence,
+    )
 
 
-def _load_resource_window(path: Path) -> dict[str, Any]:
+def _load_resource_window(
+    path: Path,
+    *,
+    allow_safety_failure_evidence: bool = False,
+) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink():
         raise CaptureError("M2 setup resource window is missing or unsafe")
     return _validate_resource_report(
         _load_object(path),
         allow_initial_membership_transitions=True,
+        allow_safety_failure_evidence=allow_safety_failure_evidence,
     )
 
 
@@ -958,6 +980,7 @@ def _validate_resource_report(
     report: dict[str, Any],
     *,
     allow_initial_membership_transitions: bool = False,
+    allow_safety_failure_evidence: bool = False,
 ) -> dict[str, Any]:
     from valkey_scale_lab.metrics.m2_resource import validate_and_aggregate_m2_resource_samples
 
@@ -998,9 +1021,10 @@ def _validate_resource_report(
             or not math.isclose(float(value), float(recomputed_value), rel_tol=0.0, abs_tol=1e-9)
         ):
             raise CaptureError(f"M2 resource metric {field} does not match raw samples")
-    for field in ("cluster_link_errors", "buffer_overflows"):
-        if recomputed_metrics.get(field) != 0:
-            raise CaptureError(f"M2 resource safety metric {field} is unavailable or nonzero")
+    if not allow_safety_failure_evidence:
+        for field in ("cluster_link_errors", "buffer_overflows"):
+            if recomputed_metrics.get(field) != 0:
+                raise CaptureError(f"M2 resource safety metric {field} is unavailable or nonzero")
     return report
 
 
@@ -3193,12 +3217,22 @@ def _failover_discovery_passed(ctx: CaptureContext, pair: Mapping[str, Any]) -> 
     ):
         return False
     return (
-        float(candidate_intervals["kill_to_stable_seconds"])
+        _discovery_safety_clean(candidate)
+        and float(candidate_intervals["kill_to_stable_seconds"])
         < float(baseline_intervals["kill_to_stable_seconds"])
         and float(candidate_intervals["kill_to_stable_seconds"]) <= 35.0
         and float(candidate_intervals["pfail_to_cluster_ok_seconds"]) <= 10.0
         and float(candidate_intervals["process_gone_to_pfail_seconds"]) <= 25.0
         and float(candidate_intervals["cluster_ok_to_stable_seconds"]) <= 2.0
+    )
+
+
+def _discovery_safety_clean(trial: Mapping[str, Any]) -> bool:
+    resources = trial.get("resource_window")
+    return (
+        isinstance(resources, Mapping)
+        and resources.get("cluster_link_errors") == 0
+        and resources.get("buffer_overflows") == 0
     )
 
 
