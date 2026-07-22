@@ -355,6 +355,22 @@ def test_m2_formation_bootstrap_classifies_initial_role_row_as_pre_establishment
         cluster_link_counts=(1, 21, 21),
     )
     assert persistent["metrics"]["cluster_link_errors"] == 1
+    unconfirmed = _m2_resource_report_with_link(
+        link,
+        claimed_errors=1,
+        window_name="m2-formation-bootstrap",
+        link_samples={2},
+        cluster_link_counts=(1, 1, 21),
+    )
+    assert unconfirmed["metrics"]["cluster_link_errors"] == 1
+    assert (
+        unconfirmed["samples"][2]["nodehosts"][0]["processes"][0]["cluster_link_errors"]
+        == 1
+    )
+    assert (
+        validate_equal_m2_resource_windows(unconfirmed, copy.deepcopy(unconfirmed))["status"]
+        == "FAIL"
+    )
 
 
 def test_m2_resource_window_fails_closed_for_unsafe_or_unknown_link_states() -> None:

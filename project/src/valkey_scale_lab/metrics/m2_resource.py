@@ -1296,6 +1296,7 @@ def _cluster_link_errors_from_raw(
     *,
     expected_gone_client_ports: set[int],
     previous_process: Mapping[str, Any] | None = None,
+    next_process: Mapping[str, Any] | None = None,
     allow_initial_membership_transition: bool = False,
 ) -> int:
     logical_id = process.get("logical_id", MISSING)
@@ -1384,6 +1385,11 @@ def _cluster_link_errors_from_raw(
             if isinstance(previous_process, Mapping)
             else None
         )
+        next_observations = (
+            next_process.get("non_connected_cluster_links")
+            if isinstance(next_process, Mapping)
+            else None
+        )
         initial_membership_transition = (
             allow_initial_membership_transition
             and previous_link_count == 1
@@ -1393,6 +1399,14 @@ def _cluster_link_errors_from_raw(
             and process["cluster_link_count"] > previous_link_count
             and (primary_link or replica_link)
             and (flag_set == {"master"} or flag_set == {"slave"})
+            and isinstance(next_process, Mapping)
+            and next_process.get("pid") == process.get("pid")
+            and isinstance(next_observations, list)
+            and all(
+                isinstance(next_observation, Mapping)
+                and next_observation.get("node_id") != node_id
+                for next_observation in next_observations
+            )
         )
         if not initial_membership_transition:
             errors += 1
@@ -1542,7 +1556,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, the first role-row topology expansion from a singleton observer in the formation-bootstrap window, and explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, the first role-row topology expansion from a singleton observer when the peer is absent from the next complete formation-bootstrap sample, and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {
@@ -1567,7 +1581,16 @@ def _aggregate_samples(
     link_error_totals: list[int] = []
     process_history: dict[str, list[tuple[dict[str, Any], int]]] = {}
     previous_processes: dict[str, dict[str, Any]] = {}
-    for sample in samples:
+    for sample_index, sample in enumerate(samples):
+        next_processes = (
+            {
+                process["logical_id"]: process
+                for nodehost in samples[sample_index + 1]["nodehosts"]
+                for process in nodehost["processes"]
+            }
+            if sample_index + 1 < len(samples)
+            else {}
+        )
         rss = 0
         fds = 0
         connections = 0
@@ -1589,6 +1612,7 @@ def _aggregate_samples(
                     process,
                     expected_gone_client_ports=expected_gone_client_ports,
                     previous_process=previous_processes.get(logical_id),
+                    next_process=next_processes.get(logical_id),
                     allow_initial_membership_transition=(
                         allow_initial_membership_transitions
                         and bool(prior_history)
