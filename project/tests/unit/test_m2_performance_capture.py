@@ -615,6 +615,10 @@ def test_resource_report_validation_uses_raw_derived_metrics(
     recomputed_metrics["cluster_link_errors"] = 1
     with pytest.raises(capture.CaptureError, match="unavailable or nonzero"):
         capture._validate_resource_report(report)
+    assert capture._validate_resource_report(
+        report,
+        allow_safety_failure_evidence=True,
+    ) is report
 
     report["metrics"]["cluster_link_errors"] = 0
     monkeypatch.setattr(
@@ -904,10 +908,12 @@ def test_formation_discovery_helper_runs_only_fixed_exact_50_pairs(
                 {
                     "trial_id": baseline_id,
                     "derived_intervals": {"formation_seconds": 100.0},
+                    "resource_window": {"cluster_link_errors": 0, "buffer_overflows": 0},
                 },
                 {
                     "trial_id": candidate_id,
                     "derived_intervals": {"formation_seconds": duration},
+                    "resource_window": {"cluster_link_errors": 0, "buffer_overflows": 0},
                 },
             ]
         )
@@ -932,6 +938,56 @@ def test_formation_discovery_helper_runs_only_fixed_exact_50_pairs(
     assert [call["candidate"] for call in calls] == capture._formation_candidates()
     assert all(cell["required_pairs"] == 1 for cell in context.cells)
     assert [candidate["bounded_parallelism"] for candidate, _ in survivors] == [8]
+
+
+def test_formation_discovery_rejects_unsafe_candidate_and_continues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    context = capture.CaptureContext(
+        args=SimpleNamespace(run_id="discovery", mode="formation"),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "m2_candidate_discovery.json",
+    )
+    candidates = capture._formation_candidates()[:2]
+    calls: list[str] = []
+
+    def fake_pair(ctx, **kwargs):
+        calls.append(kwargs["cell_id"])
+        pair_id = f"{kwargs['cell_id']}-pair-01"
+        baseline_id = f"{pair_id}-baseline"
+        candidate_id = f"{pair_id}-candidate"
+        unsafe = len(calls) == 1
+        ctx.trials.extend(
+            [
+                {
+                    "trial_id": baseline_id,
+                    "derived_intervals": {"formation_seconds": 100.0},
+                    "resource_window": {"cluster_link_errors": 0, "buffer_overflows": 0},
+                },
+                {
+                    "trial_id": candidate_id,
+                    "derived_intervals": {"formation_seconds": 80.0},
+                    "resource_window": {
+                        "cluster_link_errors": 1 if unsafe else 0,
+                        "buffer_overflows": 0,
+                    },
+                },
+            ]
+        )
+        return {
+            "pair_id": pair_id,
+            "cell_id": kwargs["cell_id"],
+            "baseline_trial_id": baseline_id,
+            "candidate_trial_id": candidate_id,
+        }
+
+    monkeypatch.setattr(capture, "_capture_pair", fake_pair)
+
+    survivors = capture.capture_formation_discovery(context, candidates=candidates)
+
+    assert calls == ["formation-discovery-1", "formation-discovery-2"]
+    assert [cell["status"] for cell in context.cells] == ["FAIL", "PASS"]
+    assert [candidate for candidate, _duration in survivors] == [candidates[1]]
 
 
 def test_failover_discovery_helper_runs_only_fixed_single_primary_pairs(

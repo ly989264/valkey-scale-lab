@@ -346,6 +346,8 @@ def _validate_trial_common(
     trial: Mapping[str, Any],
     report: Mapping[str, Any],
     errors: list[str],
+    *,
+    allow_safety_rejection: bool = False,
 ) -> None:
     trial_id = str(trial.get("trial_id", "MISSING"))
     prefix = f"trial {trial_id}"
@@ -373,7 +375,14 @@ def _validate_trial_common(
         _add(errors, value is not None and value >= 0, f"{prefix} resource {metric} is missing")
     for metric in ("cluster_link_errors", "buffer_overflows"):
         value = resources.get(metric)
-        _add(errors, isinstance(value, int) and not isinstance(value, bool) and value == 0, f"{prefix} resource {metric} must be zero")
+        _add(
+            errors,
+            isinstance(value, int)
+            and not isinstance(value, bool)
+            and value >= 0
+            and (value == 0 or allow_safety_rejection),
+            f"{prefix} resource {metric} must be zero",
+        )
     _add(errors, (_number(resources.get("duration_seconds")) or 0) > 0, f"{prefix} resource window duration is missing")
 
     cleanup = _object(trial.get("cleanup"))
@@ -585,6 +594,14 @@ def _metric_values(
     return values
 
 
+def _trial_safety_clean(trial: Mapping[str, Any]) -> bool:
+    resources = _object(trial.get("resource_window"))
+    return not resources or (
+        resources.get("cluster_link_errors") == 0
+        and resources.get("buffer_overflows") == 0
+    )
+
+
 def _validate_formation_discovery(
     report: Mapping[str, Any],
     trials_by_id: Mapping[str, Mapping[str, Any]],
@@ -664,6 +681,10 @@ def _validate_formation_discovery(
                 len(baseline_values) == len(cell_pairs)
                 and len(candidate_values) == len(cell_pairs)
                 and bool(cell_pairs)
+                and all(
+                    _trial_safety_clean(trial)
+                    for trial in _trials_for_pairs(cell_pairs, trials_by_id, "candidate")
+                )
                 and nearest_rank(candidate_values, 0.50) < nearest_rank(baseline_values, 0.50)
             )
             expected_status = "PASS" if passed else "FAIL"
@@ -865,6 +886,7 @@ def _failover_discovery_passed(
     )
     return (
         complete
+        and all(_trial_safety_clean(trial) for trial in candidate_trials)
         and nearest_rank(candidate_rto, 0.50) < nearest_rank(baseline_rto, 0.50)
         and nearest_rank(candidate_rto, 0.95) <= 35.0
         and nearest_rank(candidate_pfail, 0.95) <= 10.0
@@ -1140,7 +1162,10 @@ def _validate_stability(
 
 
 def _validate_trials_and_pairs(
-    report: Mapping[str, Any], errors: list[str]
+    report: Mapping[str, Any],
+    errors: list[str],
+    *,
+    allow_discovery_safety_rejections: bool = False,
 ) -> tuple[
     dict[str, Mapping[str, Any]],
     dict[str, Mapping[str, Any]],
@@ -1160,13 +1185,25 @@ def _validate_trials_and_pairs(
     _add(errors, all(isinstance(value, str) and value for value in started_trial_ids), "started trial ids must be non-empty strings")
     _add(errors, _all_unique(started_trial_ids), "started trial ids must be unique")
     _add(errors, set(started_trial_ids) == set(trial_ids), "started trial ledger must match every reported trial exactly")
+    cells_by_id = _cell_index(report, errors)
     trials_by_id: dict[str, Mapping[str, Any]] = {str(row.get("trial_id")): row for row in trials}
     for trial in trials:
-        _validate_trial_common(trial, report, errors)
+        cell = cells_by_id.get(str(trial.get("cell_id")), {})
+        allow_safety_rejection = (
+            allow_discovery_safety_rejections
+            and trial.get("arm") == "candidate"
+            and cell.get("campaign_step") == "discovery"
+            and cell.get("status") == "FAIL"
+        )
+        _validate_trial_common(
+            trial,
+            report,
+            errors,
+            allow_safety_rejection=allow_safety_rejection,
+        )
         _add(errors, isinstance(trial.get("run_id"), str) and str(trial.get("run_id")).startswith(f"{invocation_run_id}-"), f"trial {trial.get('trial_id', 'MISSING')} run id is not attributable to this invocation")
         _add(errors, trial.get("ownership_id") == trial.get("run_id"), f"trial {trial.get('trial_id', 'MISSING')} ownership id must equal its run id")
 
-    cells_by_id = _cell_index(report, errors)
     pairs_by_cell = _validate_pairs(report, trials_by_id, cells_by_id, errors)
     for cell_id, pairs in pairs_by_cell.items():
         _add(errors, cell_id in cells_by_id, f"pairs reference unknown cell {cell_id}")
@@ -1266,7 +1303,11 @@ def validate_discovery_campaign(
     _add(errors, report.get("errors") == [], "discovery campaign contains producer errors")
     _validate_protocol(report, errors)
 
-    trials_by_id, cells_by_id, pairs_by_cell = _validate_trials_and_pairs(report, errors)
+    trials_by_id, cells_by_id, pairs_by_cell = _validate_trials_and_pairs(
+        report,
+        errors,
+        allow_discovery_safety_rejections=True,
+    )
     cells = list(cells_by_id.values())
     _add(errors, bool(cells) and all(cell.get("campaign_step") == "discovery" for cell in cells), "discovery campaign contains a non-discovery cell")
     for cell in cells:
@@ -3555,6 +3596,7 @@ def validate_current_invocation_sources(
     report: Mapping[str, Any],
     *,
     artifacts_dir: Path,
+    allow_discovery_safety_rejections: bool = False,
 ) -> list[str]:
     """Verify every source exists, is non-symlinked, current, and digest-bound."""
     errors: list[str] = []
@@ -3595,6 +3637,10 @@ def validate_current_invocation_sources(
     cells_by_id = {
         str(cell.get("cell_id")): cell
         for cell in (_object(value) for value in _array(report.get("cells")))
+    }
+    trials_by_id = {
+        str(trial.get("trial_id")): trial
+        for trial in (_object(value) for value in _array(report.get("trials")))
     }
     trial_refs: list[dict[str, Any]] = []
     attempt_bounds: dict[str, tuple[float, float]] = {}
@@ -3805,6 +3851,15 @@ def validate_current_invocation_sources(
         candidate = resource_documents.get(str(pair.get("candidate_trial_id")))
         if baseline is None or candidate is None:
             continue
+        candidate_trial = trials_by_id.get(str(pair.get("candidate_trial_id")), {})
+        candidate_cell = cells_by_id.get(str(candidate_trial.get("cell_id")), {})
+        allow_candidate_safety_failure = (
+            allow_discovery_safety_rejections
+            and candidate_trial.get("arm") == "candidate"
+            and candidate_cell.get("campaign_step") == "discovery"
+            and candidate_cell.get("status") == "FAIL"
+            and not _trial_safety_clean(candidate_trial)
+        )
         comparison = validate_equal_m2_resource_windows(
             baseline,
             candidate,
@@ -3812,6 +3867,7 @@ def validate_current_invocation_sources(
                 resource_transition_permissions.get(str(pair.get("baseline_trial_id")), False)
                 and resource_transition_permissions.get(str(pair.get("candidate_trial_id")), False)
             ),
+            allow_candidate_safety_failure=allow_candidate_safety_failure,
         )
         for message in _array(comparison.get("errors")):
             errors.append(f"pair {pair_id} resource window: {message}")
