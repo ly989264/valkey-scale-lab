@@ -506,6 +506,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
     setup_result = _run_command(setup_cmd, env=setup_env, timeout=1800)
     _write_json(wrapper_commands, {"setup": setup_result, "cleanup": "PENDING"})
     state: dict[str, Any] = {}
+    state_validated = False
     trial_error: Exception | None = None
     measurement: dict[str, Any] = {}
     try:
@@ -513,6 +514,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
             raise CaptureError(f"setup failed for {spec.trial_id}: {setup_result['stderr'][-1000:]}")
         state = _load_object(state_path)
         _validate_state(state, spec)
+        state_validated = True
         topology = _capture_topology(
             trial_dir,
             state,
@@ -618,6 +620,11 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
         measurement.update({"topology": topology, "workload": workload, "resource": resource})
     except Exception as exc:  # cleanup below remains mandatory
         trial_error = exc
+    if trial_error is not None and state_validated:
+        try:
+            _capture_owned_valkey_logs(trial_dir, state, expected_run_id=spec.trial_id)
+        except Exception:  # diagnostics must never prevent mandatory cleanup
+            pass
     cleanup_state_path = _cleanup_state_for_attempt(
         trial_dir,
         state_path,
@@ -2965,6 +2972,102 @@ def _cleanup_error(
     return ""
 
 
+def _capture_owned_valkey_logs(
+    trial_dir: Path,
+    state: Mapping[str, Any],
+    *,
+    expected_run_id: str,
+) -> Path:
+    log_dir = trial_dir / "server_logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    rows: list[dict[str, Any]] = []
+    nodes = state.get("nodes")
+    runtime = state.get("runtime")
+    state_run_id = runtime.get("run_id") if isinstance(runtime, Mapping) else None
+    if not isinstance(nodes, list) or not nodes or state_run_id != expected_run_id:
+        manifest = {
+            "artifact_type": "m2_owned_valkey_logs",
+            "status": "MISSING",
+            "run_id": expected_run_id,
+            "logs": [],
+            "errors": ["validated current-trial node state was unavailable before cleanup"],
+        }
+        path = log_dir / "manifest.json"
+        _write_json(path, manifest)
+        return path
+
+    errors: list[str] = []
+    bindings: list[tuple[str, str, str]] = []
+    expected_prefix = f"/tmp/valkey-scale-lab/{expected_run_id}/"
+    for node in sorted(nodes, key=lambda item: str(item.get("logical_id", "")) if isinstance(item, Mapping) else ""):
+        if not isinstance(node, Mapping):
+            errors.append("node state row is not an object")
+            continue
+        logical_id = node.get("logical_id")
+        container_name = node.get("container_name")
+        log_file = node.get("log_file")
+        if (
+            not isinstance(logical_id, str)
+            or RUN_ID_RE.fullmatch(logical_id) is None
+            or not isinstance(container_name, str)
+            or not container_name
+            or not isinstance(log_file, str)
+            or log_file != f"{expected_prefix}{logical_id}/valkey.log"
+        ):
+            errors.append(f"unsafe or incomplete log binding for {logical_id!r}")
+            continue
+        bindings.append((logical_id, container_name, log_file))
+
+    def capture_log(binding: tuple[str, str, str]) -> tuple[str, dict[str, Any]]:
+        logical_id, container_name, log_file = binding
+        return logical_id, _run_command(
+            ["docker", "exec", container_name, "cat", log_file],
+            env=os.environ,
+            timeout=5,
+        )
+
+    results: list[tuple[str, dict[str, Any]]] = []
+    if bindings:
+        with ThreadPoolExecutor(max_workers=min(len(bindings), 8)) as executor:
+            results = list(executor.map(capture_log, bindings))
+    for logical_id, result in results:
+        if result["returncode"] != 0:
+            rows.append(
+                {
+                    "logical_id": logical_id,
+                    "status": "MISSING",
+                    "reason": "owned Valkey log was unavailable before cleanup",
+                }
+            )
+            continue
+        target = log_dir / f"{logical_id}.log"
+        target.write_text(result["stdout"], encoding="utf-8")
+        rows.append(
+            {
+                "logical_id": logical_id,
+                "status": "PASS",
+                "path": target.relative_to(trial_dir).as_posix(),
+                "sha256": _file_digest(target),
+                "size_bytes": target.stat().st_size,
+            }
+        )
+    if len(rows) != len(nodes):
+        errors.append("one or more owned Valkey logs lacked a safe state binding")
+    missing = sum(1 for row in rows if row.get("status") != "PASS")
+    manifest = {
+        "artifact_type": "m2_owned_valkey_logs",
+        "status": "PASS" if not errors and missing == 0 else "PARTIAL",
+        "run_id": expected_run_id,
+        "expected_log_count": len(nodes),
+        "captured_log_count": len(rows) - missing,
+        "logs": rows,
+        "errors": errors,
+    }
+    path = log_dir / "manifest.json"
+    _write_json(path, manifest)
+    return path
+
+
 def _trial_source_paths(trial_dir: Path, spec: ArmSpec, measurement: dict[str, Any]) -> list[tuple[str, Path]]:
     rows = [
         ("attempt", trial_dir / "attempt_ledger.json"),
@@ -2995,6 +3098,7 @@ def _collect_partial_refs(ctx: CaptureContext, trial_dir: Path, spec: ArmSpec) -
         ("workload", trial_dir / "workload_observation.json"),
         ("topology", trial_dir / "topology_observation.json"),
         ("fault", trial_dir / "fault_observation.json"),
+        ("server_logs", trial_dir / "server_logs" / "manifest.json"),
     ]
     for category, path in candidates:
         if path.is_file() and not path.is_symlink():
