@@ -139,6 +139,12 @@ for owned_process in "$@"; do
     failed=1
     continue
   fi
+  if ! cluster_links=$(valkey-cli -3 --json -p "$port" CLUSTER LINKS 2>/dev/null); then
+    printf 'ERROR\t%s\tcluster_links_unreadable\n' "$pid"
+    failed=1
+    continue
+  fi
+  printf 'CLINKS\t%s\t%s\n' "$pid" "$cluster_links"
 done
 rx=0
 tx=0
@@ -169,6 +175,7 @@ def collect_m2_resource_window(
     expected_gone_pids: set[int] | list[int] | tuple[int, ...] | None = None,
     first_complete_sample_event: Any | None = None,
     window_start_event: Any | None = None,
+    formation_complete_event: Any | None = None,
     allow_initial_membership_transitions: bool = False,
 ) -> dict[str, Any]:
     """Measure an explicitly requested M2 resource window.
@@ -197,6 +204,10 @@ def collect_m2_resource_window(
             raise M2ResourceMeasurementError("first_complete_sample_event must provide set()")
         if window_start_event is not None and not callable(getattr(window_start_event, "wait", None)):
             raise M2ResourceMeasurementError("window_start_event must provide wait()")
+        if formation_complete_event is not None and not callable(
+            getattr(formation_complete_event, "is_set", None)
+        ):
+            raise M2ResourceMeasurementError("formation_complete_event must provide is_set()")
         expected_samples = window_samples + (1 if window_start_event is not None else 0)
         _verify_owned_targets(
             targets,
@@ -230,6 +241,11 @@ def collect_m2_resource_window(
         if delay > 0:
             sleep(delay)
         sample_started = float(monotonic_clock())
+        formation_complete_at_start = (
+            bool(formation_complete_event.is_set())
+            if formation_complete_event is not None
+            else None
+        )
         wall_unix_ms = int(float(wall_clock()) * 1000.0)
         nodehost_rows: list[dict[str, Any]] = []
         sample_errors: list[str] = []
@@ -273,6 +289,11 @@ def collect_m2_resource_window(
             except Exception as exc:  # noqa: BLE001 - preserve a fail-closed report for the caller
                 sample_errors.append(f"{target.nodehost_id}: {exc}")
         sample_ended = float(monotonic_clock())
+        formation_complete_at_end = (
+            bool(formation_complete_event.is_set())
+            if formation_complete_event is not None
+            else None
+        )
         if sample_ended < sample_started:
             sample_errors.append("monotonic clock moved backwards during sampling")
         sample = {
@@ -287,6 +308,14 @@ def collect_m2_resource_window(
             "status": "PASS" if not sample_errors and len(nodehost_rows) == len(targets) else "FAIL",
             "errors": sample_errors,
         }
+        if formation_complete_event is not None:
+            sample["sample_phase"] = (
+                "formation_bootstrap"
+                if formation_complete_at_start is False and formation_complete_at_end is False
+                else "post_formation"
+                if formation_complete_at_start is True and formation_complete_at_end is True
+                else "formation_boundary"
+            )
         errors.extend(f"sample {sample_index}: {message}" for message in sample_errors)
         return sample
 
@@ -595,6 +624,14 @@ def validate_and_aggregate_m2_resource_samples(
             continue
         if sample.get("sample_index") != sample_position:
             errors.append(f"sample index is not exact at position {sample_position}")
+        if sample.get("sample_phase") is not None and sample.get("sample_phase") not in {
+            "pre_barrier",
+            "window",
+            "formation_bootstrap",
+            "formation_boundary",
+            "post_formation",
+        }:
+            errors.append(f"sample {sample_position} has an invalid phase")
         if sample.get("status") != "PASS" or sample.get("errors") != []:
             errors.append(f"sample {sample_position} is not a clean PASS")
         nodehosts = sample.get("nodehosts")
@@ -1159,6 +1196,7 @@ def _parse_batch(
     processes: dict[int, dict[str, int]] = {}
     cluster_counters: dict[int, dict[str, int]] = {}
     non_connected_cluster_links: dict[int, list[dict[str, Any]]] = {}
+    directional_cluster_links: dict[int, list[dict[str, Any]]] = {}
     gone_pids: set[int] = set()
     rx_bytes: int | None = None
     tx_bytes: int | None = None
@@ -1208,6 +1246,15 @@ def _parse_batch(
                     "link_state": parts[6],
                 }
             )
+        elif parts[0] == "CLINKS" and len(parts) == 3:
+            pid = _positive_int(parts[1], "directional cluster link pid")
+            if pid in directional_cluster_links:
+                raise M2ResourceMeasurementError(
+                    f"duplicate CLUSTER LINKS sample for pid {pid}"
+                )
+            directional_cluster_links[pid] = _parse_directional_cluster_links(
+                parts[2], pid=pid
+            )
         elif parts[0] == "GONE" and len(parts) == 3:
             pid = _positive_int(parts[1], "gone pid")
             port = _positive_int(parts[2], "gone client_port")
@@ -1244,6 +1291,11 @@ def _parse_batch(
         errors.append(
             "cluster link observations are not bound to live proc targets: "
             f"{sorted(set(non_connected_cluster_links) - set(processes))}"
+        )
+    if set(directional_cluster_links) - set(processes):
+        errors.append(
+            "directional cluster link observations are not bound to live proc targets: "
+            f"{sorted(set(directional_cluster_links) - set(processes))}"
         )
     reappeared = {
         _process_identity(target, pid)
@@ -1294,6 +1346,11 @@ def _parse_batch(
                 "cluster_link_errors": cluster_counters[pid]["cluster_link_errors"],
                 "non_connected_cluster_link_count": cluster_counters[pid]["non_connected_cluster_link_count"],
                 "non_connected_cluster_links": non_connected_cluster_links.get(pid, []),
+                **(
+                    {"directional_cluster_links": directional_cluster_links[pid]}
+                    if pid in directional_cluster_links
+                    else {}
+                ),
             }
             for pid in target.pids
             if pid in processes
@@ -1307,6 +1364,55 @@ def _parse_batch(
     }
 
 
+def _parse_directional_cluster_links(raw: str, *, pid: int) -> list[dict[str, Any]]:
+    try:
+        decoded = json.loads(raw)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise M2ResourceMeasurementError(
+            f"pid {pid} CLUSTER LINKS is not valid JSON: {exc}"
+        ) from exc
+    if not isinstance(decoded, list):
+        raise M2ResourceMeasurementError(f"pid {pid} CLUSTER LINKS is not an array")
+    normalized: list[dict[str, Any]] = []
+    for position, value in enumerate(decoded):
+        if not isinstance(value, dict):
+            raise M2ResourceMeasurementError(
+                f"pid {pid} CLUSTER LINKS entry {position} is not an object"
+            )
+        direction = value.get("direction")
+        node_id = value.get("node")
+        create_time = value.get("create-time")
+        events = value.get("events")
+        allocated = value.get("send-buffer-allocated")
+        used = value.get("send-buffer-used")
+        if (
+            direction not in {"to", "from"}
+            or not _valid_cluster_node_id(node_id)
+            or isinstance(create_time, bool)
+            or not isinstance(create_time, int)
+            or create_time < 0
+            or not isinstance(events, str)
+            or any(event not in {"r", "w"} for event in events)
+            or len(set(events)) != len(events)
+            or not _valid_nonnegative_int(allocated)
+            or not _valid_nonnegative_int(used)
+        ):
+            raise M2ResourceMeasurementError(
+                f"pid {pid} CLUSTER LINKS entry {position} is incomplete or invalid"
+            )
+        normalized.append(
+            {
+                "direction": direction,
+                "node_id": node_id,
+                "create_time": create_time,
+                "events": events,
+                "send_buffer_allocated": allocated,
+                "send_buffer_used": used,
+            }
+        )
+    return normalized
+
+
 def _cluster_link_errors_from_raw(
     process: Mapping[str, Any],
     *,
@@ -1314,6 +1420,7 @@ def _cluster_link_errors_from_raw(
     previous_process: Mapping[str, Any] | None = None,
     next_process: Mapping[str, Any] | None = None,
     allow_initial_membership_transition: bool = False,
+    sample_phase: str | None = None,
 ) -> int:
     logical_id = process.get("logical_id", MISSING)
     observations = process.get("non_connected_cluster_links")
@@ -1435,7 +1542,39 @@ def _cluster_link_errors_from_raw(
                 for next_observation in next_observations
             )
         )
-        if not initial_membership_transition:
+        previous_directions = (
+            _directional_link_directions(previous_process, node_id)
+            if isinstance(previous_process, Mapping)
+            else None
+        )
+        current_directions = _directional_link_directions(process, node_id)
+        next_directions = (
+            _directional_link_directions(next_process, node_id)
+            if isinstance(next_process, Mapping)
+            else None
+        )
+        formation_direction_correction = (
+            allow_initial_membership_transition
+            and sample_phase == "formation_bootstrap"
+            and (primary_link or replica_link)
+            and (flag_set == {"master"} or flag_set == {"slave"})
+            and isinstance(previous_process, Mapping)
+            and previous_process.get("pid") == process.get("pid")
+            and isinstance(next_process, Mapping)
+            and next_process.get("pid") == process.get("pid")
+            and previous_directions is not None
+            and "from" not in previous_directions
+            and current_directions is not None
+            and "from" in current_directions
+            and next_directions == {"to", "from"}
+            and isinstance(next_observations, list)
+            and all(
+                isinstance(next_observation, Mapping)
+                and next_observation.get("node_id") != node_id
+                for next_observation in next_observations
+            )
+        )
+        if not initial_membership_transition and not formation_direction_correction:
             errors += 1
     claimed = process.get("cluster_link_errors")
     if not _valid_nonnegative_int(claimed) or claimed != claimed_errors:
@@ -1444,6 +1583,44 @@ def _cluster_link_errors_from_raw(
             f"claimed={claimed!r} recomputed={claimed_errors}"
         )
     return errors
+
+
+def _directional_link_directions(
+    process: Mapping[str, Any], node_id: str
+) -> set[str] | None:
+    raw_links = process.get("directional_cluster_links")
+    if not isinstance(raw_links, list):
+        return None
+    directions: set[str] = set()
+    for position, link in enumerate(raw_links):
+        if not isinstance(link, Mapping):
+            raise M2ResourceMeasurementError(
+                f"directional cluster link {position} must be an object"
+            )
+        direction = link.get("direction")
+        observed_node_id = link.get("node_id")
+        create_time = link.get("create_time")
+        events = link.get("events")
+        allocated = link.get("send_buffer_allocated")
+        used = link.get("send_buffer_used")
+        if (
+            direction not in {"to", "from"}
+            or not _valid_cluster_node_id(observed_node_id)
+            or isinstance(create_time, bool)
+            or not isinstance(create_time, int)
+            or create_time < 0
+            or not isinstance(events, str)
+            or any(event not in {"r", "w"} for event in events)
+            or len(set(events)) != len(events)
+            or not _valid_nonnegative_int(allocated)
+            or not _valid_nonnegative_int(used)
+        ):
+            raise M2ResourceMeasurementError(
+                f"directional cluster link {position} is incomplete or invalid"
+            )
+        if observed_node_id == node_id and "r" in events:
+            directions.add(direction)
+    return directions
 
 
 def _cluster_link_client_port(address: str) -> int | None:
@@ -1585,7 +1762,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, a setup-trial-authorized role-row topology expansion during monotonic initial formation when the peer is absent and link count does not regress in the next complete formation-bootstrap sample, and explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, setup-trial-authorized monotonic membership expansion, raw CLUSTER LINKS-proven missing-inbound direction correction wholly before full-mesh formation completion with next-sample bidirectional recovery, and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {
@@ -1658,6 +1835,7 @@ def _aggregate_samples(
                             )
                         )
                     ),
+                    sample_phase=sample.get("sample_phase"),
                 )
                 prior_history.append((process, hz))
                 previous_processes[logical_id] = process

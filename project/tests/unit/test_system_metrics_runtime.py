@@ -269,6 +269,7 @@ def test_m2_resource_window_batches_owned_pids_and_aggregates_proc_counters() ->
     assert all("/proc/$pid/fd" in args[4] and "/proc/net/dev" in args[4] for args in exec_calls)
     assert all("valkey-cli --raw -p \"$port\" CLUSTER INFO" in args[4] for args in exec_calls)
     assert all("valkey-cli --raw -p \"$port\" CLUSTER NODES" in args[4] for args in exec_calls)
+    assert all("valkey-cli -3 --json -p \"$port\" CLUSTER LINKS" in args[4] for args in exec_calls)
     assert all('printf "LINK\\t%s' in args[4] and "pending_handshake" in args[4] for args in exec_calls)
     assert report["diagnostics"] == {"cluster_bus_messages": 108, "namespace_network_bytes": 600}
     assert "exact Valkey 9.1 per-node CLUSTER INFO" in report["metric_provenance"]["cluster_bus_bytes"]
@@ -464,6 +465,80 @@ def test_m2_bootstrap_transition_allows_unrelated_prior_handshake() -> None:
         previous_process=previous_process,
         next_process=next_process,
         allow_initial_membership_transition=True,
+    ) == 1
+
+
+def test_m2_bootstrap_classifies_only_raw_proven_direction_correction() -> None:
+    peer_id = "b" * 40
+
+    def directional(direction: str) -> dict:
+        return {
+            "direction": direction,
+            "node_id": peer_id,
+            "create_time": 1000,
+            "events": "r",
+            "send_buffer_allocated": 0,
+            "send_buffer_used": 0,
+        }
+
+    previous = {
+        "pid": 101,
+        "cluster_link_count": 50,
+        "non_connected_cluster_links": [],
+        "directional_cluster_links": [directional("to")],
+    }
+    current = {
+        "logical_id": "observer",
+        "pid": 101,
+        "cluster_link_count": 50,
+        "cluster_link_errors": 1,
+        "non_connected_cluster_link_count": 1,
+        "non_connected_cluster_links": [
+            {
+                "node_id": peer_id,
+                "address": "127.0.0.1:7201@17201",
+                "flags": ["master"],
+                "master_id": "-",
+                "link_state": "disconnected",
+            }
+        ],
+        "directional_cluster_links": [directional("from")],
+    }
+    recovered = {
+        "pid": 101,
+        "cluster_link_count": 50,
+        "non_connected_cluster_links": [],
+        "directional_cluster_links": [directional("to"), directional("from")],
+    }
+
+    assert _cluster_link_errors_from_raw(
+        current,
+        expected_gone_client_ports=set(),
+        previous_process=previous,
+        next_process=recovered,
+        allow_initial_membership_transition=True,
+        sample_phase="formation_bootstrap",
+    ) == 0
+
+    for phase in ("formation_boundary", "post_formation", None):
+        assert _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=previous,
+            next_process=recovered,
+            allow_initial_membership_transition=True,
+            sample_phase=phase,
+        ) == 1
+
+    not_bidirectional = copy.deepcopy(recovered)
+    not_bidirectional["directional_cluster_links"] = [directional("from")]
+    assert _cluster_link_errors_from_raw(
+        current,
+        expected_gone_client_ports=set(),
+        previous_process=previous,
+        next_process=not_bidirectional,
+        allow_initial_membership_transition=True,
+        sample_phase="formation_bootstrap",
     ) == 1
 
 

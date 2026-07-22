@@ -856,6 +856,37 @@ def test_process_wait_predicate_uses_representatives_then_full_check(monkeypatch
     assert calls == [["p0", "p1"], ["p0", "p1", "r0", "r1"]]
 
 
+def test_process_cluster_link_counts_require_readable_bidirectional_peers() -> None:
+    peer_a = "a" * 40
+    peer_b = "b" * 40
+
+    counts = docker_runtime._process_cluster_link_counts(
+        [
+            ["direction", "to", "node", peer_a, "events", "r"],
+            ["direction", "from", "node", peer_a, "events", "r"],
+            ["direction", "to", "node", peer_b, "events", "rw"],
+            ["direction", "from", "node", peer_b, "events", "r"],
+        ]
+    )
+
+    assert counts == {
+        "cluster_link_to_count": 2,
+        "cluster_link_from_count": 2,
+        "cluster_link_bidirectional_peer_count": 2,
+        "cluster_link_invalid_count": 0,
+        "cluster_link_duplicate_count": 0,
+    }
+
+    incomplete = docker_runtime._process_cluster_link_counts(
+        [
+            ["direction", "to", "node", peer_a, "events", "r"],
+            ["direction", "from", "node", peer_a, "events", ""],
+        ]
+    )
+    assert incomplete["cluster_link_bidirectional_peer_count"] == 0
+    assert incomplete["cluster_link_invalid_count"] == 1
+
+
 def test_large_process_cluster_uses_cluster_create(monkeypatch: pytest.MonkeyPatch) -> None:
     create_calls: list[tuple[list[str], list[str]]] = []
     waits: list[str] = []
