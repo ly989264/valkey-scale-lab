@@ -2004,6 +2004,131 @@ def test_raw_resource_source_accepts_pre_establishment_handshake_transient(tmp_p
     assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
 
 
+def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_path: Path) -> None:
+    report = _formation_report()
+    trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    resource = json.loads(paths["resource"].read_text(encoding="utf-8"))
+    duration = float(resource["duration_seconds"])
+    midpoint = duration / 2.0
+    previous, recovered = resource["samples"]
+    current = deepcopy(previous)
+    resource["samples"] = [previous, current, recovered]
+    resource["window_name"] = "m2-formation-bootstrap"
+    resource["interval_seconds"] = midpoint
+
+    for index, (sample, offset, sample_marker) in enumerate(
+        zip(
+            resource["samples"],
+            (0.0, midpoint, duration),
+            ("formation_bootstrap", "formation_bootstrap", "formation_boundary"),
+        )
+    ):
+        sample["sample_index"] = index
+        sample["scheduled_offset_seconds"] = offset
+        sample["timestamp_unix_ms"] = 1_700_000_000_000 + int(offset * 1000)
+        sample["scheduled_at_monotonic_seconds"] = offset
+        sample["started_at_monotonic_seconds"] = offset
+        sample["ended_at_monotonic_seconds"] = offset
+        sample["sample_phase"] = sample_marker
+
+    peer_id = "b" * 40
+
+    def directional(direction: str, create_time: int) -> dict[str, object]:
+        return {
+            "direction": direction,
+            "node_id": peer_id,
+            "create_time": create_time,
+            "events": "r",
+            "send_buffer_allocated": 0,
+            "send_buffer_used": 0,
+        }
+
+    observed_processes = [
+        sample["nodehosts"][0]["processes"][0] for sample in resource["samples"]
+    ]
+    observed_processes[0]["directional_cluster_links"] = [
+        directional("to", 1000),
+        directional("from", 1000),
+    ]
+    observed_processes[1].update(
+        {
+            "cluster_link_errors": 1,
+            "non_connected_cluster_link_count": 1,
+            "non_connected_cluster_links": [
+                {
+                    "node_id": peer_id,
+                    "address": "127.0.0.1:7201@17201",
+                    "flags": ["master"],
+                    "master_id": "-",
+                    "link_state": "disconnected",
+                }
+            ],
+            "directional_cluster_links": [
+                directional("to", 2000),
+                directional("from", 1000),
+            ],
+        }
+    )
+    observed_processes[2]["directional_cluster_links"] = [
+        directional("to", 2000),
+        directional("from", 1000),
+    ]
+    resource["coverage"].update(
+        {
+            "expected_sample_count": 3,
+            "observed_sample_count": 3,
+            "sample_timestamps_unix_ms": [
+                sample["timestamp_unix_ms"] for sample in resource["samples"]
+            ],
+            "sample_monotonic_seconds": [
+                sample["started_at_monotonic_seconds"] for sample in resource["samples"]
+            ],
+            "scheduled_offsets_seconds": [
+                sample["scheduled_offset_seconds"] for sample in resource["samples"]
+            ],
+            "actual_window_start_monotonic_seconds": 0.0,
+            "actual_window_end_monotonic_seconds": duration,
+            "actual_window_span_seconds": duration,
+            "sampling_envelope_end_monotonic_seconds": duration,
+            "sampling_envelope_span_seconds": duration,
+            "max_schedule_lag_seconds": 0.0,
+            "max_sample_collection_seconds": 0.0,
+        }
+    )
+
+    verdict = M2.validate_and_aggregate_m2_resource_samples(
+        resource,
+        allow_initial_membership_transitions=True,
+    )
+
+    assert verdict["status"] == "PASS", verdict["errors"]
+    assert verdict["metrics"]["cluster_link_errors"] == 0
+    resource["metrics"] = verdict["metrics"]
+    resource["diagnostics"] = verdict["diagnostics"]
+    trial["resource_window"].update(verdict["metrics"])
+    _rewrite_bound_source(report, trial, paths["resource"], "resource", resource)
+    refs = {ref["category"]: ref for ref in trial["source_sha256s"]}
+    trial["provenance"]["capture_digest"] = M2._canonical_digest(
+        {
+            category: ref["sha256"]
+            for category, ref in refs.items()
+            if category != "provenance"
+        }
+    )
+    _rewrite_bound_source(
+        report,
+        trial,
+        paths["provenance"],
+        "provenance",
+        trial["provenance"],
+    )
+
+    assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
+
+
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [

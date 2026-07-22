@@ -1540,17 +1540,24 @@ def _cluster_link_errors_from_raw(
                 for next_observation in next_observations
             )
         )
-        previous_directions = (
-            _directional_link_directions(previous_process, node_id)
+        previous_link_times = (
+            _directional_link_create_times(previous_process, node_id)
             if isinstance(previous_process, Mapping)
             else None
         )
-        current_directions = _directional_link_directions(process, node_id)
-        next_directions = (
-            _directional_link_directions(next_process, node_id)
+        current_link_times = _directional_link_create_times(process, node_id)
+        next_link_times = (
+            _directional_link_create_times(next_process, node_id)
             if isinstance(next_process, Mapping)
             else None
         )
+        previous_directions = (
+            set(previous_link_times) if previous_link_times is not None else None
+        )
+        current_directions = (
+            set(current_link_times) if current_link_times is not None else None
+        )
+        next_directions = set(next_link_times) if next_link_times is not None else None
         formation_direction_correction = (
             allow_initial_membership_transition
             and sample_phase == "formation_bootstrap"
@@ -1572,7 +1579,58 @@ def _cluster_link_errors_from_raw(
                 for next_observation in next_observations
             )
         )
-        if not initial_membership_transition and not formation_direction_correction:
+        previous_count = (
+            previous_process.get("cluster_link_count")
+            if isinstance(previous_process, Mapping)
+            else None
+        )
+        current_count = process.get("cluster_link_count")
+        next_count = (
+            next_process.get("cluster_link_count")
+            if isinstance(next_process, Mapping)
+            else None
+        )
+        # CLUSTER NODES is captured before CLUSTER LINKS; require an in-sample
+        # reconnect plus next-sample recovery before classifying bootstrap churn.
+        formation_reconnect_recovery = (
+            allow_initial_membership_transition
+            and sample_phase == "formation_bootstrap"
+            and (primary_link or replica_link)
+            and (flag_set == {"master"} or flag_set == {"slave"})
+            and isinstance(previous_process, Mapping)
+            and previous_process.get("pid") == process.get("pid")
+            and isinstance(next_process, Mapping)
+            and next_process.get("pid") == process.get("pid")
+            and _valid_positive_int(previous_count)
+            and _valid_positive_int(current_count)
+            and _valid_positive_int(next_count)
+            and previous_count <= current_count <= next_count
+            and previous_directions == {"to", "from"}
+            and current_directions == {"to", "from"}
+            and next_directions == {"to", "from"}
+            and previous_link_times is not None
+            and current_link_times is not None
+            and next_link_times is not None
+            and any(
+                current_link_times[direction] > previous_link_times[direction]
+                for direction in ("to", "from")
+            )
+            and all(
+                next_link_times[direction] >= current_link_times[direction]
+                for direction in ("to", "from")
+            )
+            and isinstance(next_observations, list)
+            and all(
+                isinstance(next_observation, Mapping)
+                and next_observation.get("node_id") != node_id
+                for next_observation in next_observations
+            )
+        )
+        if not (
+            initial_membership_transition
+            or formation_direction_correction
+            or formation_reconnect_recovery
+        ):
             errors += 1
     claimed = process.get("cluster_link_errors")
     if not _valid_nonnegative_int(claimed) or claimed != claimed_errors:
@@ -1583,13 +1641,13 @@ def _cluster_link_errors_from_raw(
     return errors
 
 
-def _directional_link_directions(
+def _directional_link_create_times(
     process: Mapping[str, Any], node_id: str
-) -> set[str] | None:
+) -> dict[str, int] | None:
     raw_links = process.get("directional_cluster_links")
     if not isinstance(raw_links, list):
         return None
-    directions: set[str] = set()
+    create_times: dict[str, int] = {}
     for position, link in enumerate(raw_links):
         if not isinstance(link, Mapping):
             raise M2ResourceMeasurementError(
@@ -1617,8 +1675,8 @@ def _directional_link_directions(
                 f"directional cluster link {position} is incomplete or invalid"
             )
         if observed_node_id == node_id and "r" in events:
-            directions.add(direction)
-    return directions
+            create_times[direction] = max(create_times.get(direction, 0), create_time)
+    return create_times
 
 
 def _cluster_link_client_port(address: str) -> int | None:
@@ -1760,7 +1818,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, setup-trial-authorized monotonic membership expansion, raw CLUSTER LINKS-proven missing-inbound direction correction wholly before full-mesh formation completion with next-sample bidirectional recovery, and explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, setup-trial-authorized monotonic membership expansion, raw CLUSTER LINKS-proven direction correction or bounded reconnect recovery wholly before full-mesh formation completion with next-sample bidirectional recovery, and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {
