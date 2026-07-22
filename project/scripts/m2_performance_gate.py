@@ -230,6 +230,25 @@ def _within_regression(baseline: float, candidate: float, limit: float) -> bool:
     return candidate <= baseline * (1.0 + limit)
 
 
+def _resource_regression_clean(
+    baseline_trial: Mapping[str, Any], candidate_trial: Mapping[str, Any]
+) -> bool:
+    baseline_window = _object(baseline_trial.get("resource_window"))
+    candidate_window = _object(candidate_trial.get("resource_window"))
+    for metric in RESOURCE_METRICS:
+        baseline_value = _number(baseline_window.get(metric))
+        candidate_value = _number(candidate_window.get(metric))
+        if (
+            baseline_value is None
+            or candidate_value is None
+            or baseline_value < 0
+            or candidate_value < 0
+            or not _within_regression(baseline_value, candidate_value, 0.10)
+        ):
+            return False
+    return True
+
+
 def _validate_required_shape(report: Mapping[str, Any]) -> list[str]:
     schema = load_json(SCHEMA_PATH)
     errors = validate(report, schema)
@@ -498,7 +517,8 @@ def _validate_pairs(
         expected_orders = (1, 2) if order == "AB" else (2, 1) if order == "BA" else (0, 0)
         _add(errors, (baseline.get("order"), candidate.get("order")) == expected_orders, f"pair {pair_id} arm order does not match {order!r}")
         _add(errors, _treatment_key(baseline.get("treatment")) == _treatment_key(report.get("baseline")), f"pair {pair_id} baseline treatment is wrong")
-        cell_candidate = _object(cells_by_id.get(str(cell_id), {})).get("candidate")
+        candidate_cell = _object(cells_by_id.get(str(cell_id), {}))
+        cell_candidate = candidate_cell.get("candidate")
         _add(errors, _treatment_key(candidate.get("treatment")) == _treatment_key(cell_candidate), f"pair {pair_id} candidate treatment is wrong")
         controls = _object(pair.get("control_digests"))
         _add(errors, set(controls) == CONTROL_DIGEST_KEYS, f"pair {pair_id} control digest set is incomplete")
@@ -524,6 +544,10 @@ def _validate_pairs(
                 and len(candidate_targets) == len(_array(_object(candidate_fault).get("targets"))),
                 f"pair {pair_id} did not hold logical fault targets and shards constant",
             )
+        allow_discovery_resource_rejection = (
+            candidate_cell.get("campaign_step") == "discovery"
+            and candidate_cell.get("status") == "FAIL"
+        )
         duration = _number(pair.get("equal_observation_seconds"))
         baseline_duration = _number(_object(baseline.get("resource_window")).get("duration_seconds"))
         candidate_duration = _number(_object(candidate.get("resource_window")).get("duration_seconds"))
@@ -542,7 +566,10 @@ def _validate_pairs(
                 errors,
                 baseline_value is not None
                 and candidate_value is not None
-                and _within_regression(baseline_value, candidate_value, 0.10),
+                and (
+                    _within_regression(baseline_value, candidate_value, 0.10)
+                    or allow_discovery_resource_rejection
+                ),
                 f"pair {pair_id} {metric} regressed by more than 10 percent",
             )
 
@@ -684,6 +711,13 @@ def _validate_formation_discovery(
                 and all(
                     _trial_safety_clean(trial)
                     for trial in _trials_for_pairs(cell_pairs, trials_by_id, "candidate")
+                )
+                and all(
+                    _resource_regression_clean(baseline_trial, candidate_trial)
+                    for baseline_trial, candidate_trial in zip(
+                        _trials_for_pairs(cell_pairs, trials_by_id, "baseline"),
+                        _trials_for_pairs(cell_pairs, trials_by_id, "candidate"),
+                    )
                 )
                 and nearest_rank(candidate_values, 0.50) < nearest_rank(baseline_values, 0.50)
             )
@@ -887,6 +921,10 @@ def _failover_discovery_passed(
     return (
         complete
         and all(_trial_safety_clean(trial) for trial in candidate_trials)
+        and all(
+            _resource_regression_clean(baseline_trial, candidate_trial)
+            for baseline_trial, candidate_trial in zip(baseline_trials, candidate_trials)
+        )
         and nearest_rank(candidate_rto, 0.50) < nearest_rank(baseline_rto, 0.50)
         and nearest_rank(candidate_rto, 0.95) <= 35.0
         and nearest_rank(candidate_pfail, 0.95) <= 10.0
