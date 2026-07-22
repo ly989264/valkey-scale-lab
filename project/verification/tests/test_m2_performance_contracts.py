@@ -2007,6 +2007,8 @@ def test_raw_resource_source_accepts_pre_establishment_handshake_transient(tmp_p
 def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_path: Path) -> None:
     report = _formation_report()
     trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     resource = json.loads(paths["resource"].read_text(encoding="utf-8"))
     duration = float(resource["duration_seconds"])
@@ -2104,6 +2106,27 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_
 
     assert verdict["status"] == "PASS", verdict["errors"]
     assert verdict["metrics"]["cluster_link_errors"] == 0
+    resource["metrics"] = verdict["metrics"]
+    resource["diagnostics"] = verdict["diagnostics"]
+    trial["resource_window"].update(verdict["metrics"])
+    _rewrite_bound_source(report, trial, paths["resource"], "resource", resource)
+    refs = {ref["category"]: ref for ref in trial["source_sha256s"]}
+    trial["provenance"]["capture_digest"] = M2._canonical_digest(
+        {
+            category: ref["sha256"]
+            for category, ref in refs.items()
+            if category != "provenance"
+        }
+    )
+    _rewrite_bound_source(
+        report,
+        trial,
+        paths["provenance"],
+        "provenance",
+        trial["provenance"],
+    )
+
+    assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
 
 
 @pytest.mark.parametrize(
