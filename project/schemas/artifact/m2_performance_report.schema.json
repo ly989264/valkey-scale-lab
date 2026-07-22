@@ -163,7 +163,7 @@
       "properties": {
         "category": {
           "type": "string",
-          "enum": ["attempt", "state", "cleanup", "provenance", "timeline", "command_log", "resource", "workload", "topology", "fault", "preflight"]
+          "enum": ["attempt", "state", "cleanup", "provenance", "timeline", "command_log", "resource", "workload", "topology", "fault", "preflight", "server_logs"]
         },
         "path": {"type": "string", "minLength": 1},
         "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
