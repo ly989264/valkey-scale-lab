@@ -1405,7 +1405,7 @@ def _cluster_link_errors_from_raw(
         )
         initial_membership_transition = (
             allow_initial_membership_transition
-            and previous_link_count == 1
+            and _valid_positive_int(previous_link_count)
             and previous_process.get("non_connected_cluster_link_count") == 0
             and previous_process.get("non_connected_cluster_links") == []
             and _valid_positive_int(process.get("cluster_link_count"))
@@ -1573,7 +1573,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, a setup-trial-authorized first role-row topology expansion from a singleton observer when the peer is absent and link count does not regress in the next complete formation-bootstrap sample, and explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, a setup-trial-authorized role-row topology expansion during monotonic initial formation when the peer is absent and link count does not regress in the next complete formation-bootstrap sample, and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {
@@ -1625,6 +1625,10 @@ def _aggregate_samples(
                 prior_history = process_history.setdefault(logical_id, [])
                 if prior_history and prior_history[-1][0]["pid"] != process["pid"]:
                     raise M2ResourceMeasurementError(f"owned pid changed for {logical_id} inside the resource window")
+                prior_link_counts = [
+                    prior_process.get("cluster_link_count")
+                    for prior_process, _ in prior_history
+                ]
                 link_errors += _cluster_link_errors_from_raw(
                     process,
                     expected_gone_client_ports=expected_gone_client_ports,
@@ -1633,9 +1637,13 @@ def _aggregate_samples(
                     allow_initial_membership_transition=(
                         allow_initial_membership_transitions
                         and bool(prior_history)
+                        and all(_valid_positive_int(value) for value in prior_link_counts)
                         and all(
-                            prior_process.get("cluster_link_count") == 1
-                            for prior_process, _ in prior_history
+                            earlier <= later
+                            for earlier, later in zip(
+                                prior_link_counts,
+                                prior_link_counts[1:],
+                            )
                         )
                     ),
                 )
