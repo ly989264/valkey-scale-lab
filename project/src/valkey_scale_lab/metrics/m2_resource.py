@@ -631,7 +631,7 @@ def validate_and_aggregate_m2_resource_samples(
             "formation_boundary",
             "post_formation",
         }:
-            errors.append(f"sample {sample_position} has an invalid phase")
+            errors.append(f"sample {sample_position} has an invalid sample marker")
         if sample.get("status") != "PASS" or sample.get("errors") != []:
             errors.append(f"sample {sample_position} is not a clean PASS")
         nodehosts = sample.get("nodehosts")

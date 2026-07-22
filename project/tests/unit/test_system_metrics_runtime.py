@@ -520,14 +520,14 @@ def test_m2_bootstrap_classifies_only_raw_proven_direction_correction() -> None:
         sample_phase="formation_bootstrap",
     ) == 0
 
-    for phase in ("formation_boundary", "post_formation", None):
+    for marker in ("formation_boundary", "post_formation", None):
         assert _cluster_link_errors_from_raw(
             current,
             expected_gone_client_ports=set(),
             previous_process=previous,
             next_process=recovered,
             allow_initial_membership_transition=True,
-            sample_phase=phase,
+            sample_phase=marker,
         ) == 1
 
     not_bidirectional = copy.deepcopy(recovered)
