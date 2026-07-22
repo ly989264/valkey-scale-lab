@@ -73,6 +73,7 @@ CLUSTER_CREATE_STRATEGIES = {
 }
 PROCESS_BUNDLE_ROOT = "/tmp"
 PROCESS_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
+CLUSTER_NODE_ID_RE = re.compile(r"^[0-9a-f]{40}$")
 MANAGEMENT_MATRIX_CAPABILITY = "management_matrix"
 MANAGEMENT_MATRIX_SCENARIO = "management_matrix"
 FAULT_MATRIX_CAPABILITY = "fault_matrix"
@@ -988,6 +989,7 @@ def _create_process_scenario(
             from valkey_scale_lab.metrics.m2_resource import collect_m2_resource_window
 
             first_resource_sample = threading.Event()
+            formation_complete = threading.Event()
             with ThreadPoolExecutor(max_workers=1) as executor:
                 resource_future = executor.submit(
                     collect_m2_resource_window,
@@ -998,6 +1000,7 @@ def _create_process_scenario(
                     command=run_docker,
                     monotonic_clock=shared_monotonic,
                     first_complete_sample_event=first_resource_sample,
+                    formation_complete_event=formation_complete,
                     allow_initial_membership_transitions=True,
                 )
                 if not first_resource_sample.wait(timeout=60.0):
@@ -1007,6 +1010,7 @@ def _create_process_scenario(
                         "M2 bootstrap resource window did not capture every owned process before cluster formation"
                     )
                 operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
+                formation_complete.set()
                 resource_report = resource_future.result()
             resource_path = artifacts / "resource_window.json"
             resource_path.write_text(
@@ -2729,17 +2733,17 @@ def _node_host_command(node: dict[str, Any], *args: Any, timeout: float = 2.0) -
     return _host_command(str(node.get("host", "127.0.0.1")), int(node["client_port"]), *args, timeout=timeout)
 
 
-def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str:
+def _node_response(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> Any:
     if "client_port" in node:
         try:
             recorder = current_command_recorder()
             if recorder is None:
-                return str(_node_host_command(node, *args, timeout=timeout)).strip()
+                return _node_host_command(node, *args, timeout=timeout)
             argv = ["valkey-cli", "-h", str(node.get("host", "127.0.0.1")), "-p", str(node["client_port"]), *[str(arg) for arg in args]]
             started = int(time.time() * 1000)
             started_monotonic_ms = time.monotonic() * 1000.0
             try:
-                value = str(_node_host_command(node, *args, timeout=timeout)).strip()
+                value = _node_host_command(node, *args, timeout=timeout)
             except Exception as exc:
                 ended_monotonic_ms = time.monotonic() * 1000.0
                 recorder.record_result(
@@ -2761,6 +2765,7 @@ def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str
                 )
                 raise
             ended_monotonic_ms = time.monotonic() * 1000.0
+            recorded_value = value.strip() if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
             recorder.record_result(
                 operation_id="cluster_setup",
                 step_id=classify_command_kind(argv),
@@ -2769,7 +2774,7 @@ def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str
                 started_at_unix_ms=started,
                 ended_at_unix_ms=int(time.time() * 1000),
                 exit_code=0,
-                stdout=value,
+                stdout=recorded_value,
                 stderr="",
                 timeout_ms=int(timeout * 1000),
                 status="PASS",
@@ -2786,6 +2791,10 @@ def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str
                 return run_node_cli(node, *args, timeout=max(1, int(timeout)))
             raise
     return run_node_cli(node, *args, timeout=max(1, int(timeout)))
+
+
+def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str:
+    return str(_node_response(node, *args, timeout=timeout)).strip()
 
 
 def _bounded_parallel(
@@ -3561,6 +3570,11 @@ def _wait_process_snapshot_clean(
             and snap["slots_assigned"] == 16384
             and snap["slots_ok"] == 16384
             and snap["slots_fail"] == 0
+            and snap["cluster_link_to_count"] == expected_nodes - 1
+            and snap["cluster_link_from_count"] == expected_nodes - 1
+            and snap["cluster_link_bidirectional_peer_count"] == expected_nodes - 1
+            and snap["cluster_link_invalid_count"] == 0
+            and snap["cluster_link_duplicate_count"] == 0
         )
 
     _wait_process_predicate(nodes, timeout, "cluster clean snapshot did not converge", clean, final_check=True, timings=timings)
@@ -3689,6 +3703,9 @@ def _process_node_snapshot(node: dict[str, Any]) -> dict[str, Any]:
         info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=5))
         nodes_text = _node_command(node, "CLUSTER", "NODES", timeout=5)
         counts = _cluster_node_text_counts(nodes_text)
+        cluster_links = _process_cluster_link_counts(
+            _node_response(node, "CLUSTER", "LINKS", timeout=5)
+        )
         return {
             "logical_id": node["logical_id"],
             "probe_status": "PASS",
@@ -3702,6 +3719,7 @@ def _process_node_snapshot(node: dict[str, Any]) -> dict[str, Any]:
             "slots_assigned": _int_or_zero(info.get("cluster_slots_assigned")),
             "slots_ok": _int_or_zero(info.get("cluster_slots_ok")),
             "slots_fail": _int_or_zero(info.get("cluster_slots_fail")),
+            **cluster_links,
         }
     except Exception as exc:  # noqa: BLE001
         return {
@@ -3718,7 +3736,52 @@ def _process_node_snapshot(node: dict[str, Any]) -> dict[str, Any]:
             "slots_assigned": 0,
             "slots_ok": 0,
             "slots_fail": 0,
+            "cluster_link_to_count": 0,
+            "cluster_link_from_count": 0,
+            "cluster_link_bidirectional_peer_count": 0,
+            "cluster_link_invalid_count": 1,
+            "cluster_link_duplicate_count": 0,
         }
+
+
+def _process_cluster_link_counts(response: Any) -> dict[str, int]:
+    if not isinstance(response, list):
+        raise DockerRuntimeError("CLUSTER LINKS response is not an array")
+    peers_by_direction: dict[str, set[str]] = {"to": set(), "from": set()}
+    invalid = 0
+    duplicates = 0
+    for raw_link in response:
+        if isinstance(raw_link, dict):
+            link = raw_link
+        elif isinstance(raw_link, list) and len(raw_link) % 2 == 0:
+            link = dict(zip(raw_link[::2], raw_link[1::2]))
+        else:
+            invalid += 1
+            continue
+        direction = link.get("direction")
+        node_id = link.get("node")
+        events = link.get("events")
+        if (
+            direction not in peers_by_direction
+            or not isinstance(node_id, str)
+            or CLUSTER_NODE_ID_RE.fullmatch(node_id) is None
+            or not isinstance(events, str)
+            or "r" not in events
+        ):
+            invalid += 1
+            continue
+        if node_id in peers_by_direction[direction]:
+            duplicates += 1
+        peers_by_direction[direction].add(node_id)
+    return {
+        "cluster_link_to_count": len(peers_by_direction["to"]),
+        "cluster_link_from_count": len(peers_by_direction["from"]),
+        "cluster_link_bidirectional_peer_count": len(
+            peers_by_direction["to"] & peers_by_direction["from"]
+        ),
+        "cluster_link_invalid_count": invalid,
+        "cluster_link_duplicate_count": duplicates,
+    }
 
 
 def _process_node_snapshots_parallel(nodes: list[dict[str, Any]], *, timeout: float = 60.0) -> list[dict[str, Any]]:
