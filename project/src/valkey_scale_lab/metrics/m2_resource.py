@@ -1401,6 +1401,11 @@ def _cluster_link_errors_from_raw(
             if isinstance(previous_process, Mapping)
             else None
         )
+        previous_observations = (
+            previous_process.get("non_connected_cluster_links")
+            if isinstance(previous_process, Mapping)
+            else None
+        )
         next_observations = (
             next_process.get("non_connected_cluster_links")
             if isinstance(next_process, Mapping)
@@ -1409,8 +1414,12 @@ def _cluster_link_errors_from_raw(
         initial_membership_transition = (
             allow_initial_membership_transition
             and _valid_positive_int(previous_link_count)
-            and previous_process.get("non_connected_cluster_link_count") == 0
-            and previous_process.get("non_connected_cluster_links") == []
+            and isinstance(previous_observations, list)
+            and all(
+                isinstance(previous_observation, Mapping)
+                and previous_observation.get("node_id") != node_id
+                for previous_observation in previous_observations
+            )
             and _valid_positive_int(process.get("cluster_link_count"))
             and process["cluster_link_count"] > previous_link_count
             and (primary_link or replica_link)
