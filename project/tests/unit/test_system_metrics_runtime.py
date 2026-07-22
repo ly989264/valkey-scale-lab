@@ -418,6 +418,33 @@ def test_m2_bootstrap_transition_rejects_link_count_rollback() -> None:
         assert report["metrics"]["cluster_link_errors"] == 1
 
 
+def test_m2_bootstrap_transition_accepts_only_monotonic_progressive_expansion() -> None:
+    link = ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected")
+    progressive = _m2_resource_report_with_link(
+        link,
+        claimed_errors=1,
+        window_name="m2-formation-bootstrap",
+        link_samples={2},
+        cluster_link_counts=(1, 20, 23, 23, 25),
+        allow_initial_membership_transitions=True,
+    )
+    assert progressive["metrics"]["cluster_link_errors"] == 0
+
+    for cluster_link_counts, link_sample in (
+        ((1, 20, 20, 23), 2),
+        ((1, 20, 19, 23, 23), 3),
+    ):
+        rejected = _m2_resource_report_with_link(
+            link,
+            claimed_errors=1,
+            window_name="m2-formation-bootstrap",
+            link_samples={link_sample},
+            cluster_link_counts=cluster_link_counts,
+            allow_initial_membership_transitions=True,
+        )
+        assert rejected["metrics"]["cluster_link_errors"] == 1
+
+
 def test_m2_resource_window_fails_closed_for_unsafe_or_unknown_link_states() -> None:
     unsafe_links = [
         ("c" * 40, "127.0.0.1:7201@17201", "master,fail?", "-", "disconnected"),
