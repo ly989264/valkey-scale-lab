@@ -1581,6 +1581,7 @@ def _validate_resource_source(
     trial: Mapping[str, Any],
     *,
     fault_trial: bool,
+    allow_initial_membership_transitions: bool,
     state_document: Mapping[str, Any] | None,
     errors: list[str],
 ) -> None:
@@ -1592,7 +1593,10 @@ def _validate_resource_source(
     state_nodes = [_object(row) for row in _array(_object(state_document).get("nodes"))]
     state_nodehosts = [_object(row) for row in _array(_object(state_document).get("nodehosts"))]
     expected_samples = coverage.get("expected_sample_count")
-    recomputed = validate_and_aggregate_m2_resource_samples(dict(document))
+    recomputed = validate_and_aggregate_m2_resource_samples(
+        dict(document),
+        allow_initial_membership_transitions=allow_initial_membership_transitions,
+    )
     recomputed_metrics = _object(recomputed.get("metrics"))
     recomputed_coverage = _object(recomputed.get("coverage"))
     _add(errors, document.get("status") == "PASS", f"trial {trial_id} resource source did not PASS")
@@ -3595,6 +3599,7 @@ def validate_current_invocation_sources(
     trial_refs: list[dict[str, Any]] = []
     attempt_bounds: dict[str, tuple[float, float]] = {}
     resource_documents: dict[str, dict[str, Any]] = {}
+    resource_transition_permissions: dict[str, bool] = {}
     for trial_value in _array(report.get("trials")):
         trial = _object(trial_value)
         trial_id = trial.get("trial_id", "MISSING")
@@ -3714,10 +3719,17 @@ def validate_current_invocation_sources(
             )
             if resource_document is not None:
                 resource_documents[str(trial_id)] = resource_document
+                allow_initial_membership_transitions = (
+                    not fault_trial and "soak" not in str(trial.get("cell_id", ""))
+                )
+                resource_transition_permissions[str(trial_id)] = (
+                    allow_initial_membership_transitions
+                )
                 _validate_resource_source(
                     resource_document,
                     trial,
                     fault_trial=fault_trial,
+                    allow_initial_membership_transitions=allow_initial_membership_transitions,
                     state_document=state_document,
                     errors=errors,
                 )
@@ -3793,7 +3805,14 @@ def validate_current_invocation_sources(
         candidate = resource_documents.get(str(pair.get("candidate_trial_id")))
         if baseline is None or candidate is None:
             continue
-        comparison = validate_equal_m2_resource_windows(baseline, candidate)
+        comparison = validate_equal_m2_resource_windows(
+            baseline,
+            candidate,
+            allow_initial_membership_transitions=(
+                resource_transition_permissions.get(str(pair.get("baseline_trial_id")), False)
+                and resource_transition_permissions.get(str(pair.get("candidate_trial_id")), False)
+            ),
+        )
         for message in _array(comparison.get("errors")):
             errors.append(f"pair {pair_id} resource window: {message}")
 

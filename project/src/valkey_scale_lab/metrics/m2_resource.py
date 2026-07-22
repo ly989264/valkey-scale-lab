@@ -169,6 +169,7 @@ def collect_m2_resource_window(
     expected_gone_pids: set[int] | list[int] | tuple[int, ...] | None = None,
     first_complete_sample_event: Any | None = None,
     window_start_event: Any | None = None,
+    allow_initial_membership_transitions: bool = False,
 ) -> dict[str, Any]:
     """Measure an explicitly requested M2 resource window.
 
@@ -217,6 +218,7 @@ def collect_m2_resource_window(
             samples=[],
             errors=errors,
             expected_gone_processes=allowed_gone_processes,
+            allow_initial_membership_transitions=allow_initial_membership_transitions,
         )
 
     samples: list[dict[str, Any]] = []
@@ -378,10 +380,15 @@ def collect_m2_resource_window(
         expected_gone_processes=allowed_gone_processes,
         captured_processes=captured_processes,
         observed_gone_processes=observed_gone_processes,
+        allow_initial_membership_transitions=allow_initial_membership_transitions,
     )
 
 
-def validate_and_aggregate_m2_resource_samples(report: dict[str, Any]) -> dict[str, Any]:
+def validate_and_aggregate_m2_resource_samples(
+    report: dict[str, Any],
+    *,
+    allow_initial_membership_transitions: bool = False,
+) -> dict[str, Any]:
     """Recompute an M2 resource window from its raw samples, failing closed."""
     missing_metrics: dict[str, int | float | str] = {
         "peak_rss_bytes": MISSING,
@@ -764,7 +771,8 @@ def validate_and_aggregate_m2_resource_samples(report: dict[str, Any]) -> dict[s
                 samples,
                 expected_gone_client_ports=expected_gone_client_ports,
                 allow_initial_membership_transitions=(
-                    report.get("window_name") == "m2-formation-bootstrap"
+                    allow_initial_membership_transitions
+                    and report.get("window_name") == "m2-formation-bootstrap"
                 ),
             )
         except (KeyError, TypeError, M2ResourceMeasurementError) as exc:
@@ -794,6 +802,8 @@ def validate_and_aggregate_m2_resource_samples(report: dict[str, Any]) -> dict[s
 def validate_equal_m2_resource_windows(
     baseline: dict[str, Any],
     candidate: dict[str, Any],
+    *,
+    allow_initial_membership_transitions: bool = False,
 ) -> dict[str, Any]:
     """Fail closed unless both arms have complete, equal resource windows."""
     errors: list[str] = []
@@ -811,7 +821,10 @@ def validate_equal_m2_resource_windows(
         if not isinstance(report, dict) or report.get("status") != "PASS":
             errors.append(f"{arm_name} resource window is not PASS")
             continue
-        recomputed = validate_and_aggregate_m2_resource_samples(report)
+        recomputed = validate_and_aggregate_m2_resource_samples(
+            report,
+            allow_initial_membership_transitions=allow_initial_membership_transitions,
+        )
         recomputed_by_arm[arm_name] = recomputed
         if recomputed.get("status") != "PASS":
             errors.append(f"{arm_name} raw resource window is incomplete or invalid")
@@ -1401,6 +1414,8 @@ def _cluster_link_errors_from_raw(
             and (flag_set == {"master"} or flag_set == {"slave"})
             and isinstance(next_process, Mapping)
             and next_process.get("pid") == process.get("pid")
+            and _valid_positive_int(next_process.get("cluster_link_count"))
+            and next_process["cluster_link_count"] >= process["cluster_link_count"]
             and isinstance(next_observations, list)
             and all(
                 isinstance(next_observation, Mapping)
@@ -1454,6 +1469,7 @@ def _resource_report(
     expected_gone_processes: set[_ProcessIdentity] | None = None,
     captured_processes: set[_ProcessIdentity] | None = None,
     observed_gone_processes: set[_ProcessIdentity] | None = None,
+    allow_initial_membership_transitions: bool = False,
 ) -> dict[str, Any]:
     expected_gone = expected_gone_processes or set()
     captured = captured_processes or set()
@@ -1485,7 +1501,8 @@ def _resource_report(
                 complete_samples,
                 expected_gone_client_ports=expected_gone_client_ports,
                 allow_initial_membership_transitions=(
-                    window_name == "m2-formation-bootstrap"
+                    allow_initial_membership_transitions
+                    and window_name == "m2-formation-bootstrap"
                 ),
             )
         except M2ResourceMeasurementError as exc:
@@ -1556,7 +1573,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, the first role-row topology expansion from a singleton observer when the peer is absent from the next complete formation-bootstrap sample, and explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, a setup-trial-authorized first role-row topology expansion from a singleton observer when the peer is absent and link count does not regress in the next complete formation-bootstrap sample, and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {

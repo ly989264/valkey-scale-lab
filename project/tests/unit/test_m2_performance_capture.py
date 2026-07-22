@@ -458,7 +458,7 @@ def test_fault_resource_window_samples_all_owned_processes_before_barrier(
     monkeypatch.setattr(
         resource_module,
         "validate_and_aggregate_m2_resource_samples",
-        lambda report: {"status": "PASS", "errors": [], "metrics": report["metrics"]},
+        lambda report, **_kwargs: {"status": "PASS", "errors": [], "metrics": report["metrics"]},
     )
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
 
@@ -500,7 +500,7 @@ def test_resource_report_validation_uses_raw_derived_metrics(
     monkeypatch.setattr(
         resource_module,
         "validate_and_aggregate_m2_resource_samples",
-        lambda _report: {"status": "PASS", "errors": [], "metrics": recomputed_metrics},
+        lambda _report, **_kwargs: {"status": "PASS", "errors": [], "metrics": recomputed_metrics},
     )
 
     assert capture._validate_resource_report(report) is report
@@ -517,7 +517,7 @@ def test_resource_report_validation_uses_raw_derived_metrics(
     monkeypatch.setattr(
         resource_module,
         "validate_and_aggregate_m2_resource_samples",
-        lambda _report: {"status": "FAIL", "errors": ["raw links missing"], "metrics": {}},
+        lambda _report, **_kwargs: {"status": "FAIL", "errors": ["raw links missing"], "metrics": {}},
     )
     with pytest.raises(capture.CaptureError, match="raw samples are incomplete or invalid"):
         capture._validate_resource_report(report)
