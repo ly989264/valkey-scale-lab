@@ -128,11 +128,13 @@ def _m2_batch_output(
     rollback_pid: int | None = None,
     non_connected_links: dict[int, list[tuple[str, str, str, str, str]]] | None = None,
     cluster_link_errors: dict[int, int] | None = None,
+    cluster_link_counts: dict[int, int] | None = None,
 ) -> str:
     gone = gone_pids or set()
     omitted = omitted_cluster_pids or set()
     link_rows = non_connected_links or {}
     error_claims = cluster_link_errors or {}
+    link_counts = cluster_link_counts or {}
     rows = ["META\t100\t4096"]
     process_values = {
         101: (7101, 10, 2, 5, 4, 2, 1000, 500, 100, 80),
@@ -154,7 +156,8 @@ def _m2_batch_output(
             f"CLUSTER\t{pid}\t{port}\t{sent_bytes + direction * sample * 100 * scale}"
             f"\t{received_bytes + direction * sample * 50 * scale}"
             f"\t{sent_messages + direction * sample * 10 * scale}"
-            f"\t{received_messages + direction * sample * 8 * scale}\t0\t2\t{error_claims.get(pid, 0)}"
+            f"\t{received_messages + direction * sample * 8 * scale}\t0\t{link_counts.get(pid, 2)}"
+            f"\t{error_claims.get(pid, 0)}"
             f"\t{len(link_rows.get(pid, []))}"
         )
         rows.extend(
@@ -169,31 +172,39 @@ def _m2_resource_report_with_link(
     link: tuple[str, str, str, str, str],
     *,
     claimed_errors: int,
+    window_name: str = "cluster-link-semantics",
+    link_samples: set[int] | None = None,
+    cluster_link_counts: tuple[int, ...] = (2, 2),
+    allow_initial_membership_transitions: bool = False,
 ) -> dict:
     clock = _FakeClock()
     sample = 0
+    active_samples = set(range(len(cluster_link_counts))) if link_samples is None else link_samples
 
     def command(args, *, timeout, check):
         nonlocal sample
         if args[0] == "inspect":
             return SimpleNamespace(returncode=0, stdout=_owned_inspect(), stderr="")
+        links = {101: [link]} if sample in active_samples else {}
         output = _m2_batch_output(
             sample,
-            non_connected_links={101: [link]},
-            cluster_link_errors={101: claimed_errors},
+            non_connected_links=links,
+            cluster_link_errors={101: claimed_errors} if links else {},
+            cluster_link_counts={101: cluster_link_counts[sample]},
         )
         sample += 1
         return SimpleNamespace(returncode=0, stdout=output, stderr="")
 
     return collect_m2_resource_window(
         _m2_runtime_state(),
-        window_name="cluster-link-semantics",
-        duration_seconds=1,
+        window_name=window_name,
+        duration_seconds=len(cluster_link_counts) - 1,
         interval_seconds=1,
         command=command,
         monotonic_clock=clock.monotonic,
         wall_clock=clock.wall,
         sleep=clock.sleep,
+        allow_initial_membership_transitions=allow_initial_membership_transitions,
     )
 
 
@@ -303,6 +314,108 @@ def test_m2_resource_window_counts_established_disconnected_link() -> None:
     verdict = validate_equal_m2_resource_windows(report, copy.deepcopy(report))
     assert verdict["status"] == "FAIL"
     assert any("metric cluster_link_errors must be zero" in error for error in verdict["errors"])
+
+
+def test_m2_formation_bootstrap_classifies_initial_role_row_as_pre_establishment() -> None:
+    link = ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected")
+    report = _m2_resource_report_with_link(
+        link,
+        claimed_errors=1,
+        window_name="m2-formation-bootstrap",
+        link_samples={1},
+        cluster_link_counts=(1, 21, 25),
+        allow_initial_membership_transitions=True,
+    )
+
+    assert report["status"] == "PASS"
+    assert report["metrics"]["cluster_link_errors"] == 0
+    process = report["samples"][1]["nodehosts"][0]["processes"][0]
+    assert process["cluster_link_errors"] == 1
+    assert process["non_connected_cluster_links"] == [
+        {
+            "node_id": "b" * 40,
+            "address": "127.0.0.1:7201@17201",
+            "flags": ["master"],
+            "master_id": "-",
+            "link_state": "disconnected",
+        }
+    ]
+    trusted = validate_and_aggregate_m2_resource_samples(
+        report,
+        allow_initial_membership_transitions=True,
+    )
+    assert trusted["metrics"]["cluster_link_errors"] == 0
+    assert (
+        validate_equal_m2_resource_windows(
+            report,
+            copy.deepcopy(report),
+            allow_initial_membership_transitions=True,
+        )["status"]
+        == "PASS"
+    )
+    non_bootstrap = _m2_resource_report_with_link(
+        link,
+        claimed_errors=1,
+        link_samples={1},
+        cluster_link_counts=(1, 21, 25),
+    )
+    assert non_bootstrap["metrics"]["cluster_link_errors"] == 1
+    persistent = _m2_resource_report_with_link(
+        link,
+        claimed_errors=1,
+        window_name="m2-formation-bootstrap",
+        link_samples={1, 2},
+        cluster_link_counts=(1, 21, 21),
+        allow_initial_membership_transitions=True,
+    )
+    assert persistent["metrics"]["cluster_link_errors"] == 1
+    unconfirmed = _m2_resource_report_with_link(
+        link,
+        claimed_errors=1,
+        window_name="m2-formation-bootstrap",
+        link_samples={2},
+        cluster_link_counts=(1, 1, 21),
+        allow_initial_membership_transitions=True,
+    )
+    assert unconfirmed["metrics"]["cluster_link_errors"] == 1
+    assert (
+        unconfirmed["samples"][2]["nodehosts"][0]["processes"][0]["cluster_link_errors"]
+        == 1
+    )
+    assert (
+        validate_equal_m2_resource_windows(unconfirmed, copy.deepcopy(unconfirmed))["status"]
+        == "FAIL"
+    )
+
+
+def test_m2_resource_window_does_not_self_authorize_bootstrap_transition() -> None:
+    report = _m2_resource_report_with_link(
+        ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
+        claimed_errors=1,
+        window_name="m2-formation-bootstrap",
+        link_samples={1},
+        cluster_link_counts=(1, 21, 25),
+        allow_initial_membership_transitions=True,
+    )
+
+    assert validate_and_aggregate_m2_resource_samples(report)["metrics"][
+        "cluster_link_errors"
+    ] == 1
+    assert validate_equal_m2_resource_windows(report, copy.deepcopy(report))["status"] == "FAIL"
+
+
+def test_m2_bootstrap_transition_rejects_link_count_rollback() -> None:
+    for cluster_link_counts in ((1, 21, 1), (1, 21, 20)):
+        report = _m2_resource_report_with_link(
+            ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
+            claimed_errors=1,
+            window_name="m2-formation-bootstrap",
+            link_samples={1},
+            cluster_link_counts=cluster_link_counts,
+            allow_initial_membership_transitions=True,
+        )
+
+        assert report["metrics"]["cluster_link_errors"] == 1
 
 
 def test_m2_resource_window_fails_closed_for_unsafe_or_unknown_link_states() -> None:

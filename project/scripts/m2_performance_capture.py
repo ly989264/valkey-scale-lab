@@ -941,15 +941,25 @@ def _capture_resource_window(
 def _load_resource_window(path: Path) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink():
         raise CaptureError("M2 setup resource window is missing or unsafe")
-    return _validate_resource_report(_load_object(path))
+    return _validate_resource_report(
+        _load_object(path),
+        allow_initial_membership_transitions=True,
+    )
 
 
-def _validate_resource_report(report: dict[str, Any]) -> dict[str, Any]:
+def _validate_resource_report(
+    report: dict[str, Any],
+    *,
+    allow_initial_membership_transitions: bool = False,
+) -> dict[str, Any]:
     from valkey_scale_lab.metrics.m2_resource import validate_and_aggregate_m2_resource_samples
 
     if report.get("status") != "PASS" or report.get("coverage", {}).get("complete") is not True:
         raise CaptureError("M2 resource window is missing or incomplete")
-    recomputed = validate_and_aggregate_m2_resource_samples(report)
+    recomputed = validate_and_aggregate_m2_resource_samples(
+        report,
+        allow_initial_membership_transitions=allow_initial_membership_transitions,
+    )
     if recomputed.get("status") != "PASS" or recomputed.get("errors") != []:
         raise CaptureError("M2 resource raw samples are incomplete or invalid")
     metrics = report.get("metrics")

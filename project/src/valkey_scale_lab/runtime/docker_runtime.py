@@ -998,6 +998,7 @@ def _create_process_scenario(
                     command=run_docker,
                     monotonic_clock=shared_monotonic,
                     first_complete_sample_event=first_resource_sample,
+                    allow_initial_membership_transitions=True,
                 )
                 if not first_resource_sample.wait(timeout=60.0):
                     if resource_future.done():
