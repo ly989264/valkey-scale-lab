@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from contracts import ContractError, PlannerOperation, PlannerOutput
+from contracts import ContractError, PlannerOperation, PlannerOutput, verified_tree
 from coordinator import (
     CONTROL_LABEL,
     DISCOVERY_REPAIR_LABEL,
@@ -29,6 +29,7 @@ from coordinator import (
     render_control,
     record_real_authorization_required,
     record_milestone_result,
+    reconcile_review,
     set_no_progress,
     trusted_m2_discovery_repair_pr,
     validate_m2_discovery_diagnosis,
@@ -119,6 +120,10 @@ class FakeClient:
 
     def dispatch(self, milestone) -> None:
         self.writes.append(("dispatch", milestone))
+
+    def merge_pull_request(self, number, *, expected_head_sha) -> str:
+        self.writes.append(("merge", number, expected_head_sha))
+        return "d" * 40
 
     def api(self, endpoint, **kwargs):
         if endpoint.startswith("commits/") and endpoint.endswith(
@@ -351,6 +356,70 @@ class CoordinatorTests(unittest.TestCase):
                 milestone_document=self.milestone,
                 catalog_document=self.catalog,
             )
+
+    def test_ordinary_verified_pr_merges_and_dispatches_fresh_round(self) -> None:
+        base_sha = "a" * 40
+        head_sha = "b" * 40
+        tree_sha = "c" * 40
+        item = issue(1, "review")
+        record = {
+            "version": 1,
+            "base_sha": base_sha,
+            "head_sha": head_sha,
+            "tree_sha": tree_sha,
+            "verified_tree": verified_tree(base_sha, head_sha, tree_sha),
+            "baseline": "repository.all",
+            "work_item_check": "product.unit",
+            "status": "PASS",
+        }
+        state = {
+            **snapshot([item]),
+            "pull_requests": [
+                {
+                    "number": 20,
+                    "body": "Work-Item: #1\nMilestone: m1\nContract-Change: false\n",
+                    "state": "open",
+                    "merged_at": None,
+                    "labels": ["milestone-loop:work-item"],
+                    "head_sha": head_sha,
+                    "head_tree_sha": tree_sha,
+                    "checks": [
+                        {
+                            "id": 10,
+                            "name": "milestone-loop / candidate",
+                            "app": "github-actions",
+                            "status": "completed",
+                            "conclusion": "success",
+                        }
+                    ],
+                    "comments": [
+                        {
+                            "author": "github-actions[bot]",
+                            "body": (
+                                "<!-- milestone-loop-verification: "
+                                + json.dumps(record, sort_keys=True, separators=(",", ":"))
+                                + " -->"
+                            ),
+                        }
+                    ],
+                }
+            ],
+        }
+        control = ControlState(99, empty_lease("m1"), 0)
+        client = FakeClient()
+
+        with (
+            patch.dict("os.environ", {"MILESTONE_LOOP_AUTO_MERGE": "true"}, clear=True),
+            patch("coordinator.collect_snapshot", return_value=state),
+        ):
+            action, returned_control = reconcile_review(client, state, control)
+
+        self.assertEqual(action, "WAIT_MERGE")
+        self.assertEqual(returned_control, control)
+        self.assertEqual(
+            client.writes,
+            [("merge", 20, head_sha), ("dispatch", "m1")],
+        )
 
     def test_m2_canonical_unresolved_candidates_reach_authorization(self) -> None:
         milestone = m2_milestone()

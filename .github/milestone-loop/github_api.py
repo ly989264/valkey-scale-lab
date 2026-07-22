@@ -141,15 +141,22 @@ class GitHubClient:
         if process.returncode != 0 and "not enabled" not in combined and "no auto-merge" not in combined:
             raise GitHubError(f"cannot disable auto-merge for PR #{number}: {combined[-1000:].strip()}")
 
-    def enable_auto_merge(self, number: int) -> None:
-        process = subprocess.run(
-            [self.gh, "pr", "merge", str(number), "--repo", self.repo, "--auto", "--squash"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+    def merge_pull_request(self, number: int, *, expected_head_sha: str) -> str:
+        value = self.api(
+            f"pulls/{number}/merge",
+            method="PUT",
+            input_value={"sha": expected_head_sha, "merge_method": "squash"},
         )
-        if process.returncode != 0:
-            detail = process.stderr.decode("utf-8", errors="replace")[-1000:].strip()
-            raise GitHubError(f"cannot enable auto-merge for PR #{number}: {detail}")
+        merge_sha = value.get("sha") if isinstance(value, dict) else None
+        if (
+            not isinstance(value, dict)
+            or value.get("merged") is not True
+            or not isinstance(merge_sha, str)
+            or len(merge_sha) != 40
+            or any(character not in "0123456789abcdef" for character in merge_sha.lower())
+        ):
+            raise GitHubError(f"cannot synchronously merge PR #{number}")
+        return merge_sha
 
     def dispatch(self, milestone: str) -> None:
         process = subprocess.run(
