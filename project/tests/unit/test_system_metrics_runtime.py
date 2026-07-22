@@ -1195,6 +1195,20 @@ def test_m2_resource_window_comparison_allows_unequal_bounded_collection_time() 
     assert verdict["status"] == "PASS"
 
 
+def test_m2_resource_window_comparison_allows_unequal_bounded_schedule_lag() -> None:
+    baseline = _complete_m2_resource_report()
+    candidate = copy.deepcopy(baseline)
+    candidate["samples"][1]["started_at_monotonic_seconds"] += 0.05
+    candidate["samples"][1]["ended_at_monotonic_seconds"] += 0.05
+    candidate["samples"][1]["schedule_lag_seconds"] = 0.05
+    candidate["coverage"]["sample_monotonic_seconds"][1] += 0.05
+    candidate["coverage"]["max_schedule_lag_seconds"] = 0.05
+
+    verdict = validate_equal_m2_resource_windows(baseline, candidate)
+
+    assert verdict["status"] == "PASS"
+
+
 def test_m2_resource_window_rejects_sampling_overrun_and_schedule_lag() -> None:
     clock = _FakeClock()
     sample = 0

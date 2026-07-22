@@ -77,6 +77,13 @@ SETUP_EVENTS = (
     "every_node_clean",
     "data_path_probe",
 )
+RESOURCE_METRICS = (
+    "peak_rss_bytes",
+    "cpu_time_seconds",
+    "fd_count",
+    "connection_count",
+    "cluster_bus_bytes",
+)
 
 
 class CaptureError(RuntimeError):
@@ -257,6 +264,7 @@ def capture_formation_discovery(
         baseline_trial, candidate_trial = _pair_trials(ctx, pair)
         passed = (
             _discovery_safety_clean(candidate_trial)
+            and _discovery_resource_clean(baseline_trial, candidate_trial)
             and float(candidate_trial["derived_intervals"]["formation_seconds"])
             < float(baseline_trial["derived_intervals"]["formation_seconds"])
         )
@@ -3218,6 +3226,7 @@ def _failover_discovery_passed(ctx: CaptureContext, pair: Mapping[str, Any]) -> 
         return False
     return (
         _discovery_safety_clean(candidate)
+        and _discovery_resource_clean(baseline, candidate)
         and float(candidate_intervals["kill_to_stable_seconds"])
         < float(baseline_intervals["kill_to_stable_seconds"])
         and float(candidate_intervals["kill_to_stable_seconds"]) <= 35.0
@@ -3234,6 +3243,35 @@ def _discovery_safety_clean(trial: Mapping[str, Any]) -> bool:
         and resources.get("cluster_link_errors") == 0
         and resources.get("buffer_overflows") == 0
     )
+
+
+def _discovery_resource_clean(
+    baseline_trial: Mapping[str, Any], candidate_trial: Mapping[str, Any]
+) -> bool:
+    baseline = baseline_trial.get("resource_window")
+    candidate = candidate_trial.get("resource_window")
+    if not isinstance(baseline, Mapping) or not isinstance(candidate, Mapping):
+        return False
+    for metric in RESOURCE_METRICS:
+        baseline_value = baseline.get(metric)
+        candidate_value = candidate.get(metric)
+        if (
+            isinstance(baseline_value, bool)
+            or not isinstance(baseline_value, (int, float))
+            or not math.isfinite(float(baseline_value))
+            or isinstance(candidate_value, bool)
+            or not isinstance(candidate_value, (int, float))
+            or not math.isfinite(float(candidate_value))
+        ):
+            return False
+        if float(baseline_value) < 0 or float(candidate_value) < 0:
+            return False
+        if float(baseline_value) == 0:
+            if float(candidate_value) != 0:
+                return False
+        elif float(candidate_value) > float(baseline_value) * 1.10:
+            return False
+    return True
 
 
 def _observed_versions(state: dict[str, Any]) -> list[str]:

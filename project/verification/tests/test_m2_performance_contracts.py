@@ -1393,6 +1393,34 @@ def test_selection_only_formation_screen_rejects_unsafe_candidate_without_failin
     )
 
 
+def test_selection_only_formation_screen_rejects_resource_regression_without_failing_campaign() -> None:
+    campaign = _formation_discovery_campaign()
+    cell = next(cell for cell in campaign["cells"] if cell["status"] == "PASS")
+    pair = next(pair for pair in campaign["pairs"] if pair["cell_id"] == cell["cell_id"])
+    candidate = next(
+        trial
+        for trial in campaign["trials"]
+        if trial["trial_id"] == pair["candidate_trial_id"]
+    )
+    candidate["resource_window"]["peak_rss_bytes"] = 111.0
+    cell["status"] = "FAIL"
+
+    assert M2.validate_discovery_campaign(
+        campaign,
+        expected_kind="formation",
+        expected_invocation_run_id="m2-contract",
+    ) == []
+
+    cell["status"] = "PASS"
+    errors = M2.validate_discovery_campaign(
+        campaign,
+        expected_kind="formation",
+        expected_invocation_run_id="m2-contract",
+    )
+    assert any("regressed by more than 10 percent" in error for error in errors)
+    assert any("status does not match measured screen result" in error for error in errors)
+
+
 def test_discovery_rejects_nonfixed_formation_strategy() -> None:
     campaign = json.loads(
         json.dumps(_formation_discovery_campaign()).replace(
@@ -1505,7 +1533,11 @@ def test_formation_relative_absolute_and_resource_budgets_are_enforced() -> None
         elif trial["cell_id"] == "promotion-100":
             trial["derived_intervals"]["formation_seconds"] = 71.0
             trial["monotonic_markers"]["data_path_probe"] = 71.0
-    first_candidate = next(trial for trial in report["trials"] if trial["arm"] == "candidate")
+    first_candidate = next(
+        trial
+        for trial in report["trials"]
+        if trial["arm"] == "candidate" and trial["cell_id"] == "promotion-50"
+    )
     first_candidate["resource_window"]["peak_rss_bytes"] = 111.0
     report["report_digest"] = M2.report_digest(report)
 
@@ -1574,6 +1606,15 @@ def test_failover_relative_and_absolute_budgets_are_enforced(monkeypatch) -> Non
                 "monotonic_markers": {},
                 "fault": {},
                 "workload": {},
+                "resource_window": {
+                    "peak_rss_bytes": 100.0,
+                    "cpu_time_seconds": 100.0,
+                    "fd_count": 100.0,
+                    "connection_count": 100.0,
+                    "cluster_bus_bytes": 100.0,
+                    "cluster_link_errors": 0,
+                    "buffer_overflows": 0,
+                },
             }
 
     for candidate in candidates:

@@ -883,6 +883,20 @@ def test_stability_facts_are_derived_from_full_slots_and_roles() -> None:
     assert bad["split_brain"] is True
 
 
+def _discovery_resources(**overrides: float) -> dict[str, float]:
+    resources = {
+        "peak_rss_bytes": 100.0,
+        "cpu_time_seconds": 100.0,
+        "fd_count": 100.0,
+        "connection_count": 100.0,
+        "cluster_bus_bytes": 100.0,
+        "cluster_link_errors": 0.0,
+        "buffer_overflows": 0.0,
+    }
+    resources.update(overrides)
+    return resources
+
+
 def test_formation_discovery_helper_runs_only_fixed_exact_50_pairs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -908,12 +922,12 @@ def test_formation_discovery_helper_runs_only_fixed_exact_50_pairs(
                 {
                     "trial_id": baseline_id,
                     "derived_intervals": {"formation_seconds": 100.0},
-                    "resource_window": {"cluster_link_errors": 0, "buffer_overflows": 0},
+                    "resource_window": _discovery_resources(),
                 },
                 {
                     "trial_id": candidate_id,
                     "derived_intervals": {"formation_seconds": duration},
-                    "resource_window": {"cluster_link_errors": 0, "buffer_overflows": 0},
+                    "resource_window": _discovery_resources(),
                 },
             ]
         )
@@ -962,15 +976,63 @@ def test_formation_discovery_rejects_unsafe_candidate_and_continues(
                 {
                     "trial_id": baseline_id,
                     "derived_intervals": {"formation_seconds": 100.0},
-                    "resource_window": {"cluster_link_errors": 0, "buffer_overflows": 0},
+                    "resource_window": _discovery_resources(),
                 },
                 {
                     "trial_id": candidate_id,
                     "derived_intervals": {"formation_seconds": 80.0},
-                    "resource_window": {
-                        "cluster_link_errors": 1 if unsafe else 0,
-                        "buffer_overflows": 0,
-                    },
+                    "resource_window": _discovery_resources(
+                        cluster_link_errors=1.0 if unsafe else 0.0
+                    ),
+                },
+            ]
+        )
+        return {
+            "pair_id": pair_id,
+            "cell_id": kwargs["cell_id"],
+            "baseline_trial_id": baseline_id,
+            "candidate_trial_id": candidate_id,
+        }
+
+    monkeypatch.setattr(capture, "_capture_pair", fake_pair)
+
+    survivors = capture.capture_formation_discovery(context, candidates=candidates)
+
+    assert calls == ["formation-discovery-1", "formation-discovery-2"]
+    assert [cell["status"] for cell in context.cells] == ["FAIL", "PASS"]
+    assert [candidate for candidate, _duration in survivors] == [candidates[1]]
+
+
+def test_formation_discovery_rejects_resource_regression_and_continues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    context = capture.CaptureContext(
+        args=SimpleNamespace(run_id="discovery", mode="formation"),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "m2_candidate_discovery.json",
+    )
+    candidates = capture._formation_candidates()[:2]
+    calls: list[str] = []
+
+    def fake_pair(ctx, **kwargs):
+        calls.append(kwargs["cell_id"])
+        pair_id = f"{kwargs['cell_id']}-pair-01"
+        baseline_id = f"{pair_id}-baseline"
+        candidate_id = f"{pair_id}-candidate"
+        regressed = len(calls) == 1
+        ctx.trials.extend(
+            [
+                {
+                    "trial_id": baseline_id,
+                    "derived_intervals": {"formation_seconds": 100.0},
+                    "resource_window": _discovery_resources(),
+                },
+                {
+                    "trial_id": candidate_id,
+                    "derived_intervals": {"formation_seconds": 80.0},
+                    "resource_window": _discovery_resources(
+                        peak_rss_bytes=111.0 if regressed else 100.0
+                    ),
                 },
             ]
         )
