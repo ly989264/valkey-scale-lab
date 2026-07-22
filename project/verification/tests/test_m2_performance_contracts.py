@@ -2017,7 +2017,7 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_
     resource["window_name"] = "m2-formation-bootstrap"
     resource["interval_seconds"] = midpoint
 
-    for index, (sample, offset, phase) in enumerate(
+    for index, (sample, offset, sample_marker) in enumerate(
         zip(
             resource["samples"],
             (0.0, midpoint, duration),
@@ -2030,7 +2030,7 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_
         sample["scheduled_at_monotonic_seconds"] = offset
         sample["started_at_monotonic_seconds"] = offset
         sample["ended_at_monotonic_seconds"] = offset
-        sample["sample_phase"] = phase
+        sample["sample_phase"] = sample_marker
 
     peer_id = "b" * 40
 
