@@ -209,7 +209,7 @@ def test_fault_targets_are_half_up_deterministic_and_cross_domain() -> None:
         capture._select_fault_target_nodes(_state(cross_domain=False), 50, "one")
 
 
-def test_owned_sigkill_prevalidates_and_batches_each_unique_container() -> None:
+def test_owned_sigkill_prevalidates_and_batches_each_unique_container_through_shell() -> None:
     labels = {
         "org.valkey-scale-lab.project": "valkey-scale-lab",
         "org.valkey-scale-lab.capability_id": "failover_timeline",
@@ -270,10 +270,56 @@ def test_owned_sigkill_prevalidates_and_batches_each_unique_container() -> None:
         ["inspect", "container-b"],
     ]
     assert [call for call in calls if call[0] == "exec"] == [
-        ["exec", "container-a", "kill", "-KILL", "101", "102"],
-        ["exec", "container-b", "kill", "-KILL", "201"],
+        ["exec", "container-a", "sh", "-c", "kill -KILL 101 102"],
+        ["exec", "container-b", "sh", "-c", "kill -KILL 201"],
     ]
     assert [batch["status"] for batch in command_batches] == ["PASS", "PASS"]
+
+
+def test_owned_sigkill_does_not_accept_a_failed_shell_command() -> None:
+    labels = {
+        "org.valkey-scale-lab.project": "valkey-scale-lab",
+        "org.valkey-scale-lab.capability_id": "failover_timeline",
+        "org.valkey-scale-lab.run_id": "trial-1",
+    }
+
+    def command(argv, **_kwargs):
+        if argv[0] == "inspect":
+            return SimpleNamespace(
+                stdout=json.dumps(
+                    [
+                        {
+                            "Id": "container-a",
+                            "Config": {"Labels": labels},
+                        }
+                    ]
+                ),
+                returncode=0,
+                stderr="",
+            )
+        return SimpleNamespace(stdout="", stderr="shell failure", returncode=127)
+
+    sender, command_batches = capture._owned_sigkill_sender(
+        {
+            "capability_id": "failover_timeline",
+            "runtime": {"run_id": "trial-1"},
+        },
+        [
+            {
+                "logical_id": "node-a",
+                "container_name": "host-a",
+                "container_id": "container-a",
+                "pid": 101,
+            }
+        ],
+        command=command,
+    )
+
+    with pytest.raises(capture.CaptureError, match="SIGKILL batch failed"):
+        sender(SimpleNamespace(logical_id="node-a", pid=101), 9)
+
+    assert command_batches[0]["status"] == "FAIL"
+    assert command_batches[0]["returncode"] == 127
 
 
 def test_fault_topology_facts_require_expected_fail_and_promotion_only() -> None:

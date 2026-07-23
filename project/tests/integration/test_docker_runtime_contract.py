@@ -1902,6 +1902,112 @@ def test_cleanup_process_scan_parsing_and_zombie_exit(monkeypatch: pytest.Monkey
     assert "kill -0" not in calls[0][-1]
 
 
+def test_single_process_wait_requires_an_explicit_process_state_sentinel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def failed_probe(
+        args: list[str], timeout: int = 120, check: bool = True
+    ) -> docker_runtime.DockerResult:
+        calls.append(args)
+        return docker_runtime.DockerResult("", "executable not found", 127)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", failed_probe)
+
+    with pytest.raises(DockerRuntimeError, match="owned process probe failed"):
+        docker_runtime._wait_container_pid_gone("nodehost-a", "101", timeout=1.0)
+
+    assert calls[0][:4] == ["exec", "nodehost-a", "sh", "-c"]
+    assert "/proc/101/stat" in calls[0][-1]
+
+
+@pytest.mark.parametrize("pid", [True, 0, -1, "1.5", "1; touch /tmp/unsafe"])
+def test_single_process_wait_rejects_unsafe_pids(pid: object) -> None:
+    with pytest.raises(DockerRuntimeError, match="unsafe process runtime pid"):
+        docker_runtime._wait_container_pid_gone("nodehost-a", pid, timeout=1.0)
+
+
+def test_single_process_wait_observes_alive_then_gone(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observations = iter(
+        [
+            docker_runtime.DockerResult("VSLAB_ALIVE", "", 0),
+            docker_runtime.DockerResult("VSLAB_GONE", "", 0),
+        ]
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *_args, **_kwargs: next(observations),
+    )
+    monkeypatch.setattr(docker_runtime.time, "sleep", lambda _seconds: None)
+
+    assert docker_runtime._wait_container_pid_gone(
+        "nodehost-a", "101", timeout=1.0
+    )
+
+
+def test_management_stop_uses_shell_builtin_for_term_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+    gone = iter([False, True])
+
+    def record_command(
+        _log,
+        _telemetry,
+        _capability,
+        _run,
+        _operation,
+        _kind,
+        _target,
+        args,
+        **_kwargs,
+    ):
+        calls.append(args)
+
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_matrix_log_docker_exec",
+        record_command,
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_wait_container_pid_gone",
+        lambda *_args, **_kwargs: next(gone),
+    )
+
+    docker_runtime._management_matrix_stop_process(
+        {
+            "logical_id": "node-a",
+            "nodehost_container_name": "nodehost-a",
+            "pid": 101,
+            "client_port": 7000,
+        },
+        object(),
+        "management_matrix",
+        "run-1",
+        "operation-1",
+        [],
+        command_kind="owned_valkey_process_stop",
+    )
+
+    assert calls == [
+        [
+            "exec",
+            "nodehost-a",
+            "valkey-cli",
+            "-p",
+            "7000",
+            "SHUTDOWN",
+            "NOSAVE",
+        ],
+        ["exec", "nodehost-a", "sh", "-c", "kill -TERM 101"],
+    ]
+
+
 def test_cleanup_residual_scan_treats_unreadable_process_as_uncertain() -> None:
     script = docker_runtime._cleanup_scan_valkey_script()
     parsed = docker_runtime._cleanup_parse_process_scan("live=\nzombie=\nunreadable=101\n")

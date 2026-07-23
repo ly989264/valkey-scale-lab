@@ -3339,9 +3339,9 @@ def _validate_fault_source(
         expected_argv = [
             "exec",
             container_id,
-            "kill",
-            "-KILL",
-            *[str(pid) for pid in expected["pids"]],
+            "sh",
+            "-c",
+            f"kill -KILL {' '.join(str(pid) for pid in expected['pids'])}",
         ]
         if not (
             batch.get("container_name") == expected["container_name"]
