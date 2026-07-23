@@ -1504,14 +1504,9 @@ def _cluster_link_errors_from_raw(
                 errors += 1
             continue
         claimed_errors += 1
-        # A replica may not know its primary yet while formation is propagating.
         formation_role_row = (
             sample_phase in {"formation_bootstrap", "formation_boundary"}
-            and flag_set in ({"master"}, {"slave"})
-            and (
-                master_id == "-"
-                or (flag_set == {"slave"} and _valid_cluster_node_id(master_id))
-            )
+            and _valid_formation_role_state(flags, master_id)
         )
         if (
             allow_initial_membership_transition
@@ -1549,6 +1544,31 @@ def _cluster_link_errors_from_raw(
     return errors
 
 
+def _valid_formation_role_state(flags: Any, master_id: Any) -> bool:
+    """Accept one coherent role plus Valkey's non-failure role modifier."""
+    if (
+        not isinstance(flags, list)
+        or not flags
+        or any(not isinstance(flag, str) or not flag for flag in flags)
+        or len(set(flags)) != len(flags)
+    ):
+        return False
+    flag_set = set(flags)
+    role_flags = flag_set & _CLUSTER_ROLE_FLAGS
+    modifiers = flag_set - role_flags
+    if (
+        len(role_flags) != 1
+        or not flag_set <= _CLUSTER_NODE_FLAGS
+        or not modifiers <= {"nofailover"}
+    ):
+        return False
+    if role_flags == {"master"}:
+        return master_id == "-"
+    return master_id == "-" or (
+        isinstance(master_id, str) and _valid_cluster_node_id(master_id)
+    )
+
+
 def _is_proven_bootstrap_transition(
     observation: Mapping[str, Any],
     *,
@@ -1579,15 +1599,7 @@ def _is_proven_bootstrap_transition(
         and isinstance(observation.get("address"), str)
         and _cluster_link_client_port(observation["address"]) is not None
         and observation.get("link_state") == "disconnected"
-        and isinstance(flags, list)
-        and (
-            (flags in (["master"], ["slave"]) and master_id == "-")
-            or (
-                flags == ["slave"]
-                and isinstance(master_id, str)
-                and _valid_cluster_node_id(master_id)
-            )
-        )
+        and _valid_formation_role_state(flags, master_id)
     )
     if not role_row:
         return False
@@ -1629,6 +1641,17 @@ def _is_proven_bootstrap_transition(
         not isinstance(next_observation, Mapping)
         or next_observation.get("node_id") == node_id
         for next_observation in next_observations
+    ):
+        return False
+    next_link_times = _directional_link_create_times(next_process, node_id)
+    next_peer_directions = [
+        link["direction"]
+        for link in next_process["directional_cluster_links"]
+        if link["node_id"] == node_id
+    ]
+    if (
+        not next_link_times
+        or len(next_peer_directions) != len(set(next_peer_directions))
     ):
         return False
     boundary_observations = formation_boundary_process[
@@ -1682,6 +1705,61 @@ def _directional_link_create_times(
         if observed_node_id == node_id and "r" in events:
             create_times[direction] = max(create_times.get(direction, 0), create_time)
     return create_times
+
+
+def _complete_owned_peer_sets(
+    processes: list[Mapping[str, Any]],
+) -> dict[str, frozenset[str]] | None:
+    process_count = len(processes)
+    if process_count < 1:
+        return None
+    peer_sets: dict[str, frozenset[str]] = {}
+    for process in processes:
+        logical_id = process.get("logical_id")
+        raw_links = process.get("directional_cluster_links")
+        if (
+            not isinstance(logical_id, str)
+            or not logical_id
+            or process.get("cluster_link_count") != process_count
+            or not isinstance(raw_links, list)
+        ):
+            return None
+        seen_links: set[tuple[str, str]] = set()
+        readable_peers: set[str] = set()
+        for link in raw_links:
+            if not isinstance(link, Mapping):
+                return None
+            node_id = link.get("node_id")
+            direction = link.get("direction")
+            events = link.get("events")
+            link_key = (str(node_id), str(direction))
+            if link_key in seen_links:
+                return None
+            seen_links.add(link_key)
+            if isinstance(node_id, str) and isinstance(events, str) and "r" in events:
+                readable_peers.add(node_id)
+        if (
+            len(readable_peers) != process_count - 1
+            or (process_count == 1 and raw_links)
+        ):
+            return None
+        peer_sets[logical_id] = frozenset(readable_peers)
+    if len(peer_sets) != process_count:
+        return None
+    if process_count == 1:
+        return peer_sets
+    peer_universe = set().union(*peer_sets.values())
+    missing_node_ids = [
+        peer_universe - set(peers)
+        for peers in peer_sets.values()
+    ]
+    if (
+        len(peer_universe) != process_count
+        or any(len(node_ids) != 1 for node_ids in missing_node_ids)
+        or len({next(iter(node_ids)) for node_ids in missing_node_ids}) != process_count
+    ):
+        return None
+    return peer_sets
 
 
 def _cluster_link_client_port(address: str) -> int | None:
@@ -1869,6 +1947,7 @@ def _aggregate_samples(
 
         strict_boundary_index: int | None = None
         owned_pids: dict[str, int] | None = None
+        owned_peer_sets: dict[str, frozenset[str]] | None = None
         for sample_index, sample in enumerate(samples):
             sample_processes: list[Mapping[str, Any]] = []
             nodehosts = sample.get("nodehosts")
@@ -1910,10 +1989,21 @@ def _aggregate_samples(
                         f"{process.get('logical_id', MISSING)} is missing raw CLUSTER LINKS"
                     )
 
+            complete_peer_sets = _complete_owned_peer_sets(sample_processes)
             if sample.get("sample_phase") != "post_formation":
+                if complete_peer_sets is not None:
+                    # Valkey renames temporary HANDSHAKE node IDs in place.
+                    owned_peer_sets = complete_peer_sets
                 continue
+            if complete_peer_sets is not None:
+                if owned_peer_sets is None:
+                    owned_peer_sets = complete_peer_sets
+                elif complete_peer_sets != owned_peer_sets:
+                    raise M2ResourceMeasurementError(
+                        f"post-formation sample {sample_index} changed owned peer identity"
+                    )
             process_count = len(sample_processes)
-            sample_is_bidirectionally_complete = True
+            links_are_bidirectionally_complete = True
             for process in sample_processes:
                 logical_id = process.get("logical_id", MISSING)
                 raw_observations = process.get("non_connected_cluster_links")
@@ -1927,7 +2017,7 @@ def _aggregate_samples(
                 link_count = process.get("cluster_link_count")
                 raw_links = process.get("directional_cluster_links")
                 if link_count != process_count or not isinstance(raw_links, list):
-                    sample_is_bidirectionally_complete = False
+                    links_are_bidirectionally_complete = False
                     if strict_boundary_index is not None:
                         raise M2ResourceMeasurementError(
                             f"post-formation boundary process {logical_id} has incomplete membership evidence"
@@ -1940,7 +2030,7 @@ def _aggregate_samples(
                     direction = link["direction"]
                     link_key = (node_id, direction)
                     if "r" not in link["events"] or link_key in seen_links:
-                        sample_is_bidirectionally_complete = False
+                        links_are_bidirectionally_complete = False
                         if strict_boundary_index is not None:
                             raise M2ResourceMeasurementError(
                                 f"post-formation boundary process {logical_id} has incomplete directional links"
@@ -1956,13 +2046,25 @@ def _aggregate_samples(
                         for directions in directions_by_peer.values()
                     )
                 )
-                sample_is_bidirectionally_complete &= process_is_bidirectionally_complete
+                links_are_bidirectionally_complete &= process_is_bidirectionally_complete
                 if strict_boundary_index is not None and not process_is_bidirectionally_complete:
                     raise M2ResourceMeasurementError(
                         f"post-formation boundary process {logical_id} is not bidirectionally complete"
                     )
+            topology_is_consistent = (
+                complete_peer_sets is not None
+                and complete_peer_sets == owned_peer_sets
+            )
+            if links_are_bidirectionally_complete and not topology_is_consistent:
+                raise M2ResourceMeasurementError(
+                    f"post-formation sample {sample_index} has inconsistent owned peer topology"
+                )
+            sample_is_bidirectionally_complete = (
+                links_are_bidirectionally_complete and topology_is_consistent
+            )
             if strict_boundary_index is None and sample_is_bidirectionally_complete:
                 strict_boundary_index = sample_index
+                owned_peer_sets = complete_peer_sets
                 formation_boundary_processes = {
                     str(process["logical_id"]): process
                     for process in sample_processes

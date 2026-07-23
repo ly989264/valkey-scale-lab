@@ -10,6 +10,7 @@ from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.metrics.m2_resource import (
     M2ResourceMeasurementError,
     _cluster_link_errors_from_raw,
+    _complete_owned_peer_sets,
     collect_m2_resource_window,
     validate_and_aggregate_m2_resource_samples,
     validate_equal_m2_resource_windows,
@@ -479,6 +480,47 @@ def _complete_boundary_links(link_count: int) -> list[dict]:
     ]
 
 
+def test_m2_complete_owned_peer_sets_require_one_consistent_peer_universe() -> None:
+    node_ids = ("a" * 40, "b" * 40, "c" * 40)
+    processes = [
+        _semantic_cluster_process(
+            cluster_link_count=3,
+            logical_id=f"node-{index}",
+            directional_links=[
+                link
+                for peer_id in node_ids
+                if peer_id != node_ids[index]
+                for link in _bidirectional_cluster_links(peer_id)
+            ],
+        )
+        for index in range(3)
+    ]
+
+    assert _complete_owned_peer_sets(processes) == {
+        f"node-{index}": frozenset(
+            peer_id for peer_id in node_ids if peer_id != node_ids[index]
+        )
+        for index in range(3)
+    }
+
+    inconsistent = copy.deepcopy(processes)
+    for link in inconsistent[1]["directional_cluster_links"]:
+        if link["node_id"] == node_ids[0]:
+            link["node_id"] = "d" * 40
+    assert _complete_owned_peer_sets(inconsistent) is None
+
+
+def test_m2_complete_owned_peer_sets_support_single_process_formation() -> None:
+    process = _semantic_cluster_process(
+        cluster_link_count=1,
+        logical_id="node-0",
+    )
+
+    assert _complete_owned_peer_sets([process]) == {
+        "node-0": frozenset(),
+    }
+
+
 @pytest.mark.parametrize(
     "case",
     [
@@ -577,6 +619,27 @@ def test_m2_bootstrap_historical_shapes_share_phase_invariants(case: dict) -> No
             _FORMATION_KNOWN_PRIMARY_ID,
             id="replica-primary-known",
         ),
+        pytest.param(["master", "nofailover"], "-", id="primary-no-failover"),
+        pytest.param(
+            ["slave", "nofailover"],
+            "-",
+            id="replica-primary-unknown-no-failover",
+        ),
+        pytest.param(
+            ["slave", "nofailover"],
+            _FORMATION_KNOWN_PRIMARY_ID,
+            id="replica-primary-known-no-failover",
+        ),
+        pytest.param(
+            ["nofailover", "master"],
+            "-",
+            id="primary-no-failover-reordered",
+        ),
+        pytest.param(
+            ["nofailover", "slave"],
+            _FORMATION_KNOWN_PRIMARY_ID,
+            id="replica-primary-known-no-failover-reordered",
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -649,6 +712,74 @@ def test_m2_formation_transition_is_invariant_to_documented_role_and_direction_s
 
 
 @pytest.mark.parametrize(
+    "next_links",
+    [
+        pytest.param([], id="missing-peer"),
+        pytest.param(
+            [_directional_cluster_link(_FORMATION_OTHER_PEER_ID, "to")],
+            id="different-peer",
+        ),
+        pytest.param(
+            [_directional_cluster_link(_FORMATION_PEER_ID, "to", events="w")],
+            id="target-not-readable",
+        ),
+        pytest.param(
+            [
+                _directional_cluster_link(_FORMATION_PEER_ID, "to"),
+                _directional_cluster_link(
+                    _FORMATION_PEER_ID,
+                    "to",
+                    create_time=2000,
+                ),
+            ],
+            id="duplicate-target-direction",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "sample_phase",
+    ["formation_bootstrap", "formation_boundary"],
+)
+def test_m2_formation_transition_rejects_unproven_next_sample_recovery(
+    next_links: list[dict],
+    sample_phase: str,
+) -> None:
+    previous = _semantic_cluster_process(cluster_link_count=1)
+    current = _semantic_cluster_process(
+        cluster_link_count=3,
+        observations=[
+            {
+                **_FORMATION_ROLE_ROW,
+                "flags": ["slave", "nofailover"],
+                "master_id": "-",
+            }
+        ],
+        claimed_errors=1,
+    )
+    recovered = _semantic_cluster_process(
+        cluster_link_count=3,
+        directional_links=next_links,
+    )
+    boundary = _semantic_cluster_process(
+        cluster_link_count=3,
+        directional_links=_complete_boundary_links(3),
+    )
+
+    assert (
+        _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=previous,
+            next_process=recovered,
+            formation_boundary_process=boundary,
+            allow_initial_membership_transition=True,
+            sample_phase=sample_phase,
+        )
+        == 1
+    )
+
+
+@pytest.mark.parametrize(
     "sample_phase",
     [None, "pre_barrier", "window", "post_formation"],
 )
@@ -699,7 +830,17 @@ def test_m2_formation_transition_does_not_relax_other_sample_phases(
             id="primary-with-primary-id",
         ),
         pytest.param(["slave", "fail?"], "-", id="replica-failure-flag"),
+        pytest.param(
+            ["slave", "nofailover", "fail?"],
+            "-",
+            id="safe-modifier-does-not-mask-failure",
+        ),
         pytest.param(["master", "slave"], "-", id="conflicting-roles"),
+        pytest.param(
+            ["nofailover"],
+            "-",
+            id="modifier-without-role",
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -841,6 +982,84 @@ def test_m2_formation_report_is_invariant_to_formation_event_timing(
     )
     assert trusted["status"] == "PASS"
     assert trusted["metrics"]["cluster_link_errors"] == 0
+
+
+def test_m2_formation_report_is_invariant_to_nonfailure_role_modifier() -> None:
+    report = _trusted_formation_report(
+        link=(
+            _FORMATION_PEER_ID,
+            "127.0.0.1:7201@17201",
+            "slave,nofailover",
+            "-",
+            "disconnected",
+        ),
+    )
+
+    trusted = validate_and_aggregate_m2_resource_samples(
+        report,
+        allow_initial_membership_transitions=True,
+    )
+    assert trusted["status"] == "PASS"
+    assert trusted["metrics"]["cluster_link_errors"] == 0
+
+
+@pytest.mark.parametrize(
+    ("next_links", "expected_status", "expected_errors"),
+    [
+        pytest.param([], "PASS", 1, id="missing-peer"),
+        pytest.param(
+            [_directional_cluster_link(_FORMATION_OTHER_PEER_ID, "to")],
+            "FAIL",
+            None,
+            id="different-peer",
+        ),
+        pytest.param(
+            [_directional_cluster_link(_FORMATION_PEER_ID, "to", events="w")],
+            "PASS",
+            1,
+            id="target-not-readable",
+        ),
+        pytest.param(
+            [
+                _directional_cluster_link(_FORMATION_PEER_ID, "to"),
+                _directional_cluster_link(
+                    _FORMATION_PEER_ID,
+                    "to",
+                    create_time=2000,
+                ),
+            ],
+            "PASS",
+            1,
+            id="duplicate-target-direction",
+        ),
+    ],
+)
+def test_m2_formation_report_rejects_unproven_next_sample_recovery(
+    next_links: list[dict],
+    expected_status: str,
+    expected_errors: int | None,
+) -> None:
+    report = _trusted_formation_report(
+        sample_phases=(
+            "formation_bootstrap",
+            "formation_bootstrap",
+            "post_formation",
+            "post_formation",
+        ),
+    )
+    report["samples"][2]["nodehosts"][0]["processes"][0][
+        "directional_cluster_links"
+    ] = copy.deepcopy(next_links)
+
+    trusted = validate_and_aggregate_m2_resource_samples(
+        report,
+        allow_initial_membership_transitions=True,
+    )
+    assert trusted["status"] == expected_status
+    if expected_errors is not None:
+        assert trusted["metrics"]["cluster_link_errors"] == expected_errors
+    else:
+        assert trusted["coverage"]["complete"] is False
 
 
 def test_m2_resource_window_does_not_self_authorize_bootstrap_transition() -> None:
@@ -1037,6 +1256,71 @@ def test_m2_formation_report_fails_closed_for_incomplete_directional_evidence(
 
     assert report["status"] == "FAIL"
     assert report["coverage"]["complete"] is False
+
+
+@pytest.mark.parametrize(
+    "changed_sample_index",
+    [
+        pytest.param(2, id="strict-boundary"),
+        pytest.param(3, id="after-strict-boundary"),
+    ],
+)
+def test_m2_formation_validator_rejects_inconsistent_owned_peer_topology(
+    changed_sample_index: int,
+) -> None:
+    report = _trusted_formation_report(
+        sample_phases=(
+            "formation_bootstrap",
+            "formation_bootstrap",
+            "post_formation",
+            "post_formation",
+        ),
+    )
+    process = report["samples"][changed_sample_index]["nodehosts"][0]["processes"][1]
+    for link in process["directional_cluster_links"]:
+        link["node_id"] = _FORMATION_OTHER_PEER_ID
+
+    trusted = validate_and_aggregate_m2_resource_samples(
+        report,
+        allow_initial_membership_transitions=True,
+    )
+    assert trusted["status"] == "FAIL"
+    assert trusted["coverage"]["complete"] is False
+    assert any("changed owned peer identity" in error for error in trusted["errors"])
+
+
+def test_m2_formation_validator_allows_handshake_peer_id_to_settle_before_boundary() -> None:
+    report = _trusted_formation_report(
+        sample_phases=(
+            "formation_bootstrap",
+            "formation_bootstrap",
+            "post_formation",
+            "post_formation",
+        ),
+    )
+    process = report["samples"][0]["nodehosts"][0]["processes"][0]
+    for link in process["directional_cluster_links"]:
+        link["node_id"] = _FORMATION_OTHER_PEER_ID
+
+    trusted = validate_and_aggregate_m2_resource_samples(
+        report,
+        allow_initial_membership_transitions=True,
+    )
+    assert trusted["status"] == "PASS"
+    assert trusted["metrics"]["cluster_link_errors"] == 0
+
+
+def test_m2_formation_report_accepts_boundary_as_first_complete_peer_topology() -> None:
+    directional_samples = list(_formation_directional_samples(3))
+    directional_samples[0][102] = []
+    directional_samples[1][102] = []
+
+    report = _trusted_formation_report(
+        directional_links_by_sample=tuple(directional_samples),
+    )
+
+    assert report["status"] == "PASS"
+    assert report["metrics"]["cluster_link_errors"] == 0
 
 
 @pytest.mark.parametrize("missing_sample", ["previous", "next"])
