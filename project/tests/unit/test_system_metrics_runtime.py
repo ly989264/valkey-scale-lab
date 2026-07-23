@@ -581,7 +581,7 @@ def _trusted_formation_report(
     sample_phases: tuple[str, ...] = (
         "formation_bootstrap",
         "formation_bootstrap",
-        "formation_boundary",
+        "post_formation",
     ),
     link_samples: set[int] | None = None,
     link: tuple[str, str, str, str, str] = (
@@ -611,26 +611,50 @@ def _trusted_formation_report(
 
 
 @pytest.mark.parametrize(
-    "strict_phase",
+    "sample_phases",
     [
-        pytest.param("formation_boundary", id="boundary-observed-during-sample"),
-        pytest.param("post_formation", id="first-complete-sample-after-boundary"),
+        pytest.param(
+            (
+                "formation_bootstrap",
+                "formation_bootstrap",
+                "post_formation",
+                "post_formation",
+            ),
+            id="event-between-samples",
+        ),
+        pytest.param(
+            (
+                "formation_bootstrap",
+                "formation_boundary",
+                "post_formation",
+                "post_formation",
+            ),
+            id="event-during-transition-sample",
+        ),
     ],
 )
-def test_m2_formation_report_preserves_transient_rows_and_requires_strict_boundary(
-    strict_phase: str,
+def test_m2_formation_report_is_invariant_to_formation_event_timing(
+    sample_phases: tuple[str, ...],
 ) -> None:
-    phases = ("formation_bootstrap", "formation_bootstrap", strict_phase)
-    report = _trusted_formation_report(sample_phases=phases)
+    directional_samples = list(_formation_directional_samples(4))
+    directional_samples[1][101] = directional_samples[1][101][:1]
+    directional_samples[2][101] = directional_samples[2][101][:1]
+    report = _trusted_formation_report(
+        sample_phases=sample_phases,
+        directional_links_by_sample=tuple(directional_samples),
+    )
 
     assert report["status"] == "PASS"
     assert report["metrics"]["cluster_link_errors"] == 0
-    assert [sample["sample_phase"] for sample in report["samples"]] == list(phases)
+    assert [sample["sample_phase"] for sample in report["samples"]] == list(sample_phases)
     process = report["samples"][1]["nodehosts"][0]["processes"][0]
     assert process["cluster_link_errors"] == 1
     assert process["non_connected_cluster_link_count"] == 1
     assert process["non_connected_cluster_links"] == [_FORMATION_ROLE_ROW]
-    assert process["directional_cluster_links"] == _bidirectional_cluster_links("b" * 40)
+    assert process["directional_cluster_links"] == directional_samples[1][101]
+    first_post_process = report["samples"][2]["nodehosts"][0]["processes"][0]
+    assert first_post_process["non_connected_cluster_links"] == []
+    assert first_post_process["directional_cluster_links"] == directional_samples[2][101]
     trusted = validate_and_aggregate_m2_resource_samples(
         report,
         allow_initial_membership_transitions=True,
@@ -652,29 +676,39 @@ def test_m2_resource_window_does_not_self_authorize_bootstrap_transition() -> No
     ("sample_phases", "link_samples", "link", "claimed_errors"),
     [
         pytest.param(
-            ("formation_bootstrap", "formation_bootstrap", "formation_boundary"),
-            {2},
+            ("formation_bootstrap", "formation_boundary", "post_formation"),
+            {1, 2},
             ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
             1,
-            id="boundary-role-disconnect",
-        ),
-        pytest.param(
-            ("formation_bootstrap", "formation_bootstrap", "formation_boundary"),
-            {2},
-            ("c" * 40, "127.0.0.1:7202@17202", "handshake", "-", "disconnected"),
-            0,
-            id="boundary-handshake",
+            id="boundary-role-disconnect-persists-into-post",
         ),
         pytest.param(
             ("formation_bootstrap", "formation_boundary", "post_formation"),
-            {2},
+            {1, 2},
+            ("c" * 40, "127.0.0.1:7202@17202", "handshake", "-", "disconnected"),
+            0,
+            id="boundary-handshake-persists-into-post",
+        ),
+        pytest.param(
+            (
+                "formation_bootstrap",
+                "formation_boundary",
+                "post_formation",
+                "post_formation",
+            ),
+            {3},
             ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
             1,
             id="post-formation-role-disconnect",
         ),
         pytest.param(
-            ("formation_bootstrap", "formation_boundary", "post_formation"),
-            {2},
+            (
+                "formation_bootstrap",
+                "formation_boundary",
+                "post_formation",
+                "post_formation",
+            ),
+            {3},
             ("c" * 40, "127.0.0.1:7202@17202", "handshake", "-", "disconnected"),
             0,
             id="post-formation-handshake",
@@ -696,6 +730,24 @@ def test_m2_formation_report_fails_closed_for_boundary_or_post_disconnect(
 
     assert report["status"] == "FAIL"
     assert report["coverage"]["complete"] is False
+
+
+def test_m2_formation_report_requires_complete_post_formation_boundary() -> None:
+    report = _trusted_formation_report(
+        sample_phases=(
+            "formation_bootstrap",
+            "formation_bootstrap",
+            "formation_boundary",
+        ),
+        link_samples=set(),
+    )
+
+    assert report["status"] == "FAIL"
+    assert report["coverage"]["complete"] is False
+    assert any(
+        "never reached a complete post-formation boundary" in error
+        for error in report["errors"]
+    )
 
 
 def _complete_bootstrap_transition() -> tuple[dict, dict, dict, dict]:
@@ -749,7 +801,7 @@ def test_m2_bootstrap_transition_raises_for_missing_surrounding_evidence(missing
 
     with pytest.raises(
         M2ResourceMeasurementError,
-        match="lacks complete surrounding evidence",
+        match="formation transition lacks complete surrounding evidence",
     ):
         _cluster_link_errors_from_raw(
             current,

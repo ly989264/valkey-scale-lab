@@ -1500,18 +1500,18 @@ def _cluster_link_errors_from_raw(
             and master_id == "-"
         )
         if pending_handshake:
-            if sample_phase in {"formation_boundary", "post_formation"}:
+            if sample_phase == "post_formation":
                 errors += 1
             continue
         claimed_errors += 1
-        bootstrap_role_row = (
-            sample_phase == "formation_bootstrap"
+        formation_role_row = (
+            sample_phase in {"formation_bootstrap", "formation_boundary"}
             and (primary_link or replica_link)
             and flag_set in ({"master"}, {"slave"})
         )
         if (
             allow_initial_membership_transition
-            and bootstrap_role_row
+            and formation_role_row
             and not all(
                 isinstance(value, Mapping)
                 for value in (
@@ -1522,7 +1522,7 @@ def _cluster_link_errors_from_raw(
             )
         ):
             raise M2ResourceMeasurementError(
-                f"cluster sample for {logical_id} bootstrap transition lacks complete surrounding evidence"
+                f"cluster sample for {logical_id} formation transition lacks complete surrounding evidence"
             )
         if not (
             allow_initial_membership_transition
@@ -1555,7 +1555,7 @@ def _is_proven_bootstrap_transition(
     sample_phase: str | None,
 ) -> bool:
     """Classify only complete, converged formation churn as non-failing."""
-    if sample_phase != "formation_bootstrap" or not all(
+    if sample_phase not in {"formation_bootstrap", "formation_boundary"} or not all(
         isinstance(value, Mapping)
         for value in (
             previous_process,
@@ -1819,7 +1819,7 @@ def _resource_report(
             "fd_count": "peak count of explicit owned PID /proc/<pid>/fd entries",
             "connection_count": "peak count of socket symlinks in explicit owned PID /proc/<pid>/fd",
             "cluster_bus_bytes": "exact Valkey 9.1 per-node CLUSTER INFO cluster_stats_bytes_sent plus cluster_stats_bytes_received counter deltas; no namespace-traffic fallback",
-            "cluster_link_errors": "maximum raw-derived stable unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, setup-trial-authorized formation_bootstrap transitions with complete monotonic owned-PID samples, next-sample CLUSTER NODES recovery, and a strict bidirectional formation boundary, and explicitly PID-bound expected fault-target client ports",
+            "cluster_link_errors": "maximum raw-derived stable unexpected disconnected-link count after excluding well-formed pre-establishment handshake rows, setup-trial-authorized formation transitions with complete monotonic owned-PID samples, next-sample CLUSTER NODES recovery, and a strict bidirectional post-formation boundary, and explicitly PID-bound expected fault-target client ports",
             "buffer_overflows": "exact per-node CLUSTER INFO total_cluster_links_buffer_limit_exceeded counter deltas",
         },
         "diagnostic_provenance": {
@@ -1858,19 +1858,12 @@ def _aggregate_samples(
             raise M2ResourceMeasurementError(
                 "formation resource samples do not have a monotonic bootstrap boundary"
             )
-        boundary_index = next(
-            (
-                index
-                for index, marker in enumerate(phases)
-                if marker in {"formation_boundary", "post_formation"}
-            ),
-            None,
-        )
-        if boundary_index is None:
+        if "post_formation" not in phases:
             raise M2ResourceMeasurementError(
-                "formation resource samples never reached a complete boundary"
+                "formation resource samples never reached a complete post-formation boundary"
             )
 
+        strict_boundary_index: int | None = None
         owned_pids: dict[str, int] | None = None
         for sample_index, sample in enumerate(samples):
             sample_processes: list[Mapping[str, Any]] = []
@@ -1913,9 +1906,10 @@ def _aggregate_samples(
                         f"{process.get('logical_id', MISSING)} is missing raw CLUSTER LINKS"
                     )
 
-            if sample_index < boundary_index:
+            if sample.get("sample_phase") != "post_formation":
                 continue
             process_count = len(sample_processes)
+            sample_is_bidirectionally_complete = True
             for process in sample_processes:
                 logical_id = process.get("logical_id", MISSING)
                 raw_observations = process.get("non_connected_cluster_links")
@@ -1924,14 +1918,17 @@ def _aggregate_samples(
                     or raw_observations != []
                 ):
                     raise M2ResourceMeasurementError(
-                        f"formation boundary process {logical_id} is disconnected"
+                        f"post-formation process {logical_id} is disconnected"
                     )
                 link_count = process.get("cluster_link_count")
                 raw_links = process.get("directional_cluster_links")
                 if link_count != process_count or not isinstance(raw_links, list):
-                    raise M2ResourceMeasurementError(
-                        f"formation boundary process {logical_id} has incomplete membership evidence"
-                    )
+                    sample_is_bidirectionally_complete = False
+                    if strict_boundary_index is not None:
+                        raise M2ResourceMeasurementError(
+                            f"post-formation boundary process {logical_id} has incomplete membership evidence"
+                        )
+                    continue
                 directions_by_peer: dict[str, set[str]] = {}
                 seen_links: set[tuple[str, str]] = set()
                 for link in raw_links:
@@ -1939,27 +1936,37 @@ def _aggregate_samples(
                     direction = link["direction"]
                     link_key = (node_id, direction)
                     if "r" not in link["events"] or link_key in seen_links:
-                        raise M2ResourceMeasurementError(
-                            f"formation boundary process {logical_id} has incomplete directional links"
-                        )
+                        sample_is_bidirectionally_complete = False
+                        if strict_boundary_index is not None:
+                            raise M2ResourceMeasurementError(
+                                f"post-formation boundary process {logical_id} has incomplete directional links"
+                            )
+                        break
                     seen_links.add(link_key)
                     directions_by_peer.setdefault(node_id, set()).add(direction)
-                if (
-                    len(directions_by_peer) != link_count - 1
-                    or len(seen_links) != 2 * (link_count - 1)
-                    or any(
-                        directions != {"to", "from"}
+                process_is_bidirectionally_complete = (
+                    len(directions_by_peer) == link_count - 1
+                    and len(seen_links) == 2 * (link_count - 1)
+                    and all(
+                        directions == {"to", "from"}
                         for directions in directions_by_peer.values()
                     )
-                ):
+                )
+                sample_is_bidirectionally_complete &= process_is_bidirectionally_complete
+                if strict_boundary_index is not None and not process_is_bidirectionally_complete:
                     raise M2ResourceMeasurementError(
-                        f"formation boundary process {logical_id} is not bidirectionally complete"
+                        f"post-formation boundary process {logical_id} is not bidirectionally complete"
                     )
-            if sample_index == boundary_index:
+            if strict_boundary_index is None and sample_is_bidirectionally_complete:
+                strict_boundary_index = sample_index
                 formation_boundary_processes = {
                     str(process["logical_id"]): process
                     for process in sample_processes
                 }
+        if strict_boundary_index is None:
+            raise M2ResourceMeasurementError(
+                "formation resource samples never reached a complete post-formation boundary"
+            )
 
     rss_totals: list[int] = []
     fd_totals: list[int] = []

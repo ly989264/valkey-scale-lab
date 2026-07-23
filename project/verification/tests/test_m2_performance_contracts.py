@@ -2004,7 +2004,17 @@ def test_raw_resource_source_accepts_pre_establishment_handshake_transient(tmp_p
     assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
 
 
-def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "transition_phase",
+    [
+        pytest.param("formation_bootstrap", id="event-between-samples"),
+        pytest.param("formation_boundary", id="event-during-transition-sample"),
+    ],
+)
+def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(
+    tmp_path: Path,
+    transition_phase: str,
+) -> None:
     report = _formation_report()
     trial = deepcopy(report["trials"][0])
     report["trials"] = [trial]
@@ -2023,7 +2033,7 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_
         zip(
             resource["samples"],
             (0.0, midpoint, duration),
-            ("formation_bootstrap", "formation_bootstrap", "formation_boundary"),
+            ("formation_bootstrap", transition_phase, "post_formation"),
         )
     ):
         sample["sample_index"] = index
@@ -2124,16 +2134,20 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(tmp_
 
     assert verdict["status"] == "PASS", verdict["errors"]
     assert verdict["metrics"]["cluster_link_errors"] == 0
-    missing_boundary = deepcopy(resource)
-    missing_boundary["samples"][-1]["sample_phase"] = "formation_bootstrap"
-    missing_boundary_verdict = M2.validate_and_aggregate_m2_resource_samples(
-        missing_boundary,
+    missing_post_formation = deepcopy(resource)
+    for sample, sample_phase in zip(
+        missing_post_formation["samples"],
+        ("formation_bootstrap", "formation_bootstrap", "formation_boundary"),
+    ):
+        sample["sample_phase"] = sample_phase
+    missing_post_formation_verdict = M2.validate_and_aggregate_m2_resource_samples(
+        missing_post_formation,
         allow_initial_membership_transitions=True,
     )
-    assert missing_boundary_verdict["status"] == "FAIL"
+    assert missing_post_formation_verdict["status"] == "FAIL"
     assert any(
-        "never reached a complete boundary" in error
-        for error in missing_boundary_verdict["errors"]
+        "never reached a complete post-formation boundary" in error
+        for error in missing_post_formation_verdict["errors"]
     )
     resource["metrics"] = verdict["metrics"]
     resource["diagnostics"] = verdict["diagnostics"]
