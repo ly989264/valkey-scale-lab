@@ -1214,7 +1214,7 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
         "errors": [],
         "mode": "owned-process-sigkill",
         "signal": "SIGKILL",
-        "commands": ["docker exec contract-container-id kill -KILL 10000"],
+        "commands": ["docker exec contract-container-id sh -c kill -KILL 10000"],
         "command_batches": [
             {
                 "container_name": "contract-nodehost",
@@ -1225,9 +1225,9 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
                 "argv": [
                     "exec",
                     "contract-container-id",
-                    "kill",
-                    "-KILL",
-                    "10000",
+                    "sh",
+                    "-c",
+                    "kill -KILL 10000",
                 ],
                 "started_at_monotonic": 200.0,
                 "ended_at_monotonic": 200.001,

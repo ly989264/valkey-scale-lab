@@ -1211,6 +1211,13 @@ def _safe_process_token(value: Any, field: str) -> str:
     return token
 
 
+def _safe_process_pid(value: Any) -> str:
+    token = str(value).strip()
+    if isinstance(value, bool) or not token.isascii() or not token.isdigit() or int(token) <= 0:
+        raise DockerRuntimeError(f"unsafe process runtime pid: {value!r}")
+    return str(int(token))
+
+
 def _process_data_dir(run_id: str, logical_id: str) -> str:
     safe_run = _safe_process_token(run_id, "run_id")
     safe_node = _safe_process_token(logical_id, "logical_id")
@@ -2479,11 +2486,36 @@ def _wait_container_pids_gone(container: str, pids: list[str], timeout: float) -
 
 
 def _wait_container_pid_gone(container: str, pid: str, timeout: float) -> bool:
+    pid_text = _safe_process_pid(pid)
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        result = run_docker(["exec", container, "kill", "-0", pid], timeout=5, check=False)
+        result = run_docker(
+            [
+                "exec",
+                container,
+                "sh",
+                "-c",
+                (
+                    f"if [ ! -r /proc/{pid_text}/stat ]; then printf VSLAB_GONE; exit 0; fi; "
+                    f"s=$(awk '{{print $3}}' /proc/{pid_text}/stat) || exit 70; "
+                    'case "$s" in Z|X) printf VSLAB_GONE;; *) printf VSLAB_ALIVE;; esac'
+                ),
+            ],
+            timeout=5,
+            check=False,
+        )
         if result.returncode != 0:
+            raise DockerRuntimeError(
+                f"owned process probe failed for container {container} pid={pid_text}: "
+                f"exit={result.returncode} stderr={result.stderr.strip()[-300:]}"
+            )
+        observation = result.stdout.strip()
+        if observation == "VSLAB_GONE":
             return True
+        if observation != "VSLAB_ALIVE":
+            raise DockerRuntimeError(
+                f"owned process probe returned no sentinel for container {container} pid={pid_text}"
+            )
         time.sleep(0.5)
     return False
 
@@ -10133,7 +10165,7 @@ def _management_matrix_stop_process(
     command_kind: str,
 ) -> None:
     container = str(target["nodehost_container_name"])
-    pid = str(target["pid"])
+    pid = _safe_process_pid(target["pid"])
     port = str(target["client_port"])
     _management_matrix_log_docker_exec(
         command_log,
@@ -10157,7 +10189,7 @@ def _management_matrix_stop_process(
         operation_id,
         f"{command_kind}_kill_term_fallback",
         target,
-        ["exec", container, "kill", "-TERM", pid],
+        ["exec", container, "sh", "-c", f"kill -TERM {pid}"],
         timeout=10,
         check=False,
     )

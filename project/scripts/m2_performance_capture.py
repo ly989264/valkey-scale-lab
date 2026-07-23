@@ -1514,7 +1514,8 @@ def _owned_sigkill_sender(
         ):
             raise CaptureError(f"SIGKILL container {container_name} failed identity/ownership verification")
         ordered = sorted(nodes, key=lambda row: str(row["logical_id"]))
-        argv = ["exec", container_id, "kill", "-KILL", *[str(node["pid"]) for node in ordered]]
+        pid_text = " ".join(str(node["pid"]) for node in ordered)
+        argv = ["exec", container_id, "sh", "-c", f"kill -KILL {pid_text}"]
         batch_states[key] = {
             "event": threading.Event(),
             "leader": str(ordered[0]["logical_id"]),
