@@ -4,8 +4,11 @@ import copy
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.metrics.m2_resource import (
+    M2ResourceMeasurementError,
     _cluster_link_errors_from_raw,
     collect_m2_resource_window,
     validate_and_aggregate_m2_resource_samples,
@@ -65,6 +68,50 @@ class _WindowStartEvent:
         self.wait_timeouts.append(timeout)
         self.clock.value += 7.0
         return True
+
+
+class _FormationCompleteEvent:
+    def __init__(self, sample_phases: tuple[str, ...]) -> None:
+        phase_states = {
+            "formation_bootstrap": (False, False),
+            "formation_boundary": (False, True),
+            "post_formation": (True, True),
+        }
+        self.states = [
+            state
+            for marker in sample_phases
+            for state in phase_states[marker]
+        ]
+        self.position = 0
+
+    def is_set(self) -> bool:
+        state = self.states[self.position]
+        self.position += 1
+        return state
+
+
+def _directional_cluster_link(
+    node_id: str,
+    direction: str,
+    *,
+    create_time: int = 1000,
+    events: str = "r",
+) -> dict:
+    return {
+        "direction": direction,
+        "node_id": node_id,
+        "create_time": create_time,
+        "events": events,
+        "send_buffer_allocated": 0,
+        "send_buffer_used": 0,
+    }
+
+
+def _bidirectional_cluster_links(node_id: str, *, create_time: int = 1000) -> list[dict]:
+    return [
+        _directional_cluster_link(node_id, "to", create_time=create_time),
+        _directional_cluster_link(node_id, "from", create_time=create_time),
+    ]
 
 
 def _m2_runtime_state() -> dict:
@@ -129,12 +176,14 @@ def _m2_batch_output(
     non_connected_links: dict[int, list[tuple[str, str, str, str, str]]] | None = None,
     cluster_link_errors: dict[int, int] | None = None,
     cluster_link_counts: dict[int, int] | None = None,
+    directional_cluster_links: dict[int, list[dict]] | None = None,
 ) -> str:
     gone = gone_pids or set()
     omitted = omitted_cluster_pids or set()
     link_rows = non_connected_links or {}
     error_claims = cluster_link_errors or {}
     link_counts = cluster_link_counts or {}
+    directional_links = directional_cluster_links or {}
     rows = ["META\t100\t4096"]
     process_values = {
         101: (7101, 10, 2, 5, 4, 2, 1000, 500, 100, 80),
@@ -164,6 +213,19 @@ def _m2_batch_output(
             f"LINK\t{pid}\t{node_id}\t{address}\t{flags}\t{master_id}\t{link_state}"
             for node_id, address, flags, master_id, link_state in link_rows.get(pid, [])
         )
+        if pid in directional_links:
+            raw_links = [
+                {
+                    "direction": link["direction"],
+                    "node": link["node_id"],
+                    "create-time": link["create_time"],
+                    "events": link["events"],
+                    "send-buffer-allocated": link["send_buffer_allocated"],
+                    "send-buffer-used": link["send_buffer_used"],
+                }
+                for link in directional_links[pid]
+            ]
+            rows.append(f"CLINKS\t{pid}\t{json.dumps(raw_links, separators=(',', ':'))}")
     rows.append(f"NET\t{1000 + sample * 100}\t{2000 + sample * 200}")
     return "\n".join(rows)
 
@@ -176,10 +238,19 @@ def _m2_resource_report_with_link(
     link_samples: set[int] | None = None,
     cluster_link_counts: tuple[int, ...] = (2, 2),
     allow_initial_membership_transitions: bool = False,
+    sample_phases: tuple[str, ...] | None = None,
+    directional_links_by_sample: tuple[dict[int, list[dict]], ...] | None = None,
 ) -> dict:
     clock = _FakeClock()
     sample = 0
     active_samples = set(range(len(cluster_link_counts))) if link_samples is None else link_samples
+    formation_complete_event = (
+        _FormationCompleteEvent(sample_phases) if sample_phases is not None else None
+    )
+    if sample_phases is not None:
+        assert len(sample_phases) == len(cluster_link_counts)
+    if directional_links_by_sample is not None:
+        assert len(directional_links_by_sample) == len(cluster_link_counts)
 
     def command(args, *, timeout, check):
         nonlocal sample
@@ -190,7 +261,15 @@ def _m2_resource_report_with_link(
             sample,
             non_connected_links=links,
             cluster_link_errors={101: claimed_errors} if links else {},
-            cluster_link_counts={101: cluster_link_counts[sample]},
+            cluster_link_counts={
+                101: cluster_link_counts[sample],
+                102: cluster_link_counts[sample],
+            },
+            directional_cluster_links=(
+                directional_links_by_sample[sample]
+                if directional_links_by_sample is not None
+                else None
+            ),
         )
         sample += 1
         return SimpleNamespace(returncode=0, stdout=output, stderr="")
@@ -204,6 +283,7 @@ def _m2_resource_report_with_link(
         monotonic_clock=clock.monotonic,
         wall_clock=clock.wall,
         sleep=clock.sleep,
+        formation_complete_event=formation_complete_event,
         allow_initial_membership_transitions=allow_initial_membership_transitions,
     )
 
@@ -340,360 +420,468 @@ def test_m2_resource_comparison_can_preserve_candidate_safety_rejection() -> Non
     )["status"] == "FAIL"
 
 
-def test_m2_formation_bootstrap_classifies_initial_role_row_as_pre_establishment() -> None:
-    link = ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected")
-    report = _m2_resource_report_with_link(
-        link,
+_FORMATION_PEER_ID = "b" * 40
+_FORMATION_OTHER_PEER_ID = "c" * 40
+_FORMATION_ROLE_ROW = {
+    "node_id": _FORMATION_PEER_ID,
+    "address": "127.0.0.1:7201@17201",
+    "flags": ["master"],
+    "master_id": "-",
+    "link_state": "disconnected",
+}
+_FORMATION_HANDSHAKE_ROW = {
+    "node_id": _FORMATION_OTHER_PEER_ID,
+    "address": "127.0.0.1:7202@17202",
+    "flags": ["handshake"],
+    "master_id": "-",
+    "link_state": "disconnected",
+}
+
+
+def _semantic_cluster_process(
+    *,
+    cluster_link_count: int,
+    observations: list[dict] | None = None,
+    directional_links: list[dict] | None = None,
+    pid: int = 101,
+    logical_id: str = "observer",
+    claimed_errors: int = 0,
+) -> dict:
+    raw_observations = copy.deepcopy(observations or [])
+    return {
+        "logical_id": logical_id,
+        "pid": pid,
+        "cluster_link_count": cluster_link_count,
+        "cluster_link_errors": claimed_errors,
+        "non_connected_cluster_link_count": len(raw_observations),
+        "non_connected_cluster_links": raw_observations,
+        "directional_cluster_links": copy.deepcopy(directional_links or []),
+    }
+
+
+def _directional_history(spec: tuple[tuple[str, int], ...]) -> list[dict]:
+    return [
+        _directional_cluster_link(_FORMATION_PEER_ID, direction, create_time=create_time)
+        for direction, create_time in spec
+    ]
+
+
+def _complete_boundary_links(link_count: int) -> list[dict]:
+    peer_ids = [
+        _FORMATION_PEER_ID,
+        *(f"{index + 1:040x}" for index in range(link_count - 2)),
+    ]
+    return [
+        _directional_cluster_link(node_id, direction)
+        for node_id in peer_ids
+        for direction in ("to", "from")
+    ]
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        pytest.param(
+            {
+                "counts": (1, 2, 2, 2),
+                "directions": ((), (), (("to", 1000), ("from", 1000))),
+            },
+            id="pr25-initial-membership-expansion",
+        ),
+        pytest.param(
+            {
+                "counts": (20, 23, 23, 25),
+                "directions": ((), (), (("to", 1000), ("from", 1000))),
+            },
+            id="pr26-progressive-expansion",
+        ),
+        pytest.param(
+            {
+                "counts": (2, 2, 2, 2),
+                "previous_observations": [_FORMATION_HANDSHAKE_ROW],
+                "directions": ((), (), (("to", 1000), ("from", 1000))),
+            },
+            id="pr31-unrelated-prior-handshake",
+        ),
+        pytest.param(
+            {
+                "counts": (2, 2, 2, 2),
+                "directions": (
+                    (("to", 1000),),
+                    (("from", 1000),),
+                    (("to", 1000), ("from", 1000)),
+                ),
+            },
+            id="pr34-direction-correction",
+        ),
+        pytest.param(
+            {
+                "counts": (2, 2, 2, 2),
+                "directions": (
+                    (("to", 1000), ("from", 1000)),
+                    (("to", 2000), ("from", 1000)),
+                    (("to", 2000), ("from", 1000)),
+                ),
+            },
+            id="pr37-same-sample-reconnect-next-confirmed",
+        ),
+    ],
+)
+def test_m2_bootstrap_historical_shapes_share_phase_invariants(case: dict) -> None:
+    previous_count, current_count, next_count, boundary_count = case["counts"]
+    previous_directions, current_directions, recovered_directions = case["directions"]
+    previous = _semantic_cluster_process(
+        cluster_link_count=previous_count,
+        observations=case.get("previous_observations"),
+        directional_links=_directional_history(previous_directions),
+    )
+    current = _semantic_cluster_process(
+        cluster_link_count=current_count,
+        observations=[_FORMATION_ROLE_ROW],
+        directional_links=_directional_history(current_directions),
         claimed_errors=1,
+    )
+    recovered = _semantic_cluster_process(
+        cluster_link_count=next_count,
+        directional_links=_directional_history(recovered_directions),
+    )
+    boundary = _semantic_cluster_process(
+        cluster_link_count=boundary_count,
+        directional_links=_complete_boundary_links(boundary_count),
+    )
+    raw_current = copy.deepcopy(current)
+
+    assert (
+        _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=previous,
+            next_process=recovered,
+            formation_boundary_process=boundary,
+            allow_initial_membership_transition=True,
+            sample_phase="formation_bootstrap",
+        )
+        == 0
+    )
+    assert current == raw_current
+
+
+def _formation_directional_samples(sample_count: int) -> tuple[dict[int, list[dict]], ...]:
+    return tuple(
+        {
+            101: _bidirectional_cluster_links("b" * 40),
+            102: _bidirectional_cluster_links("a" * 40),
+        }
+        for _ in range(sample_count)
+    )
+
+
+def _trusted_formation_report(
+    *,
+    sample_phases: tuple[str, ...] = (
+        "formation_bootstrap",
+        "formation_bootstrap",
+        "post_formation",
+    ),
+    link_samples: set[int] | None = None,
+    link: tuple[str, str, str, str, str] = (
+        "b" * 40,
+        "127.0.0.1:7201@17201",
+        "master",
+        "-",
+        "disconnected",
+    ),
+    claimed_errors: int = 1,
+    directional_links_by_sample: tuple[dict[int, list[dict]], ...] | None = None,
+) -> dict:
+    return _m2_resource_report_with_link(
+        link,
+        claimed_errors=claimed_errors,
         window_name="m2-formation-bootstrap",
-        link_samples={1},
-        cluster_link_counts=(1, 21, 25),
+        link_samples={1} if link_samples is None else link_samples,
+        cluster_link_counts=tuple(2 for _ in sample_phases),
         allow_initial_membership_transitions=True,
+        sample_phases=sample_phases,
+        directional_links_by_sample=(
+            directional_links_by_sample
+            if directional_links_by_sample is not None
+            else _formation_directional_samples(len(sample_phases))
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "sample_phases",
+    [
+        pytest.param(
+            (
+                "formation_bootstrap",
+                "formation_bootstrap",
+                "post_formation",
+                "post_formation",
+            ),
+            id="event-between-samples",
+        ),
+        pytest.param(
+            (
+                "formation_bootstrap",
+                "formation_boundary",
+                "post_formation",
+                "post_formation",
+            ),
+            id="event-during-transition-sample",
+        ),
+    ],
+)
+def test_m2_formation_report_is_invariant_to_formation_event_timing(
+    sample_phases: tuple[str, ...],
+) -> None:
+    directional_samples = list(_formation_directional_samples(4))
+    directional_samples[1][101] = directional_samples[1][101][:1]
+    directional_samples[2][101] = directional_samples[2][101][:1]
+    report = _trusted_formation_report(
+        sample_phases=sample_phases,
+        directional_links_by_sample=tuple(directional_samples),
     )
 
     assert report["status"] == "PASS"
     assert report["metrics"]["cluster_link_errors"] == 0
+    assert [sample["sample_phase"] for sample in report["samples"]] == list(sample_phases)
     process = report["samples"][1]["nodehosts"][0]["processes"][0]
     assert process["cluster_link_errors"] == 1
-    assert process["non_connected_cluster_links"] == [
-        {
-            "node_id": "b" * 40,
-            "address": "127.0.0.1:7201@17201",
-            "flags": ["master"],
-            "master_id": "-",
-            "link_state": "disconnected",
-        }
-    ]
+    assert process["non_connected_cluster_link_count"] == 1
+    assert process["non_connected_cluster_links"] == [_FORMATION_ROLE_ROW]
+    assert process["directional_cluster_links"] == directional_samples[1][101]
+    first_post_process = report["samples"][2]["nodehosts"][0]["processes"][0]
+    assert first_post_process["non_connected_cluster_links"] == []
+    assert first_post_process["directional_cluster_links"] == directional_samples[2][101]
     trusted = validate_and_aggregate_m2_resource_samples(
         report,
         allow_initial_membership_transitions=True,
     )
+    assert trusted["status"] == "PASS"
     assert trusted["metrics"]["cluster_link_errors"] == 0
+
+
+def test_m2_resource_window_does_not_self_authorize_bootstrap_transition() -> None:
+    report = _trusted_formation_report()
+
+    recomputed = validate_and_aggregate_m2_resource_samples(report)
+    assert recomputed["status"] == "PASS"
+    assert recomputed["metrics"]["cluster_link_errors"] == 1
+    assert validate_equal_m2_resource_windows(report, copy.deepcopy(report))["status"] == "FAIL"
+
+
+@pytest.mark.parametrize(
+    ("sample_phases", "link_samples", "link", "claimed_errors"),
+    [
+        pytest.param(
+            ("formation_bootstrap", "formation_boundary", "post_formation"),
+            {1, 2},
+            ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
+            1,
+            id="boundary-role-disconnect-persists-into-post",
+        ),
+        pytest.param(
+            ("formation_bootstrap", "formation_boundary", "post_formation"),
+            {1, 2},
+            ("c" * 40, "127.0.0.1:7202@17202", "handshake", "-", "disconnected"),
+            0,
+            id="boundary-handshake-persists-into-post",
+        ),
+        pytest.param(
+            (
+                "formation_bootstrap",
+                "formation_boundary",
+                "post_formation",
+                "post_formation",
+            ),
+            {3},
+            ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
+            1,
+            id="post-formation-role-disconnect",
+        ),
+        pytest.param(
+            (
+                "formation_bootstrap",
+                "formation_boundary",
+                "post_formation",
+                "post_formation",
+            ),
+            {3},
+            ("c" * 40, "127.0.0.1:7202@17202", "handshake", "-", "disconnected"),
+            0,
+            id="post-formation-handshake",
+        ),
+    ],
+)
+def test_m2_formation_report_fails_closed_for_boundary_or_post_disconnect(
+    sample_phases: tuple[str, ...],
+    link_samples: set[int],
+    link: tuple[str, str, str, str, str],
+    claimed_errors: int,
+) -> None:
+    report = _trusted_formation_report(
+        sample_phases=sample_phases,
+        link_samples=link_samples,
+        link=link,
+        claimed_errors=claimed_errors,
+    )
+
+    assert report["status"] == "FAIL"
+    assert report["coverage"]["complete"] is False
+
+
+def test_m2_formation_report_requires_complete_post_formation_boundary() -> None:
+    report = _trusted_formation_report(
+        sample_phases=(
+            "formation_bootstrap",
+            "formation_bootstrap",
+            "formation_boundary",
+        ),
+        link_samples=set(),
+    )
+
+    assert report["status"] == "FAIL"
+    assert report["coverage"]["complete"] is False
+    assert any(
+        "never reached a complete post-formation boundary" in error
+        for error in report["errors"]
+    )
+
+
+def _complete_bootstrap_transition() -> tuple[dict, dict, dict, dict]:
+    previous = _semantic_cluster_process(
+        cluster_link_count=2,
+        directional_links=_bidirectional_cluster_links(_FORMATION_PEER_ID),
+    )
+    current = _semantic_cluster_process(
+        cluster_link_count=2,
+        observations=[_FORMATION_ROLE_ROW],
+        directional_links=_bidirectional_cluster_links(_FORMATION_PEER_ID),
+        claimed_errors=1,
+    )
+    recovered = _semantic_cluster_process(
+        cluster_link_count=2,
+        directional_links=_bidirectional_cluster_links(_FORMATION_PEER_ID),
+    )
+    boundary = copy.deepcopy(recovered)
+    return previous, current, recovered, boundary
+
+
+def test_m2_bootstrap_transition_counts_disconnect_when_next_sample_is_still_disconnected() -> None:
+    previous, current, recovered, boundary = _complete_bootstrap_transition()
+    recovered["non_connected_cluster_links"] = [copy.deepcopy(_FORMATION_ROLE_ROW)]
+    recovered["non_connected_cluster_link_count"] = 1
+    recovered["cluster_link_errors"] = 1
+
     assert (
-        validate_equal_m2_resource_windows(
-            report,
-            copy.deepcopy(report),
-            allow_initial_membership_transitions=True,
-        )["status"]
-        == "PASS"
-    )
-    non_bootstrap = _m2_resource_report_with_link(
-        link,
-        claimed_errors=1,
-        link_samples={1},
-        cluster_link_counts=(1, 21, 25),
-    )
-    assert non_bootstrap["metrics"]["cluster_link_errors"] == 1
-    persistent = _m2_resource_report_with_link(
-        link,
-        claimed_errors=1,
-        window_name="m2-formation-bootstrap",
-        link_samples={1, 2},
-        cluster_link_counts=(1, 21, 21),
-        allow_initial_membership_transitions=True,
-    )
-    assert persistent["metrics"]["cluster_link_errors"] == 1
-    unconfirmed = _m2_resource_report_with_link(
-        link,
-        claimed_errors=1,
-        window_name="m2-formation-bootstrap",
-        link_samples={2},
-        cluster_link_counts=(1, 1, 21),
-        allow_initial_membership_transitions=True,
-    )
-    assert unconfirmed["metrics"]["cluster_link_errors"] == 1
-    assert (
-        unconfirmed["samples"][2]["nodehosts"][0]["processes"][0]["cluster_link_errors"]
+        _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=previous,
+            next_process=recovered,
+            formation_boundary_process=boundary,
+            allow_initial_membership_transition=True,
+            sample_phase="formation_bootstrap",
+        )
         == 1
     )
+
+
+@pytest.mark.parametrize("missing", ["previous", "next", "boundary"])
+def test_m2_bootstrap_transition_raises_for_missing_surrounding_evidence(missing: str) -> None:
+    previous, current, recovered, boundary = _complete_bootstrap_transition()
+    evidence = {
+        "previous": previous,
+        "next": recovered,
+        "boundary": boundary,
+    }
+    evidence[missing] = None
+
+    with pytest.raises(
+        M2ResourceMeasurementError,
+        match="formation transition lacks complete surrounding evidence",
+    ):
+        _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=evidence["previous"],
+            next_process=evidence["next"],
+            formation_boundary_process=evidence["boundary"],
+            allow_initial_membership_transition=True,
+            sample_phase="formation_bootstrap",
+        )
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        pytest.param("missing-clinks", id="missing-cluster-links"),
+        pytest.param("incomplete-clinks", id="incomplete-cluster-links"),
+        pytest.param("one-direction", id="no-bidirectional-boundary"),
+    ],
+)
+def test_m2_formation_report_fails_closed_for_incomplete_directional_evidence(
+    mutate: str,
+) -> None:
+    directional_samples = list(_formation_directional_samples(3))
+    boundary_links = copy.deepcopy(directional_samples[2])
+    if mutate == "missing-clinks":
+        del boundary_links[101]
+    elif mutate == "incomplete-clinks":
+        boundary_links[101][0] = {
+            **boundary_links[101][0],
+            "events": "x",
+        }
+    else:
+        boundary_links[101] = boundary_links[101][:1]
+    directional_samples[2] = boundary_links
+
+    report = _trusted_formation_report(
+        directional_links_by_sample=tuple(directional_samples),
+    )
+
+    assert report["status"] == "FAIL"
+    assert report["coverage"]["complete"] is False
+
+
+@pytest.mark.parametrize("missing_sample", ["previous", "next"])
+def test_m2_formation_validator_fails_when_surrounding_sample_is_missing(
+    missing_sample: str,
+) -> None:
+    report = _trusted_formation_report()
+    missing_index = 0 if missing_sample == "previous" else 2
+    del report["samples"][missing_index]
+
     assert (
-        validate_equal_m2_resource_windows(unconfirmed, copy.deepcopy(unconfirmed))["status"]
+        validate_and_aggregate_m2_resource_samples(
+            report,
+            allow_initial_membership_transitions=True,
+        )["status"]
         == "FAIL"
     )
 
 
-def test_m2_bootstrap_transition_allows_unrelated_prior_handshake() -> None:
-    role_node_id = "b" * 40
-    previous_process = {
-        "pid": 101,
-        "cluster_link_count": 2,
-        "non_connected_cluster_link_count": 1,
-        "non_connected_cluster_links": [
-            {
-                "node_id": "a" * 40,
-                "address": "127.0.0.1:7202@17202",
-                "flags": ["handshake"],
-                "master_id": "-",
-                "link_state": "disconnected",
-            }
-        ],
-    }
-    process = {
-        "logical_id": "observer",
-        "pid": 101,
-        "cluster_link_count": 25,
-        "cluster_link_errors": 1,
-        "non_connected_cluster_link_count": 1,
-        "non_connected_cluster_links": [
-            {
-                "node_id": role_node_id,
-                "address": "127.0.0.1:7201@17201",
-                "flags": ["master"],
-                "master_id": "-",
-                "link_state": "disconnected",
-            }
-        ],
-    }
-    next_process = {
-        "pid": 101,
-        "cluster_link_count": 25,
-        "non_connected_cluster_links": [],
-    }
+@pytest.mark.parametrize("mutation", ["pid", "link-count"])
+def test_m2_formation_validator_fails_for_owned_pid_change_or_topology_rollback(
+    mutation: str,
+) -> None:
+    report = _trusted_formation_report()
+    if mutation == "pid":
+        report["samples"][2]["nodehosts"][0]["processes"][0]["pid"] = 202
+    else:
+        report["samples"][1]["nodehosts"][0]["processes"][0][
+            "cluster_link_count"
+        ] = 3
 
-    assert _cluster_link_errors_from_raw(
-        process,
-        expected_gone_client_ports=set(),
-        previous_process=previous_process,
-        next_process=next_process,
-        allow_initial_membership_transition=True,
-    ) == 0
-
-    previous_process["non_connected_cluster_links"][0]["node_id"] = role_node_id
-    assert _cluster_link_errors_from_raw(
-        process,
-        expected_gone_client_ports=set(),
-        previous_process=previous_process,
-        next_process=next_process,
-        allow_initial_membership_transition=True,
-    ) == 1
-
-
-def test_m2_bootstrap_classifies_only_raw_proven_direction_correction() -> None:
-    peer_id = "b" * 40
-
-    def directional(direction: str) -> dict:
-        return {
-            "direction": direction,
-            "node_id": peer_id,
-            "create_time": 1000,
-            "events": "r",
-            "send_buffer_allocated": 0,
-            "send_buffer_used": 0,
-        }
-
-    previous = {
-        "pid": 101,
-        "cluster_link_count": 50,
-        "non_connected_cluster_links": [],
-        "directional_cluster_links": [directional("to")],
-    }
-    current = {
-        "logical_id": "observer",
-        "pid": 101,
-        "cluster_link_count": 50,
-        "cluster_link_errors": 1,
-        "non_connected_cluster_link_count": 1,
-        "non_connected_cluster_links": [
-            {
-                "node_id": peer_id,
-                "address": "127.0.0.1:7201@17201",
-                "flags": ["master"],
-                "master_id": "-",
-                "link_state": "disconnected",
-            }
-        ],
-        "directional_cluster_links": [directional("from")],
-    }
-    recovered = {
-        "pid": 101,
-        "cluster_link_count": 50,
-        "non_connected_cluster_links": [],
-        "directional_cluster_links": [directional("to"), directional("from")],
-    }
-
-    assert _cluster_link_errors_from_raw(
-        current,
-        expected_gone_client_ports=set(),
-        previous_process=previous,
-        next_process=recovered,
-        allow_initial_membership_transition=True,
-        sample_phase="formation_bootstrap",
-    ) == 0
-
-    for marker in ("formation_boundary", "post_formation", None):
-        assert _cluster_link_errors_from_raw(
-            current,
-            expected_gone_client_ports=set(),
-            previous_process=previous,
-            next_process=recovered,
-            allow_initial_membership_transition=True,
-            sample_phase=marker,
-        ) == 1
-
-    not_bidirectional = copy.deepcopy(recovered)
-    not_bidirectional["directional_cluster_links"] = [directional("from")]
-    assert _cluster_link_errors_from_raw(
-        current,
-        expected_gone_client_ports=set(),
-        previous_process=previous,
-        next_process=not_bidirectional,
-        allow_initial_membership_transition=True,
-        sample_phase="formation_bootstrap",
-    ) == 1
-
-
-def test_m2_bootstrap_classifies_only_raw_proven_reconnect_recovery() -> None:
-    peer_id = "b" * 40
-
-    def directional(direction: str, create_time: int) -> dict:
-        return {
-            "direction": direction,
-            "node_id": peer_id,
-            "create_time": create_time,
-            "events": "r",
-            "send_buffer_allocated": 0,
-            "send_buffer_used": 0,
-        }
-
-    previous = {
-        "pid": 101,
-        "cluster_link_count": 50,
-        "non_connected_cluster_links": [],
-        "directional_cluster_links": [
-            directional("to", 1000),
-            directional("from", 1000),
-        ],
-    }
-    current = {
-        "logical_id": "observer",
-        "pid": 101,
-        "cluster_link_count": 50,
-        "cluster_link_errors": 1,
-        "non_connected_cluster_link_count": 1,
-        "non_connected_cluster_links": [
-            {
-                "node_id": peer_id,
-                "address": "127.0.0.1:7201@17201",
-                "flags": ["master"],
-                "master_id": "-",
-                "link_state": "disconnected",
-            }
-        ],
-        "directional_cluster_links": [
-            directional("to", 2000),
-            directional("from", 1000),
-        ],
-    }
-    recovered = {
-        "pid": 101,
-        "cluster_link_count": 50,
-        "non_connected_cluster_links": [],
-        "directional_cluster_links": [
-            directional("to", 2000),
-            directional("from", 1000),
-        ],
-    }
-
-    assert _cluster_link_errors_from_raw(
-        current,
-        expected_gone_client_ports=set(),
-        previous_process=previous,
-        next_process=recovered,
-        allow_initial_membership_transition=True,
-        sample_phase="formation_bootstrap",
-    ) == 0
-
-    for marker in ("formation_boundary", "post_formation", None):
-        assert _cluster_link_errors_from_raw(
-            current,
-            expected_gone_client_ports=set(),
-            previous_process=previous,
-            next_process=recovered,
-            allow_initial_membership_transition=True,
-            sample_phase=marker,
-        ) == 1
-
-    no_reconnect = copy.deepcopy(current)
-    no_reconnect["directional_cluster_links"] = [
-        directional("to", 1000),
-        directional("from", 1000),
-    ]
-    assert _cluster_link_errors_from_raw(
-        no_reconnect,
-        expected_gone_client_ports=set(),
-        previous_process=previous,
-        next_process=recovered,
-        allow_initial_membership_transition=True,
-        sample_phase="formation_bootstrap",
-    ) == 1
-
-    regressed = copy.deepcopy(recovered)
-    regressed["cluster_link_count"] = 49
-    assert _cluster_link_errors_from_raw(
-        current,
-        expected_gone_client_ports=set(),
-        previous_process=previous,
-        next_process=regressed,
-        allow_initial_membership_transition=True,
-        sample_phase="formation_bootstrap",
-    ) == 1
-
-
-def test_m2_resource_window_does_not_self_authorize_bootstrap_transition() -> None:
-    report = _m2_resource_report_with_link(
-        ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
-        claimed_errors=1,
-        window_name="m2-formation-bootstrap",
-        link_samples={1},
-        cluster_link_counts=(1, 21, 25),
-        allow_initial_membership_transitions=True,
-    )
-
-    assert validate_and_aggregate_m2_resource_samples(report)["metrics"][
-        "cluster_link_errors"
-    ] == 1
-    assert validate_equal_m2_resource_windows(report, copy.deepcopy(report))["status"] == "FAIL"
-
-
-def test_m2_bootstrap_transition_rejects_link_count_rollback() -> None:
-    for cluster_link_counts in ((1, 21, 1), (1, 21, 20)):
-        report = _m2_resource_report_with_link(
-            ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected"),
-            claimed_errors=1,
-            window_name="m2-formation-bootstrap",
-            link_samples={1},
-            cluster_link_counts=cluster_link_counts,
+    assert (
+        validate_and_aggregate_m2_resource_samples(
+            report,
             allow_initial_membership_transitions=True,
-        )
-
-        assert report["metrics"]["cluster_link_errors"] == 1
-
-
-def test_m2_bootstrap_transition_accepts_only_monotonic_progressive_expansion() -> None:
-    link = ("b" * 40, "127.0.0.1:7201@17201", "master", "-", "disconnected")
-    progressive = _m2_resource_report_with_link(
-        link,
-        claimed_errors=1,
-        window_name="m2-formation-bootstrap",
-        link_samples={2},
-        cluster_link_counts=(1, 20, 23, 23, 25),
-        allow_initial_membership_transitions=True,
+        )["status"]
+        == "FAIL"
     )
-    assert progressive["metrics"]["cluster_link_errors"] == 0
-
-    for cluster_link_counts, link_sample in (
-        ((1, 20, 20, 23), 2),
-        ((1, 20, 19, 23, 23), 3),
-    ):
-        rejected = _m2_resource_report_with_link(
-            link,
-            claimed_errors=1,
-            window_name="m2-formation-bootstrap",
-            link_samples={link_sample},
-            cluster_link_counts=cluster_link_counts,
-            allow_initial_membership_transitions=True,
-        )
-        assert rejected["metrics"]["cluster_link_errors"] == 1
 
 
 def test_m2_resource_window_fails_closed_for_unsafe_or_unknown_link_states() -> None:
@@ -716,6 +904,27 @@ def test_m2_resource_window_fails_closed_for_unsafe_or_unknown_link_states() -> 
         assert recomputed["status"] == "PASS"
         assert recomputed["metrics"]["cluster_link_errors"] == 1
         assert validate_equal_m2_resource_windows(report, copy.deepcopy(report))["status"] == "FAIL"
+
+        previous, current, recovered, boundary = _complete_bootstrap_transition()
+        node_id, address, flags, master_id, link_state = link
+        current["non_connected_cluster_links"] = [
+            {
+                "node_id": node_id,
+                "address": address,
+                "flags": flags.split(","),
+                "master_id": master_id,
+                "link_state": link_state,
+            }
+        ]
+        assert _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=previous,
+            next_process=recovered,
+            formation_boundary_process=boundary,
+            allow_initial_membership_transition=True,
+            sample_phase="formation_bootstrap",
+        ) == 1
 
 
 def test_m2_expected_gone_link_exclusion_requires_known_disconnected_target() -> None:
