@@ -601,11 +601,16 @@ def test_m2_bootstrap_historical_shapes_share_phase_invariants(case: dict) -> No
         ),
     ],
 )
-def test_m2_bootstrap_transition_is_invariant_to_documented_role_and_direction_state(
+@pytest.mark.parametrize(
+    "sample_phase",
+    ["formation_bootstrap", "formation_boundary"],
+)
+def test_m2_formation_transition_is_invariant_to_documented_role_and_direction_state(
     flags: list[str],
     master_id: str,
     current_directions: tuple[tuple[str, int], ...],
     recovered_directions: tuple[tuple[str, int], ...],
+    sample_phase: str,
 ) -> None:
     previous = _semantic_cluster_process(cluster_link_count=1)
     current = _semantic_cluster_process(
@@ -637,9 +642,51 @@ def test_m2_bootstrap_transition_is_invariant_to_documented_role_and_direction_s
             next_process=recovered,
             formation_boundary_process=boundary,
             allow_initial_membership_transition=True,
-            sample_phase="formation_bootstrap",
+            sample_phase=sample_phase,
         )
         == 0
+    )
+
+
+@pytest.mark.parametrize(
+    "sample_phase",
+    [None, "pre_barrier", "window", "post_formation"],
+)
+def test_m2_formation_transition_does_not_relax_other_sample_phases(
+    sample_phase: str | None,
+) -> None:
+    previous = _semantic_cluster_process(cluster_link_count=1)
+    current = _semantic_cluster_process(
+        cluster_link_count=3,
+        observations=[
+            {
+                **_FORMATION_ROLE_ROW,
+                "flags": ["slave"],
+                "master_id": "-",
+            }
+        ],
+        claimed_errors=1,
+    )
+    recovered = _semantic_cluster_process(
+        cluster_link_count=3,
+        directional_links=_directional_history((("to", 1000),)),
+    )
+    boundary = _semantic_cluster_process(
+        cluster_link_count=3,
+        directional_links=_complete_boundary_links(3),
+    )
+
+    assert (
+        _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=previous,
+            next_process=recovered,
+            formation_boundary_process=boundary,
+            allow_initial_membership_transition=True,
+            sample_phase=sample_phase,
+        )
+        == 1
     )
 
 
@@ -655,9 +702,14 @@ def test_m2_bootstrap_transition_is_invariant_to_documented_role_and_direction_s
         pytest.param(["master", "slave"], "-", id="conflicting-roles"),
     ],
 )
-def test_m2_bootstrap_transition_rejects_adversarial_role_rows(
+@pytest.mark.parametrize(
+    "sample_phase",
+    ["formation_bootstrap", "formation_boundary"],
+)
+def test_m2_formation_transition_rejects_adversarial_role_rows(
     flags: list[str],
     master_id: str,
+    sample_phase: str,
 ) -> None:
     previous = _semantic_cluster_process(cluster_link_count=1)
     current = _semantic_cluster_process(
@@ -688,7 +740,7 @@ def test_m2_bootstrap_transition_rejects_adversarial_role_rows(
             next_process=recovered,
             formation_boundary_process=boundary,
             allow_initial_membership_transition=True,
-            sample_phase="formation_bootstrap",
+            sample_phase=sample_phase,
         )
         == 1
     )
