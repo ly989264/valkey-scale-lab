@@ -1504,10 +1504,14 @@ def _cluster_link_errors_from_raw(
                 errors += 1
             continue
         claimed_errors += 1
+        # A replica may not know its primary yet while formation is propagating.
         formation_role_row = (
             sample_phase in {"formation_bootstrap", "formation_boundary"}
-            and (primary_link or replica_link)
             and flag_set in ({"master"}, {"slave"})
+            and (
+                master_id == "-"
+                or (flag_set == {"slave"} and _valid_cluster_node_id(master_id))
+            )
         )
         if (
             allow_initial_membership_transition
@@ -1577,7 +1581,7 @@ def _is_proven_bootstrap_transition(
         and observation.get("link_state") == "disconnected"
         and isinstance(flags, list)
         and (
-            (flags == ["master"] and master_id == "-")
+            (flags in (["master"], ["slave"]) and master_id == "-")
             or (
                 flags == ["slave"]
                 and isinstance(master_id, str)

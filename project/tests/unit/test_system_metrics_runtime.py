@@ -422,6 +422,7 @@ def test_m2_resource_comparison_can_preserve_candidate_safety_rejection() -> Non
 
 _FORMATION_PEER_ID = "b" * 40
 _FORMATION_OTHER_PEER_ID = "c" * 40
+_FORMATION_KNOWN_PRIMARY_ID = f"{1:040x}"
 _FORMATION_ROLE_ROW = {
     "node_id": _FORMATION_PEER_ID,
     "address": "127.0.0.1:7201@17201",
@@ -564,6 +565,133 @@ def test_m2_bootstrap_historical_shapes_share_phase_invariants(case: dict) -> No
         == 0
     )
     assert current == raw_current
+
+
+@pytest.mark.parametrize(
+    ("flags", "master_id"),
+    [
+        pytest.param(["master"], "-", id="primary"),
+        pytest.param(["slave"], "-", id="replica-primary-unknown"),
+        pytest.param(
+            ["slave"],
+            _FORMATION_KNOWN_PRIMARY_ID,
+            id="replica-primary-known",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ("current_directions", "recovered_directions"),
+    [
+        pytest.param((), (("to", 1000),), id="next-outbound"),
+        pytest.param((), (("from", 1000),), id="next-inbound"),
+        pytest.param(
+            (("to", 1000),),
+            (("to", 1000), ("from", 1000)),
+            id="current-outbound",
+        ),
+        pytest.param(
+            (("from", 1000),),
+            (("to", 1000), ("from", 1000)),
+            id="current-inbound",
+        ),
+        pytest.param(
+            (("to", 1000), ("from", 1000)),
+            (("to", 1000), ("from", 1000)),
+            id="current-bidirectional",
+        ),
+    ],
+)
+def test_m2_bootstrap_transition_is_invariant_to_documented_role_and_direction_state(
+    flags: list[str],
+    master_id: str,
+    current_directions: tuple[tuple[str, int], ...],
+    recovered_directions: tuple[tuple[str, int], ...],
+) -> None:
+    previous = _semantic_cluster_process(cluster_link_count=1)
+    current = _semantic_cluster_process(
+        cluster_link_count=3,
+        observations=[
+            {
+                **_FORMATION_ROLE_ROW,
+                "flags": flags,
+                "master_id": master_id,
+            }
+        ],
+        directional_links=_directional_history(current_directions),
+        claimed_errors=1,
+    )
+    recovered = _semantic_cluster_process(
+        cluster_link_count=3,
+        directional_links=_directional_history(recovered_directions),
+    )
+    boundary = _semantic_cluster_process(
+        cluster_link_count=3,
+        directional_links=_complete_boundary_links(3),
+    )
+
+    assert (
+        _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=previous,
+            next_process=recovered,
+            formation_boundary_process=boundary,
+            allow_initial_membership_transition=True,
+            sample_phase="formation_bootstrap",
+        )
+        == 0
+    )
+
+
+@pytest.mark.parametrize(
+    ("flags", "master_id"),
+    [
+        pytest.param(
+            ["master"],
+            _FORMATION_KNOWN_PRIMARY_ID,
+            id="primary-with-primary-id",
+        ),
+        pytest.param(["slave", "fail?"], "-", id="replica-failure-flag"),
+        pytest.param(["master", "slave"], "-", id="conflicting-roles"),
+    ],
+)
+def test_m2_bootstrap_transition_rejects_adversarial_role_rows(
+    flags: list[str],
+    master_id: str,
+) -> None:
+    previous = _semantic_cluster_process(cluster_link_count=1)
+    current = _semantic_cluster_process(
+        cluster_link_count=3,
+        observations=[
+            {
+                **_FORMATION_ROLE_ROW,
+                "flags": flags,
+                "master_id": master_id,
+            }
+        ],
+        claimed_errors=1,
+    )
+    recovered = _semantic_cluster_process(
+        cluster_link_count=3,
+        directional_links=_directional_history((("to", 1000),)),
+    )
+    boundary = _semantic_cluster_process(
+        cluster_link_count=3,
+        directional_links=_complete_boundary_links(3),
+    )
+
+    assert (
+        _cluster_link_errors_from_raw(
+            current,
+            expected_gone_client_ports=set(),
+            previous_process=previous,
+            next_process=recovered,
+            formation_boundary_process=boundary,
+            allow_initial_membership_transition=True,
+            sample_phase="formation_bootstrap",
+        )
+        == 1
+    )
 
 
 def _formation_directional_samples(sample_count: int) -> tuple[dict[int, list[dict]], ...]:
@@ -771,7 +899,17 @@ def _complete_bootstrap_transition() -> tuple[dict, dict, dict, dict]:
 
 def test_m2_bootstrap_transition_counts_disconnect_when_next_sample_is_still_disconnected() -> None:
     previous, current, recovered, boundary = _complete_bootstrap_transition()
-    recovered["non_connected_cluster_links"] = [copy.deepcopy(_FORMATION_ROLE_ROW)]
+    replica_without_known_primary = {
+        **_FORMATION_ROLE_ROW,
+        "flags": ["slave"],
+        "master_id": "-",
+    }
+    current["non_connected_cluster_links"] = [
+        copy.deepcopy(replica_without_known_primary)
+    ]
+    recovered["non_connected_cluster_links"] = [
+        copy.deepcopy(replica_without_known_primary)
+    ]
     recovered["non_connected_cluster_link_count"] = 1
     recovered["cluster_link_errors"] = 1
 
@@ -792,6 +930,9 @@ def test_m2_bootstrap_transition_counts_disconnect_when_next_sample_is_still_dis
 @pytest.mark.parametrize("missing", ["previous", "next", "boundary"])
 def test_m2_bootstrap_transition_raises_for_missing_surrounding_evidence(missing: str) -> None:
     previous, current, recovered, boundary = _complete_bootstrap_transition()
+    current["non_connected_cluster_links"][0].update(
+        {"flags": ["slave"], "master_id": "-"}
+    )
     evidence = {
         "previous": previous,
         "next": recovered,
