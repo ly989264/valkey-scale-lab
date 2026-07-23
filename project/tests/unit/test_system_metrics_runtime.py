@@ -1009,8 +1009,8 @@ def test_m2_formation_report_is_invariant_to_nonfailure_role_modifier() -> None:
         pytest.param([], "PASS", 1, id="missing-peer"),
         pytest.param(
             [_directional_cluster_link(_FORMATION_OTHER_PEER_ID, "to")],
-            "FAIL",
-            None,
+            "PASS",
+            1,
             id="different-peer",
         ),
         pytest.param(
@@ -1258,16 +1258,7 @@ def test_m2_formation_report_fails_closed_for_incomplete_directional_evidence(
     assert report["coverage"]["complete"] is False
 
 
-@pytest.mark.parametrize(
-    "changed_sample_index",
-    [
-        pytest.param(2, id="strict-boundary"),
-        pytest.param(3, id="after-strict-boundary"),
-    ],
-)
-def test_m2_formation_validator_rejects_inconsistent_owned_peer_topology(
-    changed_sample_index: int,
-) -> None:
+def test_m2_formation_validator_rejects_inconsistent_owned_peer_topology() -> None:
     report = _trusted_formation_report(
         sample_phases=(
             "formation_bootstrap",
@@ -1276,7 +1267,29 @@ def test_m2_formation_validator_rejects_inconsistent_owned_peer_topology(
             "post_formation",
         ),
     )
-    process = report["samples"][changed_sample_index]["nodehosts"][0]["processes"][1]
+    process = report["samples"][2]["nodehosts"][0]["processes"][1]
+    for link in process["directional_cluster_links"]:
+        link["node_id"] = _FORMATION_PEER_ID
+
+    trusted = validate_and_aggregate_m2_resource_samples(
+        report,
+        allow_initial_membership_transitions=True,
+    )
+    assert trusted["status"] == "FAIL"
+    assert trusted["coverage"]["complete"] is False
+    assert any("inconsistent owned peer topology" in error for error in trusted["errors"])
+
+
+def test_m2_formation_validator_rejects_peer_identity_change_after_strict_boundary() -> None:
+    report = _trusted_formation_report(
+        sample_phases=(
+            "formation_bootstrap",
+            "formation_bootstrap",
+            "post_formation",
+            "post_formation",
+        ),
+    )
+    process = report["samples"][3]["nodehosts"][0]["processes"][1]
     for link in process["directional_cluster_links"]:
         link["node_id"] = _FORMATION_OTHER_PEER_ID
 
@@ -1289,7 +1302,21 @@ def test_m2_formation_validator_rejects_inconsistent_owned_peer_topology(
     assert any("changed owned peer identity" in error for error in trusted["errors"])
 
 
-def test_m2_formation_validator_allows_handshake_peer_id_to_settle_before_boundary() -> None:
+@pytest.mark.parametrize(
+    "convergence_case",
+    [
+        pytest.param("early-formation", id="early-formation-temporary-id"),
+        pytest.param("last-formation", id="last-formation-temporary-id"),
+        pytest.param("first-post", id="first-post-one-way-temporary-id"),
+        pytest.param(
+            "complete-then-incomplete",
+            id="complete-formation-then-incomplete-convergence",
+        ),
+    ],
+)
+def test_m2_formation_validator_locks_peer_identity_only_at_strict_boundary(
+    convergence_case: str,
+) -> None:
     report = _trusted_formation_report(
         sample_phases=(
             "formation_bootstrap",
@@ -1297,10 +1324,24 @@ def test_m2_formation_validator_allows_handshake_peer_id_to_settle_before_bounda
             "post_formation",
             "post_formation",
         ),
+        link_samples=set(),
+        claimed_errors=0,
     )
-    process = report["samples"][0]["nodehosts"][0]["processes"][0]
+    changed_sample_index = {
+        "early-formation": 0,
+        "last-formation": 1,
+        "first-post": 2,
+        "complete-then-incomplete": 0,
+    }[convergence_case]
+    process = report["samples"][changed_sample_index]["nodehosts"][0]["processes"][0]
     for link in process["directional_cluster_links"]:
         link["node_id"] = _FORMATION_OTHER_PEER_ID
+    if convergence_case == "first-post":
+        process["directional_cluster_links"] = process["directional_cluster_links"][:1]
+    elif convergence_case == "complete-then-incomplete":
+        report["samples"][1]["nodehosts"][0]["processes"][0][
+            "directional_cluster_links"
+        ] = []
 
     trusted = validate_and_aggregate_m2_resource_samples(
         report,

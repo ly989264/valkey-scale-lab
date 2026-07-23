@@ -1991,17 +1991,15 @@ def _aggregate_samples(
 
             complete_peer_sets = _complete_owned_peer_sets(sample_processes)
             if sample.get("sample_phase") != "post_formation":
-                if complete_peer_sets is not None:
-                    # Valkey renames temporary HANDSHAKE node IDs in place.
-                    owned_peer_sets = complete_peer_sets
                 continue
-            if complete_peer_sets is not None:
-                if owned_peer_sets is None:
-                    owned_peer_sets = complete_peer_sets
-                elif complete_peer_sets != owned_peer_sets:
-                    raise M2ResourceMeasurementError(
-                        f"post-formation sample {sample_index} changed owned peer identity"
-                    )
+            if (
+                strict_boundary_index is not None
+                and complete_peer_sets is not None
+                and complete_peer_sets != owned_peer_sets
+            ):
+                raise M2ResourceMeasurementError(
+                    f"post-formation sample {sample_index} changed owned peer identity"
+                )
             process_count = len(sample_processes)
             links_are_bidirectionally_complete = True
             for process in sample_processes:
@@ -2053,7 +2051,10 @@ def _aggregate_samples(
                     )
             topology_is_consistent = (
                 complete_peer_sets is not None
-                and complete_peer_sets == owned_peer_sets
+                and (
+                    strict_boundary_index is None
+                    or complete_peer_sets == owned_peer_sets
+                )
             )
             if links_are_bidirectionally_complete and not topology_is_consistent:
                 raise M2ResourceMeasurementError(
