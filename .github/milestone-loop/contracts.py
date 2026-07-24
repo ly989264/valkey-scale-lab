@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +17,7 @@ ISSUE_RE = re.compile(r"^#([1-9][0-9]*)$")
 CONTRACT_RE = re.compile(
     r"(?m)^Criterion: ([^\r\n]+)\r?\nDepends on: ([^\r\n]+)\r?\nCheck: ([^\r\n]+)$"
 )
+PR_CONTRACT_CHANGE_RE = re.compile(r"(?m)^Contract-Change: (true|false)$")
 
 
 class ContractError(ValueError):
@@ -325,6 +327,29 @@ def status_from_labels(labels: Iterable[str]) -> str:
     if len(selected) != 1:
         raise ContractError("Work Item must have exactly one milestone-loop status Label")
     return selected[0].split(":", 1)[1]
+
+
+def pr_contract_change(body: str, labels: Iterable[str]) -> bool:
+    if not isinstance(body, str) or len(body.encode("utf-8")) > 32_768:
+        raise ContractError("pull request body must be bounded text")
+    matches = PR_CONTRACT_CHANGE_RE.findall(body)
+    prefixed = re.findall(r"(?m)^Contract-Change:[^\r\n]*$", body)
+    if len(matches) != 1 or len(prefixed) != 1:
+        raise ContractError("pull request must contain exactly one Contract-Change metadata line")
+    return "contract-change" in set(labels) or matches[0] == "true"
+
+
+def verification_metadata_path() -> Path:
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+    runner_temp = os.environ.get("RUNNER_TEMP", "")
+    if (
+        not runner_temp
+        or re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is None
+        or re.fullmatch(r"[1-9][0-9]{0,9}", run_attempt) is None
+    ):
+        raise ContractError("candidate verification metadata identity is unavailable")
+    return Path(runner_temp) / f"milestone-loop-pr-metadata-{run_id}-{run_attempt}.json"
 
 
 ALLOWED_TRANSITIONS = {

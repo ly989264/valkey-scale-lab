@@ -2922,8 +2922,18 @@ def test_discovery_runner_without_authorization_is_blocked_before_capture(
 
     payload = json.loads(result.read_text(encoding="utf-8"))
     assert payload["status"] == "BLOCKED"
-    assert set(payload) == {"status", "summary"}
-    assert not artifacts.exists()
+    assert set(payload) == {"status", "summary", "failure"}
+    assert payload["failure"] == {
+        "capture_stage": "preflight",
+        "class": "environment",
+        "evidence_path": DISCOVERY.REPORT_NAME,
+    }
+    report = json.loads((artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8"))
+    assert report["status"] == "BLOCKED"
+    assert report["campaigns"] == {}
+    assert report["candidate_results"] == {"formation": [], "failover": []}
+    assert report["errors"] == [payload["summary"]]
+    assert report["report_digest"] == DISCOVERY.admission.report_digest(report)
 
 
 @pytest.mark.parametrize(
@@ -2965,7 +2975,9 @@ def test_discovery_runner_rejects_invalid_or_mismatched_sha_before_capture(
     payload = json.loads(result.read_text(encoding="utf-8"))
     assert payload["status"] == "BLOCKED"
     assert summary_fragment in payload["summary"]
-    assert set(payload) == {"status", "summary"}
+    assert set(payload) == {"status", "summary", "failure"}
+    assert payload["failure"]["capture_stage"] == "preflight"
+    assert payload["failure"]["class"] == "environment"
 
 
 def test_discovery_runner_rejects_preexisting_or_forbidden_artifacts(
@@ -3007,13 +3019,21 @@ def test_discovery_runner_rejects_preexisting_or_forbidden_artifacts(
         ]
     )
 
-    assert DISCOVERY.run(preexisting_args) == (
+    preexisting_status, preexisting_summary, preexisting_failure = DISCOVERY.run(
+        preexisting_args
+    )
+    assert (preexisting_status, preexisting_summary) == (
         "FAIL",
         "refusing pre-existing M2 discovery artifacts",
     )
-    forbidden_status, forbidden_summary = DISCOVERY.run(forbidden_args)
+    assert preexisting_failure["capture_stage"] == "preflight"
+    assert preexisting_failure["class"] == "product"
+    forbidden_status, forbidden_summary, forbidden_failure = DISCOVERY.run(
+        forbidden_args
+    )
     assert forbidden_status == "FAIL"
     assert "forbidden" in forbidden_summary
+    assert forbidden_failure["evidence_path"] == ""
 
 
 def test_discovery_environment_blocker_emits_distinct_blocked_report(
@@ -3048,7 +3068,12 @@ def test_discovery_environment_blocker_emits_distinct_blocked_report(
         (artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8")
     )
     assert payload["status"] == "BLOCKED"
-    assert set(payload) == {"status", "summary"}
+    assert set(payload) == {"status", "summary", "failure"}
+    assert payload["failure"] == {
+        "capture_stage": "preflight",
+        "class": "environment",
+        "evidence_path": DISCOVERY.REPORT_NAME,
+    }
     assert report["artifact_type"] == "m2_candidate_discovery"
     assert report["purpose"] == "candidate-selection-only"
     assert report["admission_evidence"] is False
@@ -3056,3 +3081,194 @@ def test_discovery_environment_blocker_emits_distinct_blocked_report(
     assert report["real_valkey"] is False
     assert report["campaigns"] == {}
     assert report["report_digest"] == DISCOVERY.admission.report_digest(report)
+
+
+def test_discovery_resource_preflight_blocker_remains_preflight_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    artifacts = tmp_path / "discovery"
+    result = tmp_path / "discovery-result.json"
+    monkeypatch.setenv(DISCOVERY.admission.AUTHORIZATION_ENV, "discovery-run")
+    monkeypatch.setattr(DISCOVERY, "_checkout_sha", lambda: "c" * 40)
+    monkeypatch.setattr(DISCOVERY.capture, "_product_digest", lambda: SHA)
+    monkeypatch.setattr(DISCOVERY.capture, "_environment_facts", lambda: {})
+
+    def blocked_preflight(*_args: object, **_kwargs: object) -> None:
+        raise DISCOVERY.capture.EnvironmentBlocked(
+            "resource preflight rejected the host"
+        )
+
+    monkeypatch.setattr(
+        DISCOVERY.capture,
+        "capture_formation_discovery",
+        blocked_preflight,
+    )
+
+    assert DISCOVERY.main(
+        [
+            "--run-id",
+            "discovery-run",
+            "--artifacts-dir",
+            str(artifacts),
+            "--result-path",
+            str(result),
+            "--tested-sha",
+            "c" * 40,
+        ]
+    ) == 0
+
+    payload = json.loads(result.read_text(encoding="utf-8"))
+    report = json.loads((artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8"))
+    assert payload["status"] == "BLOCKED"
+    assert payload["failure"] == {
+        "capture_stage": "preflight",
+        "class": "environment",
+        "evidence_path": DISCOVERY.REPORT_NAME,
+    }
+    assert report["campaigns"] == {}
+    assert report["errors"] == ["ENVIRONMENT_BLOCKED: resource preflight rejected the host"]
+
+
+@pytest.mark.parametrize(
+    ("failure_phase", "exception_type", "failure_class"),
+    [
+        ("formation", DISCOVERY.capture.CaptureError, "measurement"),
+        ("failover", RuntimeError, "product"),
+    ],
+)
+def test_discovery_producer_structures_capture_site_failures(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_phase: str,
+    exception_type: type[Exception],
+    failure_class: str,
+) -> None:
+    artifacts = tmp_path / failure_phase
+    args = DISCOVERY._parser().parse_args(
+        [
+            "--run-id",
+            "discovery-run",
+            "--artifacts-dir",
+            str(artifacts),
+            "--result-path",
+            str(tmp_path / f"{failure_phase}-result.json"),
+            "--tested-sha",
+            "c" * 40,
+        ]
+    )
+
+    def context(arguments, *, mode, **_kwargs):
+        return DISCOVERY.SimpleNamespace(
+            args=DISCOVERY.SimpleNamespace(run_id=arguments.run_id, mode=mode),
+            started=True,
+            started_trial_ids=[],
+            trials=[],
+            pairs=[],
+            cells=[],
+            invalid_samples=[],
+            source_refs=[],
+        )
+
+    def formation_capture(*_args, **_kwargs):
+        if failure_phase == "formation":
+            raise exception_type("collector failed")
+        return []
+
+    def failover_capture(*_args, **_kwargs):
+        raise exception_type("collector failed")
+
+    monkeypatch.setattr(DISCOVERY, "_context", context)
+    monkeypatch.setattr(DISCOVERY.capture, "_product_digest", lambda: SHA)
+    monkeypatch.setattr(DISCOVERY.capture, "_environment_facts", lambda: {})
+    monkeypatch.setattr(DISCOVERY.capture, "_digest", lambda _value: SHA)
+    monkeypatch.setattr(
+        DISCOVERY.capture, "capture_formation_discovery", formation_capture
+    )
+    monkeypatch.setattr(
+        DISCOVERY.capture, "capture_failover_discovery", failover_capture
+    )
+    monkeypatch.setattr(
+        DISCOVERY.admission, "validate_discovery_campaign", lambda *_args, **_kwargs: []
+    )
+    monkeypatch.setattr(
+        DISCOVERY.admission,
+        "validate_current_invocation_sources",
+        lambda *_args, **_kwargs: [],
+    )
+
+    status, _summary, failure = DISCOVERY._capture(args)
+    report = json.loads(
+        (artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8")
+    )
+
+    assert status == "FAIL"
+    assert failure == {
+        "capture_stage": failure_phase,
+        "class": failure_class,
+        "evidence_path": DISCOVERY.REPORT_NAME,
+    }
+    assert report["status"] == "FAIL"
+    assert report["campaigns"][failure_phase]["errors"] == report["errors"]
+
+
+def test_discovery_producer_replaces_current_phase_after_validation_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    artifacts = tmp_path / "formation-validation"
+    args = DISCOVERY._parser().parse_args(
+        [
+            "--run-id",
+            "discovery-run",
+            "--artifacts-dir",
+            str(artifacts),
+            "--result-path",
+            str(tmp_path / "formation-validation-result.json"),
+            "--tested-sha",
+            "c" * 40,
+        ]
+    )
+
+    def context(arguments, *, mode, **_kwargs):
+        return DISCOVERY.SimpleNamespace(
+            args=DISCOVERY.SimpleNamespace(run_id=arguments.run_id, mode=mode),
+            started=True,
+            started_trial_ids=[],
+            trials=[],
+            pairs=[],
+            cells=[],
+            invalid_samples=[],
+            source_refs=[],
+        )
+
+    monkeypatch.setattr(DISCOVERY, "_context", context)
+    monkeypatch.setattr(DISCOVERY.capture, "_product_digest", lambda: SHA)
+    monkeypatch.setattr(DISCOVERY.capture, "_environment_facts", lambda: {})
+    monkeypatch.setattr(DISCOVERY.capture, "_digest", lambda _value: SHA)
+    monkeypatch.setattr(
+        DISCOVERY.capture, "capture_formation_discovery", lambda *_args, **_kwargs: []
+    )
+    monkeypatch.setattr(
+        DISCOVERY.admission,
+        "validate_discovery_campaign",
+        lambda *_args, **_kwargs: ["producer/gate mismatch"],
+    )
+    monkeypatch.setattr(
+        DISCOVERY.admission,
+        "validate_current_invocation_sources",
+        lambda *_args, **_kwargs: [],
+    )
+
+    status, _summary, failure = DISCOVERY._capture(args)
+    report = json.loads(
+        (artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8")
+    )
+
+    assert status == "FAIL"
+    assert failure == {
+        "capture_stage": "formation",
+        "class": "measurement",
+        "evidence_path": DISCOVERY.REPORT_NAME,
+    }
+    assert report["campaigns"]["formation"]["status"] == "FAIL"
+    assert report["campaigns"]["formation"]["errors"] == report["errors"]
+    assert "failover" not in report["campaigns"]

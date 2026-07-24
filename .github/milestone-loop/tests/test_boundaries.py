@@ -21,8 +21,8 @@ from coordinator import (
     render_control,
     real_readiness_fingerprint,
 )
-from github_api import GitHubClient, GitHubError
-from loop import main as loop_main, pr_metadata
+from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError
+from loop import _publish_verification_comment, main as loop_main, pr_metadata
 from milestone_runner import (
     LeaseConfirmationBlocked,
     _canonical_digest,
@@ -43,6 +43,7 @@ from milestone_runner import (
 )
 from loop import _version
 from recovery import cleanup_owned_docker, cleanup_runtime_root
+from verifier import verify
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -181,7 +182,7 @@ class BoundaryTests(unittest.TestCase):
             record.call_args.kwargs["summary"],
         )
 
-    def test_contract_change_body_closes_the_label_event_race(self) -> None:
+    def test_pr_metadata_uses_live_body_labels_and_fixed_head(self) -> None:
         event = {
             "action": "opened",
             "repository": {"full_name": "owner/repo"},
@@ -198,12 +199,307 @@ class BoundaryTests(unittest.TestCase):
                 "base": {"sha": "a" * 40},
             },
         }
+        live = copy.deepcopy(event["pull_request"])
+        live["state"] = "open"
+        live["body"] = "Milestone: m2\nWork-Item: #7\nContract-Change: false\n"
+        live["labels"] = []
+        snapshot = {
+            "issues": [
+                {
+                    "number": 7,
+                    "state": "open",
+                    "labels": ["milestone-loop:work-item", "milestone-loop:review"],
+                    "body": (
+                        "Implement it.\n\nCriterion: local.lifecycle\n"
+                        "Depends on: none\nCheck: product.unit"
+                    ),
+                }
+            ]
+        }
+        client = Mock()
+        client.api.return_value = live
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "event.json"
             path.write_text(json.dumps(event), encoding="utf-8")
-            metadata = pr_metadata(object(), path)
-        self.assertTrue(metadata["contract_change"])
-        self.assertEqual(metadata["check"], "repository.all")
+            with patch("loop.collect_snapshot", return_value=snapshot):
+                metadata = pr_metadata(client, path)
+            self.assertEqual(
+                (metadata["contract_change"], metadata["check"], metadata["work_item"]),
+                (False, "product.unit", 7),
+            )
+            live["labels"] = [{"name": "contract-change"}]
+            with patch("loop.collect_snapshot", return_value=snapshot):
+                metadata = pr_metadata(client, path)
+            self.assertEqual(
+                (metadata["contract_change"], metadata["check"]),
+                (True, "repository.all"),
+            )
+            with (
+                patch("loop.collect_snapshot", return_value={"issues": []}),
+                self.assertRaises(ContractError),
+            ):
+                pr_metadata(client, path)
+            snapshot["issues"][0]["labels"].append("milestone-loop:ready")
+            with (
+                patch("loop.collect_snapshot", return_value=snapshot),
+                self.assertRaises(ContractError),
+            ):
+                pr_metadata(client, path)
+            snapshot["issues"][0]["labels"].pop()
+            live["head"]["sha"] = "c" * 40
+            with self.assertRaises(LoopBlocked):
+                pr_metadata(client, path)
+            live["head"]["sha"] = "b" * 40
+            live["state"] = "closed"
+            with self.assertRaises(LoopBlocked):
+                pr_metadata(client, path)
+            event["action"] = "closed"
+            event["pull_request"]["merged"] = True
+            live["merged"] = True
+            path.write_text(json.dumps(event), encoding="utf-8")
+            with patch("loop.collect_snapshot", return_value=snapshot):
+                self.assertTrue(pr_metadata(client, path)["merged"])
+            event["action"] = "opened"
+            event["pull_request"]["merged"] = False
+            live["state"] = "open"
+            live["merged"] = False
+            path.write_text(json.dumps(event), encoding="utf-8")
+            for body in (
+                "Milestone: m2\nWork-Item: #7\nNot-Contract-Change: true\n",
+                "Milestone: m2\nWork-Item: #7\nContract-Change: trueish\n",
+                (
+                    "Milestone: m2\nWork-Item: #7\nContract-Change: false\n"
+                    "Contract-Change: true\n"
+                ),
+            ):
+                live["body"] = body
+                with self.assertRaises(ContractError):
+                    pr_metadata(client, path)
+
+    def test_verification_comment_reconciles_one_ambiguous_publish(self) -> None:
+        class Client:
+            def __init__(self, outcomes: list[str]) -> None:
+                self.comments: list[dict] = []
+                self.outcomes = outcomes
+                self.calls = 0
+                self.hidden_reads = 0
+
+            def api(self, endpoint: str):
+                if endpoint != f"issues/42/comments?per_page={MAX_ISSUE_COMMENTS + 1}":
+                    raise AssertionError(endpoint)
+                if self.hidden_reads:
+                    self.hidden_reads -= 1
+                    return []
+                return list(self.comments)
+
+            def comment(self, number: int, body: str) -> None:
+                outcome = self.outcomes[self.calls]
+                self.calls += 1
+                if outcome == "written-eof":
+                    self.comments.append(
+                        {"user": {"login": "github-actions[bot]"}, "body": body}
+                    )
+                    raise GitHubError("unexpected EOF")
+                if outcome == "written-eof-hidden":
+                    self.comments.append(
+                        {"user": {"login": "github-actions[bot]"}, "body": body}
+                    )
+                    self.hidden_reads = 1
+                    raise GitHubError("unexpected EOF")
+                if outcome == "eof":
+                    raise GitHubError("unexpected EOF")
+                self.comments.append(
+                    {"user": {"login": "github-actions[bot]"}, "body": body}
+                )
+
+        record = {"status": "PASS", "head_sha": "b" * 40}
+        with patch("loop.time.sleep"):
+            written = Client(["written-eof"])
+            _publish_verification_comment(written, pr_number=42, record=record)
+            self.assertEqual(written.calls, 1)
+
+            delayed = Client(["written-eof-hidden"])
+            _publish_verification_comment(delayed, pr_number=42, record=record)
+            self.assertEqual(delayed.calls, 1)
+
+            retried = Client(["eof", "success"])
+            _publish_verification_comment(retried, pr_number=42, record=record)
+            self.assertEqual(retried.calls, 2)
+            _publish_verification_comment(retried, pr_number=42, record=record)
+            self.assertEqual(retried.calls, 2)
+
+            failed = Client(["eof", "eof"])
+            with self.assertRaises(GitHubError):
+                _publish_verification_comment(failed, pr_number=42, record=record)
+            self.assertEqual(failed.calls, 2)
+
+            invisible = Client(["success"])
+            with self.assertRaises(GitHubError):
+                with patch.object(invisible, "api", return_value=[]):
+                    _publish_verification_comment(invisible, pr_number=42, record=record)
+            self.assertEqual(invisible.calls, 1)
+
+            read_eof = Client(["success"])
+            original_api = read_eof.api
+            read_attempts = iter(("eof", "empty", "empty", "eof", "visible"))
+
+            def intermittent_read(endpoint: str):
+                outcome = next(read_attempts)
+                if outcome == "eof":
+                    raise GitHubError("unexpected EOF")
+                if outcome == "empty":
+                    return []
+                return original_api(endpoint)
+
+            with patch.object(read_eof, "api", side_effect=intermittent_read):
+                _publish_verification_comment(read_eof, pr_number=42, record=record)
+            self.assertEqual(read_eof.calls, 1)
+
+            capacity = Client(["success"])
+            capacity.comments = [{}] * (MAX_ISSUE_COMMENTS - 1)
+            _publish_verification_comment(capacity, pr_number=42, record=record)
+            self.assertEqual(capacity.calls, 1)
+
+            full = Client(["success"])
+            full.comments = [{}] * MAX_ISSUE_COMMENTS
+            with self.assertRaises(LoopBlocked):
+                _publish_verification_comment(full, pr_number=42, record=record)
+            self.assertEqual(full.calls, 0)
+
+    def test_false_contract_metadata_rejects_protected_changes(self) -> None:
+        base_sha = "a" * 40
+        head_sha = "b" * 40
+
+        def git_result(_cwd: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return head_sha
+            if args == ("diff", "--name-only", base_sha, head_sha):
+                return ".github/milestone-loop/loop.py"
+            if args == ("rev-parse", "HEAD^{tree}"):
+                return "c" * 40
+            raise AssertionError(args)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            metadata = {
+                "action": "synchronize",
+                "base_sha": base_sha,
+                "check": "product.unit",
+                "contract_change": False,
+                "head_sha": head_sha,
+                "merged": False,
+                "milestone": "m2",
+                "pr": 42,
+                "work_item": 7,
+            }
+            metadata_path = Path(temporary) / "metadata.json"
+            metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+            with (
+                patch(
+                    "verifier.verification_metadata_path",
+                    return_value=metadata_path,
+                ),
+                patch("verifier._git", side_effect=git_result),
+                self.assertRaisesRegex(
+                    ContractError,
+                    "ordinary Work Item PR changes protected contracts",
+                ),
+            ):
+                verify(
+                    trusted_root=ROOT,
+                    candidate_root=ROOT,
+                    base_sha=base_sha,
+                    head_sha=head_sha,
+                    check_id="product.unit",
+                    pr_number=42,
+                    contract_change=False,
+                )
+
+    def test_publish_binds_live_work_item_and_contract_metadata(self) -> None:
+        record = {
+            "base_sha": "a" * 40,
+            "head_sha": "b" * 40,
+            "work_item_check": "product.unit",
+            "work_item": 7,
+            "contract_change": False,
+            "status": "PASS",
+        }
+        metadata = {
+            "pr": 42,
+            "work_item": 7,
+            "milestone": "m2",
+            "base_sha": "a" * 40,
+            "head_sha": "b" * 40,
+            "check": "product.unit",
+            "contract_change": False,
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            result_path = Path(temporary) / "result.json"
+            event_path = Path(temporary) / "event.json"
+            result_path.write_text(
+                json.dumps({"record": record, "commands": []}),
+                encoding="utf-8",
+            )
+            event_path.write_text("{}", encoding="utf-8")
+            client = Mock()
+            client.api.return_value = []
+            calls: list[str] = []
+
+            def publish(_number: int, _body: str) -> None:
+                client.api.return_value = [
+                    {"user": {"login": "github-actions[bot]"}, "body": _body}
+                ]
+                calls.append("comment")
+
+            def check(**_kwargs) -> None:
+                calls.append("check")
+
+            client.comment.side_effect = publish
+            client.create_check_run.side_effect = check
+            environment = {"GITHUB_EVENT_PATH": str(event_path)}
+            argv = [
+                "publish-verification",
+                "--pr",
+                "42",
+                "--head-sha",
+                "b" * 40,
+                "--milestone",
+                "m2",
+                "--contract-change",
+                "false",
+                "--result",
+                str(result_path),
+            ]
+            with (
+                patch.dict(os.environ, environment, clear=True),
+                patch("loop.GitHubClient.from_environment", return_value=client),
+                patch("loop.pr_metadata") as live_metadata,
+                patch("builtins.print"),
+            ):
+                live_metadata.return_value = {**metadata, "contract_change": True}
+                self.assertEqual(loop_main(argv), 78)
+                client.disable_auto_merge.assert_not_called()
+                live_metadata.return_value = {**metadata, "work_item": 8}
+                self.assertEqual(loop_main(argv), 78)
+                client.disable_auto_merge.assert_not_called()
+                live_metadata.return_value = metadata
+                self.assertEqual(loop_main(argv), 0)
+                result_path.write_text(
+                    json.dumps(
+                        {
+                            "record": {"status": "BLOCKED"},
+                            "error": "trusted verifier preflight blocked",
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                self.assertEqual(loop_main(argv), 0)
+        self.assertEqual(calls[:3], ["comment", "check", "check"])
+        client.disable_auto_merge.assert_not_called()
+        client.dispatch.assert_called_once_with("m2")
+        self.assertEqual(
+            client.create_check_run.call_args.kwargs["conclusion"],
+            "action_required",
+        )
 
     def test_repository_has_one_workflow_and_single_runner_role_routing(self) -> None:
         workflows = sorted((ROOT / ".github" / "workflows").glob("*"))
@@ -1250,6 +1546,7 @@ class BoundaryTests(unittest.TestCase):
         *,
         include_admission_report: bool = False,
         status: str = "PASS",
+        malformed_failure: bool = False,
         report_overrides: dict[str, object] | None = None,
     ) -> tuple[dict, list[tuple[list[str], dict]], int]:
         expected_sha = "a" * 40
@@ -1283,6 +1580,8 @@ class BoundaryTests(unittest.TestCase):
                     "campaign_id": run_id,
                     "status": status,
                     "report_digest": "c" * 64,
+                    "errors": [] if status == "PASS" else ["Docker unavailable"],
+                    "campaigns": {},
                 }
                 report.update(report_overrides or {})
                 (artifacts / "m2_candidate_discovery.json").write_text(
@@ -1293,7 +1592,23 @@ class BoundaryTests(unittest.TestCase):
                         "{}", encoding="utf-8"
                     )
                 result_path.write_text(
-                    json.dumps({"status": status, "summary": "selection screen complete"}),
+                    json.dumps(
+                        {
+                            "status": status,
+                            "summary": "selection screen complete",
+                            "failure": (
+                                {"capture_stage": "formation"}
+                                if malformed_failure
+                                else None
+                                if status == "PASS"
+                                else {
+                                    "capture_stage": "preflight",
+                                    "class": "environment",
+                                    "evidence_path": "m2_candidate_discovery.json",
+                                }
+                            ),
+                        }
+                    ),
                     encoding="utf-8",
                 )
                 return subprocess.CompletedProcess(command, 0, "producer output\n", None)
@@ -1387,6 +1702,13 @@ class BoundaryTests(unittest.TestCase):
         self.assertTrue(result["artifacts"].endswith("/m2-discovery-evidence"))
         self.assertEqual(cleanup_count, 2)
 
+        malformed, _calls, _cleanup_count = self._run_discovery_fixture(
+            status="BLOCKED",
+            malformed_failure=True,
+        )
+        self.assertEqual(malformed["status"], "FAIL")
+        self.assertIn("failure metadata is invalid", malformed["summary"])
+
     def test_m2_discovery_blocks_if_candidate_state_is_no_longer_canonical(self) -> None:
         snapshot = {
             "default_sha": "a" * 40,
@@ -1423,6 +1745,7 @@ class BoundaryTests(unittest.TestCase):
         run_id: str = "123",
         run_attempt: str = "2",
         failure_scope: str = "formation",
+        failure_class: str = "product",
         invalid_samples: list[dict[str, str]] | None = None,
     ) -> tuple[dict, Path, Path]:
         root = Path(temporary)
@@ -1529,6 +1852,8 @@ class BoundaryTests(unittest.TestCase):
                     [failover_losing_cell],
                 ),
             }
+        elif failure_scope == "preflight":
+            campaigns = {}
         elif failure_scope == "failover":
             campaigns = {
                 "formation": campaign(
@@ -1559,9 +1884,9 @@ class BoundaryTests(unittest.TestCase):
         candidate_results = {
             kind: [
                 {"candidate": dict(cell["candidate"]), "status": cell["status"]}
-                for cell in value["cells"]
+                for cell in campaigns.get(kind, {}).get("cells", [])
             ]
-            for kind, value in campaigns.items()
+            for kind in ("formation", "failover")
         }
         report = {
             "schema_version": "m2-candidate-discovery-v1",
@@ -1575,8 +1900,8 @@ class BoundaryTests(unittest.TestCase):
             "created_at": "2026-07-21T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": "test"},
             "status": status,
-            "real_valkey": True,
-            "execution_mode": "valkey-real",
+            "real_valkey": bool(campaigns),
+            "execution_mode": "valkey-real" if campaigns else "not-run",
             "campaigns": campaigns,
             "candidate_results": candidate_results,
             "survivors": {"formation": [], "failover": []},
@@ -1591,11 +1916,30 @@ class BoundaryTests(unittest.TestCase):
         (evidence / "m2_candidate_discovery.json").write_text(
             json.dumps(report), encoding="utf-8"
         )
+        failure = (
+            None
+            if status == "PASS"
+            else {
+                "failure_phase": failure_scope,
+                "class": failure_class,
+                "scope": (
+                    failure_scope
+                    if failure_scope in {"formation", "failover"}
+                    else ""
+                ),
+                "retryable": (
+                    failure_class in {"measurement", "product"}
+                    and failure_scope in {"formation", "failover"}
+                ),
+                "evidence_path": "m2_candidate_discovery.json",
+            }
+        )
         raw_result.write_text(
             json.dumps(
                 {
                     "status": status,
                     "summary": error or "selection complete",
+                    "failure": failure,
                     "milestone": "m2",
                     "entrypoint": "discovery",
                     "tested_sha": sha,
@@ -1636,7 +1980,7 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(loaded["status"], "PASS")
         self.assertEqual(loaded["failure_scope"], "")
 
-    def test_only_narrow_programming_failure_is_repairable(self) -> None:
+    def test_structured_product_and_measurement_failures_are_repairable(self) -> None:
         reason = "formation collector called an invalid API"
         with tempfile.TemporaryDirectory() as temporary:
             repairable, _sealed, _evidence = self._seal_discovery_fixture(
@@ -1651,8 +1995,9 @@ class BoundaryTests(unittest.TestCase):
                 ],
             )
         self.assertEqual(repairable["disposition"], "REPAIRABLE_IMPLEMENTATION")
+        self.assertEqual(repairable["failure_class"], "product")
         self.assertEqual(repairable["failure_scope"], "formation")
-        self.assertEqual(repairable["failure_code"], "python-typeerror")
+        self.assertEqual(repairable["failure_code"], "product")
 
         failover_reason = "failover collector called an invalid API"
         with tempfile.TemporaryDirectory() as temporary:
@@ -1676,6 +2021,7 @@ class BoundaryTests(unittest.TestCase):
                 temporary,
                 status="FAIL",
                 error="DISCOVERY_FAILED: CaptureError: cluster link safety metric is nonzero",
+                failure_class="measurement",
                 invalid_samples=[
                     {
                         "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
@@ -1684,16 +2030,59 @@ class BoundaryTests(unittest.TestCase):
                 ],
             )
         self.assertEqual(safety["status"], "FAIL")
-        self.assertEqual(safety["disposition"], "HUMAN_REQUIRED")
+        self.assertEqual(safety["disposition"], "REPAIRABLE_IMPLEMENTATION")
+        self.assertEqual(safety["failure_class"], "measurement")
 
-    def test_invalid_sample_must_match_the_current_repairable_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            environment, _sealed, _evidence = self._seal_discovery_fixture(
+                temporary,
+                status="BLOCKED",
+                error="ENVIRONMENT_AFTER_START: Docker unavailable",
+                failure_class="environment",
+            )
+        self.assertEqual(environment["disposition"], "HUMAN_REQUIRED")
+        self.assertEqual(environment["failure_class"], "environment")
+        self.assertFalse(environment["retryable"])
+
+        with tempfile.TemporaryDirectory() as temporary:
+            preflight, sealed, evidence = self._seal_discovery_fixture(
+                temporary,
+                status="BLOCKED",
+                error="ENVIRONMENT_BLOCKED: resource preflight rejected the host",
+                failure_scope="preflight",
+                failure_class="environment",
+            )
+            loaded = load_m2_discovery_result(
+                result_path=sealed,
+                evidence_root=evidence,
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="123",
+                run_attempt="2",
+            )
+        self.assertEqual(preflight["failure_phase"], "preflight")
+        self.assertEqual(preflight["failure_class"], "environment")
+        self.assertEqual(preflight["evidence_path"], "m2_candidate_discovery.json")
+        self.assertEqual(loaded, preflight)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            malformed, _sealed, _evidence = self._seal_discovery_fixture(
+                temporary,
+                status="FAIL",
+                error="DISCOVERY_FAILED: unknown failure metadata",
+                failure_class="unknown",
+            )
+        self.assertEqual(malformed["status"], "BLOCKED")
+        self.assertEqual(malformed["disposition"], "HUMAN_REQUIRED")
+
+    def test_historical_invalid_sample_does_not_replace_current_failure(self) -> None:
         error = "DISCOVERY_FAILED: TypeError: current implementation failure"
         cases = (
             (
                 [
                     {
                         "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
-                        "reason": "different failure",
+                        "reason": "prior candidate safety rejection",
                     }
                 ],
                 "FAIL",
@@ -1730,7 +2119,14 @@ class BoundaryTests(unittest.TestCase):
                     invalid_samples=samples,
                 )
             self.assertEqual(result["status"], expected_status)
-            self.assertEqual(result["disposition"], "HUMAN_REQUIRED")
+            self.assertEqual(
+                result["disposition"],
+                (
+                    "REPAIRABLE_IMPLEMENTATION"
+                    if expected_status == "FAIL"
+                    else "HUMAN_REQUIRED"
+                ),
+            )
 
     def test_pass_cannot_hide_invalid_samples(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1786,6 +2182,31 @@ class BoundaryTests(unittest.TestCase):
             )
         self.assertEqual(cleanup["status"], "BLOCKED")
         self.assertEqual(cleanup["cleanup_outcome"], "failure")
+        self.assertEqual(cleanup["failure_class"], "environment")
+        self.assertFalse(cleanup["retryable"])
+
+        with tempfile.TemporaryDirectory() as temporary:
+            failed_cleanup, sealed, evidence = self._seal_discovery_fixture(
+                temporary,
+                status="FAIL",
+                error="DISCOVERY_FAILED: CaptureError: sampler IPC failed",
+                cleanup_outcome="failure",
+                failure_class="measurement",
+            )
+            loaded = load_m2_discovery_result(
+                result_path=sealed,
+                evidence_root=evidence,
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="123",
+                run_attempt="2",
+            )
+        self.assertEqual(failed_cleanup["status"], "BLOCKED")
+        self.assertEqual(failed_cleanup["disposition"], "HUMAN_REQUIRED")
+        self.assertEqual(failed_cleanup["failure_phase"], "formation")
+        self.assertEqual(failed_cleanup["failure_class"], "environment")
+        self.assertFalse(failed_cleanup["retryable"])
+        self.assertEqual(loaded, failed_cleanup)
 
         with tempfile.TemporaryDirectory() as temporary:
             malformed, _sealed, _evidence = self._seal_discovery_fixture(

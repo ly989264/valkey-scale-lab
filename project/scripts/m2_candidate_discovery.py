@@ -40,10 +40,55 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _write_result(path: Path, status: str, summary: str) -> None:
+def _failure(failure_phase: str, failure_class: str, *, evidence: bool) -> dict[str, Any]:
+    return {
+        "capture_stage": failure_phase,
+        "class": failure_class,
+        "evidence_path": REPORT_NAME if evidence else "",
+    }
+
+
+def _preflight_failure(
+    args: argparse.Namespace,
+    status: str,
+    summary: str,
+    failure_class: str,
+) -> tuple[str, str, dict[str, Any]]:
+    evidence = False
+    artifacts_dir = args.artifacts_dir.resolve()
+    if (
+        not _forbidden_path(artifacts_dir)
+        and SHA_RE.fullmatch(str(args.tested_sha)) is not None
+        and capture.RUN_ID_RE.fullmatch(str(args.run_id)) is not None
+        and (not artifacts_dir.exists() or not any(artifacts_dir.iterdir()))
+    ):
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        report = _build_report(
+            args,
+            status=status,
+            campaigns={},
+            survivors={"formation": [], "failover": []},
+            errors=[summary],
+        )
+        capture._write_report(artifacts_dir / REPORT_NAME, report)
+        evidence = True
+    return status, summary, _failure("preflight", failure_class, evidence=evidence)
+
+
+def _write_result(
+    path: Path,
+    status: str,
+    summary: str,
+    failure: dict[str, Any] | None,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    bounded_summary = " ".join(summary.split())[:4000]
     path.write_text(
-        json.dumps({"status": status, "summary": summary}, sort_keys=True) + "\n",
+        json.dumps(
+            {"status": status, "summary": bounded_summary, "failure": failure},
+            sort_keys=True,
+        )
+        + "\n",
         encoding="utf-8",
     )
 
@@ -133,12 +178,12 @@ def _candidate_results(campaigns: Mapping[str, Mapping[str, Any]]) -> dict[str, 
     return {
         kind: [
             {"candidate": dict(cell["candidate"]), "status": str(cell["status"])}
-            for cell in campaign.get("cells", [])
+            for cell in campaigns.get(kind, {}).get("cells", [])
             if isinstance(cell, dict)
             and isinstance(cell.get("candidate"), dict)
             and cell.get("status") in {"PASS", "FAIL"}
         ]
-        for kind, campaign in campaigns.items()
+        for kind in ("formation", "failover")
     }
 
 
@@ -277,7 +322,9 @@ def _clear_context(context: capture.CaptureContext) -> None:
     context.source_refs.clear()
 
 
-def _capture(args: argparse.Namespace) -> tuple[str, str]:
+def _capture(
+    args: argparse.Namespace,
+) -> tuple[str, str, dict[str, Any] | None]:
     artifacts_dir = args.artifacts_dir.resolve()
     args.artifacts_dir = artifacts_dir
     report_path = artifacts_dir / REPORT_NAME
@@ -294,6 +341,41 @@ def _capture(args: argparse.Namespace) -> tuple[str, str]:
     campaigns: dict[str, dict[str, Any]] = {}
     survivors: dict[str, list[dict[str, Any]]] = {"formation": [], "failover": []}
     contexts: dict[str, capture.CaptureContext] = {}
+    failure_phase = "preflight"
+
+    def finish_failure(
+        exc: Exception,
+        *,
+        status: str,
+        reason: str,
+        failure_class: str,
+        include_campaigns: bool = True,
+    ) -> tuple[str, str, dict[str, Any]]:
+        if include_campaigns and failure_phase in contexts:
+            campaigns[failure_phase] = _campaign(
+                contexts[failure_phase],
+                baseline=(
+                    formation_baseline
+                    if failure_phase == "formation"
+                    else failover_baseline
+                ),
+                candidates=(
+                    formation_candidates
+                    if failure_phase == "formation"
+                    else failover_candidates
+                ),
+                status="FAIL",
+                errors=[reason],
+            )
+        report = _build_report(
+            args,
+            status=status,
+            campaigns=campaigns,
+            survivors=survivors,
+            errors=[reason],
+        )
+        capture._write_report(report_path, report)
+        return status, str(exc), _failure(failure_phase, failure_class, evidence=True)
 
     try:
         product_digest = capture._product_digest()
@@ -309,6 +391,7 @@ def _capture(args: argparse.Namespace) -> tuple[str, str]:
             )
             for kind in ("formation", "failover")
         }
+        failure_phase = "formation"
         formation_survivors = capture.capture_formation_discovery(
             contexts["formation"],
             baseline=formation_baseline,
@@ -337,6 +420,7 @@ def _capture(args: argparse.Namespace) -> tuple[str, str]:
         if formation_errors:
             raise capture.CaptureError("; ".join(dict.fromkeys(formation_errors)))
 
+        failure_phase = "failover"
         failover_survivors = capture.capture_failover_discovery(
             contexts["failover"],
             baseline=failover_baseline,
@@ -366,55 +450,36 @@ def _capture(args: argparse.Namespace) -> tuple[str, str]:
             raise capture.CaptureError("; ".join(dict.fromkeys(failover_errors)))
     except capture.EnvironmentBlocked as exc:
         started = any(context.started for context in contexts.values())
-        status = "FAIL" if started else "BLOCKED"
+        status = "BLOCKED"
         reason = f"{'ENVIRONMENT_AFTER_START' if started else 'ENVIRONMENT_BLOCKED'}: {exc}"
         if not started:
+            failure_phase = "preflight"
             for context in contexts.values():
                 _clear_context(context)
             campaigns = {}
-        else:
-            for kind, context in contexts.items():
-                campaigns.setdefault(
-                    kind,
-                    _campaign(
-                        context,
-                        baseline=formation_baseline if kind == "formation" else failover_baseline,
-                        candidates=formation_candidates if kind == "formation" else failover_candidates,
-                        status="FAIL",
-                        errors=[reason],
-                    ),
-                )
-        report = _build_report(
-            args,
+        return finish_failure(
+            exc,
             status=status,
-            campaigns=campaigns,
-            survivors=survivors,
-            errors=[reason],
+            reason=reason,
+            failure_class="environment",
+            include_campaigns=started,
         )
-        capture._write_report(report_path, report)
-        return status, str(exc)
+    except capture.CaptureError as exc:
+        reason = f"DISCOVERY_FAILED: {type(exc).__name__}: {exc}"
+        return finish_failure(
+            exc,
+            status="FAIL",
+            reason=reason,
+            failure_class="measurement",
+        )
     except Exception as exc:  # noqa: BLE001 - partial real evidence must close as FAIL
         reason = f"DISCOVERY_FAILED: {type(exc).__name__}: {exc}"
-        for kind, context in contexts.items():
-            campaigns.setdefault(
-                kind,
-                _campaign(
-                    context,
-                    baseline=formation_baseline if kind == "formation" else failover_baseline,
-                    candidates=formation_candidates if kind == "formation" else failover_candidates,
-                    status="FAIL",
-                    errors=[reason],
-                ),
-            )
-        report = _build_report(
-            args,
+        return finish_failure(
+            exc,
             status="FAIL",
-            campaigns=campaigns,
-            survivors=survivors,
-            errors=[reason],
+            reason=reason,
+            failure_class="product",
         )
-        capture._write_report(report_path, report)
-        return "FAIL", str(exc)
 
     report = _build_report(
         args,
@@ -430,6 +495,11 @@ def _capture(args: argparse.Namespace) -> tuple[str, str]:
         expected_sha=args.tested_sha,
     )
     if validation_errors:
+        campaigns["failover"] = {
+            **campaigns["failover"],
+            "status": "FAIL",
+            "errors": validation_errors,
+        }
         report = _build_report(
             args,
             status="FAIL",
@@ -438,31 +508,68 @@ def _capture(args: argparse.Namespace) -> tuple[str, str]:
             errors=validation_errors,
         )
         capture._write_report(report_path, report)
-        return "FAIL", "; ".join(validation_errors[:8])
+        return (
+            "FAIL",
+            "; ".join(validation_errors[:8]),
+            _failure("failover", "measurement", evidence=True),
+        )
     capture._write_report(report_path, report)
-    return "PASS", (
-        f"validated {len(campaigns['formation']['trials'])} formation and "
-        f"{len(campaigns['failover']['trials'])} failover discovery trials"
+    return (
+        "PASS",
+        (
+            f"validated {len(campaigns['formation']['trials'])} formation and "
+            f"{len(campaigns['failover']['trials'])} failover discovery trials"
+        ),
+        None,
     )
 
 
-def run(args: argparse.Namespace) -> tuple[str, str]:
+def run(
+    args: argparse.Namespace,
+) -> tuple[str, str, dict[str, Any] | None]:
     if _forbidden_path(args.artifacts_dir):
-        return "FAIL", "M2 discovery artifacts directory names forbidden non-current evidence"
+        return _preflight_failure(
+            args,
+            "FAIL",
+            "M2 discovery artifacts directory names forbidden non-current evidence",
+            "product",
+        )
     if not _authorized(args.run_id):
-        return (
+        return _preflight_failure(
+            args,
             "BLOCKED",
             f"real M2 discovery requires explicit {admission.AUTHORIZATION_ENV}=1 (or this run id); no trial was started",
+            "environment",
         )
     if SHA_RE.fullmatch(str(args.tested_sha)) is None:
-        return "BLOCKED", "M2 discovery tested SHA must be a full lowercase Git SHA"
+        return _preflight_failure(
+            args,
+            "BLOCKED",
+            "M2 discovery tested SHA must be a full lowercase Git SHA",
+            "environment",
+        )
     if _checkout_sha() != args.tested_sha:
-        return "BLOCKED", "M2 discovery checkout does not match the authorized tested SHA"
+        return _preflight_failure(
+            args,
+            "BLOCKED",
+            "M2 discovery checkout does not match the authorized tested SHA",
+            "environment",
+        )
     if not capture.RUN_ID_RE.fullmatch(str(args.run_id)):
-        return "FAIL", "M2 discovery run id is not a safe current-invocation identifier"
+        return _preflight_failure(
+            args,
+            "FAIL",
+            "M2 discovery run id is not a safe current-invocation identifier",
+            "product",
+        )
     artifacts_dir = args.artifacts_dir.resolve()
     if artifacts_dir.exists() and any(artifacts_dir.iterdir()):
-        return "FAIL", "refusing pre-existing M2 discovery artifacts"
+        return _preflight_failure(
+            args,
+            "FAIL",
+            "refusing pre-existing M2 discovery artifacts",
+            "product",
+        )
     return _capture(args)
 
 
@@ -471,10 +578,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if _forbidden_path(args.result_path):
         return 2
     try:
-        status, summary = run(args)
+        status, summary, failure = run(args)
     except Exception as exc:  # noqa: BLE001 - result must remain machine-readable
         status, summary = "FAIL", f"M2 discovery raised {type(exc).__name__}: {exc}"
-    _write_result(args.result_path, status, summary)
+        failure = _failure("preflight", "product", evidence=False)
+    _write_result(args.result_path, status, summary, failure)
     return 0
 
 

@@ -27,6 +27,7 @@ from contracts import (
     parse_planner_output,
     parse_work_item,
     parse_worker_output,
+    pr_contract_change,
     render_work_item,
     require_candidate_check,
     resolve_check,
@@ -1170,11 +1171,46 @@ def _find_pr(snapshot: Mapping[str, Any], issue_number: int) -> dict[str, Any] |
     ]
     open_matches = [pr for pr in matches if pr.get("state") == "open"]
     if len(open_matches) > 1:
-        raise LoopBlocked(f"Work Item #{issue_number} has multiple open PRs")
+        ordinary = [
+            pr
+            for pr in open_matches
+            if not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
+        ]
+        protected = [pr for pr in open_matches if pr not in ordinary]
+        if len(ordinary) == 1 and len(protected) == 1:
+            return ordinary[0]
+        raise LoopBlocked(f"Work Item #{issue_number} has multiple open implementation PRs")
     if open_matches:
         return open_matches[0]
     merged = [pr for pr in matches if pr.get("merged_at")]
-    return sorted(merged, key=lambda pr: pr["number"])[-1] if merged else None
+    ordinary_merged = [
+        pr
+        for pr in merged
+        if not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
+    ]
+    selected = ordinary_merged or merged
+    return sorted(selected, key=lambda pr: pr["number"])[-1] if selected else None
+
+
+def _contract_change_sibling(
+    snapshot: Mapping[str, Any],
+    issue_number: int,
+    *,
+    exclude_number: int,
+) -> dict[str, Any] | None:
+    matches = [
+        pr
+        for pr in snapshot.get("pull_requests", [])
+        if pr.get("number") != exclude_number
+        and pr.get("state") == "open"
+        and PR_WORK_ITEM_RE.findall(pr.get("body", "")) == [str(issue_number)]
+        and pr_contract_change(pr.get("body", ""), pr.get("labels", []))
+    ]
+    if len(matches) > 1:
+        raise LoopBlocked(
+            f"Work Item #{issue_number} has multiple open Contract Change prerequisites"
+        )
+    return matches[0] if matches else None
 
 
 def _failure_payload(kind: str, signature: str) -> str:
@@ -1312,10 +1348,15 @@ def pending_m2_discovery_diagnosis(snapshot: Mapping[str, Any]) -> dict[str, Any
     pending: list[dict[str, Any]] = []
     for value in _trusted_comment_payloads(control, M2_DISCOVERY_RECORD_RE):
         if (
-            value.get("version") != 1
+            value.get("version") != 2
             or value.get("milestone") != "m2"
             or value.get("disposition") != "REPAIRABLE_IMPLEMENTATION"
+            or value.get("failure_phase") not in {"formation", "failover"}
+            or value.get("failure_class") not in {"measurement", "product"}
             or value.get("failure_scope") not in M2_DISCOVERY_CRITERIA
+            or value.get("failure_scope") != value.get("failure_phase")
+            or value.get("retryable") is not True
+            or value.get("evidence_path") != "m2_candidate_discovery.json"
             or re.fullmatch(r"[0-9a-f]{64}", str(value.get("failure_fingerprint", ""))) is None
             or re.fullmatch(r"[0-9a-f]{40}", str(value.get("tested_sha", ""))) is None
         ):
@@ -1435,7 +1476,7 @@ def trusted_m2_discovery_repair_pr(
     pr = matches[0]
     if (
         CONTRACT_CHANGE_LABEL not in pr.get("labels", [])
-        or "Contract-Change: true" not in pr.get("body", "")
+        or not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
     ):
         return False
     item_numbers = PR_WORK_ITEM_RE.findall(pr.get("body", ""))
@@ -1757,16 +1798,28 @@ def reconcile_review(
         if pr.get("merged_at"):
             record = verification_record(pr)
             expected = None
-            if isinstance(record, dict) and set(record) == {
-                "version",
-                "base_sha",
-                "head_sha",
-                "tree_sha",
-                "verified_tree",
-                "baseline",
-                "work_item_check",
-                "status",
-            }:
+            contract_change = pr_contract_change(
+                pr.get("body", ""),
+                pr.get("labels", []),
+            )
+            if (
+                isinstance(record, dict)
+                and set(record)
+                == {
+                    "version",
+                    "base_sha",
+                    "head_sha",
+                    "tree_sha",
+                    "verified_tree",
+                    "baseline",
+                    "work_item_check",
+                    "work_item",
+                    "contract_change",
+                    "status",
+                }
+                and record.get("work_item") == number
+                and record.get("contract_change") is contract_change
+            ):
                 try:
                     expected = verified_tree(
                         str(record["base_sha"]),
@@ -1792,6 +1845,37 @@ def reconcile_review(
         if pr.get("state") != "open":
             _set_issue_status(client, issue, "ready")
             continue
+        prerequisite = _contract_change_sibling(
+            snapshot,
+            number,
+            exclude_number=int(pr["number"]),
+        )
+        if (
+            prerequisite is not None
+            and not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
+        ):
+            client.disable_auto_merge(int(pr["number"]))
+            repository = str(snapshot.get("repository", ""))
+            record_human_action_state(
+                client=client,
+                snapshot=snapshot,
+                control=control,
+                state="PR_REVIEW_REQUIRED",
+                target=(
+                    f"pr:{prerequisite['number']}:"
+                    f"{prerequisite.get('head_sha', '')}"
+                ),
+                sha=str(prerequisite.get("head_sha", "")),
+                action=(
+                    "Review and merge the prerequisite Contract Change before "
+                    "continuing this Work Item."
+                ),
+                link=(
+                    f"https://github.com/{repository}/pull/"
+                    f"{prerequisite['number']}"
+                ),
+            )
+            return "HUMAN_REVIEW", control
         matching_checks = [
             item
             for item in pr.get("checks", [])
@@ -1841,17 +1925,22 @@ def reconcile_review(
             "verified_tree",
             "baseline",
             "work_item_check",
+            "work_item",
+            "contract_change",
             "status",
         }
-        if set(record) != required or record.get("status") != "PASS":
+        if (
+            set(record) != required
+            or record.get("status") != "PASS"
+        ):
             raise LoopBlocked("candidate verification record has invalid fields or status")
         expected_tree = verified_tree(
             str(record["base_sha"]), str(record["head_sha"]), str(record["tree_sha"])
         )
         contract = parse_work_item(issue["body"])
-        contract_change = (
-            CONTRACT_CHANGE_LABEL in pr.get("labels", [])
-            or "Contract-Change: true" in pr.get("body", "")
+        contract_change = pr_contract_change(
+            pr.get("body", ""),
+            pr.get("labels", []),
         )
         expected_work_item_check = "repository.all" if contract_change else contract.check
         if (
@@ -1861,6 +1950,8 @@ def reconcile_review(
             or record.get("verified_tree") != expected_tree
             or record.get("baseline") != "repository.all"
             or record.get("work_item_check") != expected_work_item_check
+            or record.get("work_item") != number
+            or record.get("contract_change") is not contract_change
         ):
             client.disable_auto_merge(int(pr["number"]))
             _set_issue_status(client, issue, "ready")
@@ -1889,6 +1980,12 @@ def reconcile_review(
             or live_pr.get("head_sha") != record["head_sha"]
             or live_pr.get("head_tree_sha") != record["tree_sha"]
             or status_from_labels(live_issue.get("labels", [])) != "review"
+            or _contract_change_sibling(
+                live,
+                number,
+                exclude_number=int(live_pr["number"]),
+            )
+            is not None
         ):
             raise LoopBlocked("live state changed before auto-merge enablement")
         client.merge_pull_request(
@@ -2290,8 +2387,12 @@ def record_m2_discovery_result(
         "milestone",
         "status",
         "disposition",
+        "failure_phase",
+        "failure_class",
         "failure_scope",
         "failure_code",
+        "retryable",
+        "evidence_path",
         "failure_fingerprint",
         "tested_sha",
         "lease_sha256",
@@ -2307,11 +2408,16 @@ def record_m2_discovery_result(
     }
     if (
         set(result) != required
-        or result.get("schema_version") != "m2-discovery-result-v1"
+        or result.get("schema_version") != "m2-discovery-result-v2"
         or result.get("milestone") != "m2"
         or result.get("status") not in {"PASS", "FAIL", "BLOCKED"}
         or result.get("disposition")
         not in {"CANDIDATE_SELECTION_ONLY", "REPAIRABLE_IMPLEMENTATION", "HUMAN_REQUIRED"}
+        or result.get("failure_phase") not in {"", "preflight", "formation", "failover"}
+        or result.get("failure_class") not in {"", "environment", "measurement", "product"}
+        or result.get("failure_scope") not in {"", "formation", "failover"}
+        or not isinstance(result.get("retryable"), bool)
+        or result.get("evidence_path") not in {"", "m2_candidate_discovery.json"}
         or re.fullmatch(r"[0-9a-f]{40}", str(result.get("tested_sha", ""))) is None
         or (
             result.get("lease_sha256") != ""
@@ -2321,6 +2427,42 @@ def record_m2_discovery_result(
         or re.fullmatch(r"[0-9a-f]{64}", str(result.get("failure_fingerprint", ""))) is None
     ):
         raise ContractError("sealed M2 discovery record is invalid")
+    failure_phase = str(result["failure_phase"])
+    failure_class = str(result["failure_class"])
+    expected_scope = (
+        failure_phase if failure_phase in {"formation", "failover"} else ""
+    )
+    expected_retryable = (
+        failure_class in {"measurement", "product"} and bool(expected_scope)
+    )
+    cleanup_failure = result["failure_code"] == "cleanup-failed"
+    cleanup_consistent = (
+        cleanup_failure
+        and result["status"] == "BLOCKED"
+        and result["disposition"] == "HUMAN_REQUIRED"
+        and result["cleanup_outcome"] != "success"
+        and failure_class == "environment"
+        and result["failure_scope"] == expected_scope
+        and result["retryable"] is False
+        and bool(failure_phase) == bool(result["evidence_path"])
+    )
+    ordinary_consistent = (
+        not cleanup_failure
+        and result["failure_scope"] == expected_scope
+        and result["retryable"] is expected_retryable
+        and bool(failure_phase) == bool(failure_class)
+        and bool(failure_phase) == bool(result["evidence_path"])
+        and not (
+            result["disposition"] == "CANDIDATE_SELECTION_ONLY"
+            and failure_phase
+        )
+        and not (
+            result["disposition"] == "REPAIRABLE_IMPLEMENTATION"
+            and not expected_retryable
+        )
+    )
+    if not cleanup_consistent and not ordinary_consistent:
+        raise ContractError("sealed M2 discovery failure classification is inconsistent")
     snapshot = collect_snapshot(client, "m2")
     control = ensure_control(client, snapshot)
     snapshot = collect_snapshot(client, "m2")
@@ -2334,10 +2476,22 @@ def record_m2_discovery_result(
     control_issue = controls[0]
     effective_status = str(result["status"])
     effective_disposition = str(result["disposition"])
+    marker_failure_phase = str(result["failure_phase"])
+    marker_failure_class = str(result["failure_class"])
+    marker_failure_scope = str(result["failure_scope"])
+    marker_failure_code = str(result["failure_code"])
+    marker_retryable = bool(result["retryable"])
+    marker_evidence_path = str(result["evidence_path"])
     stale = snapshot.get("default_sha") != result["tested_sha"]
     if stale:
         effective_status = "BLOCKED"
         effective_disposition = "HUMAN_REQUIRED"
+        marker_failure_phase = ""
+        marker_failure_class = ""
+        marker_failure_scope = ""
+        marker_failure_code = "stale-default-sha"
+        marker_retryable = False
+        marker_evidence_path = ""
     dedup_key = hashlib.sha256(
         json.dumps(
             {
@@ -2352,7 +2506,7 @@ def record_m2_discovery_result(
         ).encode("utf-8")
     ).hexdigest()
     record_identity = {
-        "version": 1,
+        "version": 2,
         "milestone": "m2",
         "run_id": str(result["run_id"]),
         "run_attempt": int(result["run_attempt"]),
@@ -2427,8 +2581,12 @@ def record_m2_discovery_result(
         "dedup_key": dedup_key,
         "status": effective_status,
         "disposition": effective_disposition,
-        "failure_scope": str(result["failure_scope"]),
-        "failure_code": str(result["failure_code"]),
+        "failure_phase": marker_failure_phase,
+        "failure_class": marker_failure_class,
+        "failure_scope": marker_failure_scope,
+        "failure_code": marker_failure_code,
+        "retryable": marker_retryable,
+        "evidence_path": marker_evidence_path,
         "failure_fingerprint": str(result["failure_fingerprint"]),
         "summary": str(result["summary"])[:2000],
     }
