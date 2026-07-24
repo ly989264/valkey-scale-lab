@@ -2925,7 +2925,7 @@ def test_discovery_runner_without_authorization_is_blocked_before_capture(
     assert set(payload) == {"status", "summary", "failure"}
     assert payload["failure"] == {
         "capture_stage": "preflight",
-        "class": "environment",
+        "failure_type": "environment-blocked",
         "evidence_path": DISCOVERY.REPORT_NAME,
     }
     report = json.loads((artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8"))
@@ -2977,7 +2977,7 @@ def test_discovery_runner_rejects_invalid_or_mismatched_sha_before_capture(
     assert summary_fragment in payload["summary"]
     assert set(payload) == {"status", "summary", "failure"}
     assert payload["failure"]["capture_stage"] == "preflight"
-    assert payload["failure"]["class"] == "environment"
+    assert payload["failure"]["failure_type"] == "environment-blocked"
 
 
 def test_discovery_runner_rejects_preexisting_or_forbidden_artifacts(
@@ -3027,7 +3027,7 @@ def test_discovery_runner_rejects_preexisting_or_forbidden_artifacts(
         "refusing pre-existing M2 discovery artifacts",
     )
     assert preexisting_failure["capture_stage"] == "preflight"
-    assert preexisting_failure["class"] == "product"
+    assert preexisting_failure["failure_type"] == "input-rejected"
     forbidden_status, forbidden_summary, forbidden_failure = DISCOVERY.run(
         forbidden_args
     )
@@ -3071,7 +3071,7 @@ def test_discovery_environment_blocker_emits_distinct_blocked_report(
     assert set(payload) == {"status", "summary", "failure"}
     assert payload["failure"] == {
         "capture_stage": "preflight",
-        "class": "environment",
+        "failure_type": "environment-blocked",
         "evidence_path": DISCOVERY.REPORT_NAME,
     }
     assert report["artifact_type"] == "m2_candidate_discovery"
@@ -3122,7 +3122,7 @@ def test_discovery_resource_preflight_blocker_remains_preflight_evidence(
     assert payload["status"] == "BLOCKED"
     assert payload["failure"] == {
         "capture_stage": "preflight",
-        "class": "environment",
+        "failure_type": "environment-blocked",
         "evidence_path": DISCOVERY.REPORT_NAME,
     }
     assert report["campaigns"] == {}
@@ -3130,10 +3130,10 @@ def test_discovery_resource_preflight_blocker_remains_preflight_evidence(
 
 
 @pytest.mark.parametrize(
-    ("failure_phase", "exception_type", "failure_class"),
+    ("failure_phase", "exception_type", "failure_type"),
     [
-        ("formation", DISCOVERY.capture.CaptureError, "measurement"),
-        ("failover", RuntimeError, "product"),
+        ("formation", DISCOVERY.capture.CaptureError, "capture-error"),
+        ("failover", RuntimeError, "unexpected-error"),
     ],
 )
 def test_discovery_producer_structures_capture_site_failures(
@@ -3141,7 +3141,7 @@ def test_discovery_producer_structures_capture_site_failures(
     monkeypatch: pytest.MonkeyPatch,
     failure_phase: str,
     exception_type: type[Exception],
-    failure_class: str,
+    failure_type: str,
 ) -> None:
     artifacts = tmp_path / failure_phase
     args = DISCOVERY._parser().parse_args(
@@ -3204,7 +3204,7 @@ def test_discovery_producer_structures_capture_site_failures(
     assert status == "FAIL"
     assert failure == {
         "capture_stage": failure_phase,
-        "class": failure_class,
+        "failure_type": failure_type,
         "evidence_path": DISCOVERY.REPORT_NAME,
     }
     assert report["status"] == "FAIL"
@@ -3266,7 +3266,7 @@ def test_discovery_producer_replaces_current_phase_after_validation_failure(
     assert status == "FAIL"
     assert failure == {
         "capture_stage": "formation",
-        "class": "measurement",
+        "failure_type": "capture-error",
         "evidence_path": DISCOVERY.REPORT_NAME,
     }
     assert report["campaigns"]["formation"]["status"] == "FAIL"

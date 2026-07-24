@@ -40,10 +40,10 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _failure(failure_phase: str, failure_class: str, *, evidence: bool) -> dict[str, Any]:
+def _failure(failure_phase: str, failure_type: str, *, evidence: bool) -> dict[str, Any]:
     return {
         "capture_stage": failure_phase,
-        "class": failure_class,
+        "failure_type": failure_type,
         "evidence_path": REPORT_NAME if evidence else "",
     }
 
@@ -52,7 +52,7 @@ def _preflight_failure(
     args: argparse.Namespace,
     status: str,
     summary: str,
-    failure_class: str,
+    failure_type: str,
 ) -> tuple[str, str, dict[str, Any]]:
     evidence = False
     artifacts_dir = args.artifacts_dir.resolve()
@@ -72,7 +72,7 @@ def _preflight_failure(
         )
         capture._write_report(artifacts_dir / REPORT_NAME, report)
         evidence = True
-    return status, summary, _failure("preflight", failure_class, evidence=evidence)
+    return status, summary, _failure("preflight", failure_type, evidence=evidence)
 
 
 def _write_result(
@@ -348,7 +348,7 @@ def _capture(
         *,
         status: str,
         reason: str,
-        failure_class: str,
+        failure_type: str,
         include_campaigns: bool = True,
     ) -> tuple[str, str, dict[str, Any]]:
         if include_campaigns and failure_phase in contexts:
@@ -375,7 +375,7 @@ def _capture(
             errors=[reason],
         )
         capture._write_report(report_path, report)
-        return status, str(exc), _failure(failure_phase, failure_class, evidence=True)
+        return status, str(exc), _failure(failure_phase, failure_type, evidence=True)
 
     try:
         product_digest = capture._product_digest()
@@ -461,7 +461,7 @@ def _capture(
             exc,
             status=status,
             reason=reason,
-            failure_class="environment",
+            failure_type="environment-blocked",
             include_campaigns=started,
         )
     except capture.CaptureError as exc:
@@ -470,7 +470,7 @@ def _capture(
             exc,
             status="FAIL",
             reason=reason,
-            failure_class="measurement",
+            failure_type="capture-error",
         )
     except Exception as exc:  # noqa: BLE001 - partial real evidence must close as FAIL
         reason = f"DISCOVERY_FAILED: {type(exc).__name__}: {exc}"
@@ -478,7 +478,7 @@ def _capture(
             exc,
             status="FAIL",
             reason=reason,
-            failure_class="product",
+            failure_type="unexpected-error",
         )
 
     report = _build_report(
@@ -511,7 +511,7 @@ def _capture(
         return (
             "FAIL",
             "; ".join(validation_errors[:8]),
-            _failure("failover", "measurement", evidence=True),
+            _failure("failover", "validation-failed", evidence=True),
         )
     capture._write_report(report_path, report)
     return (
@@ -532,35 +532,35 @@ def run(
             args,
             "FAIL",
             "M2 discovery artifacts directory names forbidden non-current evidence",
-            "product",
+            "input-rejected",
         )
     if not _authorized(args.run_id):
         return _preflight_failure(
             args,
             "BLOCKED",
             f"real M2 discovery requires explicit {admission.AUTHORIZATION_ENV}=1 (or this run id); no trial was started",
-            "environment",
+            "environment-blocked",
         )
     if SHA_RE.fullmatch(str(args.tested_sha)) is None:
         return _preflight_failure(
             args,
             "BLOCKED",
             "M2 discovery tested SHA must be a full lowercase Git SHA",
-            "environment",
+            "environment-blocked",
         )
     if _checkout_sha() != args.tested_sha:
         return _preflight_failure(
             args,
             "BLOCKED",
             "M2 discovery checkout does not match the authorized tested SHA",
-            "environment",
+            "environment-blocked",
         )
     if not capture.RUN_ID_RE.fullmatch(str(args.run_id)):
         return _preflight_failure(
             args,
             "FAIL",
             "M2 discovery run id is not a safe current-invocation identifier",
-            "product",
+            "input-rejected",
         )
     artifacts_dir = args.artifacts_dir.resolve()
     if artifacts_dir.exists() and any(artifacts_dir.iterdir()):
@@ -568,7 +568,7 @@ def run(
             args,
             "FAIL",
             "refusing pre-existing M2 discovery artifacts",
-            "product",
+            "input-rejected",
         )
     return _capture(args)
 
@@ -581,7 +581,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         status, summary, failure = run(args)
     except Exception as exc:  # noqa: BLE001 - result must remain machine-readable
         status, summary = "FAIL", f"M2 discovery raised {type(exc).__name__}: {exc}"
-        failure = _failure("preflight", "product", evidence=False)
+        failure = _failure("preflight", "unexpected-error", evidence=False)
     _write_result(args.result_path, status, summary, failure)
     return 0
 

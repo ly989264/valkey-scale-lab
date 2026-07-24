@@ -336,7 +336,7 @@ def pr_contract_change(body: str, labels: Iterable[str]) -> bool:
     prefixed = re.findall(r"(?m)^Contract-Change:[^\r\n]*$", body)
     if len(matches) != 1 or len(prefixed) != 1:
         raise ContractError("pull request must contain exactly one Contract-Change metadata line")
-    return "contract-change" in set(labels) or matches[0] == "true"
+    return matches[0] == "true"
 
 
 def verification_metadata_path() -> Path:

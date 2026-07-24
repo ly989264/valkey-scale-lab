@@ -232,7 +232,7 @@ class BoundaryTests(unittest.TestCase):
                 metadata = pr_metadata(client, path)
             self.assertEqual(
                 (metadata["contract_change"], metadata["check"]),
-                (True, "repository.all"),
+                (False, "product.unit"),
             )
             with (
                 patch("loop.collect_snapshot", return_value={"issues": []}),
@@ -1603,7 +1603,7 @@ class BoundaryTests(unittest.TestCase):
                                 if status == "PASS"
                                 else {
                                     "capture_stage": "preflight",
-                                    "class": "environment",
+                                    "failure_type": "environment-blocked",
                                     "evidence_path": "m2_candidate_discovery.json",
                                 }
                             ),

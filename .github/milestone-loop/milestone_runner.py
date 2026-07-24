@@ -452,14 +452,28 @@ def _derive_discovery_command_failure(
         return None
     if (
         not isinstance(value, dict)
-        or set(value) != {"capture_stage", "class", "evidence_path"}
+        or set(value) != {"capture_stage", "failure_type", "evidence_path"}
         or value.get("capture_stage") not in {"preflight", "formation", "failover"}
-        or value.get("class") not in {"environment", "measurement", "product"}
+        or value.get("failure_type")
+        not in {
+            "environment-blocked",
+            "capture-error",
+            "validation-failed",
+            "input-rejected",
+            "unexpected-error",
+        }
         or value.get("evidence_path") != _M2_DISCOVERY_REPORT_NAME
     ):
         raise ContractError("M2 discovery command failure is malformed")
     phase = str(value["capture_stage"])
-    failure_class = str(value["class"])
+    failure_type = str(value["failure_type"])
+    failure_class = {
+        "environment-blocked": "environment",
+        "capture-error": "measurement",
+        "validation-failed": "measurement",
+        "input-rejected": "product",
+        "unexpected-error": "product",
+    }[failure_type]
     return _validate_discovery_failure(
         {
             "failure_phase": phase,
