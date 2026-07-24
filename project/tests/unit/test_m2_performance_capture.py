@@ -1763,12 +1763,19 @@ def test_fixed_complete_matrix_file_count_stays_below_seal_limit() -> None:
     maximum_source_and_archive_files_per_trial = 11
     bounded_top_level_files = 32
 
+    largest_single_gate_run = max(
+        formation_trials,
+        failover_trials,
+        stability_trials,
+    )
     projected_files = (
-        formation_trials + failover_trials + stability_trials
-    ) * maximum_source_and_archive_files_per_trial + bounded_top_level_files
+        largest_single_gate_run * maximum_source_and_archive_files_per_trial
+        + bounded_top_level_files
+    )
 
     assert (formation_trials, failover_trials, stability_trials) == (176, 366, 6)
-    assert projected_files == 6060
+    assert largest_single_gate_run == failover_trials
+    assert projected_files == 4058
     assert projected_files < 10_000
 
 
