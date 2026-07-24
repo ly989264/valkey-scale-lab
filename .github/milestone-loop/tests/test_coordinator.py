@@ -6,7 +6,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from contracts import ContractError, PlannerOperation, PlannerOutput, verified_tree
+from contracts import (
+    ContractError,
+    PlannerOperation,
+    PlannerOutput,
+    status_from_labels,
+    verified_tree,
+)
 from coordinator import (
     CONTROL_LABEL,
     DISCOVERY_REPAIR_LABEL,
@@ -20,6 +26,7 @@ from coordinator import (
     empty_lease,
     m2_candidate_blockers,
     m2_discovery_eligible,
+    merged_contract_change_prerequisite,
     parse_control,
     pending_failure_diagnosis,
     pending_m2_discovery_diagnosis,
@@ -67,6 +74,68 @@ def snapshot(issues: list[dict]) -> dict:
         "milestone_number": 1,
         "issues": issues,
         "pull_requests": [],
+    }
+
+
+def exact_base_prerequisite(
+    *,
+    number: int = 21,
+    work_item: int = 1,
+    merge_sha: str = "a" * 40,
+) -> dict:
+    base_sha = "9" * 40
+    head_sha = "d" * 40
+    tree_sha = "e" * 40
+    record = {
+        "version": 1,
+        "base_sha": base_sha,
+        "head_sha": head_sha,
+        "tree_sha": tree_sha,
+        "verified_tree": verified_tree(base_sha, head_sha, tree_sha),
+        "baseline": "repository.all",
+        "work_item_check": "repository.all",
+        "status": "PASS",
+    }
+    return {
+        "number": number,
+        "body": (
+            f"Work-Item: #{work_item}\n"
+            "Milestone: m1\n"
+            "Contract-Change: true\n"
+        ),
+        "state": "closed",
+        "merged_at": "2026-07-24T00:00:00Z",
+        "merge_commit_sha": merge_sha,
+        "base_ref": "main",
+        "base_sha": base_sha,
+        "labels": [],
+        "head_sha": head_sha,
+        "head_message": (
+            "Authorize exact-base protected verification\n\n"
+            f"Work-Item: #{work_item}\n"
+            "Contract-Change: true\n"
+        ),
+        "head_tree_sha": tree_sha,
+        "merge_tree_sha": tree_sha,
+        "checks": [
+            {
+                "id": 11,
+                "name": "milestone-loop / candidate",
+                "app": "github-actions",
+                "status": "completed",
+                "conclusion": "success",
+            }
+        ],
+        "comments": [
+            {
+                "author": "github-actions[bot]",
+                "body": (
+                    "<!-- milestone-loop-verification: "
+                    + json.dumps(record, sort_keys=True, separators=(",", ":"))
+                    + " -->"
+                ),
+            }
+        ],
     }
 
 
@@ -387,6 +456,7 @@ class CoordinatorTests(unittest.TestCase):
             "work_item_check": "product.unit",
             "work_item": 1,
             "contract_change": False,
+            "protected_prerequisite": None,
             "status": "PASS",
         }
         state = {
@@ -497,6 +567,7 @@ class CoordinatorTests(unittest.TestCase):
             "work_item_check": "product.unit",
             "work_item": 1,
             "contract_change": False,
+            "protected_prerequisite": None,
             "status": "PASS",
         }
         ordinary = {
@@ -599,6 +670,250 @@ class CoordinatorTests(unittest.TestCase):
             merged_at="2026-07-24T00:00:00Z",
         )
         self.assertEqual(_find_pr(both_merged, 1)["number"], 20)
+
+    def test_exact_base_contract_prerequisite_is_fail_closed(self) -> None:
+        base_sha = "a" * 40
+        prerequisite = exact_base_prerequisite(merge_sha=base_sha)
+        state = {
+            **snapshot([]),
+            "default_sha": base_sha,
+            "pull_requests": [prerequisite],
+        }
+        expected = {"pr": 21, "merge_commit_sha": base_sha}
+        self.assertEqual(
+            merged_contract_change_prerequisite(
+                state,
+                1,
+                base_sha=base_sha,
+                exclude_number=20,
+            ),
+            expected,
+        )
+
+        variants = []
+        for change in (
+            {"state": "open", "merged_at": None},
+            {"merge_commit_sha": "b" * 40},
+            {"body": "Work-Item: #2\nMilestone: m1\nContract-Change: true\n"},
+            {"body": "Work-Item: #1\nMilestone: m1\nContract-Change: false\n"},
+            {"head_message": "Work-Item: #2\nContract-Change: true\n"},
+            {"head_message": "Work-Item: #1\nContract-Change: false\n"},
+            {"base_ref": "other"},
+            {"merge_tree_sha": "f" * 40},
+        ):
+            variant = copy.deepcopy(prerequisite)
+            variant.update(change)
+            variants.append(variant)
+        failed_check = copy.deepcopy(prerequisite)
+        failed_check["checks"].append(
+            {
+                "id": 12,
+                "name": "milestone-loop / candidate",
+                "app": "github-actions",
+                "status": "completed",
+                "conclusion": "failure",
+            }
+        )
+        variants.append(failed_check)
+        missing_record = copy.deepcopy(prerequisite)
+        missing_record["comments"] = []
+        variants.append(missing_record)
+        failed_record = copy.deepcopy(prerequisite)
+        failed_record["comments"][0]["body"] = failed_record["comments"][0][
+            "body"
+        ].replace('"PASS"', '"FAIL"')
+        variants.append(failed_record)
+        for variant in variants:
+            with self.subTest(variant=variant):
+                state["pull_requests"] = [variant]
+                self.assertIsNone(
+                    merged_contract_change_prerequisite(
+                        state,
+                        1,
+                        base_sha=base_sha,
+                        exclude_number=20,
+                    )
+                )
+
+        state["pull_requests"] = [
+            prerequisite,
+            {**copy.deepcopy(prerequisite), "number": 22},
+        ]
+        with self.assertRaisesRegex(LoopBlocked, "multiple exact-base"):
+            merged_contract_change_prerequisite(
+                state,
+                1,
+                base_sha=base_sha,
+                exclude_number=20,
+            )
+
+    def test_contract_prerequisite_handoff_ignores_stale_check(self) -> None:
+        base_sha = "a" * 40
+        item = issue(1, "review")
+        control_issue = {
+            "number": 99,
+            "body": render_control(empty_lease("m1"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        ordinary = {
+            "number": 20,
+            "body": "Work-Item: #1\nMilestone: m1\nContract-Change: false\n",
+            "state": "open",
+            "merged_at": None,
+            "labels": [],
+            "head_sha": "b" * 40,
+            "head_tree_sha": "c" * 40,
+            "checks": [
+                {
+                    "id": 10,
+                    "name": "milestone-loop / candidate",
+                    "app": "github-actions",
+                    "status": "completed",
+                    "conclusion": "action_required",
+                }
+            ],
+            "comments": [],
+        }
+        state = {
+            **snapshot([item, control_issue]),
+            "default_sha": base_sha,
+            "pull_requests": [
+                ordinary,
+                exact_base_prerequisite(merge_sha=base_sha),
+            ],
+        }
+        client = FakeClient(control_issue)
+
+        action, _ = reconcile_review(
+            client,
+            state,
+            ControlState(99, empty_lease("m1"), 0),
+        )
+
+        self.assertEqual(action, "HUMAN_REVIEW")
+        self.assertEqual(status_from_labels(item["labels"]), "review")
+        self.assertIn(("disable", 20), client.writes)
+        self.assertFalse(any(write[0] == "update" for write in client.writes))
+        self.assertTrue(
+            any(
+                write[0] == "comment" and "Rebase PR #20" in write[2]
+                for write in client.writes
+            )
+        )
+
+    def test_exact_base_prerequisite_is_rechecked_through_merge(self) -> None:
+        base_sha = "a" * 40
+        head_sha = "b" * 40
+        tree_sha = "c" * 40
+        proof = {"pr": 21, "merge_commit_sha": base_sha}
+        item = issue(1, "review")
+        control_issue = {
+            "number": 99,
+            "body": render_control(empty_lease("m1"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        record = {
+            "version": 1,
+            "base_sha": base_sha,
+            "head_sha": head_sha,
+            "tree_sha": tree_sha,
+            "verified_tree": verified_tree(base_sha, head_sha, tree_sha),
+            "baseline": "repository.all",
+            "work_item_check": "product.unit",
+            "work_item": 1,
+            "contract_change": False,
+            "protected_prerequisite": proof,
+            "status": "PASS",
+        }
+        ordinary = {
+            "number": 20,
+            "body": "Work-Item: #1\nMilestone: m1\nContract-Change: false\n",
+            "state": "open",
+            "merged_at": None,
+            "labels": [],
+            "head_sha": head_sha,
+            "head_tree_sha": tree_sha,
+            "checks": [
+                {
+                    "id": 20,
+                    "name": "milestone-loop / candidate",
+                    "app": "github-actions",
+                    "status": "completed",
+                    "conclusion": "success",
+                }
+            ],
+            "comments": [
+                {
+                    "author": "github-actions[bot]",
+                    "body": (
+                        "<!-- milestone-loop-verification: "
+                        + json.dumps(record, sort_keys=True, separators=(",", ":"))
+                        + " -->"
+                    ),
+                }
+            ],
+        }
+        state = {
+            **snapshot([item, control_issue]),
+            "default_sha": base_sha,
+            "pull_requests": [
+                ordinary,
+                exact_base_prerequisite(merge_sha=base_sha),
+            ],
+        }
+        client = FakeClient(control_issue)
+        with (
+            patch.dict("os.environ", {"MILESTONE_LOOP_AUTO_MERGE": "true"}, clear=True),
+            patch("coordinator.collect_snapshot", return_value=state),
+        ):
+            action, _ = reconcile_review(
+                client,
+                state,
+                ControlState(99, empty_lease("m1"), 0),
+            )
+        self.assertEqual(action, "WAIT_MERGE")
+        self.assertIn(("merge", 20, head_sha), client.writes)
+
+        revoked = copy.deepcopy(state)
+        revoked["pull_requests"][1]["checks"].append(
+            {
+                "id": 12,
+                "name": "milestone-loop / candidate",
+                "app": "github-actions",
+                "status": "completed",
+                "conclusion": "failure",
+            }
+        )
+        revoked_client = FakeClient(control_issue)
+        with (
+            patch.dict("os.environ", {"MILESTONE_LOOP_AUTO_MERGE": "true"}, clear=True),
+            patch("coordinator.collect_snapshot", return_value=revoked),
+            self.assertRaisesRegex(LoopBlocked, "live state changed"),
+        ):
+            reconcile_review(
+                revoked_client,
+                state,
+                ControlState(99, empty_lease("m1"), 0),
+            )
+        self.assertFalse(any(write[0] == "merge" for write in revoked_client.writes))
+
+        merged = copy.deepcopy(state)
+        merged["default_sha"] = "f" * 40
+        merged["pull_requests"][0].update(
+            state="closed",
+            merged_at="2026-07-24T02:00:00Z",
+            merge_commit_sha="f" * 40,
+            merge_tree_sha=tree_sha,
+        )
+        merged_client = FakeClient(control_issue)
+        action, _ = reconcile_review(
+            merged_client,
+            merged,
+            ControlState(99, empty_lease("m1"), 0),
+        )
+        self.assertEqual(action, "PROGRESS")
 
     def test_m2_canonical_unresolved_candidates_reach_authorization(self) -> None:
         milestone = m2_milestone()

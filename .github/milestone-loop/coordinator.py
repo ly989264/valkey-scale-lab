@@ -1782,6 +1782,121 @@ def verification_record(pr: Mapping[str, Any]) -> Mapping[str, Any] | None:
     return records[-1] if records else None
 
 
+def merged_contract_change_prerequisite(
+    snapshot: Mapping[str, Any],
+    issue_number: int,
+    *,
+    base_sha: str,
+    exclude_number: int,
+) -> dict[str, object] | None:
+    if re.fullmatch(r"[0-9a-f]{40}", base_sha) is None:
+        return None
+
+    def head_binds_contract(pr: Mapping[str, Any]) -> bool:
+        message = pr.get("head_message")
+        if (
+            not isinstance(message, str)
+            or PR_WORK_ITEM_RE.findall(message) != [str(issue_number)]
+        ):
+            return False
+        try:
+            return pr_contract_change(message, ())
+        except ContractError:
+            return False
+
+    matches = [
+        pr
+        for pr in snapshot.get("pull_requests", [])
+        if pr.get("number") != exclude_number
+        and pr.get("state") == "closed"
+        and pr.get("merged_at")
+        and pr.get("merge_commit_sha") == base_sha
+        and pr.get("base_ref") == snapshot.get("default_branch")
+        and PR_WORK_ITEM_RE.findall(pr.get("body", "")) == [str(issue_number)]
+        and pr_contract_change(pr.get("body", ""), pr.get("labels", []))
+        and head_binds_contract(pr)
+    ]
+    if len(matches) > 1:
+        raise LoopBlocked(
+            f"Work Item #{issue_number} has multiple exact-base Contract Change prerequisites"
+        )
+    if not matches:
+        return None
+    prerequisite = matches[0]
+    record = verification_record(prerequisite)
+    legacy_fields = {
+        "version",
+        "base_sha",
+        "head_sha",
+        "tree_sha",
+        "verified_tree",
+        "baseline",
+        "work_item_check",
+        "status",
+    }
+    current_fields = legacy_fields | {
+        "work_item",
+        "contract_change",
+        "protected_prerequisite",
+    }
+    record_fields = frozenset(record) if isinstance(record, dict) else frozenset()
+    if not isinstance(record, dict) or record_fields not in {
+        frozenset(legacy_fields),
+        frozenset(current_fields),
+    }:
+        return None
+    try:
+        expected_tree = verified_tree(
+            str(record["base_sha"]),
+            str(record["head_sha"]),
+            str(record["tree_sha"]),
+        )
+    except ContractError:
+        return None
+    if (
+        record.get("status") != "PASS"
+        or record.get("baseline") != "repository.all"
+        or record.get("work_item_check") != "repository.all"
+        or record.get("base_sha") != prerequisite.get("base_sha")
+        or record.get("head_sha") != prerequisite.get("head_sha")
+        or record.get("tree_sha") != prerequisite.get("head_tree_sha")
+        or record.get("verified_tree") != expected_tree
+        or (
+            record_fields == current_fields
+            and (
+                record.get("work_item") != issue_number
+                or record.get("contract_change") is not True
+                or record.get("protected_prerequisite") is not None
+            )
+        )
+    ):
+        return None
+    matching_checks = [
+        item
+        for item in prerequisite.get("checks", [])
+        if item.get("name") == "milestone-loop / candidate"
+        and item.get("app") == "github-actions"
+        and isinstance(item.get("id"), int)
+    ]
+    check = max(matching_checks, key=lambda item: item["id"], default=None)
+    if (
+        check is None
+        or check.get("status") != "completed"
+        or check.get("conclusion") != "success"
+        or prerequisite.get("head_tree_sha") != prerequisite.get("merge_tree_sha")
+        or re.fullmatch(
+            r"[0-9a-f]{40}",
+            str(prerequisite.get("merge_tree_sha", "")),
+        )
+        is None
+    ):
+        return None
+    return {
+        "pr": prerequisite["number"],
+        "merge_commit_sha": base_sha,
+    }
+
+
 def reconcile_review(
     client: GitHubClient,
     snapshot: Mapping[str, Any],
@@ -1798,6 +1913,7 @@ def reconcile_review(
         if pr.get("merged_at"):
             record = verification_record(pr)
             expected = None
+            expected_prerequisite = None
             contract_change = pr_contract_change(
                 pr.get("body", ""),
                 pr.get("labels", []),
@@ -1815,6 +1931,7 @@ def reconcile_review(
                     "work_item_check",
                     "work_item",
                     "contract_change",
+                    "protected_prerequisite",
                     "status",
                 }
                 and record.get("work_item") == number
@@ -1828,12 +1945,20 @@ def reconcile_review(
                     )
                 except ContractError:
                     expected = None
+                if not contract_change:
+                    expected_prerequisite = merged_contract_change_prerequisite(
+                        snapshot,
+                        number,
+                        base_sha=str(record["base_sha"]),
+                        exclude_number=int(pr["number"]),
+                    )
             if (
                 record is None
                 or record.get("status") != "PASS"
                 or record.get("head_sha") != pr.get("head_sha")
                 or record.get("tree_sha") != pr.get("merge_tree_sha")
                 or record.get("verified_tree") != expected
+                or record.get("protected_prerequisite") != expected_prerequisite
             ):
                 _set_issue_status(client, issue, "blocked")
                 client.comment(number, f"Merged PR #{pr['number']} did not preserve its verified tree; BLOCKED.")
@@ -1884,6 +2009,47 @@ def reconcile_review(
             and isinstance(item.get("id"), int)
         ]
         check = max(matching_checks, key=lambda item: item["id"], default=None)
+        default_sha = snapshot.get("default_sha")
+        handoff_prerequisite = None
+        if (
+            not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
+            and isinstance(default_sha, str)
+        ):
+            handoff_prerequisite = merged_contract_change_prerequisite(
+                snapshot,
+                number,
+                base_sha=default_sha,
+                exclude_number=int(pr["number"]),
+            )
+        if handoff_prerequisite is not None:
+            handoff_record = verification_record(pr)
+            if (
+                check is None
+                or check.get("status") != "completed"
+                or check.get("conclusion") != "success"
+                or not isinstance(handoff_record, dict)
+                or handoff_record.get("status") != "PASS"
+                or handoff_record.get("base_sha") != default_sha
+                or handoff_record.get("protected_prerequisite")
+                != handoff_prerequisite
+            ):
+                client.disable_auto_merge(int(pr["number"]))
+                repository = str(snapshot.get("repository", ""))
+                record_human_action_state(
+                    client=client,
+                    snapshot=snapshot,
+                    control=control,
+                    state="PR_REVIEW_REQUIRED",
+                    target=f"pr:{pr['number']}:rebase:{default_sha}",
+                    sha=default_sha,
+                    action=(
+                        f"Rebase PR #{pr['number']} onto the merged Contract Change "
+                        "prerequisite, then wait for its fixed-head verification."
+                    ),
+                    link=f"https://github.com/{repository}/pull/{pr['number']}",
+                    action_label="open implementation PR",
+                )
+                return "HUMAN_REVIEW", control
         if check is None or check.get("status") != "completed":
             return "WAIT_PR", control
         conclusion = check.get("conclusion")
@@ -1927,6 +2093,7 @@ def reconcile_review(
             "work_item_check",
             "work_item",
             "contract_change",
+            "protected_prerequisite",
             "status",
         }
         if (
@@ -1942,6 +2109,14 @@ def reconcile_review(
             pr.get("body", ""),
             pr.get("labels", []),
         )
+        expected_prerequisite = None
+        if not contract_change:
+            expected_prerequisite = merged_contract_change_prerequisite(
+                snapshot,
+                number,
+                base_sha=str(record["base_sha"]),
+                exclude_number=int(pr["number"]),
+            )
         expected_work_item_check = "repository.all" if contract_change else contract.check
         if (
             record.get("base_sha") != snapshot.get("default_sha")
@@ -1952,6 +2127,7 @@ def reconcile_review(
             or record.get("work_item_check") != expected_work_item_check
             or record.get("work_item") != number
             or record.get("contract_change") is not contract_change
+            or record.get("protected_prerequisite") != expected_prerequisite
         ):
             client.disable_auto_merge(int(pr["number"]))
             _set_issue_status(client, issue, "ready")
@@ -1974,12 +2150,21 @@ def reconcile_review(
         live = collect_snapshot(client, str(snapshot["milestone"]))
         live_pr = _find_pr(live, number)
         live_issue = _find_item(live, number)
+        live_prerequisite = None
+        if live_pr is not None and not contract_change:
+            live_prerequisite = merged_contract_change_prerequisite(
+                live,
+                number,
+                base_sha=str(record["base_sha"]),
+                exclude_number=int(live_pr["number"]),
+            )
         if (
             live.get("default_sha") != snapshot.get("default_sha")
             or live_pr is None
             or live_pr.get("head_sha") != record["head_sha"]
             or live_pr.get("head_tree_sha") != record["tree_sha"]
             or status_from_labels(live_issue.get("labels", [])) != "review"
+            or record.get("protected_prerequisite") != live_prerequisite
             or _contract_change_sibling(
                 live,
                 number,

@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from context_builder import MAX_CONTEXT_BYTES, build_context
-from contracts import ContractError
+from contracts import ContractError, verified_tree
 from coordinator import (
     CONTROL_LABEL,
     PR_MILESTONE_RE,
@@ -276,6 +276,128 @@ class BoundaryTests(unittest.TestCase):
                 with self.assertRaises(ContractError):
                     pr_metadata(client, path)
 
+    def test_pr_metadata_binds_exact_base_contract_prerequisite(self) -> None:
+        base_sha = "a" * 40
+        event = {
+            "action": "synchronize",
+            "repository": {"full_name": "owner/repo"},
+            "pull_request": {
+                "number": 41,
+                "author_association": "OWNER",
+                "body": "Milestone: m2\nWork-Item: #42\nContract-Change: false\n",
+                "labels": [],
+                "merged": False,
+                "head": {"sha": "b" * 40, "repo": {"full_name": "owner/repo"}},
+                "base": {"sha": base_sha},
+            },
+        }
+        live = copy.deepcopy(event["pull_request"])
+        live["state"] = "open"
+        prerequisite_base = "9" * 40
+        prerequisite_head = "8" * 40
+        prerequisite_tree = "c" * 40
+        prerequisite_record = {
+            "version": 1,
+            "base_sha": prerequisite_base,
+            "head_sha": prerequisite_head,
+            "tree_sha": prerequisite_tree,
+            "verified_tree": verified_tree(
+                prerequisite_base,
+                prerequisite_head,
+                prerequisite_tree,
+            ),
+            "baseline": "repository.all",
+            "work_item_check": "repository.all",
+            "status": "PASS",
+        }
+        snapshot = {
+            "default_branch": "main",
+            "default_sha": base_sha,
+            "issues": [
+                {
+                    "number": 42,
+                    "state": "open",
+                    "labels": ["milestone-loop:work-item", "milestone-loop:review"],
+                    "body": (
+                        "Implement it.\n\nCriterion: local.lifecycle\n"
+                        "Depends on: none\nCheck: product.unit"
+                    ),
+                }
+            ],
+            "pull_requests": [
+                {
+                    "number": 43,
+                    "body": (
+                        "Milestone: m2\nWork-Item: #42\n"
+                        "Contract-Change: true\n"
+                    ),
+                    "labels": [],
+                    "state": "closed",
+                    "merged_at": "2026-07-24T00:00:00Z",
+                    "merge_commit_sha": base_sha,
+                    "base_ref": "main",
+                    "base_sha": prerequisite_base,
+                    "head_sha": prerequisite_head,
+                    "head_message": (
+                        "Authorize exact-base protected verification\n\n"
+                        "Work-Item: #42\n"
+                        "Contract-Change: true\n"
+                    ),
+                    "head_tree_sha": prerequisite_tree,
+                    "merge_tree_sha": prerequisite_tree,
+                    "checks": [
+                        {
+                            "id": 10,
+                            "name": "milestone-loop / candidate",
+                            "app": "github-actions",
+                            "status": "completed",
+                            "conclusion": "success",
+                        }
+                    ],
+                    "comments": [
+                        {
+                            "author": "github-actions[bot]",
+                            "body": (
+                                "<!-- milestone-loop-verification: "
+                                + json.dumps(
+                                    prerequisite_record,
+                                    sort_keys=True,
+                                    separators=(",", ":"),
+                                )
+                                + " -->"
+                            ),
+                        }
+                    ],
+                }
+            ],
+        }
+        client = Mock()
+        client.api.side_effect = lambda endpoint: (
+            live
+            if endpoint == "pulls/41"
+            else [{"filename": ".github/milestone-loop/loop.py"}]
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "event.json"
+            path.write_text(json.dumps(event), encoding="utf-8")
+            with patch("loop.collect_snapshot", return_value=snapshot):
+                metadata = pr_metadata(client, path)
+            self.assertEqual(
+                metadata["protected_prerequisite"],
+                {"pr": 43, "merge_commit_sha": base_sha},
+            )
+            snapshot["default_sha"] = "d" * 40
+            with patch("loop.collect_snapshot", return_value=snapshot):
+                metadata = pr_metadata(client, path)
+            self.assertIsNone(metadata["protected_prerequisite"])
+            snapshot["default_sha"] = base_sha
+            client.api.side_effect = lambda endpoint: (
+                live if endpoint == "pulls/41" else [{"filename": "README.md"}]
+            )
+            with patch("loop.collect_snapshot", return_value=snapshot):
+                metadata = pr_metadata(client, path)
+            self.assertIsNone(metadata["protected_prerequisite"])
+
     def test_verification_comment_reconciles_one_ambiguous_publish(self) -> None:
         class Client:
             def __init__(self, outcomes: list[str]) -> None:
@@ -389,6 +511,7 @@ class BoundaryTests(unittest.TestCase):
                 "merged": False,
                 "milestone": "m2",
                 "pr": 42,
+                "protected_prerequisite": None,
                 "work_item": 7,
             }
             metadata_path = Path(temporary) / "metadata.json"
@@ -414,6 +537,83 @@ class BoundaryTests(unittest.TestCase):
                     contract_change=False,
                 )
 
+    def test_exact_base_prerequisite_allows_protected_verification(self) -> None:
+        base_sha = "a" * 40
+        head_sha = "b" * 40
+        prerequisite = {"pr": 43, "merge_commit_sha": base_sha}
+
+        def git_result(_cwd: Path, *args: str) -> str:
+            if args == ("rev-parse", "HEAD"):
+                return head_sha
+            if args == ("diff", "--name-only", base_sha, head_sha):
+                return ".github/milestone-loop/loop.py"
+            if args == ("rev-parse", "HEAD^{tree}"):
+                return "c" * 40
+            raise AssertionError(args)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            metadata = {
+                "action": "synchronize",
+                "base_sha": base_sha,
+                "check": "product.unit",
+                "contract_change": False,
+                "head_sha": head_sha,
+                "merged": False,
+                "milestone": "m2",
+                "pr": 41,
+                "protected_prerequisite": prerequisite,
+                "work_item": 42,
+            }
+            metadata_path = Path(temporary) / "metadata.json"
+            metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+            with (
+                patch("verifier.verification_metadata_path", return_value=metadata_path),
+                patch("verifier._git", side_effect=git_result),
+                patch("verifier._docker_residue", return_value=()),
+                patch("verifier._run", return_value=(0, "ok")) as run,
+            ):
+                result = verify(
+                    trusted_root=ROOT,
+                    candidate_root=ROOT,
+                    base_sha=base_sha,
+                    head_sha=head_sha,
+                    check_id="product.unit",
+                    pr_number=41,
+                    contract_change=False,
+                )
+            invalid = {
+                **metadata,
+                "protected_prerequisite": {
+                    "pr": 43,
+                    "merge_commit_sha": "d" * 40,
+                },
+            }
+            metadata_path.write_text(json.dumps(invalid), encoding="utf-8")
+            with (
+                patch("verifier.verification_metadata_path", return_value=metadata_path),
+                patch("verifier._git", side_effect=git_result),
+                self.assertRaisesRegex(
+                    ContractError,
+                    "trusted live PR metadata changed",
+                ),
+            ):
+                verify(
+                    trusted_root=ROOT,
+                    candidate_root=ROOT,
+                    base_sha=base_sha,
+                    head_sha=head_sha,
+                    check_id="product.unit",
+                    pr_number=41,
+                    contract_change=False,
+                )
+
+        self.assertEqual(result["record"]["status"], "PASS")
+        self.assertEqual(result["record"]["protected_prerequisite"], prerequisite)
+        self.assertIn(
+            ["python3", ".github/milestone-loop/selftest.py"],
+            [call.args[0] for call in run.call_args_list],
+        )
+
     def test_publish_binds_live_work_item_and_contract_metadata(self) -> None:
         record = {
             "base_sha": "a" * 40,
@@ -421,6 +621,7 @@ class BoundaryTests(unittest.TestCase):
             "work_item_check": "product.unit",
             "work_item": 7,
             "contract_change": False,
+            "protected_prerequisite": None,
             "status": "PASS",
         }
         metadata = {
@@ -431,6 +632,7 @@ class BoundaryTests(unittest.TestCase):
             "head_sha": "b" * 40,
             "check": "product.unit",
             "contract_change": False,
+            "protected_prerequisite": None,
         }
         with tempfile.TemporaryDirectory() as temporary:
             result_path = Path(temporary) / "result.json"
@@ -479,6 +681,15 @@ class BoundaryTests(unittest.TestCase):
                 self.assertEqual(loop_main(argv), 78)
                 client.disable_auto_merge.assert_not_called()
                 live_metadata.return_value = {**metadata, "work_item": 8}
+                self.assertEqual(loop_main(argv), 78)
+                client.disable_auto_merge.assert_not_called()
+                live_metadata.return_value = {
+                    **metadata,
+                    "protected_prerequisite": {
+                        "pr": 43,
+                        "merge_commit_sha": "a" * 40,
+                    },
+                }
                 self.assertEqual(loop_main(argv), 78)
                 client.disable_auto_merge.assert_not_called()
                 live_metadata.return_value = metadata

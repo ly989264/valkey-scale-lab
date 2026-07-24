@@ -115,6 +115,18 @@ def verify(
         metadata_path.read_text(encoding="utf-8"),
         max_bytes=8_192,
     )
+    protected_prerequisite = (
+        metadata.get("protected_prerequisite") if isinstance(metadata, dict) else object()
+    )
+    prerequisite_valid = protected_prerequisite is None or (
+        isinstance(protected_prerequisite, dict)
+        and set(protected_prerequisite) == {"merge_commit_sha", "pr"}
+        and isinstance(protected_prerequisite.get("pr"), int)
+        and not isinstance(protected_prerequisite.get("pr"), bool)
+        and protected_prerequisite["pr"] > 0
+        and protected_prerequisite["pr"] != pr_number
+        and protected_prerequisite.get("merge_commit_sha") == base_sha
+    )
     if (
         not isinstance(metadata, dict)
         or set(metadata)
@@ -127,6 +139,7 @@ def verify(
             "merged",
             "milestone",
             "pr",
+            "protected_prerequisite",
             "work_item",
         }
         or metadata.get("pr") != pr_number
@@ -138,6 +151,8 @@ def verify(
         or isinstance(metadata.get("work_item"), bool)
         or not isinstance(metadata.get("work_item"), int)
         or metadata["work_item"] <= 0
+        or not prerequisite_valid
+        or (contract_change and protected_prerequisite is not None)
     ):
         raise ContractError("trusted live PR metadata changed before verification")
     metadata_path.unlink()
@@ -147,7 +162,7 @@ def verify(
         if path
     )
     protected = protected_changes(paths)
-    if protected and not contract_change:
+    if protected and not contract_change and protected_prerequisite is None:
         raise ContractError(f"ordinary Work Item PR changes protected contracts: {list(protected)}")
     if contract_change and not protected:
         raise ContractError("contract-change label is only valid when protected contracts change")
@@ -175,7 +190,7 @@ def verify(
         if code != 0:
             status = "FAIL"
             break
-    if contract_change:
+    if contract_change or (protected and protected_prerequisite is not None):
         code, output = _run(
             ["python3", ".github/milestone-loop/selftest.py"],
             cwd=candidate_root,
@@ -207,6 +222,7 @@ def verify(
         "work_item_check": check_id,
         "work_item": metadata["work_item"],
         "contract_change": contract_change,
+        "protected_prerequisite": protected_prerequisite,
         "status": status,
     }
     return {
