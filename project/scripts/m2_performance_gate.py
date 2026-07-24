@@ -10,11 +10,13 @@ and emits only the Gate command+json result at ``--result-path``.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import math
 import os
 import re
+import shlex
 import sys
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
@@ -25,7 +27,6 @@ from typing import Any, Iterable, Mapping, Sequence
 from valkey_scale_lab.metrics import nearest_rank
 from valkey_scale_lab.metrics.m2_resource import (
     validate_and_aggregate_m2_resource_samples,
-    validate_equal_m2_resource_windows,
 )
 
 try:
@@ -48,6 +49,23 @@ REPORT_NAME = "m2_performance_report.json"
 AUTHORIZATION_ENV = "VSLAB_M2_REAL_AUTHORIZATION"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 VALKEY_91_RE = re.compile(r"^9\.1\.")
+DOCKER_CONTAINER_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$", re.ASCII)
+LATENCY_HISTOGRAM_SCHEMA_VERSION = "m2-relative-latency-histogram-v1"
+LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE = 100
+LATENCY_HISTOGRAM_MIN_POSITIVE_MS = 0.000001
+LATENCY_HISTOGRAM_MAX_MS = 10_000.0
+LATENCY_HISTOGRAM_BUCKET_LIMIT = 4_096
+LATENCY_HISTOGRAM_MIN_TICK = math.floor(
+    math.log2(LATENCY_HISTOGRAM_MIN_POSITIVE_MS)
+    * LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE
+)
+LATENCY_HISTOGRAM_MAX_TICK = math.ceil(
+    math.log2(LATENCY_HISTOGRAM_MAX_MS)
+    * LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE
+)
+LATENCY_HISTOGRAM_MAX_INDEX = (
+    LATENCY_HISTOGRAM_MAX_TICK - LATENCY_HISTOGRAM_MIN_TICK
+)
 
 BASELINE_FORMATION = {
     "kind": "cluster_create_strategy",
@@ -228,6 +246,47 @@ def _within_regression(baseline: float, candidate: float, limit: float) -> bool:
     if baseline == 0:
         return candidate == 0
     return candidate <= baseline * (1.0 + limit)
+
+
+def _latency_bucket_bounds(bucket_index: int) -> tuple[float, float]:
+    tick = LATENCY_HISTOGRAM_MIN_TICK + bucket_index
+    return (
+        0.0
+        if bucket_index == 0
+        else 2.0 ** ((tick - 1) / LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE),
+        2.0 ** (tick / LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE),
+    )
+
+
+def _latency_bucket_index_from_upper(value: float) -> int | None:
+    if value <= 0 or value > 2.0 ** (
+        LATENCY_HISTOGRAM_MAX_TICK / LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE
+    ):
+        return None
+    tick = round(math.log2(value) * LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE)
+    bucket_index = tick - LATENCY_HISTOGRAM_MIN_TICK
+    if not 0 <= bucket_index <= LATENCY_HISTOGRAM_MAX_INDEX:
+        return None
+    _lower, upper = _latency_bucket_bounds(bucket_index)
+    return (
+        bucket_index
+        if math.isclose(value, upper, rel_tol=1e-12, abs_tol=1e-15)
+        else None
+    )
+
+
+def _histogram_p99_within_regression(
+    baseline_upper: float,
+    candidate_upper: float,
+    limit: float,
+) -> bool:
+    baseline_index = _latency_bucket_index_from_upper(baseline_upper)
+    candidate_index = _latency_bucket_index_from_upper(candidate_upper)
+    if baseline_index is None or candidate_index is None:
+        return False
+    baseline_lower, _baseline_upper = _latency_bucket_bounds(baseline_index)
+    _candidate_lower, conservative_candidate = _latency_bucket_bounds(candidate_index)
+    return conservative_candidate <= baseline_lower * (1.0 + limit)
 
 
 def _resource_regression_clean(
@@ -814,6 +873,11 @@ def _validate_fault(
 ) -> None:
     trial_id = trial.get("trial_id", "MISSING")
     fault = _object(trial.get("fault"))
+    _add(
+        errors,
+        fault == _compact_fault_summary(fault),
+        f"trial {trial_id} fault summary contains raw or non-contract fields",
+    )
     _add(errors, fault.get("mode") == "owned-process-sigkill", f"trial {trial_id} did not use owned-process SIGKILL")
     _add(errors, fault.get("signal") == "SIGKILL", f"trial {trial_id} did not use SIGKILL")
     commands = _array(fault.get("commands"))
@@ -1163,7 +1227,17 @@ def _validate_stability(
         _add(errors, baseline_throughput is not None and baseline_throughput > 0 and candidate_throughput is not None and candidate_throughput >= baseline_throughput * 0.95, f"stability pair {pair_id} throughput regressed by more than 5 percent")
         baseline_latency = _number(baseline_workload.get("p99_latency_ms"))
         candidate_latency = _number(candidate_workload.get("p99_latency_ms"))
-        _add(errors, baseline_latency is not None and candidate_latency is not None and _within_regression(baseline_latency, candidate_latency, 0.10), f"stability pair {pair_id} p99 latency regressed by more than 10 percent")
+        _add(
+            errors,
+            baseline_latency is not None
+            and candidate_latency is not None
+            and _histogram_p99_within_regression(
+                baseline_latency,
+                candidate_latency,
+                0.10,
+            ),
+            f"stability pair {pair_id} p99 latency regressed by more than 10 percent",
+        )
         _add(errors, baseline_workload.get("errors") == 0 and candidate_workload.get("errors") == 0, f"stability pair {pair_id} workload has errors")
 
     for cell in (*bootstrap, *fault, *soak_cells):
@@ -1424,7 +1498,11 @@ def _load_bound_json_source(
         errors.append(f"{label} is missing or not digest-bound")
         return None
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        if path.name.endswith(".json.gz"):
+            with gzip.open(path, mode="rt", encoding="utf-8") as handle:
+                value = json.load(handle)
+        else:
+            value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         errors.append(f"{label} is not valid JSON: {exc}")
         return None
@@ -1655,6 +1733,148 @@ def _validate_timeline_source(
     )
 
 
+def _expand_resource_directional_links(
+    document: Mapping[str, Any],
+    *,
+    trial_id: Any,
+    errors: list[str],
+) -> dict[str, Any]:
+    expanded = dict(document)
+    raw_entries = expanded.pop("directional_cluster_links_dictionary", None)
+    entries = raw_entries if isinstance(raw_entries, list) else []
+    links_by_digest: dict[str, list[Any]] = {}
+    declared_digests: list[str] = []
+    _add(
+        errors,
+        isinstance(raw_entries, list) and bool(raw_entries),
+        f"trial {trial_id} resource directional CLUSTER LINKS dictionary is missing",
+    )
+    link_fields = {
+        "direction",
+        "node_id",
+        "create_time",
+        "events",
+        "send_buffer_allocated",
+        "send_buffer_used",
+    }
+    for index, raw_entry in enumerate(entries, start=1):
+        entry = raw_entry if isinstance(raw_entry, dict) else {}
+        digest = entry.get("sha256")
+        links = entry.get("directional_cluster_links")
+        try:
+            canonical_digest = (
+                _canonical_digest(links)
+                if isinstance(links, list)
+                else None
+            )
+        except (TypeError, ValueError):
+            canonical_digest = None
+        links_valid = isinstance(links, list) and all(
+            isinstance(link, dict)
+            and set(link) == link_fields
+            and link.get("direction") in {"to", "from"}
+            and isinstance(link.get("node_id"), str)
+            and len(link["node_id"]) == 40
+            and all(character in "0123456789abcdef" for character in link["node_id"].lower())
+            and isinstance(link.get("create_time"), int)
+            and not isinstance(link.get("create_time"), bool)
+            and link["create_time"] >= 0
+            and isinstance(link.get("events"), str)
+            and all(event in {"r", "w"} for event in link["events"])
+            and len(set(link["events"])) == len(link["events"])
+            and isinstance(link.get("send_buffer_allocated"), int)
+            and not isinstance(link.get("send_buffer_allocated"), bool)
+            and link["send_buffer_allocated"] >= 0
+            and isinstance(link.get("send_buffer_used"), int)
+            and not isinstance(link.get("send_buffer_used"), bool)
+            and link["send_buffer_used"] >= 0
+            for link in (links if isinstance(links, list) else [])
+        )
+        entry_valid = (
+            isinstance(raw_entry, dict)
+            and set(raw_entry) == {"sha256", "directional_cluster_links"}
+            and isinstance(digest, str)
+            and SHA256_RE.fullmatch(digest) is not None
+            and links_valid
+            and canonical_digest == digest
+        )
+        _add(
+            errors,
+            entry_valid,
+            f"trial {trial_id} resource directional CLUSTER LINKS dictionary entry {index} is invalid",
+        )
+        if isinstance(digest, str):
+            declared_digests.append(digest)
+        if entry_valid and digest not in links_by_digest:
+            links_by_digest[digest] = links
+    _add(
+        errors,
+        len(declared_digests) == len(entries)
+        and _all_unique(declared_digests)
+        and len(links_by_digest) == len(entries),
+        f"trial {trial_id} resource directional CLUSTER LINKS dictionary contains duplicate entries",
+    )
+
+    referenced_digests: set[str] = set()
+    process_count = 0
+    expanded_samples: list[Any] = []
+    for sample in _array(document.get("samples")):
+        if not isinstance(sample, dict):
+            expanded_samples.append(sample)
+            continue
+        sample_row = dict(sample)
+        expanded_nodehosts: list[Any] = []
+        for nodehost in _array(sample.get("nodehosts")):
+            if not isinstance(nodehost, dict):
+                expanded_nodehosts.append(nodehost)
+                continue
+            nodehost_row = dict(nodehost)
+            expanded_processes: list[Any] = []
+            for process in _array(nodehost.get("processes")):
+                if not isinstance(process, dict):
+                    expanded_processes.append(process)
+                    continue
+                process_row = dict(process)
+                process_count += 1
+                digest = process_row.get("directional_cluster_links_sha256")
+                _add(
+                    errors,
+                    isinstance(process, dict)
+                    and "directional_cluster_links" not in process,
+                    f"trial {trial_id} resource process contains inline directional CLUSTER LINKS",
+                )
+                ref_valid = (
+                    isinstance(digest, str)
+                    and SHA256_RE.fullmatch(digest) is not None
+                    and digest in links_by_digest
+                )
+                _add(
+                    errors,
+                    ref_valid,
+                    f"trial {trial_id} resource process directional CLUSTER LINKS reference is missing or invalid",
+                )
+                if isinstance(digest, str):
+                    referenced_digests.add(digest)
+                if ref_valid:
+                    process_row.pop("directional_cluster_links_sha256", None)
+                    process_row["directional_cluster_links"] = links_by_digest[digest]
+                expanded_processes.append(process_row)
+            if isinstance(nodehost.get("processes"), list):
+                nodehost_row["processes"] = expanded_processes
+            expanded_nodehosts.append(nodehost_row)
+        if isinstance(sample.get("nodehosts"), list):
+            sample_row["nodehosts"] = expanded_nodehosts
+        expanded_samples.append(sample_row)
+    if isinstance(document.get("samples"), list):
+        expanded["samples"] = expanded_samples
+    _add(
+        errors,
+        process_count > 0 and set(links_by_digest) == referenced_digests,
+        f"trial {trial_id} resource directional CLUSTER LINKS dictionary has unreferenced or unknown entries",
+    )
+    return expanded
+
+
 def _validate_resource_source(
     document: Mapping[str, Any],
     trial: Mapping[str, Any],
@@ -1663,7 +1883,7 @@ def _validate_resource_source(
     allow_initial_membership_transitions: bool,
     state_document: Mapping[str, Any] | None,
     errors: list[str],
-) -> None:
+) -> dict[str, Any]:
     trial_id = trial.get("trial_id", "MISSING")
     summary = _object(trial.get("resource_window"))
     coverage = _object(document.get("coverage"))
@@ -1672,8 +1892,13 @@ def _validate_resource_source(
     state_nodes = [_object(row) for row in _array(_object(state_document).get("nodes"))]
     state_nodehosts = [_object(row) for row in _array(_object(state_document).get("nodehosts"))]
     expected_samples = coverage.get("expected_sample_count")
+    expanded_document = _expand_resource_directional_links(
+        document,
+        trial_id=trial_id,
+        errors=errors,
+    )
     recomputed = validate_and_aggregate_m2_resource_samples(
-        dict(document),
+        expanded_document,
         allow_initial_membership_transitions=allow_initial_membership_transitions,
     )
     recomputed_metrics = _object(recomputed.get("metrics"))
@@ -1846,31 +2071,133 @@ def _validate_resource_source(
             first_end is not None and first_membership is not None and first_end <= first_membership,
             f"trial {trial_id} resource window did not capture every owned process before cluster formation",
         )
+    return {
+        "duration_seconds": document.get("duration_seconds"),
+        "interval_seconds": document.get("interval_seconds"),
+        "safety_metrics": {
+            field: recomputed_metrics.get(field)
+            for field in ("cluster_link_errors", "buffer_overflows")
+        },
+        "coverage": {
+            field: recomputed_coverage.get(field)
+            for field in (
+                "expected_sample_count",
+                "observed_sample_count",
+                "nodehost_count",
+                "process_count",
+                "actual_window_span_seconds",
+                "sampling_envelope_span_seconds",
+            )
+        },
+    }
 
 
-def _histogram_nearest_rank(rows: Any, percentile: float) -> tuple[float | None, int]:
-    parsed: list[tuple[float, int]] = []
-    if not isinstance(rows, list):
-        return None, 0
+def _validate_equal_resource_window_facts(
+    baseline: Mapping[str, Any],
+    candidate: Mapping[str, Any],
+    *,
+    allow_candidate_safety_failure: bool = False,
+) -> list[str]:
+    errors: list[str] = []
+    for arm_name, facts in (("baseline", baseline), ("candidate", candidate)):
+        safety_metrics = _object(facts.get("safety_metrics"))
+        for field in ("cluster_link_errors", "buffer_overflows"):
+            value = safety_metrics.get(field)
+            if value != 0 and not (
+                arm_name == "candidate" and allow_candidate_safety_failure
+            ):
+                errors.append(f"{arm_name} metric {field} must be zero")
+    for field in ("duration_seconds", "interval_seconds"):
+        left = baseline.get(field)
+        right = candidate.get(field)
+        if not _same_number(left, right):
+            errors.append(
+                f"resource windows have unequal {field}: "
+                f"baseline={left!r} candidate={right!r}"
+            )
+
+    baseline_coverage = _object(baseline.get("coverage"))
+    candidate_coverage = _object(candidate.get("coverage"))
+    for field in (
+        "expected_sample_count",
+        "observed_sample_count",
+        "nodehost_count",
+        "process_count",
+    ):
+        left = baseline_coverage.get(field, "MISSING")
+        right = candidate_coverage.get(field, "MISSING")
+        if left != right:
+            errors.append(
+                f"resource windows have unequal coverage {field}: "
+                f"baseline={left!r} candidate={right!r}"
+            )
+
+    interval = _number(baseline.get("interval_seconds"))
+    equality_tolerance = (
+        min(0.5, max(0.001, float(interval) * 0.1))
+        if interval is not None and interval > 0
+        else 0.0
+    )
+    for field in (
+        "actual_window_span_seconds",
+        "sampling_envelope_span_seconds",
+    ):
+        left = _number(baseline_coverage.get(field))
+        right = _number(candidate_coverage.get(field))
+        if (
+            left is None
+            or right is None
+            or abs(left - right) > equality_tolerance + 1e-6
+        ):
+            errors.append(
+                f"resource windows have unequal {field}: "
+                f"baseline={baseline_coverage.get(field, 'MISSING')!r} "
+                f"candidate={candidate_coverage.get(field, 'MISSING')!r}"
+            )
+    return errors
+
+
+def _histogram_nearest_rank(
+    histogram: Any,
+    percentile: float,
+) -> tuple[float | None, int, bool]:
+    if (
+        not isinstance(histogram, dict)
+        or set(histogram) != {"schema_version", "buckets"}
+        or histogram.get("schema_version") != LATENCY_HISTOGRAM_SCHEMA_VERSION
+    ):
+        return None, 0, False
+    rows = histogram.get("buckets")
+    if not isinstance(rows, list) or len(rows) > LATENCY_HISTOGRAM_BUCKET_LIMIT:
+        return None, 0, False
+    parsed: list[tuple[int, int]] = []
     for row in rows:
-        if not isinstance(row, dict):
-            return None, 0
-        value = _number(row.get("latency_ms"))
+        if not isinstance(row, dict) or set(row) != {"index", "count"}:
+            return None, 0, False
+        bucket_index = row.get("index")
         count = row.get("count")
-        if value is None or value < 0 or not isinstance(count, int) or isinstance(count, bool) or count <= 0:
-            return None, 0
-        parsed.append((value, count))
-    if not parsed or len({value for value, _count in parsed}) != len(parsed):
-        return None, 0
-    parsed.sort()
-    total = sum(count for _value, count in parsed)
+        if (
+            not isinstance(bucket_index, int)
+            or isinstance(bucket_index, bool)
+            or not 0 <= bucket_index <= LATENCY_HISTOGRAM_MAX_INDEX
+            or not isinstance(count, int)
+            or isinstance(count, bool)
+            or count <= 0
+        ):
+            return None, 0, False
+        parsed.append((bucket_index, count))
+    indices = [bucket_index for bucket_index, _count in parsed]
+    if not parsed or indices != sorted(indices) or len(set(indices)) != len(indices):
+        return None, 0, False
+    total = sum(count for _bucket_index, count in parsed)
     rank = math.ceil(percentile * total)
     cumulative = 0
-    for value, count in parsed:
+    for bucket_index, count in parsed:
         cumulative += count
         if cumulative >= rank:
-            return value, total
-    return None, 0
+            _lower, upper = _latency_bucket_bounds(bucket_index)
+            return upper, total, True
+    return None, 0, False
 
 
 def _validate_workload_source(
@@ -1928,7 +2255,7 @@ def _validate_workload_source(
         ended = _number(document.get("ended_at_monotonic"))
         requested = _number(document.get("requested_duration_seconds"))
         observed = ended - started if started is not None and ended is not None else None
-        histogram_p99, histogram_count = _histogram_nearest_rank(
+        histogram_p99, histogram_count, histogram_valid = _histogram_nearest_rank(
             document.get("latency_histogram"),
             0.99,
         )
@@ -1957,6 +2284,11 @@ def _validate_workload_source(
             and operation_count == histogram_count
             and operation_count > 0,
             f"trial {trial_id} steady workload operation count is not histogram-derived",
+        )
+        _add(
+            errors,
+            histogram_valid,
+            f"trial {trial_id} steady workload latency histogram bins are invalid",
         )
         _add(
             errors,
@@ -2054,6 +2386,183 @@ def _validate_fault_client_evidence(
         return
 
     window_end = barrier + duration
+    attempts_by_shard: dict[str, list[dict[str, Any]]] = {}
+    all_success_latencies: list[float] = []
+    all_error_messages: list[str] = []
+    all_error_timeouts = 0
+    all_set_successes = 0
+    raw_series_valid = len(series) == len(affected) + len(controls)
+    for row in series:
+        shard_id = row.get("shard_id")
+        raw_attempt_values = row.get("attempts")
+        row_valid = (
+            isinstance(shard_id, str)
+            and bool(shard_id)
+            and shard_id not in attempts_by_shard
+            and isinstance(raw_attempt_values, list)
+            and bool(raw_attempt_values)
+            and all(isinstance(value, dict) for value in raw_attempt_values)
+        )
+        parsed_attempts: list[dict[str, Any]] = []
+        if isinstance(raw_attempt_values, list):
+            for value in raw_attempt_values:
+                sample = _object(value)
+                started = _number(sample.get("started_at_monotonic"))
+                completed = _number(sample.get("completed_at_monotonic"))
+                set_completed = _number(sample.get("set_completed_at_monotonic"))
+                get_completed = _number(sample.get("get_completed_at_monotonic"))
+                latency = _number(sample.get("latency_ms"))
+                set_succeeded = sample.get("set_succeeded")
+                get_succeeded = sample.get("get_succeeded")
+                value_matches = sample.get("value_matches")
+                timed_out = sample.get("timed_out")
+                error = sample.get("error")
+                moved_count = sample.get("moved_count")
+                ask_count = sample.get("ask_count")
+                passed = (
+                    set_succeeded is True
+                    and get_succeeded is True
+                    and value_matches is True
+                    and timed_out is False
+                    and error == ""
+                )
+                structurally_valid = (
+                    started is not None
+                    and completed is not None
+                    and completed >= started
+                    and latency is not None
+                    and latency >= 0
+                    and math.isclose(
+                        latency,
+                        (completed - started) * 1000.0,
+                        rel_tol=0,
+                        abs_tol=0.002001,
+                    )
+                    and all(
+                        isinstance(sample.get(field), bool)
+                        for field in (
+                            "set_succeeded",
+                            "get_succeeded",
+                            "value_matches",
+                            "timed_out",
+                        )
+                    )
+                    and isinstance(error, str)
+                    and (
+                        set_completed is not None
+                        or sample.get("set_completed_at_monotonic") == "MISSING"
+                    )
+                    and (
+                        get_completed is not None
+                        or sample.get("get_completed_at_monotonic") == "MISSING"
+                    )
+                    and (set_completed is None or started <= set_completed <= completed)
+                    and (get_completed is None or started <= get_completed <= completed)
+                    and (set_completed is None or get_completed is None or get_completed >= set_completed)
+                    and (set_succeeded is not True or set_completed is not None)
+                    and (get_succeeded is not True or get_completed is not None)
+                    and (value_matches is not True or get_succeeded is True)
+                    and sample.get("status") == ("PASS" if passed else "FAIL")
+                    and isinstance(moved_count, int)
+                    and not isinstance(moved_count, bool)
+                    and moved_count >= 0
+                    and isinstance(ask_count, int)
+                    and not isinstance(ask_count, bool)
+                    and ask_count >= 0
+                )
+                row_valid = row_valid and structurally_valid
+                if structurally_valid:
+                    parsed_attempts.append(
+                        {
+                            **sample,
+                            "started": started,
+                            "completed": completed,
+                            "latency": latency,
+                        }
+                    )
+        if isinstance(shard_id, str) and shard_id:
+            attempts_by_shard[shard_id] = [
+                sample
+                for sample in parsed_attempts
+                if barrier <= float(sample["started"]) <= window_end
+            ]
+        window_attempts = [
+            sample
+            for sample in parsed_attempts
+            if barrier <= float(sample["started"]) <= window_end
+        ]
+        successful_latencies = [
+            sample["latency"]
+            for sample in window_attempts
+            if sample.get("status") == "PASS"
+        ]
+        error_attempts = [
+            sample
+            for sample in window_attempts
+            if sample.get("status") != "PASS"
+        ]
+        duplicate_raw_views = {
+            "attempt_started_monotonic",
+            "successful_pair_latencies_ms",
+            "samples_through_stable_endpoint",
+        }
+        row_valid = (
+            row_valid
+            and duplicate_raw_views.isdisjoint(row)
+            and all(
+                left["started"] < right["started"]
+                and left["completed"] <= right["completed"]
+                for left, right in zip(parsed_attempts, parsed_attempts[1:])
+            )
+            and row.get("attempt_count") == len(window_attempts)
+            and row.get("set_success_count")
+            == sum(sample.get("set_succeeded") is True for sample in window_attempts)
+            and row.get("get_success_count")
+            == sum(sample.get("get_succeeded") is True for sample in window_attempts)
+            and row.get("error_count") == len(error_attempts)
+            and row.get("timeout_count")
+            == sum(sample.get("timed_out") is True for sample in window_attempts)
+            and row.get("moved_count")
+            == sum(int(sample["moved_count"]) for sample in window_attempts)
+            and row.get("ask_count")
+            == sum(int(sample["ask_count"]) for sample in window_attempts)
+        )
+        _add(
+            errors,
+            row_valid,
+            f"trial {trial_id} client shard {shard_id or 'MISSING'} raw attempts or summaries are inconsistent",
+        )
+        raw_series_valid = raw_series_valid and row_valid
+        all_success_latencies.extend(successful_latencies)
+        all_error_messages.extend(
+            str(sample.get("error") or "client operation failed")
+            for sample in error_attempts
+        )
+        all_error_timeouts += sum(
+            sample.get("timed_out") is True for sample in error_attempts
+        )
+        all_set_successes += sum(
+            sample.get("set_succeeded") is True for sample in window_attempts
+        )
+
+    raw_p99 = (
+        round(nearest_rank(all_success_latencies, 0.99), 6)
+        if all_success_latencies
+        else None
+    )
+    raw_throughput = round(all_set_successes / duration, 6)
+    _add(
+        errors,
+        raw_series_valid
+        and _same_number(document.get("duration_seconds"), duration)
+        and _same_number(document.get("set_throughput_ops_per_second"), raw_throughput)
+        and raw_p99 is not None
+        and _same_number(document.get("p99_latency_ms"), raw_p99)
+        and document.get("errors") == all_error_messages
+        and document.get("error_count") == len(all_error_messages)
+        and document.get("timeout_count") == all_error_timeouts,
+        f"trial {trial_id} fault workload throughput, p99, errors, or timeouts are not raw-derived",
+    )
     cadence_rows = {
         str(row.get("shard_id")): row
         for row in (_object(value) for value in _array(document.get("per_shard")))
@@ -2094,14 +2603,14 @@ def _validate_fault_client_evidence(
     successful_read_completions: list[float] = []
     for row in controls:
         shard_id = str(row.get("shard_id"))
-        raw_starts = _array(row.get("attempt_started_monotonic"))
-        starts = [_number(value) for value in raw_starts]
-        numeric_starts = [float(value) for value in starts if value is not None]
+        numeric_starts = [
+            float(sample["started"])
+            for sample in attempts_by_shard.get(shard_id, [])
+        ]
         _add(
             errors,
-            bool(raw_starts)
-            and len(numeric_starts) == len(raw_starts)
-            and numeric_starts == sorted(numeric_starts)
+            bool(numeric_starts)
+            and all(left < right for left, right in zip(numeric_starts, numeric_starts[1:]))
             and row.get("attempt_count") == len(numeric_starts)
             and isinstance(row.get("key"), str)
             and bool(row.get("key")),
@@ -2126,14 +2635,14 @@ def _validate_fault_client_evidence(
         )
     for row in affected:
         shard_id = str(row.get("shard_id"))
-        raw_starts = _array(row.get("attempt_started_monotonic"))
-        starts = [_number(value) for value in raw_starts]
-        numeric_starts = [float(value) for value in starts if value is not None]
+        numeric_starts = [
+            float(sample["started"])
+            for sample in attempts_by_shard.get(shard_id, [])
+        ]
         _add(
             errors,
-            bool(raw_starts)
-            and len(numeric_starts) == len(raw_starts)
-            and numeric_starts == sorted(numeric_starts)
+            bool(numeric_starts)
+            and all(left < right for left, right in zip(numeric_starts, numeric_starts[1:]))
             and row.get("attempt_count") == len(numeric_starts),
             f"trial {trial_id} affected shard {shard_id} has an incomplete attempt series",
         )
@@ -2156,73 +2665,25 @@ def _validate_fault_client_evidence(
         if maximum_ms is not None:
             cadence_maxima.append(maximum_ms)
 
-        raw_samples = [_object(value) for value in _array(row.get("samples_through_stable_endpoint"))]
-        samples: list[dict[str, Any]] = []
-        previous_start: float | None = None
-        previous_end: float | None = None
-        for index, sample in enumerate(raw_samples, start=1):
-            started = _number(sample.get("started_at_monotonic"))
-            completed = _number(sample.get("completed_at_monotonic"))
+        samples = attempts_by_shard.get(shard_id, [])
+        for sample in samples:
             set_completed = _number(sample.get("set_completed_at_monotonic"))
             get_completed = _number(sample.get("get_completed_at_monotonic"))
-            structurally_valid = (
-                started is not None
-                and completed is not None
-                and started >= barrier
-                and completed >= started
-                and (previous_start is None or started >= previous_start)
-                and (previous_end is None or completed >= previous_end)
-                and all(
-                    isinstance(sample.get(field), bool)
-                    for field in ("set_succeeded", "get_succeeded", "value_matches", "timed_out")
-                )
-                and isinstance(sample.get("error"), str)
-                and (set_completed is None or started <= set_completed <= completed)
-                and (get_completed is None or started <= get_completed <= completed)
-                and (set_completed is None or get_completed is None or get_completed >= set_completed)
-                and (sample.get("set_succeeded") is not True or set_completed is not None)
-                and (sample.get("get_succeeded") is not True or get_completed is not None)
-                and (sample.get("value_matches") is not True or sample.get("get_succeeded") is True)
-            )
-            _add(
-                errors,
-                structurally_valid,
-                f"trial {trial_id} affected shard {shard_id} stable sample {index} is incomplete or non-monotonic",
-            )
-            if not structurally_valid:
-                continue
-            previous_start = started
-            previous_end = completed
-            samples.append(
-                {
-                    **sample,
-                    "started": started,
-                    "completed": completed,
-                    "set_completed": set_completed,
-                    "get_completed": get_completed,
-                }
-            )
             if (
-                started >= barrier
+                float(sample["started"]) >= barrier
                 and sample.get("set_succeeded") is True
                 and set_completed is not None
                 and set_completed >= barrier
             ):
                 successful_write_completions.append(set_completed)
             if (
-                started >= barrier
+                float(sample["started"]) >= barrier
                 and sample.get("get_succeeded") is True
                 and sample.get("value_matches") is True
                 and get_completed is not None
                 and get_completed >= barrier
             ):
                 successful_read_completions.append(get_completed)
-        sample_starts = [float(sample["started"]) for sample in samples]
-        _add(
-            errors,
-            sample_starts == numeric_starts[: len(sample_starts)],
-            f"trial {trial_id} affected shard {shard_id} stable samples must be the complete post-SIGKILL attempt prefix",
-        )
         stable = _earliest_stable_window(samples, cluster_ok=cluster_ok)
         summary = stable_rows.get(shard_id, {})
         if stable is None:
@@ -3098,6 +3559,7 @@ def _recompute_compact_fault_facts(
             raw_slots = node.get("slots")
             node_flags = {str(value) for value in _array(raw_flags)}
             role = observed_role(node)
+            master_id = node.get("master_id")
             slots_structurally_valid = (
                 isinstance(raw_slots, list)
                 and all(isinstance(value, str) for value in raw_slots)
@@ -3105,11 +3567,15 @@ def _recompute_compact_fault_facts(
             )
             row_contract = (
                 node.get("node_id") == node_id
+                and isinstance(node.get("addr"), str)
+                and bool(node.get("addr"))
                 and isinstance(raw_flags, list)
                 and all(isinstance(value, str) for value in raw_flags)
                 and slots_structurally_valid
                 and role in {"primary", "replica"}
                 and node.get("role") == role
+                and isinstance(master_id, str)
+                and bool(master_id)
                 and node.get("link_state") in {"connected", "disconnected"}
             )
             clean_topology = clean_topology and row_contract
@@ -3125,6 +3591,23 @@ def _recompute_compact_fault_facts(
                 unexpected_promotion_ids.add(node_id)
             if role == "replica" and raw_slots:
                 clean_topology = False
+            if role == "primary" and master_id != "-":
+                clean_topology = False
+            if role == "replica":
+                master = _object(nodes.get(master_id)) if isinstance(master_id, str) else {}
+                master_flags = {
+                    str(value) for value in _array(master.get("flags"))
+                }
+                if (
+                    not master
+                    or node_shards.get(node_id) != node_shards.get(str(master_id))
+                    or observed_role(master) != "primary"
+                    or master.get("link_state") != "connected"
+                    or master_flags.intersection(
+                        {"pfail", "fail?", "fail", "handshake", "noaddr"}
+                    )
+                ):
+                    clean_topology = False
             if role == "primary" and not node_flags.intersection({"pfail", "fail?", "fail", "handshake", "noaddr"}):
                 shard_id = node_shards.get(node_id)
                 if isinstance(shard_id, str) and shard_id:
@@ -3222,6 +3705,107 @@ def _validate_fault_fact_row(
     )
 
 
+def _validate_fault_topology_view_dictionary(
+    document: Mapping[str, Any],
+    *,
+    trial_id: Any,
+    errors: list[str],
+) -> dict[str, list[Any]]:
+    raw_entries = document.get("topology_view_dictionary")
+    entries = raw_entries if isinstance(raw_entries, list) else []
+    views_by_digest: dict[str, list[Any]] = {}
+    declared_digests: list[str] = []
+    _add(
+        errors,
+        isinstance(raw_entries, list) and bool(raw_entries),
+        f"trial {trial_id} fault topology view dictionary is missing",
+    )
+    for index, raw_entry in enumerate(entries, start=1):
+        entry = raw_entry if isinstance(raw_entry, dict) else {}
+        digest = entry.get("sha256")
+        views = entry.get("views")
+        try:
+            canonical_digest = (
+                _canonical_digest(views)
+                if isinstance(views, list) and bool(views)
+                else None
+            )
+        except (TypeError, ValueError):
+            canonical_digest = None
+        entry_valid = (
+            isinstance(raw_entry, dict)
+            and set(raw_entry) == {"sha256", "views"}
+            and isinstance(digest, str)
+            and SHA256_RE.fullmatch(digest) is not None
+            and isinstance(views, list)
+            and bool(views)
+            and canonical_digest == digest
+        )
+        _add(
+            errors,
+            entry_valid,
+            f"trial {trial_id} fault topology view dictionary entry {index} is not canonically digest-bound",
+        )
+        if isinstance(digest, str):
+            declared_digests.append(digest)
+        if entry_valid and digest not in views_by_digest:
+            views_by_digest[digest] = views
+    _add(
+        errors,
+        len(declared_digests) == len(entries)
+        and _all_unique(declared_digests)
+        and len(views_by_digest) == len(entries),
+        f"trial {trial_id} fault topology view dictionary contains duplicate entries",
+    )
+
+    referenced_digests: set[str] = set()
+    for index, raw_round in enumerate(_array(document.get("observer_rounds")), start=1):
+        round_row = raw_round if isinstance(raw_round, dict) else {}
+        digest = round_row.get("views_sha256")
+        _add(
+            errors,
+            isinstance(raw_round, dict) and "views" not in raw_round,
+            f"trial {trial_id} observer round {index} contains inline topology views",
+        )
+        ref_valid = (
+            isinstance(digest, str)
+            and SHA256_RE.fullmatch(digest) is not None
+            and digest in views_by_digest
+        )
+        _add(
+            errors,
+            ref_valid,
+            f"trial {trial_id} observer round {index} topology view reference is missing or invalid",
+        )
+        if isinstance(digest, str):
+            referenced_digests.add(digest)
+
+    convergence_digest = document.get("every_node_convergence_views_sha256")
+    _add(
+        errors,
+        "every_node_convergence_views" not in document,
+        f"trial {trial_id} every-node convergence contains inline topology views",
+    )
+    convergence_ref_valid = (
+        isinstance(convergence_digest, str)
+        and SHA256_RE.fullmatch(convergence_digest) is not None
+        and convergence_digest in views_by_digest
+    )
+    _add(
+        errors,
+        convergence_ref_valid,
+        f"trial {trial_id} every-node convergence topology view reference is missing or invalid",
+    )
+    if isinstance(convergence_digest, str):
+        referenced_digests.add(convergence_digest)
+    _add(
+        errors,
+        set(views_by_digest) == referenced_digests,
+        f"trial {trial_id} fault topology view dictionary has unreferenced or unknown entries",
+    )
+    return views_by_digest
+
+
 def _validate_fault_source(
     document: Mapping[str, Any],
     trial: Mapping[str, Any],
@@ -3232,7 +3816,11 @@ def _validate_fault_source(
 ) -> None:
     trial_id = trial.get("trial_id", "MISSING")
     summary = _object(trial.get("fault"))
-    _add(errors, document == summary, f"trial {trial_id} fault source does not exactly match its summary")
+    _add(
+        errors,
+        summary == _compact_fault_summary(document),
+        f"trial {trial_id} fault summary is not the compact raw-derived projection",
+    )
     _add(errors, document.get("status") == "PASS", f"trial {trial_id} fault source did not PASS")
     _add(errors, document.get("errors") == [], f"trial {trial_id} fault source reports errors")
     source_markers = _object(document.get("monotonic_markers"))
@@ -3288,30 +3876,85 @@ def _validate_fault_source(
         if isinstance(row.get("shard_id"), str) and row.get("shard_id")
     }
     barrier = _number(document.get("barrier_monotonic"))
+    barrier_ms = barrier * 1000.0 if barrier is not None else None
+    signal_sent_values: list[float] = []
+    signal_completed_values: list[float] = []
+    signal_envelope_valid = bool(target_rows) and barrier_ms is not None
+    for row in target_rows:
+        sent = _number(row.get("signal_sent_at_monotonic_ms"))
+        completed = _number(row.get("signal_completed_at_monotonic_ms"))
+        gone = _number(row.get("process_gone_at_monotonic_ms"))
+        if (
+            sent is None
+            or completed is None
+            or gone is None
+            or barrier_ms is None
+            or not barrier_ms <= sent <= completed <= gone
+            or row.get("status") != "PASS"
+            or row.get("error", "") != ""
+        ):
+            signal_envelope_valid = False
+            continue
+        signal_sent_values.append(sent)
+        signal_completed_values.append(completed)
+    raw_barrier_span = (
+        round(max(signal_completed_values) - min(signal_sent_values), 3)
+        if len(signal_sent_values) == len(signal_completed_values) == len(target_rows)
+        else None
+    )
+    _add(
+        errors,
+        signal_envelope_valid
+        and raw_barrier_span is not None
+        and raw_barrier_span <= 500.0
+        and _same_number(document.get("fault_apply_monotonic_ms"), barrier_ms)
+        and _same_number(document.get("signal_barrier_span_ms"), raw_barrier_span)
+        and _same_number(document.get("injection_skew_ms"), raw_barrier_span),
+        f"trial {trial_id} SIGKILL barrier span is not raw-derived or exceeds 500 ms",
+    )
     state_nodes = {
         str(node.get("logical_id")): node
         for node in (_object(value) for value in _array(_object(state_document).get("nodes")))
         if isinstance(node.get("logical_id"), str) and node.get("logical_id")
     }
     expected_batches: dict[str, dict[str, Any]] = {}
+    container_names: dict[str, str] = {}
+    container_ids: dict[str, str] = {}
     command_binding_valid = bool(target_logical_ids)
     for logical_id in sorted(target_logical_ids):
         node = state_nodes.get(logical_id)
         if (
             node is None
             or not isinstance(node.get("container_id"), str)
-            or not node.get("container_id")
+            or DOCKER_CONTAINER_REF_RE.fullmatch(node["container_id"]) is None
             or not isinstance(node.get("container_name"), str)
-            or not node.get("container_name")
+            or DOCKER_CONTAINER_REF_RE.fullmatch(node["container_name"]) is None
             or not isinstance(node.get("pid"), int)
             or isinstance(node.get("pid"), bool)
+            or not 1 < node["pid"] <= 2_147_483_647
+            or not isinstance(node.get("pid_file"), str)
+            or not node["pid_file"].startswith("/")
+            or not isinstance(node.get("config_file"), str)
+            or not node["config_file"].startswith("/")
+            or not isinstance(node.get("client_port"), int)
+            or isinstance(node.get("client_port"), bool)
+            or not 1 <= node["client_port"] <= 65535
         ):
             command_binding_valid = False
             continue
+        container_name = str(node["container_name"])
+        container_id = str(node["container_id"])
+        if (
+            container_names.get(container_name, container_id) != container_id
+            or container_ids.get(container_id, container_name) != container_name
+        ):
+            command_binding_valid = False
+        container_names[container_name] = container_id
+        container_ids[container_id] = container_name
         batch = expected_batches.setdefault(
-            str(node["container_id"]),
+            container_id,
             {
-                "container_name": str(node["container_name"]),
+                "container_name": container_name,
                 "logical_ids": [],
                 "pids": [],
             },
@@ -3336,12 +3979,13 @@ def _validate_fault_source(
         if expected is None:
             command_binding_valid = False
             continue
+        pid_text = " ".join(str(pid) for pid in expected["pids"])
         expected_argv = [
             "exec",
             container_id,
             "sh",
             "-c",
-            f"kill -KILL {' '.join(str(pid) for pid in expected['pids'])}",
+            f"kill -KILL {pid_text}",
         ]
         if not (
             batch.get("container_name") == expected["container_name"]
@@ -3351,6 +3995,7 @@ def _validate_fault_source(
             and argv == expected_argv
             and batch.get("status") == "PASS"
             and batch.get("returncode") == 0
+            and isinstance(batch.get("stdout"), str)
             and started is not None
             and ended is not None
             and barrier is not None
@@ -3358,7 +4003,7 @@ def _validate_fault_source(
         ):
             command_binding_valid = False
         if isinstance(argv, list) and all(isinstance(value, str) for value in argv):
-            rendered_commands.append(" ".join(["docker", *argv]))
+            rendered_commands.append(shlex.join(["docker", *argv]))
     _add(
         errors,
         command_binding_valid
@@ -3416,6 +4061,11 @@ def _validate_fault_source(
         f"trial {trial_id} all-processes-gone marker is not raw-derived",
     )
 
+    view_dictionary = _validate_fault_topology_view_dictionary(
+        document,
+        trial_id=trial_id,
+        errors=errors,
+    )
     rounds = _array(document.get("observer_rounds"))
     derived_markers: dict[str, float] = {}
     aggregate_safety = {
@@ -3445,8 +4095,9 @@ def _validate_fault_source(
         _add(errors, bounds_valid, f"trial {trial_id} observer round {index} has invalid monotonic bounds")
         if observed_at is not None:
             previous_at = observed_at
+        views_digest = round_row.get("views_sha256")
         recomputed, view_contract, _logical_ids = _recompute_compact_fault_facts(
-            round_row.get("views"),
+            view_dictionary.get(str(views_digest)),
             initial_roles=initial_roles,
             node_shards=node_shards,
             target_node_ids=target_node_ids,
@@ -3506,6 +4157,15 @@ def _validate_fault_source(
             aggregate_safety["split_brain"] or recomputed.get("split_brain") is True
         )
     _add(errors, bool(rounds), f"trial {trial_id} has no raw fault observer rounds")
+    requested_duration = _number(_object(trial.get("workload")).get("duration_seconds"))
+    _add(
+        errors,
+        barrier is not None
+        and requested_duration is not None
+        and previous_at is not None
+        and previous_at >= barrier + requested_duration,
+        f"trial {trial_id} raw fault observer rounds do not cover the complete fixed window",
+    )
     _add(
         errors,
         post_convergence_rounds > 0,
@@ -3531,8 +4191,9 @@ def _validate_fault_source(
         )
 
     full_facts = _object(document.get("topology_facts"))
+    convergence_views_digest = document.get("every_node_convergence_views_sha256")
     full_recomputed, full_contract, survivor_ids = _recompute_compact_fault_facts(
-        document.get("every_node_convergence_views"),
+        view_dictionary.get(str(convergence_views_digest)),
         initial_roles=initial_roles,
         node_shards=node_shards,
         target_node_ids=target_node_ids,
@@ -3630,6 +4291,36 @@ def _validate_fault_source(
         )
 
 
+def _compact_fault_summary(document: Mapping[str, Any]) -> dict[str, Any]:
+    summary_fields = (
+        "status",
+        "errors",
+        "mode",
+        "signal",
+        "commands",
+        "barrier_monotonic",
+        "primary_count",
+        "failed_primary_count",
+        "injection_skew_ms",
+        "signal_barrier_span_ms",
+    )
+    target_fields = (
+        "logical_id",
+        "shard_id",
+        "pid",
+        "ownership_id",
+        "process_gone",
+        "physical_fault_id",
+    )
+    return {
+        **{field: document.get(field) for field in summary_fields},
+        "targets": [
+            {field: target.get(field) for field in target_fields}
+            for target in (_object(value) for value in _array(document.get("targets")))
+        ],
+    }
+
+
 def validate_current_invocation_sources(
     report: Mapping[str, Any],
     *,
@@ -3683,7 +4374,6 @@ def validate_current_invocation_sources(
     trial_refs: list[dict[str, Any]] = []
     attempt_bounds: dict[str, tuple[float, float]] = {}
     resource_documents: dict[str, dict[str, Any]] = {}
-    resource_transition_permissions: dict[str, bool] = {}
     for trial_value in _array(report.get("trials")):
         trial = _object(trial_value)
         trial_id = trial.get("trial_id", "MISSING")
@@ -3802,14 +4492,10 @@ def validate_current_invocation_sources(
                 errors=errors,
             )
             if resource_document is not None:
-                resource_documents[str(trial_id)] = resource_document
                 allow_initial_membership_transitions = (
                     not fault_trial and "soak" not in str(trial.get("cell_id", ""))
                 )
-                resource_transition_permissions[str(trial_id)] = (
-                    allow_initial_membership_transitions
-                )
-                _validate_resource_source(
+                resource_documents[str(trial_id)] = _validate_resource_source(
                     resource_document,
                     trial,
                     fault_trial=fault_trial,
@@ -3898,16 +4584,11 @@ def validate_current_invocation_sources(
             and candidate_cell.get("status") == "FAIL"
             and not _trial_safety_clean(candidate_trial)
         )
-        comparison = validate_equal_m2_resource_windows(
+        for message in _validate_equal_resource_window_facts(
             baseline,
             candidate,
-            allow_initial_membership_transitions=(
-                resource_transition_permissions.get(str(pair.get("baseline_trial_id")), False)
-                and resource_transition_permissions.get(str(pair.get("candidate_trial_id")), False)
-            ),
             allow_candidate_safety_failure=allow_candidate_safety_failure,
-        )
-        for message in _array(comparison.get("errors")):
+        ):
             errors.append(f"pair {pair_id} resource window: {message}")
 
     intervals = sorted((start, end, trial_id) for trial_id, (start, end) in attempt_bounds.items())

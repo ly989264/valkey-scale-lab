@@ -8,14 +8,21 @@ smaller profile.  The caller is responsible for real-run authorization.
 from __future__ import annotations
 
 import binascii
+import gzip
 import hashlib
 import json
 import math
+import multiprocessing
 import os
 import platform
+import queue
 import re
+import shlex
+import shutil
+import stat
 import subprocess
 import sys
+import tarfile
 import threading
 import time
 from collections import Counter
@@ -33,7 +40,25 @@ REPORT_NAME = "m2_performance_report.json"
 TRIALS_DIR = "trials"
 BASELINE_STRATEGY = "valkey_cli_cluster_create_primaries"
 BASELINE_TIMEOUT_MS = 30000
+LATENCY_HISTOGRAM_SCHEMA_VERSION = "m2-relative-latency-histogram-v1"
+LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE = 100
+LATENCY_HISTOGRAM_MIN_POSITIVE_MS = 0.000001
+LATENCY_HISTOGRAM_MAX_MS = 10_000.0
+LATENCY_HISTOGRAM_MIN_TICK = math.floor(
+    math.log2(LATENCY_HISTOGRAM_MIN_POSITIVE_MS)
+    * LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE
+)
+LATENCY_HISTOGRAM_MAX_TICK = math.ceil(
+    math.log2(LATENCY_HISTOGRAM_MAX_MS)
+    * LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE
+)
+LATENCY_HISTOGRAM_MAX_INDEX = (
+    LATENCY_HISTOGRAM_MAX_TICK - LATENCY_HISTOGRAM_MIN_TICK
+)
+LATENCY_HISTOGRAM_OVERFLOW_INDEX = LATENCY_HISTOGRAM_MAX_INDEX + 1
+LATENCY_HISTOGRAM_MAX_BUCKETS = LATENCY_HISTOGRAM_OVERFLOW_INDEX + 1
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]+$")
+DOCKER_CONTAINER_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$", re.ASCII)
 FORBIDDEN_EVIDENCE_PATH_PARTS = {
     "fixture",
     "fixtures",
@@ -41,6 +66,63 @@ FORBIDDEN_EVIDENCE_PATH_PARTS = {
     "loop_evidence",
     "retained",
 }
+OWNED_PROCESS_IDENTITY_PROBE_SCRIPT = (
+    'fail_identity() { printf "VSLAB_IDENTITY_MISMATCH %s\\n" "$1"; exit 65; }; '
+    "read_start_time() { "
+    'stat_path="/proc/$pid/stat"; '
+    '[ -e "$stat_path" ] || fail_identity process_gone; '
+    '[ -r "$stat_path" ] || fail_identity process_stat_unreadable; '
+    'stat_line=$(cat "$stat_path") || return 1; '
+    'case "$stat_line" in *") "*) ;; *) return 1;; esac; '
+    "stat_tail=${stat_line##*) }; "
+    "set -- $stat_tail; "
+    '[ "$#" -ge 20 ] || return 1; '
+    'case "$1" in R|S|D|T|t|W|K|P|I) ;; *) return 1;; esac; '
+    "shift 19; "
+    'case "$1" in ""|*[!0-9]*) return 1;; esac; '
+    'printf "%s" "$1"; '
+    "}; "
+    "read_info_value() { "
+    'wanted_key=$1; while IFS=: read -r info_key info_value; do '
+    'if [ "$info_key" = "$wanted_key" ]; then '
+    'cr=$(printf "\\r"); info_value=${info_value%"$cr"}; '
+    'printf "%s" "$info_value"; return 0; fi; '
+    'done; return 1; '
+    "}; "
+    'while [ "$#" -gt 0 ]; do '
+    '[ "$#" -ge 4 ] || fail_identity argv; '
+    'pid=$1; pid_file=$2; config_file=$3; client_port=$4; shift 4; '
+    'case "$pid" in ""|0|1|*[!0-9]*) fail_identity pid;; esac; '
+    '[ -r "$pid_file" ] || fail_identity pidfile_unreadable; '
+    'actual_pid=$(cat "$pid_file") || fail_identity pidfile_value; '
+    'case "$actual_pid" in ""|*[!0-9]*) fail_identity pidfile_value;; esac; '
+    '[ "$actual_pid" = "$pid" ] || fail_identity pidfile_pid; '
+    'start_before=$(read_start_time) || fail_identity process_stat; '
+    'server_info=$(valkey-cli -p "$client_port" --raw INFO SERVER 2>/dev/null) || fail_identity info_server; '
+    '[ "$(printf "%s\\n" "$server_info" | read_info_value process_id)" = "$pid" ] || fail_identity process_id; '
+    '[ "$(printf "%s\\n" "$server_info" | read_info_value config_file)" = "$config_file" ] || fail_identity config_file; '
+    '[ "$(printf "%s\\n" "$server_info" | read_info_value tcp_port)" = "$client_port" ] || fail_identity tcp_port; '
+    'start_after=$(read_start_time) || fail_identity process_stat_reread; '
+    '[ "$start_after" = "$start_before" ] || fail_identity pid_reused; '
+    "done; "
+    'printf "VSLAB_IDENTITY_VERIFIED\\n"'
+)
+OWNED_PROCESS_STATE_PROBE_SCRIPT = (
+    'expected_pid="$1"; stat_path="/proc/$expected_pid/stat"; '
+    'if [ ! -e "$stat_path" ]; then printf "VSLAB_GONE\\n"; exit 0; fi; '
+    'if [ ! -r "$stat_path" ]; then printf "VSLAB_UNREADABLE\\n" >&2; exit 70; fi; '
+    'stat_line=$(cat "$stat_path" 2>/dev/null) || { '
+    'if [ ! -e "$stat_path" ]; then printf "VSLAB_GONE\\n"; exit 0; fi; '
+    'printf "VSLAB_UNREADABLE\\n" >&2; exit 70; }; '
+    'case "$stat_line" in *") "*) ;; *) printf "VSLAB_UNREADABLE\\n" >&2; exit 70;; esac; '
+    'stat_tail=${stat_line##*) }; state=${stat_tail%% *}; '
+    'case "$state" in Z|X|x) printf "VSLAB_GONE\\n";; '
+    'R|S|D|T|t|W|K|P|I) '
+    'if kill -0 "$expected_pid" 2>/dev/null; then printf "VSLAB_PRESENT\\n"; '
+    'elif [ ! -e "$stat_path" ]; then printf "VSLAB_GONE\\n"; '
+    'else printf "VSLAB_UNREADABLE\\n" >&2; exit 70; fi;; '
+    '*) printf "VSLAB_UNREADABLE\\n" >&2; exit 70;; esac'
+)
 CONTROL_KEYS = {
     "valkey_binary",
     "product",
@@ -84,6 +166,15 @@ RESOURCE_METRICS = (
     "connection_count",
     "cluster_bus_bytes",
 )
+COMPRESSED_TRIAL_SOURCE_CATEGORIES = {
+    "resource",
+    "workload",
+    "topology",
+    "fault",
+}
+FAULT_CLIENT_CADENCE_SECONDS = 0.05
+FAULT_CLIENT_PROCESS_START_TIMEOUT_SECONDS = 10.0
+FAULT_CLIENT_PROCESS_STOP_TIMEOUT_SECONDS = 5.0
 
 
 class CaptureError(RuntimeError):
@@ -641,11 +732,23 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
         measurement.update({"topology": topology, "workload": workload, "resource": resource})
     except Exception as exc:  # cleanup below remains mandatory
         trial_error = exc
-    if state_validated:
+    # Server logs are failure diagnostics, not admission evidence. Capturing
+    # every successful arm would retain the full log set for the whole matrix.
+    if state_validated and trial_error is not None:
         try:
             _capture_owned_valkey_logs(trial_dir, state, expected_run_id=spec.trial_id)
-        except Exception:  # diagnostics must never prevent mandatory cleanup
-            pass
+        except Exception as log_error:  # cleanup below remains mandatory
+            log_note = (
+                "owned Valkey log diagnostics also failed: "
+                f"{type(log_error).__name__}: {log_error}"
+            )
+            if hasattr(trial_error, "add_note"):
+                trial_error.add_note(log_note)
+            else:
+                try:
+                    setattr(trial_error, "server_log_capture_error", log_note)
+                except Exception:
+                    pass
     cleanup_state_path = _cleanup_state_for_attempt(
         trial_dir,
         state_path,
@@ -682,12 +785,26 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
         },
     )
     if trial_error is not None:
-        _collect_partial_refs(ctx, trial_dir, spec)
-        raise CaptureError(str(trial_error))
+        _collect_partial_refs_after_error(ctx, trial_dir, spec, trial_error)
+        raise CaptureError(_capture_error_text(trial_error)) from trial_error
     if cleanup_error:
-        _collect_partial_refs(ctx, trial_dir, spec)
-        raise CaptureError(cleanup_error)
-    return _build_trial(ctx, spec, state, preflight_path, preflight, trial_dir, cleanup, measurement)
+        error = CaptureError(cleanup_error)
+        _collect_partial_refs_after_error(ctx, trial_dir, spec, error)
+        raise CaptureError(_capture_error_text(error)) from error
+    try:
+        return _build_trial(
+            ctx,
+            spec,
+            state,
+            preflight_path,
+            preflight,
+            trial_dir,
+            cleanup,
+            measurement,
+        )
+    except Exception as exc:
+        _collect_partial_refs_after_error(ctx, trial_dir, spec, exc)
+        raise CaptureError(_capture_error_text(exc)) from exc
 
 
 def _capture_topology(
@@ -735,48 +852,54 @@ def _capture_topology(
 
 def _capture_data_path(trial_dir: Path, state: dict[str, Any], *, duration_seconds: float) -> dict[str, Any]:
     from valkey_scale_lab.observer.failover_timeline import ObserverEndpoint, PersistentClusterClient
-    from valkey_scale_lab.metrics import nearest_rank
 
     endpoints = [ObserverEndpoint.from_node(node) for node in state["nodes"]]
     key = f"m2-current-{state['runtime']['run_id']}"
     value = "x" * 512
-    latencies: list[float] = []
+    latency_bins: Counter[int] = Counter()
+    operation_count = 0
     errors: list[str] = []
     started = round(time.monotonic(), 6)
     with PersistentClusterClient(endpoints, timeout_seconds=1.0) as client:
-        while not latencies or time.monotonic() - started < duration_seconds:
+        while operation_count == 0 or time.monotonic() - started < duration_seconds:
             set_started = time.monotonic()
             try:
                 set_result = client.execute("SET", key, value)
                 set_completed = time.monotonic()
                 if str(set_result.value).upper() != "OK":
                     raise CaptureError("persistent cluster-aware SET returned an unexpected value")
-                latencies.append(round((set_completed - set_started) * 1000.0, 6))
+                latency_ms = round((set_completed - set_started) * 1000.0, 6)
+                latency_bins[_latency_histogram_bucket_index(latency_ms)] += 1
+                operation_count += 1
                 get_result = client.execute("GET", key)
                 if str(get_result.value) != value:
                     raise CaptureError("persistent cluster-aware GET returned an unexpected value")
             except Exception as exc:  # noqa: BLE001
                 errors.append(repr(exc))
                 break
+    overflow_count = latency_bins.get(LATENCY_HISTOGRAM_OVERFLOW_INDEX, 0)
+    if overflow_count:
+        errors.append(
+            f"latency histogram overflowed its {LATENCY_HISTOGRAM_MAX_MS:.1f} ms "
+            f"bound for {overflow_count} successful operations"
+        )
     ended = round(time.monotonic(), 6)
     elapsed = max(ended - started, 0.000001)
-    histogram = Counter(latencies)
+    histogram = _latency_histogram_rows(latency_bins)
+    p99_latency_ms = _histogram_nearest_rank(histogram, 0.99)
     report = {
-        "status": "PASS" if latencies and not errors else "FAIL",
+        "status": "PASS" if operation_count and not errors else "FAIL",
         "requested_duration_seconds": float(duration_seconds),
         "duration_seconds": round(elapsed, 6),
         "started_at_monotonic": started,
         "ended_at_monotonic": ended,
         "value_size_bytes": 512,
-        "operation_count": len(latencies),
+        "operation_count": operation_count,
         "latency_operation": "SET",
         "error_count": len(errors),
-        "latency_histogram": [
-            {"latency_ms": latency, "count": count}
-            for latency, count in sorted(histogram.items())
-        ],
-        "set_throughput_ops_per_second": round(len(latencies) / elapsed, 6),
-        "p99_latency_ms": round(nearest_rank(latencies, 0.99), 6) if latencies else "MISSING",
+        "latency_histogram": histogram,
+        "set_throughput_ops_per_second": round(operation_count / elapsed, 6),
+        "p99_latency_ms": p99_latency_ms if p99_latency_ms is not None else "MISSING",
         "errors": errors,
         "persistent_cluster_client": True,
         "per_operation_process_spawn": False,
@@ -787,6 +910,58 @@ def _capture_data_path(trial_dir: Path, state: dict[str, Any], *, duration_secon
     if report["status"] != "PASS":
         raise CaptureError("persistent cluster-aware data-path observation failed")
     return report
+
+
+def _latency_histogram_bucket_index(latency_ms: float) -> int:
+    if not math.isfinite(latency_ms) or latency_ms < 0:
+        raise CaptureError("SET latency must be finite and non-negative")
+    if latency_ms == 0:
+        return 0
+    if latency_ms > LATENCY_HISTOGRAM_MAX_MS:
+        return LATENCY_HISTOGRAM_OVERFLOW_INDEX
+    tick = math.ceil(
+        math.log2(latency_ms) * LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE - 1e-12
+    )
+    return max(0, tick - LATENCY_HISTOGRAM_MIN_TICK)
+
+
+def _latency_histogram_bucket_upper_ms(bucket_index: int) -> float:
+    if bucket_index == LATENCY_HISTOGRAM_OVERFLOW_INDEX:
+        return LATENCY_HISTOGRAM_MAX_MS
+    tick = LATENCY_HISTOGRAM_MIN_TICK + bucket_index
+    return 2.0 ** (tick / LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE)
+
+
+def _latency_histogram_rows(
+    latency_bins: Mapping[int, int],
+) -> dict[str, Any]:
+    return {
+        "schema_version": LATENCY_HISTOGRAM_SCHEMA_VERSION,
+        "buckets": [
+            {"index": bucket_index, "count": count}
+            for bucket_index, count in sorted(latency_bins.items())
+            if count > 0
+        ],
+    }
+
+
+def _histogram_nearest_rank(
+    histogram: Mapping[str, Any],
+    percentile: float,
+) -> float | None:
+    rows = histogram.get("buckets")
+    if not isinstance(rows, list):
+        return None
+    total = sum(int(row["count"]) for row in rows)
+    if total <= 0:
+        return None
+    rank = math.ceil(percentile * total)
+    cumulative = 0
+    for row in rows:
+        cumulative += int(row["count"])
+        if cumulative >= rank:
+            return _latency_histogram_bucket_upper_ms(int(row["index"]))
+    return None
 
 
 def _capture_stability_observation(
@@ -962,12 +1137,19 @@ def _capture_resource_window(
         expected_gone_processes=expected_gone_processes,
         first_complete_sample_event=first_sample_event,
         window_start_event=window_start_event,
+        monotonic_clock=shared_monotonic,
     )
-    _write_json(trial_dir / "resource_window.json", report)
-    return _validate_resource_report(
+    resource_path = trial_dir / "resource_window.json"
+    _write_resource_json(resource_path, report)
+    validated = _validate_resource_report(
         report,
         allow_safety_failure_evidence=allow_safety_failure_evidence,
     )
+    if "directional_cluster_links_dictionary" in validated:
+        return validated
+    encoded = _intern_resource_directional_links(validated)
+    _write_resource_json(resource_path, encoded)
+    return encoded
 
 
 def _load_resource_window(
@@ -977,11 +1159,67 @@ def _load_resource_window(
 ) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink():
         raise CaptureError("M2 setup resource window is missing or unsafe")
-    return _validate_resource_report(
+    report = _validate_resource_report(
         _load_object(path),
         allow_initial_membership_transitions=True,
         allow_safety_failure_evidence=allow_safety_failure_evidence,
     )
+    encoded = _intern_resource_directional_links(report)
+    _write_resource_json(path, encoded)
+    return encoded
+
+
+def _intern_resource_directional_links(report: dict[str, Any]) -> dict[str, Any]:
+    if "directional_cluster_links_dictionary" in report:
+        return report
+    entries: dict[str, dict[str, Any]] = {}
+    process_count = 0
+    samples = report.get("samples")
+    if not isinstance(samples, list):
+        raise CaptureError("M2 resource samples are not an array")
+    for sample in samples:
+        nodehosts = sample.get("nodehosts") if isinstance(sample, dict) else None
+        if not isinstance(nodehosts, list):
+            raise CaptureError("M2 resource sample nodehosts are not an array")
+        for nodehost in nodehosts:
+            processes = nodehost.get("processes") if isinstance(nodehost, dict) else None
+            if not isinstance(processes, list):
+                raise CaptureError("M2 resource nodehost processes are not an array")
+            for process in processes:
+                if (
+                    not isinstance(process, dict)
+                    or "directional_cluster_links_sha256" in process
+                    or not isinstance(process.get("directional_cluster_links"), list)
+                ):
+                    raise CaptureError(
+                        "M2 resource process lacks inline validated directional CLUSTER LINKS"
+                    )
+                links = process.pop("directional_cluster_links")
+                digest = _digest(links)
+                existing = entries.get(digest)
+                if (
+                    existing is not None
+                    and existing["directional_cluster_links"] != links
+                ):
+                    raise CaptureError(
+                        "M2 resource directional CLUSTER LINKS canonical digest collision"
+                    )
+                entries.setdefault(
+                    digest,
+                    {
+                        "sha256": digest,
+                        "directional_cluster_links": links,
+                    },
+                )
+                process["directional_cluster_links_sha256"] = digest
+                process_count += 1
+    if process_count == 0 or not entries:
+        raise CaptureError("M2 resource has no directional CLUSTER LINKS observations")
+    report["directional_cluster_links_dictionary"] = [
+        entries[digest]
+        for digest in sorted(entries)
+    ]
+    return report
 
 
 def _validate_resource_report(
@@ -1053,17 +1291,25 @@ def _owned_pid_is_alive(
     *,
     command: Callable[..., Any],
 ) -> bool:
+    container_id = node.get("container_id")
+    pid = target.pid
+    if (
+        not isinstance(container_id, str)
+        or DOCKER_CONTAINER_REF_RE.fullmatch(container_id) is None
+        or isinstance(pid, bool)
+        or not isinstance(pid, int)
+        or not 1 < pid <= 2_147_483_647
+    ):
+        raise CaptureError(f"PID observation identity is unsafe for {target.logical_id}")
     result = command(
         [
             "exec",
-            str(node["container_id"]),
+            container_id,
             "sh",
             "-c",
-            (
-                f"if [ ! -r /proc/{target.pid}/stat ]; then printf VSLAB_GONE; exit 0; fi; "
-                f"s=$(awk '{{print $3}}' /proc/{target.pid}/stat) || exit 70; "
-                "case \"$s\" in Z|X) printf VSLAB_GONE;; *) printf VSLAB_ALIVE;; esac"
-            ),
+            OWNED_PROCESS_STATE_PROBE_SCRIPT,
+            "sh",
+            str(pid),
         ],
         timeout=10,
         check=False,
@@ -1074,11 +1320,411 @@ def _owned_pid_is_alive(
             f"exit={result.returncode} stderr={str(result.stderr)[-300:]}"
         )
     observation = str(result.stdout).strip()
-    if observation == "VSLAB_ALIVE":
+    if observation == "VSLAB_PRESENT":
         return True
     if observation == "VSLAB_GONE":
         return False
     raise CaptureError(f"PID observation for {target.logical_id} returned no owned-process sentinel")
+
+
+def _make_fault_client(endpoints: list[Any]) -> Any:
+    from valkey_scale_lab.observer.failover_timeline import PersistentClusterClient
+
+    return PersistentClusterClient(endpoints, timeout_seconds=0.04)
+
+
+def _fault_client_ipc_loop(
+    index: int,
+    probe: FaultClientProbe,
+    stop: Any,
+    started: threading.Event,
+    output: Any,
+) -> int:
+    sequence = 0
+
+    def emit(row: dict[str, Any]) -> None:
+        nonlocal sequence
+        output.put(
+            {
+                "type": "sample",
+                "probe_index": index,
+                "sequence": sequence,
+                "sample": row,
+            }
+        )
+        sequence += 1
+
+    _fault_client_loop(
+        probe,
+        stop,
+        started,
+        threading.Lock(),
+        sample_sink=emit,
+    )
+    return sequence
+
+
+def _fault_sampler_process(
+    endpoints: list[Any],
+    probe_specs: list[dict[str, Any]],
+    stop: Any,
+    output: Any,
+) -> None:
+    probes = [
+        FaultClientProbe(
+            shard_id=str(spec["shard_id"]),
+            key=str(spec["key"]),
+            value=str(spec["value"]),
+            client=_make_fault_client(endpoints),
+            affected=spec["affected"] is True,
+        )
+        for spec in probe_specs
+    ]
+    executor: ThreadPoolExecutor | None = None
+    try:
+        with ThreadPoolExecutor(max_workers=len(probes)) as warmup_executor:
+            warmups = list(warmup_executor.map(_warm_fault_client, probes))
+        if not all(row.get("status") == "PASS" for row in warmups):
+            raise CaptureError("persistent affected/control clients were not established before SIGKILL")
+
+        client_started = [threading.Event() for _probe in probes]
+        executor = ThreadPoolExecutor(max_workers=len(probes))
+        futures = [
+            executor.submit(
+                _fault_client_ipc_loop,
+                index,
+                probe,
+                stop,
+                started,
+                output,
+            )
+            for index, (probe, started) in enumerate(zip(probes, client_started))
+        ]
+        if not all(event.wait(timeout=5.0) for event in client_started):
+            raise CaptureError("persistent fault clients did not start before SIGKILL")
+        output.put({"type": "ready", "warmups": warmups})
+        while not stop.wait(0.02):
+            for future in futures:
+                if future.done():
+                    future.result()
+                    raise CaptureError("persistent fault client loop exited before the capture stopped")
+        counts = [future.result(timeout=2.0) for future in futures]
+        output.put({"type": "done", "sample_counts": counts})
+    except BaseException as exc:
+        try:
+            output.put({"type": "error", "error": f"{type(exc).__name__}: {exc}"})
+        finally:
+            stop.set()
+        raise
+    finally:
+        stop.set()
+        if executor is not None:
+            executor.shutdown(wait=True)
+        for probe in probes:
+            probe.client.close()
+
+
+class _FaultClientSampler:
+    def __init__(
+        self,
+        probes: list[FaultClientProbe],
+        endpoints: list[Any],
+        sample_lock: threading.Lock,
+        *,
+        process_context: Any | None = None,
+    ) -> None:
+        if not probes:
+            raise CaptureError("fault client sampler requires at least one probe")
+        context = process_context or multiprocessing.get_context("spawn")
+        self._probes = probes
+        self._sample_lock = sample_lock
+        self._stop = context.Event()
+        self._output = context.Queue()
+        self._process = context.Process(
+            target=_fault_sampler_process,
+            args=(
+                endpoints,
+                [
+                    {
+                        "shard_id": probe.shard_id,
+                        "key": probe.key,
+                        "value": probe.value,
+                        "affected": probe.affected,
+                    }
+                    for probe in probes
+                ],
+                self._stop,
+                self._output,
+            ),
+            name="m2-fault-client-sampler",
+            daemon=True,
+        )
+        self._received_counts = [0 for _probe in probes]
+        self._warmups: list[dict[str, Any]] | None = None
+        self._done_counts: list[int] | None = None
+        self._started = False
+        self._closed = False
+
+    def start(self) -> list[dict[str, Any]]:
+        self._process.start()
+        self._started = True
+        deadline = time.monotonic() + FAULT_CLIENT_PROCESS_START_TIMEOUT_SECONDS
+        try:
+            while self._warmups is None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise CaptureError("persistent fault client process did not become ready before SIGKILL")
+                try:
+                    message = self._output.get(timeout=min(remaining, 0.05))
+                except queue.Empty:
+                    if not self._process.is_alive():
+                        self._process.join(timeout=0.1)
+                        raise CaptureError(
+                            "persistent fault client process exited before SIGKILL "
+                            f"(exit={self._process.exitcode})"
+                        )
+                    continue
+                self._accept_message(message)
+            return self._warmups
+        except BaseException:
+            self._abort()
+            raise
+
+    def drain(self) -> None:
+        self._require_started()
+        while True:
+            try:
+                message = self._output.get_nowait()
+            except queue.Empty:
+                break
+            self._accept_message(message)
+        if not self._process.is_alive():
+            self._process.join(timeout=0.1)
+            raise CaptureError(
+                "persistent fault client process exited during capture "
+                f"(exit={self._process.exitcode})"
+            )
+
+    def stop(self) -> None:
+        self._require_started()
+        self._stop.set()
+        failure: CaptureError | None = None
+        deadline = time.monotonic() + FAULT_CLIENT_PROCESS_STOP_TIMEOUT_SECONDS
+        try:
+            # Drain while joining. Waiting for the child first can deadlock when
+            # many client threads have filled the multiprocessing pipe.
+            while time.monotonic() < deadline:
+                try:
+                    message = self._output.get(timeout=0.05)
+                except queue.Empty:
+                    message = None
+                if message is not None:
+                    try:
+                        self._accept_message(message)
+                    except CaptureError as exc:
+                        failure = exc
+                        break
+                if not self._process.is_alive():
+                    self._process.join(timeout=0.1)
+                    if self._process.is_alive():
+                        continue
+                    while True:
+                        try:
+                            self._accept_message(self._output.get(timeout=0.05))
+                        except queue.Empty:
+                            break
+                        except CaptureError as exc:
+                            failure = exc
+                            break
+                    break
+            if failure is not None:
+                if self._process.is_alive():
+                    self._process.terminate()
+                    self._process.join(timeout=1.0)
+                raise failure
+            if self._process.is_alive():
+                self._process.terminate()
+                self._process.join(timeout=1.0)
+                raise CaptureError("persistent fault client process did not stop cleanly")
+            if self._process.exitcode != 0:
+                raise CaptureError(
+                    "persistent fault client process failed "
+                    f"(exit={self._process.exitcode})"
+                )
+            if self._done_counts is None:
+                raise CaptureError("persistent fault client IPC ended without its completion record")
+            if self._done_counts != self._received_counts:
+                raise CaptureError(
+                    "persistent fault client IPC sample counts do not match the received evidence"
+                )
+        finally:
+            self._close_queue()
+
+    def _accept_message(self, message: Any) -> None:
+        if not isinstance(message, dict):
+            raise CaptureError("persistent fault client IPC returned a non-object message")
+        if self._done_counts is not None:
+            raise CaptureError("persistent fault client IPC returned a message after its completion record")
+        message_type = message.get("type")
+        if message_type == "sample":
+            self._accept_sample(message)
+            return
+        if message_type == "ready":
+            warmups = message.get("warmups")
+            if (
+                self._warmups is not None
+                or not isinstance(warmups, list)
+                or len(warmups) != len(self._probes)
+                or not all(isinstance(row, dict) and row.get("status") == "PASS" for row in warmups)
+            ):
+                raise CaptureError("persistent fault client IPC returned invalid warmup evidence")
+            self._warmups = warmups
+            return
+        if message_type == "done":
+            counts = message.get("sample_counts")
+            if (
+                self._done_counts is not None
+                or not isinstance(counts, list)
+                or len(counts) != len(self._probes)
+                or not all(isinstance(value, int) and not isinstance(value, bool) and value >= 0 for value in counts)
+            ):
+                raise CaptureError("persistent fault client IPC returned invalid completion evidence")
+            self._done_counts = counts
+            return
+        if message_type == "error":
+            raise CaptureError(
+                "persistent fault client process reported an error: "
+                + str(message.get("error") or "MISSING")
+            )
+        raise CaptureError("persistent fault client IPC returned an unknown message")
+
+    def _accept_sample(self, message: dict[str, Any]) -> None:
+        index = message.get("probe_index")
+        sequence = message.get("sequence")
+        sample = message.get("sample")
+        if (
+            not isinstance(index, int)
+            or isinstance(index, bool)
+            or index < 0
+            or index >= len(self._probes)
+            or not isinstance(sequence, int)
+            or isinstance(sequence, bool)
+            or sequence != self._received_counts[index]
+            or not isinstance(sample, dict)
+        ):
+            raise CaptureError("persistent fault client IPC sample sequence is missing or out of order")
+        probe = self._probes[index]
+        if not _fault_sample_is_complete(sample, probe):
+            raise CaptureError("persistent fault client IPC returned an incomplete sample")
+        with self._sample_lock:
+            probe.samples.append(sample)
+        self._received_counts[index] += 1
+
+    def _require_started(self) -> None:
+        if not self._started or self._closed:
+            raise CaptureError("persistent fault client process is not active")
+
+    def _abort(self) -> None:
+        self._stop.set()
+        if self._process.is_alive():
+            self._process.terminate()
+        self._process.join(timeout=1.0)
+        self._close_queue()
+
+    def _close_queue(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self._output.close()
+        self._output.join_thread()
+
+
+def _stop_fault_sampler(
+    sampler: _FaultClientSampler,
+    primary_error: BaseException | None,
+) -> None:
+    try:
+        sampler.stop()
+    except BaseException as shutdown_error:
+        if primary_error is None:
+            raise
+        shutdown_note = (
+            "persistent fault client shutdown also failed: "
+            f"{type(shutdown_error).__name__}: {shutdown_error}"
+        )
+        if hasattr(primary_error, "add_note"):
+            primary_error.add_note(shutdown_note)
+        else:
+            try:
+                setattr(primary_error, "sampler_shutdown_error", shutdown_note)
+            except Exception:
+                pass
+
+
+def _capture_error_text(error: BaseException) -> str:
+    details = [str(error)]
+    notes = getattr(error, "__notes__", ())
+    if isinstance(notes, list):
+        details.extend(str(note) for note in notes if note)
+    for attribute in (
+        "sampler_shutdown_error",
+        "server_log_capture_error",
+        "partial_evidence_error",
+    ):
+        detail = getattr(error, attribute, None)
+        if detail and str(detail) not in details:
+            details.append(str(detail))
+    return "\n".join(details)
+
+
+def _fault_sample_is_complete(sample: dict[str, Any], probe: FaultClientProbe) -> bool:
+    def number(value: Any) -> float | None:
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value)):
+            return float(value)
+        return None
+
+    started = number(sample.get("started_at_monotonic"))
+    completed = number(sample.get("completed_at_monotonic"))
+    set_completed = number(sample.get("set_completed_at_monotonic"))
+    get_completed = number(sample.get("get_completed_at_monotonic"))
+    latency = number(sample.get("latency_ms"))
+    if (
+        sample.get("shard_id") != probe.shard_id
+        or sample.get("affected") is not probe.affected
+        or started is None
+        or completed is None
+        or completed < started
+        or latency is None
+        or latency < 0
+        or not all(
+            isinstance(sample.get(field), bool)
+            for field in ("set_succeeded", "get_succeeded", "value_matches", "timed_out")
+        )
+        or not isinstance(sample.get("error"), str)
+        or sample.get("status") not in {"PASS", "FAIL"}
+        or not all(
+            isinstance(sample.get(field), int) and not isinstance(sample.get(field), bool)
+            for field in ("moved_count", "ask_count")
+        )
+    ):
+        return False
+    if sample.get("set_completed_at_monotonic") != "MISSING" and set_completed is None:
+        return False
+    if sample.get("get_completed_at_monotonic") != "MISSING" and get_completed is None:
+        return False
+    if set_completed is not None and not started <= set_completed <= completed:
+        return False
+    if get_completed is not None and not started <= get_completed <= completed:
+        return False
+    if set_completed is not None and get_completed is not None and get_completed < set_completed:
+        return False
+    passed = (
+        sample.get("set_succeeded") is True
+        and sample.get("get_succeeded") is True
+        and sample.get("value_matches") is True
+        and sample.get("error") == ""
+    )
+    return sample.get("status") == ("PASS" if passed else "FAIL")
 
 
 def _capture_fault_window(
@@ -1095,7 +1741,6 @@ def _capture_fault_window(
     from valkey_scale_lab.observer.failover_timeline import (
         ObserverEndpoint,
         OwnedProcessTarget,
-        PersistentClusterClient,
         StableShardAccumulator,
         _probe_endpoint,
         apply_owned_sigkill,
@@ -1140,7 +1785,7 @@ def _capture_fault_window(
                 shard_id=str(node["shard_id"]),
                 key=key,
                 value="x" * 512,
-                client=PersistentClusterClient(endpoints, timeout_seconds=0.04),
+                client=None,
                 affected=True,
             )
         )
@@ -1153,17 +1798,11 @@ def _capture_fault_window(
             shard_id=str(unaffected_primary["shard_id"]),
             key=_key_for_slots(spec.trial_id, str(unaffected_primary["shard_id"]), unaffected_slots),
             value="x" * 512,
-            client=PersistentClusterClient(endpoints, timeout_seconds=0.04),
+            client=None,
             affected=False,
         )
     ]
     client_probes = [*affected, *controls]
-    with ThreadPoolExecutor(max_workers=len(client_probes)) as executor:
-        warmups = list(executor.map(_warm_fault_client, client_probes))
-    if not all(row.get("status") == "PASS" for row in warmups):
-        for probe in client_probes:
-            probe.client.close()
-        raise CaptureError("persistent affected-slot clients were not established before SIGKILL")
 
     def alive(target: Any) -> bool:
         node = node_by_logical[target.logical_id]
@@ -1172,21 +1811,11 @@ def _capture_fault_window(
     send, command_batches = _owned_sigkill_sender(state, selected, command=run_docker)
 
     sample_lock = threading.Lock()
-    stop_clients = threading.Event()
-    client_started = [threading.Event() for _probe in client_probes]
-    client_executor = ThreadPoolExecutor(max_workers=len(client_probes))
-    client_futures = [
-        client_executor.submit(
-            _fault_client_loop,
-            probe,
-            stop_clients,
-            started,
-            sample_lock,
-        )
-        for probe, started in zip(client_probes, client_started)
-    ]
+    sampler = _FaultClientSampler(client_probes, endpoints, sample_lock)
+    warmups = sampler.start()
     fault: dict[str, Any] = {}
     observer_rounds: list[dict[str, Any]] = []
+    topology_view_entries: dict[str, dict[str, Any]] = {}
     accumulator = StableShardAccumulator(window_ms=1000.0, min_pairs=10, max_pair_interval_ms=100.0)
     markers: dict[str, float] = {}
     first_success: dict[str, float] = {}
@@ -1198,21 +1827,21 @@ def _capture_fault_window(
         "unexpected_promotions": 0,
         "split_brain": False,
     }
+    primary_error: BaseException | None = None
     try:
-        if not all(event.wait(timeout=5.0) for event in client_started):
-            raise CaptureError("persistent fault clients did not start before SIGKILL")
         fault = apply_owned_sigkill(
             targets,
             expected_ownership_id=ownership_id,
             signal_sender=send,
             process_alive=alive,
             wait_timeout_seconds=10.0,
+            monotonic_clock=shared_monotonic,
             barrier_callback=resource_window_start_event.set,
         )
         fault["mode"] = "owned-process-sigkill"
         fault["command_batches"] = command_batches
         fault["commands"] = [
-            " ".join(["docker", *[str(value) for value in batch["argv"]]])
+            shlex.join(["docker", *[str(value) for value in batch["argv"]]])
             for batch in command_batches
         ]
         fault["primary_count"] = len(primaries)
@@ -1240,15 +1869,17 @@ def _capture_fault_window(
         survivor_endpoints = [endpoint for endpoint in endpoints if endpoint.logical_id not in {target.logical_id for target in targets}]
         representative_endpoints = _representative_observers(survivor_endpoints)
         deadline = markers["sigkill_barrier"] + float(spec.workload_seconds)
-        next_probe = time.monotonic()
-        while time.monotonic() <= deadline:
-            now = time.monotonic()
+        next_probe = shared_monotonic()
+        while True:
+            sampler.drain()
+            now = shared_monotonic()
             if now < next_probe:
                 time.sleep(next_probe - now)
-            probe_started = time.monotonic()
+            probe_started = shared_monotonic()
             with ThreadPoolExecutor(max_workers=len(representative_endpoints)) as executor:
                 probes = list(executor.map(lambda endpoint: _probe_endpoint(endpoint, 0.08), representative_endpoints))
-            observed_at = time.monotonic()
+            observed_at = shared_monotonic()
+            sampler.drain()
             facts = _fault_topology_facts(
                 probes,
                 initial_roles=initial_roles,
@@ -1263,7 +1894,14 @@ def _capture_fault_window(
                     "probe_started_at_monotonic": round(probe_started, 6),
                     "probe_duration_ms": round(max(observed_at - probe_started, 0.0) * 1000.0, 6),
                     "facts": facts,
-                    "views": _compact_fault_views(probes, target_node_ids, replacement_node_ids),
+                    "views_sha256": _intern_fault_topology_view(
+                        topology_view_entries,
+                        _compact_fault_views(
+                            probes,
+                            target_node_ids,
+                            replacement_node_ids,
+                        ),
+                    ),
                 }
             )
             for field in ("unexpected_pfail", "unexpected_fail", "unexpected_promotions"):
@@ -1277,16 +1915,18 @@ def _capture_fault_window(
                 accumulator,
                 markers,
                 first_success,
+                window_end=deadline,
             )
             stable = accumulator.summary([probe.shard_id for probe in affected])
             if stable.get("status") == "PASS" and "all_slots_covered_cluster_ok" in markers:
                 stable_at = float(stable["stable_endpoint_monotonic_ms"]) / 1000.0
                 markers.setdefault("stable_client_recovery", round(stable_at, 6))
             if "stable_client_recovery" in markers and "every_node_converged" not in markers:
-                convergence_probe_started = time.monotonic()
+                convergence_probe_started = shared_monotonic()
                 with ThreadPoolExecutor(max_workers=min(len(survivor_endpoints), 32)) as executor:
                     full_probes = list(executor.map(lambda endpoint: _probe_endpoint(endpoint, 0.5), survivor_endpoints))
-                convergence_probe_observed = time.monotonic()
+                convergence_probe_observed = shared_monotonic()
+                sampler.drain()
                 full_convergence = _fault_topology_facts(
                     full_probes,
                     initial_roles=initial_roles,
@@ -1305,10 +1945,13 @@ def _capture_fault_window(
                             6,
                         ),
                     }
-                    fault["every_node_convergence_views"] = _compact_fault_views(
-                        full_probes,
-                        target_node_ids,
-                        replacement_node_ids,
+                    fault["every_node_convergence_views_sha256"] = _intern_fault_topology_view(
+                        topology_view_entries,
+                        _compact_fault_views(
+                            full_probes,
+                            target_node_ids,
+                            replacement_node_ids,
+                        ),
                     )
             # Keep observing topology for the full fixed window after recovery;
             # otherwise a late PFAIL, FAIL, promotion, or slot loss would be
@@ -1316,18 +1959,23 @@ def _capture_fault_window(
             next_probe = probe_started + (
                 1.0 if all(name in markers for name in _fault_marker_names()) else 0.1
             )
+            if observed_at >= deadline:
+                break
+    except BaseException as exc:
+        primary_error = exc
+        raise
     finally:
-        stop_clients.set()
-        for future in client_futures:
-            try:
-                future.result(timeout=2.0)
-            except Exception:
-                pass
-        client_executor.shutdown(wait=True)
-        for probe in client_probes:
-            probe.client.close()
+        _stop_fault_sampler(sampler, primary_error)
 
-    _consume_fault_samples(affected, sample_lock, processed, accumulator, markers, first_success)
+    _consume_fault_samples(
+        affected,
+        sample_lock,
+        processed,
+        accumulator,
+        markers,
+        first_success,
+        window_end=deadline,
+    )
     stable = accumulator.summary([probe.shard_id for probe in affected])
     stable_shards = _stable_shard_rows(accumulator, stable)
     cadence = _fault_cadence(client_probes, markers.get("sigkill_barrier"), float(spec.workload_seconds))
@@ -1335,9 +1983,11 @@ def _capture_fault_window(
     all_samples = [
         row
         for probe in client_probes
-        for row in probe.samples
-        if isinstance(row.get("started_at_monotonic"), (int, float))
-        and float(row["started_at_monotonic"]) >= barrier
+        for row in _fault_samples_in_window(
+            probe,
+            barrier,
+            float(spec.workload_seconds),
+        )
     ]
     latencies = [float(row["latency_ms"]) for row in all_samples if row.get("status") == "PASS"]
     error_rows = [row for row in all_samples if row.get("status") != "PASS"]
@@ -1345,7 +1995,14 @@ def _capture_fault_window(
         "status": "PASS",
         "requested_duration_seconds": float(spec.workload_seconds),
         "duration_seconds": float(spec.workload_seconds),
-        "observed_duration_seconds": round(max(time.monotonic() - markers.get("sigkill_barrier", time.monotonic()), 0.0), 6),
+        "observed_duration_seconds": round(
+            max(
+                shared_monotonic()
+                - markers.get("sigkill_barrier", shared_monotonic()),
+                0.0,
+            ),
+            6,
+        ),
         "value_size_bytes": 512,
         "set_throughput_ops_per_second": round(sum(1 for row in all_samples if row.get("set_succeeded") is True) / max(float(spec.workload_seconds), 0.000001), 6),
         "p99_latency_ms": round(nearest_rank(latencies, 0.99), 6) if latencies else "MISSING",
@@ -1360,7 +2017,11 @@ def _capture_fault_window(
         "pre_fault_warmups": warmups,
         "first_success": first_success,
         "per_shard": cadence.get("per_shard", []),
-        "client_series": _fault_client_series(client_probes, markers, stable_shards),
+        "client_series": _fault_client_series(
+            client_probes,
+            markers,
+            float(spec.workload_seconds),
+        ),
         "unaffected_control_shards": [probe.shard_id for probe in controls],
     }
     missing = _missing_fault_facts(
@@ -1369,18 +2030,21 @@ def _capture_fault_window(
         stable,
         stable_shards,
         cadence,
+        observer_rounds,
         full_convergence,
         observed_safety,
     )
     if not latencies:
         missing.append("no successful persistent client operation was measured")
-    if missing:
-        workload["status"] = "FAIL"
-        workload["errors"] = [*workload["errors"], *missing]
+    _apply_fault_measurement_errors(workload, missing)
     fault.update(
         {
             "monotonic_markers": markers,
             "observer_rounds": observer_rounds,
+            "topology_view_dictionary": [
+                topology_view_entries[digest]
+                for digest in sorted(topology_view_entries)
+            ],
             "topology_facts": full_convergence,
             "observed_safety": observed_safety,
             "initial_roles": initial_roles,
@@ -1462,35 +2126,61 @@ def _owned_sigkill_sender(
     """Pre-authorize containers, then issue one post-barrier kill per container."""
     runtime = state.get("runtime")
     capability_id = state.get("capability_id")
-    if not isinstance(runtime, Mapping) or not isinstance(runtime.get("run_id"), str):
+    if (
+        not isinstance(runtime, Mapping)
+        or not isinstance(runtime.get("run_id"), str)
+        or not runtime["run_id"]
+        or not isinstance(capability_id, str)
+        or not capability_id
+    ):
         raise CaptureError("SIGKILL batching requires runtime ownership")
     ownership_id = str(runtime["run_id"])
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     logical_to_group: dict[str, tuple[str, str]] = {}
     logical_to_pid: dict[str, int] = {}
     container_names: dict[str, str] = {}
+    container_ids: dict[str, str] = {}
+    process_identities: set[tuple[str, int]] = set()
     for node in selected:
         logical_id = node.get("logical_id")
         container_name = node.get("container_name")
         container_id = node.get("container_id")
         pid = node.get("pid")
+        pid_file = node.get("pid_file")
+        config_file = node.get("config_file")
+        client_port = node.get("client_port")
         if (
             not isinstance(logical_id, str)
             or not logical_id
             or not isinstance(container_name, str)
-            or not container_name
+            or DOCKER_CONTAINER_REF_RE.fullmatch(container_name) is None
             or not isinstance(container_id, str)
-            or not container_id
+            or DOCKER_CONTAINER_REF_RE.fullmatch(container_id) is None
             or not isinstance(pid, int)
             or isinstance(pid, bool)
-            or pid <= 0
+            or pid <= 1
+            or pid > 2_147_483_647
+            or not isinstance(pid_file, str)
+            or not pid_file.startswith("/")
+            or not isinstance(config_file, str)
+            or not config_file.startswith("/")
+            or not isinstance(client_port, int)
+            or isinstance(client_port, bool)
+            or not 1 <= client_port <= 65535
         ):
             raise CaptureError("SIGKILL target lacks a complete container/process identity")
         if logical_id in logical_to_group:
             raise CaptureError("SIGKILL target logical ids are duplicated")
         if container_name in container_names and container_names[container_name] != container_id:
             raise CaptureError("SIGKILL target container name maps to multiple container ids")
+        if container_id in container_ids and container_ids[container_id] != container_name:
+            raise CaptureError("SIGKILL target container id maps to multiple container names")
+        process_identity = (container_id, pid)
+        if process_identity in process_identities:
+            raise CaptureError("SIGKILL target process identities are duplicated")
         container_names[container_name] = container_id
+        container_ids[container_id] = container_name
+        process_identities.add(process_identity)
         key = (container_name, container_id)
         groups.setdefault(key, []).append(node)
         logical_to_group[logical_id] = key
@@ -1509,17 +2199,41 @@ def _owned_sigkill_sender(
         if not isinstance(payload, list) or len(payload) != 1 or not isinstance(payload[0], dict):
             raise CaptureError(f"SIGKILL container {container_name} inspection was incomplete")
         labels = payload[0].get("Config", {}).get("Labels", {})
-        if payload[0].get("Id") != container_id or any(
-            labels.get(label) != value for label, value in expected_labels.items()
+        if (
+            payload[0].get("Id") != container_id
+            or payload[0].get("Name") != f"/{container_name}"
+            or any(
+                labels.get(label) != value
+                for label, value in expected_labels.items()
+            )
         ):
             raise CaptureError(f"SIGKILL container {container_name} failed identity/ownership verification")
         ordered = sorted(nodes, key=lambda row: str(row["logical_id"]))
+        identity_argv = [
+            "exec",
+            container_id,
+            "sh",
+            "-c",
+            OWNED_PROCESS_IDENTITY_PROBE_SCRIPT,
+            "sh",
+            *[
+                value
+                for node in ordered
+                for value in (
+                    str(node["pid"]),
+                    str(node["pid_file"]),
+                    str(node["config_file"]),
+                    str(node["client_port"]),
+                )
+            ],
+        ]
         pid_text = " ".join(str(node["pid"]) for node in ordered)
         argv = ["exec", container_id, "sh", "-c", f"kill -KILL {pid_text}"]
         batch_states[key] = {
             "event": threading.Event(),
             "leader": str(ordered[0]["logical_id"]),
             "pids": [int(node["pid"]) for node in ordered],
+            "identity_argv": identity_argv,
             "error": None,
             "evidence": {
                 "container_name": container_name,
@@ -1531,6 +2245,7 @@ def _owned_sigkill_sender(
                 "started_at_monotonic": "MISSING",
                 "ended_at_monotonic": "MISSING",
                 "returncode": "MISSING",
+                "stdout": "MISSING",
                 "status": "PENDING",
             },
         }
@@ -1545,17 +2260,31 @@ def _owned_sigkill_sender(
         event = batch["event"]
         if logical_id == batch["leader"]:
             evidence = batch["evidence"]
-            evidence["started_at_monotonic"] = round(time.monotonic(), 6)
+            evidence["started_at_monotonic"] = round(shared_monotonic(), 6)
             try:
+                identity = command(
+                    list(batch["identity_argv"]),
+                    timeout=10,
+                    check=False,
+                )
+                if identity.returncode != 0 or str(identity.stdout).strip() != "VSLAB_IDENTITY_VERIFIED":
+                    reason = str(identity.stdout).strip() or str(identity.stderr).strip()
+                    raise CaptureError(
+                        f"SIGKILL identity probe returned {identity.returncode} for "
+                        f"container {container_name}: {reason[-500:]}"
+                    )
                 result = command(
                     list(evidence["argv"]),
                     timeout=10,
-                    check=True,
+                    check=False,
                 )
                 evidence["returncode"] = int(result.returncode)
+                evidence["stdout"] = str(result.stdout).strip()
                 if result.returncode != 0:
+                    reason = evidence["stdout"] or str(result.stderr).strip()
                     raise CaptureError(
-                        f"SIGKILL command returned {result.returncode} for container {container_name}"
+                        f"SIGKILL command returned {result.returncode} for container {container_name}: "
+                        f"{reason[-500:]}"
                     )
                 evidence["status"] = "PASS"
             except Exception as exc:  # noqa: BLE001 - all callbacks must see one batch failure
@@ -1566,7 +2295,7 @@ def _owned_sigkill_sender(
                     evidence["returncode"] = returncode
                 evidence["error"] = repr(exc)
             finally:
-                evidence["ended_at_monotonic"] = round(time.monotonic(), 6)
+                evidence["ended_at_monotonic"] = round(shared_monotonic(), 6)
                 event.set()
         elif not event.wait(timeout=10.0):
             raise CaptureError(f"SIGKILL batch leader timed out for container {container_name}")
@@ -1685,14 +2414,14 @@ def _warm_fault_client(probe: FaultClientProbe) -> dict[str, Any]:
 
 def _fault_client_loop(
     probe: FaultClientProbe,
-    stop: threading.Event,
-    started: threading.Event,
+    stop: Any,
+    started: Any,
     sample_lock: threading.Lock,
     *,
-    monotonic_clock: Callable[[], float] = time.monotonic,
+    sample_sink: Callable[[dict[str, Any]], None] | None = None,
+    monotonic_clock: Callable[[], float] = shared_monotonic,
     sleep: Callable[[float], None] = time.sleep,
 ) -> None:
-    cadence_seconds = 0.09
     next_start = monotonic_clock()
     started.set()
     while not stop.is_set():
@@ -1754,9 +2483,12 @@ def _fault_client_loop(
             "ask_count": ask_count,
             "status": "PASS" if set_succeeded and get_succeeded and value_matches and not error else "FAIL",
         }
-        with sample_lock:
-            probe.samples.append(row)
-        next_start += cadence_seconds
+        if sample_sink is None:
+            with sample_lock:
+                probe.samples.append(row)
+        else:
+            sample_sink(row)
+        next_start += FAULT_CLIENT_CADENCE_SECONDS
         if next_start < operation_started:
             next_start = operation_started
 
@@ -1863,6 +2595,7 @@ def _fault_topology_facts(
             raw_slots = row.get("slots")
             row_flags = set(raw_flags) if isinstance(raw_flags, list) else set()
             role = row.get("role")
+            master_id = row.get("master_id")
             inferred_role = observed_role(row)
             row_structure_valid = (
                 row.get("node_id") == node_id
@@ -1872,6 +2605,8 @@ def _fault_topology_facts(
                 and all(isinstance(slot, str) for slot in raw_slots)
                 and role == inferred_role
                 and inferred_role in {"primary", "replica"}
+                and isinstance(master_id, str)
+                and bool(master_id)
                 and row.get("link_state") in {"connected", "disconnected"}
             )
             clean_topology = clean_topology and row_structure_valid
@@ -1893,6 +2628,25 @@ def _fault_topology_facts(
                 node_slots = set()
             if inferred_role == "replica" and raw_slots:
                 clean_topology = False
+            if inferred_role == "primary" and master_id != "-":
+                clean_topology = False
+            if inferred_role == "replica":
+                master = view.get(master_id) if isinstance(master_id, str) else None
+                master_flags = (
+                    set(master.get("flags", []))
+                    if isinstance(master, dict) and isinstance(master.get("flags"), list)
+                    else set()
+                )
+                if (
+                    not isinstance(master, dict)
+                    or node_shards.get(str(node_id)) != node_shards.get(str(master_id))
+                    or observed_role(master) != "primary"
+                    or master.get("link_state") != "connected"
+                    or master_flags.intersection(
+                        {"pfail", "fail?", "fail", "handshake", "noaddr"}
+                    )
+                ):
+                    clean_topology = False
             if inferred_role == "primary" and not row_flags.intersection({"pfail", "fail?", "fail", "handshake", "noaddr"}):
                 shard_id = node_shards.get(str(node_id))
                 if shard_id:
@@ -1980,6 +2734,22 @@ def _compact_fault_views(
     rows: list[dict[str, Any]] = []
     for probe in probes:
         nodes = probe.get("cluster_nodes") if isinstance(probe, dict) else None
+        compact_nodes = {
+            str(node_id): {
+                field: node.get(field, "MISSING")
+                for field in (
+                    "node_id",
+                    "addr",
+                    "flags",
+                    "role",
+                    "master_id",
+                    "slots",
+                    "link_state",
+                )
+            }
+            for node_id, node in (nodes.items() if isinstance(nodes, dict) else ())
+            if isinstance(node, dict)
+        }
         rows.append(
             {
                 "logical_id": probe.get("logical_id", "MISSING") if isinstance(probe, dict) else "MISSING",
@@ -1988,18 +2758,32 @@ def _compact_fault_views(
                 "cluster_slots_assigned": probe.get("cluster_slots_assigned", "MISSING") if isinstance(probe, dict) else "MISSING",
                 "cluster_slots_ok": probe.get("cluster_slots_ok", "MISSING") if isinstance(probe, dict) else "MISSING",
                 "cluster_known_nodes": probe.get("cluster_known_nodes", "MISSING") if isinstance(probe, dict) else "MISSING",
-                "cluster_nodes": nodes if isinstance(nodes, dict) else {},
+                "cluster_nodes": compact_nodes,
                 "target_flags": {
-                    node_id: (nodes.get(node_id, {}).get("flags", []) if isinstance(nodes, dict) else [])
+                    node_id: compact_nodes.get(node_id, {}).get("flags", [])
                     for node_id in sorted(target_node_ids)
                 },
                 "replacement_roles": {
-                    node_id: (nodes.get(node_id, {}).get("role", "MISSING") if isinstance(nodes, dict) else "MISSING")
+                    node_id: compact_nodes.get(node_id, {}).get("role", "MISSING")
                     for node_id in sorted(replacement_node_ids)
                 },
             }
         )
     return rows
+
+
+def _intern_fault_topology_view(
+    entries: dict[str, dict[str, Any]],
+    views: Any,
+) -> str:
+    if not isinstance(views, list):
+        raise CaptureError("fault topology views are not a list")
+    digest = _digest(views)
+    existing = entries.get(digest)
+    if existing is not None and existing["views"] != views:
+        raise CaptureError("fault topology canonical digest collision")
+    entries.setdefault(digest, {"sha256": digest, "views": views})
+    return digest
 
 
 def _advance_fault_markers(markers: dict[str, float], observed_at: float, facts: dict[str, Any]) -> None:
@@ -2021,6 +2805,8 @@ def _consume_fault_samples(
     accumulator: Any,
     markers: dict[str, float],
     first_success: dict[str, float],
+    *,
+    window_end: float | None = None,
 ) -> None:
     barrier = markers.get("sigkill_barrier")
     if barrier is None:
@@ -2036,6 +2822,7 @@ def _consume_fault_samples(
             if (
                 not isinstance(started, (int, float))
                 or float(started) < barrier
+                or (window_end is not None and float(started) > window_end)
                 or not isinstance(completed, (int, float))
                 or float(completed) < float(started)
             ):
@@ -2117,24 +2904,52 @@ def _fault_cadence(
     barrier: float | None,
     duration_seconds: float,
 ) -> dict[str, Any]:
-    if barrier is None:
+    if (
+        barrier is None
+        or isinstance(barrier, bool)
+        or not isinstance(barrier, (int, float))
+        or not math.isfinite(float(barrier))
+        or isinstance(duration_seconds, bool)
+        or not isinstance(duration_seconds, (int, float))
+        or not math.isfinite(float(duration_seconds))
+        or duration_seconds <= 0
+    ):
         return {"status": "FAIL", "affected_shard_max_interval_ms": "MISSING", "per_shard": []}
-    end = barrier + duration_seconds
+    barrier = float(barrier)
+    end = barrier + float(duration_seconds)
     per_shard: list[dict[str, Any]] = []
     affected_maxima: list[float] = []
     for probe in probes:
-        starts = sorted(
-            float(row["started_at_monotonic"])
+        raw_starts = [
+            row.get("started_at_monotonic")
             for row in probe.samples
-            if isinstance(row.get("started_at_monotonic"), (int, float))
-            and barrier <= float(row["started_at_monotonic"]) <= end
+        ]
+        series_complete = bool(raw_starts) and all(
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(float(value))
+            for value in raw_starts
         )
+        numeric_starts = [float(value) for value in raw_starts if isinstance(value, (int, float)) and not isinstance(value, bool)]
+        strictly_increasing = series_complete and all(
+            left < right for left, right in zip(numeric_starts, numeric_starts[1:])
+        )
+        starts = [
+            value
+            for value in numeric_starts
+            if barrier <= value <= end
+        ]
         intervals = [max(starts[0] - barrier, 0.0)] if starts else []
         intervals.extend(right - left for left, right in zip(starts, starts[1:]))
         if starts:
             intervals.append(max(end - starts[-1], 0.0))
         max_ms = round(max(intervals) * 1000.0, 6) if intervals else "MISSING"
-        passed = isinstance(max_ms, float) and max_ms <= 100.0 + 1e-6
+        passed = (
+            series_complete
+            and strictly_increasing
+            and isinstance(max_ms, float)
+            and max_ms <= 100.0 + 1e-6
+        )
         per_shard.append(
             {
                 "shard_id": probe.shard_id,
@@ -2147,8 +2962,13 @@ def _fault_cadence(
         if probe.affected and isinstance(max_ms, float):
             affected_maxima.append(max_ms)
     expected_affected = sum(1 for probe in probes if probe.affected)
-    complete = len(affected_maxima) == expected_affected and all(
-        row["status"] == "PASS" for row in per_shard if row["affected"] is True
+    complete = (
+        bool(probes)
+        and len({probe.shard_id for probe in probes}) == len(probes)
+        and expected_affected > 0
+        and any(not probe.affected for probe in probes)
+        and len(affected_maxima) == expected_affected
+        and all(row["status"] == "PASS" for row in per_shard)
     )
     return {
         "status": "PASS" if complete else "FAIL",
@@ -2160,60 +2980,60 @@ def _fault_cadence(
 def _fault_client_series(
     probes: list[FaultClientProbe],
     markers: dict[str, float],
-    stable_shards: list[dict[str, Any]],
+    duration_seconds: float,
 ) -> list[dict[str, Any]]:
     barrier = markers.get("sigkill_barrier", float("inf"))
-    stable_by_shard = {str(row["shard_id"]): float(row["endpoint_monotonic"]) for row in stable_shards}
     series: list[dict[str, Any]] = []
     for probe in probes:
-        cadence_rows = [
-            row
-            for row in probe.samples
-            if isinstance(row.get("started_at_monotonic"), (int, float))
-            and float(row["started_at_monotonic"]) >= barrier
-        ]
-        recovery_rows = [
-            row
-            for row in probe.samples
-            if isinstance(row.get("started_at_monotonic"), (int, float))
-            and float(row["started_at_monotonic"]) >= barrier
-            and isinstance(row.get("completed_at_monotonic"), (int, float))
-            and float(row["completed_at_monotonic"]) >= float(row["started_at_monotonic"])
-        ]
-        endpoint = stable_by_shard.get(probe.shard_id)
-        through_stable = [
-            {
-                "started_at_monotonic": row["started_at_monotonic"],
-                "completed_at_monotonic": row["completed_at_monotonic"],
-                "set_completed_at_monotonic": row["set_completed_at_monotonic"],
-                "get_completed_at_monotonic": row["get_completed_at_monotonic"],
-                "set_succeeded": row["set_succeeded"],
-                "get_succeeded": row["get_succeeded"],
-                "value_matches": row["value_matches"],
-                "timed_out": row["timed_out"],
-                "error": row["error"],
-            }
-            for row in recovery_rows
-            if endpoint is None or float(row["completed_at_monotonic"]) <= endpoint
-        ]
+        raw_rows = list(probe.samples)
+        window_rows = _fault_samples_in_window(probe, barrier, duration_seconds)
         series.append(
             {
                 "shard_id": probe.shard_id,
                 "affected": probe.affected,
                 "key": probe.key,
-                "attempt_started_monotonic": [row["started_at_monotonic"] for row in cadence_rows],
-                "successful_pair_latencies_ms": [row["latency_ms"] for row in cadence_rows if row.get("status") == "PASS"],
-                "attempt_count": len(cadence_rows),
-                "set_success_count": sum(1 for row in cadence_rows if row.get("set_succeeded") is True),
-                "get_success_count": sum(1 for row in cadence_rows if row.get("get_succeeded") is True),
-                "error_count": sum(1 for row in cadence_rows if row.get("status") != "PASS"),
-                "timeout_count": sum(1 for row in cadence_rows if row.get("timed_out") is True),
-                "moved_count": sum(int(row.get("moved_count", 0)) for row in cadence_rows),
-                "ask_count": sum(int(row.get("ask_count", 0)) for row in cadence_rows),
-                "samples_through_stable_endpoint": through_stable if probe.affected else [],
+                "attempts": [
+                    {
+                        "started_at_monotonic": row["started_at_monotonic"],
+                        "completed_at_monotonic": row["completed_at_monotonic"],
+                        "set_completed_at_monotonic": row["set_completed_at_monotonic"],
+                        "get_completed_at_monotonic": row["get_completed_at_monotonic"],
+                        "latency_ms": row["latency_ms"],
+                        "set_succeeded": row["set_succeeded"],
+                        "get_succeeded": row["get_succeeded"],
+                        "value_matches": row["value_matches"],
+                        "timed_out": row["timed_out"],
+                        "error": row["error"],
+                        "moved_count": row["moved_count"],
+                        "ask_count": row["ask_count"],
+                        "status": row["status"],
+                    }
+                    for row in raw_rows
+                ],
+                "attempt_count": len(window_rows),
+                "set_success_count": sum(1 for row in window_rows if row.get("set_succeeded") is True),
+                "get_success_count": sum(1 for row in window_rows if row.get("get_succeeded") is True),
+                "error_count": sum(1 for row in window_rows if row.get("status") != "PASS"),
+                "timeout_count": sum(1 for row in window_rows if row.get("timed_out") is True),
+                "moved_count": sum(int(row.get("moved_count", 0)) for row in window_rows),
+                "ask_count": sum(int(row.get("ask_count", 0)) for row in window_rows),
             }
         )
     return series
+
+
+def _fault_samples_in_window(
+    probe: FaultClientProbe,
+    barrier: float,
+    duration_seconds: float,
+) -> list[dict[str, Any]]:
+    window_end = barrier + duration_seconds
+    return [
+        row
+        for row in probe.samples
+        if isinstance(row.get("started_at_monotonic"), (int, float))
+        and barrier <= float(row["started_at_monotonic"]) <= window_end
+    ]
 
 
 def _fault_marker_names() -> tuple[str, ...]:
@@ -2235,6 +3055,7 @@ def _missing_fault_facts(
     stable: dict[str, Any],
     stable_shards: list[dict[str, Any]],
     cadence: dict[str, Any],
+    observer_rounds: list[dict[str, Any]],
     convergence: dict[str, Any],
     observed_safety: dict[str, Any],
 ) -> list[str]:
@@ -2260,9 +3081,35 @@ def _missing_fault_facts(
     ):
         missing.append("stable affected-shard evidence is incomplete or contains an error/timeout")
     if cadence.get("status") != "PASS":
-        missing.append("affected-shard SET/GET attempt cadence exceeded 100 ms or was incomplete")
+        missing.append("affected/control SET/GET attempt cadence exceeded 100 ms or was incomplete")
     if convergence.get("converged") is not True:
         missing.append("every surviving node did not prove converged topology")
+    converged_at = markers.get("every_node_converged")
+    post_convergence_rounds = [
+        row
+        for row in observer_rounds
+        if isinstance(row, dict)
+        and isinstance(row.get("at_monotonic"), (int, float))
+        and not isinstance(row.get("at_monotonic"), bool)
+        and math.isfinite(float(row["at_monotonic"]))
+        and isinstance(converged_at, (int, float))
+        and not isinstance(converged_at, bool)
+        and math.isfinite(float(converged_at))
+        and float(row["at_monotonic"]) > float(converged_at)
+    ]
+    if not post_convergence_rounds:
+        missing.append("no fixed observation round followed every-node convergence")
+    elif any(
+        not isinstance(row.get("facts"), dict)
+        or row["facts"].get("converged") is not True
+        or row["facts"].get("unexpected_pfail") != 0
+        or row["facts"].get("unexpected_fail") != 0
+        or row["facts"].get("unexpected_promotions") != 0
+        or row["facts"].get("split_brain") is not False
+        or row["facts"].get("slot_loss") is not False
+        for row in post_convergence_rounds
+    ):
+        missing.append("post-convergence topology observation regressed")
     for field in ("unexpected_pfail", "unexpected_fail", "unexpected_promotions"):
         if observed_safety.get(field) != 0:
             missing.append(f"fault window has nonzero {field}")
@@ -2271,6 +3118,17 @@ def _missing_fault_facts(
     if convergence.get("slot_loss") is not False:
         missing.append("post-fault topology observed slot loss")
     return missing
+
+
+def _apply_fault_measurement_errors(
+    workload: dict[str, Any],
+    missing: list[str],
+) -> None:
+    if not missing:
+        return
+    workload["status"] = "FAIL"
+    workload["errors"] = [*workload.get("errors", []), *missing]
+    workload["error_count"] = len(workload["errors"])
 
 
 def _fault_intervals(markers: dict[str, float], first_success: dict[str, float]) -> dict[str, float]:
@@ -2523,6 +3381,15 @@ def _build_trial(
         raise CaptureError("internal control digest set is incomplete")
     provenance_path = trial_dir / "evidence_provenance.json"
     categorized = _trial_source_paths(trial_dir, spec, measurement)
+    categorized = [
+        (
+            category,
+            _gzip_trial_json_source(path)
+            if category in COMPRESSED_TRIAL_SOURCE_CATEGORIES
+            else path,
+        )
+        for category, path in categorized
+    ]
     capture_digest = _digest({category: _file_digest(path) for category, path in categorized if path.is_file()})
     command_path = trial_dir / "command_log.jsonl"
     provenance = {
@@ -2549,7 +3416,6 @@ def _build_trial(
     _write_json(provenance_path, provenance)
     categorized.append(("provenance", provenance_path))
     refs = [_source_ref(ctx, category, path) for category, path in categorized]
-    ctx.source_refs.extend(refs)
     correctness = measurement.get("correctness")
     if not isinstance(correctness, dict) or not correctness:
         correctness = _derive_formation_correctness(
@@ -2564,7 +3430,7 @@ def _build_trial(
         "formation_seconds": round(markers["data_path_probe"] - markers["last_process_ping"], 6),
         **measurement.get("derived_intervals", {}),
     }
-    return {
+    trial = {
         "trial_id": spec.trial_id,
         "pair_id": spec.pair_id,
         "cell_id": spec.cell_id,
@@ -2584,7 +3450,11 @@ def _build_trial(
         "correctness": correctness,
         "resource_window": resource_metrics,
         "workload": workload,
-        "fault": measurement.get("fault"),
+        "fault": (
+            _compact_fault_summary(fault_document)
+            if fault_document
+            else None
+        ),
         "cleanup": {
             "status": cleanup["status"],
             "resources_remaining": cleanup.get("resources_remaining", []),
@@ -2594,6 +3464,49 @@ def _build_trial(
         "provenance": provenance,
         "source_sha256s": refs,
         "control_digests": controls,
+    }
+    # Admission sources remain individually bound; the outer seal binds this
+    # lossless archive of the remaining current-trial files.
+    _archive_success_supporting_artifacts(
+        ctx,
+        trial_dir,
+        gate_source_paths=[path for _category, path in categorized],
+        command_path=command_path,
+    )
+    ctx.source_refs.extend(refs)
+    return trial
+
+
+def _compact_fault_summary(document: Mapping[str, Any]) -> dict[str, Any]:
+    summary_fields = (
+        "status",
+        "errors",
+        "mode",
+        "signal",
+        "commands",
+        "barrier_monotonic",
+        "primary_count",
+        "failed_primary_count",
+        "injection_skew_ms",
+        "signal_barrier_span_ms",
+    )
+    target_fields = (
+        "logical_id",
+        "shard_id",
+        "pid",
+        "ownership_id",
+        "process_gone",
+        "physical_fault_id",
+    )
+    raw_targets = document.get("targets")
+    targets = raw_targets if isinstance(raw_targets, list) else []
+    return {
+        **{field: document.get(field) for field in summary_fields},
+        "targets": [
+            {field: target.get(field) for field in target_fields}
+            for target in targets
+            if isinstance(target, Mapping)
+        ],
     }
 
 
@@ -3101,6 +4014,221 @@ def _capture_owned_valkey_logs(
     return path
 
 
+def _gzip_trial_json_source(path: Path) -> Path:
+    if not path.is_file() or path.is_symlink() or path.suffix != ".json":
+        raise CaptureError(f"trial JSON source is absent or unsafe: {path}")
+    target = path.with_suffix(path.suffix + ".gz")
+    temporary = target.with_name(target.name + ".tmp")
+    if target.exists() or temporary.exists():
+        raise CaptureError(f"trial JSON compression target already exists: {target}")
+    try:
+        with path.open("rb") as source, temporary.open("xb") as raw_target:
+            with gzip.GzipFile(
+                filename="",
+                mode="wb",
+                compresslevel=6,
+                fileobj=raw_target,
+                mtime=0,
+            ) as compressed:
+                shutil.copyfileobj(source, compressed, length=1024 * 1024)
+        restored_digest = hashlib.sha256()
+        with gzip.open(temporary, "rb") as compressed:
+            for block in iter(lambda: compressed.read(1024 * 1024), b""):
+                restored_digest.update(block)
+        if restored_digest.hexdigest() != _file_digest(path):
+            raise CaptureError(f"trial JSON compression did not preserve source bytes: {path}")
+        os.replace(temporary, target)
+        path.unlink()
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+    return target
+
+
+def _artifact_regular_file(
+    artifacts_dir: Path,
+    value: Path,
+) -> tuple[Path, str, int, int, str]:
+    root = artifacts_dir.resolve()
+    candidate = value if value.is_absolute() else root / value
+    if ".." in candidate.parts:
+        raise CaptureError(f"supporting artifact path contains traversal: {value}")
+    try:
+        relative = candidate.relative_to(root)
+    except ValueError as exc:
+        raise CaptureError(f"supporting artifact escapes current artifact directory: {value}") from exc
+    if not relative.parts:
+        raise CaptureError(f"supporting artifact path is not a file: {value}")
+    current = root
+    for part in relative.parts:
+        current /= part
+        try:
+            metadata = current.lstat()
+        except OSError as exc:
+            raise CaptureError(f"supporting artifact is missing: {value}") from exc
+        if stat.S_ISLNK(metadata.st_mode):
+            raise CaptureError(f"supporting artifact path contains a symlink: {value}")
+    if not stat.S_ISREG(metadata.st_mode):
+        raise CaptureError(f"supporting artifact is not a regular file: {value}")
+    resolved = current.resolve()
+    if not resolved.is_relative_to(root):
+        raise CaptureError(f"supporting artifact escapes current artifact directory: {value}")
+    return (
+        resolved,
+        relative.as_posix(),
+        stat.S_IMODE(metadata.st_mode),
+        int(metadata.st_size),
+        _file_digest(resolved),
+    )
+
+
+def _archive_success_supporting_artifacts(
+    ctx: CaptureContext,
+    trial_dir: Path,
+    *,
+    gate_source_paths: list[Path],
+    command_path: Path,
+) -> Path:
+    archive_path = trial_dir / "supporting_artifacts.tar.gz"
+    temporary = archive_path.with_name(archive_path.name + ".tmp")
+    if archive_path.exists() or temporary.exists():
+        raise CaptureError(f"supporting artifact archive already exists: {archive_path}")
+
+    source_paths = {path.resolve() for path in gate_source_paths}
+    files: dict[str, tuple[Path, str, int, int, str]] = {}
+    for candidate in trial_dir.rglob("*"):
+        if candidate.is_symlink():
+            raise CaptureError(f"supporting artifact path contains a symlink: {candidate}")
+        if candidate.is_dir():
+            continue
+        record = _artifact_regular_file(ctx.artifacts_dir, candidate)
+        if record[0] not in source_paths:
+            if record[1] in files:
+                raise CaptureError(f"duplicate supporting artifact path: {record[1]}")
+            files[record[1]] = record
+
+    sidecar_paths: set[Path] = set()
+    try:
+        command_rows = [
+            json.loads(line)
+            for line in command_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise CaptureError(f"command log cannot bind supporting sidecars: {exc}") from exc
+    for row_index, row in enumerate(command_rows):
+        if not isinstance(row, dict):
+            raise CaptureError(f"command log row {row_index} is not an object")
+        for stream_name in ("stdout", "stderr"):
+            path_value = row.get(f"{stream_name}_path")
+            digest_value = row.get(f"{stream_name}_sha256")
+            if not isinstance(path_value, str) or not path_value:
+                raise CaptureError(
+                    f"command log row {row_index} has no {stream_name} sidecar path"
+                )
+            if not isinstance(digest_value, str) or not re.fullmatch(
+                r"[0-9a-f]{64}", digest_value
+            ):
+                raise CaptureError(
+                    f"command log row {row_index} has no valid {stream_name} sidecar digest"
+                )
+            record = _artifact_regular_file(ctx.artifacts_dir, Path(path_value))
+            if record[0] in sidecar_paths:
+                raise CaptureError(f"command log repeats supporting sidecar: {path_value}")
+            if record[4] != digest_value:
+                raise CaptureError(f"command log {stream_name} sidecar digest does not match")
+            sidecar_paths.add(record[0])
+            existing = files.get(record[1])
+            if existing is not None and existing[0] != record[0]:
+                raise CaptureError(f"duplicate supporting artifact path: {record[1]}")
+            files[record[1]] = record
+
+    records = [files[name] for name in sorted(files)]
+
+    class _DigestingReader:
+        def __init__(self, handle: Any) -> None:
+            self.handle = handle
+            self.digest = hashlib.sha256()
+            self.size = 0
+
+        def read(self, size: int = -1) -> bytes:
+            data = self.handle.read(size)
+            self.digest.update(data)
+            self.size += len(data)
+            return data
+
+    try:
+        with temporary.open("xb") as raw_archive:
+            with gzip.GzipFile(
+                filename="",
+                mode="wb",
+                compresslevel=6,
+                fileobj=raw_archive,
+                mtime=0,
+            ) as compressed:
+                with tarfile.open(
+                    fileobj=compressed,
+                    mode="w",
+                    format=tarfile.PAX_FORMAT,
+                ) as archive:
+                    for path, member_name, mode, size, expected_digest in records:
+                        info = tarfile.TarInfo(member_name)
+                        info.size = size
+                        info.mode = mode
+                        info.uid = 0
+                        info.gid = 0
+                        info.uname = ""
+                        info.gname = ""
+                        info.mtime = 0
+                        with path.open("rb") as source:
+                            reader = _DigestingReader(source)
+                            archive.addfile(info, reader)
+                        if (
+                            reader.size != size
+                            or reader.digest.hexdigest() != expected_digest
+                        ):
+                            raise CaptureError(
+                                f"supporting artifact changed while archiving: {member_name}"
+                            )
+
+        with tarfile.open(temporary, mode="r:gz") as archive:
+            members = archive.getmembers()
+            if [member.name for member in members] != [record[1] for record in records]:
+                raise CaptureError("supporting artifact archive member order is not exact")
+            for member, record in zip(members, records):
+                if (
+                    not member.isfile()
+                    or member.size != record[3]
+                    or member.mode != record[2]
+                ):
+                    raise CaptureError(
+                        f"supporting artifact metadata is not exact: {member.name}"
+                    )
+                extracted = archive.extractfile(member)
+                if extracted is None:
+                    raise CaptureError(
+                        f"supporting artifact bytes are unavailable: {member.name}"
+                    )
+                digest = hashlib.sha256()
+                for block in iter(lambda: extracted.read(1024 * 1024), b""):
+                    digest.update(block)
+                if digest.hexdigest() != record[4]:
+                    raise CaptureError(
+                        f"supporting artifact bytes are not exact: {member.name}"
+                    )
+        os.replace(temporary, archive_path)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+    for path, _member_name, _mode, _size, _digest_value in records:
+        try:
+            path.unlink()
+        except OSError as exc:
+            raise CaptureError(f"archived supporting artifact could not be removed: {path}") from exc
+    return archive_path
+
+
 def _trial_source_paths(trial_dir: Path, spec: ArmSpec, measurement: dict[str, Any]) -> list[tuple[str, Path]]:
     rows = [
         ("attempt", trial_dir / "attempt_ledger.json"),
@@ -3127,15 +4255,49 @@ def _collect_partial_refs(ctx: CaptureContext, trial_dir: Path, spec: ArmSpec) -
         ("cleanup", trial_dir / "cleanup_report.json"),
         ("timeline", trial_dir / f"setup_timeline_{spec.scenario}.json"),
         ("command_log", trial_dir / "command_log.jsonl"),
-        ("resource", trial_dir / "resource_window.json"),
-        ("workload", trial_dir / "workload_observation.json"),
-        ("topology", trial_dir / "topology_observation.json"),
-        ("fault", trial_dir / "fault_observation.json"),
+        ("provenance", trial_dir / "evidence_provenance.json"),
         ("server_logs", trial_dir / "server_logs" / "manifest.json"),
     ]
     for category, path in candidates:
         if path.is_file() and not path.is_symlink():
             ctx.source_refs.append(_source_ref(ctx, category, path))
+    for category, name in (
+        ("resource", "resource_window.json"),
+        ("workload", "workload_observation.json"),
+        ("topology", "topology_observation.json"),
+        ("fault", "fault_observation.json"),
+    ):
+        plain = trial_dir / name
+        compressed = plain.with_suffix(plain.suffix + ".gz")
+        existing = [path for path in (plain, compressed) if path.is_file()]
+        if len(existing) > 1:
+            raise CaptureError(
+                f"partial evidence has ambiguous plain and compressed sources: {name}"
+            )
+        if existing:
+            ctx.source_refs.append(_source_ref(ctx, category, existing[0]))
+
+
+def _collect_partial_refs_after_error(
+    ctx: CaptureContext,
+    trial_dir: Path,
+    spec: ArmSpec,
+    primary_error: BaseException,
+) -> None:
+    try:
+        _collect_partial_refs(ctx, trial_dir, spec)
+    except BaseException as evidence_error:
+        note = (
+            "partial evidence binding also failed: "
+            f"{type(evidence_error).__name__}: {evidence_error}"
+        )
+        if hasattr(primary_error, "add_note"):
+            primary_error.add_note(note)
+        else:
+            try:
+                setattr(primary_error, "partial_evidence_error", note)
+            except Exception:
+                pass
 
 
 def _source_ref(ctx: CaptureContext, category: str, path: Path) -> dict[str, str]:
@@ -3492,7 +4654,30 @@ def _write_report(path: Path, report: dict[str, Any]) -> None:
 
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_resource_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoder = json.JSONEncoder(
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    )
+    with path.open("w", encoding="utf-8") as handle:
+        for chunk in encoder.iterencode(value):
+            handle.write(chunk)
+        handle.write("\n")
 
 
 def _load_object(path: Path) -> dict[str, Any]:

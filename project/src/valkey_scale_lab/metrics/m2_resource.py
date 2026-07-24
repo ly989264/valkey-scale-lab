@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import ipaddress
 import json
 import math
@@ -45,23 +46,94 @@ printf 'META\t%s\t%s\n' "$clk_tck" "$page_size"
 expected_gone_ports=$1
 shift
 failed=0
+emit_process_failure() {
+  reason=$1
+  if [ "$expected_gone" -eq 1 ]; then
+    if [ ! -e "$stat_path" ]; then
+      printf 'GONE\t%s\t%s\n' "$pid" "$port"
+      return
+    fi
+    if [ -r "$stat_path" ] && gone_stat_line=$(cat "$stat_path" 2>/dev/null); then
+      gone_stat_tail=${gone_stat_line##*) }
+      gone_state=${gone_stat_tail%% *}
+      case "$gone_state" in
+        Z|X|x)
+          printf 'GONE\t%s\t%s\n' "$pid" "$port"
+          return
+          ;;
+      esac
+    elif [ ! -e "$stat_path" ]; then
+      printf 'GONE\t%s\t%s\n' "$pid" "$port"
+      return
+    fi
+  fi
+  printf 'ERROR\t%s\t%s\n' "$pid" "$reason"
+  failed=1
+}
 for owned_process in "$@"; do
   pid=${owned_process%%:*}
   port=${owned_process#*:}
   stat_path="/proc/$pid/stat"
   statm_path="/proc/$pid/statm"
   fd_path="/proc/$pid/fd"
-  if [ ! -r "$stat_path" ] || [ ! -r "$statm_path" ] || [ ! -d "$fd_path" ]; then
-    printf 'GONE\t%s\t%s\n' "$pid" "$port"
+  case ",$expected_gone_ports," in
+    *",$port,"*) expected_gone=1;;
+    *) expected_gone=0;;
+  esac
+  if [ ! -e "$stat_path" ]; then
+    emit_process_failure process_stat_missing
     continue
   fi
-  stat_line=$(cat "$stat_path" 2>/dev/null) || { printf 'ERROR\t%s\tstat_unreadable\n' "$pid"; failed=1; continue; }
+  if [ ! -r "$stat_path" ]; then
+    emit_process_failure stat_unreadable
+    continue
+  fi
+  if ! stat_line=$(cat "$stat_path" 2>/dev/null); then
+    emit_process_failure stat_unreadable
+    continue
+  fi
+  case "$stat_line" in
+    *") "*) ;;
+    *) emit_process_failure stat_malformed; continue;;
+  esac
   stat_tail=${stat_line##*) }
   set -- $stat_tail
+  if [ "$#" -lt 20 ]; then
+    emit_process_failure stat_malformed
+    continue
+  fi
+  case "$1" in
+    Z|X|x)
+      emit_process_failure process_not_live
+      continue
+      ;;
+    R|S|D|T|t|W|K|P|I) ;;
+    *)
+      emit_process_failure stat_malformed
+      continue
+      ;;
+  esac
   utime=${12}
   stime=${13}
-  set -- $(cat "$statm_path" 2>/dev/null) || { printf 'ERROR\t%s\tstatm_unreadable\n' "$pid"; failed=1; continue; }
+  start_time=${20}
+  if [ ! -e "$statm_path" ] || [ ! -r "$statm_path" ]; then
+    emit_process_failure statm_unreadable
+    continue
+  fi
+  if ! statm_line=$(cat "$statm_path" 2>/dev/null); then
+    emit_process_failure statm_unreadable
+    continue
+  fi
+  set -- $statm_line
+  if [ "$#" -lt 2 ]; then
+    emit_process_failure statm_malformed
+    continue
+  fi
   rss_pages=$2
+  if [ ! -d "$fd_path" ] || [ ! -r "$fd_path" ] || [ ! -x "$fd_path" ]; then
+    emit_process_failure fd_unreadable
+    continue
+  fi
   fd_count=0
   socket_count=0
   for fd in "$fd_path"/*; do
@@ -70,10 +142,10 @@ for owned_process in "$@"; do
     target=$(readlink "$fd" 2>/dev/null || true)
     case "$target" in socket:\[*\]) socket_count=$((socket_count + 1));; esac
   done
-  printf 'PID\t%s\t%s\t%s\t%s\t%s\t%s\n' "$pid" "$utime" "$stime" "$rss_pages" "$fd_count" "$socket_count"
+  pid_row=$(printf 'PID\t%s\t%s\t%s\t%s\t%s\t%s' \
+    "$pid" "$utime" "$stime" "$rss_pages" "$fd_count" "$socket_count")
   if ! cluster_info=$(valkey-cli --raw -p "$port" CLUSTER INFO 2>/dev/null); then
-    printf 'ERROR\t%s\tcluster_info_unreadable\n' "$pid"
-    failed=1
+    emit_process_failure cluster_info_unreadable
     continue
   fi
   if ! cluster_values=$(printf '%s\n' "$cluster_info" | awk -F: '
@@ -92,8 +164,7 @@ for owned_process in "$@"; do
       printf "%s %s %s %s %s", sent_bytes, received_bytes, sent_messages, received_messages, buffer_exceeded
     }
   '); then
-    printf 'ERROR\t%s\tcluster_info_counters_missing\n' "$pid"
-    failed=1
+    emit_process_failure cluster_info_counters_missing
     continue
   fi
   set -- $cluster_values
@@ -103,8 +174,7 @@ for owned_process in "$@"; do
   received_messages=$4
   buffer_exceeded=$5
   if ! cluster_nodes=$(valkey-cli --raw -p "$port" CLUSTER NODES 2>/dev/null); then
-    printf 'ERROR\t%s\tcluster_nodes_unreadable\n' "$pid"
-    failed=1
+    emit_process_failure cluster_nodes_unreadable
     continue
   fi
   if ! link_values=$(printf '%s\n' "$cluster_nodes" | awk -v expected_gone_ports="$expected_gone_ports" '
@@ -122,28 +192,56 @@ for owned_process in "$@"; do
     }
     END { if (links < 1) exit 2; printf "%s %s %s", links, errors + 0, non_connected + 0 }
   '); then
-    printf 'ERROR\t%s\tcluster_nodes_links_missing\n' "$pid"
-    failed=1
+    emit_process_failure cluster_nodes_links_missing
     continue
   fi
   set -- $link_values
-  printf 'CLUSTER\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+  cluster_row=$(printf 'CLUSTER\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
     "$pid" "$port" "$sent_bytes" "$received_bytes" "$sent_messages" "$received_messages" \
-    "$buffer_exceeded" "$1" "$2" "$3"
-  if ! printf '%s\n' "$cluster_nodes" | awk -v pid="$pid" '
+    "$buffer_exceeded" "$1" "$2" "$3")
+  if ! link_rows=$(printf '%s\n' "$cluster_nodes" | awk -v pid="$pid" '
     NF && $8 != "connected" {
       printf "LINK\t%s\t%s\t%s\t%s\t%s\t%s\n", pid, $1, $2, $3, $4, $8
     }
-  '; then
-    printf 'ERROR\t%s\tcluster_nodes_raw_unreadable\n' "$pid"
-    failed=1
+  '); then
+    emit_process_failure cluster_nodes_raw_unreadable
     continue
   fi
   if ! cluster_links=$(valkey-cli -3 --json -p "$port" CLUSTER LINKS 2>/dev/null); then
-    printf 'ERROR\t%s\tcluster_links_unreadable\n' "$pid"
-    failed=1
+    emit_process_failure cluster_links_unreadable
     continue
   fi
+  if ! final_stat_line=$(cat "$stat_path" 2>/dev/null); then
+    emit_process_failure process_stat_reread
+    continue
+  fi
+  case "$final_stat_line" in
+    *") "*) ;;
+    *) emit_process_failure process_stat_reread_malformed; continue;;
+  esac
+  final_stat_tail=${final_stat_line##*) }
+  set -- $final_stat_tail
+  if [ "$#" -lt 20 ]; then
+    emit_process_failure process_stat_reread_malformed
+    continue
+  fi
+  case "$1" in
+    Z|X|x)
+      emit_process_failure process_not_live_at_reread
+      continue
+      ;;
+    R|S|D|T|t|W|K|P|I) ;;
+    *)
+      emit_process_failure process_stat_reread_malformed
+      continue
+      ;;
+  esac
+  if [ "${20}" != "$start_time" ]; then
+    emit_process_failure process_identity_changed
+    continue
+  fi
+  printf '%s\n%s\n' "$pid_row" "$cluster_row"
+  [ -z "$link_rows" ] || printf '%s\n' "$link_rows"
   printf 'CLINKS\t%s\t%s\n' "$pid" "$cluster_links"
 done
 rx=0
@@ -233,6 +331,7 @@ def collect_m2_resource_window(
         )
 
     samples: list[dict[str, Any]] = []
+    directional_cluster_links: dict[str, list[dict[str, Any]]] = {}
     captured_processes: set[_ProcessIdentity] = set()
     observed_gone_processes: set[_ProcessIdentity] = set()
 
@@ -249,25 +348,29 @@ def collect_m2_resource_window(
         wall_unix_ms = int(float(wall_clock()) * 1000.0)
         nodehost_rows: list[dict[str, Any]] = []
         sample_errors: list[str] = []
+        expected_gone_ports = ",".join(
+            str(port)
+            for owned_target in targets
+            for pid, port in zip(owned_target.pids, owned_target.client_ports)
+            if _process_identity(owned_target, pid) in allowed_gone_processes
+        )
+
         for target in targets:
             try:
-                expected_gone_ports = ",".join(
-                    str(port)
-                    for owned_target in targets
-                    for pid, port in zip(owned_target.pids, owned_target.client_ports)
-                    if _process_identity(owned_target, pid) in allowed_gone_processes
-                )
                 output = _run_command(
                     command,
                     [
                         "exec",
-                        target.container_name,
+                        target.container_id,
                         "sh",
                         "-c",
                         _PROC_BATCH_SCRIPT,
                         "m2-resource",
                         expected_gone_ports,
-                        *[f"{pid}:{port}" for pid, port in zip(target.pids, target.client_ports)],
+                        *[
+                            f"{pid}:{port}"
+                            for pid, port in zip(target.pids, target.client_ports)
+                        ],
                     ],
                     timeout=command_timeout_seconds,
                 )
@@ -277,6 +380,10 @@ def collect_m2_resource_window(
                     expected_gone_processes=allowed_gone_processes,
                     previously_captured_processes=captured_processes,
                     previously_gone_processes=observed_gone_processes,
+                )
+                _intern_nodehost_directional_links(
+                    row,
+                    directional_cluster_links,
                 )
                 nodehost_rows.append(row)
                 captured_processes.update(
@@ -410,6 +517,7 @@ def collect_m2_resource_window(
         captured_processes=captured_processes,
         observed_gone_processes=observed_gone_processes,
         allow_initial_membership_transitions=allow_initial_membership_transitions,
+        directional_cluster_links=directional_cluster_links,
     )
 
 
@@ -445,7 +553,7 @@ def validate_and_aggregate_m2_resource_samples(
     coverage = report.get("coverage")
     ownership = report.get("ownership")
     fault_capture = report.get("fault_target_capture")
-    samples = report.get("samples")
+    raw_samples = report.get("samples")
     if not isinstance(coverage, dict):
         errors.append("resource coverage must be an object")
         coverage = {}
@@ -455,9 +563,11 @@ def validate_and_aggregate_m2_resource_samples(
     if not isinstance(fault_capture, dict):
         errors.append("fault_target_capture must be an object")
         fault_capture = {}
-    if not isinstance(samples, list):
+    if not isinstance(raw_samples, list):
         errors.append("resource samples must be an array")
         samples = []
+    else:
+        samples = _resource_samples_with_directional_links(report, errors)
 
     duration: float | None = None
     interval: float | None = None
@@ -1004,13 +1114,18 @@ def _targets_from_state(runtime_state: dict[str, Any]) -> tuple[list[_Target], s
 
     nodehost_by_id: dict[str, dict[str, Any]] = {}
     container_to_id: dict[str, str] = {}
+    container_id_to_nodehost: dict[str, str] = {}
     for row in nodehost_rows:
         if not isinstance(row, dict):
             raise M2ResourceMeasurementError("runtime state nodehosts must contain objects")
         nodehost_id = _required_text(row.get("nodehost_id"), "nodehost_id")
         container_id = _required_text(row.get("container_id"), f"{nodehost_id} container_id")
         container_name = _required_text(row.get("container_name"), f"{nodehost_id} container_name")
-        if nodehost_id in nodehost_by_id or container_name in container_to_id:
+        if (
+            nodehost_id in nodehost_by_id
+            or container_name in container_to_id
+            or container_id in container_id_to_nodehost
+        ):
             raise M2ResourceMeasurementError(f"duplicate nodehost ownership target {nodehost_id}/{container_name}")
         nodehost_by_id[nodehost_id] = {
             "container_id": container_id,
@@ -1020,13 +1135,18 @@ def _targets_from_state(runtime_state: dict[str, Any]) -> tuple[list[_Target], s
             "client_ports": [],
         }
         container_to_id[container_name] = nodehost_id
+        container_id_to_nodehost[container_id] = nodehost_id
 
     seen_pid_targets: set[tuple[str, int]] = set()
     seen_port_targets: set[tuple[str, int]] = set()
+    seen_logical_ids: set[str] = set()
     for node in nodes:
         if not isinstance(node, dict):
             raise M2ResourceMeasurementError("runtime state nodes must contain objects")
         logical_id = _required_text(node.get("logical_id"), "node logical_id")
+        if logical_id in seen_logical_ids:
+            raise M2ResourceMeasurementError(f"duplicate owned logical_id {logical_id}")
+        seen_logical_ids.add(logical_id)
         pid = node.get("pid")
         if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
             raise M2ResourceMeasurementError(f"{logical_id} requires a positive numeric owned pid")
@@ -1051,10 +1171,10 @@ def _targets_from_state(runtime_state: dict[str, Any]) -> tuple[list[_Target], s
         node_container_id = node.get("container_id")
         if node_container_id and not _same_container_id(str(node_container_id), target["container_id"]):
             raise M2ResourceMeasurementError(f"{logical_id} container id does not match its owned nodehost")
-        pid_key = (target["container_name"], pid)
+        pid_key = (target["container_id"], pid)
         if pid_key in seen_pid_targets:
             raise M2ResourceMeasurementError(f"duplicate owned pid {pid} in {target['container_name']}")
-        port_key = (target["container_name"], client_port)
+        port_key = (target["container_id"], client_port)
         if port_key in seen_port_targets:
             raise M2ResourceMeasurementError(f"duplicate owned client_port {client_port} in {target['container_name']}")
         seen_pid_targets.add(pid_key)
@@ -1097,7 +1217,7 @@ def _verify_owned_targets(
         f"{LABEL_PREFIX}.run_id": run_id,
     }
     for target in targets:
-        output = _run_command(command, ["inspect", target.container_name], timeout=timeout)
+        output = _run_command(command, ["inspect", target.container_id], timeout=timeout)
         try:
             raw = json.loads(output)
         except (TypeError, json.JSONDecodeError) as exc:
@@ -1106,9 +1226,12 @@ def _verify_owned_targets(
         if not isinstance(inspected, dict):
             raise M2ResourceMeasurementError(f"ownership inspection for {target.container_name} must contain one object")
         actual_id = inspected.get("Id")
+        actual_name = inspected.get("Name")
         labels = inspected.get("Config", {}).get("Labels") if isinstance(inspected.get("Config"), dict) else None
         if not isinstance(actual_id, str) or not _same_container_id(actual_id, target.container_id):
             raise M2ResourceMeasurementError(f"container id ownership mismatch for {target.container_name}")
+        if actual_name != f"/{target.container_name}":
+            raise M2ResourceMeasurementError(f"container name ownership mismatch for {target.container_name}")
         if not isinstance(labels, dict) or any(labels.get(key) != value for key, value in expected_labels.items()):
             raise M2ResourceMeasurementError(
                 f"container {target.container_name} is not owned by capability_id {capability_id} and run_id {run_id}"
@@ -1290,10 +1413,10 @@ def _parse_batch(
             "cluster link observations are not bound to live proc targets: "
             f"{sorted(set(non_connected_cluster_links) - set(processes))}"
         )
-    if set(directional_cluster_links) - set(processes):
+    if set(directional_cluster_links) != set(processes):
         errors.append(
-            "directional cluster link observations are not bound to live proc targets: "
-            f"{sorted(set(directional_cluster_links) - set(processes))}"
+            "directional cluster link observations do not match live proc targets: "
+            f"expected={sorted(processes)} observed={sorted(directional_cluster_links)}"
         )
     reappeared = {
         _process_identity(target, pid)
@@ -1344,11 +1467,7 @@ def _parse_batch(
                 "cluster_link_errors": cluster_counters[pid]["cluster_link_errors"],
                 "non_connected_cluster_link_count": cluster_counters[pid]["non_connected_cluster_link_count"],
                 "non_connected_cluster_links": non_connected_cluster_links.get(pid, []),
-                **(
-                    {"directional_cluster_links": directional_cluster_links[pid]}
-                    if pid in directional_cluster_links
-                    else {}
-                ),
+                "directional_cluster_links": directional_cluster_links[pid],
             }
             for pid in target.pids
             if pid in processes
@@ -1409,6 +1528,208 @@ def _parse_directional_cluster_links(raw: str, *, pid: int) -> list[dict[str, An
             }
         )
     return normalized
+
+
+def _directional_cluster_links_digest(links: list[dict[str, Any]]) -> str:
+    encoded = json.dumps(
+        links,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("ascii")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _intern_nodehost_directional_links(
+    nodehost: dict[str, Any],
+    entries: dict[str, list[dict[str, Any]]],
+) -> None:
+    processes = nodehost.get("processes")
+    if not isinstance(processes, list):
+        raise M2ResourceMeasurementError(
+            "resource nodehost processes must be an array before directional-link interning"
+        )
+    for process in processes:
+        if not isinstance(process, dict):
+            raise M2ResourceMeasurementError(
+                "resource process must be an object before directional-link interning"
+            )
+        links = process.pop("directional_cluster_links", None)
+        if (
+            not isinstance(links, list)
+            or "directional_cluster_links_sha256" in process
+        ):
+            raise M2ResourceMeasurementError(
+                "resource process lacks inline directional CLUSTER LINKS before interning"
+            )
+        digest = _directional_cluster_links_digest(links)
+        existing = entries.get(digest)
+        if existing is not None and existing != links:
+            raise M2ResourceMeasurementError(
+                "directional CLUSTER LINKS canonical digest collision"
+            )
+        entries.setdefault(digest, links)
+        process["directional_cluster_links_sha256"] = digest
+
+
+def _directional_cluster_links_dictionary(
+    entries: Mapping[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "sha256": digest,
+            "directional_cluster_links": entries[digest],
+        }
+        for digest in sorted(entries)
+    ]
+
+
+def _valid_directional_cluster_links(value: Any) -> bool:
+    fields = {
+        "direction",
+        "node_id",
+        "create_time",
+        "events",
+        "send_buffer_allocated",
+        "send_buffer_used",
+    }
+    return isinstance(value, list) and all(
+        isinstance(link, dict)
+        and set(link) == fields
+        and link.get("direction") in {"to", "from"}
+        and _valid_cluster_node_id(link.get("node_id"))
+        and isinstance(link.get("create_time"), int)
+        and not isinstance(link.get("create_time"), bool)
+        and link["create_time"] >= 0
+        and isinstance(link.get("events"), str)
+        and all(event in {"r", "w"} for event in link["events"])
+        and len(set(link["events"])) == len(link["events"])
+        and _valid_nonnegative_int(link.get("send_buffer_allocated"))
+        and _valid_nonnegative_int(link.get("send_buffer_used"))
+        for link in (value if isinstance(value, list) else [])
+    )
+
+
+def _resource_samples_with_directional_links(
+    report: Mapping[str, Any],
+    errors: list[str],
+) -> list[Any]:
+    raw_samples = report.get("samples")
+    if not isinstance(raw_samples, list):
+        return []
+
+    if "directional_cluster_links_dictionary" not in report:
+        for sample in raw_samples:
+            nodehosts = sample.get("nodehosts") if isinstance(sample, dict) else None
+            for nodehost in nodehosts if isinstance(nodehosts, list) else []:
+                processes = (
+                    nodehost.get("processes")
+                    if isinstance(nodehost, dict)
+                    else None
+                )
+                for process in processes if isinstance(processes, list) else []:
+                    if (
+                        not isinstance(process, dict)
+                        or "directional_cluster_links_sha256" in process
+                        or not _valid_directional_cluster_links(
+                            process.get("directional_cluster_links")
+                        )
+                    ):
+                        errors.append(
+                            "inline resource process directional CLUSTER LINKS are missing or invalid"
+                        )
+        return raw_samples
+
+    raw_entries = report.get("directional_cluster_links_dictionary")
+    links_by_digest: dict[str, list[dict[str, Any]]] = {}
+    declared_digests: list[str] = []
+    if not isinstance(raw_entries, list) or not raw_entries:
+        errors.append("resource directional CLUSTER LINKS dictionary is missing")
+        raw_entries = []
+    for position, raw_entry in enumerate(raw_entries):
+        entry = raw_entry if isinstance(raw_entry, dict) else {}
+        digest = entry.get("sha256")
+        links = entry.get("directional_cluster_links")
+        try:
+            actual_digest = (
+                _directional_cluster_links_digest(links)
+                if _valid_directional_cluster_links(links)
+                else None
+            )
+        except (TypeError, ValueError):
+            actual_digest = None
+        valid = (
+            isinstance(raw_entry, dict)
+            and set(raw_entry) == {"sha256", "directional_cluster_links"}
+            and isinstance(digest, str)
+            and len(digest) == 64
+            and all(character in "0123456789abcdef" for character in digest)
+            and actual_digest == digest
+        )
+        if not valid:
+            errors.append(
+                f"resource directional CLUSTER LINKS dictionary entry {position} is invalid"
+            )
+            continue
+        declared_digests.append(digest)
+        links_by_digest.setdefault(digest, links)
+    if (
+        len(declared_digests) != len(raw_entries)
+        or len(set(declared_digests)) != len(declared_digests)
+        or len(links_by_digest) != len(raw_entries)
+    ):
+        errors.append(
+            "resource directional CLUSTER LINKS dictionary contains duplicate entries"
+        )
+
+    referenced_digests: set[str] = set()
+    expanded_samples: list[Any] = []
+    for sample in raw_samples:
+        if not isinstance(sample, dict):
+            expanded_samples.append(sample)
+            continue
+        sample_row = dict(sample)
+        raw_nodehosts = sample.get("nodehosts")
+        expanded_nodehosts: list[Any] = []
+        for nodehost in raw_nodehosts if isinstance(raw_nodehosts, list) else []:
+            if not isinstance(nodehost, dict):
+                expanded_nodehosts.append(nodehost)
+                continue
+            nodehost_row = dict(nodehost)
+            raw_processes = nodehost.get("processes")
+            expanded_processes: list[Any] = []
+            for process in raw_processes if isinstance(raw_processes, list) else []:
+                if not isinstance(process, dict):
+                    expanded_processes.append(process)
+                    continue
+                process_row = dict(process)
+                digest = process.get("directional_cluster_links_sha256")
+                valid_ref = (
+                    "directional_cluster_links" not in process
+                    and isinstance(digest, str)
+                    and digest in links_by_digest
+                )
+                if not valid_ref:
+                    errors.append(
+                        "resource process directional CLUSTER LINKS reference is missing or invalid"
+                    )
+                else:
+                    referenced_digests.add(digest)
+                    process_row.pop("directional_cluster_links_sha256", None)
+                    process_row["directional_cluster_links"] = links_by_digest[digest]
+                expanded_processes.append(process_row)
+            if isinstance(raw_processes, list):
+                nodehost_row["processes"] = expanded_processes
+            expanded_nodehosts.append(nodehost_row)
+        if isinstance(raw_nodehosts, list):
+            sample_row["nodehosts"] = expanded_nodehosts
+        expanded_samples.append(sample_row)
+    if set(links_by_digest) != referenced_digests:
+        errors.append(
+            "resource directional CLUSTER LINKS dictionary has unreferenced entries"
+        )
+    return expanded_samples
 
 
 def _cluster_link_errors_from_raw(
@@ -1779,8 +2100,12 @@ def _cluster_link_client_port(address: str) -> int | None:
     return port if 0 < port <= 65535 and 0 < bus_port <= 65535 else None
 
 
-def _valid_cluster_node_id(value: str) -> bool:
-    return len(value) == 40 and all(character in "0123456789abcdef" for character in value.lower())
+def _valid_cluster_node_id(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 40
+        and all(character in "0123456789abcdef" for character in value.lower())
+    )
 
 
 def _resource_report(
@@ -1798,6 +2123,7 @@ def _resource_report(
     captured_processes: set[_ProcessIdentity] | None = None,
     observed_gone_processes: set[_ProcessIdentity] | None = None,
     allow_initial_membership_transitions: bool = False,
+    directional_cluster_links: Mapping[str, list[dict[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     expected_gone = expected_gone_processes or set()
     captured = captured_processes or set()
@@ -1808,7 +2134,27 @@ def _resource_report(
         for pid, port in zip(target.pids, target.client_ports)
         if _process_identity(target, pid) in expected_gone
     }
-    complete_samples = [sample for sample in samples if sample.get("status") == "PASS"]
+    dictionary_rows = _directional_cluster_links_dictionary(
+        directional_cluster_links or {}
+    )
+    aggregate_samples = samples
+    if dictionary_rows:
+        resolution_errors: list[str] = []
+        aggregate_samples = _resource_samples_with_directional_links(
+            {
+                "samples": samples,
+                "directional_cluster_links_dictionary": dictionary_rows,
+            },
+            resolution_errors,
+        )
+        if resolution_errors:
+            status = "FAIL"
+            errors.extend(resolution_errors)
+    complete_samples = [
+        sample
+        for sample in aggregate_samples
+        if isinstance(sample, dict) and sample.get("status") == "PASS"
+    ]
     complete = status == "PASS" and len(complete_samples) == expected_samples and expected_samples > 0
     metrics: dict[str, int | float | str] = {
         "peak_rss_bytes": MISSING,
@@ -1837,7 +2183,7 @@ def _resource_report(
             status = "FAIL"
             complete = False
             errors.append(str(exc))
-    return {
+    report = {
         "schema_version": "v1",
         "artifact_type": "m2_resource_window",
         "status": status,
@@ -1911,6 +2257,9 @@ def _resource_report(
         "samples": samples,
         "errors": errors,
     }
+    if dictionary_rows:
+        report["directional_cluster_links_dictionary"] = dictionary_rows
+    return report
 
 
 def _aggregate_samples(
@@ -2387,7 +2736,7 @@ def _nonnegative_int(value: str, label: str) -> int:
 
 
 def _same_container_id(left: str, right: str) -> bool:
-    return bool(left and right and (left.startswith(right) or right.startswith(left)))
+    return bool(left and right and left == right)
 
 
 def _same_number(left: Any, right: Any) -> bool:
