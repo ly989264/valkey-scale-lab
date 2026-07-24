@@ -17,6 +17,7 @@ from contracts import (
     parse_planner_output,
     parse_work_item,
     parse_worker_output,
+    pr_contract_change,
     render_work_item,
     require_candidate_check,
     validate_acyclic,
@@ -161,6 +162,23 @@ class ContractTests(unittest.TestCase):
         self.assertNotEqual(first, verified_tree(a, b, d))
         self.assertNotEqual(first, verified_tree(a, c, c))
         self.assertNotEqual(first, verified_tree(d, b, c))
+
+    def test_contract_change_metadata_is_body_authoritative(self) -> None:
+        self.assertTrue(pr_contract_change("Contract-Change: true\n", []))
+        self.assertFalse(
+            pr_contract_change(
+                "Contract-Change: false\n",
+                ["milestone-loop:contract-change"],
+            )
+        )
+        for body in (
+            "",
+            "Contract-Change:true\n",
+            "Contract-Change: maybe\n",
+            "Contract-Change: false\nContract-Change: true\n",
+        ):
+            with self.subTest(body=body), self.assertRaises(ContractError):
+                pr_contract_change(body, [])
 
     def test_gate_conclusions_have_only_three_fixed_mappings(self) -> None:
         self.assertEqual(github_conclusion("PASS"), "success")

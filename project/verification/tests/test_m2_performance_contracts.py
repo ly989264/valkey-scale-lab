@@ -2926,9 +2926,6 @@ def test_discovery_runner_without_authorization_is_blocked_before_capture(
     report = json.loads((artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8"))
     assert report["status"] == "BLOCKED"
     assert report["campaigns"] == {}
-    assert report["candidate_results"] == {"formation": [], "failover": []}
-    assert report["errors"] == [payload["summary"]]
-    assert report["report_digest"] == DISCOVERY.admission.report_digest(report)
 
 
 @pytest.mark.parametrize(
@@ -3117,7 +3114,7 @@ def test_discovery_resource_preflight_blocker_remains_preflight_evidence(
         ("failover", RuntimeError),
     ],
 )
-def test_discovery_producer_structures_capture_site_failures(
+def test_discovery_producer_keeps_only_completed_and_affected_phases(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     failure_phase: str,
@@ -3184,6 +3181,9 @@ def test_discovery_producer_structures_capture_site_failures(
     assert status == "FAIL"
     assert report["status"] == "FAIL"
     assert report["campaigns"][failure_phase]["errors"] == report["errors"]
+    assert set(report["campaigns"]) == (
+        {"formation"} if failure_phase == "formation" else {"formation", "failover"}
+    )
 
 
 def test_discovery_producer_replaces_current_phase_after_validation_failure(

@@ -26,7 +26,6 @@ from loop import main as loop_main, pr_metadata
 from milestone_runner import (
     LeaseConfirmationBlocked,
     _canonical_digest,
-    _derive_discovery_report_failure,
     _gate_environment,
     _gate_result_summary,
     _lease_fingerprint,
@@ -94,73 +93,6 @@ class InvocationClient:
 
 
 class BoundaryTests(unittest.TestCase):
-    def test_discovery_failure_policy_is_derived_from_report_facts(self) -> None:
-        capture_error = "DISCOVERY_FAILED: CaptureError: collector failed"
-        measurement = _derive_discovery_report_failure(
-            status="FAIL",
-            report={
-                "errors": [capture_error],
-                "campaigns": {
-                    "formation": {
-                        "status": "FAIL",
-                        "errors": [capture_error],
-                    }
-                },
-            },
-        )
-        self.assertEqual(
-            measurement,
-            {
-                "failure_phase": "formation",
-                "class": "measurement",
-                "scope": "formation",
-                "retryable": True,
-                "evidence_path": "m2_candidate_discovery.json",
-            },
-        )
-
-        product_error = "DISCOVERY_FAILED: RuntimeError: collector failed"
-        product = _derive_discovery_report_failure(
-            status="FAIL",
-            report={
-                "errors": [product_error],
-                "campaigns": {
-                    "formation": {
-                        "status": "FAIL",
-                        "errors": [product_error],
-                    }
-                },
-            },
-        )
-        self.assertEqual(product["class"], "product")
-        self.assertTrue(product["retryable"])
-
-        environment = _derive_discovery_report_failure(
-            status="BLOCKED",
-            report={
-                "errors": ["ENVIRONMENT_BLOCKED: Docker unavailable"],
-                "campaigns": {},
-            },
-        )
-        self.assertEqual(environment["class"], "environment")
-        self.assertFalse(environment["retryable"])
-
-        validation = _derive_discovery_report_failure(
-            status="FAIL",
-            report={
-                "errors": ["candidate validation failed"],
-                "campaigns": {
-                    "formation": {"status": "PASS", "errors": []},
-                    "failover": {
-                        "status": "FAIL",
-                        "errors": ["candidate validation failed"],
-                    },
-                },
-            },
-        )
-        self.assertEqual(validation["failure_phase"], "failover")
-        self.assertEqual(validation["class"], "measurement")
-
     def test_environment_rejection_skips_discovery_recorder(self) -> None:
         workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
         discovery_job = workflow.split("\n  m2-discovery:", 1)[1].split(
@@ -1558,8 +1490,6 @@ class BoundaryTests(unittest.TestCase):
                     "campaign_id": run_id,
                     "status": status,
                     "report_digest": "c" * 64,
-                    "errors": [] if status == "PASS" else ["Docker unavailable"],
-                    "campaigns": {},
                 }
                 report.update(report_overrides or {})
                 (artifacts / "m2_candidate_discovery.json").write_text(
@@ -1713,8 +1643,8 @@ class BoundaryTests(unittest.TestCase):
         run_id: str = "123",
         run_attempt: str = "2",
         failure_scope: str = "formation",
-        failure_class: str = "product",
         invalid_samples: list[dict[str, str]] | None = None,
+        legacy_empty_failover: bool = False,
     ) -> tuple[dict, Path, Path]:
         root = Path(temporary)
         evidence = root / "evidence"
@@ -1820,8 +1750,6 @@ class BoundaryTests(unittest.TestCase):
                     [failover_losing_cell],
                 ),
             }
-        elif failure_scope == "preflight":
-            campaigns = {}
         elif failure_scope == "failover":
             campaigns = {
                 "formation": campaign(
@@ -1846,13 +1774,14 @@ class BoundaryTests(unittest.TestCase):
                     [f"{invocation}-formation-trial"],
                     [],
                     invalid_samples,
-                ),
-                "failover": campaign("failover", "FAIL", [], []),
+                )
             }
+            if legacy_empty_failover:
+                campaigns["failover"] = campaign("failover", "FAIL", [], [])
         candidate_results = {
             kind: [
                 {"candidate": dict(cell["candidate"]), "status": cell["status"]}
-                for cell in campaigns.get(kind, {}).get("cells", [])
+                for cell in campaigns.get(kind, {"cells": []})["cells"]
             ]
             for kind in ("formation", "failover")
         }
@@ -1868,8 +1797,8 @@ class BoundaryTests(unittest.TestCase):
             "created_at": "2026-07-21T00:00:00Z",
             "producer": {"name": "valkey-scale-lab", "version": "test"},
             "status": status,
-            "real_valkey": bool(campaigns),
-            "execution_mode": "valkey-real" if campaigns else "not-run",
+            "real_valkey": True,
+            "execution_mode": "valkey-real",
             "campaigns": campaigns,
             "candidate_results": candidate_results,
             "survivors": {"formation": [], "failover": []},
@@ -1884,30 +1813,11 @@ class BoundaryTests(unittest.TestCase):
         (evidence / "m2_candidate_discovery.json").write_text(
             json.dumps(report), encoding="utf-8"
         )
-        failure = (
-            None
-            if status == "PASS"
-            else {
-                "failure_phase": failure_scope,
-                "class": failure_class,
-                "scope": (
-                    failure_scope
-                    if failure_scope in {"formation", "failover"}
-                    else ""
-                ),
-                "retryable": (
-                    failure_class in {"measurement", "product"}
-                    and failure_scope in {"formation", "failover"}
-                ),
-                "evidence_path": "m2_candidate_discovery.json",
-            }
-        )
         raw_result.write_text(
             json.dumps(
                 {
                     "status": status,
                     "summary": error or "selection complete",
-                    "failure": failure,
                     "milestone": "m2",
                     "entrypoint": "discovery",
                     "tested_sha": sha,
@@ -1948,7 +1858,7 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(loaded["status"], "PASS")
         self.assertEqual(loaded["failure_scope"], "")
 
-    def test_structured_product_and_measurement_failures_are_repairable(self) -> None:
+    def test_valid_phase_failure_is_repairable_without_exception_taxonomy(self) -> None:
         reason = "formation collector called an invalid API"
         with tempfile.TemporaryDirectory() as temporary:
             repairable, _sealed, _evidence = self._seal_discovery_fixture(
@@ -1963,9 +1873,17 @@ class BoundaryTests(unittest.TestCase):
                 ],
             )
         self.assertEqual(repairable["disposition"], "REPAIRABLE_IMPLEMENTATION")
-        self.assertEqual(repairable["failure_class"], "product")
         self.assertEqual(repairable["failure_scope"], "formation")
-        self.assertEqual(repairable["failure_code"], "product")
+        self.assertEqual(repairable["failure_code"], "discovery-failed")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            legacy, _sealed, _evidence = self._seal_discovery_fixture(
+                temporary,
+                status="FAIL",
+                error=f"DISCOVERY_FAILED: TypeError: {reason}",
+                legacy_empty_failover=True,
+            )
+        self.assertEqual(legacy["disposition"], "REPAIRABLE_IMPLEMENTATION")
 
         failover_reason = "failover collector called an invalid API"
         with tempfile.TemporaryDirectory() as temporary:
@@ -1989,7 +1907,6 @@ class BoundaryTests(unittest.TestCase):
                 temporary,
                 status="FAIL",
                 error="DISCOVERY_FAILED: CaptureError: cluster link safety metric is nonzero",
-                failure_class="measurement",
                 invalid_samples=[
                     {
                         "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
@@ -1999,61 +1916,19 @@ class BoundaryTests(unittest.TestCase):
             )
         self.assertEqual(safety["status"], "FAIL")
         self.assertEqual(safety["disposition"], "REPAIRABLE_IMPLEMENTATION")
-        self.assertEqual(safety["failure_class"], "measurement")
 
-        with tempfile.TemporaryDirectory() as temporary:
-            environment, _sealed, _evidence = self._seal_discovery_fixture(
-                temporary,
-                status="BLOCKED",
-                error="ENVIRONMENT_AFTER_START: Docker unavailable",
-                failure_class="environment",
-            )
-        self.assertEqual(environment["disposition"], "HUMAN_REQUIRED")
-        self.assertEqual(environment["failure_class"], "environment")
-        self.assertFalse(environment["retryable"])
-
-        with tempfile.TemporaryDirectory() as temporary:
-            preflight, sealed, evidence = self._seal_discovery_fixture(
-                temporary,
-                status="BLOCKED",
-                error="ENVIRONMENT_BLOCKED: resource preflight rejected the host",
-                failure_scope="preflight",
-                failure_class="environment",
-            )
-            loaded = load_m2_discovery_result(
-                result_path=sealed,
-                evidence_root=evidence,
-                expected_sha="a" * 40,
-                expected_lease_sha256="b" * 64,
-                run_id="123",
-                run_attempt="2",
-            )
-        self.assertEqual(preflight["failure_phase"], "preflight")
-        self.assertEqual(preflight["failure_class"], "environment")
-        self.assertEqual(preflight["evidence_path"], "m2_candidate_discovery.json")
-        self.assertEqual(loaded, preflight)
-
-        with tempfile.TemporaryDirectory() as temporary:
-            malformed, _sealed, _evidence = self._seal_discovery_fixture(
-                temporary,
-                status="FAIL",
-                error="DISCOVERY_FAILED: unknown failure metadata",
-                failure_class="unknown",
-            )
-        self.assertEqual(malformed["status"], "BLOCKED")
-        self.assertEqual(malformed["disposition"], "HUMAN_REQUIRED")
-
-    def test_historical_invalid_sample_does_not_replace_current_failure(self) -> None:
+    def test_invalid_sample_must_match_the_current_repairable_failure(self) -> None:
         error = "DISCOVERY_FAILED: TypeError: current implementation failure"
         cases = (
             (
                 [
                     {
                         "trial_id": "m2-discovery-gh-123-attempt-2-formation-trial",
-                        "reason": "prior candidate safety rejection",
+                        "reason": "different failure",
                     }
                 ],
                 "FAIL",
+                "REPAIRABLE_IMPLEMENTATION",
             ),
             (
                 [
@@ -2063,6 +1938,7 @@ class BoundaryTests(unittest.TestCase):
                     }
                 ],
                 "BLOCKED",
+                "HUMAN_REQUIRED",
             ),
             (
                 [
@@ -2076,9 +1952,10 @@ class BoundaryTests(unittest.TestCase):
                     },
                 ],
                 "BLOCKED",
+                "HUMAN_REQUIRED",
             ),
         )
-        for samples, expected_status in cases:
+        for samples, expected_status, expected_disposition in cases:
             with self.subTest(samples=samples), tempfile.TemporaryDirectory() as temporary:
                 result, _sealed, _evidence = self._seal_discovery_fixture(
                     temporary,
@@ -2087,14 +1964,7 @@ class BoundaryTests(unittest.TestCase):
                     invalid_samples=samples,
                 )
             self.assertEqual(result["status"], expected_status)
-            self.assertEqual(
-                result["disposition"],
-                (
-                    "REPAIRABLE_IMPLEMENTATION"
-                    if expected_status == "FAIL"
-                    else "HUMAN_REQUIRED"
-                ),
-            )
+            self.assertEqual(result["disposition"], expected_disposition)
 
     def test_pass_cannot_hide_invalid_samples(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -2150,31 +2020,6 @@ class BoundaryTests(unittest.TestCase):
             )
         self.assertEqual(cleanup["status"], "BLOCKED")
         self.assertEqual(cleanup["cleanup_outcome"], "failure")
-        self.assertEqual(cleanup["failure_class"], "environment")
-        self.assertFalse(cleanup["retryable"])
-
-        with tempfile.TemporaryDirectory() as temporary:
-            failed_cleanup, sealed, evidence = self._seal_discovery_fixture(
-                temporary,
-                status="FAIL",
-                error="DISCOVERY_FAILED: CaptureError: sampler IPC failed",
-                cleanup_outcome="failure",
-                failure_class="measurement",
-            )
-            loaded = load_m2_discovery_result(
-                result_path=sealed,
-                evidence_root=evidence,
-                expected_sha="a" * 40,
-                expected_lease_sha256="b" * 64,
-                run_id="123",
-                run_attempt="2",
-            )
-        self.assertEqual(failed_cleanup["status"], "BLOCKED")
-        self.assertEqual(failed_cleanup["disposition"], "HUMAN_REQUIRED")
-        self.assertEqual(failed_cleanup["failure_phase"], "formation")
-        self.assertEqual(failed_cleanup["failure_class"], "environment")
-        self.assertFalse(failed_cleanup["retryable"])
-        self.assertEqual(loaded, failed_cleanup)
 
         with tempfile.TemporaryDirectory() as temporary:
             malformed, _sealed, _evidence = self._seal_discovery_fixture(
