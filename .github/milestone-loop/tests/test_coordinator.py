@@ -14,6 +14,7 @@ from coordinator import (
     M2_DISCOVERY_REPAIR_PROTECTED_PREFIXES,
     ControlState,
     LoopBlocked,
+    _find_pr,
     apply_planner_transaction,
     coordinate,
     empty_lease,
@@ -36,6 +37,7 @@ from coordinator import (
     validate_failure_diagnosis,
     verification_record,
 )
+from github_api import GitHubError
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -124,6 +126,9 @@ class FakeClient:
     def merge_pull_request(self, number, *, expected_head_sha) -> str:
         self.writes.append(("merge", number, expected_head_sha))
         return "d" * 40
+
+    def disable_auto_merge(self, number) -> None:
+        self.writes.append(("disable", number))
 
     def api(self, endpoint, **kwargs):
         if endpoint.startswith("commits/") and endpoint.endswith(
@@ -226,13 +231,18 @@ class CoordinatorTests(unittest.TestCase):
         disposition: str = "REPAIRABLE_IMPLEMENTATION",
         tested_sha: str = "a" * 40,
     ) -> dict:
+        repairable = disposition == "REPAIRABLE_IMPLEMENTATION"
         return {
-            "schema_version": "m2-discovery-result-v1",
+            "schema_version": "m2-discovery-result-v2",
             "milestone": "m2",
             "status": status,
             "disposition": disposition,
+            "failure_phase": "formation" if repairable else "",
+            "failure_class": "product" if repairable else "",
             "failure_scope": "formation" if disposition == "REPAIRABLE_IMPLEMENTATION" else "",
-            "failure_code": "python-typeerror" if disposition == "REPAIRABLE_IMPLEMENTATION" else "",
+            "failure_code": "product" if repairable else "",
+            "retryable": repairable,
+            "evidence_path": "m2_candidate_discovery.json" if repairable else "",
             "failure_fingerprint": "f" * 64,
             "tested_sha": tested_sha,
             "lease_sha256": "e" * 64,
@@ -257,6 +267,15 @@ class CoordinatorTests(unittest.TestCase):
             "milestone_number": 2,
             "issues": [control],
             "pull_requests": [],
+        }
+
+    @staticmethod
+    def _m2_control(number: int = 9) -> dict:
+        return {
+            "number": number,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
         }
 
     def test_planner_transaction_leaves_only_one_selected_ready(self) -> None:
@@ -357,11 +376,17 @@ class CoordinatorTests(unittest.TestCase):
                 catalog_document=self.catalog,
             )
 
-    def test_ordinary_verified_pr_merges_and_dispatches_fresh_round(self) -> None:
+    def test_verified_pr_auto_merge_and_contract_change_human_review(self) -> None:
         base_sha = "a" * 40
         head_sha = "b" * 40
         tree_sha = "c" * 40
         item = issue(1, "review")
+        control_issue = {
+            "number": 99,
+            "body": render_control(empty_lease("m1"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
         record = {
             "version": 1,
             "base_sha": base_sha,
@@ -370,10 +395,12 @@ class CoordinatorTests(unittest.TestCase):
             "verified_tree": verified_tree(base_sha, head_sha, tree_sha),
             "baseline": "repository.all",
             "work_item_check": "product.unit",
+            "work_item": 1,
+            "contract_change": False,
             "status": "PASS",
         }
         state = {
-            **snapshot([item]),
+            **snapshot([item, control_issue]),
             "pull_requests": [
                 {
                     "number": 20,
@@ -406,7 +433,7 @@ class CoordinatorTests(unittest.TestCase):
             ],
         }
         control = ControlState(99, empty_lease("m1"), 0)
-        client = FakeClient()
+        client = FakeClient(control_issue)
 
         with (
             patch.dict("os.environ", {"MILESTONE_LOOP_AUTO_MERGE": "true"}, clear=True),
@@ -420,6 +447,63 @@ class CoordinatorTests(unittest.TestCase):
             client.writes,
             [("merge", 20, head_sha), ("dispatch", "m1")],
         )
+
+        client.writes.clear()
+        record["work_item_check"] = "repository.all"
+        record["contract_change"] = True
+        state["pull_requests"][0]["body"] = (
+            "Work-Item: #1\nMilestone: m1\nContract-Change: true\n"
+        )
+        state["pull_requests"][0]["labels"].append("contract-change")
+        state["pull_requests"][0]["comments"][0]["body"] = (
+            "<!-- milestone-loop-verification: "
+            + json.dumps(record, sort_keys=True, separators=(",", ":"))
+            + " -->"
+        )
+        with (
+            patch.dict("os.environ", {"MILESTONE_LOOP_AUTO_MERGE": "true"}, clear=True),
+            patch("coordinator.collect_snapshot", return_value=state),
+        ):
+            action, _returned_control = reconcile_review(
+                client,
+                state,
+                ControlState(99, empty_lease("m1"), 0),
+            )
+        self.assertEqual(action, "HUMAN_REVIEW")
+        self.assertFalse(any(write[0] == "merge" for write in client.writes))
+        self.assertTrue(
+            any(
+                write[0] == "comment" and "PR_REVIEW_REQUIRED" in write[2]
+                for write in client.writes
+            )
+        )
+        state["pull_requests"][0]["merged_at"] = "2026-07-24T00:00:00Z"
+        state["pull_requests"][0]["merge_tree_sha"] = tree_sha
+        action, _returned_control = reconcile_review(
+            client,
+            state,
+            ControlState(99, empty_lease("m1"), 0),
+        )
+        self.assertEqual(action, "PROGRESS")
+
+    def test_second_open_pr_for_one_work_item_fails_closed(self) -> None:
+        state = snapshot([])
+        state["pull_requests"] = [
+            {
+                "number": 20,
+                "body": "Work-Item: #1\nMilestone: m1\nContract-Change: false\n",
+                "state": "open",
+                "labels": [],
+            },
+            {
+                "number": 21,
+                "body": "Work-Item: #1\nMilestone: m1\nContract-Change: true\n",
+                "state": "open",
+                "labels": ["contract-change"],
+            },
+        ]
+        with self.assertRaisesRegex(LoopBlocked, "multiple open PRs"):
+            _find_pr(state, 1)
 
     def test_m2_canonical_unresolved_candidates_reach_authorization(self) -> None:
         milestone = m2_milestone()
@@ -839,6 +923,147 @@ class CoordinatorTests(unittest.TestCase):
         self.assertIsNotNone(pending)
         self.assertEqual(pending["failure_fingerprint"], "f" * 64)
 
+    def test_discovery_result_comment_posts_normally(self) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with patch(
+            "coordinator.collect_snapshot",
+            return_value=self._m2_record_state(control),
+        ):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+        comments = [
+            write
+            for write in client.writes
+            if write[0] == "comment" and "milestone-loop-m2-discovery:" in write[2]
+        ]
+        self.assertEqual(len(comments), 1)
+
+    def test_discovery_result_comment_eof_after_acceptance_reads_marker(self) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        original_comment = client.comment
+        attempts = 0
+
+        def accepted_then_eof(number, body) -> None:
+            nonlocal attempts
+            attempts += 1
+            original_comment(number, body)
+            raise GitHubError("gh api POST comments failed: unexpected EOF")
+
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with (
+            patch(
+                "coordinator.collect_snapshot",
+                return_value=self._m2_record_state(control),
+            ),
+            patch.object(client, "comment", side_effect=accepted_then_eof),
+        ):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+        self.assertEqual(attempts, 1)
+        self.assertEqual(
+            len(
+                [
+                    write
+                    for write in client.writes
+                    if write[0] == "comment"
+                    and "milestone-loop-m2-discovery:" in write[2]
+                ]
+            ),
+            1,
+        )
+
+    def test_discovery_result_comment_retries_one_uncommitted_eof(self) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        original_comment = client.comment
+        attempts = 0
+
+        def first_eof(number, body) -> None:
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise GitHubError("gh api POST comments failed: unexpected EOF")
+            original_comment(number, body)
+
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with (
+            patch(
+                "coordinator.collect_snapshot",
+                return_value=self._m2_record_state(control),
+            ),
+            patch.object(client, "comment", side_effect=first_eof),
+        ):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+        self.assertEqual(attempts, 2)
+
+    def test_discovery_result_comment_two_uncommitted_eofs_fail_closed(self) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        attempts = 0
+
+        def always_eof(_number, _body) -> None:
+            nonlocal attempts
+            attempts += 1
+            raise GitHubError("gh api POST comments failed: unexpected EOF")
+
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with (
+            patch(
+                "coordinator.collect_snapshot",
+                return_value=self._m2_record_state(control),
+            ),
+            patch.object(client, "comment", side_effect=always_eof),
+            self.assertRaisesRegex(GitHubError, "unexpected EOF"),
+        ):
+            record_m2_discovery_result(client=client, result=result)
+        self.assertEqual(attempts, 2)
+        self.assertFalse(any(write[0] == "comment" for write in client.writes))
+
+    def test_discovery_result_existing_exact_marker_skips_post_and_continues(
+        self,
+    ) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with patch(
+            "coordinator.collect_snapshot",
+            return_value=self._m2_record_state(control),
+        ):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "NOOP"
+            )
+        self.assertEqual(
+            len(
+                [
+                    write
+                    for write in client.writes
+                    if write[0] == "comment"
+                    and "milestone-loop-m2-discovery:" in write[2]
+                ]
+            ),
+            1,
+        )
+
     def test_discovery_check_history_must_fit_the_authoritative_page(self) -> None:
         control = {
             "number": 9,
@@ -897,6 +1122,43 @@ class CoordinatorTests(unittest.TestCase):
             with self.assertRaises(LoopBlocked):
                 record_m2_discovery_result(client=client, result=result)
         self.assertEqual(client.writes, [])
+
+    def test_cleanup_failure_is_environment_blocked_and_not_retryable(self) -> None:
+        control = {
+            "number": 9,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        result = self._discovery_result(
+            status="BLOCKED",
+            disposition="HUMAN_REQUIRED",
+        )
+        result.update(
+            failure_phase="formation",
+            failure_class="environment",
+            failure_scope="formation",
+            failure_code="cleanup-failed",
+            retryable=False,
+            evidence_path="m2_candidate_discovery.json",
+            cleanup_outcome="failure",
+        )
+        client = FakeClient(control)
+        with patch("coordinator.collect_snapshot", return_value=state):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result),
+                "HUMAN_REQUIRED",
+            )
+        self.assertFalse(any(write[0] == "dispatch" for write in client.writes))
+
+        invalid = dict(result)
+        invalid.update(failure_class="measurement", retryable=True)
+        with (
+            patch("coordinator.collect_snapshot", return_value=state),
+            self.assertRaises(ContractError),
+        ):
+            record_m2_discovery_result(client=FakeClient(control), result=invalid)
 
     def test_discovery_reuses_only_a_trusted_consistent_partial_check(self) -> None:
         control = {
@@ -1078,6 +1340,16 @@ class CoordinatorTests(unittest.TestCase):
             )
         stale_check = next(write for write in stale_client.writes if write[0] == "check")
         self.assertEqual(stale_check[1]["conclusion"], "action_required")
+        stale_record = next(
+            write[2]
+            for write in stale_client.writes
+            if write[0] == "comment" and "milestone-loop-m2-discovery:" in write[2]
+        )
+        self.assertIn('"status":"BLOCKED"', stale_record)
+        self.assertIn('"disposition":"HUMAN_REQUIRED"', stale_record)
+        self.assertIn('"failure_code":"stale-default-sha"', stale_record)
+        self.assertIn('"failure_phase":""', stale_record)
+        self.assertIn('"retryable":false', stale_record)
 
     def test_discovery_diagnosis_creates_one_narrow_ready_work_item(self) -> None:
         state = self._m2_record_state(
@@ -1210,7 +1482,7 @@ class CoordinatorTests(unittest.TestCase):
                 f"M2-Discovery-Fingerprint: {'f' * 64}\n"
                 "M2-Discovery-Run: 12345 attempt 1\n"
                 f"M2-Discovery-Tested-SHA: {'a' * 40}\n"
-                "M2-Discovery-Failure-Code: python-typeerror\n"
+                "M2-Discovery-Failure-Code: product\n"
                 "M2-Discovery-Summary: bounded failure"
             ),
             "state": "open",
@@ -1275,7 +1547,7 @@ class CoordinatorTests(unittest.TestCase):
     def test_only_trusted_discovery_contract_failure_can_self_dispatch(self) -> None:
         result = self._discovery_result()
         record = {
-            "version": 1,
+            "version": 2,
             "milestone": "m2",
             "run_id": result["run_id"],
             "run_attempt": result["run_attempt"],
@@ -1288,8 +1560,12 @@ class CoordinatorTests(unittest.TestCase):
             "dedup_key": "2" * 64,
             "status": "FAIL",
             "disposition": "REPAIRABLE_IMPLEMENTATION",
+            "failure_phase": "formation",
+            "failure_class": "product",
             "failure_scope": "formation",
-            "failure_code": "python-typeerror",
+            "failure_code": "product",
+            "retryable": True,
+            "evidence_path": "m2_candidate_discovery.json",
             "failure_fingerprint": "f" * 64,
             "summary": result["summary"],
         }
@@ -1321,7 +1597,7 @@ class CoordinatorTests(unittest.TestCase):
                 f"M2-Discovery-Fingerprint: {'f' * 64}\n"
                 "M2-Discovery-Run: 12345 attempt 1\n"
                 f"M2-Discovery-Tested-SHA: {'a' * 40}\n"
-                "M2-Discovery-Failure-Code: python-typeerror\n"
+                "M2-Discovery-Failure-Code: product\n"
                 f"M2-Discovery-Summary: {result['summary']}"
             ),
             "state": "open",

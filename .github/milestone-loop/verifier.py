@@ -10,7 +10,13 @@ import time
 from pathlib import Path
 from typing import Mapping, Sequence
 
-from contracts import ContractError, require_candidate_check, verified_tree
+from contracts import (
+    ContractError,
+    require_candidate_check,
+    strict_json_loads,
+    verification_metadata_path,
+    verified_tree,
+)
 from coordinator import protected_changes
 
 
@@ -94,6 +100,7 @@ def verify(
     base_sha: str,
     head_sha: str,
     check_id: str,
+    pr_number: int,
     contract_change: bool,
 ) -> dict[str, object]:
     if SHA_RE.fullmatch(base_sha) is None or SHA_RE.fullmatch(head_sha) is None:
@@ -101,6 +108,39 @@ def verify(
     actual_head = _git(candidate_root, "rev-parse", "HEAD")
     if actual_head != head_sha:
         raise ContractError("candidate checkout does not match the event head SHA")
+    metadata_path = verification_metadata_path()
+    if not metadata_path.is_file() or metadata_path.is_symlink():
+        raise ContractError("trusted live PR metadata is unavailable")
+    metadata = strict_json_loads(
+        metadata_path.read_text(encoding="utf-8"),
+        max_bytes=8_192,
+    )
+    if (
+        not isinstance(metadata, dict)
+        or set(metadata)
+        != {
+            "action",
+            "base_sha",
+            "check",
+            "contract_change",
+            "head_sha",
+            "merged",
+            "milestone",
+            "pr",
+            "work_item",
+        }
+        or metadata.get("pr") != pr_number
+        or metadata.get("base_sha") != base_sha
+        or metadata.get("head_sha") != head_sha
+        or metadata.get("check") != check_id
+        or metadata.get("contract_change") is not contract_change
+        or metadata.get("merged") is not False
+        or isinstance(metadata.get("work_item"), bool)
+        or not isinstance(metadata.get("work_item"), int)
+        or metadata["work_item"] <= 0
+    ):
+        raise ContractError("trusted live PR metadata changed before verification")
+    metadata_path.unlink()
     paths = tuple(
         path
         for path in _git(candidate_root, "diff", "--name-only", base_sha, head_sha).splitlines()
@@ -165,6 +205,8 @@ def verify(
         "verified_tree": verified_tree(base_sha, head_sha, tree_sha),
         "baseline": "repository.all",
         "work_item_check": check_id,
+        "work_item": metadata["work_item"],
+        "contract_change": contract_change,
         "status": status,
     }
     return {
@@ -198,6 +240,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             base_sha=args.base_sha,
             head_sha=args.head_sha,
             check_id=args.check,
+            pr_number=args.pr,
             contract_change=args.contract_change,
         )
     except (ContractError, OSError, json.JSONDecodeError) as exc:

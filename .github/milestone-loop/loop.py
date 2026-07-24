@@ -8,6 +8,7 @@ import platform
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -20,7 +21,10 @@ from contracts import (
     fixed_milestone_path,
     github_conclusion,
     parse_work_item,
+    pr_contract_change,
     require_candidate_check,
+    status_from_labels,
+    verification_metadata_path,
 )
 from coordinator import (
     LoopBlocked,
@@ -30,7 +34,7 @@ from coordinator import (
     record_milestone_result,
     trusted_m2_discovery_repair_pr,
 )
-from github_api import GitHubClient, GitHubError, collect_snapshot
+from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError, collect_snapshot
 from milestone_runner import (
     LeaseConfirmationBlocked,
     authorize_real_invocation,
@@ -119,23 +123,72 @@ def _event(path: Path) -> dict[str, Any]:
     return value
 
 
+def _live_pull_request(
+    client: GitHubClient,
+    *,
+    event_action: str,
+    event_pr: dict[str, Any],
+    repository: dict[str, Any],
+) -> dict[str, Any]:
+    number = event_pr.get("number")
+    if not isinstance(number, int):
+        raise ContractError("pull request number is invalid")
+    live = client.api(f"pulls/{number}")
+    if not isinstance(live, dict) or live.get("number") != number:
+        raise ContractError("live pull request is unavailable or mismatched")
+    if event_action == "closed":
+        if (
+            live.get("state") != "closed"
+            or live.get("merged") is not True
+            or event_pr.get("merged") is not True
+        ):
+            raise LoopBlocked("closed pull request event is not a live merged PR")
+    elif live.get("state") != "open" or live.get("merged") is True:
+        raise LoopBlocked("live pull request is no longer open")
+    event_head = event_pr.get("head")
+    event_base = event_pr.get("base")
+    live_head = live.get("head")
+    live_base = live.get("base")
+    if not all(isinstance(value, dict) for value in (event_head, event_base, live_head, live_base)):
+        raise ContractError("pull request head or base is missing")
+    full_name = repository.get("full_name")
+    event_head_repo = event_head.get("repo")
+    live_head_repo = live_head.get("repo")
+    if (
+        not isinstance(full_name, str)
+        or not isinstance(event_head_repo, dict)
+        or not isinstance(live_head_repo, dict)
+        or event_head_repo.get("full_name") != full_name
+        or live_head_repo.get("full_name") != full_name
+    ):
+        raise LoopBlocked("fork pull requests cannot execute on the local Mac")
+    if (
+        live_head.get("sha") != event_head.get("sha")
+        or live_base.get("sha") != event_base.get("sha")
+    ):
+        raise LoopBlocked("live pull request head or base changed after this workflow event")
+    if live.get("author_association") not in {"OWNER", "MEMBER", "COLLABORATOR"}:
+        raise LoopBlocked("pull request author is not trusted for self-hosted execution")
+    return live
+
+
 def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
     event = _event(event_path)
-    pr = event.get("pull_request")
+    event_pr = event.get("pull_request")
     repository = event.get("repository")
-    if not isinstance(pr, dict) or not isinstance(repository, dict):
+    if not isinstance(event_pr, dict) or not isinstance(repository, dict):
         raise ContractError("event is not a pull_request event")
-    head = pr.get("head")
-    base = pr.get("base")
-    if not isinstance(head, dict) or not isinstance(base, dict):
-        raise ContractError("pull_request head or base is missing")
-    head_repo = head.get("repo")
-    full_name = repository.get("full_name")
-    if not isinstance(head_repo, dict) or head_repo.get("full_name") != full_name:
-        raise LoopBlocked("fork pull requests cannot execute on the local Mac")
-    association = pr.get("author_association")
-    if association not in {"OWNER", "MEMBER", "COLLABORATOR"}:
-        raise LoopBlocked("pull request author is not trusted for self-hosted execution")
+    action = event.get("action")
+    if not isinstance(action, str):
+        raise ContractError("pull request action is invalid")
+    pr = _live_pull_request(
+        client,
+        event_action=action,
+        event_pr=event_pr,
+        repository=repository,
+    )
+    head = pr["head"]
+    base = pr["base"]
     body = pr.get("body") or ""
     if not isinstance(body, str):
         raise ContractError("pull request body is invalid")
@@ -146,31 +199,37 @@ def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
         for item in pr.get("labels", [])
         if isinstance(item, dict) and isinstance(item.get("name"), str)
     }
-    contract_change = "contract-change" in labels or "Contract-Change: true" in body
+    contract_change = pr_contract_change(body, labels)
+    matches = re.findall(r"(?m)^Work-Item: #([1-9][0-9]*)$", body)
+    if len(matches) != 1:
+        raise ContractError("pull request must reference exactly one Work-Item")
+    issue_number = int(matches[0])
+    snapshot = collect_snapshot(client, milestone)
+    issue = next(
+        (item for item in snapshot["issues"] if item.get("number") == issue_number),
+        None,
+    )
+    issue_labels = set(issue.get("labels", [])) if isinstance(issue, dict) else set()
+    if (
+        issue is None
+        or issue.get("state") != "open"
+        or "milestone-loop:work-item" not in issue_labels
+    ):
+        raise ContractError("referenced Work Item is not the active reviewed Milestone item")
+    if status_from_labels(issue_labels) != "review":
+        raise ContractError("referenced Work Item is not the active reviewed Milestone item")
+    work_item = parse_work_item(issue.get("body", ""))
     if contract_change:
         check = "repository.all"
     else:
-        import re
-
-        matches = re.findall(r"(?m)^Work-Item: #([1-9][0-9]*)$", body)
-        if len(matches) != 1:
-            raise ContractError("ordinary pull request must reference exactly one Work-Item")
-        issue_number = int(matches[0])
-        snapshot = collect_snapshot(client, milestone)
-        issue = next(
-            (item for item in snapshot["issues"] if item.get("number") == issue_number),
-            None,
-        )
-        if issue is None:
-            raise ContractError("referenced Work Item is absent from the Milestone")
-        check = parse_work_item(issue.get("body", "")).check
-        catalog = json.loads((REPO_ROOT / "project" / "catalog.json").read_text(encoding="utf-8"))
+        check = work_item.check
+    catalog = json.loads((REPO_ROOT / "project" / "catalog.json").read_text(encoding="utf-8"))
+    require_candidate_check(catalog, work_item.check)
+    if check != work_item.check:
         require_candidate_check(catalog, check)
-    number = pr.get("number")
-    if not isinstance(number, int):
-        raise ContractError("pull request number is invalid")
     return {
-        "pr": number,
+        "pr": pr["number"],
+        "work_item": issue_number,
         "milestone": milestone,
         "base_sha": base.get("sha"),
         "head_sha": head.get("sha"),
@@ -179,6 +238,101 @@ def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
         "merged": bool(pr.get("merged")),
         "action": event.get("action"),
     }
+
+
+def _verification_comment_exists(
+    client: GitHubClient,
+    *,
+    pr_number: int,
+    marker: str,
+) -> bool:
+    comments = client.api(
+        f"issues/{pr_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
+    )
+    if not isinstance(comments, list):
+        raise GitHubError("PR verification comments response is not an array")
+    for comment in comments:
+        if (
+            isinstance(comment, dict)
+            and isinstance(comment.get("user"), dict)
+            and comment["user"].get("login") == "github-actions[bot]"
+            and isinstance(comment.get("body"), str)
+            and marker in comment["body"]
+        ):
+            return True
+    if len(comments) >= MAX_ISSUE_COMMENTS:
+        raise LoopBlocked("PR verification comment history exceeds the reconciliation bound")
+    return False
+
+
+def _reconcile_verification_comment(
+    client: GitHubClient,
+    *,
+    pr_number: int,
+    marker: str,
+) -> bool:
+    absent_reads = 0
+    last_error: GitHubError | None = None
+    for attempt in range(4):
+        try:
+            if _verification_comment_exists(
+                client,
+                pr_number=pr_number,
+                marker=marker,
+            ):
+                return True
+            absent_reads += 1
+            if absent_reads == 2:
+                return False
+        except GitHubError as exc:
+            if "unexpected eof" not in str(exc).lower():
+                raise
+            absent_reads = 0
+            last_error = exc
+        if attempt < 3:
+            time.sleep(1)
+    raise GitHubError(
+        "verification comment reconciliation remained ambiguous"
+    ) from last_error
+
+
+def _publish_verification_comment(
+    client: GitHubClient,
+    *,
+    pr_number: int,
+    record: dict[str, Any],
+) -> None:
+    marker = "<!-- milestone-loop-verification: " + json.dumps(
+        record, sort_keys=True, separators=(",", ":")
+    ) + " -->"
+    body = "Trusted candidate verification PASS.\n\n" + marker
+    if _reconcile_verification_comment(client, pr_number=pr_number, marker=marker):
+        return
+    last_error: GitHubError | None = None
+    for attempt in range(2):
+        acknowledged = False
+        try:
+            client.comment(pr_number, body)
+            acknowledged = True
+        except GitHubError as exc:
+            if "unexpected eof" not in str(exc).lower():
+                raise
+            last_error = exc
+        if _reconcile_verification_comment(
+            client,
+            pr_number=pr_number,
+            marker=marker,
+        ):
+            return
+        if acknowledged:
+            raise GitHubError(
+                "verification comment was acknowledged but is not yet visible"
+            )
+        if attempt == 1:
+            break
+    raise GitHubError(
+        "verification comment publication remained ambiguous after one retry"
+    ) from last_error
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -327,7 +481,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 0
         if args.command == "pr-metadata":
-            _write_output(pr_metadata(client, args.event))
+            metadata = pr_metadata(client, args.event)
+            path = verification_metadata_path()
+            with path.open("x", encoding="utf-8") as handle:
+                json.dump(metadata, handle, sort_keys=True, separators=(",", ":"))
+                handle.write("\n")
+            _write_output(metadata)
             return 0
         if args.command == "authorize-real-invocation":
             validate_environment("real")
@@ -482,11 +641,34 @@ def main(argv: Sequence[str] | None = None) -> int:
             status = record.get("status") if isinstance(record, dict) else "BLOCKED"
             if status not in {"PASS", "FAIL", "BLOCKED"}:
                 status = "BLOCKED"
+            event_path = os.environ.get("GITHUB_EVENT_PATH")
+            if not event_path:
+                raise ContractError("verification publication lacks its pull request event")
+            metadata = pr_metadata(client, Path(event_path))
+            metadata_changed = (
+                metadata["pr"] != args.pr
+                or metadata["head_sha"] != args.head_sha
+                or metadata["milestone"] != args.milestone
+                or metadata["contract_change"] != (args.contract_change == "true")
+            )
+            record_matches = (
+                isinstance(record, dict)
+                and record.get("base_sha") == metadata["base_sha"]
+                and record.get("head_sha") == metadata["head_sha"]
+                and record.get("work_item_check") == metadata["check"]
+                and record.get("work_item") == metadata["work_item"]
+                and record.get("contract_change") is metadata["contract_change"]
+            )
+            if metadata_changed or (status != "BLOCKED" and not record_matches):
+                raise LoopBlocked(
+                    "live pull request metadata changed during fixed-head verification"
+                )
             if status == "PASS":
-                marker = "<!-- milestone-loop-verification: " + json.dumps(
-                    record, sort_keys=True, separators=(",", ":")
-                ) + " -->"
-                client.comment(args.pr, "Trusted candidate verification PASS.\n\n" + marker)
+                _publish_verification_comment(
+                    client,
+                    pr_number=args.pr,
+                    record=record,
+                )
             summary = result.get("error", "") if isinstance(result, dict) else "invalid result"
             if not summary:
                 summary = "; ".join(
@@ -501,7 +683,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 title=f"Candidate verification {status}",
                 summary=summary or status,
             )
-            if status != "BLOCKED" and args.contract_change == "false":
+            if (
+                status != "BLOCKED"
+                and args.contract_change == "false"
+            ):
                 client.dispatch(args.milestone)
             elif status == "FAIL" and args.contract_change == "true":
                 snapshot = collect_snapshot(client, args.milestone)

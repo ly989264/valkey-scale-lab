@@ -42,7 +42,7 @@ _MILESTONE_RESULT_FIELDS = {
 }
 _M2_DISCOVERY_REPORT_NAME = "m2_candidate_discovery.json"
 _M2_ADMISSION_REPORT_NAME = "m2_performance_report.json"
-_M2_DISCOVERY_RESULT_SCHEMA = "m2-discovery-result-v1"
+_M2_DISCOVERY_RESULT_SCHEMA = "m2-discovery-result-v2"
 _M2_DISCOVERY_RESULT_MAX_BYTES = 65_536
 _M2_DISCOVERY_REPORT_MAX_BYTES = 256 * 1024 * 1024
 _M2_DISCOVERY_EVIDENCE_MAX_FILES = 10_000
@@ -52,8 +52,12 @@ _M2_DISCOVERY_RESULT_FIELDS = {
     "milestone",
     "status",
     "disposition",
+    "failure_phase",
+    "failure_class",
     "failure_scope",
     "failure_code",
+    "retryable",
+    "evidence_path",
     "failure_fingerprint",
     "tested_sha",
     "lease_sha256",
@@ -114,13 +118,6 @@ _M2_DISCOVERY_CAMPAIGN_FIELDS = {
     "source_refs",
     "errors",
 }
-_M2_REPAIRABLE_EXCEPTION_RE = re.compile(
-    r"DISCOVERY_FAILED: "
-    r"(AttributeError|IndexError|KeyError|NameError|TypeError|UnboundLocalError): "
-    r"([^\r\n]{1,4000})"
-)
-
-
 def _canonical_digest(value: Mapping[str, Any], *, omit: str = "") -> str:
     payload = dict(value)
     if omit:
@@ -389,35 +386,111 @@ def _github_discovery_identity(run_id: str, run_attempt: str) -> tuple[str, int,
     return run_id, int(run_attempt), f"m2-discovery-gh-{run_id}-attempt-{run_attempt}"
 
 
-def _discovery_failure_scope(report: Mapping[str, Any]) -> str:
+def _validate_discovery_failure(
+    value: Any,
+    *,
+    status: str,
+    report: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    if status == "PASS":
+        if value is not None:
+            raise ContractError("M2 discovery PASS cannot contain a failure")
+        return None
+    if (
+        not isinstance(value, dict)
+        or set(value)
+        != {"failure_phase", "class", "scope", "retryable", "evidence_path"}
+        or value.get("failure_phase") not in {"preflight", "formation", "failover"}
+        or value.get("class") not in {"environment", "measurement", "product"}
+        or not isinstance(value.get("retryable"), bool)
+        or value.get("evidence_path") != _M2_DISCOVERY_REPORT_NAME
+    ):
+        raise ContractError("M2 discovery structured failure is malformed")
+    failure_phase = str(value["failure_phase"])
+    failure_class = str(value["class"])
+    scope = failure_phase if failure_phase in {"formation", "failover"} else ""
+    retryable = failure_class in {"measurement", "product"} and bool(scope)
+    if value.get("scope") != scope or value.get("retryable") is not retryable:
+        raise ContractError("M2 discovery structured failure policy is inconsistent")
+    if (
+        (failure_class == "environment" and status != "BLOCKED")
+        or (failure_class != "environment" and status != "FAIL")
+    ):
+        raise ContractError("M2 discovery failure class and status are inconsistent")
+    errors = report.get("errors")
+    if not isinstance(errors, list) or not errors:
+        raise ContractError("M2 discovery failure has no report error")
     campaigns = report.get("campaigns")
     if not isinstance(campaigns, dict):
-        return ""
-    formation = campaigns.get("formation")
-    failover = campaigns.get("failover")
-    formation_started = (
-        formation.get("started_trial_ids") if isinstance(formation, dict) else None
+        raise ContractError("M2 discovery failure campaigns are invalid")
+    if scope:
+        affected = campaigns.get(scope)
+        if (
+            not isinstance(affected, dict)
+            or affected.get("status") != "FAIL"
+            or affected.get("errors") != errors
+        ):
+            raise ContractError("M2 discovery failure is not bound to its phase evidence")
+        if scope == "failover":
+            formation = campaigns.get("formation")
+            if not isinstance(formation, dict) or formation.get("status") != "PASS":
+                raise ContractError("M2 failover failure lacks completed formation evidence")
+    elif campaigns:
+        raise ContractError("M2 preflight failure cannot contain campaign evidence")
+    return dict(value)
+
+
+def _derive_discovery_report_failure(
+    *,
+    status: str,
+    report: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    if status == "PASS":
+        return None
+    campaigns = report.get("campaigns")
+    errors = report.get("errors")
+    if (
+        not isinstance(campaigns, dict)
+        or not isinstance(errors, list)
+        or not errors
+        or any(not isinstance(error, str) for error in errors)
+    ):
+        raise ContractError("M2 discovery report failure facts are malformed")
+    if not campaigns:
+        phase = "preflight"
+    elif "failover" in campaigns:
+        phase = "failover"
+    elif "formation" in campaigns:
+        phase = "formation"
+    else:
+        raise ContractError("M2 discovery failure phase is not report-derived")
+    if status == "BLOCKED":
+        failure_class = "environment"
+    elif any(error.startswith("DISCOVERY_FAILED: ") for error in errors):
+        failure_class = (
+            "measurement"
+            if all(
+                error.startswith("DISCOVERY_FAILED: CaptureError:")
+                for error in errors
+            )
+            else "product"
+        )
+    else:
+        failure_class = "measurement" if phase != "preflight" else "product"
+    return _validate_discovery_failure(
+        {
+            "failure_phase": phase,
+            "class": failure_class,
+            "scope": phase if phase in {"formation", "failover"} else "",
+            "retryable": (
+                failure_class in {"measurement", "product"}
+                and phase in {"formation", "failover"}
+            ),
+            "evidence_path": _M2_DISCOVERY_REPORT_NAME,
+        },
+        status=status,
+        report=report,
     )
-    failover_started = failover.get("started_trial_ids") if isinstance(failover, dict) else None
-    if (
-        isinstance(formation, dict)
-        and formation.get("status") == "FAIL"
-        and isinstance(formation_started, list)
-        and bool(formation_started)
-        and isinstance(failover_started, list)
-        and not failover_started
-    ):
-        return "formation"
-    if (
-        isinstance(formation, dict)
-        and formation.get("status") == "PASS"
-        and isinstance(failover, dict)
-        and failover.get("status") == "FAIL"
-        and isinstance(failover_started, list)
-        and bool(failover_started)
-    ):
-        return "failover"
-    return ""
 
 
 def _validate_discovery_report(
@@ -426,6 +499,8 @@ def _validate_discovery_report(
     expected_sha: str,
     invocation_id: str,
     evidence_root: Path,
+    failure: Any,
+    validate_failure_binding: bool = True,
 ) -> tuple[str, str, str]:
     if set(report) != _M2_DISCOVERY_REPORT_FIELDS:
         raise ContractError("M2 discovery report fields are incomplete or unexpected")
@@ -495,6 +570,15 @@ def _validate_discovery_report(
         or any(not isinstance(value, str) or len(value) > 4000 for value in errors)
     ):
         raise ContractError("M2 discovery errors are invalid or unbounded")
+    structured_failure = (
+        _validate_discovery_failure(
+            failure,
+            status=status,
+            report=report,
+        )
+        if validate_failure_binding
+        else None
+    )
     if status == "PASS":
         if (
             set(campaigns) != {"formation", "failover"}
@@ -505,29 +589,19 @@ def _validate_discovery_report(
         ):
             raise ContractError("M2 discovery PASS is not a completed real selection screen")
         return "CANDIDATE_SELECTION_ONLY", "", ""
-    if status == "FAIL" and isinstance(errors, list) and len(errors) == 1 and isinstance(errors[0], str):
-        match = _M2_REPAIRABLE_EXCEPTION_RE.fullmatch(errors[0])
-        scope = _discovery_failure_scope(report)
-        affected = campaigns.get(scope) if scope else None
-        invalid_samples = affected.get("invalid_samples") if isinstance(affected, dict) else None
-        if (
-            match is not None
-            and scope
-            and isinstance(affected, dict)
-            and affected.get("errors") == errors
-            and (
-                invalid_samples == []
-                or (
-                    isinstance(invalid_samples, list)
-                    and len(invalid_samples) == 1
-                    and invalid_samples[0].get("reason") == match.group(2)
-                )
-            )
-            and report.get("real_valkey") is True
-            and report.get("execution_mode") == "valkey-real"
-        ):
-            return "REPAIRABLE_IMPLEMENTATION", scope, f"python-{match.group(1).lower()}"
-    return "HUMAN_REQUIRED", "", "non-repairable-result"
+    if not validate_failure_binding:
+        return "HUMAN_REQUIRED", "", "non-repairable-result"
+    if structured_failure is not None and structured_failure["retryable"]:
+        return (
+            "REPAIRABLE_IMPLEMENTATION",
+            str(structured_failure["scope"]),
+            str(structured_failure["class"]),
+        )
+    return (
+        "HUMAN_REQUIRED",
+        "" if structured_failure is None else str(structured_failure["scope"]),
+        "non-repairable-result",
+    )
 
 
 def _bounded_summary(value: Any) -> str:
@@ -565,8 +639,12 @@ def _sealed_discovery_result(
     cleanup_outcome: str,
     status: str,
     disposition: str,
+    failure_phase: str,
+    failure_class: str,
     failure_scope: str,
     failure_code: str,
+    retryable: bool,
+    evidence_path: str,
     report_digest: str,
     evidence_digest: str,
     summary: str,
@@ -586,8 +664,12 @@ def _sealed_discovery_result(
         "milestone": "m2",
         "status": status,
         "disposition": disposition,
+        "failure_phase": failure_phase,
+        "failure_class": failure_class,
         "failure_scope": failure_scope,
         "failure_code": failure_code,
+        "retryable": retryable,
+        "evidence_path": evidence_path,
         "failure_fingerprint": _discovery_failure_fingerprint(
             tested_sha=expected_sha,
             disposition=disposition,
@@ -627,8 +709,12 @@ def seal_m2_discovery_result(
     _run_id, _attempt, invocation_id = _github_discovery_identity(run_id, run_attempt)
     status = "BLOCKED"
     disposition = "HUMAN_REQUIRED"
+    failure_phase = ""
+    failure_class = ""
     scope = ""
     code = "artifact-invalid"
+    retryable = False
+    evidence_path = ""
     report_digest = ""
     evidence_digest = ""
     summary = "M2 discovery result or evidence artifact is missing or invalid"
@@ -648,7 +734,7 @@ def seal_m2_discovery_result(
             run_attempt=run_attempt,
         )
         raw_status = raw.get("status")
-        if raw_status not in {"PASS", "FAIL", "BLOCKED"}:
+        if raw_status not in {"PASS", "FAIL", "BLOCKED"} or "failure" not in raw:
             raise ContractError("raw M2 discovery status is invalid")
         evidence_digest = _evidence_digest(evidence_root)
         if any(path.name == _M2_ADMISSION_REPORT_NAME for path in evidence_root.rglob("*")):
@@ -665,26 +751,38 @@ def seal_m2_discovery_result(
             expected_sha=expected_sha,
             invocation_id=invocation_id,
             evidence_root=evidence_root,
+            failure=raw["failure"],
         )
+        structured_failure = raw["failure"]
+        if isinstance(structured_failure, dict):
+            failure_phase = str(structured_failure["failure_phase"])
+            failure_class = str(structured_failure["class"])
+            retryable = bool(structured_failure["retryable"])
+            evidence_path = str(structured_failure["evidence_path"])
         status = str(raw_status)
         report_digest = str(report["report_digest"])
         if disposition == "CANDIDATE_SELECTION_ONLY":
             summary = "Current-invocation M2 candidate-selection screen completed"
         elif disposition == "REPAIRABLE_IMPLEMENTATION":
-            summary = f"Allowlisted {scope} discovery implementation failure ({code})"
+            summary = f"Structured {scope} discovery {failure_class} failure"
         else:
             summary = "M2 discovery result is not safely machine-repairable; inspect the protected artifact"
         if cleanup_outcome != "success":
             status = "BLOCKED"
             disposition = "HUMAN_REQUIRED"
-            scope = ""
+            failure_class = "environment"
             code = "cleanup-failed"
+            retryable = False
             summary = f"M2 discovery cleanup outcome was {cleanup_outcome}"
     except (ContractError, OSError) as exc:
         status = "BLOCKED"
         disposition = "HUMAN_REQUIRED"
+        failure_phase = ""
+        failure_class = ""
         scope = ""
         code = "artifact-invalid"
+        retryable = False
+        evidence_path = ""
         summary = f"M2 discovery artifact validation failed: {exc}"
     result = _sealed_discovery_result(
         expected_sha=expected_sha,
@@ -695,8 +793,12 @@ def seal_m2_discovery_result(
         cleanup_outcome=cleanup_outcome,
         status=status,
         disposition=disposition,
+        failure_phase=failure_phase,
+        failure_class=failure_class,
         failure_scope=scope,
         failure_code=code,
+        retryable=retryable,
+        evidence_path=evidence_path,
         report_digest=report_digest,
         evidence_digest=evidence_digest,
         summary=summary,
@@ -722,8 +824,12 @@ def human_required_m2_discovery_result(
         cleanup_outcome="unknown",
         status="BLOCKED",
         disposition="HUMAN_REQUIRED",
+        failure_phase="",
+        failure_class="",
         failure_scope="",
         failure_code="record-artifact-invalid",
+        retryable=False,
+        evidence_path="",
         report_digest="",
         evidence_digest="",
         summary=summary,
@@ -756,6 +862,11 @@ def load_m2_discovery_result(
         or result.get("status") not in {"PASS", "FAIL", "BLOCKED"}
         or result.get("disposition")
         not in {"CANDIDATE_SELECTION_ONLY", "REPAIRABLE_IMPLEMENTATION", "HUMAN_REQUIRED"}
+        or result.get("failure_phase") not in {"", "preflight", "formation", "failover"}
+        or result.get("failure_class") not in {"", "environment", "measurement", "product"}
+        or result.get("failure_scope") not in {"", "formation", "failover"}
+        or not isinstance(result.get("retryable"), bool)
+        or result.get("evidence_path") not in {"", _M2_DISCOVERY_REPORT_NAME}
         or result.get("cleanup_outcome") not in {"success", "failure", "cancelled", "skipped", "unknown"}
         or result.get("run_outcome") not in {"success", "failure", "cancelled", "skipped", "unknown"}
     ):
@@ -777,6 +888,26 @@ def load_m2_discovery_result(
     )
     if result.get("failure_fingerprint") != expected_fingerprint:
         raise ContractError("M2 discovery failure fingerprint does not match")
+    has_failure = any(
+        (
+            result["failure_phase"],
+            result["failure_class"],
+            result["failure_scope"],
+            result["retryable"],
+            result["evidence_path"],
+        )
+    )
+    structured_failure = (
+        {
+            "failure_phase": result["failure_phase"],
+            "class": result["failure_class"],
+            "scope": result["failure_scope"],
+            "retryable": result["retryable"],
+            "evidence_path": result["evidence_path"],
+        }
+        if has_failure
+        else None
+    )
 
     report_digest = result.get("report_digest")
     evidence_digest = result.get("evidence_digest")
@@ -800,6 +931,8 @@ def load_m2_discovery_result(
             expected_sha=expected_sha,
             invocation_id=invocation_id,
             evidence_root=evidence_root,
+            failure=structured_failure,
+            validate_failure_binding=result["cleanup_outcome"] == "success",
         )
         if report.get("report_digest") != report_digest:
             raise ContractError("M2 discovery report artifact digest does not match the result")
@@ -811,9 +944,55 @@ def load_m2_discovery_result(
                 or result.get("failure_code") != code
             ):
                 raise ContractError("sealed M2 discovery classification differs from its report")
-        elif result.get("status") != "BLOCKED" or result.get("disposition") != "HUMAN_REQUIRED":
-            raise ContractError("M2 discovery cleanup failure was not fail-closed")
+        else:
+            failure_phase = str(result["failure_phase"])
+            expected_scope = (
+                failure_phase
+                if failure_phase in {"formation", "failover"}
+                else ""
+            )
+            if (
+                result.get("status") != "BLOCKED"
+                or result.get("disposition") != "HUMAN_REQUIRED"
+                or result.get("failure_class") != "environment"
+                or result.get("failure_scope") != expected_scope
+                or result.get("failure_code") != "cleanup-failed"
+                or result.get("retryable") is not False
+                or bool(failure_phase) != bool(result.get("evidence_path"))
+            ):
+                raise ContractError("M2 discovery cleanup failure was not fail-closed")
+            if failure_phase in {"formation", "failover"}:
+                affected = report["campaigns"].get(failure_phase)
+                if (
+                    not isinstance(affected, dict)
+                    or affected.get("status") != "FAIL"
+                    or affected.get("errors") != report.get("errors")
+                    or (
+                        failure_phase == "failover"
+                        and (
+                            not isinstance(
+                                report["campaigns"].get("formation"), dict
+                            )
+                            or report["campaigns"]["formation"].get("status")
+                            != "PASS"
+                        )
+                    )
+                ):
+                    raise ContractError(
+                        "M2 discovery cleanup failure lost its phase evidence"
+                    )
+            elif failure_phase == "preflight":
+                if report.get("status") == "PASS" or report.get("campaigns") != {}:
+                    raise ContractError(
+                        "M2 discovery cleanup failure has invalid preflight evidence"
+                    )
+            elif report.get("status") != "PASS":
+                raise ContractError(
+                    "M2 discovery cleanup failure lost the producer failure phase"
+                )
     else:
+        if structured_failure is not None:
+            raise ContractError("missing M2 discovery report retains a structured failure")
         if evidence_digest:
             if (
                 re.fullmatch(r"[0-9a-f]{64}", evidence_digest) is None
@@ -1515,9 +1694,13 @@ def run_m2_discovery(
                 "artifacts": str(artifacts),
             }
         try:
-            command = json.loads(command_result.read_text(encoding="utf-8"))
+            command = _read_bounded_object(
+                command_result,
+                16_384,
+                "M2 discovery command result",
+            )
             report = json.loads(report_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        except (ContractError, OSError, UnicodeError, json.JSONDecodeError) as exc:
             return {
                 "status": "FAIL",
                 "summary": f"M2 discovery output is unreadable: {exc}",
@@ -1531,6 +1714,7 @@ def run_m2_discovery(
             or set(command) != {"status", "summary"}
             or command_status not in {"PASS", "FAIL", "BLOCKED"}
             or not isinstance(summary, str)
+            or len(summary) > 4000
         ):
             return {
                 "status": "FAIL",
@@ -1561,6 +1745,18 @@ def run_m2_discovery(
                 "exit_code": process.returncode,
                 "artifacts": str(artifacts),
             }
+        try:
+            failure = _derive_discovery_report_failure(
+                status=str(command_status),
+                report=report,
+            )
+        except ContractError:
+            return {
+                "status": "FAIL",
+                "summary": "M2 discovery command failure metadata is invalid",
+                "exit_code": process.returncode,
+                "artifacts": str(artifacts),
+            }
         if process.returncode != 0:
             return {
                 "status": "FAIL",
@@ -1571,6 +1767,7 @@ def run_m2_discovery(
         return {
             "status": command_status,
             "summary": " ".join(summary.split())[:2000],
+            "failure": failure,
             "exit_code": process.returncode,
             "artifacts": str(artifacts),
             "report": str(report_path),

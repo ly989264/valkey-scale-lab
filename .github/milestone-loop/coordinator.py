@@ -27,6 +27,7 @@ from contracts import (
     parse_planner_output,
     parse_work_item,
     parse_worker_output,
+    pr_contract_change,
     render_work_item,
     require_candidate_check,
     resolve_check,
@@ -1312,10 +1313,15 @@ def pending_m2_discovery_diagnosis(snapshot: Mapping[str, Any]) -> dict[str, Any
     pending: list[dict[str, Any]] = []
     for value in _trusted_comment_payloads(control, M2_DISCOVERY_RECORD_RE):
         if (
-            value.get("version") != 1
+            value.get("version") != 2
             or value.get("milestone") != "m2"
             or value.get("disposition") != "REPAIRABLE_IMPLEMENTATION"
+            or value.get("failure_phase") not in {"formation", "failover"}
+            or value.get("failure_class") not in {"measurement", "product"}
             or value.get("failure_scope") not in M2_DISCOVERY_CRITERIA
+            or value.get("failure_scope") != value.get("failure_phase")
+            or value.get("retryable") is not True
+            or value.get("evidence_path") != "m2_candidate_discovery.json"
             or re.fullmatch(r"[0-9a-f]{64}", str(value.get("failure_fingerprint", ""))) is None
             or re.fullmatch(r"[0-9a-f]{40}", str(value.get("tested_sha", ""))) is None
         ):
@@ -1435,7 +1441,7 @@ def trusted_m2_discovery_repair_pr(
     pr = matches[0]
     if (
         CONTRACT_CHANGE_LABEL not in pr.get("labels", [])
-        or "Contract-Change: true" not in pr.get("body", "")
+        or not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
     ):
         return False
     item_numbers = PR_WORK_ITEM_RE.findall(pr.get("body", ""))
@@ -1757,16 +1763,28 @@ def reconcile_review(
         if pr.get("merged_at"):
             record = verification_record(pr)
             expected = None
-            if isinstance(record, dict) and set(record) == {
-                "version",
-                "base_sha",
-                "head_sha",
-                "tree_sha",
-                "verified_tree",
-                "baseline",
-                "work_item_check",
-                "status",
-            }:
+            contract_change = pr_contract_change(
+                pr.get("body", ""),
+                pr.get("labels", []),
+            )
+            if (
+                isinstance(record, dict)
+                and set(record)
+                == {
+                    "version",
+                    "base_sha",
+                    "head_sha",
+                    "tree_sha",
+                    "verified_tree",
+                    "baseline",
+                    "work_item_check",
+                    "work_item",
+                    "contract_change",
+                    "status",
+                }
+                and record.get("work_item") == number
+                and record.get("contract_change") is contract_change
+            ):
                 try:
                     expected = verified_tree(
                         str(record["base_sha"]),
@@ -1841,17 +1859,22 @@ def reconcile_review(
             "verified_tree",
             "baseline",
             "work_item_check",
+            "work_item",
+            "contract_change",
             "status",
         }
-        if set(record) != required or record.get("status") != "PASS":
+        if (
+            set(record) != required
+            or record.get("status") != "PASS"
+        ):
             raise LoopBlocked("candidate verification record has invalid fields or status")
         expected_tree = verified_tree(
             str(record["base_sha"]), str(record["head_sha"]), str(record["tree_sha"])
         )
         contract = parse_work_item(issue["body"])
-        contract_change = (
-            CONTRACT_CHANGE_LABEL in pr.get("labels", [])
-            or "Contract-Change: true" in pr.get("body", "")
+        contract_change = pr_contract_change(
+            pr.get("body", ""),
+            pr.get("labels", []),
         )
         expected_work_item_check = "repository.all" if contract_change else contract.check
         if (
@@ -1861,6 +1884,8 @@ def reconcile_review(
             or record.get("verified_tree") != expected_tree
             or record.get("baseline") != "repository.all"
             or record.get("work_item_check") != expected_work_item_check
+            or record.get("work_item") != number
+            or record.get("contract_change") is not contract_change
         ):
             client.disable_auto_merge(int(pr["number"]))
             _set_issue_status(client, issue, "ready")
@@ -2282,6 +2307,39 @@ def _m2_discovery_diagnosis_completed(
     )
 
 
+def _publish_m2_discovery_result_comment(
+    client: GitHubClient, issue_number: int, body: str, marker: str
+) -> None:
+    endpoint = f"issues/{issue_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
+    eof: GitHubError | None = None
+    for attempt in range(3):
+        comments = client.api(endpoint)
+        if not isinstance(comments, list):
+            raise GitHubError("cannot read Control Issue after M2 discovery comment EOF")
+        if len(comments) > MAX_ISSUE_COMMENTS:
+            raise LoopBlocked("Control Issue comment history exceeds its authoritative bound")
+        if any(
+            isinstance(comment, dict)
+            and isinstance(comment.get("user"), dict)
+            and comment["user"].get("login") == "github-actions[bot]"
+            and isinstance(comment.get("body"), str)
+            and marker in comment["body"]
+            for comment in comments
+        ):
+            return
+        if attempt == 2:
+            if eof is None:
+                raise GitHubError("M2 discovery comment retry state is invalid")
+            raise eof
+        try:
+            client.comment(issue_number, body)
+            return
+        except GitHubError as exc:
+            if "unexpected EOF" not in str(exc):
+                raise
+            eof = exc
+
+
 def record_m2_discovery_result(
     *, client: GitHubClient, result: Mapping[str, Any]
 ) -> str:
@@ -2290,8 +2348,12 @@ def record_m2_discovery_result(
         "milestone",
         "status",
         "disposition",
+        "failure_phase",
+        "failure_class",
         "failure_scope",
         "failure_code",
+        "retryable",
+        "evidence_path",
         "failure_fingerprint",
         "tested_sha",
         "lease_sha256",
@@ -2307,11 +2369,16 @@ def record_m2_discovery_result(
     }
     if (
         set(result) != required
-        or result.get("schema_version") != "m2-discovery-result-v1"
+        or result.get("schema_version") != "m2-discovery-result-v2"
         or result.get("milestone") != "m2"
         or result.get("status") not in {"PASS", "FAIL", "BLOCKED"}
         or result.get("disposition")
         not in {"CANDIDATE_SELECTION_ONLY", "REPAIRABLE_IMPLEMENTATION", "HUMAN_REQUIRED"}
+        or result.get("failure_phase") not in {"", "preflight", "formation", "failover"}
+        or result.get("failure_class") not in {"", "environment", "measurement", "product"}
+        or result.get("failure_scope") not in {"", "formation", "failover"}
+        or not isinstance(result.get("retryable"), bool)
+        or result.get("evidence_path") not in {"", "m2_candidate_discovery.json"}
         or re.fullmatch(r"[0-9a-f]{40}", str(result.get("tested_sha", ""))) is None
         or (
             result.get("lease_sha256") != ""
@@ -2321,6 +2388,42 @@ def record_m2_discovery_result(
         or re.fullmatch(r"[0-9a-f]{64}", str(result.get("failure_fingerprint", ""))) is None
     ):
         raise ContractError("sealed M2 discovery record is invalid")
+    failure_phase = str(result["failure_phase"])
+    failure_class = str(result["failure_class"])
+    expected_scope = (
+        failure_phase if failure_phase in {"formation", "failover"} else ""
+    )
+    expected_retryable = (
+        failure_class in {"measurement", "product"} and bool(expected_scope)
+    )
+    cleanup_failure = result["failure_code"] == "cleanup-failed"
+    cleanup_consistent = (
+        cleanup_failure
+        and result["status"] == "BLOCKED"
+        and result["disposition"] == "HUMAN_REQUIRED"
+        and result["cleanup_outcome"] != "success"
+        and failure_class == "environment"
+        and result["failure_scope"] == expected_scope
+        and result["retryable"] is False
+        and bool(failure_phase) == bool(result["evidence_path"])
+    )
+    ordinary_consistent = (
+        not cleanup_failure
+        and result["failure_scope"] == expected_scope
+        and result["retryable"] is expected_retryable
+        and bool(failure_phase) == bool(failure_class)
+        and bool(failure_phase) == bool(result["evidence_path"])
+        and not (
+            result["disposition"] == "CANDIDATE_SELECTION_ONLY"
+            and failure_phase
+        )
+        and not (
+            result["disposition"] == "REPAIRABLE_IMPLEMENTATION"
+            and not expected_retryable
+        )
+    )
+    if not cleanup_consistent and not ordinary_consistent:
+        raise ContractError("sealed M2 discovery failure classification is inconsistent")
     snapshot = collect_snapshot(client, "m2")
     control = ensure_control(client, snapshot)
     snapshot = collect_snapshot(client, "m2")
@@ -2334,10 +2437,22 @@ def record_m2_discovery_result(
     control_issue = controls[0]
     effective_status = str(result["status"])
     effective_disposition = str(result["disposition"])
+    marker_failure_phase = str(result["failure_phase"])
+    marker_failure_class = str(result["failure_class"])
+    marker_failure_scope = str(result["failure_scope"])
+    marker_failure_code = str(result["failure_code"])
+    marker_retryable = bool(result["retryable"])
+    marker_evidence_path = str(result["evidence_path"])
     stale = snapshot.get("default_sha") != result["tested_sha"]
     if stale:
         effective_status = "BLOCKED"
         effective_disposition = "HUMAN_REQUIRED"
+        marker_failure_phase = ""
+        marker_failure_class = ""
+        marker_failure_scope = ""
+        marker_failure_code = "stale-default-sha"
+        marker_retryable = False
+        marker_evidence_path = ""
     dedup_key = hashlib.sha256(
         json.dumps(
             {
@@ -2352,7 +2467,7 @@ def record_m2_discovery_result(
         ).encode("utf-8")
     ).hexdigest()
     record_identity = {
-        "version": 1,
+        "version": 2,
         "milestone": "m2",
         "run_id": str(result["run_id"]),
         "run_attempt": int(result["run_attempt"]),
@@ -2427,21 +2542,30 @@ def record_m2_discovery_result(
         "dedup_key": dedup_key,
         "status": effective_status,
         "disposition": effective_disposition,
-        "failure_scope": str(result["failure_scope"]),
-        "failure_code": str(result["failure_code"]),
+        "failure_phase": marker_failure_phase,
+        "failure_class": marker_failure_class,
+        "failure_scope": marker_failure_scope,
+        "failure_code": marker_failure_code,
+        "retryable": marker_retryable,
+        "evidence_path": marker_evidence_path,
         "failure_fingerprint": str(result["failure_fingerprint"]),
         "summary": str(result["summary"])[:2000],
     }
     qualifier = " (stale default SHA)" if stale else ""
     if not existing:
-        client.comment(
+        comment_marker = (
+            "<!-- milestone-loop-m2-discovery: "
+            + json.dumps(marker, sort_keys=True, separators=(",", ":"))
+            + " -->"
+        )
+        _publish_m2_discovery_result_comment(
+            client,
             control.issue_number,
             f"Trusted M2 candidate-selection-only discovery result: **{effective_status}**{qualifier}\n\n"
             f"{summary}\n\n"
             "This result is not M2 admission evidence and cannot close M2.\n\n"
-            "<!-- milestone-loop-m2-discovery: "
-            + json.dumps(marker, sort_keys=True, separators=(",", ":"))
-            + " -->",
+            + comment_marker,
+            comment_marker,
         )
     if repairable:
         if diagnosis_completed:
