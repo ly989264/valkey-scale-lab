@@ -8,7 +8,6 @@ import platform
 import re
 import subprocess
 import sys
-import time
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -34,7 +33,7 @@ from coordinator import (
     record_milestone_result,
     trusted_m2_discovery_repair_pr,
 )
-from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError, collect_snapshot
+from github_api import GitHubClient, GitHubError, collect_snapshot
 from milestone_runner import (
     LeaseConfirmationBlocked,
     authorize_real_invocation,
@@ -238,101 +237,6 @@ def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
         "merged": bool(pr.get("merged")),
         "action": event.get("action"),
     }
-
-
-def _verification_comment_exists(
-    client: GitHubClient,
-    *,
-    pr_number: int,
-    marker: str,
-) -> bool:
-    comments = client.api(
-        f"issues/{pr_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
-    )
-    if not isinstance(comments, list):
-        raise GitHubError("PR verification comments response is not an array")
-    for comment in comments:
-        if (
-            isinstance(comment, dict)
-            and isinstance(comment.get("user"), dict)
-            and comment["user"].get("login") == "github-actions[bot]"
-            and isinstance(comment.get("body"), str)
-            and marker in comment["body"]
-        ):
-            return True
-    if len(comments) >= MAX_ISSUE_COMMENTS:
-        raise LoopBlocked("PR verification comment history exceeds the reconciliation bound")
-    return False
-
-
-def _reconcile_verification_comment(
-    client: GitHubClient,
-    *,
-    pr_number: int,
-    marker: str,
-) -> bool:
-    absent_reads = 0
-    last_error: GitHubError | None = None
-    for attempt in range(4):
-        try:
-            if _verification_comment_exists(
-                client,
-                pr_number=pr_number,
-                marker=marker,
-            ):
-                return True
-            absent_reads += 1
-            if absent_reads == 2:
-                return False
-        except GitHubError as exc:
-            if "unexpected eof" not in str(exc).lower():
-                raise
-            absent_reads = 0
-            last_error = exc
-        if attempt < 3:
-            time.sleep(1)
-    raise GitHubError(
-        "verification comment reconciliation remained ambiguous"
-    ) from last_error
-
-
-def _publish_verification_comment(
-    client: GitHubClient,
-    *,
-    pr_number: int,
-    record: dict[str, Any],
-) -> None:
-    marker = "<!-- milestone-loop-verification: " + json.dumps(
-        record, sort_keys=True, separators=(",", ":")
-    ) + " -->"
-    body = "Trusted candidate verification PASS.\n\n" + marker
-    if _reconcile_verification_comment(client, pr_number=pr_number, marker=marker):
-        return
-    last_error: GitHubError | None = None
-    for attempt in range(2):
-        acknowledged = False
-        try:
-            client.comment(pr_number, body)
-            acknowledged = True
-        except GitHubError as exc:
-            if "unexpected eof" not in str(exc).lower():
-                raise
-            last_error = exc
-        if _reconcile_verification_comment(
-            client,
-            pr_number=pr_number,
-            marker=marker,
-        ):
-            return
-        if acknowledged:
-            raise GitHubError(
-                "verification comment was acknowledged but is not yet visible"
-            )
-        if attempt == 1:
-            break
-    raise GitHubError(
-        "verification comment publication remained ambiguous after one retry"
-    ) from last_error
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -664,10 +568,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "live pull request metadata changed during fixed-head verification"
                 )
             if status == "PASS":
-                _publish_verification_comment(
-                    client,
-                    pr_number=args.pr,
-                    record=record,
+                marker = "<!-- milestone-loop-verification: " + json.dumps(
+                    record, sort_keys=True, separators=(",", ":")
+                ) + " -->"
+                client.comment(
+                    args.pr,
+                    "Trusted candidate verification PASS.\n\n" + marker,
                 )
             summary = result.get("error", "") if isinstance(result, dict) else "invalid result"
             if not summary:
