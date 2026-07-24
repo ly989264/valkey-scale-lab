@@ -37,6 +37,7 @@ from coordinator import (
     validate_failure_diagnosis,
     verification_record,
 )
+from github_api import GitHubError
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -268,6 +269,15 @@ class CoordinatorTests(unittest.TestCase):
             "pull_requests": [],
         }
 
+    @staticmethod
+    def _m2_control(number: int = 9) -> dict:
+        return {
+            "number": number,
+            "body": render_control(empty_lease("m2"), 0),
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+
     def test_planner_transaction_leaves_only_one_selected_ready(self) -> None:
         state = snapshot([issue(1, "blocked"), issue(2, "blocked")])
         operation = PlannerOperation(
@@ -476,129 +486,24 @@ class CoordinatorTests(unittest.TestCase):
         )
         self.assertEqual(action, "PROGRESS")
 
-    def test_contract_change_prerequisite_blocks_ordinary_merge(self) -> None:
-        base_sha = "a" * 40
-        head_sha = "b" * 40
-        tree_sha = "c" * 40
-        item = issue(1, "review")
-        control_issue = {
-            "number": 99,
-            "body": render_control(empty_lease("m1"), 0),
-            "labels": [CONTROL_LABEL],
-            "comments": [],
-        }
-        record = {
-            "version": 1,
-            "base_sha": base_sha,
-            "head_sha": head_sha,
-            "tree_sha": tree_sha,
-            "verified_tree": verified_tree(base_sha, head_sha, tree_sha),
-            "baseline": "repository.all",
-            "work_item_check": "product.unit",
-            "work_item": 1,
-            "contract_change": False,
-            "status": "PASS",
-        }
-        ordinary = {
-            "number": 20,
-            "body": "Work-Item: #1\nMilestone: m1\nContract-Change: false\n",
-            "state": "open",
-            "merged_at": None,
-            "labels": ["milestone-loop:work-item"],
-            "head_sha": head_sha,
-            "head_tree_sha": tree_sha,
-            "checks": [
-                {
-                    "id": 10,
-                    "name": "milestone-loop / candidate",
-                    "app": "github-actions",
-                    "status": "completed",
-                    "conclusion": "success",
-                }
-            ],
-            "comments": [
-                {
-                    "author": "github-actions[bot]",
-                    "body": (
-                        "<!-- milestone-loop-verification: "
-                        + json.dumps(record, sort_keys=True, separators=(",", ":"))
-                        + " -->"
-                    ),
-                }
-            ],
-        }
-        prerequisite = {
-            "number": 21,
-            "body": "Work-Item: #1\nMilestone: m1\nContract-Change: true\n",
-            "state": "open",
-            "merged_at": None,
-            "labels": ["milestone-loop:work-item", "contract-change"],
-            "head_sha": "e" * 40,
-        }
-        state = {
-            **snapshot([item, control_issue]),
-            "default_sha": base_sha,
-            "pull_requests": [ordinary, prerequisite],
-        }
-        client = FakeClient(control_issue)
-
-        action, returned_control = reconcile_review(
-            client,
-            state,
-            ControlState(99, empty_lease("m1"), 0),
-        )
-
-        self.assertEqual(action, "HUMAN_REVIEW")
-        self.assertEqual(returned_control, ControlState(99, empty_lease("m1"), 0))
-        self.assertEqual(_find_pr(state, 1)["number"], 20)
-        self.assertIn(("disable", 20), client.writes)
-        self.assertFalse(
-            any(
-                write[0] in {"dispatch", "merge"}
-                for write in client.writes
-            )
-        )
-        self.assertTrue(
-            any(
-                write[0] == "comment"
-                and "pull/21" in write[2]
-                for write in client.writes
-            )
-        )
-
-        live_race = copy.deepcopy(state)
-        initial = copy.deepcopy(state)
-        initial["pull_requests"] = [ordinary]
-        race_client = FakeClient(control_issue)
-        with (
-            patch.dict("os.environ", {"MILESTONE_LOOP_AUTO_MERGE": "true"}, clear=True),
-            patch("coordinator.collect_snapshot", return_value=live_race),
-            self.assertRaisesRegex(LoopBlocked, "live state changed"),
-        ):
-            reconcile_review(
-                race_client,
-                initial,
-                ControlState(99, empty_lease("m1"), 0),
-            )
-        self.assertFalse(any(write[0] == "merge" for write in race_client.writes))
-
-        second_ordinary = copy.deepcopy(ordinary)
-        second_ordinary["number"] = 22
-        state["pull_requests"].append(second_ordinary)
-        with self.assertRaises(LoopBlocked):
+    def test_second_open_pr_for_one_work_item_fails_closed(self) -> None:
+        state = snapshot([])
+        state["pull_requests"] = [
+            {
+                "number": 20,
+                "body": "Work-Item: #1\nMilestone: m1\nContract-Change: false\n",
+                "state": "open",
+                "labels": [],
+            },
+            {
+                "number": 21,
+                "body": "Work-Item: #1\nMilestone: m1\nContract-Change: true\n",
+                "state": "open",
+                "labels": ["contract-change"],
+            },
+        ]
+        with self.assertRaisesRegex(LoopBlocked, "multiple open PRs"):
             _find_pr(state, 1)
-
-        both_merged = copy.deepcopy(state)
-        both_merged["pull_requests"] = both_merged["pull_requests"][:2]
-        both_merged["pull_requests"][0].update(
-            state="closed",
-            merged_at="2026-07-24T01:00:00Z",
-        )
-        both_merged["pull_requests"][1].update(
-            state="closed",
-            merged_at="2026-07-24T00:00:00Z",
-        )
-        self.assertEqual(_find_pr(both_merged, 1)["number"], 20)
 
     def test_m2_canonical_unresolved_candidates_reach_authorization(self) -> None:
         milestone = m2_milestone()
@@ -1017,6 +922,147 @@ class CoordinatorTests(unittest.TestCase):
         pending = pending_m2_discovery_diagnosis(state)
         self.assertIsNotNone(pending)
         self.assertEqual(pending["failure_fingerprint"], "f" * 64)
+
+    def test_discovery_result_comment_posts_normally(self) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with patch(
+            "coordinator.collect_snapshot",
+            return_value=self._m2_record_state(control),
+        ):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+        comments = [
+            write
+            for write in client.writes
+            if write[0] == "comment" and "milestone-loop-m2-discovery:" in write[2]
+        ]
+        self.assertEqual(len(comments), 1)
+
+    def test_discovery_result_comment_eof_after_acceptance_reads_marker(self) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        original_comment = client.comment
+        attempts = 0
+
+        def accepted_then_eof(number, body) -> None:
+            nonlocal attempts
+            attempts += 1
+            original_comment(number, body)
+            raise GitHubError("gh api POST comments failed: unexpected EOF")
+
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with (
+            patch(
+                "coordinator.collect_snapshot",
+                return_value=self._m2_record_state(control),
+            ),
+            patch.object(client, "comment", side_effect=accepted_then_eof),
+        ):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+        self.assertEqual(attempts, 1)
+        self.assertEqual(
+            len(
+                [
+                    write
+                    for write in client.writes
+                    if write[0] == "comment"
+                    and "milestone-loop-m2-discovery:" in write[2]
+                ]
+            ),
+            1,
+        )
+
+    def test_discovery_result_comment_retries_one_uncommitted_eof(self) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        original_comment = client.comment
+        attempts = 0
+
+        def first_eof(number, body) -> None:
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise GitHubError("gh api POST comments failed: unexpected EOF")
+            original_comment(number, body)
+
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with (
+            patch(
+                "coordinator.collect_snapshot",
+                return_value=self._m2_record_state(control),
+            ),
+            patch.object(client, "comment", side_effect=first_eof),
+        ):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+        self.assertEqual(attempts, 2)
+
+    def test_discovery_result_comment_two_uncommitted_eofs_fail_closed(self) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        attempts = 0
+
+        def always_eof(_number, _body) -> None:
+            nonlocal attempts
+            attempts += 1
+            raise GitHubError("gh api POST comments failed: unexpected EOF")
+
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with (
+            patch(
+                "coordinator.collect_snapshot",
+                return_value=self._m2_record_state(control),
+            ),
+            patch.object(client, "comment", side_effect=always_eof),
+            self.assertRaisesRegex(GitHubError, "unexpected EOF"),
+        ):
+            record_m2_discovery_result(client=client, result=result)
+        self.assertEqual(attempts, 2)
+        self.assertFalse(any(write[0] == "comment" for write in client.writes))
+
+    def test_discovery_result_existing_exact_marker_skips_post_and_continues(
+        self,
+    ) -> None:
+        control = self._m2_control()
+        client = FakeClient(control)
+        result = self._discovery_result(
+            status="PASS", disposition="CANDIDATE_SELECTION_ONLY"
+        )
+        with patch(
+            "coordinator.collect_snapshot",
+            return_value=self._m2_record_state(control),
+        ):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "RECORDED"
+            )
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "NOOP"
+            )
+        self.assertEqual(
+            len(
+                [
+                    write
+                    for write in client.writes
+                    if write[0] == "comment"
+                    and "milestone-loop-m2-discovery:" in write[2]
+                ]
+            ),
+            1,
+        )
 
     def test_discovery_check_history_must_fit_the_authoritative_page(self) -> None:
         control = {

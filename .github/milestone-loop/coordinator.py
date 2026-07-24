@@ -1171,46 +1171,11 @@ def _find_pr(snapshot: Mapping[str, Any], issue_number: int) -> dict[str, Any] |
     ]
     open_matches = [pr for pr in matches if pr.get("state") == "open"]
     if len(open_matches) > 1:
-        ordinary = [
-            pr
-            for pr in open_matches
-            if not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
-        ]
-        protected = [pr for pr in open_matches if pr not in ordinary]
-        if len(ordinary) == 1 and len(protected) == 1:
-            return ordinary[0]
-        raise LoopBlocked(f"Work Item #{issue_number} has multiple open implementation PRs")
+        raise LoopBlocked(f"Work Item #{issue_number} has multiple open PRs")
     if open_matches:
         return open_matches[0]
     merged = [pr for pr in matches if pr.get("merged_at")]
-    ordinary_merged = [
-        pr
-        for pr in merged
-        if not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
-    ]
-    selected = ordinary_merged or merged
-    return sorted(selected, key=lambda pr: pr["number"])[-1] if selected else None
-
-
-def _contract_change_sibling(
-    snapshot: Mapping[str, Any],
-    issue_number: int,
-    *,
-    exclude_number: int,
-) -> dict[str, Any] | None:
-    matches = [
-        pr
-        for pr in snapshot.get("pull_requests", [])
-        if pr.get("number") != exclude_number
-        and pr.get("state") == "open"
-        and PR_WORK_ITEM_RE.findall(pr.get("body", "")) == [str(issue_number)]
-        and pr_contract_change(pr.get("body", ""), pr.get("labels", []))
-    ]
-    if len(matches) > 1:
-        raise LoopBlocked(
-            f"Work Item #{issue_number} has multiple open Contract Change prerequisites"
-        )
-    return matches[0] if matches else None
+    return sorted(merged, key=lambda pr: pr["number"])[-1] if merged else None
 
 
 def _failure_payload(kind: str, signature: str) -> str:
@@ -1845,37 +1810,6 @@ def reconcile_review(
         if pr.get("state") != "open":
             _set_issue_status(client, issue, "ready")
             continue
-        prerequisite = _contract_change_sibling(
-            snapshot,
-            number,
-            exclude_number=int(pr["number"]),
-        )
-        if (
-            prerequisite is not None
-            and not pr_contract_change(pr.get("body", ""), pr.get("labels", []))
-        ):
-            client.disable_auto_merge(int(pr["number"]))
-            repository = str(snapshot.get("repository", ""))
-            record_human_action_state(
-                client=client,
-                snapshot=snapshot,
-                control=control,
-                state="PR_REVIEW_REQUIRED",
-                target=(
-                    f"pr:{prerequisite['number']}:"
-                    f"{prerequisite.get('head_sha', '')}"
-                ),
-                sha=str(prerequisite.get("head_sha", "")),
-                action=(
-                    "Review and merge the prerequisite Contract Change before "
-                    "continuing this Work Item."
-                ),
-                link=(
-                    f"https://github.com/{repository}/pull/"
-                    f"{prerequisite['number']}"
-                ),
-            )
-            return "HUMAN_REVIEW", control
         matching_checks = [
             item
             for item in pr.get("checks", [])
@@ -1980,12 +1914,6 @@ def reconcile_review(
             or live_pr.get("head_sha") != record["head_sha"]
             or live_pr.get("head_tree_sha") != record["tree_sha"]
             or status_from_labels(live_issue.get("labels", [])) != "review"
-            or _contract_change_sibling(
-                live,
-                number,
-                exclude_number=int(live_pr["number"]),
-            )
-            is not None
         ):
             raise LoopBlocked("live state changed before auto-merge enablement")
         client.merge_pull_request(
@@ -2379,6 +2307,39 @@ def _m2_discovery_diagnosis_completed(
     )
 
 
+def _publish_m2_discovery_result_comment(
+    client: GitHubClient, issue_number: int, body: str, marker: str
+) -> None:
+    endpoint = f"issues/{issue_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
+    eof: GitHubError | None = None
+    for attempt in range(3):
+        comments = client.api(endpoint)
+        if not isinstance(comments, list):
+            raise GitHubError("cannot read Control Issue after M2 discovery comment EOF")
+        if len(comments) > MAX_ISSUE_COMMENTS:
+            raise LoopBlocked("Control Issue comment history exceeds its authoritative bound")
+        if any(
+            isinstance(comment, dict)
+            and isinstance(comment.get("user"), dict)
+            and comment["user"].get("login") == "github-actions[bot]"
+            and isinstance(comment.get("body"), str)
+            and marker in comment["body"]
+            for comment in comments
+        ):
+            return
+        if attempt == 2:
+            if eof is None:
+                raise GitHubError("M2 discovery comment retry state is invalid")
+            raise eof
+        try:
+            client.comment(issue_number, body)
+            return
+        except GitHubError as exc:
+            if "unexpected EOF" not in str(exc):
+                raise
+            eof = exc
+
+
 def record_m2_discovery_result(
     *, client: GitHubClient, result: Mapping[str, Any]
 ) -> str:
@@ -2592,14 +2553,19 @@ def record_m2_discovery_result(
     }
     qualifier = " (stale default SHA)" if stale else ""
     if not existing:
-        client.comment(
+        comment_marker = (
+            "<!-- milestone-loop-m2-discovery: "
+            + json.dumps(marker, sort_keys=True, separators=(",", ":"))
+            + " -->"
+        )
+        _publish_m2_discovery_result_comment(
+            client,
             control.issue_number,
             f"Trusted M2 candidate-selection-only discovery result: **{effective_status}**{qualifier}\n\n"
             f"{summary}\n\n"
             "This result is not M2 admission evidence and cannot close M2.\n\n"
-            "<!-- milestone-loop-m2-discovery: "
-            + json.dumps(marker, sort_keys=True, separators=(",", ":"))
-            + " -->",
+            + comment_marker,
+            comment_marker,
         )
     if repairable:
         if diagnosis_completed:
