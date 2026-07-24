@@ -40,21 +40,11 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _failure(failure_phase: str, failure_type: str, *, evidence: bool) -> dict[str, Any]:
-    return {
-        "capture_stage": failure_phase,
-        "failure_type": failure_type,
-        "evidence_path": REPORT_NAME if evidence else "",
-    }
-
-
 def _preflight_failure(
     args: argparse.Namespace,
     status: str,
     summary: str,
-    failure_type: str,
-) -> tuple[str, str, dict[str, Any]]:
-    evidence = False
+) -> tuple[str, str]:
     artifacts_dir = args.artifacts_dir.resolve()
     if (
         not _forbidden_path(artifacts_dir)
@@ -71,21 +61,19 @@ def _preflight_failure(
             errors=[summary],
         )
         capture._write_report(artifacts_dir / REPORT_NAME, report)
-        evidence = True
-    return status, summary, _failure("preflight", failure_type, evidence=evidence)
+    return status, summary
 
 
 def _write_result(
     path: Path,
     status: str,
     summary: str,
-    failure: dict[str, Any] | None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     bounded_summary = " ".join(summary.split())[:4000]
     path.write_text(
         json.dumps(
-            {"status": status, "summary": bounded_summary, "failure": failure},
+            {"status": status, "summary": bounded_summary},
             sort_keys=True,
         )
         + "\n",
@@ -324,7 +312,7 @@ def _clear_context(context: capture.CaptureContext) -> None:
 
 def _capture(
     args: argparse.Namespace,
-) -> tuple[str, str, dict[str, Any] | None]:
+) -> tuple[str, str]:
     artifacts_dir = args.artifacts_dir.resolve()
     args.artifacts_dir = artifacts_dir
     report_path = artifacts_dir / REPORT_NAME
@@ -348,9 +336,8 @@ def _capture(
         *,
         status: str,
         reason: str,
-        failure_type: str,
         include_campaigns: bool = True,
-    ) -> tuple[str, str, dict[str, Any]]:
+    ) -> tuple[str, str]:
         if include_campaigns and failure_phase in contexts:
             campaigns[failure_phase] = _campaign(
                 contexts[failure_phase],
@@ -375,7 +362,7 @@ def _capture(
             errors=[reason],
         )
         capture._write_report(report_path, report)
-        return status, str(exc), _failure(failure_phase, failure_type, evidence=True)
+        return status, str(exc)
 
     try:
         product_digest = capture._product_digest()
@@ -461,7 +448,6 @@ def _capture(
             exc,
             status=status,
             reason=reason,
-            failure_type="environment-blocked",
             include_campaigns=started,
         )
     except capture.CaptureError as exc:
@@ -470,7 +456,6 @@ def _capture(
             exc,
             status="FAIL",
             reason=reason,
-            failure_type="capture-error",
         )
     except Exception as exc:  # noqa: BLE001 - partial real evidence must close as FAIL
         reason = f"DISCOVERY_FAILED: {type(exc).__name__}: {exc}"
@@ -478,7 +463,6 @@ def _capture(
             exc,
             status="FAIL",
             reason=reason,
-            failure_type="unexpected-error",
         )
 
     report = _build_report(
@@ -508,59 +492,46 @@ def _capture(
             errors=validation_errors,
         )
         capture._write_report(report_path, report)
-        return (
-            "FAIL",
-            "; ".join(validation_errors[:8]),
-            _failure("failover", "validation-failed", evidence=True),
-        )
+        return "FAIL", "; ".join(validation_errors[:8])
     capture._write_report(report_path, report)
-    return (
-        "PASS",
-        (
-            f"validated {len(campaigns['formation']['trials'])} formation and "
-            f"{len(campaigns['failover']['trials'])} failover discovery trials"
-        ),
-        None,
+    return "PASS", (
+        f"validated {len(campaigns['formation']['trials'])} formation and "
+        f"{len(campaigns['failover']['trials'])} failover discovery trials"
     )
 
 
 def run(
     args: argparse.Namespace,
-) -> tuple[str, str, dict[str, Any] | None]:
+) -> tuple[str, str]:
     if _forbidden_path(args.artifacts_dir):
         return _preflight_failure(
             args,
             "FAIL",
             "M2 discovery artifacts directory names forbidden non-current evidence",
-            "input-rejected",
         )
     if not _authorized(args.run_id):
         return _preflight_failure(
             args,
             "BLOCKED",
             f"real M2 discovery requires explicit {admission.AUTHORIZATION_ENV}=1 (or this run id); no trial was started",
-            "environment-blocked",
         )
     if SHA_RE.fullmatch(str(args.tested_sha)) is None:
         return _preflight_failure(
             args,
             "BLOCKED",
             "M2 discovery tested SHA must be a full lowercase Git SHA",
-            "environment-blocked",
         )
     if _checkout_sha() != args.tested_sha:
         return _preflight_failure(
             args,
             "BLOCKED",
             "M2 discovery checkout does not match the authorized tested SHA",
-            "environment-blocked",
         )
     if not capture.RUN_ID_RE.fullmatch(str(args.run_id)):
         return _preflight_failure(
             args,
             "FAIL",
             "M2 discovery run id is not a safe current-invocation identifier",
-            "input-rejected",
         )
     artifacts_dir = args.artifacts_dir.resolve()
     if artifacts_dir.exists() and any(artifacts_dir.iterdir()):
@@ -568,7 +539,6 @@ def run(
             args,
             "FAIL",
             "refusing pre-existing M2 discovery artifacts",
-            "input-rejected",
         )
     return _capture(args)
 
@@ -578,11 +548,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if _forbidden_path(args.result_path):
         return 2
     try:
-        status, summary, failure = run(args)
+        status, summary = run(args)
     except Exception as exc:  # noqa: BLE001 - result must remain machine-readable
         status, summary = "FAIL", f"M2 discovery raised {type(exc).__name__}: {exc}"
-        failure = _failure("preflight", "unexpected-error", evidence=False)
-    _write_result(args.result_path, status, summary, failure)
+    _write_result(args.result_path, status, summary)
     return 0
 
 

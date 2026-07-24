@@ -2922,12 +2922,7 @@ def test_discovery_runner_without_authorization_is_blocked_before_capture(
 
     payload = json.loads(result.read_text(encoding="utf-8"))
     assert payload["status"] == "BLOCKED"
-    assert set(payload) == {"status", "summary", "failure"}
-    assert payload["failure"] == {
-        "capture_stage": "preflight",
-        "failure_type": "environment-blocked",
-        "evidence_path": DISCOVERY.REPORT_NAME,
-    }
+    assert set(payload) == {"status", "summary"}
     report = json.loads((artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8"))
     assert report["status"] == "BLOCKED"
     assert report["campaigns"] == {}
@@ -2975,9 +2970,7 @@ def test_discovery_runner_rejects_invalid_or_mismatched_sha_before_capture(
     payload = json.loads(result.read_text(encoding="utf-8"))
     assert payload["status"] == "BLOCKED"
     assert summary_fragment in payload["summary"]
-    assert set(payload) == {"status", "summary", "failure"}
-    assert payload["failure"]["capture_stage"] == "preflight"
-    assert payload["failure"]["failure_type"] == "environment-blocked"
+    assert set(payload) == {"status", "summary"}
 
 
 def test_discovery_runner_rejects_preexisting_or_forbidden_artifacts(
@@ -3019,21 +3012,18 @@ def test_discovery_runner_rejects_preexisting_or_forbidden_artifacts(
         ]
     )
 
-    preexisting_status, preexisting_summary, preexisting_failure = DISCOVERY.run(
+    preexisting_status, preexisting_summary = DISCOVERY.run(
         preexisting_args
     )
     assert (preexisting_status, preexisting_summary) == (
         "FAIL",
         "refusing pre-existing M2 discovery artifacts",
     )
-    assert preexisting_failure["capture_stage"] == "preflight"
-    assert preexisting_failure["failure_type"] == "input-rejected"
-    forbidden_status, forbidden_summary, forbidden_failure = DISCOVERY.run(
+    forbidden_status, forbidden_summary = DISCOVERY.run(
         forbidden_args
     )
     assert forbidden_status == "FAIL"
     assert "forbidden" in forbidden_summary
-    assert forbidden_failure["evidence_path"] == ""
 
 
 def test_discovery_environment_blocker_emits_distinct_blocked_report(
@@ -3068,12 +3058,7 @@ def test_discovery_environment_blocker_emits_distinct_blocked_report(
         (artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8")
     )
     assert payload["status"] == "BLOCKED"
-    assert set(payload) == {"status", "summary", "failure"}
-    assert payload["failure"] == {
-        "capture_stage": "preflight",
-        "failure_type": "environment-blocked",
-        "evidence_path": DISCOVERY.REPORT_NAME,
-    }
+    assert set(payload) == {"status", "summary"}
     assert report["artifact_type"] == "m2_candidate_discovery"
     assert report["purpose"] == "candidate-selection-only"
     assert report["admission_evidence"] is False
@@ -3120,20 +3105,16 @@ def test_discovery_resource_preflight_blocker_remains_preflight_evidence(
     payload = json.loads(result.read_text(encoding="utf-8"))
     report = json.loads((artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8"))
     assert payload["status"] == "BLOCKED"
-    assert payload["failure"] == {
-        "capture_stage": "preflight",
-        "failure_type": "environment-blocked",
-        "evidence_path": DISCOVERY.REPORT_NAME,
-    }
+    assert set(payload) == {"status", "summary"}
     assert report["campaigns"] == {}
     assert report["errors"] == ["ENVIRONMENT_BLOCKED: resource preflight rejected the host"]
 
 
 @pytest.mark.parametrize(
-    ("failure_phase", "exception_type", "failure_type"),
+    ("failure_phase", "exception_type"),
     [
-        ("formation", DISCOVERY.capture.CaptureError, "capture-error"),
-        ("failover", RuntimeError, "unexpected-error"),
+        ("formation", DISCOVERY.capture.CaptureError),
+        ("failover", RuntimeError),
     ],
 )
 def test_discovery_producer_structures_capture_site_failures(
@@ -3141,7 +3122,6 @@ def test_discovery_producer_structures_capture_site_failures(
     monkeypatch: pytest.MonkeyPatch,
     failure_phase: str,
     exception_type: type[Exception],
-    failure_type: str,
 ) -> None:
     artifacts = tmp_path / failure_phase
     args = DISCOVERY._parser().parse_args(
@@ -3196,17 +3176,12 @@ def test_discovery_producer_structures_capture_site_failures(
         lambda *_args, **_kwargs: [],
     )
 
-    status, _summary, failure = DISCOVERY._capture(args)
+    status, _summary = DISCOVERY._capture(args)
     report = json.loads(
         (artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8")
     )
 
     assert status == "FAIL"
-    assert failure == {
-        "capture_stage": failure_phase,
-        "failure_type": failure_type,
-        "evidence_path": DISCOVERY.REPORT_NAME,
-    }
     assert report["status"] == "FAIL"
     assert report["campaigns"][failure_phase]["errors"] == report["errors"]
 
@@ -3258,17 +3233,12 @@ def test_discovery_producer_replaces_current_phase_after_validation_failure(
         lambda *_args, **_kwargs: [],
     )
 
-    status, _summary, failure = DISCOVERY._capture(args)
+    status, _summary = DISCOVERY._capture(args)
     report = json.loads(
         (artifacts / DISCOVERY.REPORT_NAME).read_text(encoding="utf-8")
     )
 
     assert status == "FAIL"
-    assert failure == {
-        "capture_stage": "formation",
-        "failure_type": "capture-error",
-        "evidence_path": DISCOVERY.REPORT_NAME,
-    }
     assert report["campaigns"]["formation"]["status"] == "FAIL"
     assert report["campaigns"]["formation"]["errors"] == report["errors"]
     assert "failover" not in report["campaigns"]

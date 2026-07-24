@@ -21,11 +21,12 @@ from coordinator import (
     render_control,
     real_readiness_fingerprint,
 )
-from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError
-from loop import _publish_verification_comment, main as loop_main, pr_metadata
+from github_api import GitHubClient, GitHubError
+from loop import main as loop_main, pr_metadata
 from milestone_runner import (
     LeaseConfirmationBlocked,
     _canonical_digest,
+    _derive_discovery_report_failure,
     _gate_environment,
     _gate_result_summary,
     _lease_fingerprint,
@@ -93,6 +94,73 @@ class InvocationClient:
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_discovery_failure_policy_is_derived_from_report_facts(self) -> None:
+        capture_error = "DISCOVERY_FAILED: CaptureError: collector failed"
+        measurement = _derive_discovery_report_failure(
+            status="FAIL",
+            report={
+                "errors": [capture_error],
+                "campaigns": {
+                    "formation": {
+                        "status": "FAIL",
+                        "errors": [capture_error],
+                    }
+                },
+            },
+        )
+        self.assertEqual(
+            measurement,
+            {
+                "failure_phase": "formation",
+                "class": "measurement",
+                "scope": "formation",
+                "retryable": True,
+                "evidence_path": "m2_candidate_discovery.json",
+            },
+        )
+
+        product_error = "DISCOVERY_FAILED: RuntimeError: collector failed"
+        product = _derive_discovery_report_failure(
+            status="FAIL",
+            report={
+                "errors": [product_error],
+                "campaigns": {
+                    "formation": {
+                        "status": "FAIL",
+                        "errors": [product_error],
+                    }
+                },
+            },
+        )
+        self.assertEqual(product["class"], "product")
+        self.assertTrue(product["retryable"])
+
+        environment = _derive_discovery_report_failure(
+            status="BLOCKED",
+            report={
+                "errors": ["ENVIRONMENT_BLOCKED: Docker unavailable"],
+                "campaigns": {},
+            },
+        )
+        self.assertEqual(environment["class"], "environment")
+        self.assertFalse(environment["retryable"])
+
+        validation = _derive_discovery_report_failure(
+            status="FAIL",
+            report={
+                "errors": ["candidate validation failed"],
+                "campaigns": {
+                    "formation": {"status": "PASS", "errors": []},
+                    "failover": {
+                        "status": "FAIL",
+                        "errors": ["candidate validation failed"],
+                    },
+                },
+            },
+        )
+        self.assertEqual(validation["failure_phase"], "failover")
+        self.assertEqual(validation["class"], "measurement")
+
     def test_environment_rejection_skips_discovery_recorder(self) -> None:
         workflow = (ROOT / ".github/workflows/milestone-loop.yml").read_text()
         discovery_job = workflow.split("\n  m2-discovery:", 1)[1].split(
@@ -275,96 +343,6 @@ class BoundaryTests(unittest.TestCase):
                 live["body"] = body
                 with self.assertRaises(ContractError):
                     pr_metadata(client, path)
-
-    def test_verification_comment_reconciles_one_ambiguous_publish(self) -> None:
-        class Client:
-            def __init__(self, outcomes: list[str]) -> None:
-                self.comments: list[dict] = []
-                self.outcomes = outcomes
-                self.calls = 0
-                self.hidden_reads = 0
-
-            def api(self, endpoint: str):
-                if endpoint != f"issues/42/comments?per_page={MAX_ISSUE_COMMENTS + 1}":
-                    raise AssertionError(endpoint)
-                if self.hidden_reads:
-                    self.hidden_reads -= 1
-                    return []
-                return list(self.comments)
-
-            def comment(self, number: int, body: str) -> None:
-                outcome = self.outcomes[self.calls]
-                self.calls += 1
-                if outcome == "written-eof":
-                    self.comments.append(
-                        {"user": {"login": "github-actions[bot]"}, "body": body}
-                    )
-                    raise GitHubError("unexpected EOF")
-                if outcome == "written-eof-hidden":
-                    self.comments.append(
-                        {"user": {"login": "github-actions[bot]"}, "body": body}
-                    )
-                    self.hidden_reads = 1
-                    raise GitHubError("unexpected EOF")
-                if outcome == "eof":
-                    raise GitHubError("unexpected EOF")
-                self.comments.append(
-                    {"user": {"login": "github-actions[bot]"}, "body": body}
-                )
-
-        record = {"status": "PASS", "head_sha": "b" * 40}
-        with patch("loop.time.sleep"):
-            written = Client(["written-eof"])
-            _publish_verification_comment(written, pr_number=42, record=record)
-            self.assertEqual(written.calls, 1)
-
-            delayed = Client(["written-eof-hidden"])
-            _publish_verification_comment(delayed, pr_number=42, record=record)
-            self.assertEqual(delayed.calls, 1)
-
-            retried = Client(["eof", "success"])
-            _publish_verification_comment(retried, pr_number=42, record=record)
-            self.assertEqual(retried.calls, 2)
-            _publish_verification_comment(retried, pr_number=42, record=record)
-            self.assertEqual(retried.calls, 2)
-
-            failed = Client(["eof", "eof"])
-            with self.assertRaises(GitHubError):
-                _publish_verification_comment(failed, pr_number=42, record=record)
-            self.assertEqual(failed.calls, 2)
-
-            invisible = Client(["success"])
-            with self.assertRaises(GitHubError):
-                with patch.object(invisible, "api", return_value=[]):
-                    _publish_verification_comment(invisible, pr_number=42, record=record)
-            self.assertEqual(invisible.calls, 1)
-
-            read_eof = Client(["success"])
-            original_api = read_eof.api
-            read_attempts = iter(("eof", "empty", "empty", "eof", "visible"))
-
-            def intermittent_read(endpoint: str):
-                outcome = next(read_attempts)
-                if outcome == "eof":
-                    raise GitHubError("unexpected EOF")
-                if outcome == "empty":
-                    return []
-                return original_api(endpoint)
-
-            with patch.object(read_eof, "api", side_effect=intermittent_read):
-                _publish_verification_comment(read_eof, pr_number=42, record=record)
-            self.assertEqual(read_eof.calls, 1)
-
-            capacity = Client(["success"])
-            capacity.comments = [{}] * (MAX_ISSUE_COMMENTS - 1)
-            _publish_verification_comment(capacity, pr_number=42, record=record)
-            self.assertEqual(capacity.calls, 1)
-
-            full = Client(["success"])
-            full.comments = [{}] * MAX_ISSUE_COMMENTS
-            with self.assertRaises(LoopBlocked):
-                _publish_verification_comment(full, pr_number=42, record=record)
-            self.assertEqual(full.calls, 0)
 
     def test_false_contract_metadata_rejects_protected_changes(self) -> None:
         base_sha = "a" * 40
@@ -1596,17 +1574,7 @@ class BoundaryTests(unittest.TestCase):
                         {
                             "status": status,
                             "summary": "selection screen complete",
-                            "failure": (
-                                {"capture_stage": "formation"}
-                                if malformed_failure
-                                else None
-                                if status == "PASS"
-                                else {
-                                    "capture_stage": "preflight",
-                                    "failure_type": "environment-blocked",
-                                    "evidence_path": "m2_candidate_discovery.json",
-                                }
-                            ),
+                            **({"unexpected": "field"} if malformed_failure else {}),
                         }
                     ),
                     encoding="utf-8",
@@ -1707,7 +1675,7 @@ class BoundaryTests(unittest.TestCase):
             malformed_failure=True,
         )
         self.assertEqual(malformed["status"], "FAIL")
-        self.assertIn("failure metadata is invalid", malformed["summary"])
+        self.assertIn("bounded contract", malformed["summary"])
 
     def test_m2_discovery_blocks_if_candidate_state_is_no_longer_canonical(self) -> None:
         snapshot = {

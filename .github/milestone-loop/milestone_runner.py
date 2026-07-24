@@ -440,40 +440,43 @@ def _validate_discovery_failure(
     return dict(value)
 
 
-def _derive_discovery_command_failure(
-    value: Any,
+def _derive_discovery_report_failure(
     *,
     status: str,
     report: Mapping[str, Any],
 ) -> dict[str, Any] | None:
     if status == "PASS":
-        if value is not None:
-            raise ContractError("M2 discovery PASS cannot contain a failure")
         return None
+    campaigns = report.get("campaigns")
+    errors = report.get("errors")
     if (
-        not isinstance(value, dict)
-        or set(value) != {"capture_stage", "failure_type", "evidence_path"}
-        or value.get("capture_stage") not in {"preflight", "formation", "failover"}
-        or value.get("failure_type")
-        not in {
-            "environment-blocked",
-            "capture-error",
-            "validation-failed",
-            "input-rejected",
-            "unexpected-error",
-        }
-        or value.get("evidence_path") != _M2_DISCOVERY_REPORT_NAME
+        not isinstance(campaigns, dict)
+        or not isinstance(errors, list)
+        or not errors
+        or any(not isinstance(error, str) for error in errors)
     ):
-        raise ContractError("M2 discovery command failure is malformed")
-    phase = str(value["capture_stage"])
-    failure_type = str(value["failure_type"])
-    failure_class = {
-        "environment-blocked": "environment",
-        "capture-error": "measurement",
-        "validation-failed": "measurement",
-        "input-rejected": "product",
-        "unexpected-error": "product",
-    }[failure_type]
+        raise ContractError("M2 discovery report failure facts are malformed")
+    if not campaigns:
+        phase = "preflight"
+    elif "failover" in campaigns:
+        phase = "failover"
+    elif "formation" in campaigns:
+        phase = "formation"
+    else:
+        raise ContractError("M2 discovery failure phase is not report-derived")
+    if status == "BLOCKED":
+        failure_class = "environment"
+    elif any(error.startswith("DISCOVERY_FAILED: ") for error in errors):
+        failure_class = (
+            "measurement"
+            if all(
+                error.startswith("DISCOVERY_FAILED: CaptureError:")
+                for error in errors
+            )
+            else "product"
+        )
+    else:
+        failure_class = "measurement" if phase != "preflight" else "product"
     return _validate_discovery_failure(
         {
             "failure_phase": phase,
@@ -483,7 +486,7 @@ def _derive_discovery_command_failure(
                 failure_class in {"measurement", "product"}
                 and phase in {"formation", "failover"}
             ),
-            "evidence_path": value["evidence_path"],
+            "evidence_path": _M2_DISCOVERY_REPORT_NAME,
         },
         status=status,
         report=report,
@@ -1708,7 +1711,7 @@ def run_m2_discovery(
         summary = command.get("summary") if isinstance(command, dict) else None
         if (
             not isinstance(command, dict)
-            or set(command) != {"status", "summary", "failure"}
+            or set(command) != {"status", "summary"}
             or command_status not in {"PASS", "FAIL", "BLOCKED"}
             or not isinstance(summary, str)
             or len(summary) > 4000
@@ -1743,8 +1746,7 @@ def run_m2_discovery(
                 "artifacts": str(artifacts),
             }
         try:
-            failure = _derive_discovery_command_failure(
-                command["failure"],
+            failure = _derive_discovery_report_failure(
                 status=str(command_status),
                 report=report,
             )
