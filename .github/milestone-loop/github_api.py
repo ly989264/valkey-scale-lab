@@ -284,15 +284,11 @@ def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
             head = detail.get("head") if isinstance(detail.get("head"), dict) else {}
             base = detail.get("base") if isinstance(detail.get("base"), dict) else {}
             head_sha = head.get("sha")
-            head_message = None
             checks: list[dict[str, Any]] = []
             if isinstance(head_sha, str):
                 head_commit = client.api(f"git/commits/{head_sha}")
                 head_tree = head_commit.get("tree") if isinstance(head_commit, dict) else None
                 head_tree_sha = head_tree.get("sha") if isinstance(head_tree, dict) else None
-                head_message = (
-                    head_commit.get("message") if isinstance(head_commit, dict) else None
-                )
                 check_doc = client.api(f"commits/{head_sha}/check-runs?per_page=100")
                 raw_checks = check_doc.get("check_runs") if isinstance(check_doc, dict) else None
                 for check in _bounded_list(raw_checks, location=f"PR #{number} Checks", maximum=99):
@@ -337,7 +333,6 @@ def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
                     "head_ref": head.get("ref"),
                     "head_sha": head_sha,
                     "head_tree_sha": head_tree_sha if isinstance(head_sha, str) else None,
-                    "head_message": head_message,
                     "base_ref": base.get("ref"),
                     "base_sha": base.get("sha"),
                     "mergeable_state": detail.get("mergeable_state"),

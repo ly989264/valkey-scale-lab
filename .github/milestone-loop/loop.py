@@ -29,9 +29,7 @@ from contracts import (
 from coordinator import (
     LoopBlocked,
     coordinate,
-    merged_contract_change_prerequisite,
     milestone_from_pr_body,
-    protected_changes,
     record_m2_discovery_result,
     record_milestone_result,
     trusted_m2_discovery_repair_pr,
@@ -229,35 +227,6 @@ def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
     require_candidate_check(catalog, work_item.check)
     if check != work_item.check:
         require_candidate_check(catalog, check)
-    protected_prerequisite = None
-    if (
-        not contract_change
-        and pr.get("state") == "open"
-        and snapshot.get("default_sha") == base.get("sha")
-    ):
-        protected_prerequisite = merged_contract_change_prerequisite(
-            snapshot,
-            issue_number,
-            base_sha=str(base.get("sha")),
-            exclude_number=int(pr["number"]),
-        )
-        if protected_prerequisite is not None:
-            files = client.api(
-                f"pulls/{protected_prerequisite['pr']}/files?per_page=100"
-            )
-            if (
-                not isinstance(files, list)
-                or not files
-                or len(files) >= 100
-                or any(
-                    not isinstance(item, dict)
-                    or not isinstance(item.get("filename"), str)
-                    for item in files
-                )
-            ):
-                raise GitHubError("Contract Change prerequisite file list is invalid")
-            if not protected_changes(tuple(item["filename"] for item in files)):
-                protected_prerequisite = None
     return {
         "pr": pr["number"],
         "work_item": issue_number,
@@ -266,7 +235,6 @@ def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
         "head_sha": head.get("sha"),
         "check": check,
         "contract_change": contract_change,
-        "protected_prerequisite": protected_prerequisite,
         "merged": bool(pr.get("merged")),
         "action": event.get("action"),
     }
@@ -690,8 +658,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 and record.get("work_item_check") == metadata["check"]
                 and record.get("work_item") == metadata["work_item"]
                 and record.get("contract_change") is metadata["contract_change"]
-                and record.get("protected_prerequisite")
-                == metadata["protected_prerequisite"]
             )
             if metadata_changed or (status != "BLOCKED" and not record_matches):
                 raise LoopBlocked(
