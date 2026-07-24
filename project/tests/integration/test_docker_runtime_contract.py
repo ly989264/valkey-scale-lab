@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import threading
 from pathlib import Path
 
@@ -9,6 +11,57 @@ import pytest
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
+
+
+def test_cached_production_image_supports_m2_shell_kill_and_proc_probe() -> None:
+    docker = shutil.which("docker")
+    if docker is None:
+        pytest.skip("Docker CLI is unavailable")
+    image = "valkey/valkey:9.1.0"
+    inspected = subprocess.run(
+        [docker, "image", "inspect", image],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if inspected.returncode != 0:
+        pytest.skip(f"cached production image {image} is unavailable")
+
+    script = (
+        "command -v sh >/dev/null || exit 73; "
+        "command -v kill >/dev/null || exit 74; "
+        "command -v cat >/dev/null || exit 75; "
+        "command -v valkey-cli >/dev/null || exit 76; "
+        "command -v getconf >/dev/null || exit 77; "
+        "command -v awk >/dev/null || exit 78; "
+        "command -v readlink >/dev/null || exit 79; "
+        "getconf CLK_TCK >/dev/null || exit 80; "
+        "getconf PAGESIZE >/dev/null || exit 81; "
+        "valkey-server --port 6399 --cluster-enabled yes "
+        "--cluster-config-file /tmp/vslab-nodes.conf --appendonly no "
+        "--daemonize no --logfile /tmp/vslab.log & pid=$!; "
+        "attempt=0; until valkey-cli -p 6399 PING >/dev/null 2>&1; do "
+        "attempt=$((attempt + 1)); [ \"$attempt\" -lt 50 ] || exit 82; sleep 0.1; done; "
+        "valkey-cli -3 --json -p 6399 CLUSTER LINKS >/tmp/vslab-links.json || exit 83; "
+        "awk 'BEGIN { if (1 != 1) exit 1 }' /tmp/vslab-links.json || exit 84; "
+        "readlink /proc/$pid/exe >/dev/null || exit 85; "
+        "stat_line=$(cat /proc/$pid/stat) && "
+        'case "$stat_line" in *") "*) ;; *) exit 71;; esac; '
+        'stat_tail=${stat_line##*) }; state=${stat_tail%% *}; '
+        'case "$state" in R|S|D|T|t|W|K|P|I) ;; *) exit 72;; esac; '
+        'kill -KILL "$pid" && wait "$pid" 2>/dev/null; '
+        'test ! -e "/proc/$pid/stat"'
+    )
+    completed = subprocess.run(
+        [docker, "run", "--rm", "--entrypoint", "sh", image, "-c", script],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_cluster_lifecycle_node_specs_are_deterministic() -> None:

@@ -1,0 +1,307 @@
+{
+  "schema_version": "m2-historical-production-gate-replays-v1",
+  "source": "Original current-invocation discovery report and every digest-bound source_ref byte from the named GitHub Actions evidence artifact",
+  "replay_entrypoint": "scripts.m2_candidate_discovery.validate_discovery_report",
+  "bundle_format": "deterministic tar.gz with sorted paths, uid/gid/mtime zero, and no unreferenced files",
+  "expectation_scope": "immutable original FAIL reports traverse the production discovery Gate and remain rejected; bounded lossless adapters exercise only the named lower Gate layer",
+  "replay_expectations": {
+    "29845739384": {
+      "classification": "LEGACY_SCHEMA_INCOMPLETE",
+      "expected_gate": "REJECT",
+      "adapter_expectation": "NONE"
+    },
+    "29885627925": {
+      "classification": "LEGACY_SCHEMA_INCOMPLETE",
+      "expected_gate": "REJECT",
+      "adapter_expectation": "NONE"
+    },
+    "29901022395": {
+      "classification": "LEGACY_SCHEMA_INCOMPLETE",
+      "expected_gate": "REJECT",
+      "adapter_expectation": "NONE"
+    },
+    "29916936241": {
+      "classification": "FORMATION_CAMPAIGN_CURRENT_SCHEMA_PASS",
+      "expected_gate": "REJECT",
+      "adapter_expectation": "FORMATION_CAMPAIGN_GATE_PASS"
+    },
+    "29925711801": {
+      "classification": "FORMATION_TRANSITION_CURRENT_SCHEMA_PASS",
+      "expected_gate": "REJECT",
+      "adapter_expectation": "RESOURCE_SOURCE_GATE_PASS"
+    },
+    "29931564838": {
+      "classification": "FORMATION_TRANSITION_CURRENT_SCHEMA_PASS",
+      "expected_gate": "REJECT",
+      "adapter_expectation": "RESOURCE_SOURCE_GATE_PASS"
+    },
+    "29992169655": {
+      "classification": "CAPTURE_IMPLEMENTATION_DEFECT_KILL_EXECUTABLE_127",
+      "expected_gate": "REJECT",
+      "adapter_expectation": "FAULT_SLICE_REJECT"
+    },
+    "29997723777": {
+      "classification": "MEASUREMENT_RUNTIME_DEFECT_CADENCE_CONTRACT",
+      "expected_gate": "REJECT",
+      "adapter_expectation": "FAULT_SLICE_REJECT"
+    }
+  },
+  "runs": [
+    {
+      "source_run_id": "29845739384",
+      "source_run_attempt": 1,
+      "invocation_run_id": "m2-discovery-gh-29845739384-attempt-1",
+      "producer_head_sha": "2aa73b61f75b67aab050c6bd25644430a83b97d3",
+      "original_status": "FAIL",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "evidence_artifact": {
+        "id": 8501702417,
+        "name": "m2-discovery-evidence-29845739384-1",
+        "archive_size_bytes": 1100018,
+        "sha256": "d2334481bbe5c04396ed84e385380c08e16b914660b4f643d04672e1e087fb45"
+      },
+      "sealed_result": {
+        "evidence_digest": "3492e1a469bab42147416a9ba740fee91fd084359def9c253cd9aa0ed7fa52a6",
+        "report_digest": "5682aedbfbab49f686520c1f6b746b34efd5442aad069950ddef326a75740687"
+      },
+      "report_sha256": "94cdacb7097e969b76d67c383f3c0b78bb969edbf59ce52162373dcf3a68ae48",
+      "fixture": {
+        "file": "historical_gate_replays/run_29845739384_production_gate_sources.tar.gz",
+        "sha256": "dbe5141a225a47c3b4b05878b26a885f5b2c18b041846fbe0f2c6c5176a4dd70",
+        "file_count": 9,
+        "source_bytes": 3042071,
+        "gzip_bytes": 116036
+      }
+    },
+    {
+      "source_run_id": "29885627925",
+      "source_run_attempt": 1,
+      "invocation_run_id": "m2-discovery-gh-29885627925-attempt-1",
+      "producer_head_sha": "f37e561ded13e9982784d0f26398994739859bd5",
+      "original_status": "FAIL",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "evidence_artifact": {
+        "id": 8516544882,
+        "name": "m2-discovery-evidence-29885627925-1",
+        "archive_size_bytes": 1101143,
+        "sha256": "12ff15a8fdca9af2163b092fbaba767433767d4ff2db71dbdb6ea511f5f76d33"
+      },
+      "sealed_result": {
+        "evidence_digest": "ed86c80333988167c536386c0f5c55ddfca9b5a8edc4a1eeba4d83c80734863a",
+        "report_digest": "7c9f95321cabc8e82dc4902ea367ef9552603eb5e981a1e51879a66c3eabdf98"
+      },
+      "report_sha256": "a30339fb9fe0271df30f7676b7c64717ff0c0490430daee7cbedd57d34634ef5",
+      "fixture": {
+        "file": "historical_gate_replays/run_29885627925_production_gate_sources.tar.gz",
+        "sha256": "f55de17d24cfad2e7d169dc71ecc0e5b534bc594f19cd24b0f389f87195a9788",
+        "file_count": 9,
+        "source_bytes": 3043011,
+        "gzip_bytes": 117156
+      }
+    },
+    {
+      "source_run_id": "29901022395",
+      "source_run_attempt": 1,
+      "invocation_run_id": "m2-discovery-gh-29901022395-attempt-1",
+      "producer_head_sha": "a2cfab8f85f019b845273cd57c37fff48406cc5c",
+      "original_status": "FAIL",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "evidence_artifact": {
+        "id": 8522187901,
+        "name": "m2-discovery-evidence-29901022395-1",
+        "archive_size_bytes": 1381421,
+        "sha256": "f940b924f66792acabd15e85d62529340e6a64540244a99597b1b34b2b7a2157"
+      },
+      "sealed_result": {
+        "evidence_digest": "64ab376ab22c4b430f6fe49feba634754b43e6e69be5b44cae77d1d37d444e41",
+        "report_digest": "ced74099bfae5ca57319beab7c132f613826fed2e4af8329cea43d37d8417df6"
+      },
+      "report_sha256": "3bf2b251536793d7e71bc88447580ca87d87bddeda67e69ece1df8ae768b5b51",
+      "fixture": {
+        "file": "historical_gate_replays/run_29901022395_production_gate_sources.tar.gz",
+        "sha256": "90f661b2874bd2d06041539d31a3062e872e381782ceadf8d209dc57e16158bc",
+        "file_count": 10,
+        "source_bytes": 3063976,
+        "gzip_bytes": 119796
+      }
+    },
+    {
+      "source_run_id": "29916936241",
+      "source_run_attempt": 1,
+      "invocation_run_id": "m2-discovery-gh-29916936241-attempt-1",
+      "producer_head_sha": "76b833a9bd89e94fb55710d43863fea3bae007bf",
+      "original_status": "FAIL",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: pair formation-discovery-1-pair-01 resource window: resource windows have unequal max_sample_collection_seconds: baseline=3.293813 candidate=2.790213",
+      "evidence_artifact": {
+        "id": 8529062582,
+        "name": "m2-discovery-evidence-29916936241-1",
+        "archive_size_bytes": 14879072,
+        "sha256": "36e3e0cdbb466ae31aff2403e39d064e61651322086b39d99c8e9c99536be55d"
+      },
+      "sealed_result": {
+        "evidence_digest": "5861f81b025bbd12376744491a5d2d586c83618ea7d4ae11b4d7448033fad8f6",
+        "report_digest": "5c13cacd0f514804c9df1fd03de8cee687160ceceb4b5badbb4bd783ccbc8e21"
+      },
+      "report_sha256": "2ac38500db85d3f6de4286d7e0d1222c486a84f3439d5c5498ca8f1c9abc8438",
+      "fixture": {
+        "file": "historical_gate_replays/run_29916936241_production_gate_sources.tar.gz",
+        "sha256": "4fc52a682d999cb0367ba47c11ff0b2e93dfb8ed786af8cf453c2725e31f5d1a",
+        "file_count": 74,
+        "source_bytes": 243271611,
+        "gzip_bytes": 8702684
+      },
+      "capacity_sources": {
+        "baseline_resource": {
+          "path": "trials/m2-discovery-gh-29916936241-attempt-1-formation-discovery-1-pair-01-baseline/resource_window.json",
+          "sha256": "c9ae892289be89341d817d128b3db27bfcf0029120917f82a0b4f5d6286ff1d4"
+        },
+        "candidate_resource": {
+          "path": "trials/m2-discovery-gh-29916936241-attempt-1-formation-discovery-1-pair-01-candidate/resource_window.json",
+          "sha256": "330d86b98fe8448ee915a6da953e594ea68ed9704c8621ef14ec2890086ff08b"
+        }
+      }
+    },
+    {
+      "source_run_id": "29925711801",
+      "source_run_attempt": 1,
+      "invocation_run_id": "m2-discovery-gh-29925711801-attempt-1",
+      "producer_head_sha": "85aedd5d0f9ae479a300828e6c559e3676813bdb",
+      "original_status": "FAIL",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "evidence_artifact": {
+        "id": 8532399290,
+        "name": "m2-discovery-evidence-29925711801-1",
+        "archive_size_bytes": 2308595,
+        "sha256": "704ba451e3b7cdfa8c1f2650602d40c43d40a2f913b6adf98126fa73bd8675e9"
+      },
+      "sealed_result": {
+        "evidence_digest": "82613c835c660e84418e1dd45a9f7abf479e878103f2d9ea2e482175c2478d52",
+        "report_digest": "dff1a2fcc811c8958564ed949f6365a6ccbc0cbe22bae7961c4c9b65fb3d3ddc"
+      },
+      "report_sha256": "0788b9cc906ee99672b8231a7da8344dda61952546c79cdfe1e60eb50c69ca4f",
+      "fixture": {
+        "file": "historical_gate_replays/run_29925711801_production_gate_sources.tar.gz",
+        "sha256": "08c75c25344b0b011753cd17045bf10c18a37276fd119c2cacbbe813ca338ff7",
+        "file_count": 10,
+        "source_bytes": 28089537,
+        "gzip_bytes": 998792
+      }
+    },
+    {
+      "source_run_id": "29931564838",
+      "source_run_attempt": 1,
+      "invocation_run_id": "m2-discovery-gh-29931564838-attempt-1",
+      "producer_head_sha": "03e9f08589aed375a64f8b863145f15414484863",
+      "original_status": "FAIL",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "evidence_artifact": {
+        "id": 8534815478,
+        "name": "m2-discovery-evidence-29931564838-1",
+        "archive_size_bytes": 2740273,
+        "sha256": "2a0d1bf7246c04c0e6541ed93281c3f9a168c9a4fec51e82c7f5ff49bae7e732"
+      },
+      "sealed_result": {
+        "evidence_digest": "d042d4415e967579290095ecf83ee5949454b24bb381f072dc63396148c70911",
+        "report_digest": "7f50882545a6fc32781adf3ebd3419273f4cecf22763c28a372b4dfb8bdeabe2"
+      },
+      "report_sha256": "7e2d74dbf5eb8eb101a51c565e7ec40465abe2f8b4cbe17a52eef015d4355f42",
+      "fixture": {
+        "file": "historical_gate_replays/run_29931564838_production_gate_sources.tar.gz",
+        "sha256": "e15ba6a8b44bf16e69438178bb2ba20c29a8291785d73fa5bd6a3f9088af60e1",
+        "file_count": 10,
+        "source_bytes": 37556188,
+        "gzip_bytes": 1417508
+      }
+    },
+    {
+      "source_run_id": "29992169655",
+      "source_run_attempt": 1,
+      "invocation_run_id": "m2-discovery-gh-29992169655-attempt-1",
+      "producer_head_sha": "46bbf74891b5a8a42be5e72ecb2c5697e1f73712",
+      "original_status": "FAIL",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: owned simultaneous SIGKILL did not complete within its evidence contract",
+      "evidence_artifact": {
+        "id": 8558481764,
+        "name": "m2-discovery-evidence-29992169655-1",
+        "archive_size_bytes": 17009695,
+        "sha256": "d514ee9d469e039f9c35c298ae338b687b595895450bd7cc5475105a621e10e6"
+      },
+      "sealed_result": {
+        "evidence_digest": "dd247a3259d79f2f442abb04cb9f2c0928799fcb88ccc4c511692731bf59907d",
+        "report_digest": "8fa78178901bc71fb2f3b7cea4a423357d7e9e8931be5b494cd686ceb93b6b65"
+      },
+      "report_sha256": "35668ed83fdf8c6816f0dbff590c2114500106ccdb4d72a081839610c1fe2b09",
+      "fixture": {
+        "file": "historical_gate_replays/run_29992169655_production_gate_sources.tar.gz",
+        "sha256": "d19d483bc01acf2fd3762e2fa4fa34860e44075f14c7c56d7bda88454216f2d7",
+        "file_count": 84,
+        "source_bytes": 280740456,
+        "gzip_bytes": 10145228
+      },
+      "failure_sources": {
+        "fault": {
+          "path": "trials/m2-discovery-gh-29992169655-attempt-1-failover-discovery-5000-pair-01-baseline/fault_observation.json",
+          "sha256": "41f747afea78a5e6f3844c15146624e1a06b89c24867f211275647c99eec0551"
+        }
+      }
+    },
+    {
+      "source_run_id": "29997723777",
+      "source_run_attempt": 1,
+      "invocation_run_id": "m2-discovery-gh-29997723777-attempt-1",
+      "producer_head_sha": "a8c32f819974777f4346f066ab5ac5b65f0f6842",
+      "original_status": "FAIL",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: fault measurement is incomplete: affected-shard SET/GET attempt cadence exceeded 100 ms or was incomplete",
+      "evidence_artifact": {
+        "id": 8561998605,
+        "name": "m2-discovery-evidence-29997723777-1",
+        "archive_size_bytes": 18917125,
+        "sha256": "6caeb5aa38756f07bc461b61c84381474a00232fa4b0ae363e98a62ea7e39fb2"
+      },
+      "sealed_result": {
+        "evidence_digest": "52fb671f5ece306d0124cdacc7fde7b50cda32f82c3bf8a4c83b19bc8668e7c5",
+        "report_digest": "da7f7f817f09201de6cfbcca2627e27583a3322bac5a8bb9f1076e1d8c68e00c"
+      },
+      "report_sha256": "af8b74ffe7819438703d4378184663af03656ca4c7d50bb414865b8eaa17e8ba",
+      "fixture": {
+        "file": "historical_gate_replays/run_29997723777_production_gate_sources.tar.gz",
+        "sha256": "f0eb5e4041d947753d69f05f0d20e7cc9048ee0157407778b78582d5131bc8f5",
+        "file_count": 85,
+        "source_bytes": 346807087,
+        "gzip_bytes": 11951170
+      },
+      "capacity_sources": {
+        "formation_resource": {
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-formation-discovery-4-pair-01-baseline/resource_window.json",
+          "sha256": "fac563496c5be384d47ad59c267c4b5ce9624a6210d27f54c424e435c760d691"
+        },
+        "failover_resource": {
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-failover-discovery-5000-pair-01-baseline/resource_window.json",
+          "sha256": "a6e59b426a6d334f6e3eaf346874667c0e115cfa0507d8e4aaef244282623212"
+        },
+        "failover_topology": {
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-failover-discovery-5000-pair-01-baseline/topology_observation.json",
+          "sha256": "6eb94c1891f02462b6a3d9b40d1818acb56c7cf4fc9a4c9ac961b4dbb4fc8274"
+        },
+        "failover_fault": {
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-failover-discovery-5000-pair-01-baseline/fault_observation.json",
+          "sha256": "d3408f9d930375dd47846aa686ca664680091f51d3713fd0f7f4884b9853ab21"
+        },
+        "failover_workload": {
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-failover-discovery-5000-pair-01-baseline/workload_observation.json",
+          "sha256": "88319b7767d8895e40b83fd3e9fe644a300ea88c2256f5a980b34c84959a7d8a"
+        }
+      },
+      "failure_sources": {
+        "fault": {
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-failover-discovery-5000-pair-01-baseline/fault_observation.json",
+          "sha256": "d3408f9d930375dd47846aa686ca664680091f51d3713fd0f7f4884b9853ab21"
+        },
+        "workload": {
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-failover-discovery-5000-pair-01-baseline/workload_observation.json",
+          "sha256": "88319b7767d8895e40b83fd3e9fe644a300ea88c2256f5a980b34c84959a7d8a"
+        }
+      }
+    }
+  ]
+}

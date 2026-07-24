@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import gzip
 import importlib.util
 import hashlib
 import json
+import math
+import tarfile
 from copy import deepcopy
 from pathlib import Path
 
 import pytest
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = PROJECT_ROOT / "scripts" / "m2_performance_gate.py"
@@ -379,6 +381,39 @@ def _formation_discovery_campaign() -> dict[str, object]:
     }
 
 
+def _intern_resource_directional_links(resource: dict[str, object]) -> None:
+    entries: dict[str, dict[str, object]] = {}
+    for sample in resource["samples"]:
+        for nodehost in sample["nodehosts"]:
+            for process in nodehost["processes"]:
+                links = process.pop("directional_cluster_links")
+                digest = M2._canonical_digest(links)
+                entries.setdefault(
+                    digest,
+                    {
+                        "sha256": digest,
+                        "directional_cluster_links": links,
+                    },
+                )
+                process["directional_cluster_links_sha256"] = digest
+    resource["directional_cluster_links_dictionary"] = [
+        entries[digest]
+        for digest in sorted(entries)
+    ]
+
+
+def _expand_resource_directional_links(resource: dict[str, object]) -> None:
+    entries = {
+        entry["sha256"]: entry["directional_cluster_links"]
+        for entry in resource.pop("directional_cluster_links_dictionary")
+    }
+    for sample in resource["samples"]:
+        for nodehost in sample["nodehosts"]:
+            for process in nodehost["processes"]:
+                digest = process.pop("directional_cluster_links_sha256")
+                process["directional_cluster_links"] = deepcopy(entries[digest])
+
+
 def _write_valid_trial_sources(
     report: dict[str, object],
     trial: dict[str, object],
@@ -469,7 +504,7 @@ def _write_valid_trial_sources(
             "node_id": node_id,
             "flags": ["master" if primary else "slave"],
             "role": "primary" if primary else "replica",
-            "master_id": None if primary else f"node-{shard_index:03d}",
+            "master_id": "-" if primary else f"node-{shard_index:03d}",
             "link_state": "connected",
             "slots": [f"{first_slot}-{last_slot}"] if primary else [],
         }
@@ -537,6 +572,8 @@ def _write_valid_trial_sources(
             "container_id": "contract-container-id",
             "nodehost_id": "contract-nodehost",
             "pid": 10000 + index,
+            "pid_file": f"/tmp/node-{index:03d}/valkey.pid",
+            "config_file": f"/tmp/node-{index:03d}/valkey.conf",
             "client_port": 7000 + index,
             "simulated": False,
         }
@@ -597,6 +634,7 @@ def _write_valid_trial_sources(
             "cluster_link_errors": 0,
             "non_connected_cluster_link_count": 0,
             "non_connected_cluster_links": [],
+            "directional_cluster_links": [],
         }
 
     resource_samples = []
@@ -739,7 +777,15 @@ def _write_valid_trial_sources(
                 "ended_at_monotonic": 520.0,
                 "operation_count": 12000,
                 "latency_operation": "SET",
-                "latency_histogram": [{"latency_ms": 1.0, "count": 12000}],
+                "latency_histogram": {
+                    "schema_version": M2.LATENCY_HISTOGRAM_SCHEMA_VERSION,
+                    "buckets": [
+                        {
+                            "index": M2._latency_bucket_index_from_upper(1.0),
+                            "count": 12000,
+                        }
+                    ],
+                },
             }
         )
     if trial.get("fault") is not None:
@@ -748,28 +794,54 @@ def _write_valid_trial_sources(
         stable_endpoint = float(markers["stable_client_recovery"])
         workload_duration = float(summary_workload["duration_seconds"])
         starts = [round(barrier + index * 0.1, 6) for index in range(int(workload_duration * 10) + 1)]
-        samples = []
-        for index, started in enumerate(value for value in starts if value <= stable_endpoint):
+        affected_attempts = []
+        control_attempts = []
+        for index, started in enumerate(starts):
             failed = index == 0
-            samples.append(
+            completed = round(started + 0.001, 6)
+            affected_attempts.append(
                 {
                     "started_at_monotonic": started,
-                    "completed_at_monotonic": started,
-                    "set_completed_at_monotonic": started if not failed else "MISSING",
-                    "get_completed_at_monotonic": started if not failed else "MISSING",
+                    "completed_at_monotonic": completed,
+                    "set_completed_at_monotonic": round(started + 0.0004, 6)
+                    if not failed
+                    else "MISSING",
+                    "get_completed_at_monotonic": round(started + 0.0008, 6)
+                    if not failed
+                    else "MISSING",
+                    "latency_ms": 1.0,
                     "set_succeeded": not failed,
                     "get_succeeded": not failed,
                     "value_matches": not failed,
                     "timed_out": False,
                     "error": "expected recovery failure" if failed else "",
+                    "moved_count": 0,
+                    "ask_count": 0,
+                    "status": "FAIL" if failed else "PASS",
+                }
+            )
+            control_attempts.append(
+                {
+                    "started_at_monotonic": started,
+                    "completed_at_monotonic": completed,
+                    "set_completed_at_monotonic": round(started + 0.0004, 6),
+                    "get_completed_at_monotonic": round(started + 0.0008, 6),
+                    "latency_ms": 1.0,
+                    "set_succeeded": True,
+                    "get_succeeded": True,
+                    "value_matches": True,
+                    "timed_out": False,
+                    "error": "",
+                    "moved_count": 0,
+                    "ask_count": 0,
+                    "status": "PASS",
                 }
             )
         affected_series = {
             "shard_id": "shard-000",
             "affected": True,
             "key": "{contract-affected}:value",
-            "attempt_started_monotonic": starts,
-            "successful_pair_latencies_ms": [1.0] * (len(starts) - 1),
+            "attempts": affected_attempts,
             "attempt_count": len(starts),
             "set_success_count": len(starts) - 1,
             "get_success_count": len(starts) - 1,
@@ -777,14 +849,12 @@ def _write_valid_trial_sources(
             "timeout_count": 0,
             "moved_count": 0,
             "ask_count": 0,
-            "samples_through_stable_endpoint": samples,
         }
         control_series = {
             "shard_id": "shard-control",
             "affected": False,
             "key": "{contract-control}:value",
-            "attempt_started_monotonic": starts,
-            "successful_pair_latencies_ms": [1.0] * len(starts),
+            "attempts": control_attempts,
             "attempt_count": len(starts),
             "set_success_count": len(starts),
             "get_success_count": len(starts),
@@ -792,7 +862,6 @@ def _write_valid_trial_sources(
             "timeout_count": 0,
             "moved_count": 0,
             "ask_count": 0,
-            "samples_through_stable_endpoint": [],
         }
         workload.update(
             {
@@ -822,8 +891,8 @@ def _write_valid_trial_sources(
                 },
                 "pre_fault_warmups": [{"status": "PASS", "shard_id": "shard-000"}],
                 "first_success": {
-                    "first_affected_write": barrier + 0.1,
-                    "first_affected_read": barrier + 0.1,
+                    "first_affected_write": barrier + 0.1004,
+                    "first_affected_read": barrier + 0.1008,
                 },
                 "per_shard": [
                     {
@@ -930,7 +999,10 @@ def _write_valid_trial_sources(
         "topology": topology,
     }
     if trial.get("fault") is not None:
-        documents["fault"] = trial["fault"]
+        fault_document = deepcopy(trial["fault"])
+        trial["fault"] = M2._compact_fault_summary(fault_document)
+        documents["fault"] = fault_document
+    _intern_resource_directional_links(documents["resource"])
 
     preflight = {
         "schema_version": "v1",
@@ -1056,6 +1128,87 @@ def _rewrite_bound_source(
     )["sha256"] = digest
 
 
+def _retime_fault_attempt(attempt: dict[str, object], started: float) -> None:
+    original = float(attempt["started_at_monotonic"])
+    shift = started - original
+    attempt["started_at_monotonic"] = round(started, 6)
+    for field in (
+        "completed_at_monotonic",
+        "set_completed_at_monotonic",
+        "get_completed_at_monotonic",
+    ):
+        value = attempt[field]
+        if isinstance(value, (int, float)):
+            attempt[field] = round(float(value) + shift, 6)
+
+
+def _intern_fault_topology_views(fault: dict[str, object]) -> None:
+    entries: dict[str, dict[str, object]] = {}
+
+    def intern(views: object) -> str:
+        digest = M2._canonical_digest(views)
+        entries.setdefault(digest, {"sha256": digest, "views": views})
+        return digest
+
+    for round_row in fault["observer_rounds"]:
+        round_row["views_sha256"] = intern(round_row.pop("views"))
+    fault["every_node_convergence_views_sha256"] = intern(
+        fault.pop("every_node_convergence_views")
+    )
+    fault["topology_view_dictionary"] = [
+        entries[digest]
+        for digest in sorted(entries)
+    ]
+
+
+def _fault_views_for_ref(
+    fault: dict[str, object],
+    digest: str,
+) -> list[dict[str, object]]:
+    matches = [
+        entry["views"]
+        for entry in fault["topology_view_dictionary"]
+        if entry["sha256"] == digest
+    ]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def _fault_round_views(
+    fault: dict[str, object],
+    index: int,
+) -> list[dict[str, object]]:
+    round_row = fault["observer_rounds"][index]
+    return _fault_views_for_ref(fault, round_row["views_sha256"])
+
+
+def _fault_convergence_views(
+    fault: dict[str, object],
+) -> list[dict[str, object]]:
+    return _fault_views_for_ref(
+        fault,
+        fault["every_node_convergence_views_sha256"],
+    )
+
+
+def _rebind_fault_view_entry(
+    fault: dict[str, object],
+    old_digest: str,
+) -> None:
+    entry = next(
+        entry
+        for entry in fault["topology_view_dictionary"]
+        if entry["sha256"] == old_digest
+    )
+    new_digest = M2._canonical_digest(entry["views"])
+    entry["sha256"] = new_digest
+    for round_row in fault["observer_rounds"]:
+        if round_row["views_sha256"] == old_digest:
+            round_row["views_sha256"] = new_digest
+    if fault["every_node_convergence_views_sha256"] == old_digest:
+        fault["every_node_convergence_views_sha256"] = new_digest
+
+
 def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
     report = _formation_report()
     trial = deepcopy(report["trials"][0])
@@ -1066,37 +1219,38 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
         "quorum_fail": 200.2,
         "first_promotion": 200.3,
         "all_slots_covered_cluster_ok": 200.4,
-        "stable_client_recovery": 201.4,
+        "stable_client_recovery": 201.401,
         "every_node_converged": 201.5,
     }
     trial["monotonic_markers"].update(markers)
     trial["derived_intervals"].update(
         {
-            "kill_to_stable_seconds": 1.4,
+            "kill_to_stable_seconds": 1.401,
             "pfail_to_cluster_ok_seconds": 0.3,
             "process_gone_to_pfail_seconds": 0.09,
-            "cluster_ok_to_stable_seconds": 1.0,
+            "cluster_ok_to_stable_seconds": 1.001,
             "sigkill_to_pfail_seconds": 0.1,
             "pfail_to_quorum_fail_seconds": 0.1,
             "quorum_fail_to_promotion_seconds": 0.1,
             "promotion_to_cluster_ok_seconds": 0.1,
-            "recovery_to_convergence_seconds": 0.1,
-            "sigkill_to_first_write_seconds": 0.1,
-            "sigkill_to_first_read_seconds": 0.1,
+            "recovery_to_convergence_seconds": 0.099,
+            "sigkill_to_first_write_seconds": 0.1004,
+            "sigkill_to_first_read_seconds": 0.1008,
         }
     )
     trial["workload"]["duration_seconds"] = 2.0
+    trial["workload"]["set_throughput_ops_per_second"] = 20.5
     trial["workload"]["errors"] = 1
     trial["workload"]["affected_shard_max_interval_ms"] = 100.0
     trial["workload"]["stable_shards"] = [
         {
             "shard_id": "shard-000",
-            "window_start_monotonic": 200.4,
+            "window_start_monotonic": 200.401,
             "window_seconds": 1,
             "consecutive_pairs": 11,
             "errors": 0,
             "timeouts": 0,
-            "endpoint_monotonic": 201.4,
+            "endpoint_monotonic": 201.401,
             "earliest_qualifying": True,
         }
     ]
@@ -1120,9 +1274,10 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
         last_slot = ((shard_index + 1) * 16384) // primary_count - 1
         initial_nodes[node_id] = {
             "node_id": node_id,
+            "addr": f"127.0.0.1:{7000 + index}@{17000 + index}",
             "flags": ["master" if primary else "slave"],
             "role": "primary" if primary else "replica",
-            "master_id": None if primary else f"node-{shard_index:03d}",
+            "master_id": "-" if primary else f"node-{shard_index:03d}",
             "link_state": "connected",
             "slots": [f"{first_slot}-{last_slot}"] if primary else [],
         }
@@ -1142,7 +1297,7 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
                 {
                     "flags": ["master"],
                     "role": "primary",
-                    "master_id": None,
+                    "master_id": "-",
                     "slots": list(initial_nodes[target_node_id]["slots"]),
                 }
             )
@@ -1209,12 +1364,19 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
         for index in range(49)
     ]
     topology_facts = facts_for(convergence_views)
+    fault_argv = [
+        "exec",
+        "contract-container-id",
+        "sh",
+        "-c",
+        "kill -KILL 10000",
+    ]
     trial["fault"] = {
         "status": "PASS",
         "errors": [],
         "mode": "owned-process-sigkill",
         "signal": "SIGKILL",
-        "commands": ["docker exec contract-container-id sh -c kill -KILL 10000"],
+        "commands": [M2.shlex.join(["docker", *fault_argv])],
         "command_batches": [
             {
                 "container_name": "contract-nodehost",
@@ -1222,20 +1384,20 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
                 "logical_ids": ["node-000"],
                 "pids": [10000],
                 "ownership_id": trial["ownership_id"],
-                "argv": [
-                    "exec",
-                    "contract-container-id",
-                    "sh",
-                    "-c",
-                    "kill -KILL 10000",
-                ],
+                "argv": fault_argv,
                 "started_at_monotonic": 200.0,
                 "ended_at_monotonic": 200.001,
                 "returncode": 0,
+                "stdout": "",
                 "status": "PASS",
             }
         ],
         "barrier_monotonic": 200.0,
+        "fault_apply_monotonic_ms": 200000.0,
+        "injection_skew_ms": 1.0,
+        "signal_barrier_span_ms": 1.0,
+        "primary_count": 25,
+        "failed_primary_count": 1,
         "targets": [
             {
                 "logical_id": "node-000",
@@ -1243,7 +1405,10 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
                 "pid": 10000,
                 "ownership_id": trial["ownership_id"],
                 "process_gone": True,
+                "signal_sent_at_monotonic_ms": 200000.0,
+                "signal_completed_at_monotonic_ms": 200001.0,
                 "process_gone_at_monotonic_ms": 200010.0,
+                "status": "PASS",
                 "valkey_node_id": target_node_id,
                 "physical_fault_id": "fault-physical-001",
             }
@@ -1268,6 +1433,7 @@ def _fault_source_report() -> tuple[dict[str, object], dict[str, object]]:
         },
         "every_node_convergence_views": convergence_views,
     }
+    _intern_fault_topology_views(trial["fault"])
     trial["correctness"].update(
         {
             "exact_membership": True,
@@ -1748,6 +1914,619 @@ def test_source_validation_rejects_missing_and_historical_paths(tmp_path: Path) 
     assert any("missing" in error for error in errors)
 
 
+_HISTORICAL_GATE_MANIFEST = json.loads(
+    (
+        PROJECT_ROOT
+        / "tests"
+        / "fixtures"
+        / "m2_regressions"
+        / "historical_gate_replays.json"
+    ).read_text(encoding="utf-8")
+)
+_HISTORICAL_GATE_CASES = _HISTORICAL_GATE_MANIFEST["runs"]
+
+
+def _historical_gate_case(run_id: str) -> dict[str, object]:
+    return next(
+        case
+        for case in _HISTORICAL_GATE_CASES
+        if case["source_run_id"] == run_id
+    )
+
+
+def _historical_gate_bundle_members(
+    case: dict[str, object],
+) -> dict[str, bytes]:
+    fixture_dir = PROJECT_ROOT / "tests" / "fixtures" / "m2_regressions"
+    fixture = case["fixture"]
+    archive_path = fixture_dir / fixture["file"]
+    compressed = archive_path.read_bytes()
+    assert len(compressed) == fixture["gzip_bytes"]
+    assert hashlib.sha256(compressed).hexdigest() == fixture["sha256"]
+    assert compressed[4:8] == b"\0\0\0\0"
+
+    members: dict[str, bytes] = {}
+    with tarfile.open(archive_path, mode="r:gz") as archive:
+        rows = archive.getmembers()
+        assert [row.name for row in rows] == sorted(row.name for row in rows)
+        for row in rows:
+            assert row.isfile()
+            assert row.uid == row.gid == row.mtime == 0
+            source = archive.extractfile(row)
+            assert source is not None
+            members[row.name] = source.read()
+    assert len(members) == fixture["file_count"]
+    assert sum(len(value) for value in members.values()) == fixture["source_bytes"]
+    return members
+
+
+def _verified_historical_report(
+    case: dict[str, object],
+) -> tuple[dict[str, bytes], dict[str, object]]:
+    members = _historical_gate_bundle_members(case)
+    report_bytes = members["m2_candidate_discovery.json"]
+    assert hashlib.sha256(report_bytes).hexdigest() == case["report_sha256"]
+    report = json.loads(report_bytes)
+    refs = [
+        ref
+        for campaign in report["campaigns"].values()
+        for ref in campaign["source_refs"]
+    ]
+    assert set(members) == {
+        "m2_candidate_discovery.json",
+        *(ref["path"] for ref in refs),
+    }
+    for ref in refs:
+        assert hashlib.sha256(members[ref["path"]]).hexdigest() == ref["sha256"]
+
+    run_id = case["source_run_id"]
+    artifact = case["evidence_artifact"]
+    sealed = case["sealed_result"]
+    assert case["source_run_attempt"] == 1
+    assert artifact["name"] == f"m2-discovery-evidence-{run_id}-1"
+    assert artifact["id"] > 0
+    assert artifact["archive_size_bytes"] > 0
+    assert M2.SHA256_RE.fullmatch(artifact["sha256"])
+    assert M2.SHA256_RE.fullmatch(sealed["evidence_digest"])
+    assert report["invocation_run_id"] == case["invocation_run_id"]
+    assert report["tested_sha"] == case["producer_head_sha"]
+    assert report["status"] == case["original_status"] == "FAIL"
+    assert report["errors"] == [case["original_capture_error"]]
+    assert report["report_digest"] == sealed["report_digest"]
+    assert report["report_digest"] == M2.report_digest(report)
+    return members, report
+
+
+def _write_historical_members(members: dict[str, bytes], target_root: Path) -> None:
+    for relative, payload in members.items():
+        target = (target_root / relative).resolve()
+        assert target.is_relative_to(target_root.resolve())
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(payload)
+
+
+def _historical_partial_resource_sources(
+    members: dict[str, bytes],
+    report: dict[str, object],
+) -> tuple[dict[str, object], dict[str, object], dict[str, object], dict[str, object]]:
+    formation = report["campaigns"]["formation"]
+    refs = {
+        ref["category"]: ref
+        for ref in formation["source_refs"]
+    }
+    state = json.loads(members[refs["state"]["path"]])
+    timeline = json.loads(members[refs["timeline"]["path"]])
+    resource = json.loads(members[refs["resource"]["path"]])
+    first_membership = next(
+        event
+        for event in timeline["events"]
+        if event["name"] == "first_membership_command"
+    )
+    trial = {
+        "trial_id": timeline["run_id"],
+        "run_id": timeline["run_id"],
+        "cell_id": "formation-discovery-replay",
+        "scale": state["requested_nodes"],
+        "ownership_id": state["runtime"]["run_id"],
+        "monotonic_markers": {
+            "first_membership_command": first_membership["at_monotonic"],
+        },
+        "resource_window": {
+            "duration_seconds": resource["duration_seconds"],
+            **resource["metrics"],
+        },
+    }
+    return trial, state, timeline, resource
+
+
+def _resource_processes(resource: dict[str, object]) -> list[dict[str, object]]:
+    return [
+        process
+        for sample in resource["samples"]
+        for nodehost in sample["nodehosts"]
+        for process in nodehost["processes"]
+    ]
+
+
+def _losslessly_intern_historical_resource(
+    original: dict[str, object],
+) -> dict[str, object]:
+    adapted = deepcopy(original)
+    _intern_resource_directional_links(adapted)
+    expanded = deepcopy(adapted)
+    _expand_resource_directional_links(expanded)
+    assert expanded == original
+    return adapted
+
+
+def test_historical_gate_manifest_covers_all_requested_runs() -> None:
+    assert _HISTORICAL_GATE_MANIFEST["replay_entrypoint"] == (
+        "scripts.m2_candidate_discovery.validate_discovery_report"
+    )
+    assert _HISTORICAL_GATE_MANIFEST["expectation_scope"] == (
+        "immutable original FAIL reports traverse the production discovery Gate "
+        "and remain rejected; bounded lossless adapters exercise only the named "
+        "lower Gate layer"
+    )
+    assert {case["source_run_id"] for case in _HISTORICAL_GATE_CASES} == {
+        "29845739384",
+        "29885627925",
+        "29901022395",
+        "29916936241",
+        "29925711801",
+        "29931564838",
+        "29992169655",
+        "29997723777",
+    }
+    assert len(_HISTORICAL_GATE_CASES) == 8
+    assert _HISTORICAL_GATE_MANIFEST["replay_expectations"] == {
+        "29845739384": {
+            "classification": "LEGACY_SCHEMA_INCOMPLETE",
+            "expected_gate": "REJECT",
+            "adapter_expectation": "NONE",
+        },
+        "29885627925": {
+            "classification": "LEGACY_SCHEMA_INCOMPLETE",
+            "expected_gate": "REJECT",
+            "adapter_expectation": "NONE",
+        },
+        "29901022395": {
+            "classification": "LEGACY_SCHEMA_INCOMPLETE",
+            "expected_gate": "REJECT",
+            "adapter_expectation": "NONE",
+        },
+        "29916936241": {
+            "classification": "FORMATION_CAMPAIGN_CURRENT_SCHEMA_PASS",
+            "expected_gate": "REJECT",
+            "adapter_expectation": "FORMATION_CAMPAIGN_GATE_PASS",
+        },
+        "29925711801": {
+            "classification": "FORMATION_TRANSITION_CURRENT_SCHEMA_PASS",
+            "expected_gate": "REJECT",
+            "adapter_expectation": "RESOURCE_SOURCE_GATE_PASS",
+        },
+        "29931564838": {
+            "classification": "FORMATION_TRANSITION_CURRENT_SCHEMA_PASS",
+            "expected_gate": "REJECT",
+            "adapter_expectation": "RESOURCE_SOURCE_GATE_PASS",
+        },
+        "29992169655": {
+            "classification": "CAPTURE_IMPLEMENTATION_DEFECT_KILL_EXECUTABLE_127",
+            "expected_gate": "REJECT",
+            "adapter_expectation": "FAULT_SLICE_REJECT",
+        },
+        "29997723777": {
+            "classification": "MEASUREMENT_RUNTIME_DEFECT_CADENCE_CONTRACT",
+            "expected_gate": "REJECT",
+            "adapter_expectation": "FAULT_SLICE_REJECT",
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "case",
+    _HISTORICAL_GATE_CASES,
+    ids=lambda case: f"run-{case['source_run_id']}",
+)
+def test_historical_original_bundle_is_provenance_bound(
+    case: dict[str, object],
+) -> None:
+    _members, report = _verified_historical_report(case)
+    assert report["status"] == "FAIL"
+
+
+@pytest.mark.parametrize(
+    "case",
+    _HISTORICAL_GATE_CASES,
+    ids=lambda case: f"run-{case['source_run_id']}",
+)
+def test_historical_original_failure_replays_through_production_gate(
+    tmp_path: Path,
+    case: dict[str, object],
+) -> None:
+    members, report = _verified_historical_report(case)
+    _write_historical_members(members, tmp_path)
+
+    errors = DISCOVERY.validate_discovery_report(
+        report,
+        artifacts_dir=tmp_path,
+        expected_run_id=case["invocation_run_id"],
+        expected_sha=case["producer_head_sha"],
+    )
+
+    assert _HISTORICAL_GATE_MANIFEST["replay_expectations"][
+        case["source_run_id"]
+    ]["expected_gate"] == "REJECT"
+    assert "completed discovery report did not PASS cleanly" in errors
+
+
+@pytest.mark.parametrize(
+    "run_id",
+    ["29845739384", "29885627925", "29901022395"],
+)
+def test_legacy_historical_resource_schema_fails_closed(run_id: str) -> None:
+    case = _historical_gate_case(run_id)
+    expectation = _HISTORICAL_GATE_MANIFEST["replay_expectations"][run_id]
+    assert expectation == {
+        "classification": "LEGACY_SCHEMA_INCOMPLETE",
+        "expected_gate": "REJECT",
+        "adapter_expectation": "NONE",
+    }
+    members, report = _verified_historical_report(case)
+    trial, state, _timeline, resource = _historical_partial_resource_sources(
+        members,
+        report,
+    )
+    assert all("sample_phase" not in sample for sample in resource["samples"])
+    assert all(
+        "directional_cluster_links" not in process
+        and "directional_cluster_links_sha256" not in process
+        for process in _resource_processes(resource)
+    )
+
+    errors: list[str] = []
+    M2._validate_resource_source(
+        resource,
+        trial,
+        fault_trial=False,
+        allow_initial_membership_transitions=True,
+        state_document=state,
+        errors=errors,
+    )
+
+    assert any("CLUSTER LINKS dictionary is missing" in error for error in errors)
+    assert any("raw resource samples are incomplete or invalid" in error for error in errors)
+
+
+def _historical_formation_transition_source_report(
+    tmp_path: Path,
+    run_id: str,
+) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+    case = _historical_gate_case(run_id)
+    assert _HISTORICAL_GATE_MANIFEST["replay_expectations"][run_id][
+        "adapter_expectation"
+    ] == "RESOURCE_SOURCE_GATE_PASS"
+    members, report = _verified_historical_report(case)
+    partial_trial, state, timeline, original = _historical_partial_resource_sources(
+        members,
+        report,
+    )
+    assert original["metrics"]["cluster_link_errors"] in {1, 2}
+    assert "post_formation" in {
+        sample["sample_phase"]
+        for sample in original["samples"]
+    }
+
+    source_report = _formation_report()
+    trial = next(
+        row
+        for row in source_report["trials"]
+        if row["scale"] == state["requested_nodes"]
+    )
+    runtime = state["runtime"]
+    treatment = {
+        "kind": "cluster_create_strategy",
+        "value": runtime["cluster_create_strategy"],
+    }
+    if isinstance(runtime.get("cluster_create_parallelism"), int):
+        treatment["bounded_parallelism"] = runtime["cluster_create_parallelism"]
+    markers = {
+        event["name"]: event["at_monotonic"]
+        for event in timeline["events"]
+        if event["name"] in M2.FORMATION_MARKERS
+    }
+    assert set(markers) == set(M2.FORMATION_MARKERS)
+    trial.update(
+        {
+            "trial_id": partial_trial["trial_id"],
+            "run_id": partial_trial["run_id"],
+            "ownership_id": partial_trial["ownership_id"],
+            "cell_id": "formation-discovery-transition-replay",
+            "treatment": treatment,
+            "monotonic_markers": markers,
+            "derived_intervals": {
+                "formation_seconds": (
+                    markers["data_path_probe"] - markers["last_process_ping"]
+                )
+            },
+            "resource_window": {
+                "duration_seconds": original["duration_seconds"],
+                **original["metrics"],
+            },
+        }
+    )
+    trial["provenance"]["invocation_run_id"] = case["invocation_run_id"]
+    cell = {
+        "cell_id": trial["cell_id"],
+        "campaign_step": "discovery",
+        "scale": trial["scale"],
+        "failure_rate": "none",
+        "required_pairs": 1,
+        "candidate": treatment,
+        "status": "FAIL",
+    }
+    source_report.update(
+        {
+            "campaign_id": case["invocation_run_id"],
+            "invocation_run_id": case["invocation_run_id"],
+            "status": "FAIL",
+            "started_trial_ids": [trial["trial_id"]],
+            "trials": [trial],
+            "pairs": [],
+            "cells": [cell],
+            "source_refs": list(trial["source_sha256s"]),
+            "errors": ["historical formation transition adapter"],
+        }
+    )
+    paths = _write_valid_trial_sources(source_report, trial, tmp_path)
+
+    adapted = _losslessly_intern_historical_resource(original)
+    recomputed = M2.validate_and_aggregate_m2_resource_samples(
+        adapted,
+        allow_initial_membership_transitions=True,
+    )
+    assert recomputed["status"] == "PASS", recomputed["errors"]
+    adapted["metrics"] = recomputed["metrics"]
+    adapted["diagnostics"] = recomputed["diagnostics"]
+    trial["resource_window"] = {
+        "duration_seconds": adapted["duration_seconds"],
+        **adapted["metrics"],
+    }
+
+    _rewrite_bound_source(
+        source_report,
+        trial,
+        paths["state"],
+        "state",
+        state,
+    )
+    _rewrite_bound_source(
+        source_report,
+        trial,
+        paths["timeline"],
+        "timeline",
+        timeline,
+    )
+    _rewrite_bound_source(
+        source_report,
+        trial,
+        paths["resource"],
+        "resource",
+        adapted,
+    )
+    provenance = deepcopy(trial["provenance"])
+    refs = {
+        ref["category"]: ref
+        for ref in trial["source_sha256s"]
+    }
+    provenance["capture_digest"] = M2._canonical_digest(
+        {
+            category: ref["sha256"]
+            for category, ref in refs.items()
+            if category != "provenance"
+        }
+    )
+    trial["provenance"] = provenance
+    _rewrite_bound_source(
+        source_report,
+        trial,
+        paths["provenance"],
+        "provenance",
+        provenance,
+    )
+    return source_report, trial, cell
+
+
+@pytest.mark.parametrize("run_id", ["29925711801", "29931564838"])
+def test_historical_formation_transition_replays_through_source_gate(
+    tmp_path: Path,
+    run_id: str,
+) -> None:
+    report, trial, cell = _historical_formation_transition_source_report(
+        tmp_path,
+        run_id,
+    )
+
+    assert M2.validate_current_invocation_sources(
+        report,
+        artifacts_dir=tmp_path,
+        allow_discovery_safety_rejections=True,
+    ) == []
+
+    trial["cell_id"] = "formation-soak-permission-negative"
+    cell["cell_id"] = trial["cell_id"]
+    errors = M2.validate_current_invocation_sources(
+        report,
+        artifacts_dir=tmp_path,
+        allow_discovery_safety_rejections=True,
+    )
+
+    assert any(
+        "resource metric cluster_link_errors is not raw-derived" in error
+        for error in errors
+    )
+
+
+def _adapt_historical_formation_campaign(
+    tmp_path: Path,
+) -> dict[str, object]:
+    case = _historical_gate_case("29916936241")
+    assert _HISTORICAL_GATE_MANIFEST["replay_expectations"]["29916936241"][
+        "adapter_expectation"
+    ] == "FORMATION_CAMPAIGN_GATE_PASS"
+    members, report = _verified_historical_report(case)
+    _write_historical_members(members, tmp_path)
+    formation = report["campaigns"]["formation"]
+    current_product = M2._current_product_digest()
+
+    for trial in formation["trials"]:
+        refs = {
+            ref["category"]: ref
+            for ref in trial["source_sha256s"]
+        }
+        resource_path = tmp_path / refs["resource"]["path"]
+        original_resource = json.loads(resource_path.read_text(encoding="utf-8"))
+        resource = _losslessly_intern_historical_resource(original_resource)
+        resource["metrics"]["cluster_link_errors"] = 0
+        trial["resource_window"]["cluster_link_errors"] = 0
+        _rewrite_bound_source(
+            formation,
+            trial,
+            resource_path,
+            "resource",
+            resource,
+        )
+
+        workload_path = tmp_path / refs["workload"]["path"]
+        workload = json.loads(workload_path.read_text(encoding="utf-8"))
+        bucket_counts: dict[int, int] = {}
+        for row in workload["latency_histogram"]:
+            latency_ms = float(row["latency_ms"])
+            tick = math.ceil(
+                math.log2(latency_ms)
+                * M2.LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE
+                - 1e-12
+            )
+            bucket_index = tick - M2.LATENCY_HISTOGRAM_MIN_TICK
+            bucket_counts[bucket_index] = (
+                bucket_counts.get(bucket_index, 0) + int(row["count"])
+            )
+        workload["latency_histogram"] = {
+            "schema_version": M2.LATENCY_HISTOGRAM_SCHEMA_VERSION,
+            "buckets": [
+                {"index": index, "count": count}
+                for index, count in sorted(bucket_counts.items())
+            ],
+        }
+        p99, _count, valid = M2._histogram_nearest_rank(
+            workload["latency_histogram"],
+            0.99,
+        )
+        assert valid and p99 is not None
+        workload["p99_latency_ms"] = p99
+        trial["workload"]["p99_latency_ms"] = p99
+        _rewrite_bound_source(
+            formation,
+            trial,
+            workload_path,
+            "workload",
+            workload,
+        )
+
+        provenance = deepcopy(trial["provenance"])
+        provenance["product_digest"] = current_product
+        trial["control_digests"]["product"] = current_product
+        refs = {
+            ref["category"]: ref
+            for ref in trial["source_sha256s"]
+        }
+        provenance["capture_digest"] = M2._canonical_digest(
+            {
+                category: ref["sha256"]
+                for category, ref in refs.items()
+                if category != "provenance"
+            }
+        )
+        trial["provenance"] = provenance
+        _rewrite_bound_source(
+            formation,
+            trial,
+            tmp_path / refs["provenance"]["path"],
+            "provenance",
+            provenance,
+        )
+
+    for pair in formation["pairs"]:
+        pair["control_digests"]["product"] = current_product
+    return formation
+
+
+def test_historical_formation_campaign_replays_and_boundaries_fail_closed(
+    tmp_path: Path,
+) -> None:
+    formation = _adapt_historical_formation_campaign(tmp_path)
+
+    assert M2.validate_discovery_campaign(
+        formation,
+        expected_kind="formation",
+        expected_invocation_run_id=formation["invocation_run_id"],
+    ) == []
+    assert M2.validate_current_invocation_sources(
+        formation,
+        artifacts_dir=tmp_path,
+        allow_discovery_safety_rejections=True,
+    ) == []
+
+    trial = next(
+        trial
+        for trial in formation["trials"]
+        if trial["cell_id"] == "formation-discovery-2"
+        and trial["arm"] == "candidate"
+    )
+    trial["cell_id"] = "formation-soak-permission-negative"
+
+    errors = M2.validate_current_invocation_sources(
+        formation,
+        artifacts_dir=tmp_path,
+        allow_discovery_safety_rejections=True,
+    )
+
+    assert any(
+        "resource metric cluster_link_errors is not raw-derived" in error
+        for error in errors
+    )
+    trial["cell_id"] = "formation-discovery-2"
+
+    trial = formation["trials"][0]
+    refs = {
+        ref["category"]: ref
+        for ref in trial["source_sha256s"]
+    }
+    provenance = deepcopy(trial["provenance"])
+    provenance["product_digest"] = "0" * 64
+    trial["provenance"] = provenance
+    trial["control_digests"]["product"] = "0" * 64
+    _rewrite_bound_source(
+        formation,
+        trial,
+        tmp_path / refs["provenance"]["path"],
+        "provenance",
+        provenance,
+    )
+
+    errors = M2.validate_current_invocation_sources(
+        formation,
+        artifacts_dir=tmp_path,
+        allow_discovery_safety_rejections=True,
+    )
+
+    assert any(
+        "provenance product digest does not match the current product tree" in error
+        for error in errors
+    )
+    assert not any("sha256 does not match" in error for error in errors)
+
+
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
@@ -1840,6 +2619,75 @@ def test_cleanup_source_is_parsed_and_bound_to_the_trial(tmp_path: Path) -> None
     assert any(
         "reports residual resources" in error
         for error in M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+    )
+
+
+def test_bound_gzip_source_is_lossless_and_hashes_compressed_bytes(
+    tmp_path: Path,
+) -> None:
+    report = _formation_report()
+    trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    source = paths["workload"]
+    raw = source.read_bytes()
+    compressed = source.with_name("workload.json.gz")
+    with compressed.open("wb") as output:
+        with gzip.GzipFile(
+            filename="",
+            mode="wb",
+            compresslevel=6,
+            fileobj=output,
+            mtime=0,
+        ) as encoded:
+            encoded.write(raw)
+    source.unlink()
+
+    digest = hashlib.sha256(compressed.read_bytes()).hexdigest()
+    trial_ref = next(
+        ref for ref in trial["source_sha256s"] if ref["category"] == "workload"
+    )
+    old_path = trial_ref["path"]
+    trial_ref.update(
+        {
+            "path": compressed.relative_to(tmp_path).as_posix(),
+            "sha256": digest,
+        }
+    )
+    top_ref = next(
+        ref
+        for ref in report["source_refs"]
+        if ref["category"] == "workload" and ref["path"] == old_path
+    )
+    top_ref.update({"path": trial_ref["path"], "sha256": digest})
+    provenance = json.loads(paths["provenance"].read_text(encoding="utf-8"))
+    provenance["capture_digest"] = M2._canonical_digest(
+        {
+            ref["category"]: ref["sha256"]
+            for ref in trial["source_sha256s"]
+            if ref["category"] != "provenance"
+        }
+    )
+    trial["provenance"]["capture_digest"] = provenance["capture_digest"]
+    _rewrite_bound_source(
+        report,
+        trial,
+        paths["provenance"],
+        "provenance",
+        provenance,
+    )
+
+    assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
+    tampered = bytearray(compressed.read_bytes())
+    tampered[len(tampered) // 2] ^= 0x01
+    compressed.write_bytes(tampered)
+    assert any(
+        "workload evidence is missing or not digest-bound" in error
+        for error in M2.validate_current_invocation_sources(
+            report,
+            artifacts_dir=tmp_path,
+        )
     )
 
 
@@ -2005,6 +2853,90 @@ def test_raw_resource_source_accepts_pre_establishment_handshake_transient(tmp_p
 
 
 @pytest.mark.parametrize(
+    "damage",
+    [
+        "inline",
+        "missing_ref",
+        "missing_entry",
+        "missing_dictionary",
+        "tampered_entry",
+        "nonfinite_entry",
+        "unreferenced_entry",
+        "duplicate_entry",
+    ],
+)
+def test_resource_directional_links_dictionary_fails_closed(
+    tmp_path: Path,
+    damage: str,
+) -> None:
+    report = _formation_report()
+    trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    resource = json.loads(paths["resource"].read_text(encoding="utf-8"))
+    process = resource["samples"][0]["nodehosts"][0]["processes"][0]
+    first_ref = process["directional_cluster_links_sha256"]
+    first_entry = next(
+        entry
+        for entry in resource["directional_cluster_links_dictionary"]
+        if entry["sha256"] == first_ref
+    )
+    link = {
+        "direction": "to",
+        "node_id": "a" * 40,
+        "create_time": 1000,
+        "events": "r",
+        "send_buffer_allocated": 0,
+        "send_buffer_used": 0,
+    }
+    if damage == "inline":
+        process["directional_cluster_links"] = deepcopy(
+            first_entry["directional_cluster_links"]
+        )
+    elif damage == "missing_ref":
+        process.pop("directional_cluster_links_sha256")
+    elif damage == "missing_entry":
+        resource["directional_cluster_links_dictionary"].remove(first_entry)
+    elif damage == "missing_dictionary":
+        resource.pop("directional_cluster_links_dictionary")
+    elif damage == "tampered_entry":
+        first_entry["directional_cluster_links"].append(link)
+    elif damage == "nonfinite_entry":
+        first_entry["directional_cluster_links"].append(
+            {**link, "send_buffer_used": float("nan")}
+        )
+    elif damage == "unreferenced_entry":
+        extra_links = [link]
+        resource["directional_cluster_links_dictionary"].append(
+            {
+                "sha256": M2._canonical_digest(extra_links),
+                "directional_cluster_links": extra_links,
+            }
+        )
+    else:
+        resource["directional_cluster_links_dictionary"].append(
+            deepcopy(first_entry)
+        )
+    _rewrite_bound_source(
+        report,
+        trial,
+        paths["resource"],
+        "resource",
+        resource,
+    )
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any(
+        "resource directional CLUSTER LINKS" in error
+        or "process contains inline directional CLUSTER LINKS" in error
+        or "process directional CLUSTER LINKS reference" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
     "transition_phase",
     [
         pytest.param("formation_bootstrap", id="event-between-samples"),
@@ -2021,6 +2953,7 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(
     report["source_refs"] = deepcopy(trial["source_sha256s"])
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     resource = json.loads(paths["resource"].read_text(encoding="utf-8"))
+    _expand_resource_directional_links(resource)
     duration = float(resource["duration_seconds"])
     midpoint = duration / 2.0
     previous, recovered = resource["samples"]
@@ -2152,6 +3085,7 @@ def test_formation_resource_contract_accepts_raw_proven_bootstrap_reconnect(
     resource["metrics"] = verdict["metrics"]
     resource["diagnostics"] = verdict["diagnostics"]
     trial["resource_window"].update(verdict["metrics"])
+    _intern_resource_directional_links(resource)
     _rewrite_bound_source(report, trial, paths["resource"], "resource", resource)
     refs = {ref["category"]: ref for ref in trial["source_sha256s"]}
     trial["provenance"]["capture_digest"] = M2._canonical_digest(
@@ -2269,6 +3203,91 @@ def test_steady_workload_histogram_must_measure_set_latency(tmp_path: Path) -> N
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
 
     assert any("histogram is not identified as SET latency" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda histogram: histogram.update(
+            {"schema_version": "unknown-histogram-schema"}
+        ),
+        lambda histogram: histogram.__setitem__(
+            "buckets",
+            [{"latency_ms": 1.234567, "count": 12000}],
+        ),
+        lambda histogram: histogram["buckets"][0].__setitem__(
+            "index",
+            M2.LATENCY_HISTOGRAM_MAX_INDEX + 1,
+        ),
+        lambda histogram: histogram["buckets"][0].__setitem__("index", 1.0),
+        lambda histogram: histogram.__setitem__(
+            "buckets",
+            [
+                {"index": M2._latency_bucket_index_from_upper(1.0), "count": 6000},
+                {"index": M2._latency_bucket_index_from_upper(1.0), "count": 6000},
+            ],
+        ),
+        lambda histogram: histogram.__setitem__(
+            "buckets",
+            [
+                {"index": M2._latency_bucket_index_from_upper(2.0), "count": 6000},
+                {"index": M2._latency_bucket_index_from_upper(1.0), "count": 6000},
+            ],
+        ),
+        lambda histogram: histogram.__setitem__(
+            "buckets",
+            [
+                {"index": index, "count": 1}
+                for index in range(M2.LATENCY_HISTOGRAM_BUCKET_LIMIT + 1)
+            ],
+        ),
+    ],
+)
+def test_steady_workload_rejects_invalid_histogram_schema_and_buckets(
+    tmp_path: Path,
+    mutate,
+) -> None:
+    report = _formation_report()
+    trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    mutate(workload["latency_histogram"])
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("latency histogram bins are invalid" in error for error in errors)
+
+
+def test_steady_workload_p99_is_recomputed_from_histogram(
+    tmp_path: Path,
+) -> None:
+    report = _formation_report()
+    trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    workload["latency_histogram"] = {
+        "schema_version": M2.LATENCY_HISTOGRAM_SCHEMA_VERSION,
+        "buckets": [
+            {
+                "index": M2._latency_bucket_index_from_upper(1.0),
+                "count": 11879,
+            },
+            {
+                "index": M2._latency_bucket_index_from_upper(2.0),
+                "count": 121,
+            },
+        ],
+    }
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("steady workload throughput or p99 is not raw-derived" in error for error in errors)
 
 
 def test_pair_source_validation_rejects_unequal_actual_resource_windows(tmp_path: Path) -> None:
@@ -2397,9 +3416,130 @@ def test_fault_raw_source_binds_markers_intervals_stability_and_sigkill_targets(
 ) -> None:
     report, trial = _fault_source_report()
 
-    _write_valid_trial_sources(report, trial, tmp_path)
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
 
     assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
+    assert {
+        "observer_rounds",
+        "topology_view_dictionary",
+        "every_node_convergence_views_sha256",
+        "initial_roles",
+        "node_shards",
+    }.isdisjoint(trial["fault"])
+    fault_document = json.loads(paths["fault"].read_text(encoding="utf-8"))
+    assert fault_document["observer_rounds"]
+    assert fault_document["topology_view_dictionary"]
+    assert fault_document["every_node_convergence_views_sha256"]
+    assert len(fault_document["observer_rounds"]) == 6
+    assert len(fault_document["topology_view_dictionary"]) < 7
+
+
+@pytest.mark.parametrize("master_id", ["MISSING", "node-002"])
+def test_fault_gate_rejects_missing_or_cross_shard_replica_master(
+    tmp_path: Path,
+    master_id: str,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
+    convergence_ref = fault["every_node_convergence_views_sha256"]
+    replica = _fault_convergence_views(fault)[0]["cluster_nodes"]["node-026"]
+    if master_id == "MISSING":
+        del replica["master_id"]
+    else:
+        replica["master_id"] = master_id
+    _rebind_fault_view_entry(fault, convergence_ref)
+    _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any(
+        "every-node convergence" in error or "compact raw views" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "inline",
+        "missing_ref",
+        "missing_entry",
+        "missing_dictionary",
+        "tampered_entry",
+        "nonfinite_entry",
+        "unreferenced_entry",
+        "duplicate_entry",
+    ],
+)
+def test_fault_topology_view_dictionary_fails_closed(
+    tmp_path: Path,
+    damage: str,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
+    first_ref = fault["observer_rounds"][0]["views_sha256"]
+    first_entry = next(
+        entry
+        for entry in fault["topology_view_dictionary"]
+        if entry["sha256"] == first_ref
+    )
+    if damage == "inline":
+        fault["observer_rounds"][0]["views"] = deepcopy(first_entry["views"])
+    elif damage == "missing_ref":
+        fault["observer_rounds"][0].pop("views_sha256")
+    elif damage == "missing_entry":
+        fault["topology_view_dictionary"].remove(first_entry)
+    elif damage == "missing_dictionary":
+        fault.pop("topology_view_dictionary")
+    elif damage == "tampered_entry":
+        first_entry["views"][0]["status"] = "FAIL"
+    elif damage == "nonfinite_entry":
+        first_entry["views"][0]["cluster_slots_ok"] = float("nan")
+    elif damage == "unreferenced_entry":
+        extra_views = deepcopy(first_entry["views"])
+        extra_views[0]["status"] = "FAIL"
+        fault["topology_view_dictionary"].append(
+            {
+                "sha256": M2._canonical_digest(extra_views),
+                "views": extra_views,
+            }
+        )
+    else:
+        fault["topology_view_dictionary"].append(deepcopy(first_entry))
+    _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any(
+        "topology view dictionary" in error
+        or "topology view reference" in error
+        or "inline topology views" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize("tamper_side", ["summary", "raw_source"])
+def test_fault_compact_summary_tampering_fails_closed(
+    tmp_path: Path,
+    tamper_side: str,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    if tamper_side == "summary":
+        trial["fault"]["failed_primary_count"] = 2
+    else:
+        fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
+        fault["failed_primary_count"] = 2
+        _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any(
+        "fault summary is not the compact raw-derived projection" in error
+        for error in errors
+    )
 
 
 def test_fault_resource_window_is_bound_to_the_sigkill_barrier(tmp_path: Path) -> None:
@@ -2453,6 +3593,75 @@ def test_fault_sigkill_command_batch_is_bound_to_owned_targets(tmp_path: Path) -
     assert any("SIGKILL command batches are not bound" in error for error in errors)
 
 
+def test_fault_sigkill_gate_rejects_shell_argv_tampering(
+    tmp_path: Path,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
+    fault["command_batches"][0]["argv"][2] = "bash"
+    fault["commands"] = [
+        M2.shlex.join(["docker", *fault["command_batches"][0]["argv"]])
+    ]
+    _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("SIGKILL command batches are not bound" in error for error in errors)
+
+
+def test_fault_sigkill_barrier_span_is_recomputed_from_raw_target_times(
+    tmp_path: Path,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
+    fault["targets"][0]["signal_completed_at_monotonic_ms"] = 201000.0
+    fault["targets"][0]["process_gone_at_monotonic_ms"] = 201001.0
+    fault["monotonic_markers"]["all_processes_gone"] = 201.001
+    report["trials"][0]["monotonic_markers"]["all_processes_gone"] = 201.001
+    _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any(
+        "SIGKILL barrier span is not raw-derived or exceeds 500 ms" in error
+        for error in errors
+    )
+
+
+def test_fault_sigkill_gate_rejects_run_29992169655_direct_kill_argv(
+    tmp_path: Path,
+) -> None:
+    case = next(
+        row
+        for row in _HISTORICAL_GATE_CASES
+        if row["source_run_id"] == "29992169655"
+    )
+    members = _historical_gate_bundle_members(case)
+    source = case["failure_sources"]["fault"]
+    recorded_fault = json.loads(members[source["path"]])
+    recorded = recorded_fault["command_batches"][0]
+    assert recorded["argv"][2] == "kill"
+    assert "exit=127" in recorded["error"]
+
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
+    direct_argv = list(recorded["argv"])
+    direct_argv[1] = fault["command_batches"][0]["container_id"]
+    direct_argv[-1] = str(fault["command_batches"][0]["pids"][0])
+    fault["command_batches"][0]["argv"] = direct_argv
+    fault["commands"] = [
+        M2.shlex.join(["docker", *fault["command_batches"][0]["argv"]])
+    ]
+    _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("SIGKILL command batches are not bound" in error for error in errors)
+
+
 def test_fault_marker_tampering_is_rejected_after_digest_refresh(tmp_path: Path) -> None:
     report, trial = _fault_source_report()
     paths = _write_valid_trial_sources(report, trial, tmp_path)
@@ -2482,12 +3691,321 @@ def test_fault_client_cadence_is_recomputed_from_attempt_timestamps(tmp_path: Pa
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
     affected = next(row for row in workload["client_series"] if row["affected"] is True)
-    affected["attempt_started_monotonic"][5] = 200.65
+    _retime_fault_attempt(affected["attempts"][5], 200.65)
     _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
 
     assert any("cadence is missing, exceeds 100 ms, or is not raw-derived" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "duplicate_field",
+    [
+        "attempt_started_monotonic",
+        "successful_pair_latencies_ms",
+        "samples_through_stable_endpoint",
+    ],
+)
+def test_fault_client_gate_rejects_duplicate_raw_views(
+    tmp_path: Path,
+    duplicate_field: str,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    affected = next(row for row in workload["client_series"] if row["affected"] is True)
+    affected[duplicate_field] = []
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("raw attempts or summaries are inconsistent" in error for error in errors)
+
+
+def test_run_29997723777_cadence_slice_is_rejected_by_gate_recomputation(
+    tmp_path: Path,
+) -> None:
+    case = next(
+        row
+        for row in _HISTORICAL_GATE_CASES
+        if row["source_run_id"] == "29997723777"
+    )
+    members = _historical_gate_bundle_members(case)
+    source = case["failure_sources"]["workload"]
+    historical_workload = json.loads(members[source["path"]])
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+
+    for affected in (True, False):
+        series = next(row for row in workload["client_series"] if row["affected"] is affected)
+        starts = [
+            float(attempt["started_at_monotonic"])
+            for attempt in series["attempts"]
+        ]
+        historical_series = next(
+            row
+            for row in historical_workload["client_series"]
+            if row["affected"] is affected
+        )
+        historical_starts = historical_series["attempt_started_monotonic"]
+        historical_gap = max(
+            right - left
+            for left, right in zip(historical_starts, historical_starts[1:])
+        )
+        insertion = 6
+        original_gap = starts[insertion] - starts[insertion - 1]
+        shift = historical_gap - original_gap
+        for index in range(insertion, len(starts)):
+            next_start = round(starts[index] + shift, 6)
+            _retime_fault_attempt(series["attempts"][index], next_start)
+
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any(
+        "affected shard shard-000 cadence is missing, exceeds 100 ms, or is not raw-derived"
+        in error
+        for error in errors
+    )
+    assert any(
+        "unaffected control shard shard-control cadence is missing, exceeds 100 ms, or is not raw-derived"
+        in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize("defect", ["missing", "out_of_order", "duplicate"])
+def test_fault_client_attempt_timestamps_must_be_complete_and_strictly_increasing(
+    tmp_path: Path,
+    defect: str,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    affected = next(row for row in workload["client_series"] if row["affected"] is True)
+    if defect == "missing":
+        affected["attempts"][5]["started_at_monotonic"] = None
+    elif defect == "out_of_order":
+        affected["attempts"][5], affected["attempts"][6] = (
+            affected["attempts"][6],
+            affected["attempts"][5],
+        )
+    else:
+        _retime_fault_attempt(
+            affected["attempts"][6],
+            float(affected["attempts"][5]["started_at_monotonic"]),
+        )
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("affected shard shard-000 has an incomplete attempt series" in error for error in errors)
+
+
+def test_fault_workload_error_count_must_include_measurement_failures(tmp_path: Path) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    workload["errors"].append(
+        "affected/control SET/GET attempt cadence exceeded 100 ms or was incomplete"
+    )
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("workload error count does not match its summary" in error for error in errors)
+
+
+def test_fault_workload_latency_is_recomputed_from_raw_attempt_timing(
+    tmp_path: Path,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    affected = next(row for row in workload["client_series"] if row["affected"] is True)
+    affected["attempts"][1]["latency_ms"] = 999999.0
+    workload["p99_latency_ms"] = 999999.0
+    trial["workload"]["p99_latency_ms"] = 999999.0
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("raw attempts or summaries are inconsistent" in error for error in errors)
+
+
+def test_fault_workload_result_counts_are_recomputed_from_raw_attempts(
+    tmp_path: Path,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    affected = next(row for row in workload["client_series"] if row["affected"] is True)
+    affected.update(
+        {
+            "set_success_count": 0,
+            "get_success_count": 0,
+            "error_count": 999,
+            "timeout_count": 999,
+        }
+    )
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("raw attempts or summaries are inconsistent" in error for error in errors)
+
+
+@pytest.mark.parametrize("metric", ["throughput", "errors", "timeouts"])
+def test_fault_workload_aggregates_are_recomputed_from_raw_attempts(
+    tmp_path: Path,
+    metric: str,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    if metric == "throughput":
+        workload["set_throughput_ops_per_second"] = 999.0
+        trial["workload"]["set_throughput_ops_per_second"] = 999.0
+    elif metric == "errors":
+        workload["errors"] = ["forged recovery error"]
+    else:
+        workload["timeout_count"] = 999
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any(
+        "fault workload throughput, p99, errors, or timeouts are not raw-derived"
+        in error
+        for error in errors
+    )
+
+
+def test_fault_client_gate_retains_post_window_raw_attempt_without_counting_it(
+    tmp_path: Path,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    window_end = (
+        float(trial["monotonic_markers"]["sigkill_barrier"])
+        + float(workload["requested_duration_seconds"])
+    )
+    for series in workload["client_series"]:
+        post_window = deepcopy(series["attempts"][-1])
+        _retime_fault_attempt(post_window, window_end + 0.05)
+        series["attempts"].append(post_window)
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+    refs = {ref["category"]: ref for ref in trial["source_sha256s"]}
+    trial["provenance"]["capture_digest"] = M2._canonical_digest(
+        {
+            category: ref["sha256"]
+            for category, ref in refs.items()
+            if category != "provenance"
+        }
+    )
+    _rewrite_bound_source(
+        report,
+        trial,
+        paths["provenance"],
+        "provenance",
+        trial["provenance"],
+    )
+
+    assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
+
+    for series in workload["client_series"]:
+        series["attempt_count"] += 1
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+    trial["provenance"]["capture_digest"] = M2._canonical_digest(
+        {
+            category: ref["sha256"]
+            for category, ref in refs.items()
+            if category != "provenance"
+        }
+    )
+    _rewrite_bound_source(
+        report,
+        trial,
+        paths["provenance"],
+        "provenance",
+        trial["provenance"],
+    )
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+    assert any("raw attempts or summaries are inconsistent" in error for error in errors)
+
+
+def test_fault_client_gate_clips_cross_boundary_intervals_to_the_closed_window(
+    tmp_path: Path,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    barrier = float(trial["monotonic_markers"]["sigkill_barrier"])
+    window_end = barrier + float(workload["requested_duration_seconds"])
+
+    for series in workload["client_series"]:
+        before = deepcopy(series["attempts"][0])
+        _retime_fault_attempt(before, barrier - 0.09)
+        _retime_fault_attempt(series["attempts"][0], barrier + 0.02)
+        after = deepcopy(series["attempts"][-1])
+        _retime_fault_attempt(series["attempts"][-1], window_end - 0.02)
+        _retime_fault_attempt(after, window_end + 0.09)
+        series["attempts"] = [before, *series["attempts"], after]
+
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+    refs = {ref["category"]: ref for ref in trial["source_sha256s"]}
+    trial["provenance"]["capture_digest"] = M2._canonical_digest(
+        {
+            category: ref["sha256"]
+            for category, ref in refs.items()
+            if category != "provenance"
+        }
+    )
+    _rewrite_bound_source(
+        report,
+        trial,
+        paths["provenance"],
+        "provenance",
+        trial["provenance"],
+    )
+
+    assert all(
+        len(series["attempts"]) == series["attempt_count"] + 2
+        for series in workload["client_series"]
+    )
+    assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
+
+
+@pytest.mark.parametrize("outside_boundary", ["before", "after"])
+def test_fault_client_outside_boundary_timestamp_cannot_hide_a_window_edge_gap(
+    tmp_path: Path,
+    outside_boundary: str,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
+    barrier = float(trial["monotonic_markers"]["sigkill_barrier"])
+    window_end = barrier + float(workload["requested_duration_seconds"])
+    affected = next(row for row in workload["client_series"] if row["affected"] is True)
+    if outside_boundary == "before":
+        _retime_fault_attempt(affected["attempts"][0], barrier - 0.01)
+        _retime_fault_attempt(affected["attempts"][1], barrier + 0.100001)
+    else:
+        _retime_fault_attempt(affected["attempts"][-2], window_end - 0.100001)
+        _retime_fault_attempt(affected["attempts"][-1], window_end + 0.01)
+    _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any(
+        "affected shard shard-000 cadence is missing, exceeds 100 ms, or is not raw-derived"
+        in error
+        for error in errors
+    )
 
 
 def test_fault_unaffected_control_cadence_is_recomputed_from_attempt_timestamps(
@@ -2497,7 +4015,7 @@ def test_fault_unaffected_control_cadence_is_recomputed_from_attempt_timestamps(
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
     control = next(row for row in workload["client_series"] if row["affected"] is False)
-    control["attempt_started_monotonic"][5] = 200.55
+    _retime_fault_attempt(control["attempts"][5], 200.55)
     _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
@@ -2514,13 +4032,22 @@ def test_fault_stable_recovery_is_recomputed_from_raw_set_get_pairs(tmp_path: Pa
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
     affected = next(row for row in workload["client_series"] if row["affected"] is True)
-    affected["samples_through_stable_endpoint"][8]["value_matches"] = False
-    affected["samples_through_stable_endpoint"][8]["error"] = "tampered pair"
+    affected["attempts"][8].update(
+        {
+            "value_matches": False,
+            "error": "tampered pair",
+            "status": "FAIL",
+        }
+    )
+    affected["error_count"] += 1
+    workload["errors"].append("tampered pair")
+    workload["error_count"] += 1
+    trial["workload"]["errors"] += 1
     _rewrite_bound_source(report, trial, paths["workload"], "workload", workload)
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
 
-    assert any("has no qualifying raw stable window" in error for error in errors)
+    assert any("stable summary is not the earliest raw one-second window" in error for error in errors)
 
 
 def test_fault_first_success_rejects_an_operation_started_before_sigkill(tmp_path: Path) -> None:
@@ -2529,16 +4056,17 @@ def test_fault_first_success_rejects_an_operation_started_before_sigkill(tmp_pat
     workload = json.loads(paths["workload"].read_text(encoding="utf-8"))
     affected = next(row for row in workload["client_series"] if row["affected"] is True)
     barrier = trial["monotonic_markers"]["sigkill_barrier"]
-    pre_barrier = deepcopy(affected["samples_through_stable_endpoint"][1])
+    pre_barrier = deepcopy(affected["attempts"][1])
     pre_barrier.update(
         {
             "started_at_monotonic": barrier - 0.01,
             "completed_at_monotonic": barrier + 0.01,
             "set_completed_at_monotonic": barrier,
             "get_completed_at_monotonic": barrier + 0.01,
+            "latency_ms": 20.0,
         }
     )
-    affected["samples_through_stable_endpoint"].insert(0, pre_barrier)
+    affected["attempts"].insert(0, pre_barrier)
     workload["first_success"].update(
         {
             "first_affected_write": barrier,
@@ -2555,7 +4083,7 @@ def test_fault_first_success_rejects_an_operation_started_before_sigkill(tmp_pat
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
 
-    assert any("stable sample 1 is incomplete or non-monotonic" in error for error in errors)
+    assert any("raw attempts or summaries are inconsistent" in error for error in errors)
     assert any("sigkill_to_first_write_seconds is not bound to raw client recovery" in error for error in errors)
 
 
@@ -2576,9 +4104,11 @@ def test_fault_transition_marker_is_recomputed_from_raw_observer_views(tmp_path:
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
     target_id = fault["target_node_ids"][0]
-    for view in fault["observer_rounds"][0]["views"]:
+    views_ref = fault["observer_rounds"][0]["views_sha256"]
+    for view in _fault_round_views(fault, 0):
         view["target_flags"][target_id] = ["master"]
         view["cluster_nodes"][target_id]["flags"] = ["master"]
+    _rebind_fault_view_entry(fault, views_ref)
     _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
@@ -2590,7 +4120,9 @@ def test_fault_unexpected_safety_is_aggregated_from_observer_facts(tmp_path: Pat
     report, trial = _fault_source_report()
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
-    fault["observer_rounds"][0]["views"][0]["cluster_nodes"]["node-001"]["flags"].append("fail")
+    views_ref = fault["observer_rounds"][0]["views_sha256"]
+    _fault_round_views(fault, 0)[0]["cluster_nodes"]["node-001"]["flags"].append("fail")
+    _rebind_fault_view_entry(fault, views_ref)
     _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
@@ -2602,7 +4134,9 @@ def test_fault_every_node_convergence_is_recomputed_from_survivor_views(tmp_path
     report, trial = _fault_source_report()
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
-    fault["every_node_convergence_views"][0]["cluster_slots_ok"] = 0
+    views_ref = fault["every_node_convergence_views_sha256"]
+    _fault_convergence_views(fault)[0]["cluster_slots_ok"] = 0
+    _rebind_fault_view_entry(fault, views_ref)
     _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
@@ -2626,12 +4160,29 @@ def test_fault_post_convergence_observer_round_cannot_regress(tmp_path: Path) ->
     report, trial = _fault_source_report()
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
-    fault["observer_rounds"][-1]["views"][0]["cluster_slots_ok"] = 0
+    views_ref = fault["observer_rounds"][-1]["views_sha256"]
+    _fault_round_views(fault, -1)[0]["cluster_slots_ok"] = 0
+    _rebind_fault_view_entry(fault, views_ref)
     _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
 
     assert any("regressed after every-node convergence" in error for error in errors)
+
+
+def test_fault_observer_rounds_must_cover_the_complete_fixed_window(
+    tmp_path: Path,
+) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    fault = json.loads(paths["fault"].read_text(encoding="utf-8"))
+    fault["observer_rounds"][-1]["at_monotonic"] = 201.500001
+    fault["observer_rounds"][-1]["probe_started_at_monotonic"] = 201.490001
+    _rewrite_bound_source(report, trial, paths["fault"], "fault", fault)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert any("do not cover the complete fixed window" in error for error in errors)
 
 
 def test_blocked_capture_without_started_trials_needs_no_performance_sources(tmp_path: Path) -> None:
@@ -2700,7 +4251,23 @@ def test_stability_requires_selected_paired_soak_and_validates_faults() -> None:
     assert any("did not use owned-process SIGKILL" in error for error in errors)
 
 
-def test_stability_workload_regression_budgets_are_enforced() -> None:
+def test_stability_workload_regression_uses_conservative_histogram_bounds() -> None:
+    def histogram_p99(latency_ms: float) -> float:
+        tick = math.ceil(
+            math.log2(latency_ms) * M2.LATENCY_HISTOGRAM_BUCKETS_PER_OCTAVE
+            - 1e-12
+        )
+        bucket_index = tick - M2.LATENCY_HISTOGRAM_MIN_TICK
+        p99, count, valid = M2._histogram_nearest_rank(
+            {
+                "schema_version": M2.LATENCY_HISTOGRAM_SCHEMA_VERSION,
+                "buckets": [{"index": bucket_index, "count": 1000}],
+            },
+            0.99,
+        )
+        assert valid and count == 1000 and p99 is not None
+        return p99
+
     baseline = {
         "kind": "selected_settings",
         "value": "m1-defaults",
@@ -2740,8 +4307,8 @@ def test_stability_workload_regression_budgets_are_enforced() -> None:
             }
         ]
         for trial_id, arm, throughput, latency in (
-            (baseline_id, "baseline", 100.0, 10.0),
-            (candidate_id, "candidate", 94.0, 11.1),
+            (baseline_id, "baseline", 100.0, histogram_p99(1.21)),
+            (candidate_id, "candidate", 94.0, histogram_p99(1.34)),
         ):
             trials[trial_id] = {
                 "trial_id": trial_id,
@@ -2770,6 +4337,22 @@ def test_stability_workload_regression_budgets_are_enforced() -> None:
 
     assert any("throughput regressed by more than 5 percent" in error for error in errors)
     assert any("p99 latency regressed by more than 10 percent" in error for error in errors)
+
+    for trial in trials.values():
+        if trial["arm"] == "candidate":
+            trial["workload"]["set_throughput_ops_per_second"] = 100.0
+            trial["workload"]["p99_latency_ms"] = histogram_p99(1.28)
+    boundary_errors: list[str] = []
+    M2._validate_stability(
+        {"baseline": baseline, "selected_candidate": selected},
+        trials,
+        pairs_by_cell,
+        cells,
+        boundary_errors,
+    )
+
+    assert not any("throughput regressed" in error for error in boundary_errors)
+    assert not any("p99 latency regressed" in error for error in boundary_errors)
 
 
 def test_runner_without_real_authorization_is_blocked_and_does_not_start(
@@ -3242,3 +4825,91 @@ def test_discovery_producer_replaces_current_phase_after_validation_failure(
     assert report["campaigns"]["formation"]["status"] == "FAIL"
     assert report["campaigns"]["formation"]["errors"] == report["errors"]
     assert "failover" not in report["campaigns"]
+
+
+def test_resource_gate_expands_compact_links_without_copying_or_mutating_raw_source(
+    tmp_path: Path,
+) -> None:
+    report = _formation_report()
+    trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    resource = json.loads(paths["resource"].read_text(encoding="utf-8"))
+    dictionary_links = resource["directional_cluster_links_dictionary"][0][
+        "directional_cluster_links"
+    ]
+    raw_process = resource["samples"][0]["nodehosts"][0]["processes"][0]
+    raw_digest = raw_process["directional_cluster_links_sha256"]
+    errors: list[str] = []
+
+    expanded = M2._expand_resource_directional_links(
+        resource,
+        trial_id=trial["trial_id"],
+        errors=errors,
+    )
+    expanded_process = expanded["samples"][0]["nodehosts"][0]["processes"][0]
+
+    assert errors == []
+    assert "directional_cluster_links_dictionary" not in expanded
+    assert expanded_process["directional_cluster_links"] is dictionary_links
+    assert "directional_cluster_links_sha256" not in expanded_process
+    assert raw_process["directional_cluster_links_sha256"] == raw_digest
+    assert "directional_cluster_links" not in raw_process
+    assert "directional_cluster_links_dictionary" in resource
+
+
+def test_resource_gate_retains_only_bounded_pair_facts_after_raw_validation(
+    tmp_path: Path,
+) -> None:
+    report = _formation_report()
+    trial = deepcopy(report["trials"][0])
+    report["trials"] = [trial]
+    report["source_refs"] = deepcopy(trial["source_sha256s"])
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    resource = json.loads(paths["resource"].read_text(encoding="utf-8"))
+    state = json.loads(paths["state"].read_text(encoding="utf-8"))
+    raw_digest = M2._canonical_digest(resource)
+    errors: list[str] = []
+
+    pair_facts = M2._validate_resource_source(
+        resource,
+        trial,
+        fault_trial=False,
+        allow_initial_membership_transitions=True,
+        state_document=state,
+        errors=errors,
+    )
+
+    assert errors == []
+    assert M2._canonical_digest(resource) == raw_digest
+    assert set(pair_facts) == {
+        "duration_seconds",
+        "interval_seconds",
+        "safety_metrics",
+        "coverage",
+    }
+    assert pair_facts["safety_metrics"] == {
+        "cluster_link_errors": 0,
+        "buffer_overflows": 0,
+    }
+    assert set(pair_facts["coverage"]) == {
+        "expected_sample_count",
+        "observed_sample_count",
+        "nodehost_count",
+        "process_count",
+        "actual_window_span_seconds",
+        "sampling_envelope_span_seconds",
+    }
+    assert "samples" not in pair_facts
+    assert "directional_cluster_links_dictionary" not in pair_facts
+    assert M2._validate_equal_resource_window_facts(pair_facts, deepcopy(pair_facts)) == []
+
+    unequal = deepcopy(pair_facts)
+    unequal["coverage"]["actual_window_span_seconds"] = (
+        float(unequal["coverage"]["actual_window_span_seconds"]) + 1.0
+    )
+    assert any(
+        "actual_window_span_seconds" in error
+        for error in M2._validate_equal_resource_window_facts(pair_facts, unequal)
+    )

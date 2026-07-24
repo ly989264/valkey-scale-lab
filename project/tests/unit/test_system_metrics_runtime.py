@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import copy
 import json
+import subprocess
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from valkey_scale_lab.metrics import m2_resource
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.metrics.m2_resource import (
     M2ResourceMeasurementError,
@@ -151,7 +154,8 @@ def _owned_inspect(*, run_id: str = "m2-run-1") -> str:
     return json.dumps(
         [
             {
-                "Id": "cid-a-full",
+                "Id": "cid-a",
+                "Name": "/owned-a",
                 "Config": {
                     "Labels": {
                         "org.valkey-scale-lab.project": "valkey-scale-lab",
@@ -184,7 +188,7 @@ def _m2_batch_output(
     link_rows = non_connected_links or {}
     error_claims = cluster_link_errors or {}
     link_counts = cluster_link_counts or {}
-    directional_links = directional_cluster_links or {}
+    directional_links = directional_cluster_links
     rows = ["META\t100\t4096"]
     process_values = {
         101: (7101, 10, 2, 5, 4, 2, 1000, 500, 100, 80),
@@ -214,7 +218,10 @@ def _m2_batch_output(
             f"LINK\t{pid}\t{node_id}\t{address}\t{flags}\t{master_id}\t{link_state}"
             for node_id, address, flags, master_id, link_state in link_rows.get(pid, [])
         )
-        if pid in directional_links:
+        if directional_links is None or pid in directional_links:
+            process_directional_links = (
+                [] if directional_links is None else directional_links[pid]
+            )
             raw_links = [
                 {
                     "direction": link["direction"],
@@ -224,11 +231,25 @@ def _m2_batch_output(
                     "send-buffer-allocated": link["send_buffer_allocated"],
                     "send-buffer-used": link["send_buffer_used"],
                 }
-                for link in directional_links[pid]
+                for link in process_directional_links
             ]
             rows.append(f"CLINKS\t{pid}\t{json.dumps(raw_links, separators=(',', ':'))}")
     rows.append(f"NET\t{1000 + sample * 100}\t{2000 + sample * 200}")
     return "\n".join(rows)
+
+
+def _inline_resource_report(report: dict) -> dict:
+    errors: list[str] = []
+    samples = m2_resource._resource_samples_with_directional_links(report, errors)
+    assert errors == []
+    return {
+        **{
+            key: value
+            for key, value in report.items()
+            if key != "directional_cluster_links_dictionary"
+        },
+        "samples": [copy.deepcopy(sample) for sample in samples],
+    }
 
 
 def _m2_resource_report_with_link(
@@ -257,6 +278,7 @@ def _m2_resource_report_with_link(
         nonlocal sample
         if args[0] == "inspect":
             return SimpleNamespace(returncode=0, stdout=_owned_inspect(), stderr="")
+        assert args[6] == ""
         links = {101: [link]} if sample in active_samples else {}
         output = _m2_batch_output(
             sample,
@@ -345,6 +367,8 @@ def test_m2_resource_window_batches_owned_pids_and_aggregates_proc_counters() ->
     }
     exec_calls = [args for args in calls if args[0] == "exec"]
     assert len(exec_calls) == 3
+    assert all(args[1] == "cid-a" for args in exec_calls)
+    assert all(args[6] == "" for args in exec_calls)
     assert all(args[-2:] == ["101:7101", "102:7102"] for args in exec_calls)
     assert all("/proc/$pid/stat" in args[4] and "/proc/$pid/statm" in args[4] for args in exec_calls)
     assert all("/proc/$pid/fd" in args[4] and "/proc/net/dev" in args[4] for args in exec_calls)
@@ -356,6 +380,132 @@ def test_m2_resource_window_batches_owned_pids_and_aggregates_proc_counters() ->
     assert "exact Valkey 9.1 per-node CLUSTER INFO" in report["metric_provenance"]["cluster_bus_bytes"]
     assert "no namespace-traffic fallback" in report["metric_provenance"]["cluster_bus_bytes"]
     assert "diagnostic only" in report["diagnostic_provenance"]["namespace_network_bytes"]
+    entries = report["directional_cluster_links_dictionary"]
+    assert len(entries) == 1
+    assert entries[0]["directional_cluster_links"] == []
+    assert all(
+        process["directional_cluster_links_sha256"] == entries[0]["sha256"]
+        and "directional_cluster_links" not in process
+        for sample in report["samples"]
+        for nodehost in sample["nodehosts"]
+        for process in nodehost["processes"]
+    )
+    assert validate_and_aggregate_m2_resource_samples(report)["status"] == "PASS"
+
+
+def test_m2_resource_window_interns_directional_links_before_report_build(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = _FakeClock()
+    sample = 0
+    original_resource_report = m2_resource._resource_report
+    observed_compact_samples = False
+
+    def recording_resource_report(**kwargs):
+        nonlocal observed_compact_samples
+        samples = kwargs["samples"]
+        entries = kwargs["directional_cluster_links"]
+        observed_compact_samples = bool(samples) and bool(entries) and all(
+            "directional_cluster_links_sha256" in process
+            and "directional_cluster_links" not in process
+            for row in samples
+            for nodehost in row["nodehosts"]
+            for process in nodehost["processes"]
+        )
+        return original_resource_report(**kwargs)
+
+    def command(args, *, timeout, check):
+        nonlocal sample
+        if args[0] == "inspect":
+            return SimpleNamespace(returncode=0, stdout=_owned_inspect(), stderr="")
+        output = _m2_batch_output(sample)
+        sample += 1
+        return SimpleNamespace(returncode=0, stdout=output, stderr="")
+
+    monkeypatch.setattr(m2_resource, "_resource_report", recording_resource_report)
+    report = collect_m2_resource_window(
+        _m2_runtime_state(),
+        window_name="collection-time-interning",
+        duration_seconds=1,
+        interval_seconds=1,
+        command=command,
+        monotonic_clock=clock.monotonic,
+        wall_clock=clock.wall,
+        sleep=clock.sleep,
+    )
+
+    assert report["status"] == "PASS"
+    assert observed_compact_samples is True
+
+
+def test_m2_resource_probe_does_not_classify_unreadable_proc_stat_as_gone() -> None:
+    script = m2_resource._PROC_BATCH_SCRIPT
+    missing = 'if [ ! -e "$stat_path" ]; then'
+    unreadable = 'if [ ! -r "$stat_path" ]; then'
+
+    assert missing in script
+    assert unreadable in script
+    assert script.index(missing) < script.index(unreadable)
+    assert "stat_unreadable" in script
+    assert "stat_malformed" in script
+    assert 'if [ ! -r "$stat_path" ] ||' not in script
+    assert 'case "$stat_line" in' in script
+    assert "stat_tail=${stat_line##*) }" in script
+    assert "R|S|D|T|t|W|K|P|I)" in script
+
+
+def test_m2_resource_probe_rechecks_stat_after_secondary_proc_exit_race() -> None:
+    script = m2_resource._PROC_BATCH_SCRIPT
+
+    helper = script.split("emit_process_failure() {", 1)[1].split(
+        "for owned_process", 1
+    )[0]
+    assert '[ "$expected_gone" -eq 1 ]' in helper
+    assert '[ ! -e "$stat_path" ]' in helper
+    assert "gone_stat_tail=${gone_stat_line##*) }" in helper
+    assert 'case "$gone_state" in' in helper
+    assert "Z|X|x)" in helper
+    assert "printf 'GONE\\t%s\\t%s\\n'" in helper
+    assert "printf 'GONE\\t%s\\t%s\\n'" not in script.split(
+        "for owned_process", 1
+    )[1]
+    for reason in (
+        "statm_unreadable",
+        "fd_unreadable",
+        "cluster_info_unreadable",
+        "cluster_nodes_unreadable",
+        "cluster_links_unreadable",
+        "process_stat_reread",
+    ):
+        assert f"emit_process_failure {reason}" in script
+
+
+def test_m2_resource_probe_buffers_complete_process_rows_across_fault_race() -> None:
+    script = m2_resource._PROC_BATCH_SCRIPT
+
+    pid_buffer = script.index("pid_row=$(printf 'PID")
+    first_cluster_probe = script.index("cluster_info=$(valkey-cli")
+    final_identity_probe = script.index("final_stat_line=$(cat")
+    row_flush = script.index("printf '%s\\n%s\\n' \"$pid_row\" \"$cluster_row\"")
+
+    assert pid_buffer < first_cluster_probe < final_identity_probe < row_flush
+    assert "start_time=${20}" in script
+    assert script.count("Z|X|x)") >= 3
+    assert "emit_process_failure process_not_live_at_reread" in script
+    assert 'if [ "${20}" != "$start_time" ]; then' in script
+    assert "emit_process_failure process_identity_changed" in script
+
+
+def test_m2_resource_probe_is_valid_posix_shell_fixture() -> None:
+    completed = subprocess.run(
+        ["sh", "-n"],
+        input=m2_resource._PROC_BATCH_SCRIPT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_m2_resource_window_excludes_only_well_formed_pending_handshake() -> None:
@@ -915,18 +1065,20 @@ def _trusted_formation_report(
     claimed_errors: int = 1,
     directional_links_by_sample: tuple[dict[int, list[dict]], ...] | None = None,
 ) -> dict:
-    return _m2_resource_report_with_link(
-        link,
-        claimed_errors=claimed_errors,
-        window_name="m2-formation-bootstrap",
-        link_samples={1} if link_samples is None else link_samples,
-        cluster_link_counts=tuple(2 for _ in sample_phases),
-        allow_initial_membership_transitions=True,
-        sample_phases=sample_phases,
-        directional_links_by_sample=(
-            directional_links_by_sample
-            if directional_links_by_sample is not None
-            else _formation_directional_samples(len(sample_phases))
+    return _inline_resource_report(
+        _m2_resource_report_with_link(
+            link,
+            claimed_errors=claimed_errors,
+            window_name="m2-formation-bootstrap",
+            link_samples={1} if link_samples is None else link_samples,
+            cluster_link_counts=tuple(2 for _ in sample_phases),
+            allow_initial_membership_transitions=True,
+            sample_phases=sample_phases,
+            directional_links_by_sample=(
+                directional_links_by_sample
+                if directional_links_by_sample is not None
+                else _formation_directional_samples(len(sample_phases))
+            ),
         ),
     )
 
@@ -1686,7 +1838,96 @@ def test_m2_resource_window_rejects_container_with_wrong_ownership() -> None:
     assert report["status"] == "FAIL"
     assert report["coverage"]["expected_sample_count"] == 2
     assert all(args[0] == "inspect" for args in calls)
+    assert all(args[1] == "cid-a" for args in calls)
     assert "not owned" in report["errors"][0]
+
+
+def test_m2_resource_window_rejects_prefix_matching_replacement_container() -> None:
+    inspected = json.loads(_owned_inspect())[0]
+    inspected["Id"] = "cid-a-replacement"
+
+    report = collect_m2_resource_window(
+        _m2_runtime_state(),
+        window_name="container-identity",
+        duration_seconds=1,
+        interval_seconds=1,
+        command=lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps([inspected]),
+            stderr="",
+        ),
+    )
+
+    assert report["status"] == "FAIL"
+    assert "container id ownership mismatch" in report["errors"][0]
+
+
+def test_m2_resource_window_rejects_runtime_container_rename() -> None:
+    inspected = json.loads(_owned_inspect())[0]
+    inspected["Name"] = "/renamed-owned-a"
+
+    report = collect_m2_resource_window(
+        _m2_runtime_state(),
+        window_name="container-identity",
+        duration_seconds=1,
+        interval_seconds=1,
+        command=lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps([inspected]),
+            stderr="",
+        ),
+    )
+
+    assert report["status"] == "FAIL"
+    assert "container name ownership mismatch" in report["errors"][0]
+
+
+def test_m2_resource_window_rejects_one_container_id_with_multiple_names() -> None:
+    state = copy.deepcopy(_m2_runtime_state())
+    state["nodehosts"].append(
+        {
+            "nodehost_id": "nodehost-b",
+            "container_id": "cid-a",
+            "container_name": "owned-b",
+        }
+    )
+    state["nodes"].append(
+        {
+            "logical_id": "node-3",
+            "nodehost_id": "nodehost-b",
+            "container_id": "cid-a",
+            "nodehost_container_name": "owned-b",
+            "pid": 103,
+            "client_port": 7103,
+        }
+    )
+
+    report = collect_m2_resource_window(
+        state,
+        window_name="duplicate-container-id",
+        duration_seconds=1,
+        interval_seconds=1,
+        command=lambda *_args, **_kwargs: pytest.fail("Docker must not run"),
+    )
+
+    assert report["status"] == "FAIL"
+    assert "duplicate nodehost ownership target" in report["errors"][0]
+
+
+def test_m2_resource_window_rejects_duplicate_logical_process_identity() -> None:
+    state = copy.deepcopy(_m2_runtime_state())
+    state["nodes"][1]["logical_id"] = state["nodes"][0]["logical_id"]
+
+    report = collect_m2_resource_window(
+        state,
+        window_name="duplicate-logical-id",
+        duration_seconds=1,
+        interval_seconds=1,
+        command=lambda *_args, **_kwargs: pytest.fail("Docker must not run"),
+    )
+
+    assert report["status"] == "FAIL"
+    assert "duplicate owned logical_id" in report["errors"][0]
 
 
 def test_m2_resource_window_requires_fixed_interval_contract() -> None:
@@ -1751,6 +1992,40 @@ def test_m2_resource_window_fails_closed_when_cluster_counter_decreases() -> Non
     assert report["status"] == "FAIL"
     assert report["metrics"]["cluster_bus_bytes"] == "MISSING"
     assert any("cluster_stats_bytes_sent decreased" in error for error in report["errors"])
+
+
+def test_m2_resource_window_requires_directional_links_for_every_live_process() -> None:
+    clock = _FakeClock()
+
+    def command(args, *, timeout, check):
+        if args[0] == "inspect":
+            return SimpleNamespace(returncode=0, stdout=_owned_inspect(), stderr="")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=_m2_batch_output(
+                0,
+                directional_cluster_links={101: []},
+            ),
+            stderr="",
+        )
+
+    report = collect_m2_resource_window(
+        _m2_runtime_state(),
+        window_name="missing-directional-links",
+        duration_seconds=1,
+        interval_seconds=1,
+        command=command,
+        monotonic_clock=clock.monotonic,
+        wall_clock=clock.wall,
+        sleep=clock.sleep,
+    )
+
+    assert report["status"] == "FAIL"
+    assert any(
+        "directional cluster link observations do not match live proc targets"
+        in error
+        for error in report["errors"]
+    )
 
 
 def test_m2_resource_window_allows_only_captured_bound_expected_gone_process() -> None:
@@ -1911,20 +2186,21 @@ def test_m2_resource_window_binds_same_pid_in_different_containers() -> None:
         ],
     }
     clock = _FakeClock()
-    samples = {"owned-a": 0, "owned-b": 0}
+    samples = {"cid-a": 0, "cid-b": 0}
 
     def command(args, *, timeout, check):
         container = args[1]
         suffix = container[-1]
         if args[0] == "inspect":
             inspected = json.loads(_owned_inspect())[0]
-            inspected["Id"] = f"cid-{suffix}-full"
+            inspected["Id"] = f"cid-{suffix}"
+            inspected["Name"] = f"/owned-{suffix}"
             return SimpleNamespace(returncode=0, stdout=json.dumps([inspected]), stderr="")
         sample = samples[container]
         samples[container] += 1
-        port = 7101 if container == "owned-a" else 7201
+        port = 7101 if container == "cid-a" else 7201
         rows = ["META\t100\t4096"]
-        if container == "owned-a" and sample > 0:
+        if container == "cid-a" and sample > 0:
             rows.append(f"GONE\t101\t{port}")
         else:
             rows.extend(
@@ -1932,6 +2208,7 @@ def test_m2_resource_window_binds_same_pid_in_different_containers() -> None:
                     f"PID\t101\t{10 + sample}\t2\t5\t4\t2",
                     f"CLUSTER\t101\t{port}\t{1000 + sample * 100}\t{500 + sample * 50}"
                     f"\t{100 + sample * 10}\t{80 + sample * 8}\t0\t2\t0\t0",
+                    "CLINKS\t101\t[]",
                 ]
             )
         rows.append(f"NET\t{1000 + sample * 100}\t{2000 + sample * 200}")

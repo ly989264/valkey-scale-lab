@@ -181,6 +181,8 @@
         "product.unit.fault_sandbox",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
+        "product.unit.m2_fault_client_sampler",
+        "product.unit.m2_performance_capture",
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
@@ -272,6 +274,8 @@
         "product.unit.fault_sandbox",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
+        "product.unit.m2_fault_client_sampler",
+        "product.unit.m2_performance_capture",
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
@@ -372,6 +376,7 @@
         "product.unit.fault_sandbox",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
+        "product.unit.m2_fault_client_sampler",
         "product.unit.m2_performance_capture",
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
@@ -1945,6 +1950,27 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_full_flow_complete_matrix.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.m2_fault_client_sampler",
+      "description": "Unit M2 isolated fault-client sampler checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_m2_fault_client_sampler.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",

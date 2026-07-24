@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import gzip
+import hashlib
 import importlib.util
 import json
+import subprocess
 import sys
+import tarfile
 import threading
+from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -19,6 +24,30 @@ assert SPEC and SPEC.loader
 capture = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = capture
 SPEC.loader.exec_module(capture)
+
+
+def _historical_source_bytes(
+    run_id: str,
+    group: str,
+    source_name: str,
+) -> bytes:
+    fixture_dir = Path(__file__).resolve().parents[1] / "fixtures" / "m2_regressions"
+    manifest = json.loads(
+        (fixture_dir / "historical_gate_replays.json").read_text(encoding="utf-8")
+    )
+    case = next(row for row in manifest["runs"] if row["source_run_id"] == run_id)
+    fixture = case["fixture"]
+    archive_path = fixture_dir / fixture["file"]
+    compressed = archive_path.read_bytes()
+    assert len(compressed) == fixture["gzip_bytes"]
+    assert hashlib.sha256(compressed).hexdigest() == fixture["sha256"]
+    source = case[group][source_name]
+    with tarfile.open(archive_path, mode="r:gz") as archive:
+        member = archive.extractfile(source["path"])
+        assert member is not None
+        raw = member.read()
+    assert hashlib.sha256(raw).hexdigest() == source["sha256"]
+    return raw
 
 
 def _state(*, cross_domain: bool = True) -> dict:
@@ -54,7 +83,7 @@ def _view(target_flags: list[str], replacement_role: str) -> dict:
             "node_id": "p0",
             "flags": target_flags or ["master"],
             "role": "primary",
-            "master_id": None,
+            "master_id": "-",
             "link_state": "disconnected" if "fail" in target_flags else "connected",
             "slots": ["0-8191"],
         },
@@ -62,7 +91,7 @@ def _view(target_flags: list[str], replacement_role: str) -> dict:
             "node_id": "r0",
             "flags": ["master"] if replacement_role == "primary" else ["replica"],
             "role": replacement_role,
-            "master_id": None if replacement_role == "primary" else "p0",
+            "master_id": "-" if replacement_role == "primary" else "p0",
             "link_state": "connected",
             "slots": ["0-8191"] if replacement_role == "primary" else [],
         },
@@ -70,7 +99,7 @@ def _view(target_flags: list[str], replacement_role: str) -> dict:
             "node_id": "p1",
             "flags": ["master"],
             "role": "primary",
-            "master_id": None,
+            "master_id": "-",
             "link_state": "connected",
             "slots": ["8192-16383"],
         },
@@ -92,6 +121,362 @@ def _view(target_flags: list[str], replacement_role: str) -> dict:
         "cluster_known_nodes": 4,
         "cluster_nodes": nodes,
     }
+
+
+def test_actual_resource_sources_round_trip_production_compaction(
+    tmp_path: Path,
+) -> None:
+    for arm in ("baseline", "candidate"):
+        raw = _historical_source_bytes(
+            "29916936241",
+            "capacity_sources",
+            f"{arm}_resource",
+        )
+        source_path = tmp_path / f"{arm}-resource-window.json"
+        source_path.write_bytes(raw)
+        report = capture._load_resource_window(source_path)
+        compact_bytes = source_path.read_bytes()
+        assert json.loads(compact_bytes) == report
+
+        second_path = tmp_path / f"{arm}-round-trip.json"
+        capture._write_json(second_path, report)
+        assert second_path.read_bytes() == compact_bytes
+        assert len(compact_bytes) <= len(raw)
+
+
+def test_run_29997723777_capacity_sources_use_production_serializers(
+    tmp_path: Path,
+) -> None:
+    sources: dict[str, tuple[bytes, dict]] = {}
+    for name in (
+        "formation_resource",
+        "failover_resource",
+        "failover_topology",
+        "failover_fault",
+        "failover_workload",
+    ):
+        raw = _historical_source_bytes(
+            "29997723777",
+            "capacity_sources",
+            name,
+        )
+        sources[name] = (raw, json.loads(raw))
+
+    def directional_counts(document: dict) -> tuple[int, int, int]:
+        refs = 0
+        transitions = 0
+        previous_by_logical: dict[str, str] = {}
+        for sample in document["samples"]:
+            for nodehost in sample["nodehosts"]:
+                for process in nodehost["processes"]:
+                    digest = process["directional_cluster_links_sha256"]
+                    refs += 1
+                    logical_id = process["logical_id"]
+                    previous = previous_by_logical.get(logical_id)
+                    if previous is not None and previous != digest:
+                        transitions += 1
+                    previous_by_logical[logical_id] = digest
+        return (
+            refs,
+            len(document["directional_cluster_links_dictionary"]),
+            transitions,
+        )
+
+    raw, _document = sources["formation_resource"]
+    resource_path = tmp_path / "formation_resource.json"
+    resource_path.write_bytes(raw)
+    report = capture._load_resource_window(resource_path)
+    compact_formation = resource_path.read_bytes()
+    assert json.loads(compact_formation) == report
+    assert directional_counts(report) == (1250, 190, 189)
+    assert len(compact_formation) * 10 < len(raw)
+    assert (
+        len(gzip.compress(compact_formation, compresslevel=6, mtime=0)) * 8
+        < len(gzip.compress(raw, compresslevel=6, mtime=0))
+    )
+
+    failover_raw, failover_resource = sources["failover_resource"]
+    compact_failover_report = capture._intern_resource_directional_links(
+        failover_resource
+    )
+    failover_resource_path = tmp_path / "failover_resource.json"
+    capture._write_json(failover_resource_path, compact_failover_report)
+    compact_failover = failover_resource_path.read_bytes()
+    assert directional_counts(compact_failover_report) == (1263, 99, 49)
+    assert len(compact_failover) * 15 < len(failover_raw)
+    assert (
+        len(gzip.compress(compact_failover, compresslevel=6, mtime=0)) * 8
+        < len(gzip.compress(failover_raw, compresslevel=6, mtime=0))
+    )
+
+    for name in (
+        "failover_topology",
+        "failover_workload",
+    ):
+        _raw, document = sources[name]
+        path = tmp_path / f"{name}.json"
+        capture._write_json(path, document)
+        assert json.loads(path.read_bytes()) == document
+
+    fault_raw, fault = sources["failover_fault"]
+    target_ids = set(fault["target_node_ids"])
+    replacement_ids = set(fault["replacement_node_ids"])
+    topology_view_entries: dict[str, dict] = {}
+    compact_rounds = []
+    for row in fault["observer_rounds"]:
+        compact_rounds.append(
+            {
+                **{key: value for key, value in row.items() if key != "views"},
+                "views_sha256": capture._intern_fault_topology_view(
+                    topology_view_entries,
+                    capture._compact_fault_views(
+                        row["views"],
+                        target_ids,
+                        replacement_ids,
+                    ),
+                ),
+            }
+        )
+    convergence_ref = capture._intern_fault_topology_view(
+        topology_view_entries,
+        capture._compact_fault_views(
+            fault["every_node_convergence_views"],
+            target_ids,
+            replacement_ids,
+        ),
+    )
+    compact_fault = {
+        **{
+            key: value
+            for key, value in fault.items()
+            if key not in {"observer_rounds", "every_node_convergence_views"}
+        },
+        "observer_rounds": compact_rounds,
+        "topology_view_dictionary": [
+            topology_view_entries[digest]
+            for digest in sorted(topology_view_entries)
+        ],
+        "every_node_convergence_views_sha256": convergence_ref,
+    }
+    fault_path = tmp_path / "failover_fault.json"
+    capture._write_json(fault_path, compact_fault)
+    assert len(compact_rounds) == len(fault["observer_rounds"]) == 535
+    assert len(topology_view_entries) == 6
+    assert fault_path.stat().st_size * 20 < len(fault_raw)
+
+    summary_path = tmp_path / "failover_fault_summary.json"
+    summary = capture._compact_fault_summary(compact_fault)
+    capture._write_json(summary_path, summary)
+    assert json.loads(summary_path.read_bytes()) == summary
+
+
+def test_steady_data_path_streams_bounded_histogram(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import valkey_scale_lab.observer.failover_timeline as failover_timeline
+
+    class Clock:
+        value = 100.0
+
+        def __call__(self) -> float:
+            self.value += 0.000001
+            return self.value
+
+    class Client:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> "Client":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+        @staticmethod
+        def execute(command: str, _key: str, value: str | None = None) -> SimpleNamespace:
+            return SimpleNamespace(value="OK" if command == "SET" else value or "x" * 512)
+
+    monkeypatch.setattr(
+        failover_timeline.ObserverEndpoint,
+        "from_node",
+        staticmethod(lambda _node: object()),
+    )
+    monkeypatch.setattr(failover_timeline, "PersistentClusterClient", Client)
+    monkeypatch.setattr(capture.time, "monotonic", Clock())
+    report = capture._capture_data_path(
+        tmp_path,
+        {
+            "runtime": {"run_id": "steady-capacity"},
+            "nodes": [{"logical_id": "node-1"}],
+        },
+        duration_seconds=0.18,
+    )
+
+    assert report["operation_count"] > 50_000
+    assert "latency_precision_ms" not in report
+    bucket_index = capture._latency_histogram_bucket_index(0.001)
+    assert report["latency_histogram"] == {
+        "schema_version": capture.LATENCY_HISTOGRAM_SCHEMA_VERSION,
+        "buckets": [
+            {
+                "index": bucket_index,
+                "count": report["operation_count"],
+            }
+        ],
+    }
+    assert (
+        sum(row["count"] for row in report["latency_histogram"]["buckets"])
+        == report["operation_count"]
+    )
+    assert report["p99_latency_ms"] == capture._latency_histogram_bucket_upper_ms(
+        bucket_index
+    )
+    assert "latencies" not in report
+
+
+def test_latency_histogram_bucket_boundaries_and_overflow_are_conservative() -> None:
+    maximum = capture.LATENCY_HISTOGRAM_MAX_MS
+
+    assert capture._latency_histogram_bucket_index(0.0) == 0
+    assert capture._latency_histogram_bucket_index(
+        capture.LATENCY_HISTOGRAM_MIN_POSITIVE_MS / 2
+    ) == 0
+    assert capture._latency_histogram_bucket_upper_ms(0) > 0
+    one_ms_index = capture._latency_histogram_bucket_index(1.0)
+    assert capture._latency_histogram_bucket_upper_ms(one_ms_index) == 1.0
+    lower = capture._latency_histogram_bucket_upper_ms(one_ms_index - 1)
+    upper = capture._latency_histogram_bucket_upper_ms(one_ms_index)
+    assert (upper - lower) / lower <= 0.01
+    assert (
+        capture._latency_histogram_bucket_index(maximum)
+        == capture.LATENCY_HISTOGRAM_MAX_INDEX
+    )
+    assert (
+        capture._latency_histogram_bucket_index(maximum + 0.000001)
+        == capture.LATENCY_HISTOGRAM_OVERFLOW_INDEX
+    )
+    overflow = capture._latency_histogram_rows(
+        Counter({capture.LATENCY_HISTOGRAM_OVERFLOW_INDEX: 7})
+    )
+    assert overflow == {
+        "schema_version": capture.LATENCY_HISTOGRAM_SCHEMA_VERSION,
+        "buckets": [
+            {"index": capture.LATENCY_HISTOGRAM_OVERFLOW_INDEX, "count": 7}
+        ],
+    }
+
+
+def test_steady_data_path_counts_overflow_and_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import valkey_scale_lab.observer.failover_timeline as failover_timeline
+
+    clock_values = iter((100.0, 100.0, 110.001, 110.001, 110.001))
+
+    class Client:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> "Client":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+        @staticmethod
+        def execute(
+            command: str,
+            _key: str,
+            value: str | None = None,
+        ) -> SimpleNamespace:
+            return SimpleNamespace(value="OK" if command == "SET" else value or "x" * 512)
+
+    monkeypatch.setattr(
+        failover_timeline.ObserverEndpoint,
+        "from_node",
+        staticmethod(lambda _node: object()),
+    )
+    monkeypatch.setattr(failover_timeline, "PersistentClusterClient", Client)
+    monkeypatch.setattr(capture.time, "monotonic", lambda: next(clock_values))
+
+    with pytest.raises(capture.CaptureError, match="data-path observation failed"):
+        capture._capture_data_path(
+            tmp_path,
+            {
+                "runtime": {"run_id": "steady-overflow"},
+                "nodes": [{"logical_id": "node-1"}],
+            },
+            duration_seconds=1.0,
+        )
+
+    report = json.loads(
+        (tmp_path / "workload_observation.json").read_text(encoding="utf-8")
+    )
+    assert report["status"] == "FAIL"
+    assert report["operation_count"] == 1
+    assert (
+        sum(row["count"] for row in report["latency_histogram"]["buckets"]) == 1
+    )
+    assert report["latency_histogram"] == {
+        "schema_version": capture.LATENCY_HISTOGRAM_SCHEMA_VERSION,
+        "buckets": [
+            {"index": capture.LATENCY_HISTOGRAM_OVERFLOW_INDEX, "count": 1}
+        ],
+    }
+    assert "histogram overflowed" in report["errors"][0]
+
+
+def test_latency_histogram_is_bounded_for_repeated_and_unique_latencies() -> None:
+    repeated_count = capture.LATENCY_HISTOGRAM_MAX_BUCKETS * 2
+    repeated = Counter(
+        {
+            capture._latency_histogram_bucket_index(1.234567): repeated_count,
+        }
+    )
+    repeated_rows = capture._latency_histogram_rows(repeated)
+    assert repeated_rows["buckets"] == [
+        {
+            "index": capture._latency_histogram_bucket_index(1.234567),
+            "count": repeated_count,
+        }
+    ]
+
+    unique_count = capture.LATENCY_HISTOGRAM_MAX_BUCKETS * 2
+    unique_bins: Counter[int] = Counter()
+    for ordinal in range(unique_count):
+        fraction = ordinal / max(unique_count - 1, 1)
+        unique_bins[
+            capture._latency_histogram_bucket_index(
+                capture.LATENCY_HISTOGRAM_MIN_POSITIVE_MS
+                * (
+                    capture.LATENCY_HISTOGRAM_MAX_MS
+                    / capture.LATENCY_HISTOGRAM_MIN_POSITIVE_MS
+                )
+                ** fraction
+            )
+        ] += 1
+    unique_rows = capture._latency_histogram_rows(unique_bins)
+
+    assert len(unique_rows["buckets"]) <= capture.LATENCY_HISTOGRAM_MAX_BUCKETS
+    assert sum(row["count"] for row in unique_rows["buckets"]) == unique_count
+
+
+def test_latency_histogram_nearest_rank_and_serialized_size_are_bounded() -> None:
+    all_bins = Counter(
+        {
+            bucket_index: 1
+            for bucket_index in range(capture.LATENCY_HISTOGRAM_MAX_INDEX + 1)
+        }
+    )
+    rows = capture._latency_histogram_rows(all_bins)
+
+    assert capture.LATENCY_HISTOGRAM_MAX_BUCKETS <= 4_096
+    assert len(rows["buckets"]) == capture.LATENCY_HISTOGRAM_MAX_INDEX + 1
+    assert capture._histogram_nearest_rank(rows, 0.50) is not None
+    assert capture._histogram_nearest_rank(rows, 0.99) is not None
+    assert len(json.dumps(rows, separators=(",", ":")).encode("ascii")) < 100_000
 
 
 def test_capture_owned_valkey_logs_before_cleanup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -138,7 +523,7 @@ def test_capture_owned_valkey_logs_before_cleanup(tmp_path: Path, monkeypatch: p
     )
 
 
-def test_capture_arm_preserves_logs_before_cleanup_can_fail(
+def test_capture_arm_preserves_failure_diagnostics_before_cleanup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     trial_id = "m2-discovery-test"
@@ -169,7 +554,81 @@ def test_capture_arm_preserves_logs_before_cleanup_can_fail(
         if command[0] == "setup":
             capture._write_json(state_path, {"runtime": {"run_id": trial_id}, "nodes": []})
             return {"returncode": 0, "stdout": "", "stderr": ""}
-        return {"returncode": 1, "stdout": "", "stderr": "cleanup failed"}
+        return {"returncode": 0, "stdout": "", "stderr": ""}
+
+    def fail_data_path(*args: object, **kwargs: object) -> dict:
+        primary = capture.CaptureError("capture failure")
+        shutdown_note = (
+            "persistent fault client shutdown also failed: CaptureError: shutdown failure"
+        )
+        if hasattr(primary, "add_note"):
+            primary.add_note(shutdown_note)
+        else:
+            setattr(primary, "sampler_shutdown_error", shutdown_note)
+        raise primary
+
+    def fail_log_capture(*args: object, **kwargs: object) -> None:
+        calls.append("logs")
+        raise RuntimeError("log collection failure")
+
+    monkeypatch.setattr(capture, "_ensure_preflight", lambda *args: (tmp_path / "preflight.json", {}))
+    monkeypatch.setattr(capture, "_treatment_environment", lambda spec: {})
+    monkeypatch.setattr(capture, "_setup_command", lambda *args: ["setup"])
+    monkeypatch.setattr(capture, "_cleanup_command", lambda *args: ["cleanup"])
+    monkeypatch.setattr(capture, "_run_command", fake_run)
+    monkeypatch.setattr(capture, "_validate_state", lambda *args: None)
+    monkeypatch.setattr(capture, "_capture_topology", lambda *args, **kwargs: {})
+    monkeypatch.setattr(capture, "_attach_setup_wrapper_timing", lambda *args, **kwargs: None)
+    monkeypatch.setattr(capture, "_uses_setup_resource_window", lambda spec: False)
+    monkeypatch.setattr(capture, "_needs_stability_observation", lambda spec: False)
+    monkeypatch.setattr(capture, "_capture_data_path", fail_data_path)
+    monkeypatch.setattr(capture, "_capture_resource_window", lambda *args, **kwargs: {})
+    monkeypatch.setattr(capture, "_capture_owned_valkey_logs", fail_log_capture)
+    monkeypatch.setattr(capture, "_cleanup_state_for_attempt", lambda *args, **kwargs: state_path)
+    monkeypatch.setattr(capture, "_cleanup_error", lambda *args, **kwargs: "")
+    monkeypatch.setattr(capture, "_collect_partial_refs", lambda *args, **kwargs: None)
+
+    with pytest.raises(capture.CaptureError) as caught:
+        capture._capture_arm(context, spec)
+
+    message = str(caught.value)
+    assert "capture failure" in message
+    assert "persistent fault client shutdown also failed: CaptureError: shutdown failure" in message
+    assert "owned Valkey log diagnostics also failed: RuntimeError: log collection failure" in message
+    assert calls == ["setup", "logs", "cleanup"]
+
+
+def test_capture_arm_does_not_collect_diagnostic_logs_after_success(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    trial_id = "m2-discovery-success"
+    trials_dir = tmp_path / capture.TRIALS_DIR
+    trials_dir.mkdir()
+    state_path = trials_dir / trial_id / "state.json"
+    context = capture.CaptureContext(
+        args=SimpleNamespace(),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "report.json",
+    )
+    spec = capture.ArmSpec(
+        trial_id=trial_id,
+        pair_id="pair-01",
+        cell_id="formation-discovery-1",
+        arm="baseline",
+        order=1,
+        scale=50,
+        scenario="formation_50",
+        treatment={"kind": "cluster_create_strategy", "value": "baseline"},
+        resource_seconds=1.0,
+        workload_seconds=1.0,
+    )
+    calls: list[str] = []
+
+    def fake_run(command: list[str], *, env: object, timeout: int) -> dict:
+        calls.append(command[0])
+        if command[0] == "setup":
+            capture._write_json(state_path, {"runtime": {"run_id": trial_id}, "nodes": []})
+        return {"returncode": 0, "stdout": "", "stderr": ""}
 
     monkeypatch.setattr(capture, "_ensure_preflight", lambda *args: (tmp_path / "preflight.json", {}))
     monkeypatch.setattr(capture, "_treatment_environment", lambda spec: {})
@@ -189,12 +648,123 @@ def test_capture_arm_preserves_logs_before_cleanup_can_fail(
         lambda *args, **kwargs: calls.append("logs"),
     )
     monkeypatch.setattr(capture, "_cleanup_state_for_attempt", lambda *args, **kwargs: state_path)
-    monkeypatch.setattr(capture, "_collect_partial_refs", lambda *args, **kwargs: None)
+    monkeypatch.setattr(capture, "_cleanup_error", lambda *args, **kwargs: "")
+    monkeypatch.setattr(capture, "_build_trial", lambda *args, **kwargs: {"status": "PASS"})
 
-    with pytest.raises(capture.CaptureError, match="owned cleanup command failed"):
+    assert capture._capture_arm(context, spec) == {"status": "PASS"}
+    assert calls == ["setup", "cleanup"]
+
+
+def test_capture_arm_binds_compressed_partial_sources_when_trial_build_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    trial_id = "m2-discovery-build-failure"
+    trials_dir = tmp_path / capture.TRIALS_DIR
+    trials_dir.mkdir()
+    trial_dir = trials_dir / trial_id
+    state_path = trial_dir / "state.json"
+    context = capture.CaptureContext(
+        args=SimpleNamespace(),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "report.json",
+    )
+    spec = capture.ArmSpec(
+        trial_id=trial_id,
+        pair_id="pair-01",
+        cell_id="formation-discovery-1",
+        arm="baseline",
+        order=1,
+        scale=50,
+        scenario="formation_50",
+        treatment={"kind": "cluster_create_strategy", "value": "baseline"},
+        resource_seconds=1.0,
+        workload_seconds=1.0,
+    )
+
+    def fake_run(command: list[str], *, env: object, timeout: int) -> dict:
+        if command[0] == "setup":
+            capture._write_json(state_path, {"runtime": {"run_id": trial_id}, "nodes": []})
+        return {"returncode": 0, "stdout": "", "stderr": ""}
+
+    def fail_build(*args: object, **kwargs: object) -> dict:
+        source = trial_dir / "resource_window.json"
+        capture._write_json(source, {"status": "PASS"})
+        capture._gzip_trial_json_source(source)
+        capture._write_json(
+            trial_dir / "evidence_provenance.json",
+            {"status": "PASS", "current_invocation": True},
+        )
+        raise OSError("archive write failed")
+
+    monkeypatch.setattr(capture, "_ensure_preflight", lambda *args: (tmp_path / "preflight.json", {}))
+    monkeypatch.setattr(capture, "_treatment_environment", lambda spec: {})
+    monkeypatch.setattr(capture, "_setup_command", lambda *args: ["setup"])
+    monkeypatch.setattr(capture, "_cleanup_command", lambda *args: ["cleanup"])
+    monkeypatch.setattr(capture, "_run_command", fake_run)
+    monkeypatch.setattr(capture, "_validate_state", lambda *args: None)
+    monkeypatch.setattr(capture, "_capture_topology", lambda *args, **kwargs: {})
+    monkeypatch.setattr(capture, "_attach_setup_wrapper_timing", lambda *args, **kwargs: None)
+    monkeypatch.setattr(capture, "_uses_setup_resource_window", lambda spec: False)
+    monkeypatch.setattr(capture, "_needs_stability_observation", lambda spec: False)
+    monkeypatch.setattr(capture, "_capture_data_path", lambda *args, **kwargs: {})
+    monkeypatch.setattr(capture, "_capture_resource_window", lambda *args, **kwargs: {})
+    monkeypatch.setattr(capture, "_cleanup_state_for_attempt", lambda *args, **kwargs: state_path)
+    monkeypatch.setattr(capture, "_cleanup_error", lambda *args, **kwargs: "")
+    monkeypatch.setattr(capture, "_build_trial", fail_build)
+
+    with pytest.raises(capture.CaptureError, match="archive write failed"):
         capture._capture_arm(context, spec)
 
-    assert calls == ["setup", "logs", "cleanup"]
+    resource_ref = next(row for row in context.source_refs if row["category"] == "resource")
+    assert resource_ref["path"].endswith("/resource_window.json.gz")
+    assert any(row["category"] == "provenance" for row in context.source_refs)
+    assert not (trial_dir / "resource_window.json").exists()
+
+
+def test_partial_refs_reject_ambiguous_plain_and_compressed_sources(tmp_path: Path) -> None:
+    trial_dir = tmp_path / "trials" / "trial-a"
+    trial_dir.mkdir(parents=True)
+    plain = trial_dir / "workload_observation.json"
+    plain.write_text('{"status":"PASS"}\n', encoding="utf-8")
+    plain.with_suffix(".json.gz").write_bytes(gzip.compress(plain.read_bytes(), mtime=0))
+    context = capture.CaptureContext(
+        args=SimpleNamespace(),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "report.json",
+    )
+
+    with pytest.raises(capture.CaptureError, match="ambiguous plain and compressed"):
+        capture._collect_partial_refs(
+            context,
+            trial_dir,
+            SimpleNamespace(scenario="formation_50"),
+        )
+
+
+def test_partial_ref_failure_is_secondary_to_the_capture_root_cause(tmp_path: Path) -> None:
+    trial_dir = tmp_path / "trials" / "trial-a"
+    trial_dir.mkdir(parents=True)
+    plain = trial_dir / "fault_observation.json"
+    plain.write_text('{"status":"FAIL"}\n', encoding="utf-8")
+    plain.with_suffix(".json.gz").write_bytes(gzip.compress(plain.read_bytes(), mtime=0))
+    context = capture.CaptureContext(
+        args=SimpleNamespace(),
+        artifacts_dir=tmp_path,
+        report_path=tmp_path / "report.json",
+    )
+    root_cause = OSError("archive write failed")
+
+    capture._collect_partial_refs_after_error(
+        context,
+        trial_dir,
+        SimpleNamespace(scenario="failover_timeline"),
+        root_cause,
+    )
+
+    text = capture._capture_error_text(root_cause)
+    assert text.startswith("archive write failed")
+    assert "partial evidence binding also failed" in text
+    assert "ambiguous plain and compressed" in text
 
 
 def test_fault_targets_are_half_up_deterministic_and_cross_domain() -> None:
@@ -209,7 +779,19 @@ def test_fault_targets_are_half_up_deterministic_and_cross_domain() -> None:
         capture._select_fault_target_nodes(_state(cross_domain=False), 50, "one")
 
 
-def test_owned_sigkill_prevalidates_and_batches_each_unique_container_through_shell() -> None:
+def test_owned_sigkill_prevalidates_and_batches_each_unique_container() -> None:
+    for script in (
+        capture.OWNED_PROCESS_IDENTITY_PROBE_SCRIPT,
+        capture.OWNED_PROCESS_STATE_PROBE_SCRIPT,
+    ):
+        parsed = subprocess.run(
+            ["sh", "-n"],
+            input=script,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert parsed.returncode == 0, parsed.stderr
     labels = {
         "org.valkey-scale-lab.project": "valkey-scale-lab",
         "org.valkey-scale-lab.capability_id": "failover_timeline",
@@ -221,18 +803,27 @@ def test_owned_sigkill_prevalidates_and_batches_each_unique_container_through_sh
             "container_name": "host-a",
             "container_id": "container-a",
             "pid": 101,
+            "pid_file": "/tmp/node-a/valkey.pid",
+            "config_file": "/tmp/node-a/valkey.conf",
+            "client_port": 7001,
         },
         {
             "logical_id": "node-b",
             "container_name": "host-a",
             "container_id": "container-a",
             "pid": 102,
+            "pid_file": "/tmp/node-b/valkey.pid",
+            "config_file": "/tmp/node-b/valkey.conf",
+            "client_port": 7002,
         },
         {
             "logical_id": "node-c",
             "container_name": "host-b",
             "container_id": "container-b",
             "pid": 201,
+            "pid_file": "/tmp/node-c/valkey.pid",
+            "config_file": "/tmp/node-c/valkey.conf",
+            "client_port": 7003,
         },
     ]
     calls: list[list[str]] = []
@@ -245,12 +836,24 @@ def test_owned_sigkill_prevalidates_and_batches_each_unique_container_through_sh
                 stdout=(
                     '[{"Id":"container-'
                     + suffix
+                    + '","Name":"/host-'
+                    + suffix
                     + '","Config":{"Labels":'
                     + json.dumps(labels)
                     + "}}]"
                 )
             )
-        return SimpleNamespace(stdout="", returncode=0)
+        if argv[4] == capture.OWNED_PROCESS_IDENTITY_PROBE_SCRIPT:
+            return SimpleNamespace(
+                stdout="VSLAB_IDENTITY_VERIFIED\n",
+                stderr="",
+                returncode=0,
+            )
+        return SimpleNamespace(
+            stdout="",
+            stderr="",
+            returncode=0,
+        )
 
     sender, command_batches = capture._owned_sigkill_sender(
         {
@@ -270,10 +873,62 @@ def test_owned_sigkill_prevalidates_and_batches_each_unique_container_through_sh
         ["inspect", "container-b"],
     ]
     assert [call for call in calls if call[0] == "exec"] == [
+        [
+            "exec",
+            "container-a",
+            "sh",
+            "-c",
+            capture.OWNED_PROCESS_IDENTITY_PROBE_SCRIPT,
+            "sh",
+            "101",
+            "/tmp/node-a/valkey.pid",
+            "/tmp/node-a/valkey.conf",
+            "7001",
+            "102",
+            "/tmp/node-b/valkey.pid",
+            "/tmp/node-b/valkey.conf",
+            "7002",
+        ],
         ["exec", "container-a", "sh", "-c", "kill -KILL 101 102"],
+        [
+            "exec",
+            "container-b",
+            "sh",
+            "-c",
+            capture.OWNED_PROCESS_IDENTITY_PROBE_SCRIPT,
+            "sh",
+            "201",
+            "/tmp/node-c/valkey.pid",
+            "/tmp/node-c/valkey.conf",
+            "7003",
+        ],
         ["exec", "container-b", "sh", "-c", "kill -KILL 201"],
     ]
     assert [batch["status"] for batch in command_batches] == ["PASS", "PASS"]
+    assert [batch["stdout"] for batch in command_batches] == ["", ""]
+
+
+def test_owned_sigkill_script_fails_closed_before_signaling_without_identity(
+    tmp_path: Path,
+) -> None:
+    result = subprocess.run(
+        [
+            "sh",
+            "-c",
+            capture.OWNED_PROCESS_IDENTITY_PROBE_SCRIPT,
+            "sh",
+            "2",
+            str(tmp_path / "missing.pid"),
+            str(tmp_path / "valkey.conf"),
+            "7001",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 65
+    assert result.stdout == "VSLAB_IDENTITY_MISMATCH pidfile_unreadable\n"
 
 
 def test_owned_sigkill_does_not_accept_a_failed_shell_command() -> None:
@@ -290,12 +945,19 @@ def test_owned_sigkill_does_not_accept_a_failed_shell_command() -> None:
                     [
                         {
                             "Id": "container-a",
+                            "Name": "/host-a",
                             "Config": {"Labels": labels},
                         }
                     ]
                 ),
                 returncode=0,
                 stderr="",
+            )
+        if argv[4] == capture.OWNED_PROCESS_IDENTITY_PROBE_SCRIPT:
+            return SimpleNamespace(
+                stdout="VSLAB_IDENTITY_VERIFIED\n",
+                stderr="",
+                returncode=0,
             )
         return SimpleNamespace(stdout="", stderr="shell failure", returncode=127)
 
@@ -310,6 +972,9 @@ def test_owned_sigkill_does_not_accept_a_failed_shell_command() -> None:
                 "container_name": "host-a",
                 "container_id": "container-a",
                 "pid": 101,
+                "pid_file": "/tmp/node-a/valkey.pid",
+                "config_file": "/tmp/node-a/valkey.conf",
+                "client_port": 7001,
             }
         ],
         command=command,
@@ -320,6 +985,304 @@ def test_owned_sigkill_does_not_accept_a_failed_shell_command() -> None:
 
     assert command_batches[0]["status"] == "FAIL"
     assert command_batches[0]["returncode"] == 127
+
+
+def test_owned_sigkill_requires_exact_identity_confirmation() -> None:
+    labels = {
+        "org.valkey-scale-lab.project": "valkey-scale-lab",
+        "org.valkey-scale-lab.capability_id": "failover_timeline",
+        "org.valkey-scale-lab.run_id": "trial-1",
+    }
+
+    def command(argv, **_kwargs):
+        if argv[0] == "inspect":
+            return SimpleNamespace(
+                stdout=json.dumps(
+                    [
+                        {
+                            "Id": "container-a",
+                            "Name": "/host-a",
+                            "Config": {"Labels": labels},
+                        }
+                    ]
+                ),
+                returncode=0,
+                stderr="",
+            )
+        return SimpleNamespace(
+            stdout="VSLAB_IDENTITY_MISMATCH process_id\n",
+            stderr="",
+            returncode=0,
+        )
+
+    sender, command_batches = capture._owned_sigkill_sender(
+        {
+            "capability_id": "failover_timeline",
+            "runtime": {"run_id": "trial-1"},
+        },
+        [
+            {
+                "logical_id": "node-a",
+                "container_name": "host-a",
+                "container_id": "container-a",
+                "pid": 101,
+                "pid_file": "/tmp/node-a/valkey.pid",
+                "config_file": "/tmp/node-a/valkey.conf",
+                "client_port": 7001,
+            }
+        ],
+        command=command,
+    )
+
+    with pytest.raises(capture.CaptureError, match="SIGKILL batch failed"):
+        sender(SimpleNamespace(logical_id="node-a", pid=101), 9)
+
+    assert command_batches[0]["status"] == "FAIL"
+    assert command_batches[0]["returncode"] == "MISSING"
+    assert command_batches[0]["stdout"] == "MISSING"
+
+
+def test_run_29992169655_kill127_replay_uses_shell_bound_pid_argv() -> None:
+    recorded_fault = json.loads(
+        _historical_source_bytes(
+            "29992169655",
+            "failure_sources",
+            "fault",
+        )
+    )
+    recorded = recorded_fault["command_batches"][0]
+    target_pid = recorded["pids"][0]
+    assert "exit=127" in recorded["error"]
+    assert recorded["argv"][2] == "kill"
+
+    labels = {
+        "org.valkey-scale-lab.project": "valkey-scale-lab",
+        "org.valkey-scale-lab.capability_id": "failover_timeline",
+        "org.valkey-scale-lab.run_id": "trial-1",
+    }
+    calls: list[list[str]] = []
+
+    def command(argv: list[str], **_kwargs: object) -> SimpleNamespace:
+        calls.append(list(argv))
+        if argv[0] == "inspect":
+            return SimpleNamespace(
+                stdout=json.dumps(
+                    [
+                        {
+                            "Id": "owned-container-id",
+                            "Name": "/owned-container",
+                            "Config": {"Labels": labels},
+                        }
+                    ]
+                ),
+                returncode=0,
+                stderr="",
+            )
+        if argv[4] == capture.OWNED_PROCESS_IDENTITY_PROBE_SCRIPT:
+            return SimpleNamespace(
+                stdout="VSLAB_IDENTITY_VERIFIED\n",
+                stderr="",
+                returncode=0,
+            )
+        return SimpleNamespace(stdout="", stderr="", returncode=0)
+
+    sender, command_batches = capture._owned_sigkill_sender(
+        {
+            "capability_id": "failover_timeline",
+            "runtime": {"run_id": "trial-1"},
+        },
+        [
+            {
+                "logical_id": "node-a",
+                "container_name": "owned-container",
+                "container_id": "owned-container-id",
+                "pid": target_pid,
+                "pid_file": "/tmp/node-a/valkey.pid",
+                "config_file": "/tmp/node-a/valkey.conf",
+                "client_port": 7001,
+            }
+        ],
+        command=command,
+    )
+    repaired = command_batches[0]["argv"]
+    assert repaired[:4] == [
+        "exec",
+        "owned-container-id",
+        "sh",
+        "-c",
+    ]
+    assert repaired[2] != recorded["argv"][2]
+    assert repaired[4] == f"kill -KILL {target_pid}"
+
+    sender(SimpleNamespace(logical_id="node-a", pid=target_pid), 9)
+    assert calls[-1] == repaired
+    assert command_batches[0]["status"] == "PASS"
+    assert command_batches[0]["stdout"] == ""
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        {"runtime": {"run_id": "trial-1"}},
+        {"capability_id": "failover_timeline", "runtime": {"run_id": ""}},
+    ],
+)
+def test_owned_sigkill_requires_nonempty_runtime_ownership(
+    state: dict[str, object],
+) -> None:
+    with pytest.raises(capture.CaptureError, match="requires runtime ownership"):
+        capture._owned_sigkill_sender(
+            state,
+            [],
+            command=lambda *_args, **_kwargs: None,
+        )
+
+
+def test_owned_sigkill_rejects_out_of_range_pid_before_docker() -> None:
+    with pytest.raises(capture.CaptureError, match="complete container/process identity"):
+        capture._owned_sigkill_sender(
+            {
+                "capability_id": "failover_timeline",
+                "runtime": {"run_id": "trial-1"},
+            },
+            [
+                {
+                    "logical_id": "node-a",
+                    "container_name": "host-a",
+                    "container_id": "container-a",
+                    "pid": 2_147_483_648,
+                    "pid_file": "/tmp/node-a/valkey.pid",
+                    "config_file": "/tmp/node-a/valkey.conf",
+                    "client_port": 7001,
+                }
+            ],
+            command=lambda *_args, **_kwargs: pytest.fail("Docker must not run"),
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("container_name", "--help"),
+        ("container_name", "owned/container"),
+        ("container_id", "-owned-container-id"),
+        ("container_id", "owned\ncontainer"),
+        ("pid_file", "--help"),
+        ("config_file", "relative/valkey.conf"),
+    ],
+)
+def test_owned_sigkill_rejects_option_like_container_identity(
+    field: str,
+    value: str,
+) -> None:
+    target = {
+        "logical_id": "node-a",
+        "container_name": "owned-container",
+        "container_id": "owned-container-id",
+        "pid": 49,
+        "pid_file": "/tmp/node-a/valkey.pid",
+        "config_file": "/tmp/node-a/valkey.conf",
+        "client_port": 7001,
+    }
+    target[field] = value
+    with pytest.raises(capture.CaptureError, match="complete container/process identity"):
+        capture._owned_sigkill_sender(
+            {
+                "capability_id": "failover_timeline",
+                "runtime": {"run_id": "trial-1"},
+            },
+            [target],
+            command=lambda *_args, **_kwargs: pytest.fail("Docker must not run"),
+        )
+
+
+def test_owned_sigkill_rejects_one_container_id_with_multiple_names() -> None:
+    selected = [
+        {
+            "logical_id": f"node-{suffix}",
+            "container_name": f"host-{suffix}",
+            "container_id": "container-a",
+            "pid": pid,
+            "pid_file": f"/tmp/node-{suffix}/valkey.pid",
+            "config_file": f"/tmp/node-{suffix}/valkey.conf",
+            "client_port": port,
+        }
+        for suffix, pid, port in (("a", 101, 7001), ("b", 102, 7002))
+    ]
+
+    with pytest.raises(capture.CaptureError, match="container id maps to multiple container names"):
+        capture._owned_sigkill_sender(
+            {
+                "capability_id": "failover_timeline",
+                "runtime": {"run_id": "trial-1"},
+            },
+            selected,
+            command=lambda *_args, **_kwargs: pytest.fail("Docker must not run"),
+        )
+
+
+def test_owned_sigkill_rejects_runtime_container_rename() -> None:
+    labels = {
+        "org.valkey-scale-lab.project": "valkey-scale-lab",
+        "org.valkey-scale-lab.capability_id": "failover_timeline",
+        "org.valkey-scale-lab.run_id": "trial-1",
+    }
+    selected = [
+        {
+            "logical_id": "node-a",
+            "container_name": "host-a",
+            "container_id": "container-a",
+            "pid": 101,
+            "pid_file": "/tmp/node-a/valkey.pid",
+            "config_file": "/tmp/node-a/valkey.conf",
+            "client_port": 7001,
+        }
+    ]
+
+    with pytest.raises(capture.CaptureError, match="identity/ownership verification"):
+        capture._owned_sigkill_sender(
+            {
+                "capability_id": "failover_timeline",
+                "runtime": {"run_id": "trial-1"},
+            },
+            selected,
+            command=lambda *_args, **_kwargs: SimpleNamespace(
+                stdout=json.dumps(
+                    [
+                        {
+                            "Id": "container-a",
+                            "Name": "/renamed-host-a",
+                            "Config": {"Labels": labels},
+                        }
+                    ]
+                )
+            ),
+        )
+
+
+def test_owned_sigkill_rejects_duplicate_physical_process_identity() -> None:
+    selected = [
+        {
+            "logical_id": f"node-{suffix}",
+            "container_name": "host-a",
+            "container_id": "container-a",
+            "pid": 101,
+            "pid_file": f"/tmp/node-{suffix}/valkey.pid",
+            "config_file": f"/tmp/node-{suffix}/valkey.conf",
+            "client_port": port,
+        }
+        for suffix, port in (("a", 7001), ("b", 7002))
+    ]
+
+    with pytest.raises(capture.CaptureError, match="process identities are duplicated"):
+        capture._owned_sigkill_sender(
+            {
+                "capability_id": "failover_timeline",
+                "runtime": {"run_id": "trial-1"},
+            },
+            selected,
+            command=lambda *_args, **_kwargs: pytest.fail("Docker must not run"),
+        )
 
 
 def test_fault_topology_facts_require_expected_fail_and_promotion_only() -> None:
@@ -358,7 +1321,30 @@ def test_fault_topology_facts_require_expected_fail_and_promotion_only() -> None
     assert bad_facts["split_brain"] is True
 
 
-def test_fault_client_series_keeps_only_operations_started_after_sigkill() -> None:
+@pytest.mark.parametrize("master_id", ["MISSING", "r0"])
+def test_fault_topology_facts_reject_missing_or_cross_shard_replica_master(
+    master_id: str,
+) -> None:
+    view = _view(["master", "fail"], "primary")
+    if master_id == "MISSING":
+        del view["cluster_nodes"]["r1"]["master_id"]
+    else:
+        view["cluster_nodes"]["r1"]["master_id"] = master_id
+
+    facts = capture._fault_topology_facts(
+        [view],
+        initial_roles={"p0": "primary", "r0": "replica", "p1": "primary", "r1": "replica"},
+        node_shards={"p0": "s0", "r0": "s0", "p1": "s1", "r1": "s1"},
+        target_node_ids={"p0"},
+        replacement_node_ids={"r0"},
+        expected_nodes=4,
+    )
+
+    assert facts["clean_topology"] is False
+    assert facts["converged"] is False
+
+
+def test_fault_client_series_retains_raw_attempts_but_summarizes_closed_fault_window() -> None:
     probe = capture.FaultClientProbe("s0", "key", "value", None, True)
     probe.samples = [
         {
@@ -391,18 +1377,463 @@ def test_fault_client_series_keeps_only_operations_started_after_sigkill() -> No
             "moved_count": 0,
             "ask_count": 0,
         },
+        {
+            "started_at_monotonic": 10.21,
+            "completed_at_monotonic": 10.22,
+            "set_completed_at_monotonic": 10.215,
+            "get_completed_at_monotonic": 10.22,
+            "set_succeeded": True,
+            "get_succeeded": True,
+            "value_matches": True,
+            "timed_out": False,
+            "error": "",
+            "latency_ms": 10.0,
+            "status": "PASS",
+            "moved_count": 0,
+            "ask_count": 0,
+        },
     ]
 
     series = capture._fault_client_series(
         [probe],
         {"sigkill_barrier": 10.0},
-        [{"shard_id": "s0", "endpoint_monotonic": 10.1}],
+        0.2,
     )[0]
 
-    assert series["attempt_started_monotonic"] == [10.09]
-    assert len(series["samples_through_stable_endpoint"]) == 1
-    assert series["samples_through_stable_endpoint"][0]["set_completed_at_monotonic"] == 10.095
-    assert series["samples_through_stable_endpoint"][0]["get_completed_at_monotonic"] == 10.1
+    assert [row["started_at_monotonic"] for row in series["attempts"]] == [
+        9.99,
+        10.09,
+        10.21,
+    ]
+    assert series["attempt_count"] == 1
+    assert series["set_success_count"] == 1
+    assert {
+        "attempt_started_monotonic",
+        "successful_pair_latencies_ms",
+        "samples_through_stable_endpoint",
+    }.isdisjoint(series)
+
+
+def test_fault_trial_summary_stays_bounded_at_full_matrix_cardinality() -> None:
+    targets = [
+        {
+            "logical_id": f"node-{index:03d}",
+            "shard_id": f"shard-{index:03d}",
+            "pid": 1000 + index,
+            "ownership_id": "capacity-run",
+            "process_gone": True,
+            "physical_fault_id": f"capacity-run:{index}",
+            "process_gone_at_monotonic_ms": 100000.0 + index,
+            "valkey_node_id": f"valkey-{index:03d}",
+        }
+        for index in range(33)
+    ]
+    raw_fault = {
+        "status": "PASS",
+        "errors": [],
+        "mode": "owned-process-sigkill",
+        "signal": "SIGKILL",
+        "commands": [
+            f"docker exec container-{index} sh -c 'kill -KILL {1000 + index}'"
+            for index in range(4)
+        ],
+        "barrier_monotonic": 100.0,
+        "primary_count": 100,
+        "failed_primary_count": 33,
+        "injection_skew_ms": 1.0,
+        "signal_barrier_span_ms": 1.0,
+        "targets": targets,
+    }
+    summary_without_rounds = capture._compact_fault_summary(raw_fault)
+    raw_fault.update(
+        {
+            "observer_rounds": [
+                {
+                    "at_monotonic": 100.0 + index / 10.0,
+                    "views": [{"cluster_nodes": {"raw": "x" * 4096}}],
+                }
+                for index in range(1201)
+            ],
+            "every_node_convergence_views": [
+                {"cluster_nodes": {"raw": "x" * 4096}}
+                for _index in range(199)
+            ],
+            "initial_roles": {f"node-{index:03d}": "primary" for index in range(200)},
+            "node_shards": {f"node-{index:03d}": f"shard-{index // 2:03d}" for index in range(200)},
+        }
+    )
+
+    summary_with_rounds = capture._compact_fault_summary(raw_fault)
+
+    assert summary_with_rounds == summary_without_rounds
+    assert {
+        "observer_rounds",
+        "every_node_convergence_views",
+        "initial_roles",
+        "node_shards",
+    }.isdisjoint(summary_with_rounds)
+    retained_report = json.dumps(
+        {"trials": [{"fault": summary_with_rounds} for _index in range(366)]},
+        sort_keys=True,
+        allow_nan=False,
+    )
+    assert len(retained_report.encode("utf-8")) < 32 * 1024 * 1024
+
+
+def test_fault_views_keep_only_gate_consumed_cluster_node_fields() -> None:
+    node_id = "a" * 40
+    compact = capture._compact_fault_views(
+        [
+            {
+                "logical_id": "node-1",
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_known_nodes": 1,
+                "cluster_nodes": {
+                    node_id: {
+                        "node_id": node_id,
+                        "flags": ["myself", "master"],
+                        "role": "primary",
+                        "slots": ["0-16383"],
+                        "link_state": "connected",
+                        "addr": "127.0.0.1:7000@17000",
+                        "master_id": "-",
+                    }
+                },
+            }
+        ],
+        {node_id},
+        {node_id},
+    )[0]
+
+    assert compact["cluster_nodes"][node_id] == {
+        "node_id": node_id,
+        "addr": "127.0.0.1:7000@17000",
+        "flags": ["myself", "master"],
+        "role": "primary",
+        "master_id": "-",
+        "slots": ["0-16383"],
+        "link_state": "connected",
+    }
+    assert compact["target_flags"] == {node_id: ["myself", "master"]}
+    assert compact["replacement_roles"] == {node_id: "primary"}
+
+
+def test_fault_topology_view_interning_preserves_rounds_and_transition() -> None:
+    stable_views = [
+        {
+            "logical_id": f"node-{observer:03d}",
+            "status": "PASS",
+            "cluster_nodes": {
+                f"node-{node:03d}": {
+                    "node_id": f"node-{node:03d}",
+                    "flags": ["master"],
+                    "role": "primary",
+                    "master_id": "-",
+                    "slots": [f"{node}-{node}"],
+                    "link_state": "connected",
+                }
+                for node in range(50)
+            },
+        }
+        for observer in range(3)
+    ]
+    transitioned_views = json.loads(json.dumps(stable_views))
+    transitioned_views[0]["cluster_nodes"]["node-000"]["flags"].append("fail")
+    rounds = [
+        {
+            "at_monotonic": float(index),
+            "facts": {"converged": index >= 64},
+            "views": stable_views if index < 64 else transitioned_views,
+        }
+        for index in range(128)
+    ]
+
+    topology_view_entries: dict[str, dict] = {}
+    encoded_rounds = [
+        {
+            **{key: value for key, value in round_row.items() if key != "views"},
+            "views_sha256": capture._intern_fault_topology_view(
+                topology_view_entries,
+                round_row["views"],
+            ),
+        }
+        for round_row in rounds
+    ]
+    convergence_ref = capture._intern_fault_topology_view(
+        topology_view_entries,
+        transitioned_views,
+    )
+    interned = {
+        "observer_rounds": encoded_rounds,
+        "topology_view_dictionary": [
+            topology_view_entries[digest]
+            for digest in sorted(topology_view_entries)
+        ],
+        "every_node_convergence_views_sha256": convergence_ref,
+    }
+    dictionary = {
+        entry["sha256"]: entry["views"]
+        for entry in interned["topology_view_dictionary"]
+    }
+    expanded = [
+        dictionary[round_row["views_sha256"]]
+        for round_row in interned["observer_rounds"]
+    ]
+    inline_size = len(
+        json.dumps(
+            {
+                "observer_rounds": rounds,
+                "every_node_convergence_views": transitioned_views,
+            },
+            sort_keys=True,
+        )
+    )
+    interned_size = len(json.dumps(interned, sort_keys=True))
+
+    assert len(interned["observer_rounds"]) == len(rounds)
+    assert len(dictionary) == 2
+    assert all(
+        entry["sha256"] == capture._digest(entry["views"])
+        for entry in interned["topology_view_dictionary"]
+    )
+    assert all("views" not in round_row for round_row in encoded_rounds)
+    assert expanded == [round_row["views"] for round_row in rounds]
+    assert expanded[63] != expanded[64]
+    assert (
+        dictionary[interned["every_node_convergence_views_sha256"]]
+        == transitioned_views
+    )
+    assert interned_size < inline_size // 10
+
+
+def test_capture_json_writer_uses_compact_encoding(tmp_path: Path) -> None:
+    path = tmp_path / "evidence.json"
+    capture._write_json(path, {"b": [2, 3], "a": 1})
+
+    assert path.read_text(encoding="utf-8") == '{"a":1,"b":[2,3]}\n'
+
+
+def test_success_source_gzip_is_deterministic_and_lossless(tmp_path: Path) -> None:
+    payload = b'{"attempts":[{"started_at_monotonic":1.0}],"status":"PASS"}\n'
+    first = tmp_path / "first.json"
+    second = tmp_path / "second.json"
+    first.write_bytes(payload)
+    second.write_bytes(payload)
+
+    first_gzip = capture._gzip_trial_json_source(first)
+    second_gzip = capture._gzip_trial_json_source(second)
+
+    assert not first.exists()
+    assert not second.exists()
+    assert first_gzip.read_bytes() == second_gzip.read_bytes()
+    with gzip.open(first_gzip, "rb") as handle:
+        assert handle.read() == payload
+
+
+def _write_supporting_archive_case(root: Path) -> tuple[capture.CaptureContext, Path, list[Path]]:
+    trial_dir = root / "trials" / "trial-a"
+    sidecar_dir = root / "trials" / "logs" / "commands"
+    (trial_dir / "node_configs").mkdir(parents=True)
+    sidecar_dir.mkdir(parents=True)
+    state = trial_dir / "state.json"
+    state.write_text('{"status":"PASS"}\n', encoding="utf-8")
+    wrapper = trial_dir / "capture_wrapper_commands.json"
+    wrapper.write_bytes(b'{"setup":{"stdout":"exact"}}\n')
+    config = trial_dir / "node_configs" / "node.conf"
+    config.write_bytes(b"port 7000\n")
+    config.chmod(0o640)
+    stdout = sidecar_dir / "cmd-000001.stdout.log"
+    stderr = sidecar_dir / "cmd-000001.stderr.log"
+    stdout.write_bytes(b"command output\n")
+    stderr.write_bytes(b"")
+    command = trial_dir / "command_log.jsonl"
+    command.write_text(
+        json.dumps(
+            {
+                "stdout_path": str(stdout),
+                "stdout_sha256": hashlib.sha256(stdout.read_bytes()).hexdigest(),
+                "stderr_path": str(stderr),
+                "stderr_sha256": hashlib.sha256(stderr.read_bytes()).hexdigest(),
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    context = capture.CaptureContext(
+        args=SimpleNamespace(run_id="archive-test"),
+        artifacts_dir=root,
+        report_path=root / capture.REPORT_NAME,
+    )
+    return context, trial_dir, [state, command]
+
+
+def test_success_supporting_archive_is_deterministic_and_preserves_sources(
+    tmp_path: Path,
+) -> None:
+    outputs = []
+    for name in ("one", "two"):
+        context, trial_dir, sources = _write_supporting_archive_case(tmp_path / name)
+        source_bytes = {path.name: path.read_bytes() for path in sources}
+        archive_path = capture._archive_success_supporting_artifacts(
+            context,
+            trial_dir,
+            gate_source_paths=sources,
+            command_path=sources[1],
+        )
+        outputs.append(archive_path.read_bytes())
+
+        assert {path.name: path.read_bytes() for path in sources} == source_bytes
+        assert not (trial_dir / "capture_wrapper_commands.json").exists()
+        assert not (trial_dir / "node_configs" / "node.conf").exists()
+        with tarfile.open(archive_path, "r:gz") as archive:
+            members = archive.getmembers()
+            assert [member.name for member in members] == sorted(
+                [
+                    "trials/logs/commands/cmd-000001.stderr.log",
+                    "trials/logs/commands/cmd-000001.stdout.log",
+                    "trials/trial-a/capture_wrapper_commands.json",
+                    "trials/trial-a/node_configs/node.conf",
+                ]
+            )
+            extracted = {
+                member.name: archive.extractfile(member).read()
+                for member in members
+            }
+            assert extracted["trials/logs/commands/cmd-000001.stdout.log"] == (
+                b"command output\n"
+            )
+            assert extracted["trials/trial-a/node_configs/node.conf"] == b"port 7000\n"
+            assert next(
+                member
+                for member in members
+                if member.name == "trials/trial-a/node_configs/node.conf"
+            ).mode == 0o640
+
+    assert outputs[0] == outputs[1]
+
+
+@pytest.mark.parametrize("failure", ["digest", "duplicate", "missing", "escape", "symlink"])
+def test_supporting_sidecars_fail_closed(
+    tmp_path: Path,
+    failure: str,
+) -> None:
+    context, trial_dir, sources = _write_supporting_archive_case(tmp_path)
+    command_path = sources[1]
+    row = json.loads(command_path.read_text(encoding="utf-8"))
+    if failure == "digest":
+        row["stdout_sha256"] = "0" * 64
+    elif failure == "duplicate":
+        row["stderr_path"] = row["stdout_path"]
+        row["stderr_sha256"] = row["stdout_sha256"]
+    elif failure == "missing":
+        row["stdout_path"] = str(tmp_path / "missing.log")
+    elif failure == "escape":
+        outside = tmp_path.parent / "outside.log"
+        outside.write_bytes(b"outside")
+        row["stdout_path"] = str(outside)
+        row["stdout_sha256"] = hashlib.sha256(b"outside").hexdigest()
+    else:
+        target = Path(row["stdout_path"])
+        replacement = target.with_name("symlink-target.log")
+        replacement.write_bytes(target.read_bytes())
+        target.unlink()
+        target.symlink_to(replacement)
+    command_path.write_text(json.dumps(row, sort_keys=True) + "\n", encoding="utf-8")
+
+    with pytest.raises(capture.CaptureError):
+        capture._archive_success_supporting_artifacts(
+            context,
+            trial_dir,
+            gate_source_paths=sources,
+            command_path=command_path,
+        )
+
+    assert not (trial_dir / "supporting_artifacts.tar.gz").exists()
+    assert (trial_dir / "capture_wrapper_commands.json").is_file()
+
+
+def test_fixed_complete_matrix_file_count_stays_below_seal_limit() -> None:
+    formation_trials = 4 * 2 + 4 * 3 * 7 * 2
+    failover_trials = 3 * 2 + 3 * 2 * 3 * 10 * 2
+    stability_trials = 3 * 2
+    maximum_source_and_archive_files_per_trial = 11
+    bounded_top_level_files = 32
+
+    largest_single_gate_run = max(
+        formation_trials,
+        failover_trials,
+        stability_trials,
+    )
+    projected_files = (
+        largest_single_gate_run * maximum_source_and_archive_files_per_trial
+        + bounded_top_level_files
+    )
+
+    assert (formation_trials, failover_trials, stability_trials) == (176, 366, 6)
+    assert largest_single_gate_run == failover_trials
+    assert projected_files == 4058
+    assert projected_files < 10_000
+
+
+def test_valid_setup_resource_window_is_compacted_before_digesting(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "resource_window.json"
+    report = {"status": "PASS", "samples": [{"sample_index": 0}]}
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    validated = False
+
+    def validate(value: dict, **kwargs: object) -> dict:
+        nonlocal validated
+        validated = True
+        assert kwargs == {
+            "allow_initial_membership_transitions": True,
+            "allow_safety_failure_evidence": False,
+        }
+        return value
+
+    monkeypatch.setattr(capture, "_validate_resource_report", validate)
+    monkeypatch.setattr(
+        capture,
+        "_intern_resource_directional_links",
+        lambda value: value,
+    )
+
+    assert capture._load_resource_window(path) == report
+    assert validated is True
+    assert path.read_text(encoding="utf-8") == (
+        '{"samples":[{"sample_index":0}],"status":"PASS"}\n'
+    )
+
+
+def test_resource_writer_streams_json_without_materializing_encoded_document(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "resource_window.json"
+    report = {
+        "status": "PASS",
+        "samples": [{"sample_index": 0}],
+        "directional_cluster_links_dictionary": [
+            {
+                "sha256": "a" * 64,
+                "directional_cluster_links": [],
+            }
+        ],
+    }
+
+    def fail_dumps(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("resource writer must use JSONEncoder.iterencode")
+
+    monkeypatch.setattr(capture.json, "dumps", fail_dumps)
+    capture._write_resource_json(path, report)
+
+    assert json.loads(path.read_text(encoding="utf-8")) == report
 
 
 def test_first_fault_success_ignores_operation_started_before_sigkill() -> None:
@@ -451,6 +1882,42 @@ def test_first_fault_success_ignores_operation_started_before_sigkill() -> None:
         "first_affected_write": 10.095,
         "first_affected_read": 10.1,
     }
+
+
+def test_fault_recovery_ignores_operation_started_after_closed_window() -> None:
+    probe = capture.FaultClientProbe("s0", "key", "value", None, True)
+    probe.samples = [
+        {
+            "started_at_monotonic": 10.21,
+            "completed_at_monotonic": 10.22,
+            "set_completed_at_monotonic": 10.215,
+            "get_completed_at_monotonic": 10.22,
+            "set_succeeded": True,
+            "get_succeeded": True,
+            "value_matches": True,
+            "timed_out": False,
+            "error": "",
+        }
+    ]
+    accumulator = StableShardAccumulator(
+        window_ms=1000.0,
+        min_pairs=10,
+        max_pair_interval_ms=100.0,
+    )
+    first_success: dict[str, float] = {}
+
+    capture._consume_fault_samples(
+        [probe],
+        threading.Lock(),
+        {"s0": 0},
+        accumulator,
+        {"sigkill_barrier": 10.0, "all_slots_covered_cluster_ok": 10.0},
+        first_success,
+        window_end=10.2,
+    )
+
+    assert first_success == {}
+    assert accumulator.samples == {}
 
 
 def test_fault_markers_and_intervals_are_observed_and_ordered() -> None:
@@ -520,11 +1987,16 @@ def test_stable_shard_evidence_is_earliest_one_second_consecutive_window() -> No
 
 def test_fault_cadence_and_missing_facts_fail_closed() -> None:
     probe = capture.FaultClientProbe("s0", "{s0}:value", "value", object(), True)
+    control = capture.FaultClientProbe("s1", "{s1}:value", "value", object(), False)
     probe.samples = [
         {"started_at_monotonic": round(10.01 + (index * 0.09), 6)}
         for index in range(12)
     ]
-    cadence = capture._fault_cadence([probe], 10.0, 1.0)
+    control.samples = [
+        {"started_at_monotonic": round(10.01 + (index * 0.09), 6)}
+        for index in range(12)
+    ]
+    cadence = capture._fault_cadence([probe, control], 10.0, 1.0)
     markers = dict(zip(capture._fault_marker_names(), [10.0, 10.01, 10.1, 10.2, 10.3, 10.4, 11.4, 11.5]))
     convergence = {
         "converged": True,
@@ -534,6 +2006,12 @@ def test_fault_cadence_and_missing_facts_fail_closed() -> None:
         "split_brain": False,
         "slot_loss": False,
     }
+    post_convergence_rounds = [
+        {
+            "at_monotonic": 11.6,
+            "facts": dict(convergence),
+        }
+    ]
 
     assert cadence["status"] == "PASS"
     assert capture._missing_fault_facts(
@@ -542,18 +2020,45 @@ def test_fault_cadence_and_missing_facts_fail_closed() -> None:
         {"status": "PASS", "required_shards": ["s0"]},
         [{"shard_id": "s0", "window_seconds": 1, "consecutive_pairs": 10, "errors": 0, "timeouts": 0, "earliest_qualifying": True}],
         cadence,
+        post_convergence_rounds,
         convergence,
         {"unexpected_pfail": 0, "unexpected_fail": 0, "unexpected_promotions": 0, "split_brain": False},
     ) == []
 
+    no_post_convergence = capture._missing_fault_facts(
+        markers,
+        {"first_affected_write": 10.4, "first_affected_read": 10.5},
+        {"status": "PASS", "required_shards": ["s0"]},
+        [{"shard_id": "s0", "window_seconds": 1, "consecutive_pairs": 10, "errors": 0, "timeouts": 0, "earliest_qualifying": True}],
+        cadence,
+        [{"at_monotonic": 11.5, "facts": dict(convergence)}],
+        convergence,
+        {"unexpected_pfail": 0, "unexpected_fail": 0, "unexpected_promotions": 0, "split_brain": False},
+    )
+    assert "no fixed observation round followed every-node convergence" in no_post_convergence
+
+    regressed = dict(convergence, slot_loss=True, converged=False)
+    post_convergence_regression = capture._missing_fault_facts(
+        markers,
+        {"first_affected_write": 10.4, "first_affected_read": 10.5},
+        {"status": "PASS", "required_shards": ["s0"]},
+        [{"shard_id": "s0", "window_seconds": 1, "consecutive_pairs": 10, "errors": 0, "timeouts": 0, "earliest_qualifying": True}],
+        cadence,
+        [{"at_monotonic": 11.6, "facts": regressed}],
+        convergence,
+        {"unexpected_pfail": 0, "unexpected_fail": 0, "unexpected_promotions": 0, "split_brain": False},
+    )
+    assert "post-convergence topology observation regressed" in post_convergence_regression
+
     probe.samples.pop(5)
-    broken = capture._fault_cadence([probe], 10.0, 1.0)
+    broken = capture._fault_cadence([probe, control], 10.0, 1.0)
     errors = capture._missing_fault_facts(
         markers,
         {"first_affected_write": 10.4, "first_affected_read": 10.5},
         {"status": "PASS", "required_shards": ["s0"]},
         [{"shard_id": "s0", "window_seconds": 1, "consecutive_pairs": 10, "errors": 0, "timeouts": 0, "earliest_qualifying": True}],
         broken,
+        post_convergence_rounds,
         convergence,
         {"unexpected_pfail": 0, "unexpected_fail": 0, "unexpected_promotions": 0, "split_brain": False},
     )
@@ -610,6 +2115,11 @@ def test_fault_resource_window_samples_all_owned_processes_before_barrier(
         lambda report, **_kwargs: {"status": "PASS", "errors": [], "metrics": report["metrics"]},
     )
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+    monkeypatch.setattr(
+        capture,
+        "_intern_resource_directional_links",
+        lambda value: value,
+    )
 
     report = capture._capture_resource_window(
         tmp_path,
@@ -678,14 +2188,19 @@ def test_resource_report_validation_uses_raw_derived_metrics(
 
 def test_owned_pid_observation_distinguishes_gone_from_probe_failure() -> None:
     target = SimpleNamespace(logical_id="node-1", pid=123)
+    calls: list[list[str]] = []
 
     def result(returncode: int, stdout: str, stderr: str = "") -> SimpleNamespace:
         return SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
 
+    def alive_command(args: list[str], **_kwargs: object) -> SimpleNamespace:
+        calls.append(args)
+        return result(0, "VSLAB_PRESENT")
+
     assert capture._owned_pid_is_alive(
         {"container_id": "owned-container"},
         target,
-        command=lambda *_args, **_kwargs: result(0, "VSLAB_ALIVE"),
+        command=alive_command,
     ) is True
     assert capture._owned_pid_is_alive(
         {"container_id": "owned-container"},
@@ -697,6 +2212,22 @@ def test_owned_pid_observation_distinguishes_gone_from_probe_failure() -> None:
             {"container_id": "owned-container"},
             target,
             command=lambda *_args, **_kwargs: result(125, "", "docker unavailable"),
+        )
+    assert calls[0][:4] == ["exec", "owned-container", "sh", "-c"]
+    assert calls[0][-2:] == ["sh", "123"]
+    assert "stat_tail=${stat_line##*) }" in calls[0][4]
+    assert "awk" not in calls[0][4]
+    assert '[ ! -e "$stat_path" ]' in calls[0][4]
+    assert "VSLAB_UNREADABLE" in calls[0][4]
+
+
+@pytest.mark.parametrize("pid", [True, 0, 1, -1, "123; touch /tmp/unsafe"])
+def test_owned_pid_observation_rejects_unsafe_pid_before_docker(pid: object) -> None:
+    with pytest.raises(capture.CaptureError, match="identity is unsafe"):
+        capture._owned_pid_is_alive(
+            {"container_id": "owned-container"},
+            SimpleNamespace(logical_id="node-1", pid=pid),
+            command=lambda *_args, **_kwargs: pytest.fail("Docker must not run"),
         )
 
 
