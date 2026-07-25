@@ -19,6 +19,9 @@ from valkey_scale_lab.runtime.setup_timeline import REQUIRED_SETUP_SEGMENTS
 
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "m2_performance_capture.py"
+sys.path.insert(0, str(SCRIPT.parent))
+import valkey_probe_lib  # noqa: E402
+
 SPEC = importlib.util.spec_from_file_location("m2_performance_capture_fault_test", SCRIPT)
 assert SPEC and SPEC.loader
 capture = importlib.util.module_from_spec(SPEC)
@@ -1319,6 +1322,48 @@ def test_fault_topology_facts_require_expected_fail_and_promotion_only() -> None
     assert bad_facts["converged"] is False
     assert bad_facts["unexpected_promotions"] == 1
     assert bad_facts["split_brain"] is True
+
+
+def test_fault_topology_facts_accept_production_primary_master_null() -> None:
+    nodes = valkey_probe_lib.parse_cluster_nodes(
+        "\n".join(
+            [
+                "p0 127.0.0.1:7000@17000 fail,master - 0 0 1 disconnected",
+                "r0 127.0.0.1:7001@17001 master - 0 0 2 connected 0-8191",
+                "p1 127.0.0.1:7002@17002 master - 0 0 3 connected 8192-16383",
+                "r1 127.0.0.1:7003@17003 slave p1 0 0 4 connected",
+            ]
+        )
+    )
+    assert nodes["p0"]["master_id"] is None
+    assert nodes["r0"]["master_id"] is None
+
+    facts = capture._fault_topology_facts(
+        [
+            {
+                "logical_id": "observer",
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_known_nodes": 4,
+                "cluster_nodes": nodes,
+            }
+        ],
+        initial_roles={
+            "p0": "primary",
+            "r0": "replica",
+            "p1": "primary",
+            "r1": "replica",
+        },
+        node_shards={"p0": "s0", "r0": "s0", "p1": "s1", "r1": "s1"},
+        target_node_ids={"p0"},
+        replacement_node_ids={"r0"},
+        expected_nodes=4,
+    )
+
+    assert facts["clean_topology"] is True
+    assert facts["converged"] is True
 
 
 @pytest.mark.parametrize("master_id", ["MISSING", "r0"])

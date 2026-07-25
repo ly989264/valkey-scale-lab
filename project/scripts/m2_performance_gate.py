@@ -3574,8 +3574,14 @@ def _recompute_compact_fault_facts(
                 and slots_structurally_valid
                 and role in {"primary", "replica"}
                 and node.get("role") == role
-                and isinstance(master_id, str)
-                and bool(master_id)
+                and (
+                    (role == "primary" and master_id in {None, "-"})
+                    or (
+                        role == "replica"
+                        and isinstance(master_id, str)
+                        and bool(master_id)
+                    )
+                )
                 and node.get("link_state") in {"connected", "disconnected"}
             )
             clean_topology = clean_topology and row_contract
@@ -3591,7 +3597,7 @@ def _recompute_compact_fault_facts(
                 unexpected_promotion_ids.add(node_id)
             if role == "replica" and raw_slots:
                 clean_topology = False
-            if role == "primary" and master_id != "-":
+            if role == "primary" and master_id not in {None, "-"}:
                 clean_topology = False
             if role == "replica":
                 master = _object(nodes.get(master_id)) if isinstance(master_id, str) else {}
