@@ -157,7 +157,7 @@ def _campaign(
     status: str,
     errors: list[str],
 ) -> dict[str, Any]:
-    return {
+    campaign = {
         "campaign_id": str(context.args.run_id),
         "invocation_run_id": str(context.args.run_id),
         "experiment_kind": str(context.args.mode),
@@ -179,6 +179,9 @@ def _campaign(
         "source_refs": capture._unique_refs(context.source_refs),
         "errors": errors,
     }
+    if context.args.mode == "formation":
+        campaign["candidate_screen_version"] = capture.FORMATION_CANDIDATE_SCREEN_VERSION
+    return campaign
 
 
 def _candidate_results(campaigns: Mapping[str, Mapping[str, Any]]) -> dict[str, list[dict[str, Any]]]:

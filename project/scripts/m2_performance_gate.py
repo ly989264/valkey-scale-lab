@@ -707,8 +707,11 @@ def _validate_formation_discovery(
         if isinstance(item.get("value"), str)
         and "addslotsrange" in item["value"].lower()
     ]
+    screen_version = report.get("candidate_screen_version")
+    expected_parallelism = {2, 4, 8, 16} if screen_version == "v2" else {4, 8, 16}
+    _add(errors, screen_version in {None, "v2"}, "formation discovery candidate screen version is unknown")
     _add(errors, len(manual) == 1, "formation discovery must include the existing manual-tree diagnostic")
-    _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == {4, 8, 16}, "formation discovery must include bounded ADDSLOTSRANGE parallelism 4, 8, and 16")
+    _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == expected_parallelism, "formation discovery must include the declared bounded ADDSLOTSRANGE parallelism screen")
     candidate_keys = [_treatment_key(item) for item in candidates]
     expected_candidate_keys = {
         ("cluster_create_strategy", "manual_tree_meet_parallel_slots", None, None, None),
@@ -720,7 +723,7 @@ def _validate_formation_discovery(
                 None,
                 None,
             )
-            for parallelism in (4, 8, 16)
+            for parallelism in sorted(expected_parallelism)
         },
     }
     _add(
@@ -1404,7 +1407,12 @@ def validate_discovery_campaign(
         "source_refs",
         "errors",
     }
-    _add(errors, set(report) == required, "discovery campaign fields are incomplete or unexpected")
+    _add(
+        errors,
+        set(report) == required
+        or set(report) == required | {"candidate_screen_version"},
+        "discovery campaign fields are incomplete or unexpected",
+    )
     _add(errors, expected_kind in {"formation", "failover"}, "discovery campaign kind is unsupported")
     _add(errors, report.get("experiment_kind") == expected_kind, "discovery campaign kind does not match")
     _add(errors, report.get("campaign_id") == expected_invocation_run_id, "discovery campaign id does not match this invocation")

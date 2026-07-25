@@ -2564,7 +2564,7 @@ def test_formation_discovery_helper_runs_only_fixed_exact_50_pairs(
 
     survivors = capture.capture_formation_discovery(context)
 
-    assert len(calls) == 4
+    assert len(calls) == 5
     assert all(
         call["scale"] == 50
         and call["sequence"] == 1
@@ -2572,6 +2572,12 @@ def test_formation_discovery_helper_runs_only_fixed_exact_50_pairs(
         for call in calls
     )
     assert [call["candidate"] for call in calls] == capture._formation_candidates()
+    assert [candidate["bounded_parallelism"] for candidate in capture._formation_candidates()[1:]] == [
+        2,
+        4,
+        8,
+        16,
+    ]
     assert all(cell["required_pairs"] == 1 for cell in context.cells)
     assert [candidate["bounded_parallelism"] for candidate, _ in survivors] == [8]
 

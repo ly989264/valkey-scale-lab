@@ -306,7 +306,7 @@ def test_cluster_create_parallelism_defaults_to_8(monkeypatch: pytest.MonkeyPatc
 
 
 def test_cluster_create_parallelism_accepts_discovery_values(monkeypatch: pytest.MonkeyPatch) -> None:
-    for value in ("4", "8", "16"):
+    for value in ("2", "4", "8", "16"):
         monkeypatch.setenv("VSLAB_CLUSTER_CREATE_PARALLELISM", value)
         assert docker_runtime._cluster_create_parallelism() == int(value)
         assert docker_runtime._cluster_create_parallelism_source() == "env:VSLAB_CLUSTER_CREATE_PARALLELISM"
