@@ -1716,6 +1716,7 @@ class BoundaryTests(unittest.TestCase):
         failure_scope: str = "formation",
         invalid_samples: list[dict[str, str]] | None = None,
         legacy_empty_failover: bool = False,
+        formation_screen_version: str | None = None,
     ) -> tuple[dict, Path, Path]:
         root = Path(temporary)
         evidence = root / "evidence"
@@ -1762,7 +1763,7 @@ class BoundaryTests(unittest.TestCase):
                         }
                     )
                 started = [trial["trial_id"] for trial in trials]
-            return {
+            result = {
                 "campaign_id": invocation,
                 "invocation_run_id": invocation,
                 "experiment_kind": kind,
@@ -1790,6 +1791,9 @@ class BoundaryTests(unittest.TestCase):
                 "source_refs": [dict(source_ref)] if started else [],
                 "errors": [error] if error and campaign_status == "FAIL" else [],
             }
+            if kind == "formation" and formation_screen_version is not None:
+                result["candidate_screen_version"] = formation_screen_version
+            return result
 
         formation_losing_cell = {
             "cell_id": "formation-discovery-test",
@@ -1928,6 +1932,33 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(result["disposition"], "CANDIDATE_SELECTION_ONLY")
         self.assertEqual(loaded["status"], "PASS")
         self.assertEqual(loaded["failure_scope"], "")
+
+    def test_v2_formation_discovery_screen_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            result, sealed, evidence = self._seal_discovery_fixture(
+                temporary,
+                status="PASS",
+                formation_screen_version="v2",
+            )
+            loaded = load_m2_discovery_result(
+                result_path=sealed,
+                evidence_root=evidence,
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="123",
+                run_attempt="2",
+            )
+        self.assertEqual(result["disposition"], "CANDIDATE_SELECTION_ONLY")
+        self.assertEqual(loaded["status"], "PASS")
+
+    def test_unknown_formation_discovery_screen_version_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            result, _sealed, _evidence = self._seal_discovery_fixture(
+                temporary,
+                status="PASS",
+                formation_screen_version="v3",
+            )
+        self.assertEqual(result["status"], "BLOCKED")
 
     def test_valid_phase_failure_is_repairable_without_exception_taxonomy(self) -> None:
         reason = "formation collector called an invalid API"
