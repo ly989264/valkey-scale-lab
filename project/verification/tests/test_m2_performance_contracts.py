@@ -3575,13 +3575,48 @@ def test_fault_command_source_rejects_coordinated_failover(tmp_path: Path) -> No
     report, trial = _fault_source_report()
     paths = _write_valid_trial_sources(report, trial, tmp_path)
     command = json.loads(paths["command_log"].read_text(encoding="utf-8"))
-    command["argv"] = ["valkey-cli", "CLUSTER", "FAILOVER", "TAKEOVER"]
+    command["argv"] = [
+        "docker",
+        "exec",
+        "m2-failover-discovery",
+        "valkey-cli",
+        "-c",
+        "-p",
+        "7400",
+        "CLUSTER",
+        "FAILOVER",
+        "TAKEOVER",
+    ]
     command["command_kind"] = "cluster_failover"
     _rewrite_bound_source(report, trial, paths["command_log"], "command_log", command)
 
     errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
 
-    assert any("uses FAILOVER, FORCE, or TAKEOVER" in error for error in errors)
+    assert any("uses CLUSTER FAILOVER" in error for error in errors)
+
+
+def test_fault_command_source_ignores_noncommand_failover_text(tmp_path: Path) -> None:
+    report, trial = _fault_source_report()
+    paths = _write_valid_trial_sources(report, trial, tmp_path)
+    command = json.loads(paths["command_log"].read_text(encoding="utf-8"))
+    command["argv"] = [
+        "docker",
+        "exec",
+        "m2-failover-discovery",
+        "valkey-cli",
+        "-c",
+        "-p",
+        "7400",
+        "SET",
+        "CLUSTER",
+        "FAILOVER",
+    ]
+    command["command_kind"] = "runtime_command"
+    _rewrite_bound_source(report, trial, paths["command_log"], "command_log", command)
+
+    errors = M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path)
+
+    assert not any("uses CLUSTER FAILOVER" in error for error in errors)
 
 
 def test_empty_command_source_fails_closed() -> None:
@@ -4814,6 +4849,9 @@ def test_discovery_producer_replaces_current_phase_after_validation_failure(
             source_refs=[],
         )
 
+    validation_errors = ["x" * 5000] + [
+        f"validation error {index}" for index in range(10)
+    ]
     monkeypatch.setattr(DISCOVERY, "_context", context)
     monkeypatch.setattr(DISCOVERY.capture, "_product_digest", lambda: SHA)
     monkeypatch.setattr(DISCOVERY.capture, "_environment_facts", lambda: {})
@@ -4824,7 +4862,7 @@ def test_discovery_producer_replaces_current_phase_after_validation_failure(
     monkeypatch.setattr(
         DISCOVERY.admission,
         "validate_discovery_campaign",
-        lambda *_args, **_kwargs: ["producer/gate mismatch"],
+        lambda *_args, **_kwargs: list(validation_errors),
     )
     monkeypatch.setattr(
         DISCOVERY.admission,
@@ -4841,6 +4879,14 @@ def test_discovery_producer_replaces_current_phase_after_validation_failure(
     assert report["campaigns"]["formation"]["status"] == "FAIL"
     assert report["campaigns"]["formation"]["errors"] == report["errors"]
     assert "failover" not in report["campaigns"]
+    assert len(report["errors"]) == DISCOVERY.MAX_REPORT_ERRORS
+    assert all(
+        len(error) <= DISCOVERY.MAX_REPORT_ERROR_CHARS
+        for error in report["errors"]
+    )
+    assert report["errors"][-1] == (
+        "2 additional validation errors; inspect sealed evidence"
+    )
 
 
 def test_resource_gate_expands_compact_links_without_copying_or_mutating_raw_source(

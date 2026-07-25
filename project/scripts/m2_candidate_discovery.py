@@ -29,6 +29,8 @@ except ModuleNotFoundError:  # Imported as scripts.m2_candidate_discovery in tes
 
 REPORT_NAME = "m2_candidate_discovery.json"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+MAX_REPORT_ERRORS = 10
+MAX_REPORT_ERROR_CHARS = 4000
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -92,6 +94,23 @@ def _forbidden_path(path: Path) -> bool:
             capture.FORBIDDEN_EVIDENCE_PATH_PARTS
         )
     )
+
+
+def _bounded_report_errors(values: Sequence[object]) -> list[str]:
+    normalized = list(
+        dict.fromkeys(
+            " ".join(str(value).split())
+            for value in values
+            if str(value).strip()
+        )
+    )
+    bounded = [value[:MAX_REPORT_ERROR_CHARS] for value in normalized]
+    if len(bounded) <= MAX_REPORT_ERRORS:
+        return bounded
+    omitted = len(bounded) - (MAX_REPORT_ERRORS - 1)
+    return bounded[: MAX_REPORT_ERRORS - 1] + [
+        f"{omitted} additional validation errors; inspect sealed evidence"
+    ]
 
 
 def _checkout_sha() -> str:
@@ -336,8 +355,10 @@ def _capture(
         *,
         status: str,
         reason: str,
+        errors: Sequence[object] | None = None,
         include_campaigns: bool = True,
     ) -> tuple[str, str]:
+        report_errors = _bounded_report_errors(errors if errors is not None else [reason])
         if include_campaigns and failure_phase in contexts:
             campaigns[failure_phase] = _campaign(
                 contexts[failure_phase],
@@ -352,14 +373,14 @@ def _capture(
                     else failover_candidates
                 ),
                 status="FAIL",
-                errors=[reason],
+                errors=report_errors,
             )
         report = _build_report(
             args,
             status=status,
             campaigns=campaigns,
             survivors=survivors,
-            errors=[reason],
+            errors=report_errors,
         )
         capture._write_report(report_path, report)
         return status, str(exc)
@@ -405,7 +426,14 @@ def _capture(
             )
         )
         if formation_errors:
-            raise capture.CaptureError("; ".join(dict.fromkeys(formation_errors)))
+            unique_errors = list(dict.fromkeys(formation_errors))
+            exc = capture.CaptureError("; ".join(unique_errors))
+            return finish_failure(
+                exc,
+                status="FAIL",
+                reason=f"DISCOVERY_FAILED: CaptureError: {exc}",
+                errors=unique_errors,
+            )
 
         failure_phase = "failover"
         failover_survivors = capture.capture_failover_discovery(
@@ -434,7 +462,14 @@ def _capture(
             )
         )
         if failover_errors:
-            raise capture.CaptureError("; ".join(dict.fromkeys(failover_errors)))
+            unique_errors = list(dict.fromkeys(failover_errors))
+            exc = capture.CaptureError("; ".join(unique_errors))
+            return finish_failure(
+                exc,
+                status="FAIL",
+                reason=f"DISCOVERY_FAILED: CaptureError: {exc}",
+                errors=unique_errors,
+            )
     except capture.EnvironmentBlocked as exc:
         started = any(context.started for context in contexts.values())
         status = "BLOCKED"
@@ -479,17 +514,18 @@ def _capture(
         expected_sha=args.tested_sha,
     )
     if validation_errors:
+        report_errors = _bounded_report_errors(validation_errors)
         campaigns["failover"] = {
             **campaigns["failover"],
             "status": "FAIL",
-            "errors": validation_errors,
+            "errors": report_errors,
         }
         report = _build_report(
             args,
             status="FAIL",
             campaigns=campaigns,
             survivors=survivors,
-            errors=validation_errors,
+            errors=report_errors,
         )
         capture._write_report(report_path, report)
         return "FAIL", "; ".join(validation_errors[:8])

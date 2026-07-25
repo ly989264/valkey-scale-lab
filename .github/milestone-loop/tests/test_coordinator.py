@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from contracts import ContractError, PlannerOperation, PlannerOutput, verified_tree
-from github_api import GitHubError
+from github_api import MAX_ISSUE_COMMENTS, GitHubError
 from coordinator import (
     CONTROL_LABEL,
     DISCOVERY_REPAIR_LABEL,
@@ -154,7 +154,11 @@ class FakeClient:
             return dict(self.control_issue)
         if (
             self.control_issue is not None
-            and endpoint == f"issues/{self.control_issue['number']}/comments?per_page=51"
+            and endpoint
+            == (
+                f"issues/{self.control_issue['number']}/comments"
+                f"?per_page={MAX_ISSUE_COMMENTS + 1}"
+            )
         ):
             return [
                 {
@@ -778,7 +782,10 @@ class CoordinatorTests(unittest.TestCase):
             "number": 9,
             "body": render_control(empty_lease("m2"), 0),
             "labels": [CONTROL_LABEL],
-            "comments": [{"author": "human", "body": "note"} for _ in range(49)],
+            "comments": [
+                {"author": "human", "body": "note"}
+                for _ in range(MAX_ISSUE_COMMENTS - 1)
+            ],
         }
         state = self._m2_record_state(control)
         parsed = ControlState(9, empty_lease("m2"), 0)
@@ -795,7 +802,7 @@ class CoordinatorTests(unittest.TestCase):
         }
         self.assertTrue(record_human_action_state(**arguments))
         self.assertFalse(record_human_action_state(**arguments))
-        self.assertEqual(len(control["comments"]), 50)
+        self.assertEqual(len(control["comments"]), MAX_ISSUE_COMMENTS)
         self.assertEqual(len(client.writes), 1)
 
         full = copy.deepcopy(control)
@@ -821,7 +828,10 @@ class CoordinatorTests(unittest.TestCase):
             "number": 9,
             "body": render_control(empty_lease("m2"), 0),
             "labels": [CONTROL_LABEL],
-            "comments": [{"author": "human", "body": "note"} for _ in range(49)],
+            "comments": [
+                {"author": "human", "body": "note"}
+                for _ in range(MAX_ISSUE_COMMENTS - 1)
+            ],
         }
         state = self._m2_record_state(control)
         client = FakeClient(control)
@@ -844,7 +854,8 @@ class CoordinatorTests(unittest.TestCase):
                     "body": render_control(empty_lease("m2"), 0),
                     "labels": [CONTROL_LABEL],
                     "comments": [
-                        {"author": "human", "body": "note"} for _ in range(49)
+                        {"author": "human", "body": "note"}
+                        for _ in range(MAX_ISSUE_COMMENTS - 1)
                     ],
                 }
                 state = self._m2_record_state(control, default_sha=default_sha)
@@ -883,6 +894,34 @@ class CoordinatorTests(unittest.TestCase):
         self.assertIn("REAL_AUTHORIZATION_REQUIRED", comments[0][2])
         self.assertIn("/owner/repo/actions/runs/12345", comments[0][2])
         self.assertEqual(control["body"], original_body)
+
+    def test_real_authorization_checks_comment_capacity_before_recording(self) -> None:
+        control = {
+            "number": 9,
+            "title": "control",
+            "body": render_control(empty_lease("m1"), 0),
+            "state": "open",
+            "labels": [CONTROL_LABEL],
+            "comments": [
+                {"author": "human", "body": "note"}
+                for _ in range(MAX_ISSUE_COMMENTS - 2)
+            ],
+        }
+        state = snapshot([control])
+        client = FakeClient(control)
+        with (
+            patch("coordinator.collect_snapshot", return_value=state),
+            patch("coordinator._run", return_value="a" * 40),
+            self.assertRaises(LoopBlocked),
+        ):
+            prepare_real_authorization(
+                client=client,
+                repo_root=ROOT,
+                milestone="m1",
+                entrypoint="milestone",
+                control=parse_control(control, "m1"),
+            )
+        self.assertEqual(client.writes, [])
 
     def test_nonreplaceable_lease_hard_blocks_before_environment_review(self) -> None:
         active = {

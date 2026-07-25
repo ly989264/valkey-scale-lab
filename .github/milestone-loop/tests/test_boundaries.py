@@ -21,7 +21,7 @@ from coordinator import (
     render_control,
     real_readiness_fingerprint,
 )
-from github_api import GitHubClient, GitHubError
+from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError
 from loop import main as loop_main, pr_metadata
 from milestone_runner import (
     LeaseConfirmationBlocked,
@@ -732,6 +732,40 @@ class BoundaryTests(unittest.TestCase):
                 snapshot=snapshot,
                 milestone_document=milestone,
             )
+
+    def test_context_accepts_the_control_comment_bound(self) -> None:
+        milestone = json.loads(
+            (ROOT / "project" / "milestones" / "m2" / "milestone.json").read_text()
+        )
+        snapshot = {
+            "repository": "owner/repo",
+            "default_branch": "main",
+            "default_sha": "a" * 40,
+            "issues": [
+                {
+                    "number": 99,
+                    "title": "Control",
+                    "body": "control",
+                    "state": "open",
+                    "labels": [CONTROL_LABEL],
+                    "comments": [
+                        {"author": "github-actions[bot]", "body": "x" * 1300}
+                        for _ in range(MAX_ISSUE_COMMENTS)
+                    ],
+                }
+            ],
+            "pull_requests": [],
+        }
+
+        context = build_context(
+            repo_root=ROOT,
+            snapshot=snapshot,
+            milestone_document=milestone,
+        )
+
+        encoded = json.dumps(context, sort_keys=True, separators=(",", ":")).encode()
+        self.assertGreater(len(encoded), 96_000)
+        self.assertLessEqual(len(encoded), MAX_CONTEXT_BYTES)
 
     def test_planner_context_excludes_closed_pr_history(self) -> None:
         milestone = json.loads(

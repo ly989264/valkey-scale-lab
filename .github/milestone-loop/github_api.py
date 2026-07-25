@@ -11,7 +11,7 @@ from urllib.parse import quote
 from contracts import ContractError
 
 
-MAX_ISSUE_COMMENTS = 50
+MAX_ISSUE_COMMENTS = 70
 
 
 class GitHubError(RuntimeError):
