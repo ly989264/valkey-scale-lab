@@ -1421,6 +1421,31 @@ def _validated_m2_discovery_repair(
     return record
 
 
+def _completed_stale_m2_discovery_repair(
+    issue: Mapping[str, Any], record: Mapping[str, Any]
+) -> bool:
+    if (
+        DISCOVERY_REPAIR_LABEL not in issue.get("labels", [])
+        or status_from_labels(issue.get("labels", [])) != "completed"
+    ):
+        return False
+    contract = parse_work_item(issue.get("body", ""))
+    expected_metadata = [
+        f"M2-Discovery-Fingerprint: {record['failure_fingerprint']}",
+        f"M2-Discovery-Run: {record['run_id']} attempt {record['run_attempt']}",
+        f"M2-Discovery-Tested-SHA: {record['tested_sha']}",
+        f"M2-Discovery-Failure-Code: {record['failure_code']}",
+        f"M2-Discovery-Summary: {str(record.get('summary', ''))[:1000]}",
+    ]
+    return (
+        contract.criterion
+        == M2_DISCOVERY_CRITERIA.get(str(record.get("failure_scope")))
+        and contract.check == M2_DISCOVERY_REPAIR_CHECK
+        and not contract.depends_on
+        and M2_DISCOVERY_METADATA_RE.findall(issue.get("body", "")) == expected_metadata
+    )
+
+
 def trusted_m2_discovery_repair_pr(
     snapshot: Mapping[str, Any], *, pr_number: int, head_sha: str
 ) -> bool:
@@ -1964,18 +1989,40 @@ def coordinate(
         discovery_diagnosis is not None
         and discovery_diagnosis.get("tested_sha") != snapshot.get("default_sha")
     ):
-        _record_m2_discovery_hard_block(
-            client=client,
-            snapshot=snapshot,
-            control=control,
-            record=discovery_diagnosis,
-            action="Review the stale M2 discovery diagnosis; it cannot run on the new default SHA.",
+        existing_issue = discovery_diagnosis.get("existing_issue")
+        existing = (
+            _find_item(snapshot, int(existing_issue))
+            if isinstance(existing_issue, int)
+            else None
         )
-        return {
-            "status": "BLOCKED",
-            "milestone": milestone,
-            "reason": "stale-discovery-diagnosis",
-        }
+        if (
+            review_action == "PROGRESS"
+            and existing is not None
+            and _completed_stale_m2_discovery_repair(existing, discovery_diagnosis)
+        ):
+            client.comment(
+                control.issue_number,
+                "Reconciled the verified merged M2 discovery repair.\n\n"
+                "<!-- milestone-loop-m2-discovery-diagnosis-complete: "
+                f"{discovery_diagnosis['failure_fingerprint']} -->",
+            )
+            snapshot = collect_snapshot(client, milestone)
+            discovery_diagnosis = pending_m2_discovery_diagnosis(snapshot)
+            if discovery_diagnosis is not None:
+                raise LoopBlocked("completed M2 discovery repair marker was not recorded")
+        else:
+            _record_m2_discovery_hard_block(
+                client=client,
+                snapshot=snapshot,
+                control=control,
+                record=discovery_diagnosis,
+                action="Review the stale M2 discovery diagnosis; it cannot run on the new default SHA.",
+            )
+            return {
+                "status": "BLOCKED",
+                "milestone": milestone,
+                "reason": "stale-discovery-diagnosis",
+            }
     if discovery_diagnosis is not None and isinstance(
         discovery_diagnosis.get("existing_issue"), int
     ):
