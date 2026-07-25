@@ -8,7 +8,7 @@ from typing import Any, Mapping
 from contracts import ContractError, parse_work_item
 
 
-MAX_CONTEXT_BYTES = 96_000
+MAX_CONTEXT_BYTES = 192_000
 WORK_ITEM_LABEL = "milestone-loop:work-item"
 
 

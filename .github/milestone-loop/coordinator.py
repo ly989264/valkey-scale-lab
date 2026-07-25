@@ -522,6 +522,7 @@ def prepare_real_authorization(
             "milestone": milestone,
             "reason": "authorization-lease",
         }
+    _require_control_comment_capacity(control_issues[0], additions=3)
     readiness_sha256 = real_readiness_fingerprint(snapshot)
     record_real_authorization_required(client, snapshot, live_control)
     live = collect_snapshot(client, milestone)

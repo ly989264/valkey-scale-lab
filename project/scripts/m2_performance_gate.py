@@ -3296,11 +3296,33 @@ def _validate_command_source(
             f"{prefix} lacks complete monotonic bounds",
         )
         if fault_trial:
-            argv = " ".join(str(value) for value in _array(row.get("argv"))).upper()
-            tokens = set(re.findall(r"[A-Z0-9_]+", argv))
-            forbidden = bool(tokens.intersection({"FAILOVER", "FORCE", "TAKEOVER"}))
-            forbidden = forbidden or str(row.get("command_kind", "")).lower() == "cluster_failover"
-            _add(errors, not forbidden, f"{prefix} uses FAILOVER, FORCE, or TAKEOVER")
+            argv = [str(value) for value in _array(row.get("argv"))]
+            cli_index = next(
+                (
+                    position
+                    for position, value in enumerate(argv)
+                    if os.path.basename(value).lower() == "valkey-cli"
+                ),
+                None,
+            )
+            command: list[str] = []
+            if cli_index is not None:
+                position = cli_index + 1
+                while position < len(argv):
+                    option = argv[position].lower()
+                    if option in {"-c", "--raw", "-3", "--json"}:
+                        position += 1
+                        continue
+                    if option in {"-h", "-p"}:
+                        position += 2
+                        continue
+                    break
+                command = [value.upper() for value in argv[position : position + 2]]
+            _add(
+                errors,
+                command != ["CLUSTER", "FAILOVER"],
+                f"{prefix} uses CLUSTER FAILOVER",
+            )
     valid_sequences = [value for value in sequences if isinstance(value, int) and not isinstance(value, bool)]
     _add(errors, len(valid_sequences) == len(set(valid_sequences)), f"trial {trial_id} command source sequences are duplicated")
 
