@@ -1295,6 +1295,125 @@ class CoordinatorTests(unittest.TestCase):
         stale_check = next(write for write in stale_client.writes if write[0] == "check")
         self.assertEqual(stale_check[1]["conclusion"], "action_required")
 
+    def test_completed_exact_repair_closes_stale_discovery_diagnosis(self) -> None:
+        control = {
+            "number": 9,
+            "title": "[milestone-loop] m2 control",
+            "body": render_control(empty_lease("m2"), 0),
+            "state": "open",
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        result = self._discovery_result()
+        with patch("coordinator.collect_snapshot", return_value=state):
+            self.assertEqual(
+                record_m2_discovery_result(client=client, result=result), "DIAGNOSE"
+            )
+        state["default_sha"] = "b" * 40
+        state["issues"].append(
+            {
+                "number": 7,
+                "title": "Repair formation collection",
+                "body": (
+                    "Fix the implementation defect.\n\n"
+                    "Criterion: performance.cluster-formation-experiment\n"
+                    "Depends on: none\n"
+                    "Check: repository.all\n\n"
+                    f"M2-Discovery-Fingerprint: {'f' * 64}\n"
+                    "M2-Discovery-Run: 12345 attempt 1\n"
+                    f"M2-Discovery-Tested-SHA: {'a' * 40}\n"
+                    "M2-Discovery-Failure-Code: discovery-failed\n"
+                    "M2-Discovery-Summary: TypeError in the formation collector"
+                ),
+                "state": "open",
+                "labels": [
+                    "milestone-loop:work-item",
+                    "milestone-loop:completed",
+                    DISCOVERY_REPAIR_LABEL,
+                ],
+                "comments": [],
+            }
+        )
+        with (
+            patch(
+                "coordinator.load_trusted_documents",
+                return_value=(self.m2_document, self.catalog),
+            ),
+            patch("coordinator.collect_snapshot", return_value=state),
+            patch(
+                "coordinator.reconcile_review",
+                return_value=("PROGRESS", ControlState(9, empty_lease("m2"), 0)),
+            ),
+            patch("coordinator.run_planner", return_value=PlannerOutput((), None, "no work")),
+            patch("coordinator.apply_planner_transaction"),
+            patch(
+                "coordinator.prepare_real_authorization",
+                return_value={"status": "NEXT", "milestone": "m2"},
+            ),
+            patch("coordinator._run", return_value="b" * 40),
+        ):
+            outcome = coordinate(
+                client=client,
+                repo_root=ROOT,
+                runtime_root=ROOT / ".ignored-test-runtime",
+                action="resume",
+                milestone="m2",
+            )
+        self.assertEqual(outcome["status"], "NEXT")
+        markers = [
+            write
+            for write in client.writes
+            if write[0] == "comment"
+            and "milestone-loop-m2-discovery-diagnosis-complete" in write[2]
+        ]
+        self.assertEqual(len(markers), 1)
+        self.assertIsNone(pending_m2_discovery_diagnosis(state))
+
+    def test_stale_discovery_diagnosis_without_exact_completed_repair_stays_blocked(
+        self,
+    ) -> None:
+        control = {
+            "number": 9,
+            "title": "[milestone-loop] m2 control",
+            "body": render_control(empty_lease("m2"), 0),
+            "state": "open",
+            "labels": [CONTROL_LABEL],
+            "comments": [],
+        }
+        state = self._m2_record_state(control)
+        client = FakeClient(control)
+        with patch("coordinator.collect_snapshot", return_value=state):
+            self.assertEqual(
+                record_m2_discovery_result(
+                    client=client, result=self._discovery_result()
+                ),
+                "DIAGNOSE",
+            )
+        state["default_sha"] = "b" * 40
+        with (
+            patch(
+                "coordinator.load_trusted_documents",
+                return_value=(self.m2_document, self.catalog),
+            ),
+            patch("coordinator.collect_snapshot", return_value=state),
+            patch(
+                "coordinator.reconcile_review",
+                return_value=("NONE", ControlState(9, empty_lease("m2"), 0)),
+            ),
+            patch("coordinator._run", return_value="b" * 40),
+        ):
+            outcome = coordinate(
+                client=client,
+                repo_root=ROOT,
+                runtime_root=ROOT / ".ignored-test-runtime",
+                action="resume",
+                milestone="m2",
+            )
+        self.assertEqual(outcome["status"], "BLOCKED")
+        self.assertEqual(outcome["reason"], "stale-discovery-diagnosis")
+
     def test_discovery_diagnosis_creates_one_narrow_ready_work_item(self) -> None:
         state = self._m2_record_state(
             {
