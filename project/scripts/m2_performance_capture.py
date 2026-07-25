@@ -166,6 +166,7 @@ RESOURCE_METRICS = (
     "connection_count",
     "cluster_bus_bytes",
 )
+FORMATION_CANDIDATE_SCREEN_VERSION = "v2"
 COMPRESSED_TRIAL_SOURCE_CATEGORIES = {
     "resource",
     "workload",
@@ -4637,6 +4638,8 @@ def _build_report(ctx: CaptureContext, *, status: str, errors: list[str], real_v
         "errors": errors,
         "report_digest": "",
     }
+    if ctx.args.mode == "formation":
+        report["candidate_screen_version"] = FORMATION_CANDIDATE_SCREEN_VERSION
     report["report_digest"] = _report_digest(report)
     return report
 
