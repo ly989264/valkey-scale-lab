@@ -733,6 +733,43 @@ class BoundaryTests(unittest.TestCase):
                 milestone_document=milestone,
             )
 
+    def test_planner_context_excludes_closed_pr_history(self) -> None:
+        milestone = json.loads(
+            (ROOT / "project" / "milestones" / "m2" / "milestone.json").read_text()
+        )
+        snapshot = {
+            "repository": "owner/repo",
+            "default_branch": "main",
+            "default_sha": "a" * 40,
+            "issues": [],
+            "pull_requests": [
+                {
+                    "number": number,
+                    "state": "closed",
+                    "body": "x" * 6_000,
+                    "checks": [{"summary": "y" * 1_000}],
+                }
+                for number in range(2, 21)
+            ]
+            + [
+                {
+                    "number": 21,
+                    "state": "open",
+                    "body": "open PR",
+                    "checks": [],
+                }
+            ],
+        }
+
+        context = build_context(
+            repo_root=ROOT,
+            snapshot=snapshot,
+            milestone_document=milestone,
+        )
+
+        self.assertEqual([pr["number"] for pr in context["pull_requests"]], [21])
+        self.assertFalse(context["context_truncated"])
+
     def test_cleanup_refuses_paths_outside_runner_temp(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             runner_temp = Path(temporary) / "runner"

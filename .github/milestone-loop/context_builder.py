@@ -33,7 +33,11 @@ def work_items(snapshot: Mapping[str, Any]) -> dict[int, dict[str, Any]]:
 
 def _relevant_prs(snapshot: Mapping[str, Any], issue_number: int | None) -> list[dict[str, Any]]:
     if issue_number is None:
-        return [dict(pr) for pr in snapshot.get("pull_requests", [])]
+        return [
+            dict(pr)
+            for pr in snapshot.get("pull_requests", [])
+            if pr.get("state") == "open"
+        ]
     marker = f"Work-Item: #{issue_number}"
     return [
         dict(pr)
