@@ -2605,8 +2605,14 @@ def _fault_topology_facts(
                 and all(isinstance(slot, str) for slot in raw_slots)
                 and role == inferred_role
                 and inferred_role in {"primary", "replica"}
-                and isinstance(master_id, str)
-                and bool(master_id)
+                and (
+                    (inferred_role == "primary" and master_id in {None, "-"})
+                    or (
+                        inferred_role == "replica"
+                        and isinstance(master_id, str)
+                        and bool(master_id)
+                    )
+                )
                 and row.get("link_state") in {"connected", "disconnected"}
             )
             clean_topology = clean_topology and row_structure_valid
@@ -2628,7 +2634,7 @@ def _fault_topology_facts(
                 node_slots = set()
             if inferred_role == "replica" and raw_slots:
                 clean_topology = False
-            if inferred_role == "primary" and master_id != "-":
+            if inferred_role == "primary" and master_id not in {None, "-"}:
                 clean_topology = False
             if inferred_role == "replica":
                 master = view.get(master_id) if isinstance(master_id, str) else None

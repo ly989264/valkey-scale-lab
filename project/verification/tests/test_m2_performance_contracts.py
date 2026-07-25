@@ -3434,6 +3434,22 @@ def test_fault_raw_source_binds_markers_intervals_stability_and_sigkill_targets(
     assert len(fault_document["topology_view_dictionary"]) < 7
 
 
+def test_fault_gate_accepts_production_primary_master_null(tmp_path: Path) -> None:
+    report, trial = _fault_source_report()
+    fault = trial["fault"]
+
+    for entry in list(fault["topology_view_dictionary"]):
+        old_digest = entry["sha256"]
+        for view in entry["views"]:
+            for node in view["cluster_nodes"].values():
+                if node["role"] == "primary":
+                    node["master_id"] = None
+        _rebind_fault_view_entry(fault, old_digest)
+    _write_valid_trial_sources(report, trial, tmp_path)
+
+    assert M2.validate_current_invocation_sources(report, artifacts_dir=tmp_path) == []
+
+
 @pytest.mark.parametrize("master_id", ["MISSING", "node-002"])
 def test_fault_gate_rejects_missing_or_cross_shard_replica_master(
     tmp_path: Path,
