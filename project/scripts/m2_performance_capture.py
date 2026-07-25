@@ -4589,7 +4589,7 @@ def _formation_candidates() -> list[dict[str, Any]]:
                 "value": "tree_meet_addslotsrange",
                 "bounded_parallelism": parallelism,
             }
-            for parallelism in (4, 8, 16)
+            for parallelism in (2, 4, 8, 16)
         ],
     ]
 

@@ -708,7 +708,7 @@ def _validate_formation_discovery(
         and "addslotsrange" in item["value"].lower()
     ]
     _add(errors, len(manual) == 1, "formation discovery must include the existing manual-tree diagnostic")
-    _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == {4, 8, 16}, "formation discovery must include bounded ADDSLOTSRANGE parallelism 4, 8, and 16")
+    _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == {2, 4, 8, 16}, "formation discovery must include bounded ADDSLOTSRANGE parallelism 2, 4, 8, and 16")
     candidate_keys = [_treatment_key(item) for item in candidates]
     expected_candidate_keys = {
         ("cluster_create_strategy", "manual_tree_meet_parallel_slots", None, None, None),
@@ -720,7 +720,7 @@ def _validate_formation_discovery(
                 None,
                 None,
             )
-            for parallelism in (4, 8, 16)
+            for parallelism in (2, 4, 8, 16)
         },
     }
     _add(
