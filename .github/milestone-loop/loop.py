@@ -209,13 +209,23 @@ def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
         None,
     )
     issue_labels = set(issue.get("labels", [])) if isinstance(issue, dict) else set()
+    merged_event = action == "closed" and bool(pr.get("merged"))
+    reviewed_open_item = (
+        isinstance(issue, dict)
+        and issue.get("state") == "open"
+        and status_from_labels(issue_labels) == "review"
+    )
+    completed_merged_item = (
+        merged_event
+        and isinstance(issue, dict)
+        and issue.get("state") == "closed"
+        and status_from_labels(issue_labels) == "review"
+    )
     if (
         issue is None
-        or issue.get("state") != "open"
         or "milestone-loop:work-item" not in issue_labels
+        or not (reviewed_open_item or completed_merged_item)
     ):
-        raise ContractError("referenced Work Item is not the active reviewed Milestone item")
-    if status_from_labels(issue_labels) != "review":
         raise ContractError("referenced Work Item is not the active reviewed Milestone item")
     work_item = parse_work_item(issue.get("body", ""))
     if contract_change:

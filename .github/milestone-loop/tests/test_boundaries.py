@@ -259,6 +259,10 @@ class BoundaryTests(unittest.TestCase):
             path.write_text(json.dumps(event), encoding="utf-8")
             with patch("loop.collect_snapshot", return_value=snapshot):
                 self.assertTrue(pr_metadata(client, path)["merged"])
+            snapshot["issues"][0]["state"] = "closed"
+            with patch("loop.collect_snapshot", return_value=snapshot):
+                self.assertTrue(pr_metadata(client, path)["merged"])
+            snapshot["issues"][0]["state"] = "open"
             event["action"] = "opened"
             event["pull_request"]["merged"] = False
             live["state"] = "open"
