@@ -167,7 +167,11 @@ human-action recorder refuses a new marker at capacity rather than truncating
 or losing old markers.
 
 After reviewing discovery, a human-reviewed `contract-change` PR must set the
-same explicit candidates on the formation, failover, and stability Checks. If
+same explicit candidates on the formation, failover, and stability Checks. A
+human may explicitly redefine M2 to replace the failover screen with one named
+direct full-validation candidate; that exception must be encoded in the fixed
+M2 contract, retain every matrix cell and all thresholds, durations, safety,
+cleanup, and Environment gates, and cannot promote a default. If
 the chosen formation candidate needs a bounded parallelism that the current
 parameters cannot express, that PR must extend the Check contract explicitly;
 it must not change the product default first. The complete M2 Gate then

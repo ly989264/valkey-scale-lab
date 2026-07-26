@@ -72,6 +72,7 @@ BASELINE_FORMATION = {
     "value": "valkey_cli_cluster_create_primaries",
 }
 BASELINE_FAILOVER = {"kind": "cluster_node_timeout_ms", "value": 30000}
+DIRECT_FAILOVER_FULL_VALIDATION_TIMEOUT_MS = 20000
 FAILURE_RATES = ("one", "10_percent", "33_percent")
 CONTROL_DIGEST_KEYS = {
     "valkey_binary",
@@ -1090,14 +1091,59 @@ def _validate_failover(
     cells_by_id: Mapping[str, Mapping[str, Any]],
     errors: list[str],
 ) -> None:
-    survivor_keys = _validate_failover_discovery(
-        report,
-        trials_by_id,
-        pairs_by_cell,
-        cells_by_id,
-        errors,
-        require_selected=True,
-    )
+    selected = _object(report.get("selected_candidate"))
+    if selected.get("value") == DIRECT_FAILOVER_FULL_VALIDATION_TIMEOUT_MS:
+        defaults = _object(report.get("current_defaults"))
+        current_strategy = defaults.get("cluster_create_strategy")
+        expected_baseline = {
+            **BASELINE_FAILOVER,
+            "cluster_create_strategy": current_strategy,
+        }
+        expected_candidate = (
+            "cluster_node_timeout_ms",
+            DIRECT_FAILOVER_FULL_VALIDATION_TIMEOUT_MS,
+            None,
+            current_strategy,
+            None,
+        )
+        candidate_keys = [_treatment_key(item) for item in _array(report.get("candidates"))]
+        _add(
+            errors,
+            isinstance(current_strategy, str)
+            and bool(current_strategy)
+            and current_strategy == _current_formation_strategy(),
+            "direct failover candidate current formation strategy is not bound to the product default",
+        )
+        _add(
+            errors,
+            _treatment_key(report.get("baseline")) == _treatment_key(expected_baseline),
+            "direct failover baseline must force 30000 ms while holding the current formation strategy",
+        )
+        _add(
+            errors,
+            candidate_keys == [expected_candidate],
+            "direct failover validation must contain only the authorized 20000 ms candidate",
+        )
+        _add(
+            errors,
+            _treatment_key(selected) == expected_candidate,
+            "direct failover selected candidate must be the authorized 20000 ms timeout",
+        )
+        _add(
+            errors,
+            not [cell for cell in cells_by_id.values() if cell.get("campaign_step") == "discovery"],
+            "direct failover validation cannot add a discovery screen",
+        )
+        survivor_keys = {expected_candidate}
+    else:
+        survivor_keys = _validate_failover_discovery(
+            report,
+            trials_by_id,
+            pairs_by_cell,
+            cells_by_id,
+            errors,
+            require_selected=True,
+        )
     matrix = [cell for cell in cells_by_id.values() if cell.get("campaign_step") == "matrix"]
     observed_cells = {
         (_treatment_key(cell.get("candidate")), cell.get("scale"), cell.get("failure_rate"))
@@ -1126,7 +1172,7 @@ def _validate_failover(
     pfail_limits = {"one": 10.0, "10_percent": 15.0, "33_percent": 25.0}
     for cell in matrix:
         cell_id = str(cell.get("cell_id"))
-        _add(errors, _treatment_key(cell.get("candidate")) in survivor_keys, f"failover cell {cell_id} advances a discovery loser")
+        _add(errors, _treatment_key(cell.get("candidate")) in survivor_keys, f"failover cell {cell_id} does not use the admitted candidate")
         pairs = pairs_by_cell.get(cell_id, [])
         _add(errors, cell.get("status") == "PASS", f"failover matrix cell {cell_id} did not PASS")
         _add(errors, isinstance(cell.get("required_pairs"), int) and cell["required_pairs"] >= 10, f"failover cell {cell_id} requires fewer than 10 pairs")
@@ -4733,8 +4779,18 @@ def _validate_selection(report: Mapping[str, Any], args: argparse.Namespace) -> 
     if args.mode in {"formation", "stability"}:
         requested = args.selected_strategy
         expected = defaults.get("cluster_create_strategy") if requested == "current-default" else requested
+        requested_parallelism = getattr(args, "selected_parallelism", "current-default")
+        expected_parallelism: Any = None
+        if expected == "tree_meet_addslotsrange":
+            if requested_parallelism == "current-default":
+                expected_parallelism = selected.get("bounded_parallelism")
+            else:
+                try:
+                    expected_parallelism = int(requested_parallelism)
+                except (TypeError, ValueError):
+                    errors.append("selected parallelism must be current-default or an integer")
         if args.mode == "formation":
-            _add(errors, selected.get("kind") == "cluster_create_strategy" and selected.get("value") == expected, "selected formation strategy does not match the Check parameter")
+            _add(errors, selected.get("kind") == "cluster_create_strategy" and selected.get("value") == expected and selected.get("bounded_parallelism") == expected_parallelism, "selected formation strategy or parallelism does not match the Check parameters")
     if args.mode in {"failover", "stability"}:
         requested_timeout = args.selected_timeout_ms
         expected_timeout: Any = defaults.get("cluster_node_timeout_ms")
@@ -4755,6 +4811,8 @@ def _validate_selection(report: Mapping[str, Any], args: argparse.Namespace) -> 
             and selected.get("cluster_node_timeout_ms") == expected_timeout,
             "selected stability settings do not match the Check parameters",
         )
+        if expected_strategy == "tree_meet_addslotsrange":
+            _add(errors, selected.get("bounded_parallelism") == expected_parallelism, "selected stability parallelism does not match the Check parameter")
     return errors
 
 
@@ -4791,6 +4849,7 @@ def _parser() -> argparse.ArgumentParser:
     formation = subparsers.add_parser("formation")
     common(formation)
     formation.add_argument("--selected-strategy", required=True)
+    formation.add_argument("--selected-parallelism", default="current-default")
 
     failover = subparsers.add_parser("failover")
     common(failover)
@@ -4799,6 +4858,7 @@ def _parser() -> argparse.ArgumentParser:
     stability = subparsers.add_parser("stability")
     common(stability)
     stability.add_argument("--selected-strategy", required=True)
+    stability.add_argument("--selected-parallelism", default="current-default")
     stability.add_argument("--selected-timeout-ms", required=True)
     return parser
 

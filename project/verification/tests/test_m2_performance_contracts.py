@@ -1754,10 +1754,9 @@ def test_failover_relative_and_absolute_budgets_are_enforced(monkeypatch) -> Non
     candidates = [
         {
             "kind": "cluster_node_timeout_ms",
-            "value": value,
+            "value": 20000,
             "cluster_create_strategy": current_strategy,
         }
-        for value in (5000, 10000, 15000)
     ]
     selected = candidates[0]
     cells: dict[str, dict[str, object]] = {}
@@ -1812,21 +1811,6 @@ def test_failover_relative_and_absolute_budgets_are_enforced(monkeypatch) -> Non
                 },
             }
 
-    for candidate in candidates:
-        cell_id = f"discovery-{candidate['value']}"
-        passed = candidate == selected
-        cells[cell_id] = {
-            "cell_id": cell_id,
-            "campaign_step": "discovery",
-            "scale": 50,
-            "failure_rate": "one",
-            "required_pairs": 1,
-            "candidate": candidate,
-            "status": "PASS" if passed else "FAIL",
-        }
-        if passed:
-            add_pair(cell_id, 1, 50, 40.0, 20.0, 5.0, 5.0, 1.0)
-
     for scale in (50, 200):
         for rate in M2.FAILURE_RATES:
             cell_id = f"matrix-{scale}-{rate}"
@@ -1868,6 +1852,7 @@ def test_failover_relative_and_absolute_budgets_are_enforced(monkeypatch) -> Non
     assert any("process-gone-to-PFAIL p95 exceeds 25 seconds" in error for error in errors)
     assert any("cluster-OK to stable client exceeds 2 seconds" in error for error in errors)
     assert not any("current formation strategy" in error for error in errors)
+    assert not any("direct failover validation" in error for error in errors)
 
 
 def test_timeout_state_binds_the_paired_dynamic_formation_strategy() -> None:

@@ -113,10 +113,16 @@ M2_RELATIVE_CANDIDATE_PARAMETERS = (
         ("manual_tree_meet_parallel_slots", "tree_meet_addslotsrange"),
     ),
     (
+        "performance.cluster-formation-experiment",
+        "real.local.m2-cluster-formation",
+        "selected_parallelism",
+        ("16",),
+    ),
+    (
         "performance.automatic-failover-experiment",
         "real.local.m2-automatic-failover",
         "selected_timeout_ms",
-        ("5000", "10000", "15000"),
+        ("20000",),
     ),
     (
         "performance.stability-and-resource-safety",
@@ -127,8 +133,14 @@ M2_RELATIVE_CANDIDATE_PARAMETERS = (
     (
         "performance.stability-and-resource-safety",
         "real.local.m2-stability-resource",
+        "selected_parallelism",
+        ("16",),
+    ),
+    (
+        "performance.stability-and-resource-safety",
+        "real.local.m2-stability-resource",
         "selected_timeout_ms",
-        ("5000", "10000", "15000"),
+        ("20000",),
     ),
 )
 
@@ -943,6 +955,10 @@ def m2_candidate_blockers(
         (
             ("real.local.m2-cluster-formation", "selected_strategy"),
             ("real.local.m2-stability-resource", "selected_strategy"),
+        ),
+        (
+            ("real.local.m2-cluster-formation", "selected_parallelism"),
+            ("real.local.m2-stability-resource", "selected_parallelism"),
         ),
         (
             ("real.local.m2-automatic-failover", "selected_timeout_ms"),

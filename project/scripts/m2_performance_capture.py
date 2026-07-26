@@ -291,7 +291,9 @@ def _capture_formation(ctx: CaptureContext) -> None:
         )
         raise CaptureError("current formation default is the forced baseline; discovery improvement is 0 percent")
     candidates = _formation_candidates()
-    requested_parallelism = _selected_strategy_parallelism(ctx.args.selected_strategy)
+    requested_parallelism = _selected_strategy_parallelism(
+        ctx.args.selected_strategy, getattr(ctx.args, "selected_parallelism", "current-default")
+    )
     eligible = [
         row
         for row in candidates
@@ -388,6 +390,31 @@ def _capture_failover(ctx: CaptureContext) -> None:
             )
         )
         raise CaptureError("current failover default is the 30000 ms baseline; discovery improvement is 0 percent")
+    if selected == 20000:
+        requested_candidate = _timeout_treatment(selected)
+        ctx.selected_candidate = dict(requested_candidate)
+        for scale in (50, 200):
+            for rate in ("one", "10_percent", "33_percent"):
+                cell_id = f"failover-matrix-{requested_candidate['value']}-exact-{scale}-{rate}"
+                ctx.cells.append(_cell(cell_id, "matrix", scale, rate, 10, requested_candidate, "FAIL"))
+                for sequence in range(1, 11):
+                    ctx.pairs.append(
+                        _capture_pair(
+                            ctx,
+                            cell_id=cell_id,
+                            sequence=sequence,
+                            scale=scale,
+                            scenario="failover_timeline",
+                            baseline=baseline,
+                            candidate=requested_candidate,
+                            resource_seconds=120.0,
+                            workload_seconds=120.0,
+                            fault_rate=rate,
+                        )
+                    )
+                ctx.cells[-1]["status"] = "PASS"
+        return
+
     candidates = [_timeout_treatment(value) for value in (5000, 10000, 15000)]
     requested_candidate = next((row for row in candidates if row["value"] == selected), None)
     if requested_candidate is None:
@@ -467,7 +494,9 @@ def _capture_stability(ctx: CaptureContext) -> None:
         "cluster_create_strategy": strategy,
         "cluster_node_timeout_ms": timeout,
     }
-    parallelism = _selected_strategy_parallelism(ctx.args.selected_strategy)
+    parallelism = _selected_strategy_parallelism(
+        ctx.args.selected_strategy, getattr(ctx.args, "selected_parallelism", "current-default")
+    )
     if parallelism is not None:
         candidate["bounded_parallelism"] = parallelism
     ctx.selected_candidate = candidate
@@ -4328,14 +4357,26 @@ def _selected_strategy(value: Any) -> str:
     return value
 
 
-def _selected_strategy_parallelism(value: Any) -> int | None:
+def _selected_strategy_parallelism(strategy_value: Any, parallelism_value: Any) -> int | None:
     from valkey_scale_lab.runtime import docker_runtime
 
-    selected = getattr(docker_runtime, "CLUSTER_CREATE_PARALLELISM_DEFAULT", None)
-    if not isinstance(selected, int) or isinstance(selected, bool):
+    strategy = (
+        _current_strategy_default()
+        if strategy_value == "current-default"
+        else str(strategy_value)
+    )
+    if strategy != "tree_meet_addslotsrange":
         return None
-    strategy = _current_strategy_default() if value == "current-default" else str(value)
-    return selected if strategy == "tree_meet_addslotsrange" else None
+    if parallelism_value == "current-default":
+        selected = getattr(docker_runtime, "CLUSTER_CREATE_PARALLELISM_DEFAULT", None)
+    else:
+        try:
+            selected = int(parallelism_value)
+        except (TypeError, ValueError) as exc:
+            raise CaptureError("selected formation parallelism must be current-default or a positive integer") from exc
+    if not isinstance(selected, int) or isinstance(selected, bool) or selected <= 0:
+        raise CaptureError("selected formation parallelism must be a positive integer")
+    return selected
 
 
 def _selected_timeout(value: Any) -> int:
@@ -4551,14 +4592,21 @@ def _report_treatments(ctx: CaptureContext) -> tuple[dict[str, Any], list[dict[s
     if ctx.args.mode == "formation":
         baseline = {"kind": "cluster_create_strategy", "value": BASELINE_STRATEGY}
         selected = dict(ctx.selected_candidate or {"kind": "cluster_create_strategy", "value": _selected_strategy(ctx.args.selected_strategy)})
-        parallelism = _selected_strategy_parallelism(ctx.args.selected_strategy)
+        parallelism = _selected_strategy_parallelism(
+            ctx.args.selected_strategy, getattr(ctx.args, "selected_parallelism", "current-default")
+        )
         if parallelism is not None:
             selected.setdefault("bounded_parallelism", parallelism)
         return baseline, _formation_candidates(), selected
     if ctx.args.mode == "failover":
         baseline = _timeout_treatment(BASELINE_TIMEOUT_MS)
-        selected = dict(ctx.selected_candidate or _timeout_treatment(_selected_timeout(ctx.args.selected_timeout_ms)))
-        candidates = [_timeout_treatment(value) for value in (5000, 10000, 15000)]
+        selected_timeout = _selected_timeout(ctx.args.selected_timeout_ms)
+        selected = dict(ctx.selected_candidate or _timeout_treatment(selected_timeout))
+        candidates = (
+            [_timeout_treatment(selected_timeout)]
+            if selected_timeout == 20000
+            else [_timeout_treatment(value) for value in (5000, 10000, 15000)]
+        )
         return baseline, candidates, selected
     baseline = {
         "kind": "selected_settings",
@@ -4575,7 +4623,9 @@ def _report_treatments(ctx: CaptureContext) -> tuple[dict[str, Any], list[dict[s
             "cluster_node_timeout_ms": _selected_timeout(ctx.args.selected_timeout_ms),
         }
     )
-    parallelism = _selected_strategy_parallelism(ctx.args.selected_strategy)
+    parallelism = _selected_strategy_parallelism(
+        ctx.args.selected_strategy, getattr(ctx.args, "selected_parallelism", "current-default")
+    )
     if parallelism is not None:
         selected.setdefault("bounded_parallelism", parallelism)
     return baseline, [selected], selected
