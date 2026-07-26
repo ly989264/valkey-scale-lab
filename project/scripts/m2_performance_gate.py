@@ -696,6 +696,7 @@ def _validate_formation_discovery(
     errors: list[str],
     *,
     require_selected: bool,
+    allow_legacy_screen: bool = False,
 ) -> set[tuple[Any, ...]]:
     _add(errors, _treatment_key(report.get("baseline")) == _treatment_key(BASELINE_FORMATION), "formation baseline must force the current valkey-cli primary-create path")
     candidates = [_object(item) for item in _array(report.get("candidates"))]
@@ -708,8 +709,13 @@ def _validate_formation_discovery(
         and "addslotsrange" in item["value"].lower()
     ]
     screen_version = report.get("candidate_screen_version")
-    expected_parallelism = {2, 4, 8, 16} if screen_version == "v2" else {4, 8, 16}
-    _add(errors, screen_version in {None, "v2"}, "formation discovery candidate screen version is unknown")
+    legacy_screen = allow_legacy_screen and screen_version is None
+    expected_parallelism = {4, 8, 16} if legacy_screen else {2, 4, 8, 16}
+    _add(
+        errors,
+        screen_version == "v2" or legacy_screen,
+        "formation discovery candidate screen version must be 'v2'",
+    )
     _add(errors, len(manual) == 1, "formation discovery must include the existing manual-tree diagnostic")
     _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == expected_parallelism, "formation discovery must include the declared bounded ADDSLOTSRANGE parallelism screen")
     candidate_keys = [_treatment_key(item) for item in candidates]
@@ -1385,6 +1391,7 @@ def validate_discovery_campaign(
     *,
     expected_kind: str,
     expected_invocation_run_id: str,
+    allow_legacy_formation_screen: bool = False,
 ) -> list[str]:
     """Validate one selection-only exact-50 discovery campaign."""
     errors: list[str] = []
@@ -1407,12 +1414,23 @@ def validate_discovery_campaign(
         "source_refs",
         "errors",
     }
-    _add(
-        errors,
-        set(report) == required
-        or set(report) == required | {"candidate_screen_version"},
-        "discovery campaign fields are incomplete or unexpected",
+    legacy_formation_screen = (
+        allow_legacy_formation_screen
+        and expected_kind == "formation"
+        and report.get("candidate_screen_version") is None
     )
+    if expected_kind == "formation":
+        allowed_fields = (
+            {frozenset(required)}
+            if legacy_formation_screen
+            else {frozenset(required | {"candidate_screen_version"})}
+        )
+    else:
+        allowed_fields = {
+            frozenset(required),
+            frozenset(required | {"candidate_screen_version"}),
+        }
+    _add(errors, frozenset(report) in allowed_fields, "discovery campaign fields are incomplete or unexpected")
     _add(errors, expected_kind in {"formation", "failover"}, "discovery campaign kind is unsupported")
     _add(errors, report.get("experiment_kind") == expected_kind, "discovery campaign kind does not match")
     _add(errors, report.get("campaign_id") == expected_invocation_run_id, "discovery campaign id does not match this invocation")
@@ -1443,6 +1461,7 @@ def validate_discovery_campaign(
             cells_by_id,
             errors,
             require_selected=False,
+            allow_legacy_screen=legacy_formation_screen,
         )
         _validate_formation_trials(trials_by_id.values(), errors)
     elif expected_kind == "failover":

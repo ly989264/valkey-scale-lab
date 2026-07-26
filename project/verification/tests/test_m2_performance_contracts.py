@@ -1532,6 +1532,33 @@ def test_selection_only_formation_screen_accepts_zero_survivors() -> None:
     ) == []
 
 
+def test_selection_only_formation_screen_requires_v2_screen_version() -> None:
+    campaign = _formation_discovery_campaign()
+    campaign.pop("candidate_screen_version")
+
+    errors = M2.validate_discovery_campaign(
+        campaign,
+        expected_kind="formation",
+        expected_invocation_run_id="m2-contract",
+    )
+
+    assert "discovery campaign fields are incomplete or unexpected" in errors
+    assert "formation discovery candidate screen version must be 'v2'" in errors
+
+
+def test_selection_only_failover_screen_keeps_version_field_optional() -> None:
+    campaign = _formation_discovery_campaign()
+    campaign["experiment_kind"] = "failover"
+
+    errors = M2.validate_discovery_campaign(
+        campaign,
+        expected_kind="failover",
+        expected_invocation_run_id="m2-contract",
+    )
+
+    assert "discovery campaign fields are incomplete or unexpected" not in errors
+
+
 def test_selection_only_formation_screen_rejects_unsafe_candidate_without_failing_campaign() -> None:
     campaign = _formation_discovery_campaign()
     cell = next(cell for cell in campaign["cells"] if cell["status"] == "PASS")
@@ -2472,6 +2499,7 @@ def test_historical_formation_campaign_replays_and_boundaries_fail_closed(
         formation,
         expected_kind="formation",
         expected_invocation_run_id=formation["invocation_run_id"],
+        allow_legacy_formation_screen=True,
     ) == []
     assert M2.validate_current_invocation_sources(
         formation,
