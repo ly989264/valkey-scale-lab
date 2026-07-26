@@ -114,6 +114,12 @@ _M2_DISCOVERY_CAMPAIGN_FIELDS = {
     "source_refs",
     "errors",
 }
+_M2_DISCOVERY_V2_FORMATION_CAMPAIGN_FIELDS = {
+    *_M2_DISCOVERY_CAMPAIGN_FIELDS,
+    "candidate_screen_version",
+}
+
+
 def _canonical_digest(value: Mapping[str, Any], *, omit: str = "") -> str:
     payload = dict(value)
     if omit:
@@ -226,7 +232,15 @@ def _validate_artifact_ref(root: Path, ref: Any) -> tuple[str, str, str]:
 def _validate_discovery_campaign(
     campaign: Any, *, kind: str, invocation_id: str, evidence_root: Path
 ) -> None:
-    if not isinstance(campaign, dict) or set(campaign) != _M2_DISCOVERY_CAMPAIGN_FIELDS:
+    if not isinstance(campaign, dict):
+        raise ContractError(f"M2 {kind} discovery campaign fields are invalid")
+    fields = set(campaign)
+    v2_formation = (
+        kind == "formation"
+        and fields == _M2_DISCOVERY_V2_FORMATION_CAMPAIGN_FIELDS
+        and campaign.get("candidate_screen_version") == "v2"
+    )
+    if fields != _M2_DISCOVERY_CAMPAIGN_FIELDS and not v2_formation:
         raise ContractError(f"M2 {kind} discovery campaign fields are invalid")
     if (
         campaign.get("campaign_id") != invocation_id
