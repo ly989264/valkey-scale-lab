@@ -709,30 +709,37 @@ def _validate_formation_discovery(
         if isinstance(item.get("value"), str)
         and "addslotsrange" in item["value"].lower()
     ]
+    candidate_keys = [_treatment_key(item) for item in candidates]
     screen_version = report.get("candidate_screen_version")
     legacy_screen = allow_legacy_screen and screen_version is None
-    expected_parallelism = {4, 8, 16} if legacy_screen else {2, 4, 8, 16}
-    _add(
-        errors,
-        screen_version == "v2" or legacy_screen,
-        "formation discovery candidate screen version must be 'v2'",
-    )
-    _add(errors, len(manual) == 1, "formation discovery must include the existing manual-tree diagnostic")
-    _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == expected_parallelism, "formation discovery must include the declared bounded ADDSLOTSRANGE parallelism screen")
-    candidate_keys = [_treatment_key(item) for item in candidates]
-    expected_candidate_keys = {
-        ("cluster_create_strategy", "manual_tree_meet_parallel_slots", None, None, None),
-        *{
-            (
-                "cluster_create_strategy",
-                "tree_meet_addslotsrange",
-                parallelism,
-                None,
-                None,
-            )
-            for parallelism in sorted(expected_parallelism)
-        },
-    }
+    if screen_version == "v3-direct-p16":
+        _add(errors, not manual, "direct formation screen must not include the manual-tree diagnostic")
+        _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == {16}, "direct formation screen must contain only ADDSLOTSRANGE parallelism 16")
+        expected_candidate_keys = {
+            ("cluster_create_strategy", "tree_meet_addslotsrange", 16, None, None),
+        }
+    else:
+        expected_parallelism = {4, 8, 16} if legacy_screen else {2, 4, 8, 16}
+        _add(
+            errors,
+            screen_version == "v2" or legacy_screen,
+            "formation discovery candidate screen version must be 'v2' or 'v3-direct-p16'",
+        )
+        _add(errors, len(manual) == 1, "formation discovery must include the existing manual-tree diagnostic")
+        _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == expected_parallelism, "formation discovery must include the declared bounded ADDSLOTSRANGE parallelism screen")
+        expected_candidate_keys = {
+            ("cluster_create_strategy", "manual_tree_meet_parallel_slots", None, None, None),
+            *{
+                (
+                    "cluster_create_strategy",
+                    "tree_meet_addslotsrange",
+                    parallelism,
+                    None,
+                    None,
+                )
+                for parallelism in sorted(expected_parallelism)
+            },
+        }
     _add(
         errors,
         len(candidate_keys) == len(expected_candidate_keys)
@@ -809,6 +816,11 @@ def _validate_formation(
     cells_by_id: Mapping[str, Mapping[str, Any]],
     errors: list[str],
 ) -> None:
+    _add(
+        errors,
+        report.get("candidate_screen_version") == "v3-direct-p16",
+        "formation admission requires the direct p16 candidate screen",
+    )
     survivor_keys = _validate_formation_discovery(
         report,
         trials_by_id,

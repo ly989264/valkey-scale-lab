@@ -1761,6 +1761,25 @@ def test_success_supporting_archive_is_deterministic_and_preserves_sources(
     assert outputs[0] == outputs[1]
 
 
+def test_artifact_binding_accepts_product_rooted_command_sidecar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    product_root = tmp_path / "product"
+    artifacts_dir = product_root / "artifacts" / "gate-runs" / "run-a" / "check-a"
+    sidecar = artifacts_dir / "trials" / "logs" / "commands" / "cmd-000001.stdout.log"
+    sidecar.parent.mkdir(parents=True)
+    sidecar.write_text("output\n", encoding="utf-8")
+    monkeypatch.setattr(capture, "ROOT", product_root)
+
+    record = capture._artifact_regular_file(
+        artifacts_dir,
+        sidecar.relative_to(product_root),
+    )
+
+    assert record[0] == sidecar.resolve()
+    assert record[1] == "trials/logs/commands/cmd-000001.stdout.log"
+
+
 @pytest.mark.parametrize("failure", ["digest", "duplicate", "missing", "escape", "symlink"])
 def test_supporting_sidecars_fail_closed(
     tmp_path: Path,

@@ -167,6 +167,12 @@ RESOURCE_METRICS = (
     "cluster_bus_bytes",
 )
 FORMATION_CANDIDATE_SCREEN_VERSION = "v2"
+FORMATION_DIRECT_CANDIDATE_VERSION = "v3-direct-p16"
+DIRECT_FORMATION_CANDIDATE = {
+    "kind": "cluster_create_strategy",
+    "value": "tree_meet_addslotsrange",
+    "bounded_parallelism": 16,
+}
 COMPRESSED_TRIAL_SOURCE_CATEGORIES = {
     "resource",
     "workload",
@@ -290,20 +296,15 @@ def _capture_formation(ctx: CaptureContext) -> None:
             )
         )
         raise CaptureError("current formation default is the forced baseline; discovery improvement is 0 percent")
-    candidates = _formation_candidates()
     requested_parallelism = _selected_strategy_parallelism(
         ctx.args.selected_strategy, getattr(ctx.args, "selected_parallelism", "current-default")
     )
-    eligible = [
-        row
-        for row in candidates
-        if row["value"] == selected
-        and (requested_parallelism is None or row.get("bounded_parallelism") == requested_parallelism)
-    ]
-    if not eligible:
-        raise CaptureError("selected formation strategy is not one of the fixed discovery candidates")
+    candidate = dict(DIRECT_FORMATION_CANDIDATE)
+    if selected != candidate["value"] or requested_parallelism != candidate["bounded_parallelism"]:
+        raise CaptureError("M2 formation must use direct tree_meet_addslotsrange parallelism 16")
+    candidates = [candidate]
     survivors = capture_formation_discovery(ctx, baseline=baseline, candidates=candidates)
-    selected_survivors = [row for row in survivors if row[0] in eligible]
+    selected_survivors = [row for row in survivors if row[0] == candidate]
     if not selected_survivors:
         raise CaptureError("selected formation candidate did not beat the exact-50 discovery baseline")
     selected_treatment = min(selected_survivors, key=lambda row: row[1])[0]
@@ -4086,7 +4087,16 @@ def _artifact_regular_file(
     value: Path,
 ) -> tuple[Path, str, int, int, str]:
     root = artifacts_dir.resolve()
-    candidate = value if value.is_absolute() else root / value
+    if value.is_absolute():
+        candidate = value
+    else:
+        candidate = root / value
+        # Command records use product-rooted paths; bind only the spelling
+        # that names this exact check's current artifact root.
+        try:
+            candidate = root / value.relative_to(root.relative_to(ROOT))
+        except ValueError:
+            pass
     if ".." in candidate.parts:
         raise CaptureError(f"supporting artifact path contains traversal: {value}")
     try:
@@ -4597,7 +4607,7 @@ def _report_treatments(ctx: CaptureContext) -> tuple[dict[str, Any], list[dict[s
         )
         if parallelism is not None:
             selected.setdefault("bounded_parallelism", parallelism)
-        return baseline, _formation_candidates(), selected
+        return baseline, [dict(DIRECT_FORMATION_CANDIDATE)], selected
     if ctx.args.mode == "failover":
         baseline = _timeout_treatment(BASELINE_TIMEOUT_MS)
         selected_timeout = _selected_timeout(ctx.args.selected_timeout_ms)
@@ -4689,7 +4699,7 @@ def _build_report(ctx: CaptureContext, *, status: str, errors: list[str], real_v
         "report_digest": "",
     }
     if ctx.args.mode == "formation":
-        report["candidate_screen_version"] = FORMATION_CANDIDATE_SCREEN_VERSION
+        report["candidate_screen_version"] = FORMATION_DIRECT_CANDIDATE_VERSION
     report["report_digest"] = _report_digest(report)
     return report
 
