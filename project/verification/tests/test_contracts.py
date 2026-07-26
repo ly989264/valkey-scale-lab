@@ -407,14 +407,17 @@ def test_m2_check_mapping_runs_each_real_performance_matrix_once() -> None:
         "performance.cluster-formation-experiment": [
             (
                 "real.local.m2-cluster-formation",
-                {"selected_strategy": "current-default"},
+                {
+                    "selected_strategy": "tree_meet_addslotsrange",
+                    "selected_parallelism": "16",
+                },
             )
         ],
         "performance.cluster-formation-budget": [("gate.m2.contracts", {})],
         "performance.automatic-failover-experiment": [
             (
                 "real.local.m2-automatic-failover",
-                {"selected_timeout_ms": "current-default"},
+                {"selected_timeout_ms": "20000"},
             )
         ],
         "performance.automatic-failover-budget": [("gate.m2.contracts", {})],
@@ -422,8 +425,9 @@ def test_m2_check_mapping_runs_each_real_performance_matrix_once() -> None:
             (
                 "real.local.m2-stability-resource",
                 {
-                    "selected_strategy": "current-default",
-                    "selected_timeout_ms": "current-default",
+                    "selected_strategy": "tree_meet_addslotsrange",
+                    "selected_parallelism": "16",
+                    "selected_timeout_ms": "20000",
                 },
             )
         ],
@@ -471,11 +475,14 @@ def test_m2_real_tests_are_current_invocation_json_runners_not_repository_tests(
     catalog = load_catalog(PROJECT_ROOT / "catalog.json")
     repository_ids = set(catalog.suites["repository.all"].test_ids)
     expected = {
-        "real.local.m2-cluster-formation": (86400, {"selected_strategy"}),
+        "real.local.m2-cluster-formation": (
+            86400,
+            {"selected_strategy", "selected_parallelism"},
+        ),
         "real.local.m2-automatic-failover": (172800, {"selected_timeout_ms"}),
         "real.local.m2-stability-resource": (
             14400,
-            {"selected_strategy", "selected_timeout_ms"},
+            {"selected_strategy", "selected_parallelism", "selected_timeout_ms"},
         ),
     }
 

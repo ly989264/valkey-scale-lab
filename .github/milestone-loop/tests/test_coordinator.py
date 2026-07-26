@@ -74,6 +74,7 @@ def snapshot(issues: list[dict]) -> dict:
 
 def m2_milestone(
     selected_strategy: object = "current-default",
+    selected_parallelism: object = "current-default",
     selected_timeout_ms: object = "current-default",
 ) -> dict:
     milestone = json.loads(
@@ -83,11 +84,13 @@ def m2_milestone(
         for check in criterion.get("check", []):
             if check["id"] == "real.local.m2-cluster-formation":
                 check["parameters"]["selected_strategy"] = selected_strategy
+                check["parameters"]["selected_parallelism"] = selected_parallelism
             elif check["id"] == "real.local.m2-automatic-failover":
                 check["parameters"]["selected_timeout_ms"] = selected_timeout_ms
             elif check["id"] == "real.local.m2-stability-resource":
                 check["parameters"].update(
                     selected_strategy=selected_strategy,
+                    selected_parallelism=selected_parallelism,
                     selected_timeout_ms=selected_timeout_ms,
                 )
     return milestone
@@ -610,7 +613,8 @@ class CoordinatorTests(unittest.TestCase):
     def test_m2_explicit_candidates_can_reach_milestone_gate(self) -> None:
         milestone = m2_milestone(
             selected_strategy="tree_meet_addslotsrange",
-            selected_timeout_ms="10000",
+            selected_parallelism="16",
+            selected_timeout_ms="20000",
         )
         result, _client = coordinate_m2(milestone, self.catalog)
         self.assertFalse(m2_discovery_eligible(milestone, "m2"))
@@ -638,7 +642,7 @@ class CoordinatorTests(unittest.TestCase):
                         if check["id"] == "real.local.m2-automatic-failover"
                         else 30000
                     )
-        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 6)
         self.assertFalse(m2_discovery_eligible(milestone, "m2"))
         result, _client = coordinate_m2(milestone, self.catalog)
         self.assertEqual(result["reason"], "candidate-not-ready")
@@ -661,7 +665,7 @@ class CoordinatorTests(unittest.TestCase):
         milestone["criteria"][-1].setdefault("check", []).append(
             copy.deepcopy(formation_check)
         )
-        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 6)
         self.assertFalse(m2_discovery_eligible(milestone, "m2"))
 
     def test_m2_extra_candidate_parameters_fail_closed(self) -> None:
@@ -670,7 +674,7 @@ class CoordinatorTests(unittest.TestCase):
             for check in criterion.get("check", []):
                 if check["id"].startswith("real.local.m2-"):
                     check["parameters"]["unexpected"] = "not-reviewed"
-        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 4)
+        self.assertEqual(len(m2_candidate_blockers(milestone, "m2")), 6)
         self.assertFalse(m2_discovery_eligible(milestone, "m2"))
 
     def test_m2_discovery_requires_exact_occurrences_and_parameter_maps(self) -> None:
@@ -701,20 +705,21 @@ class CoordinatorTests(unittest.TestCase):
     def test_m2_stability_must_use_the_selected_experiment_candidates(self) -> None:
         milestone = m2_milestone(
             selected_strategy="tree_meet_addslotsrange",
-            selected_timeout_ms="10000",
+            selected_parallelism="16",
+            selected_timeout_ms="20000",
         )
         for criterion in milestone["criteria"]:
             for check in criterion.get("check", []):
                 if check["id"] == "real.local.m2-stability-resource":
                     check["parameters"].update(
                         selected_strategy="manual_tree_meet_parallel_slots",
-                        selected_timeout_ms="15000",
+                        selected_parallelism="16",
+                        selected_timeout_ms="20000",
                     )
         self.assertEqual(
             set(m2_candidate_blockers(milestone, "m2")),
             {
                 "real.local.m2-stability-resource.selected_strategy",
-                "real.local.m2-stability-resource.selected_timeout_ms",
             },
         )
 

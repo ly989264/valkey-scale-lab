@@ -2300,6 +2300,10 @@
         "selected_strategy": {
           "type": "string",
           "required": true
+        },
+        "selected_parallelism": {
+          "type": "string",
+          "required": true
         }
       },
       "runner": {
@@ -2312,6 +2316,8 @@
           "formation",
           "--selected-strategy",
           "{param.selected_strategy}",
+          "--selected-parallelism",
+          "{param.selected_parallelism}",
           "--run-id",
           "{gate.run_id}",
           "--artifacts-dir",
@@ -2363,6 +2369,10 @@
           "type": "string",
           "required": true
         },
+        "selected_parallelism": {
+          "type": "string",
+          "required": true
+        },
         "selected_timeout_ms": {
           "type": "string",
           "required": true
@@ -2378,6 +2388,8 @@
           "stability",
           "--selected-strategy",
           "{param.selected_strategy}",
+          "--selected-parallelism",
+          "{param.selected_parallelism}",
           "--selected-timeout-ms",
           "{param.selected_timeout_ms}",
           "--run-id",
