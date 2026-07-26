@@ -193,18 +193,11 @@ def _formation_report() -> dict[str, object]:
     candidates = [
         {
             "kind": "cluster_create_strategy",
-            "value": "manual_tree_meet_parallel_slots",
-        },
-        *[
-            {
-                "kind": "cluster_create_strategy",
-                "value": "tree_meet_addslotsrange",
-                "bounded_parallelism": parallelism,
-            }
-            for parallelism in (2, 4, 8, 16)
-        ],
+            "value": "tree_meet_addslotsrange",
+            "bounded_parallelism": 16,
+        }
     ]
-    selected = candidates[2]
+    selected = candidates[0]
     trials: list[dict[str, object]] = []
     pairs: list[dict[str, object]] = []
     cells: list[dict[str, object]] = []
@@ -302,7 +295,7 @@ def _formation_report() -> dict[str, object]:
         "campaign_id": invocation,
         "invocation_run_id": invocation,
         "experiment_kind": "formation",
-        "candidate_screen_version": "v2",
+        "candidate_screen_version": "v3-direct-p16",
         "created_at": "2026-07-19T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": "0.0.0"},
         "status": "PASS",
@@ -361,7 +354,7 @@ def _formation_discovery_campaign() -> dict[str, object]:
         "campaign_id": report["campaign_id"],
         "invocation_run_id": report["invocation_run_id"],
         "experiment_kind": "formation",
-        "candidate_screen_version": "v2",
+        "candidate_screen_version": "v3-direct-p16",
         "status": "PASS",
         "real_valkey": True,
         "execution_mode": "valkey-real",
@@ -1532,7 +1525,7 @@ def test_selection_only_formation_screen_accepts_zero_survivors() -> None:
     ) == []
 
 
-def test_selection_only_formation_screen_requires_v2_screen_version() -> None:
+def test_selection_only_formation_screen_requires_declared_screen_version() -> None:
     campaign = _formation_discovery_campaign()
     campaign.pop("candidate_screen_version")
 
@@ -1543,7 +1536,7 @@ def test_selection_only_formation_screen_requires_v2_screen_version() -> None:
     )
 
     assert "discovery campaign fields are incomplete or unexpected" in errors
-    assert "formation discovery candidate screen version must be 'v2'" in errors
+    assert "formation discovery candidate screen version must be 'v2' or 'v3-direct-p16'" in errors
 
 
 def test_selection_only_failover_screen_keeps_version_field_optional() -> None:
@@ -2578,7 +2571,7 @@ def test_selected_candidate_must_win_formation_discovery() -> None:
     trial = next(
         trial
         for trial in report["trials"]
-        if trial["cell_id"] == "discovery-2" and trial["arm"] == "candidate"
+        if trial["cell_id"] == "discovery-0" and trial["arm"] == "candidate"
     )
     duration = 200.0
     trial["monotonic_markers"] = {

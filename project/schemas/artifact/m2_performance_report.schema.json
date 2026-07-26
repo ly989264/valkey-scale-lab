@@ -36,7 +36,7 @@
     "campaign_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]+$"},
     "invocation_run_id": {"type": "string", "minLength": 1},
     "experiment_kind": {"type": "string", "enum": ["formation", "failover", "stability"]},
-    "candidate_screen_version": {"type": "string", "enum": ["v2"]},
+    "candidate_screen_version": {"type": "string", "enum": ["v2", "v3-direct-p16"]},
     "created_at": {"type": "string", "minLength": 1},
     "producer": {
       "type": "object",
