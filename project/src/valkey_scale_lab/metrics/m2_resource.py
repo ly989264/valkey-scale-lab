@@ -5,6 +5,7 @@ import ipaddress
 import json
 import math
 import time
+from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -355,25 +356,43 @@ def collect_m2_resource_window(
             if _process_identity(owned_target, pid) in allowed_gone_processes
         )
 
+        def probe_target(target: _Target) -> tuple[_Target, str]:
+            output = _run_command(
+                command,
+                [
+                    "exec",
+                    target.container_id,
+                    "sh",
+                    "-c",
+                    _PROC_BATCH_SCRIPT,
+                    "m2-resource",
+                    expected_gone_ports,
+                    *[
+                        f"{pid}:{port}"
+                        for pid, port in zip(target.pids, target.client_ports)
+                    ],
+                ],
+                timeout=command_timeout_seconds,
+            )
+            return target, output
+
+        probes: dict[_Target, tuple[str | None, Exception | None]] = {}
+        with ThreadPoolExecutor(max_workers=len(targets)) as executor:
+            futures = {target: executor.submit(probe_target, target) for target in targets}
+            for target in targets:
+                try:
+                    _target, output = futures[target].result()
+                    probes[_target] = (output, None)
+                except Exception as exc:  # noqa: BLE001 - preserve a fail-closed report for the caller
+                    probes[target] = (None, exc)
+
         for target in targets:
             try:
-                output = _run_command(
-                    command,
-                    [
-                        "exec",
-                        target.container_id,
-                        "sh",
-                        "-c",
-                        _PROC_BATCH_SCRIPT,
-                        "m2-resource",
-                        expected_gone_ports,
-                        *[
-                            f"{pid}:{port}"
-                            for pid, port in zip(target.pids, target.client_ports)
-                        ],
-                    ],
-                    timeout=command_timeout_seconds,
-                )
+                output, probe_error = probes[target]
+                if probe_error is not None:
+                    raise probe_error
+                if output is None:
+                    raise M2ResourceMeasurementError("resource probe returned no output")
                 row = _parse_batch(
                     output,
                     target,

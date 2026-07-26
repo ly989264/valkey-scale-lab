@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import subprocess
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -1789,6 +1790,60 @@ def test_m2_fault_resource_window_captures_before_barrier_then_runs_full_window(
     verdict = validate_and_aggregate_m2_resource_samples(invalid)
     assert verdict["status"] == "FAIL"
     assert any("does not match raw process identity" in error for error in verdict["errors"])
+
+
+def test_m2_resource_window_probes_owned_nodehosts_concurrently() -> None:
+    state = copy.deepcopy(_m2_runtime_state())
+    state["nodehosts"].append(
+        {
+            "nodehost_id": "nodehost-b",
+            "container_id": "cid-b",
+            "container_name": "owned-b",
+        }
+    )
+    state["nodes"].extend(
+        [
+            {
+                **node,
+                "logical_id": f"{node['logical_id']}-b",
+                "nodehost_id": "nodehost-b",
+                "container_id": "cid-b",
+                "nodehost_container_name": "owned-b",
+            }
+            for node in state["nodes"]
+        ]
+    )
+    clock = _FakeClock()
+    barrier = threading.Barrier(2)
+    per_container_sample = {"cid-a": 0, "cid-b": 0}
+
+    def command(args, *, timeout, check):
+        if args[0] == "inspect":
+            owned = json.loads(_owned_inspect())
+            if args[1] == "cid-b":
+                owned[0] = {**owned[0], "Id": "cid-b", "Name": "/owned-b"}
+            return SimpleNamespace(returncode=0, stdout=json.dumps(owned), stderr="")
+        assert args[0] == "exec"
+        barrier.wait(timeout=0.5)
+        container_id = args[1]
+        sample = per_container_sample[container_id]
+        per_container_sample[container_id] += 1
+        return SimpleNamespace(returncode=0, stdout=_m2_batch_output(sample), stderr="")
+
+    report = collect_m2_resource_window(
+        state,
+        window_name="parallel-nodehosts",
+        duration_seconds=2,
+        interval_seconds=1,
+        command=command,
+        monotonic_clock=clock.monotonic,
+        wall_clock=clock.wall,
+        sleep=clock.sleep,
+    )
+
+    assert report["status"] == "PASS", report["errors"]
+    assert report["coverage"]["nodehost_count"] == 2
+    assert report["coverage"]["process_count"] == 4
 
 
 def test_m2_resource_window_fails_closed_when_pid_sample_is_missing() -> None:
