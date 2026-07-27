@@ -39,6 +39,11 @@ class _Target:
 
 _ProcessIdentity = tuple[str, str, int]
 
+# A dense 200-node topology places 25 Valkey processes in each owned
+# nodehost. Bound each in-container probe batch so sampling can retain the
+# existing five-second cadence without dropping owned-process evidence.
+_RESOURCE_PROBE_BATCH_SIZE = 8
+
 
 _PROC_BATCH_SCRIPT = r"""
 clk_tck=$(getconf CLK_TCK 2>/dev/null) || exit 70
@@ -336,6 +341,43 @@ def collect_m2_resource_window(
     captured_processes: set[_ProcessIdentity] = set()
     observed_gone_processes: set[_ProcessIdentity] = set()
 
+    def target_batches(target: _Target) -> list[_Target]:
+        return [
+            _Target(
+                nodehost_id=target.nodehost_id,
+                container_id=target.container_id,
+                container_name=target.container_name,
+                ownership_id=target.ownership_id,
+                pids=target.pids[index : index + _RESOURCE_PROBE_BATCH_SIZE],
+                logical_ids=target.logical_ids[index : index + _RESOURCE_PROBE_BATCH_SIZE],
+                client_ports=target.client_ports[index : index + _RESOURCE_PROBE_BATCH_SIZE],
+            )
+            for index in range(0, len(target.pids), _RESOURCE_PROBE_BATCH_SIZE)
+        ]
+
+    def merge_batch_rows(target: _Target, rows: list[dict[str, Any]]) -> dict[str, Any]:
+        if not rows:
+            raise M2ResourceMeasurementError(f"{target.nodehost_id} has no resource probe rows")
+        first = rows[0]
+        if any(
+            row["clock_ticks_per_second"] != first["clock_ticks_per_second"]
+            or row["page_size_bytes"] != first["page_size_bytes"]
+            for row in rows[1:]
+        ):
+            raise M2ResourceMeasurementError(
+                f"{target.nodehost_id} resource probe batches disagree on proc metadata"
+            )
+        return {
+            **{key: first[key] for key in ("nodehost_id", "container_id", "container_name", "ownership_id")},
+            "clock_ticks_per_second": first["clock_ticks_per_second"],
+            "page_size_bytes": first["page_size_bytes"],
+            "processes": [process for row in rows for process in row["processes"]],
+            "gone_pids": sorted(pid for row in rows for pid in row["gone_pids"]),
+            # Namespace counters are host-scoped. Keep one bounded observation
+            # rather than treating concurrent duplicate rows as independent.
+            "namespace_network": first["namespace_network"],
+        }
+
     def capture_sample(sample_index: int, scheduled_offset: float, scheduled: float) -> dict[str, Any]:
         delay = scheduled - float(monotonic_clock())
         if delay > 0:
@@ -356,49 +398,62 @@ def collect_m2_resource_window(
             if _process_identity(owned_target, pid) in allowed_gone_processes
         )
 
-        def probe_target(target: _Target) -> tuple[_Target, str]:
-            output = _run_command(
-                command,
-                [
-                    "exec",
-                    target.container_id,
-                    "sh",
-                    "-c",
-                    _PROC_BATCH_SCRIPT,
-                    "m2-resource",
-                    expected_gone_ports,
-                    *[
-                        f"{pid}:{port}"
-                        for pid, port in zip(target.pids, target.client_ports)
-                    ],
-                ],
-                timeout=command_timeout_seconds,
-            )
-            return target, output
+        def probe_target(target: _Target) -> tuple[_Target, list[tuple[_Target, str]]]:
+            batches = target_batches(target)
 
-        probes: dict[_Target, tuple[str | None, Exception | None]] = {}
+            def probe_batch(batch: _Target) -> tuple[_Target, str]:
+                output = _run_command(
+                    command,
+                    [
+                        "exec",
+                        batch.container_id,
+                        "sh",
+                        "-c",
+                        _PROC_BATCH_SCRIPT,
+                        "m2-resource",
+                        expected_gone_ports,
+                        *[
+                            f"{pid}:{port}"
+                            for pid, port in zip(batch.pids, batch.client_ports)
+                        ],
+                    ],
+                    timeout=command_timeout_seconds,
+                )
+                return batch, output
+
+            with ThreadPoolExecutor(max_workers=len(batches)) as executor:
+                futures = [executor.submit(probe_batch, batch) for batch in batches]
+                return target, [future.result() for future in futures]
+
+        probes: dict[_Target, tuple[list[tuple[_Target, str]] | None, Exception | None]] = {}
         with ThreadPoolExecutor(max_workers=len(targets)) as executor:
             futures = {target: executor.submit(probe_target, target) for target in targets}
             for target in targets:
                 try:
-                    _target, output = futures[target].result()
-                    probes[_target] = (output, None)
+                    _target, batch_outputs = futures[target].result()
+                    probes[_target] = (batch_outputs, None)
                 except Exception as exc:  # noqa: BLE001 - preserve a fail-closed report for the caller
                     probes[target] = (None, exc)
 
         for target in targets:
             try:
-                output, probe_error = probes[target]
+                batch_outputs, probe_error = probes[target]
                 if probe_error is not None:
                     raise probe_error
-                if output is None:
+                if batch_outputs is None:
                     raise M2ResourceMeasurementError("resource probe returned no output")
-                row = _parse_batch(
-                    output,
+                row = merge_batch_rows(
                     target,
-                    expected_gone_processes=allowed_gone_processes,
-                    previously_captured_processes=captured_processes,
-                    previously_gone_processes=observed_gone_processes,
+                    [
+                        _parse_batch(
+                            output,
+                            batch,
+                            expected_gone_processes=allowed_gone_processes,
+                            previously_captured_processes=captured_processes,
+                            previously_gone_processes=observed_gone_processes,
+                        )
+                        for batch, output in batch_outputs
+                    ],
                 )
                 _intern_nodehost_directional_links(
                     row,

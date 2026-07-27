@@ -1846,6 +1846,58 @@ def test_m2_resource_window_probes_owned_nodehosts_concurrently() -> None:
     assert report["coverage"]["process_count"] == 4
 
 
+def test_m2_resource_window_splits_dense_nodehost_probes() -> None:
+    state = _m2_runtime_state()
+    state["nodes"].extend(
+        {
+            "logical_id": f"node-{pid}",
+            "nodehost_id": "nodehost-a",
+            "container_id": "cid-a",
+            "nodehost_container_name": "owned-a",
+            "pid": pid,
+            "client_port": 7000 + pid,
+        }
+        for pid in range(103, 110)
+    )
+    clock = _FakeClock()
+    barrier = threading.Barrier(2)
+    batches: list[tuple[int, ...]] = []
+
+    def command(args, *, timeout, check):
+        if args[0] == "inspect":
+            return SimpleNamespace(returncode=0, stdout=_owned_inspect(), stderr="")
+        selected = tuple(int(value.split(":", 1)[0]) for value in args[7:])
+        barrier.wait(timeout=0.5)
+        batches.append(selected)
+        rows = ["META\t100\t4096"]
+        for pid in selected:
+            port = 7000 + pid
+            rows.extend(
+                [
+                    f"PID\t{pid}\t10\t2\t5\t4\t2",
+                    f"CLUSTER\t{pid}\t{port}\t100\t50\t10\t8\t0\t1\t0\t0",
+                    f"CLINKS\t{pid}\t[]",
+                ]
+            )
+        rows.append("NET\t1000\t2000")
+        return SimpleNamespace(returncode=0, stdout="\n".join(rows), stderr="")
+
+    report = collect_m2_resource_window(
+        state,
+        window_name="dense-nodehost",
+        duration_seconds=1,
+        interval_seconds=1,
+        command=command,
+        monotonic_clock=clock.monotonic,
+        wall_clock=clock.wall,
+        sleep=clock.sleep,
+    )
+
+    assert report["status"] == "PASS", report["errors"]
+    assert report["coverage"]["process_count"] == 9
+    assert sorted(len(batch) for batch in batches) == [1, 1, 8, 8]
+
+
 def test_m2_resource_window_fails_closed_when_pid_sample_is_missing() -> None:
     clock = _FakeClock()
 
