@@ -8,7 +8,7 @@ safety:
   cleanup_on_error: true
 runtime:
   provider: docker
-  valkey_image: valkey/valkey:9.1.0
+  valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
   sandbox_mode: container_namespace
   dry_run: false
 hosts:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import hashlib
 import math
@@ -137,10 +138,104 @@ T = TypeVar("T")
 M2_MEASUREMENT_ENV = "VSLAB_M2_MEASUREMENT"
 M2_RUN_ID_ENV = "VSLAB_M2_RUN_ID"
 M2_BOOTSTRAP_RESOURCE_SECONDS_ENV = "VSLAB_M2_BOOTSTRAP_RESOURCE_SECONDS"
+CUSTOM_VALKEY_IMAGE = "valkey-scale-lab/valkey:9.1.0-myslots"
+CUSTOM_VALKEY_VERSION = "9.1.0"
+CUSTOM_VALKEY_SOURCE_SHA256 = "7789fe1df257774457bafb4c1d56c9f7020c3879a7f5b4234af9030b2bd82dfd"
+CUSTOM_VALKEY_PATCH_SHA256 = "d42df002c5c37c5900debabcb71dacc293236042661609ebb09379d350891c92"
+CUSTOM_VALKEY_SERVER_SHA256_LABEL = "org.valkey-scale-lab.valkey.server.sha256"
+CUSTOM_VALKEY_CLI_SHA256_LABEL = "org.valkey-scale-lab.valkey.cli.sha256"
 
 
 class DockerRuntimeError(RuntimeError):
     pass
+
+
+def _verify_custom_valkey_image(image: str) -> dict[str, Any]:
+    build_command = "./project/scripts/build_valkey_image.sh"
+    if image != CUSTOM_VALKEY_IMAGE:
+        raise DockerRuntimeError(
+            f"runtime.valkey_image must be {CUSTOM_VALKEY_IMAGE}; "
+            f"build it first with {build_command}"
+        )
+
+    inspected = run_docker(
+        ["image", "inspect", image, "--format", "{{json .Config.Labels}}"],
+        timeout=30,
+        check=False,
+    )
+    if inspected.returncode != 0:
+        raise DockerRuntimeError(
+            f"required local image {image} is missing; run {build_command}"
+        )
+    try:
+        labels = json.loads(inspected.stdout)
+    except json.JSONDecodeError as exc:
+        raise DockerRuntimeError(f"could not parse build labels for {image}") from exc
+    if not isinstance(labels, dict):
+        raise DockerRuntimeError(f"image {image} has no custom Valkey build labels")
+
+    expected_labels = {
+        "org.valkey-scale-lab.valkey.version": CUSTOM_VALKEY_VERSION,
+        "org.valkey-scale-lab.valkey.source.sha256": CUSTOM_VALKEY_SOURCE_SHA256,
+        "org.valkey-scale-lab.valkey.patch.sha256": CUSTOM_VALKEY_PATCH_SHA256,
+    }
+    for name, expected in expected_labels.items():
+        if labels.get(name) != expected:
+            raise DockerRuntimeError(
+                f"image {image} has invalid label {name}; run {build_command}"
+            )
+    server_sha256 = str(labels.get(CUSTOM_VALKEY_SERVER_SHA256_LABEL, ""))
+    cli_sha256 = str(labels.get(CUSTOM_VALKEY_CLI_SHA256_LABEL, ""))
+    if not re.fullmatch(r"[0-9a-f]{64}", server_sha256) or not re.fullmatch(r"[0-9a-f]{64}", cli_sha256):
+        raise DockerRuntimeError(
+            f"image {image} has invalid binary digest labels; run {build_command}"
+        )
+
+    script = (
+        "set -eu; "
+        'test "$(sha256sum /usr/local/bin/valkey-server | cut -d \" \" -f 1)" = "$1"; '
+        'test "$(sha256sum /usr/local/bin/valkey-cli | cut -d \" \" -f 1)" = "$2"; '
+        "tmp=/tmp/valkey-scale-lab-image-preflight; mkdir -p \"$tmp\"; "
+        "valkey-server --port 6379 --bind 127.0.0.1 --protected-mode no "
+        "--cluster-enabled yes --cluster-config-file \"$tmp/nodes.conf\" "
+        "--dir \"$tmp\" --daemonize yes; "
+        "trap 'valkey-cli -h 127.0.0.1 -p 6379 shutdown nosave >/dev/null 2>&1 || true' EXIT; "
+        "attempt=0; until valkey-cli -h 127.0.0.1 -p 6379 ping >/dev/null 2>&1; do "
+        "attempt=$((attempt + 1)); test \"$attempt\" -lt 50; sleep 0.1; done; "
+        "valkey-cli --raw -h 127.0.0.1 -p 6379 command info 'cluster|myslots' "
+        "| grep -Fx 'cluster|myslots'"
+    )
+    verified = run_docker(
+        [
+            "run",
+            "--rm",
+            "--entrypoint",
+            "sh",
+            image,
+            "-c",
+            script,
+            "sh",
+            server_sha256,
+            cli_sha256,
+        ],
+        timeout=30,
+        check=False,
+    )
+    if verified.returncode != 0:
+        raise DockerRuntimeError(
+            f"image {image} failed binary or CLUSTER MYSLOTS verification; "
+            f"rebuild it with {build_command}: {verified.stderr.strip()}"
+        )
+    return {
+        "image": image,
+        "valkey_version": CUSTOM_VALKEY_VERSION,
+        "source_sha256": CUSTOM_VALKEY_SOURCE_SHA256,
+        "patch_sha256": CUSTOM_VALKEY_PATCH_SHA256,
+        "valkey_server_sha256": server_sha256,
+        "valkey_cli_sha256": cli_sha256,
+        "command": "CLUSTER MYSLOTS",
+        "status": "PASS",
+    }
 
 
 def _runtime_scale_profile(node_count: int) -> ExecutionProfile | None:
@@ -507,6 +602,14 @@ def _execute_runtime(
     with _timeline_span(setup_timeline, "port_preflight_check", "preflight", {"port_count": len(ports)}):
         _check_ports_free(ports)
 
+    with _timeline_span(
+        setup_timeline,
+        "custom_valkey_image_preflight",
+        "preflight",
+        {"image": config["runtime"]["valkey_image"]},
+    ):
+        image_preflight = _verify_custom_valkey_image(str(config["runtime"]["valkey_image"]))
+
     if backend_id == "docker_process":
         return _create_process_scenario(
             capability_id=capability_id,
@@ -518,6 +621,7 @@ def _execute_runtime(
             nodes=nodes,
             profile_id=profile_id,
             setup_timeline=setup_timeline,
+            image_preflight=image_preflight,
         )
 
     network_name = _network_name(capability_id, scenario)
@@ -567,6 +671,7 @@ def _execute_runtime(
             backend_id=backend_id,
             profile_id=profile_id,
         )
+        state["runtime"]["valkey_image_preflight"] = image_preflight
         _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", capability_id, scenario, run_id, state)
         _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", capability_id, scenario, run_id, state)
         _write_state(Path(state_out), state)
@@ -820,6 +925,7 @@ def _create_process_scenario(
     nodes: list[dict[str, Any]],
     profile_id: str,
     setup_timeline: SetupTimeline | None = None,
+    image_preflight: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     network_name = _network_name(capability_id, scenario)
     management_profile = _management_matrix_profile(capability_id, scenario, len(nodes))
@@ -978,6 +1084,8 @@ def _create_process_scenario(
             profile_id=profile_id,
         )
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
+        if image_preflight is not None:
+            state["runtime"]["valkey_image_preflight"] = image_preflight
         _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", capability_id, scenario, run_id, state)
         _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", capability_id, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_before_cluster", "state_write", {"path": state_out.as_posix()}):
@@ -1034,6 +1142,8 @@ def _create_process_scenario(
             profile_id=profile_id,
         )
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
+        if image_preflight is not None:
+            state["runtime"]["valkey_image_preflight"] = image_preflight
         state["runtime"]["cluster_snapshot_path"] = snapshots_path.as_posix()
         state["runtime"]["operations"] = operations
         timing_path = artifacts / f"runtime_timing_breakdown_{scenario}.json"
@@ -1057,6 +1167,20 @@ def _create_process_scenario(
         if full_flow_profile:
             with _timeline_span(setup_timeline, "stabilize", "stabilize", {"node_count": len(nodes)}):
                 _management_wait_clean_cluster(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0))
+            if image_preflight is None:
+                raise DockerRuntimeError("LOCAL_FULL_FLOW requires a verified custom Valkey image")
+            myslots_path = artifacts / "cluster_myslots_report.json"
+            with _timeline_span(setup_timeline, "cluster_myslots", "artifact_validation", {"node_count": len(nodes)}):
+                _write_cluster_myslots_report(
+                    myslots_path,
+                    capability_id=capability_id,
+                    scenario=scenario,
+                    run_id=run_id,
+                    nodes=nodes,
+                    image_preflight=image_preflight,
+                )
+            state["runtime"]["cluster_myslots_report_path"] = myslots_path.as_posix()
+            _write_state(state_out, state)
         if management_profile:
             write_management_matrix_artifacts(
                 artifacts=artifacts,
@@ -4468,6 +4592,13 @@ def _host_command(host: str, port: int, *args: Any, timeout: float = 2.0) -> Any
         return _read_resp(sock.makefile("rb"))
 
 
+def _host_command_binary(host: str, port: int, *args: Any, timeout: float = 2.0) -> Any:
+    with socket.create_connection((host, port), timeout=timeout) as sock:
+        sock.settimeout(timeout)
+        sock.sendall(_encode_resp(*args))
+        return _read_resp(sock.makefile("rb"), decode_bulk=False)
+
+
 def _encode_resp(*args: Any) -> bytes:
     parts = [f"*{len(args)}\r\n".encode("utf-8")]
     for arg in args:
@@ -4477,7 +4608,7 @@ def _encode_resp(*args: Any) -> bytes:
     return b"".join(parts)
 
 
-def _read_resp(fp: Any) -> Any:
+def _read_resp(fp: Any, *, decode_bulk: bool = True) -> Any:
     prefix = fp.read(1)
     if prefix == b"+":
         return _read_resp_line(fp).decode("utf-8", errors="replace")
@@ -4490,11 +4621,12 @@ def _read_resp(fp: Any) -> Any:
         if size == -1:
             return None
         data = fp.read(size)
-        _ = fp.read(2)
-        return data.decode("utf-8", errors="replace")
+        if fp.read(2) != b"\r\n":
+            raise DockerRuntimeError("invalid RESP bulk string")
+        return data.decode("utf-8", errors="replace") if decode_bulk else data
     if prefix == b"*":
         size = int(_read_resp_line(fp))
-        return [_read_resp(fp) for _ in range(size)]
+        return [_read_resp(fp, decode_bulk=decode_bulk) for _ in range(size)]
     raise DockerRuntimeError(f"unknown RESP prefix {prefix!r}")
 
 
@@ -4503,6 +4635,181 @@ def _read_resp_line(fp: Any) -> bytes:
     if not line.endswith(b"\r\n"):
         raise DockerRuntimeError("invalid RESP line")
     return line[:-2]
+
+
+def _write_cluster_myslots_report(
+    path: Path,
+    *,
+    capability_id: str,
+    scenario: str,
+    run_id: str,
+    nodes: list[dict[str, Any]],
+    image_preflight: dict[str, Any],
+) -> dict[str, Any]:
+    expected_keys = [
+        b"node-id",
+        b"shard-id",
+        b"role",
+        b"slot-owner-id",
+        b"slot-count",
+        b"bitmap-encoding",
+        b"slot-bitmap",
+    ]
+    expected_server_sha256 = str(image_preflight["valkey_server_sha256"])
+
+    def observe(node: dict[str, Any]) -> dict[str, Any]:
+        response = _host_command_binary(
+            "127.0.0.1",
+            int(node["client_port"]),
+            "CLUSTER",
+            "MYSLOTS",
+            timeout=5.0,
+        )
+        if not isinstance(response, list) or len(response) != 14:
+            raise DockerRuntimeError(
+                f"{node['logical_id']} returned an invalid CLUSTER MYSLOTS response"
+            )
+        keys = response[0::2]
+        if keys != expected_keys:
+            raise DockerRuntimeError(
+                f"{node['logical_id']} returned unexpected CLUSTER MYSLOTS fields"
+            )
+        values = dict(zip(keys, response[1::2]))
+        node_id = bytes(values[b"node-id"]).decode("ascii")
+        shard_id = bytes(values[b"shard-id"]).decode("ascii")
+        role = bytes(values[b"role"]).decode("ascii")
+        slot_owner_id = bytes(values[b"slot-owner-id"]).decode("ascii")
+        slot_count = values[b"slot-count"]
+        bitmap_encoding = bytes(values[b"bitmap-encoding"]).decode("ascii")
+        bitmap = bytes(values[b"slot-bitmap"])
+        if not CLUSTER_NODE_ID_RE.fullmatch(node_id):
+            raise DockerRuntimeError(f"{node['logical_id']} returned an invalid node-id")
+        if not CLUSTER_NODE_ID_RE.fullmatch(shard_id):
+            raise DockerRuntimeError(f"{node['logical_id']} returned an invalid shard-id")
+        if not CLUSTER_NODE_ID_RE.fullmatch(slot_owner_id):
+            raise DockerRuntimeError(f"{node['logical_id']} returned an invalid slot-owner-id")
+        if role not in {"primary", "replica"} or role != node.get("role"):
+            raise DockerRuntimeError(f"{node['logical_id']} returned an invalid role {role!r}")
+        if bitmap_encoding != "lsb0" or len(bitmap) != 2048:
+            raise DockerRuntimeError(f"{node['logical_id']} returned an invalid slot bitmap")
+        popcount = sum(bin(byte).count("1") for byte in bitmap)
+        if not isinstance(slot_count, int) or slot_count != popcount:
+            raise DockerRuntimeError(
+                f"{node['logical_id']} slot-count does not match bitmap population count"
+            )
+
+        digest_result = run_docker(
+            [
+                "exec",
+                str(node["nodehost_container_name"]),
+                "sha256sum",
+                f"/proc/{int(node['pid'])}/exe",
+            ],
+            timeout=15,
+        )
+        process_sha256 = digest_result.stdout.strip().split(maxsplit=1)[0]
+        if process_sha256 != expected_server_sha256:
+            raise DockerRuntimeError(
+                f"{node['logical_id']} is not running the verified patched Valkey binary"
+            )
+        return {
+            "logical_id": str(node["logical_id"]),
+            "ordinal": int(node["ordinal"]),
+            "client_port": int(node["client_port"]),
+            "node-id": node_id,
+            "shard-id": shard_id,
+            "role": role,
+            "slot-owner-id": slot_owner_id,
+            "slot-count": slot_count,
+            "bitmap-encoding": bitmap_encoding,
+            "slot-bitmap-bytes": len(bitmap),
+            "slot-bitmap-sha256": hashlib.sha256(bitmap).hexdigest(),
+            "slot-bitmap-base64": base64.b64encode(bitmap).decode("ascii"),
+            "valkey-server-sha256": process_sha256,
+            "_bitmap": bitmap,
+        }
+
+    observations = _bounded_parallel(
+        nodes,
+        observe,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0),
+        label="CLUSTER MYSLOTS observation",
+    )
+    observations.sort(key=lambda item: item["ordinal"])
+    if len(observations) != len(nodes):
+        raise DockerRuntimeError(
+            f"CLUSTER MYSLOTS observed {len(observations)}/{len(nodes)} nodes"
+        )
+    if len({item["node-id"] for item in observations}) != len(nodes):
+        raise DockerRuntimeError("CLUSTER MYSLOTS node-id values are not unique")
+
+    primaries = [item for item in observations if item["role"] == "primary"]
+    replicas = [item for item in observations if item["role"] == "replica"]
+    primary_by_id = {item["node-id"]: item for item in primaries}
+    if len(primary_by_id) != len(primaries):
+        raise DockerRuntimeError("CLUSTER MYSLOTS primary node-id values are not unique")
+    for primary in primaries:
+        if primary["slot-owner-id"] != primary["node-id"]:
+            raise DockerRuntimeError(
+                f"{primary['logical_id']} primary does not own its reported bitmap"
+            )
+    for replica in replicas:
+        primary = primary_by_id.get(replica["slot-owner-id"])
+        if primary is None:
+            raise DockerRuntimeError(
+                f"{replica['logical_id']} reports an unknown slot owner"
+            )
+        if (
+            replica["shard-id"] != primary["shard-id"]
+            or replica["slot-count"] != primary["slot-count"]
+            or replica["_bitmap"] != primary["_bitmap"]
+        ):
+            raise DockerRuntimeError(
+                f"{replica['logical_id']} bitmap does not match its shard primary"
+            )
+
+    union = bytearray(2048)
+    for primary in primaries:
+        bitmap = primary["_bitmap"]
+        for index, byte in enumerate(bitmap):
+            if union[index] & byte:
+                raise DockerRuntimeError("CLUSTER MYSLOTS primary bitmaps overlap")
+            union[index] |= byte
+    if union != bytearray([0xFF]) * 2048:
+        raise DockerRuntimeError(
+            "CLUSTER MYSLOTS primary bitmap union does not cover all 16384 slots"
+        )
+
+    rows = []
+    for item in observations:
+        row = dict(item)
+        del row["_bitmap"]
+        rows.append(row)
+    report = {
+        "schema_version": "v1",
+        "artifact_type": "cluster_myslots_report",
+        "capability_id": capability_id,
+        "scenario_name": scenario,
+        "run_id": run_id,
+        "status": "PASS",
+        "nodes_expected": len(nodes),
+        "nodes_observed": len(rows),
+        "primary_count": len(primaries),
+        "replica_count": len(replicas),
+        "slot_count": 16384,
+        "bitmap_bytes": 2048,
+        "bitmap_encoding": "lsb0",
+        "coverage": {
+            "primary_bitmaps_pairwise_disjoint": True,
+            "all_slots_covered_exactly_once": True,
+            "replicas_match_primaries": True,
+        },
+        "image_preflight": image_preflight,
+        "nodes": rows,
+    }
+    _write_json_artifact(path, report)
+    return report
 
 
 def _mesh_meet(nodes: list[dict[str, Any]]) -> None:
@@ -7259,6 +7566,7 @@ def write_full_flow_artifacts(
                 _local_full_flow_rel(artifacts / "fault_sequence.json"),
                 _local_full_flow_rel(artifacts / "fault_command_log.jsonl"),
             ],
+            "cluster_myslots_ref": _local_full_flow_rel(artifacts / "cluster_myslots_report.json"),
             "analysis_ref": _local_full_flow_rel(artifacts / "analysis_summary.json"),
             "report_ref": _local_full_flow_rel(artifacts / "report_index.json"),
             "cleanup_ref": _local_full_flow_rel(artifacts / "cleanup_report.json"),
@@ -7978,7 +8286,7 @@ def _local_full_flow_lifecycle_steps(scale: int, artifacts: Path, management: di
         "plan_cluster": [f"{scoped}/cluster_plan.json"],
         "create_cluster": [f"{scoped}/run_state.json", f"{scoped}/cluster_snapshots_{LOCAL_FULL_FLOW_SCENARIO if scale == 50 else LOCAL_FULL_FLOW_SCENARIO if scale == 100 else LOCAL_FULL_FLOW_SCENARIO}.json"],
         "meet_nodes": [f"{scoped}/run_state.json"],
-        "assign_slots": [f"{scoped}/run_state.json"],
+        "assign_slots": [f"{scoped}/run_state.json", f"{scoped}/cluster_myslots_report.json"],
         "add_replica": [f"{scoped}/run_state.json"],
         "baseline_workload": [f"{scoped}/workload_windows.json", f"{scoped}/events.jsonl"],
         "telemetry_collect": [f"{scoped}/events.jsonl", f"{scoped}/metrics_timeseries.jsonl"],

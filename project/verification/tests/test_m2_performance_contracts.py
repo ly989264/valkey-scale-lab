@@ -2442,7 +2442,13 @@ def _adapt_historical_formation_campaign(
 
         provenance = deepcopy(trial["provenance"])
         provenance["product_digest"] = current_product
+        provenance["configuration_digest"] = M2._file_digest(
+            PROJECT_ROOT / "templates" / "configs" / f"scale_{trial['scale']}.yaml"
+        )
         trial["control_digests"]["product"] = current_product
+        trial["control_digests"]["configuration_except_treatment"] = provenance[
+            "configuration_digest"
+        ]
         refs = {
             ref["category"]: ref
             for ref in trial["source_sha256s"]
@@ -2463,8 +2469,12 @@ def _adapt_historical_formation_campaign(
             provenance,
         )
 
+    trials_by_id = {trial["trial_id"]: trial for trial in formation["trials"]}
     for pair in formation["pairs"]:
         pair["control_digests"]["product"] = current_product
+        pair["control_digests"]["configuration_except_treatment"] = trials_by_id[
+            pair["baseline_trial_id"]
+        ]["control_digests"]["configuration_except_treatment"]
     return formation
 
 

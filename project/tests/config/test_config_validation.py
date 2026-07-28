@@ -13,7 +13,7 @@ def test_single_mac_template_validates(tmp_path: Path) -> None:
     assert report["status"] == "PASS"
     normalized = json.loads(Path(report["normalized_config_path"]).read_text(encoding="utf-8"))
     assert normalized["safety"]["default_max_nodes"] == 100
-    assert normalized["runtime"]["valkey_image"].startswith("valkey/valkey:9.1.")
+    assert normalized["runtime"]["valkey_image"] == "valkey-scale-lab/valkey:9.1.0-myslots"
 
 
 def test_multi_az_template_validates(tmp_path: Path) -> None:
