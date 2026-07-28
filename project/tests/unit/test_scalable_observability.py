@@ -35,7 +35,7 @@ from valkey_scale_lab.observability.sentinel import (
     key_slot,
     slot_tags,
 )
-from valkey_scale_lab.valkey.resp import Endpoint, read_response
+from valkey_scale_lab.valkey.resp import Endpoint, RespCommandError, read_response
 
 
 def _bitmap(start: int, end: int) -> bytes:
@@ -361,6 +361,80 @@ def test_sentinel_router_tries_next_seed_after_connection_failure() -> None:
 
     assert router.get("key") == b"value"
     assert calls == seeds
+
+
+def test_fault_probe_reaches_promoted_replica_through_its_published_endpoint() -> None:
+    clock = FakeClock()
+    affected = Canary("affected", 0, "affected-key", "affected-value")
+    control = Canary("control", 1, "control-key", "control-value")
+    nodes = [
+        SentinelNode(
+            NodeEndpoint("affected-primary", "127.0.0.1", 7000, "primary", "affected"),
+            "1" * 40,
+            "affected",
+            "primary",
+            affected,
+        ),
+        SentinelNode(
+            NodeEndpoint("control-primary", "127.0.0.1", 7001, "primary", "control"),
+            "2" * 40,
+            "control",
+            "primary",
+            control,
+        ),
+        SentinelNode(
+            NodeEndpoint("promoted-replica", "127.0.0.1", 7002, "replica", "affected"),
+            "3" * 40,
+            "affected",
+            "replica",
+            affected,
+        ),
+        SentinelNode(
+            NodeEndpoint("control-replica", "127.0.0.1", 7003, "replica", "control"),
+            "4" * 40,
+            "control",
+            "replica",
+            control,
+        ),
+    ]
+    redirected = Endpoint("172.18.0.3", 7002)
+    calls: list[tuple[Endpoint, str]] = []
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        def response(key: str) -> Any:
+            calls.append((endpoint, key))
+            if endpoint.port == 7000 or endpoint == redirected:
+                raise ConnectionRefusedError("endpoint is unreachable")
+            if endpoint.port == 7002 and key == affected.key:
+                return affected.value
+            if endpoint.port == 7001 and key == control.key:
+                return control.value
+            raise RespCommandError(
+                f"MOVED {key_slot(key)} {redirected.host}:{redirected.port}"
+            )
+
+        return FakeConnection(
+            {
+                ("GET", affected.key): lambda: response(affected.key),
+                ("GET", control.key): lambda: response(control.key),
+            }
+        )
+
+    result = SentinelLane(
+        nodes,
+        connection_factory=factory,
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+    ).fault_probe(
+        affected=affected,
+        control=control,
+        recovery_deadline_seconds=2.0,
+        fault_monotonic=clock.monotonic(),
+    )
+
+    assert result["stable_rounds"] == 10
+    assert (Endpoint("127.0.0.1", 7002), affected.key) in calls
+    assert (redirected, control.key) in calls
 
 
 class FakeClock:

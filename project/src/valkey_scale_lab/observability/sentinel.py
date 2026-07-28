@@ -268,7 +268,9 @@ class ClusterRouter:
             endpoint = candidate
             for _ in range(3):
                 try:
-                    return self._connection(endpoint).execute("GET", key)
+                    value = self._connection(endpoint).execute("GET", key)
+                    self._slot_routes[slot] = endpoint
+                    return value
                 except RespCommandError as exc:
                     redirect = self._redirect(exc)
                     if redirect is None:
@@ -432,11 +434,25 @@ class SentinelLane:
             raise ValueError("Sentinel recovery requires exactly 10 stable rounds")
         owned_router = router is None
         if router is None:
+            shard_order = {
+                affected.shard_id: 0,
+                control.shard_id: 1,
+            }
+            seed_nodes = sorted(
+                (
+                    node
+                    for node in self.nodes
+                    if node.shard_id in shard_order
+                ),
+                key=lambda node: (
+                    shard_order[node.shard_id],
+                    node.role != "primary",
+                ),
+            )
             router = ClusterRouter(
                 [
                     Endpoint(node.endpoint.host, node.endpoint.port)
-                    for node in self.nodes
-                    if node.role == "primary"
+                    for node in seed_nodes
                 ],
                 timeout=self.timeout,
                 connection_factory=self._factory,
