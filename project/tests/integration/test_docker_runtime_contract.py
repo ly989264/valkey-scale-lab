@@ -17,7 +17,7 @@ def test_cached_production_image_supports_m2_shell_kill_and_proc_probe() -> None
     docker = shutil.which("docker")
     if docker is None:
         pytest.skip("Docker CLI is unavailable")
-    image = "valkey/valkey:9.1.0"
+    image = docker_runtime.CUSTOM_VALKEY_IMAGE
     inspected = subprocess.run(
         [docker, "image", "inspect", image],
         stdout=subprocess.DEVNULL,
@@ -62,6 +62,176 @@ def test_cached_production_image_supports_m2_shell_kill_and_proc_probe() -> None
     )
 
     assert completed.returncode == 0, completed.stderr
+
+
+def test_custom_valkey_image_preflight_verifies_labels_binaries_and_command(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    server_sha256 = "a" * 64
+    cli_sha256 = "b" * 64
+    labels = {
+        "org.valkey-scale-lab.valkey.version": docker_runtime.CUSTOM_VALKEY_VERSION,
+        "org.valkey-scale-lab.valkey.source.sha256": docker_runtime.CUSTOM_VALKEY_SOURCE_SHA256,
+        "org.valkey-scale-lab.valkey.patch.sha256": docker_runtime.CUSTOM_VALKEY_PATCH_SHA256,
+        docker_runtime.CUSTOM_VALKEY_SERVER_SHA256_LABEL: server_sha256,
+        docker_runtime.CUSTOM_VALKEY_CLI_SHA256_LABEL: cli_sha256,
+    }
+    calls: list[list[str]] = []
+
+    def fake_run_docker(
+        args: list[str],
+        timeout: int = 120,
+        check: bool = True,
+    ) -> docker_runtime.DockerResult:
+        calls.append(args)
+        if args[:2] == ["image", "inspect"]:
+            return docker_runtime.DockerResult(json.dumps(labels), "", 0)
+        return docker_runtime.DockerResult("cluster|myslots\n", "", 0)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    result = docker_runtime._verify_custom_valkey_image(
+        docker_runtime.CUSTOM_VALKEY_IMAGE
+    )
+
+    assert result["status"] == "PASS"
+    assert result["valkey_server_sha256"] == server_sha256
+    assert calls[0][:3] == [
+        "image",
+        "inspect",
+        docker_runtime.CUSTOM_VALKEY_IMAGE,
+    ]
+    assert calls[1][:4] == [
+        "run",
+        "--rm",
+        "--entrypoint",
+        "sh",
+    ]
+
+
+def test_custom_valkey_image_preflight_missing_image_is_actionable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *_args, **_kwargs: docker_runtime.DockerResult("", "not found", 1),
+    )
+
+    with pytest.raises(
+        DockerRuntimeError,
+        match=r"\./project/scripts/build_valkey_image\.sh",
+    ):
+        docker_runtime._verify_custom_valkey_image(
+            docker_runtime.CUSTOM_VALKEY_IMAGE
+        )
+
+
+def test_cluster_myslots_report_validates_full_coverage_and_replicas(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    server_sha256 = "c" * 64
+    primary_zero = bytes([0xFF]) * 1024 + bytes(1024)
+    primary_one = bytes(1024) + bytes([0xFF]) * 1024
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    shard_ids = ["a" * 40, "b" * 40]
+    nodes = [
+        {
+            "logical_id": "shard-0000-primary",
+            "ordinal": 0,
+            "client_port": 7000,
+            "role": "primary",
+            "nodehost_container_name": "nodehost-0",
+            "pid": 100,
+        },
+        {
+            "logical_id": "shard-0001-primary",
+            "ordinal": 1,
+            "client_port": 7001,
+            "role": "primary",
+            "nodehost_container_name": "nodehost-1",
+            "pid": 101,
+        },
+        {
+            "logical_id": "shard-0000-replica-00",
+            "ordinal": 2,
+            "client_port": 7002,
+            "role": "replica",
+            "nodehost_container_name": "nodehost-0",
+            "pid": 102,
+        },
+        {
+            "logical_id": "shard-0001-replica-00",
+            "ordinal": 3,
+            "client_port": 7003,
+            "role": "replica",
+            "nodehost_container_name": "nodehost-1",
+            "pid": 103,
+        },
+    ]
+
+    def response(
+        node_id: str,
+        shard_id: str,
+        role: str,
+        owner_id: str,
+        bitmap: bytes,
+    ) -> list[object]:
+        return [
+            b"node-id",
+            node_id.encode(),
+            b"shard-id",
+            shard_id.encode(),
+            b"role",
+            role.encode(),
+            b"slot-owner-id",
+            owner_id.encode(),
+            b"slot-count",
+            8192,
+            b"bitmap-encoding",
+            b"lsb0",
+            b"slot-bitmap",
+            bitmap,
+        ]
+
+    responses = {
+        7000: response(node_ids[0], shard_ids[0], "primary", node_ids[0], primary_zero),
+        7001: response(node_ids[1], shard_ids[1], "primary", node_ids[1], primary_one),
+        7002: response(node_ids[2], shard_ids[0], "replica", node_ids[0], primary_zero),
+        7003: response(node_ids[3], shard_ids[1], "replica", node_ids[1], primary_one),
+    }
+    monkeypatch.setattr(
+        docker_runtime,
+        "_host_command_binary",
+        lambda _host, port, *_args, **_kwargs: responses[port],
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *_args, **_kwargs: docker_runtime.DockerResult(
+            f"{server_sha256}  /proc/100/exe\n",
+            "",
+            0,
+        ),
+    )
+    path = tmp_path / "cluster_myslots_report.json"
+
+    report = docker_runtime._write_cluster_myslots_report(
+        path,
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        run_id="test",
+        nodes=nodes,
+        image_preflight={"valkey_server_sha256": server_sha256},
+    )
+
+    assert report["status"] == "PASS"
+    assert report["nodes_observed"] == 4
+    assert report["primary_count"] == 2
+    assert report["coverage"]["all_slots_covered_exactly_once"] is True
+    assert all(item["slot-bitmap-bytes"] == 2048 for item in report["nodes"])
+    assert json.loads(path.read_text(encoding="utf-8"))["status"] == "PASS"
 
 
 def test_cluster_lifecycle_node_specs_are_deterministic() -> None:

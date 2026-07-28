@@ -9,6 +9,6 @@
   "platform": "darwin-or-linux",
   "python_version": "3.x",
   "docker_available": false,
-  "valkey_image": "valkey/valkey:9.1.0",
+  "valkey_image": "valkey-scale-lab/valkey:9.1.0-myslots",
   "default_node_cap": 100
 }

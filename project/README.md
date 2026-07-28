@@ -15,6 +15,19 @@ Product code does not load tests, verification policy, or milestones. Tests use
 product APIs directly. The executable verification catalog is separate from
 the milestone roadmap and owns every registered pytest path and command.
 
+## Custom Valkey Image
+
+Build the pinned Valkey 9.1.0 image before any real run:
+
+```bash
+./scripts/build_valkey_image.sh
+```
+
+The build verifies the upstream archive and repository patch, applies the
+patch with zero fuzz, and produces
+`valkey-scale-lab/valkey:9.1.0-myslots`. Real runtime preflight requires this
+local image and never builds or falls back to the upstream image.
+
 ## Product Commands
 
 Create a run and validate a configuration:

@@ -1,0 +1,254 @@
+diff --git a/src/cluster.c b/src/cluster.c
+index 85bce90..ef8fa7e 100644
+--- a/src/cluster.c
++++ b/src/cluster.c
+@@ -855,6 +855,8 @@ void clusterCommandHelp(client *c) {
+         "    Return the node id.",
+         "MYSHARDID",
+         "    Return the node's shard id.",
++        "MYSLOTS",
++        "    Return the current shard's slot bitmap.",
+         "NODES",
+         "    Return cluster configuration seen by node. Output format:",
+         "    <id> <ip:port@bus-port[,hostname]> <flags> <primary> <pings> <pongs> <epoch> <link> <slot> ...",
+@@ -897,6 +899,9 @@ void clusterCommand(client *c) {
+     } else if (!strcasecmp(objectGetVal(c->argv[1]), "myshardid") && c->argc == 2) {
+         /* CLUSTER MYSHARDID */
+         clusterCommandMyShardId(c);
++    } else if (!strcasecmp(objectGetVal(c->argv[1]), "myslots") && c->argc == 2) {
++        /* CLUSTER MYSLOTS */
++        clusterCommandMySlots(c);
+     } else if (!strcasecmp(objectGetVal(c->argv[1]), "slots") && c->argc == 2) {
+         /* CLUSTER SLOTS */
+         clusterCommandSlots(c);
+diff --git a/src/cluster.h b/src/cluster.h
+index 92a254c..37d3285 100644
+--- a/src/cluster.h
++++ b/src/cluster.h
+@@ -91,6 +91,7 @@ mstime_t clusterManualFailoverTimeLimit(void);
+ void clusterCommandSlots(client *c);
+ void clusterCommandMyId(client *c);
+ void clusterCommandMyShardId(client *c);
++void clusterCommandMySlots(client *c);
+ void clusterCommandShards(client *c);
+ sds clusterGenNodeDescription(client *c, clusterNode *node, int tls_primary);
+ 
+diff --git a/src/cluster_legacy.c b/src/cluster_legacy.c
+index 63cfc13..08df321 100644
+--- a/src/cluster_legacy.c
++++ b/src/cluster_legacy.c
+@@ -7322,6 +7322,37 @@ void clusterCommandShards(client *c) {
+     dictReleaseIterator(di);
+ }
+ 
++void clusterCommandMySlots(client *c) {
++    clusterNode *node = myself;
++    clusterNode *slot_owner = node;
++    const char *role = "primary";
++
++    if (nodeIsReplica(node)) {
++        if (node->replicaof == NULL) {
++            addReplyError(c, "Replica primary is unknown");
++            return;
++        }
++        slot_owner = node->replicaof;
++        role = "replica";
++    }
++
++    addReplyMapLen(c, 7);
++    addReplyBulkCString(c, "node-id");
++    addReplyBulkCBuffer(c, node->name, CLUSTER_NAMELEN);
++    addReplyBulkCString(c, "shard-id");
++    addReplyBulkCBuffer(c, node->shard_id, CLUSTER_NAMELEN);
++    addReplyBulkCString(c, "role");
++    addReplyBulkCString(c, role);
++    addReplyBulkCString(c, "slot-owner-id");
++    addReplyBulkCBuffer(c, slot_owner->name, CLUSTER_NAMELEN);
++    addReplyBulkCString(c, "slot-count");
++    addReplyLongLong(c, slot_owner->numslots);
++    addReplyBulkCString(c, "bitmap-encoding");
++    addReplyBulkCString(c, "lsb0");
++    addReplyBulkCString(c, "slot-bitmap");
++    addReplyBulkCBuffer(c, slot_owner->slots, sizeof(slot_owner->slots));
++}
++
+ sds genClusterInfoString(sds info) {
+     char *statestr[] = {"ok", "fail"};
+     int slots_assigned = 0, slots_ok = 0, slots_pfail = 0, slots_fail = 0;
+diff --git a/src/commands.def b/src/commands.def
+index 08cad9d..868e39a 100644
+--- a/src/commands.def
++++ b/src/commands.def
+@@ -822,6 +822,25 @@ const char *CLUSTER_MYSHARDID_Tips[] = {
+ #define CLUSTER_MYSHARDID_Keyspecs NULL
+ #endif
+ 
++/********** CLUSTER MYSLOTS ********************/
++
++#ifndef SKIP_CMD_HISTORY_TABLE
++/* CLUSTER MYSLOTS history */
++#define CLUSTER_MYSLOTS_History NULL
++#endif
++
++#ifndef SKIP_CMD_TIPS_TABLE
++/* CLUSTER MYSLOTS tips */
++const char *CLUSTER_MYSLOTS_Tips[] = {
++"nondeterministic_output",
++};
++#endif
++
++#ifndef SKIP_CMD_KEY_SPECS_TABLE
++/* CLUSTER MYSLOTS key specs */
++#define CLUSTER_MYSLOTS_Keyspecs NULL
++#endif
++
+ /********** CLUSTER NODES ********************/
+ 
+ #ifndef SKIP_CMD_HISTORY_TABLE
+@@ -1161,6 +1180,7 @@ struct COMMAND_STRUCT CLUSTER_Subcommands[] = {
+ {MAKE_CMD("migrateslots","Migrate the given slots from this node to the specified nodes.","O(N) where N is the total number of the slots between all start slot and end slot arguments.","9.0.0",CMD_DOC_NONE,NULL,NULL,"cluster",COMMAND_GROUP_CLUSTER,CLUSTER_MIGRATESLOTS_History,0,CLUSTER_MIGRATESLOTS_Tips,0,clusterCommand,-4,CMD_NO_ASYNC_LOADING|CMD_ADMIN|CMD_STALE|CMD_ALL_DBS,ACL_CATEGORY_ADMIN|ACL_CATEGORY_DANGEROUS|ACL_CATEGORY_SLOW,NULL,CLUSTER_MIGRATESLOTS_Keyspecs,0,NULL,1),.args=CLUSTER_MIGRATESLOTS_Args},
+ {MAKE_CMD("myid","Returns the ID of a node.","O(1)","3.0.0",CMD_DOC_NONE,NULL,NULL,"cluster",COMMAND_GROUP_CLUSTER,CLUSTER_MYID_History,0,CLUSTER_MYID_Tips,0,clusterCommand,2,CMD_LOADING|CMD_STALE,ACL_CATEGORY_SLOW,NULL,CLUSTER_MYID_Keyspecs,0,NULL,0)},
+ {MAKE_CMD("myshardid","Returns the shard ID of a node.","O(1)","7.2.0",CMD_DOC_NONE,NULL,NULL,"cluster",COMMAND_GROUP_CLUSTER,CLUSTER_MYSHARDID_History,0,CLUSTER_MYSHARDID_Tips,1,clusterCommand,2,CMD_LOADING|CMD_STALE,ACL_CATEGORY_SLOW,NULL,CLUSTER_MYSHARDID_Keyspecs,0,NULL,0)},
++{MAKE_CMD("myslots","Returns the current shard's slot bitmap and identifying metadata.","O(1)","9.1.0",CMD_DOC_NONE,NULL,NULL,"cluster",COMMAND_GROUP_CLUSTER,CLUSTER_MYSLOTS_History,0,CLUSTER_MYSLOTS_Tips,1,clusterCommand,2,CMD_LOADING|CMD_STALE,ACL_CATEGORY_SLOW,NULL,CLUSTER_MYSLOTS_Keyspecs,0,NULL,0)},
+ {MAKE_CMD("nodes","Returns the cluster configuration for a node.","O(N) where N is the total number of Cluster nodes","3.0.0",CMD_DOC_NONE,NULL,NULL,"cluster",COMMAND_GROUP_CLUSTER,CLUSTER_NODES_History,0,CLUSTER_NODES_Tips,1,clusterCommand,2,CMD_LOADING|CMD_STALE,ACL_CATEGORY_SLOW,NULL,CLUSTER_NODES_Keyspecs,0,NULL,0)},
+ {MAKE_CMD("replicas","Lists the replica nodes of a primary node.","O(N) where N is the number of replicas.","5.0.0",CMD_DOC_NONE,NULL,NULL,"cluster",COMMAND_GROUP_CLUSTER,CLUSTER_REPLICAS_History,0,CLUSTER_REPLICAS_Tips,1,clusterCommand,3,CMD_ADMIN|CMD_STALE,ACL_CATEGORY_ADMIN|ACL_CATEGORY_DANGEROUS|ACL_CATEGORY_SLOW,NULL,CLUSTER_REPLICAS_Keyspecs,0,NULL,1),.args=CLUSTER_REPLICAS_Args},
+ {MAKE_CMD("replicate","Configures a node as replica of a primary node or detaches a replica from its primary.","O(1)","3.0.0",CMD_DOC_NONE,NULL,NULL,"cluster",COMMAND_GROUP_CLUSTER,CLUSTER_REPLICATE_History,1,CLUSTER_REPLICATE_Tips,0,clusterCommand,-3,CMD_NO_ASYNC_LOADING|CMD_ADMIN|CMD_STALE,ACL_CATEGORY_ADMIN|ACL_CATEGORY_DANGEROUS|ACL_CATEGORY_SLOW,NULL,CLUSTER_REPLICATE_Keyspecs,0,NULL,1),.args=CLUSTER_REPLICATE_Args},
+diff --git a/src/commands/cluster-myslots.json b/src/commands/cluster-myslots.json
+new file mode 100644
+index 0000000..f0a49a7
+--- /dev/null
++++ b/src/commands/cluster-myslots.json
+@@ -0,0 +1,57 @@
++{
++    "MYSLOTS": {
++        "summary": "Returns the current shard's slot bitmap and identifying metadata.",
++        "complexity": "O(1)",
++        "group": "cluster",
++        "since": "9.1.0",
++        "arity": 2,
++        "container": "CLUSTER",
++        "function": "clusterCommand",
++        "command_flags": [
++            "LOADING",
++            "STALE"
++        ],
++        "command_tips": [
++            "NONDETERMINISTIC_OUTPUT"
++        ],
++        "reply_schema": {
++            "description": "The local node and shard identifiers plus a fixed-length LSB0 slot bitmap.",
++            "type": "object",
++            "additionalProperties": false,
++            "properties": {
++                "node-id": {
++                    "type": "string"
++                },
++                "shard-id": {
++                    "type": "string"
++                },
++                "role": {
++                    "oneOf": [
++                        {
++                            "const": "primary"
++                        },
++                        {
++                            "const": "replica"
++                        }
++                    ]
++                },
++                "slot-owner-id": {
++                    "type": "string"
++                },
++                "slot-count": {
++                    "type": "integer"
++                },
++                "bitmap-encoding": {
++                    "const": "lsb0"
++                },
++                "slot-bitmap": {
++                    "description": "A 2048-byte binary string representing all 16384 cluster slots.",
++                    "type": "string"
++                }
++            }
++        },
++        "acl_categories": [
++            "SLOW"
++        ]
++    }
++}
+diff --git a/tests/unit/cluster/cluster-myslots.tcl b/tests/unit/cluster/cluster-myslots.tcl
+new file mode 100644
+index 0000000..786832e
+--- /dev/null
++++ b/tests/unit/cluster/cluster-myslots.tcl
+@@ -0,0 +1,70 @@
++proc myslots_dict {node} {
++    return [dict create {*}[R $node CLUSTER MYSLOTS]]
++}
++
++proc bitmap_has_slot {bitmap slot} {
++    binary scan [string index $bitmap [expr {$slot >> 3}]] cu byte
++    return [expr {($byte & (1 << ($slot & 7))) != 0}]
++}
++
++proc bitmap_popcount {bitmap} {
++    binary scan $bitmap cu* bytes
++    set count 0
++    foreach byte $bytes {
++        for {set bit 0} {$bit < 8} {incr bit} {
++            incr count [expr {($byte >> $bit) & 1}]
++        }
++    }
++    return $count
++}
++
++start_cluster 3 3 {tags {external:skip cluster}} {
++    test "CLUSTER MYSLOTS returns an ordered RESP2 reply with a fixed LSB0 bitmap" {
++        set reply [R 0 CLUSTER MYSLOTS]
++        set keys {}
++        foreach {key value} $reply {
++            lappend keys $key
++        }
++        assert_equal {node-id shard-id role slot-owner-id slot-count bitmap-encoding slot-bitmap} $keys
++
++        set result [dict create {*}$reply]
++        assert_equal 40 [string length [dict get $result node-id]]
++        assert_equal 40 [string length [dict get $result shard-id]]
++        assert_equal primary [dict get $result role]
++        assert_equal [dict get $result node-id] [dict get $result slot-owner-id]
++        assert_equal 2048 [string length [dict get $result slot-bitmap]]
++        assert_equal lsb0 [dict get $result bitmap-encoding]
++        assert_equal [dict get $result slot-count] [bitmap_popcount [dict get $result slot-bitmap]]
++        assert_equal 1 [bitmap_has_slot [dict get $result slot-bitmap] 0]
++        assert_equal 1 [bitmap_has_slot [dict get $result slot-bitmap] 5461]
++        assert_equal 0 [bitmap_has_slot [dict get $result slot-bitmap] 5462]
++    }
++
++    test "CLUSTER MYSLOTS returns the same shard bitmap from a replica" {
++        for {set primary 0} {$primary < 3} {incr primary} {
++            set replica [expr {$primary + 3}]
++            set primary_result [myslots_dict $primary]
++            set replica_result [myslots_dict $replica]
++
++            assert_equal replica [dict get $replica_result role]
++            assert_equal [R $replica CLUSTER MYID] [dict get $replica_result node-id]
++            assert_equal [dict get $primary_result shard-id] [dict get $replica_result shard-id]
++            assert_equal [dict get $primary_result node-id] [dict get $replica_result slot-owner-id]
++            assert_equal [dict get $primary_result slot-count] [dict get $replica_result slot-count]
++            assert_equal [dict get $primary_result slot-bitmap] [dict get $replica_result slot-bitmap]
++        }
++    }
++
++    test "CLUSTER MYSLOTS returns a RESP3 map" {
++        R 0 HELLO 3
++        set result [R 0 CLUSTER MYSLOTS]
++        assert_equal 7 [dict size $result]
++        assert_equal primary [dict get $result role]
++        assert_equal 2048 [string length [dict get $result slot-bitmap]]
++        R 0 HELLO 2
++    }
++
++    test "CLUSTER MYSLOTS rejects extra arguments" {
++        assert_error "*wrong number of arguments*" {R 0 CLUSTER MYSLOTS extra}
++    }
++}
