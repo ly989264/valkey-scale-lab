@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -28,13 +27,9 @@ from valkey_scale_lab.observability.failover import (
     AffectedShardObserver,
 )
 from valkey_scale_lab.observability.load import MemtierLoadLane, per_connection_rate
-from valkey_scale_lab.observability.resources import (
-    LocalResourceSampler,
-    ProcessSpec,
-    analyze_resource_samples,
-)
 from valkey_scale_lab.observability.sentinel import (
     Canary,
+    ClusterRouter,
     SentinelLane,
     SentinelNode,
     key_slot,
@@ -349,6 +344,25 @@ def test_sentinel_keyspace_and_one_canary_per_shard() -> None:
     assert all(not canary.key.startswith("vsl:load:") for canary in canaries)
 
 
+def test_sentinel_router_tries_next_seed_after_connection_failure() -> None:
+    seeds = [Endpoint("first", 7000), Endpoint("second", 7001)]
+    calls: list[Endpoint] = []
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        calls.append(endpoint)
+        response: Any = (
+            ConnectionRefusedError("primary seed is down")
+            if endpoint == seeds[0]
+            else b"value"
+        )
+        return FakeConnection({("GET", "key"): response})
+
+    router = ClusterRouter(seeds, connection_factory=factory)
+
+    assert router.get("key") == b"value"
+    assert calls == seeds
+
+
 class FakeClock:
     def __init__(self) -> None:
         self.value = 0.0
@@ -469,56 +483,3 @@ def test_actuator_failure_is_a_collection_error() -> None:
     recorder.sent()
     with pytest.raises(CollectionError, match="could not execute"):
         recorder.complete(result="permission denied")
-
-
-def _write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-
-
-def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
-    tmp_path: Path,
-) -> None:
-    proc = tmp_path / "proc"
-    cgroup = tmp_path / "cgroup"
-    _write(
-        proc / "stat",
-        "cpu 10 1 5 100 2 1 1 0 0 0\nprocs_running 2\nprocs_blocked 1\n",
-    )
-    _write(
-        proc / "meminfo",
-        "MemTotal: 1000 kB\nMemAvailable: 800 kB\n"
-        "SwapTotal: 100 kB\nSwapFree: 90 kB\n",
-    )
-    _write(
-        proc / "net" / "dev",
-        "Inter-| Receive | Transmit\n face |bytes packets errs drop fifo frame compressed multicast|bytes packets errs drop fifo colls carrier compressed\n"
-        "eth0: 100 10 1 2 0 0 0 0 200 20 3 4 0 0 0 0\n",
-    )
-    _write(proc / "123" / "stat", "123 (valkey server) S " + " ".join(["0"] * 30) + "\n")
-    (proc / "123" / "fd").mkdir(parents=True)
-    (proc / "123" / "fd" / "0").touch()
-    _write(cgroup / "cpu.max", "100000 100000\n")
-    _write(cgroup / "cpu.stat", "usage_usec 10\nnr_throttled 1\nthrottled_usec 2\n")
-    _write(cgroup / "memory.current", "100\n")
-    _write(cgroup / "memory.max", "1000\n")
-    _write(cgroup / "memory.events", "oom 0\noom_kill 0\n")
-    sampler = LocalResourceSampler(
-        sampler_id="host-a",
-        processes=[ProcessSpec("node-a", 123)],
-        proc_root=proc,
-        cgroup_root=cgroup,
-    )
-
-    static = sampler.static()
-    samples = [sampler.host_sample(), sampler.process_sample()]
-    analysis = analyze_resource_samples(static, samples)
-
-    assert static["network_interfaces"] == ["eth0"]
-    assert samples[0]["network"]["eth0"]["rx_drops"] == 2
-    assert samples[1]["processes"][0]["fd_count"] == 1
-    assert analysis["status"] == "OK"
-    assert analysis["processes"]["node-a"]["fd_count_max"] == 1
-    serialized = json.dumps(samples)
-    assert "CLUSTER" not in serialized
-    assert "valkey-cli" not in serialized

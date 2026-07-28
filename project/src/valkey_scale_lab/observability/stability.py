@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Sequence
+from typing import Any
 
 from valkey_scale_lab.observability.cluster import LightClusterProbe
 from valkey_scale_lab.observability.contracts import (
     CheckResult,
     CheckStatus,
-    CollectionError,
     SemanticFailure,
     final_verdict,
     run_check,
 )
 from valkey_scale_lab.observability.load import MemtierLoadLane
-from valkey_scale_lab.observability.resources import ResourceSamplerRunner
 from valkey_scale_lab.observability.sentinel import SentinelLane
 
 
@@ -26,12 +24,10 @@ class StabilityWindow:
         light_probe: LightClusterProbe,
         sentinel: SentinelLane,
         load: MemtierLoadLane,
-        resource_runners: Sequence[ResourceSamplerRunner] = (),
     ) -> None:
         self.light_probe = light_probe
         self.sentinel = sentinel
         self.load = load
-        self.resource_runners = list(resource_runners)
 
     def run(self) -> dict[str, Any]:
         checks: list[CheckResult] = []
@@ -61,11 +57,8 @@ class StabilityWindow:
             }
 
         load_process = None
-        resource_documents: list[dict[str, Any]] = []
         rounds: list[dict[str, Any]] = []
         try:
-            for runner in self.resource_runners:
-                runner.start()
             load_process = self.load.start(duration_seconds=120.0)
             for round_index in range(2):
                 with ThreadPoolExecutor(max_workers=2) as executor:
@@ -128,28 +121,8 @@ class StabilityWindow:
         finally:
             if load_process is not None:
                 load_process.stop()
-            for runner in self.resource_runners:
-                try:
-                    resource_documents.append(runner.stop())
-                except Exception as exc:
-                    checks.append(
-                        CheckResult(
-                            name=f"resource_sampler:{runner.sampler.sampler_id}",
-                            status=CheckStatus.ERROR,
-                            reason=f"{type(exc).__name__}: {exc}",
-                        )
-                    )
             self.sentinel.close()
 
-        for document in resource_documents:
-            if document.get("errors"):
-                checks.append(
-                    CheckResult(
-                        name=f"resource_sampler:{document['static']['sampler_id']}",
-                        status=CheckStatus.ERROR,
-                        reason="; ".join(document["errors"]),
-                    )
-                )
         warnings = _epoch_warnings(
             start_boundary.evidence,
             rounds[-1]["light"] if rounds else None,
@@ -170,7 +143,6 @@ class StabilityWindow:
                 "start_boundary": start_boundary.evidence,
                 "rounds": rounds,
                 "end_boundary": rounds[-1]["light"] if rounds else None,
-                "resource_documents": resource_documents,
                 "claim": "未观察到异常" if result["status"] == "PASS" else "",
             }
         )

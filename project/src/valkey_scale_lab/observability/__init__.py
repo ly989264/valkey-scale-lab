@@ -1,4 +1,4 @@
-"""Scalable cluster, data-path, workload, and resource observation."""
+"""Scalable cluster, data-path, and workload observation."""
 
 from valkey_scale_lab.observability.contracts import (
     CheckResult,

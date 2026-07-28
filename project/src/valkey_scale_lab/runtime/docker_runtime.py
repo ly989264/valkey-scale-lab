@@ -8242,7 +8242,14 @@ def _run_scalable_primary_kill_failover(
             3,
         ),
         "read_unavailability_ms": sentinel_result["rto_ms"],
-        "write_unavailability_ms": sentinel_result["rto_ms"],
+        "write_unavailability_ms": MISSING,
+        "missing_fields": [
+            {
+                "field": "write_unavailability_ms",
+                "status": MISSING,
+                "reason": "Sentinel fault probe measures GET recovery only.",
+            }
+        ],
         "failover_success": True,
         "redundancy_recovery_success": True,
         "observation_ref": "scalable_primary_failover_observation.json",

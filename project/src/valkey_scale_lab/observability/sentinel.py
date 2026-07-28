@@ -259,20 +259,36 @@ class ClusterRouter:
 
     def get(self, key: str) -> Any:
         slot = key_slot(key)
-        endpoint = self._slot_routes.get(slot, self.seeds[0])
-        for _ in range(3):
-            try:
-                return self._connection(endpoint).execute("GET", key)
-            except RespCommandError as exc:
-                redirect = self._redirect(exc)
-                if redirect is None:
-                    raise
-                kind, redirected_slot, endpoint = redirect
-                if kind == "MOVED":
-                    self._slot_routes[redirected_slot] = endpoint
-                else:
-                    self._connection(endpoint).execute("ASKING")
-        raise SemanticFailure(f"too many redirections for Sentinel key slot {slot}")
+        route = self._slot_routes.get(slot)
+        candidates = ([route] if route is not None else []) + [
+            seed for seed in self.seeds if seed != route
+        ]
+        last_connection_error: Exception | None = None
+        for candidate in candidates:
+            endpoint = candidate
+            for _ in range(3):
+                try:
+                    return self._connection(endpoint).execute("GET", key)
+                except RespCommandError as exc:
+                    redirect = self._redirect(exc)
+                    if redirect is None:
+                        raise
+                    kind, redirected_slot, endpoint = redirect
+                    if kind == "MOVED":
+                        self._slot_routes[redirected_slot] = endpoint
+                    else:
+                        self._connection(endpoint).execute("ASKING")
+                except (OSError, EOFError, TimeoutError) as exc:
+                    last_connection_error = exc
+                    break
+            else:
+                raise SemanticFailure(
+                    f"too many redirections for Sentinel key slot {slot}"
+                )
+        raise SemanticFailure(
+            f"all Sentinel seeds failed for key slot {slot}: "
+            f"{last_connection_error}"
+        ) from last_connection_error
 
 
 class SentinelLane:
