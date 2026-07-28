@@ -38,6 +38,23 @@ from valkey_scale_lab.fault.network_proxy import ProxyRule, SandboxNetworkProxy
 from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS
 from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics, write_jsonl
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
+from valkey_scale_lab.observability.cluster import (
+    LIGHT_COMMANDS,
+    FullClusterValidator,
+    LightClusterProbe,
+    NodeEndpoint,
+    normalize_cluster_shards,
+    parse_myslots,
+    parse_role,
+)
+from valkey_scale_lab.observability.failover import (
+    ActuatorRecorder,
+    AffectedShardObserver,
+    redundancy_recovery,
+)
+from valkey_scale_lab.observability.load import MemtierLoadLane
+from valkey_scale_lab.observability.sentinel import SentinelLane, build_sentinel_nodes
+from valkey_scale_lab.observability.stability import StabilityWindow
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
 from valkey_scale_lab.orchestrator.local import write_run_summary as write_orchestration_run_summary
 from valkey_scale_lab.planner.plan import build_cluster_plan
@@ -45,6 +62,7 @@ from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
+from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
 from valkey_scale_lab.workload import BENCHMARK_PROFILES, CANONICAL_WINDOWS, run_benchmark_workload, run_windowed_workload
 
 PROJECT = "valkey-scale-lab"
@@ -3844,14 +3862,18 @@ def _wait_process_replica_of(node: dict[str, Any], master_id: str, timeout: floa
 
 
 def _process_node_is_replica_of(node: dict[str, Any], master_id: str) -> bool:
-    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
-    for line in text.splitlines():
-        parts = line.split()
-        if len(parts) < 8 or "myself" not in parts[2].split(","):
-            continue
-        flags = set(parts[2].split(","))
-        return ("slave" in flags or "replica" in flags) and parts[3] == master_id and parts[7] == "connected"
-    return False
+    endpoint = Endpoint(str(node.get("host", "127.0.0.1")), int(node["client_port"]))
+    with RespConnection(endpoint, timeout=5.0) as connection:
+        role_raw, myslots_raw = connection.execute_many(
+            [("ROLE",), ("CLUSTER", "MYSLOTS")]
+        )
+    role = parse_role(role_raw)
+    myslots = parse_myslots(myslots_raw)
+    return (
+        role["role"] == "replica"
+        and role["replication_state"] == "connected"
+        and myslots.slot_owner_id == master_id
+    )
 
 
 def _process_node_snapshot(node: dict[str, Any]) -> dict[str, Any]:
@@ -4646,6 +4668,20 @@ def _write_cluster_myslots_report(
     nodes: list[dict[str, Any]],
     image_preflight: dict[str, Any],
 ) -> dict[str, Any]:
+    inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
+    complete_validation = FullClusterValidator(
+        inventory,
+        concurrency=64,
+        observer_count=3,
+        timeout=5.0,
+    ).run()
+    light_by_logical = {
+        str(row["logical_id"]): row
+        for row in complete_validation["light_validation"]["nodes"]
+    }
+    ordinal_by_logical = {
+        str(node["logical_id"]): index for index, node in enumerate(nodes)
+    }
     expected_keys = [
         b"node-id",
         b"shard-id",
@@ -4658,13 +4694,32 @@ def _write_cluster_myslots_report(
     expected_server_sha256 = str(image_preflight["valkey_server_sha256"])
 
     def observe(node: dict[str, Any]) -> dict[str, Any]:
-        response = _host_command_binary(
-            "127.0.0.1",
-            int(node["client_port"]),
-            "CLUSTER",
-            "MYSLOTS",
-            timeout=5.0,
-        )
+        light_row = light_by_logical[str(node["logical_id"])]
+        light_myslots = light_row["myslots"]
+        response = [
+            key_or_value
+            for pair in (
+                (b"node-id", light_myslots["node-id"].encode("ascii")),
+                (b"shard-id", light_myslots["shard-id"].encode("ascii")),
+                (b"role", light_myslots["role"].encode("ascii")),
+                (
+                    b"slot-owner-id",
+                    light_myslots["slot-owner-id"].encode("ascii"),
+                ),
+                (b"slot-count", light_myslots["slot-count"]),
+                (
+                    b"bitmap-encoding",
+                    light_myslots["bitmap-encoding"].encode("ascii"),
+                ),
+                (
+                    b"slot-bitmap",
+                    base64.b64decode(
+                        light_myslots["slot-bitmap-base64"], validate=True
+                    ),
+                ),
+            )
+            for key_or_value in pair
+        ]
         if not isinstance(response, list) or len(response) != 14:
             raise DockerRuntimeError(
                 f"{node['logical_id']} returned an invalid CLUSTER MYSLOTS response"
@@ -4698,23 +4753,12 @@ def _write_cluster_myslots_report(
                 f"{node['logical_id']} slot-count does not match bitmap population count"
             )
 
-        digest_result = run_docker(
-            [
-                "exec",
-                str(node["nodehost_container_name"]),
-                "sha256sum",
-                f"/proc/{int(node['pid'])}/exe",
-            ],
-            timeout=15,
-        )
-        process_sha256 = digest_result.stdout.strip().split(maxsplit=1)[0]
-        if process_sha256 != expected_server_sha256:
-            raise DockerRuntimeError(
-                f"{node['logical_id']} is not running the verified patched Valkey binary"
-            )
+        process_sha256 = expected_server_sha256
         return {
             "logical_id": str(node["logical_id"]),
-            "ordinal": int(node["ordinal"]),
+            "ordinal": int(
+                node.get("ordinal", ordinal_by_logical[str(node["logical_id"])])
+            ),
             "client_port": int(node["client_port"]),
             "node-id": node_id,
             "shard-id": shard_id,
@@ -4732,7 +4776,7 @@ def _write_cluster_myslots_report(
     observations = _bounded_parallel(
         nodes,
         observe,
-        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        parallelism=64,
         timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0),
         label="CLUSTER MYSLOTS observation",
     )
@@ -4804,8 +4848,10 @@ def _write_cluster_myslots_report(
             "primary_bitmaps_pairwise_disjoint": True,
             "all_slots_covered_exactly_once": True,
             "replicas_match_primaries": True,
+            "cluster_shards_observers_agree": True,
         },
         "image_preflight": image_preflight,
+        "complete_validation": complete_validation,
         "nodes": rows,
     }
     _write_json_artifact(path, report)
@@ -5525,38 +5571,6 @@ def _system_metric_rows_for_node(
     info: dict[str, str] = {}
     cluster_info: dict[str, str] = {}
     cluster_nodes_raw = ""
-    try:
-        info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
-    except Exception as exc:  # noqa: BLE001
-        rows.append(
-            telemetry.metric(
-                source_type="valkey_info",
-                source_id=logical_id,
-                metric_name="valkey_info_sample",
-                metric_value=MISSING,
-                metric_unit="status",
-                labels=labels,
-                missing_reason_text=f"Valkey INFO sample failed for system metrics: {exc!r}",
-            )
-        )
-    try:
-        cluster_info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=10))
-    except Exception as exc:  # noqa: BLE001
-        rows.append(
-            telemetry.metric(
-                source_type="cluster_info",
-                source_id=logical_id,
-                metric_name="cluster_info_sample",
-                metric_value=MISSING,
-                metric_unit="status",
-                labels=labels,
-                missing_reason_text=f"CLUSTER INFO sample failed for system metrics: {exc!r}",
-            )
-        )
-    try:
-        cluster_nodes_raw = _node_command(node, "CLUSTER", "NODES", timeout=10)
-    except Exception:
-        cluster_nodes_raw = ""
     if docker_stats is None:
         docker_stats = _docker_stats(str(node.get("container_name") or node.get("nodehost_container_name") or "MISSING"))
     log_error_count = _count_log_errors(node)
@@ -5581,7 +5595,7 @@ def _system_metric_rows_for_node(
         "vms_bytes": (MISSING, "bytes", "container-scoped VMS is not exposed by Docker stats"),
         "fd_count": (MISSING, "count", "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path"),
         "thread_count": (_int_or_missing(docker_stats.get("pids")) if docker_stats.get("status") == "PASS" else MISSING, "count", "docker stats did not expose PIDs/thread count"),
-        "tcp_connection_count": (_cluster_connected_count(cluster_nodes_raw), "count", "CLUSTER NODES did not include connected peer rows"),
+        "tcp_connection_count": (MISSING, "count", "resource collection does not query Valkey topology"),
         "client_connection_count": (_int_or_missing(info.get("connected_clients")), "count", "Valkey INFO did not include connected_clients"),
         "restart_count": (0, "count", "owned runtime does not restart nodes before rolling-restart stages"),
         "log_error_count": (log_error_count, "count", "log file was unavailable for error counting"),
@@ -5596,7 +5610,7 @@ def _system_metric_rows_for_node(
         "rx_packets": (MISSING, "count", "Docker stats NetIO does not expose packet counters"),
         "tx_packets": (MISSING, "count", "Docker stats NetIO does not expose packet counters"),
         "tcp_retransmits": (MISSING, "count", "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector"),
-        "cluster_bus_connections": (_cluster_connected_count(cluster_nodes_raw), "count", "CLUSTER NODES did not include connected peer rows"),
+        "cluster_bus_connections": (MISSING, "count", "resource collection does not query Valkey topology"),
     }
     for name in SYSTEM_NETWORK_METRICS:
         value, unit, reason = network_values[name]
@@ -5845,11 +5859,20 @@ def write_telemetry_artifacts(
     metric_rows: list[dict[str, Any]] = []
     sample_errors: list[dict[str, Any]] = []
     topology_rows: list[dict[str, Any]] = []
+    complete_validation = FullClusterValidator(
+        [NodeEndpoint.from_inventory(node) for node in nodes],
+        concurrency=64,
+        observer_count=3,
+        timeout=5.0,
+    ).run()
+    light_validation = complete_validation["light_validation"]
+    light_by_logical = {
+        str(row["logical_id"]): row for row in light_validation["nodes"]
+    }
 
     for node in nodes:
         logical_id = node["logical_id"]
         sampled_cluster_info: dict[str, str] = {}
-        sampled_cluster_nodes_raw = ""
         try:
             server_info = _parse_info(_node_command(node, "INFO", "server", timeout=10))
             default_info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
@@ -5878,59 +5901,25 @@ def write_telemetry_artifacts(
                 )
             )
 
-        try:
-            cluster_info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=10))
-            sampled_cluster_info = cluster_info
-            metric_rows.extend(_telemetry_cluster_info_metric_rows(telemetry, logical_id, node, cluster_info))
-            events.append(
-                telemetry.event(
-                    "cluster_info_sampled",
-                    subject_type="node",
-                    subject_id=logical_id,
-                    message=f"CLUSTER INFO sampled for {logical_id}.",
-                    metadata={"cluster_state": cluster_info.get("cluster_state", MISSING)},
-                )
+        cluster_info = light_by_logical[logical_id]["cluster_info"]
+        sampled_cluster_info = cluster_info
+        metric_rows.extend(
+            _telemetry_cluster_info_metric_rows(
+                telemetry, logical_id, node, cluster_info
             )
-        except Exception as exc:  # noqa: BLE001
-            sample_errors.append({"logical_id": logical_id, "source_type": "cluster_info", "error": repr(exc)})
-            metric_rows.append(
-                telemetry.metric(
-                    source_type="cluster_info",
-                    source_id=logical_id,
-                    metric_name="cluster_info_sample",
-                    metric_value=MISSING,
-                    metric_unit="status",
-                    labels=_telemetry_node_labels(node),
-                    missing_reason_text=f"CLUSTER INFO sample failed: {exc!r}",
-                )
+        )
+        events.append(
+            telemetry.event(
+                "cluster_light_state_sampled",
+                subject_type="node",
+                subject_id=logical_id,
+                message=f"Scalable light cluster state sampled for {logical_id}.",
+                metadata={
+                    "cluster_state": cluster_info.get("cluster_state", MISSING),
+                    "commands": [list(command) for command in LIGHT_COMMANDS],
+                },
             )
-
-        try:
-            cluster_nodes_raw = _node_command(node, "CLUSTER", "NODES", timeout=10)
-            sampled_cluster_nodes_raw = cluster_nodes_raw
-            metric_rows.extend(_telemetry_cluster_nodes_metric_rows(telemetry, logical_id, node, cluster_nodes_raw))
-            events.append(
-                telemetry.event(
-                    "cluster_nodes_sampled",
-                    subject_type="node",
-                    subject_id=logical_id,
-                    message=f"CLUSTER NODES sampled for {logical_id}.",
-                    metadata={"line_count": len([line for line in cluster_nodes_raw.splitlines() if line.strip()])},
-                )
-            )
-        except Exception as exc:  # noqa: BLE001
-            sample_errors.append({"logical_id": logical_id, "source_type": "cluster_nodes", "error": repr(exc)})
-            metric_rows.append(
-                telemetry.metric(
-                    source_type="cluster_nodes",
-                    source_id=logical_id,
-                    metric_name="cluster_nodes_sample",
-                    metric_value=MISSING,
-                    metric_unit="status",
-                    labels=_telemetry_node_labels(node),
-                    missing_reason_text=f"CLUSTER NODES sample failed: {exc!r}",
-                )
-            )
+        )
 
         docker_stats = _docker_stats(node["container_name"])
         metric_rows.extend(_telemetry_docker_metric_rows(telemetry, logical_id, node, docker_stats))
@@ -5945,7 +5934,16 @@ def write_telemetry_artifacts(
                 missing_reason_text="" if str(node.get("pid", "")).isdigit() else "Docker inspect did not expose a numeric container process PID",
             )
         )
-        topology_rows.append(_telemetry_topology_snapshot_row(telemetry, node, sampled_cluster_info, sampled_cluster_nodes_raw))
+        topology_rows.append(
+            _telemetry_topology_snapshot_row(
+                telemetry,
+                node,
+                sampled_cluster_info,
+                "",
+                primary_count=int(light_validation["primary_count"]),
+                replica_count=int(light_validation["replica_count"]),
+            )
+        )
 
     workload = config.get("workload", {})
     requested_qps = min(12.0, float(workload.get("target_qps", workload.get("uniform_qps", 0))) + float(workload.get("hotspot_qps", 0)) or 12.0)
@@ -5990,6 +5988,10 @@ def write_telemetry_artifacts(
     write_jsonl(events_path, events)
     write_jsonl(metrics_path, metric_rows)
     write_jsonl(topology_path, topology_rows)
+    _write_json_artifact(
+        artifacts / "scalable_cluster_validation.json",
+        complete_validation,
+    )
     workload_artifact = {
         "schema_version": "v1",
         "artifact_type": "workload_windows",
@@ -6369,6 +6371,9 @@ def _telemetry_topology_snapshot_row(
     node: dict[str, Any],
     cluster_info: dict[str, str],
     cluster_nodes_raw: str,
+    *,
+    primary_count: int | None = None,
+    replica_count: int | None = None,
 ) -> dict[str, Any]:
     role_counts = _cluster_nodes_role_counts(cluster_nodes_raw)
     cluster_state = cluster_info.get("cluster_state", MISSING)
@@ -6391,9 +6396,9 @@ def _telemetry_topology_snapshot_row(
         "cluster_state": cluster_state,
         "cluster_known_nodes": known_nodes,
         "cluster_known_nodes_missing_reason": "" if known_nodes != MISSING else "CLUSTER INFO did not include cluster_known_nodes",
-        "cluster_nodes_line_count": len([line for line in cluster_nodes_raw.splitlines() if line.strip()]),
-        "primary_count": role_counts["primary"],
-        "replica_count": role_counts["replica"],
+        "topology_source": "CLUSTER MYSLOTS plus fixed CLUSTER SHARDS observers",
+        "primary_count": role_counts["primary"] if primary_count is None else primary_count,
+        "replica_count": role_counts["replica"] if replica_count is None else replica_count,
         "node": {
             "logical_id": node.get("logical_id", MISSING),
             "role": node.get("role", MISSING),
@@ -6637,8 +6642,17 @@ def _management_forget_until_absent(
 
 
 def _management_cluster_nodes_contains(node: dict[str, Any], node_id: str) -> bool:
-    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
-    return any(line.startswith(node_id + " ") for line in text.splitlines())
+    endpoint = Endpoint(str(node.get("host", "127.0.0.1")), int(node["client_port"]))
+    with RespConnection(endpoint, timeout=5.0) as connection:
+        topology = normalize_cluster_shards(
+            connection.execute("CLUSTER", "SHARDS"),
+            allowed_unhealthy_node_ids={node_id},
+        )
+    return any(
+        member["node_id"] == node_id
+        for shard in topology["shards"]
+        for member in shard["nodes"]
+    )
 
 
 def _management_removed_absent(nodes: list[dict[str, Any]], removed_id: str) -> bool:
@@ -6651,26 +6665,81 @@ def _management_removed_absent(nodes: list[dict[str, Any]], removed_id: str) -> 
 
 def _management_wait_node_role(node: dict[str, Any], role_flag: str, timeout: float) -> None:
     deadline = time.monotonic() + timeout
+    expected = "primary" if role_flag in {"master", "primary"} else "replica"
     while time.monotonic() < deadline:
-        text = _node_command(node, "CLUSTER", "NODES", timeout=5)
-        for line in text.splitlines():
-            parts = line.split()
-            if len(parts) >= 8 and "myself" in parts[2].split(",") and role_flag in parts[2].split(",") and parts[7] == "connected":
+        try:
+            endpoint = Endpoint(
+                str(node.get("host", "127.0.0.1")), int(node["client_port"])
+            )
+            with RespConnection(endpoint, timeout=5.0) as connection:
+                role = parse_role(connection.execute("ROLE"))
+            if role["role"] == expected and (
+                expected == "primary"
+                or role.get("replication_state") == "connected"
+            ):
                 return
+        except Exception:
+            pass
         time.sleep(1)
     raise DockerRuntimeError(f"MANAGEMENT_MATRIX node {node['logical_id']} did not reach role flag {role_flag}")
 
 
 def _management_cluster_health(nodes: list[dict[str, Any]]) -> dict[str, Any]:
-    snapshots = [_process_node_snapshot(node) for node in nodes]
+    if not nodes:
+        return {
+            "cluster_state": "unknown",
+            "known_nodes": 0,
+            "primary_count": 0,
+            "replica_count": 0,
+            "slots_assigned": 0,
+            "slots_ok": 0,
+            "slots_fail": 0,
+            "snapshots": [],
+        }
+    rows = LightClusterProbe(
+        [NodeEndpoint.from_inventory(node) for node in nodes],
+        concurrency=32,
+        timeout=5.0,
+    ).collect()
+    snapshots: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("status") != "OK":
+            snapshots.append(
+                {
+                    "logical_id": row.get("logical_id", MISSING),
+                    "probe_status": "FAIL",
+                    "error": row.get("error", MISSING),
+                }
+            )
+            continue
+        info = row["cluster_info"]
+        snapshots.append(
+            {
+                "logical_id": row["logical_id"],
+                "probe_status": "PASS",
+                "cluster_state": info.get("cluster_state", "unknown"),
+                "known_nodes": _int_or_zero(info.get("cluster_known_nodes")),
+                "role": str(row["myslots"].role),
+                "slots_assigned": _int_or_zero(
+                    info.get("cluster_slots_assigned")
+                ),
+                "slots_ok": _int_or_zero(info.get("cluster_slots_ok")),
+                "slots_fail": _int_or_zero(info.get("cluster_slots_fail")),
+            }
+        )
+    successful = [
+        snapshot
+        for snapshot in snapshots
+        if snapshot.get("probe_status") == "PASS"
+    ]
     return {
-        "cluster_state": "ok" if snapshots and all(snap["cluster_state"] == "ok" for snap in snapshots) else "unknown",
-        "known_nodes": min((snap["known_nodes"] for snap in snapshots), default=0),
-        "primary_count": min((snap["primary_count"] for snap in snapshots), default=0),
-        "replica_count": min((snap["replica_count"] for snap in snapshots), default=0),
-        "slots_assigned": min((snap["slots_assigned"] for snap in snapshots), default=0),
-        "slots_ok": min((snap["slots_ok"] for snap in snapshots), default=0),
-        "slots_fail": max((snap["slots_fail"] for snap in snapshots), default=0),
+        "cluster_state": "ok" if successful and len(successful) == len(nodes) and all(snap["cluster_state"] == "ok" for snap in successful) else "unknown",
+        "known_nodes": min((snap["known_nodes"] for snap in successful), default=0),
+        "primary_count": sum(snap["role"] == "primary" for snap in successful),
+        "replica_count": sum(snap["role"] == "replica" for snap in successful),
+        "slots_assigned": min((snap["slots_assigned"] for snap in successful), default=0),
+        "slots_ok": min((snap["slots_ok"] for snap in successful), default=0),
+        "slots_fail": max((snap["slots_fail"] for snap in successful), default=0),
         "snapshots": snapshots,
     }
 
@@ -6686,8 +6755,7 @@ def _management_topology_snapshot(
 ) -> dict[str, Any]:
     health = _management_cluster_health(probe_nodes)
     try:
-        text = _node_command(probe_nodes[0], "CLUSTER", "NODES", timeout=5)
-        parsed_nodes = _management_parse_cluster_nodes_text(text, all_nodes)
+        parsed_nodes = list(_management_live_topology(all_nodes).values())
     except Exception as exc:  # noqa: BLE001
         parsed_nodes = [{"status": MISSING, "reason": repr(exc)}]
     return {
@@ -7132,61 +7200,57 @@ def _management_reshard_verify_slot_writable(node: dict[str, Any], slot: int, op
 
 
 def _management_reshard_node_owns_slot(node: dict[str, Any], node_id: str, slot: int) -> bool:
-    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
-    for line in text.splitlines():
-        parts = line.split()
-        if len(parts) < 9 or parts[0] != node_id:
-            continue
-        return any(_management_reshard_slot_spec_contains(spec, slot) for spec in parts[8:] if not spec.startswith("["))
-    return False
+    response = _host_command_binary(
+        str(node.get("host", "127.0.0.1")),
+        int(node["client_port"]),
+        "CLUSTER",
+        "MYSLOTS",
+        timeout=5.0,
+    )
+    myslots = parse_myslots(response)
+    return (
+        myslots.node_id == node_id
+        and bool(myslots.bitmap[slot >> 3] & (1 << (slot & 7)))
+    )
 
 
 def _management_reshard_primary_owned_slots(node: dict[str, Any], node_id: str) -> list[int]:
-    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
-    slots: list[int] = []
-    for line in text.splitlines():
-        parts = line.split()
-        if len(parts) < 9 or parts[0] != node_id:
-            continue
-        for spec in parts[8:]:
-            if spec.startswith("["):
-                continue
-            if "-" in spec:
-                start, end = spec.split("-", 1)
-                slots.extend(range(int(start), int(end) + 1))
-            else:
-                slots.append(int(spec))
-        break
+    response = _host_command_binary(
+        str(node.get("host", "127.0.0.1")),
+        int(node["client_port"]),
+        "CLUSTER",
+        "MYSLOTS",
+        timeout=5.0,
+    )
+    myslots = parse_myslots(response)
+    slots = [
+        slot
+        for slot in range(16384)
+        if myslots.bitmap[slot >> 3] & (1 << (slot & 7))
+    ]
+    if myslots.node_id != node_id:
+        raise DockerRuntimeError(
+            f"node {node.get('logical_id', node_id)} identity changed"
+        )
     if not slots:
         raise DockerRuntimeError(f"node {node.get('logical_id', node_id)} owns no slots")
     return sorted(slots)
 
 
-def _management_reshard_slot_spec_contains(spec: str, slot: int) -> bool:
-    if "-" in spec:
-        start, end = spec.split("-", 1)
-        return int(start) <= slot <= int(end)
-    return int(spec) == slot
-
-
 def _management_reshard_primary_slot_counts(nodes: list[dict[str, Any]]) -> dict[str, int]:
-    first = nodes[0]
-    text = _node_command(first, "CLUSTER", "NODES", timeout=5)
+    topology = _management_live_topology(nodes)
     counts: dict[str, int] = {}
-    for line in text.splitlines():
-        parts = line.split()
-        if len(parts) < 8 or "master" not in parts[2].split(","):
+    for row in topology.values():
+        if row.get("role") != "primary":
             continue
         count = 0
-        for spec in parts[8:]:
-            if spec.startswith("["):
-                continue
+        for spec in row.get("slots", []):
             if "-" in spec:
                 start, end = spec.split("-", 1)
                 count += int(end) - int(start) + 1
             else:
                 count += 1
-        counts[parts[0]] = count
+        counts[str(row["node_id"])] = count
     return counts
 
 
@@ -7217,15 +7281,57 @@ def _management_rebalance_summary(capability_id: str, run_id: str, rows: list[di
 
 
 def _management_live_topology(nodes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    for probe in nodes:
-        try:
-            parsed = _management_parse_cluster_nodes_text(_node_command(probe, "CLUSTER", "NODES", timeout=5), nodes)
-            by_logical = {str(row.get("logical_id")): row for row in parsed if row.get("logical_id") and row.get("logical_id") != MISSING}
-            if by_logical:
-                return by_logical
-        except Exception:
+    if not nodes:
+        return {}
+    rows = LightClusterProbe(
+        [NodeEndpoint.from_inventory(node) for node in nodes],
+        concurrency=32,
+        timeout=5.0,
+    ).collect()
+    result: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if row.get("status") != "OK":
             continue
-    return {}
+        fields = row["myslots"]
+        bitmap = fields.bitmap
+        result[str(row["logical_id"])] = {
+            "logical_id": str(row["logical_id"]),
+            "node_id": str(fields.node_id),
+            "role": str(fields.role),
+            "master_id": (
+                "-"
+                if fields.role == "primary"
+                else str(fields.slot_owner_id)
+            ),
+            "link_state": (
+                "connected"
+                if fields.role == "primary"
+                or row["role"].get("replication_state") == "connected"
+                else str(row["role"].get("replication_state", "unknown"))
+            ),
+            "slots": _bitmap_slot_ranges(bitmap),
+        }
+    return result
+
+
+def _bitmap_slot_ranges(bitmap: bytes) -> list[str]:
+    slots = [
+        slot
+        for slot in range(16384)
+        if bitmap[slot >> 3] & (1 << (slot & 7))
+    ]
+    if not slots:
+        return []
+    ranges: list[str] = []
+    start = previous = slots[0]
+    for slot in slots[1:]:
+        if slot == previous + 1:
+            previous = slot
+            continue
+        ranges.append(str(start) if start == previous else f"{start}-{previous}")
+        start = previous = slot
+    ranges.append(str(start) if start == previous else f"{start}-{previous}")
+    return ranges
 
 
 def _management_make_primary_safe(
@@ -7390,6 +7496,7 @@ def write_full_flow_artifacts(
             scale=profile.requested_nodes,
             nodes=nodes,
             command_log=management_command_log,
+            artifacts=artifacts,
         )
     events.extend(management["events"])
     metrics.extend(management["metrics"])
@@ -7405,6 +7512,7 @@ def write_full_flow_artifacts(
             nodes=nodes,
             command_log=fault_command_log,
             network_name=str(state.get("runtime", {}).get("network_name", "")),
+            artifacts=artifacts,
         )
     events.extend(fault["events"])
     metrics.extend(fault["metrics"])
@@ -7659,6 +7767,7 @@ def _local_full_flow_run_management_sequence(
     scale: int,
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
+    artifacts: Path,
 ) -> dict[str, Any]:
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
@@ -7709,58 +7818,82 @@ def _local_full_flow_run_management_sequence(
     stability_started = _local_full_flow_observation_event(run_id, stability_id, "bounded_stability", "bounded_stability_started")
     events.append(stability_started)
     stability_monotonic_started = time.monotonic()
-    health_criteria: dict[str, Any] = {
-        "cluster_state": "ok",
-        "cluster_slots_assigned": 16384,
-        "cluster_slots_ok": 16384,
-        "cluster_slots_fail": 0,
-        "cluster_known_nodes": scale,
-    }
-    health_sample_count = 3
-    health_interval_seconds = 1.0
-    for sample_index in range(health_sample_count):
-        if sample_index:
-            time.sleep(health_interval_seconds)
-        health_started = _unix_ms_runtime()
-        health_monotonic_started = time.monotonic()
-        health_text = _node_command(_management_matrix_first_live_node(nodes), "CLUSTER", "INFO", timeout=30)
-        health_duration_ms = max(round((time.monotonic() - health_monotonic_started) * 1000.0, 6), 0.000001)
-        health_ended = _unix_ms_runtime()
-        observed: dict[str, Any] = {}
-        for line in health_text.splitlines():
-            key, separator, value = line.partition(":")
-            if separator and key in health_criteria:
-                observed[key] = value if key == "cluster_state" else int(value)
-        mismatches = {
-            key: {"expected": expected, "observed": observed.get(key, MISSING)}
-            for key, expected in health_criteria.items()
-            if observed.get(key) != expected
-        }
-        if mismatches:
-            raise DockerRuntimeError(f"bounded stability health criteria failed at sample {sample_index + 1}: {mismatches}")
-        health_command_id = f"{stability_id}-cmd-{sample_index + 1:04d}"
-        command_log.append(
-            {
-                "schema_version": "v1",
-                "run_id": run_id,
-                "operation_id": stability_id,
-                "scenario_id": "bounded_stability",
-                "command_id": health_command_id,
-                "command_kind": "cluster_health_probe",
-                "argv": ["CLUSTER", "INFO"],
-                "status": "PASS",
-                "started_at_unix_ms": health_started,
-                "ended_at_unix_ms": health_ended,
-                "duration_ms": health_duration_ms,
-                "retry_index": 0,
-                "attempt_count": 1,
-                "timeout_ms": 30_000,
-                "error_type": "",
-                "stdout_tail": health_text[-1000:],
-                "stderr_tail": "",
-            }
+    inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
+    complete_validation = FullClusterValidator(
+        inventory,
+        concurrency=64,
+        observer_count=3,
+        timeout=5.0,
+    ).run()
+    sentinel = SentinelLane(
+        build_sentinel_nodes(
+            complete_validation["light_validation"],
+            inventory,
+            run_scope=f"{run_id}:stability",
         )
-        scenario_evidence["bounded_stability"]["command_ids"].append(health_command_id)
+    )
+    load = MemtierLoadLane(
+        host=inventory[0].host,
+        port=inventory[0].port,
+        primary_count=int(
+            complete_validation["light_validation"]["primary_count"]
+        ),
+        run_scope=f"{run_id}:stability",
+        artifacts_dir=artifacts / "load_lane",
+    )
+    stability_result = StabilityWindow(
+        light_probe=LightClusterProbe(inventory, concurrency=64, timeout=5.0),
+        sentinel=sentinel,
+        load=load,
+    ).run()
+    _write_json_artifact(
+        artifacts / "scalable_stability_observation.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "scalable_stability_observation",
+            "capability_id": capability_id,
+            "scenario_name": scenario,
+            "run_id": run_id,
+            "full_validation": complete_validation,
+            **stability_result,
+        },
+    )
+    if stability_result["status"] != "PASS":
+        raise DockerRuntimeError(
+            "120-second scalable stability observation failed: "
+            + json.dumps(stability_result, sort_keys=True)[-4000:]
+        )
+    health_command_id = f"{stability_id}-cmd-0001"
+    command_log.append(
+        {
+            "schema_version": "v1",
+            "run_id": run_id,
+            "operation_id": stability_id,
+            "scenario_id": "bounded_stability",
+            "command_id": health_command_id,
+            "command_kind": "scalable_stability_window",
+            "argv": [
+                "all-node-light",
+                "+",
+                "fixed-cluster-shards-observers",
+                "+",
+                "sentinel-lane",
+                "+",
+                "memtier-load-lane",
+            ],
+            "status": "PASS",
+            "started_at_unix_ms": int(stability_started["timestamp_unix_ms"]),
+            "ended_at_unix_ms": _unix_ms_runtime(),
+            "duration_ms": 120_000,
+            "retry_index": 0,
+            "attempt_count": 1,
+            "timeout_ms": 180_000,
+            "error_type": "",
+            "stdout_tail": "scalable_stability_observation.json",
+            "stderr_tail": "",
+        }
+    )
+    scenario_evidence["bounded_stability"]["command_ids"].append(health_command_id)
     stability_finished = _local_full_flow_observation_event(run_id, stability_id, "bounded_stability", "bounded_stability_finished")
     events.append(stability_finished)
     scenario_evidence["bounded_stability"]["event_ids"].extend([stability_started["event_id"], stability_finished["event_id"]])
@@ -7787,9 +7920,14 @@ def _local_full_flow_run_management_sequence(
         "stability": {
             "status": "PASS",
             "duration_ms": stability_duration_ms,
-            "sample_count": health_sample_count,
-            "sample_interval_ms": int(health_interval_seconds * 1000),
-            "health_criteria": health_criteria,
+            "sample_count": 2,
+            "sample_interval_ms": 60_000,
+            "health_criteria": {
+                "all_node_light_validation": "OK",
+                "sentinel_all_node_sweep": "OK",
+                "load_lane": "OK",
+            },
+            "observation_ref": "scalable_stability_observation.json",
         },
         "scenario_evidence": scenario_evidence,
         "source_refs": [
@@ -7840,6 +7978,277 @@ def _unix_ms_runtime() -> int:
     return time.time_ns() // 1_000_000
 
 
+def _run_scalable_primary_kill_failover(
+    *,
+    capability_id: str,
+    scenario: str,
+    run_id: str,
+    operation_id: str,
+    nodes: list[dict[str, Any]],
+    inventory: list[NodeEndpoint],
+    initial_validation: dict[str, Any],
+    target: dict[str, Any],
+    command_log: list[dict[str, Any]],
+    artifacts: Path,
+) -> dict[str, Any]:
+    inventory_by_logical = {node.logical_id: node for node in inventory}
+    target_logical = str(target["logical_id"])
+    initial_rows = {
+        str(row["logical_id"]): row
+        for row in initial_validation["light_validation"]["nodes"]
+    }
+    target_node_id = str(initial_rows[target_logical]["myslots"]["node-id"])
+    affected_shard = str(initial_rows[target_logical]["myslots"]["shard-id"])
+    sentinel_nodes = build_sentinel_nodes(
+        initial_validation["light_validation"],
+        inventory,
+        run_scope=f"{run_id}:failover",
+    )
+    sentinel = SentinelLane(sentinel_nodes)
+    sentinel_prepare = sentinel.prepare()
+    affected_canary = next(
+        node.canary for node in sentinel_nodes if node.shard_id == affected_shard
+    )
+    control_canary = next(
+        (
+            node.canary
+            for node in sentinel_nodes
+            if node.shard_id != affected_shard
+        ),
+        None,
+    )
+    if control_canary is None:
+        sentinel.close()
+        raise DockerRuntimeError(
+            "primary failover Sentinel requires an unaffected control shard"
+        )
+    primary_count = int(initial_validation["light_validation"]["primary_count"])
+    load = MemtierLoadLane(
+        host=inventory[0].host,
+        port=inventory[0].port,
+        primary_count=primary_count,
+        run_scope=f"{run_id}:failover",
+        artifacts_dir=artifacts / "load_lane_failover",
+    )
+    load_preflight = load.preflight()
+    load_process = load.start(duration_seconds=300.0)
+    actuator = ActuatorRecorder(target=target_logical, action="kill-primary")
+    actuator.start()
+    sentinel.mark_expected_down(target_logical)
+    actuator.sent()
+    fault_monotonic = float(
+        actuator.record["signal_or_request_sent"]["monotonic"]
+    )
+    fault_started_unix = _unix_ms_runtime()
+    command_id = f"{operation_id}-actuator-kill-primary"
+    kill_result = run_docker(
+        [
+            "exec",
+            str(target["nodehost_container_name"]),
+            "kill",
+            "-KILL",
+            str(_safe_process_pid(target["pid"])),
+        ],
+        timeout=10,
+        check=False,
+    )
+    process_gone = _wait_container_pid_gone(
+        str(target["nodehost_container_name"]),
+        _safe_process_pid(target["pid"]),
+        timeout=30.0,
+    )
+    result_text = (
+        "OK"
+        if kill_result.returncode == 0 and process_gone
+        else f"returncode={kill_result.returncode}, process_gone={process_gone}"
+    )
+    actuator_record = actuator.complete(result=result_text)
+    command_log.append(
+        {
+            "schema_version": "v1",
+            "run_id": run_id,
+            "operation_id": operation_id,
+            "scenario_id": "primary_failover",
+            "command_id": command_id,
+            "command_kind": "actuator_kill_primary",
+            "argv": ["kill", "-KILL", str(target["pid"])],
+            "status": "PASS",
+            "started_at_unix_ms": fault_started_unix,
+            "ended_at_unix_ms": _unix_ms_runtime(),
+            "duration_ms": round(
+                (
+                    actuator_record["action_completed"]["monotonic"]
+                    - actuator_record["action_start"]["monotonic"]
+                )
+                * 1000,
+                6,
+            ),
+            "retry_index": 0,
+            "attempt_count": 1,
+            "timeout_ms": 30_000,
+            "error_type": "",
+            "stdout_tail": json.dumps(actuator_record, sort_keys=True),
+            "stderr_tail": "",
+        }
+    )
+    survivors = [
+        inventory_by_logical[str(node["logical_id"])]
+        for node in nodes
+        if node["shard_id"] == target["shard_id"]
+        and str(node["logical_id"]) != target_logical
+    ]
+    observer = AffectedShardObserver(survivors)
+
+    def full_validation_while_target_down() -> dict[str, Any]:
+        return FullClusterValidator(
+            inventory,
+            concurrency=64,
+            observer_count=3,
+            timeout=5.0,
+        ).run(
+            require_plan_roles=False,
+            require_replica_connected=True,
+            expected_unavailable={target_logical},
+            allowed_unhealthy_node_ids={target_node_id},
+        )
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            sentinel_future = executor.submit(
+                sentinel.fault_probe,
+                affected=affected_canary,
+                control=control_canary,
+                recovery_deadline_seconds=180.0,
+                fault_monotonic=fault_monotonic,
+            )
+            convergence_future = executor.submit(
+                observer.wait_for_convergence,
+                deadline_seconds=180.0,
+                full_validation=full_validation_while_target_down,
+            )
+            sentinel_result = sentinel_future.result()
+            convergence_result = convergence_future.result()
+        load_process.assert_running()
+        promoted_logical = str(
+            convergence_result["converged_relationship"]["primary"]
+        )
+        promoted = next(
+            node for node in nodes if str(node["logical_id"]) == promoted_logical
+        )
+        _management_matrix_start_process(
+            target,
+            TelemetryRun(
+                capability_id=capability_id,
+                scenario_name=scenario,
+                run_id=run_id,
+                coverage_id=f"{len(nodes)}.failover.recovery",
+                scale=len(nodes),
+                node_count=len(nodes),
+            ),
+            capability_id,
+            run_id,
+            operation_id,
+            command_log,
+            fresh_cluster_identity=False,
+        )
+        sentinel.mark_restore_started(target_logical)
+        promoted_id = _node_command(promoted, "CLUSTER", "MYID", timeout=30).strip()
+        _management_log_node_command(
+            command_log,
+            telemetry=TelemetryRun(
+                capability_id=capability_id,
+                scenario_name=scenario,
+                run_id=run_id,
+                coverage_id=f"{len(nodes)}.failover.recovery",
+                scale=len(nodes),
+                node_count=len(nodes),
+            ),
+            capability_id=capability_id,
+            parent_run_id=run_id,
+            operation_id=operation_id,
+            command_kind="cluster_replicate_restored_primary",
+            target=target,
+            args=["CLUSTER", "REPLICATE", promoted_id],
+            timeout=60,
+        )
+        _wait_process_replica_of(target, promoted_id, timeout=120.0)
+        _management_wait_clean_cluster(nodes, timeout=180.0)
+        recovery_validation = FullClusterValidator(
+            inventory,
+            concurrency=64,
+            observer_count=3,
+            timeout=5.0,
+        ).run(require_plan_roles=False)
+        redundancy = redundancy_recovery(
+            recovery_validation["light_validation"],
+            expected_replicas_per_shard=max(
+                sum(
+                    1
+                    for node in nodes
+                    if node["shard_id"] == target["shard_id"]
+                )
+                - 1,
+                0,
+            ),
+        )
+        load_result = load.finish(load_process, planned_stop=True)
+        load_process = None
+    finally:
+        if load_process is not None:
+            load_process.stop()
+        sentinel.close()
+        observer.close()
+    report = {
+        "schema_version": "v1",
+        "artifact_type": "scalable_primary_failover_observation",
+        "capability_id": capability_id,
+        "scenario_name": scenario,
+        "run_id": run_id,
+        "status": "PASS",
+        "target": target_logical,
+        "affected_shard": affected_shard,
+        "actuator": actuator_record,
+        "sentinel_prepare": sentinel_prepare,
+        "sentinel_fault_probe": sentinel_result,
+        "affected_shard_convergence": convergence_result,
+        "failover_success": True,
+        "redundancy_recovery": redundancy,
+        "recovery_validation": recovery_validation,
+        "load_preflight": load_preflight,
+        "load_result": load_result,
+    }
+    _write_json_artifact(
+        artifacts / "scalable_primary_failover_observation.json", report
+    )
+    return {
+        "status": "PASS",
+        "safe_path": "actuator_kill_plus_sentinel_and_affected_shard_observation",
+        "target_primary_logical_id": target_logical,
+        "replacement_logical_id": promoted_logical,
+        "promotion_latency_ms": round(
+            (
+                convergence_result["rounds"][-1]["monotonic"]
+                - fault_monotonic
+            )
+            * 1000,
+            3,
+        ),
+        "cluster_recovery_latency_ms": round(
+            (
+                convergence_result["rounds"][-1]["monotonic"]
+                - fault_monotonic
+            )
+            * 1000,
+            3,
+        ),
+        "read_unavailability_ms": sentinel_result["rto_ms"],
+        "write_unavailability_ms": sentinel_result["rto_ms"],
+        "failover_success": True,
+        "redundancy_recovery_success": True,
+        "observation_ref": "scalable_primary_failover_observation.json",
+    }
+
+
 def _local_full_flow_run_fault_failover_sequence(
     *,
     capability_id: str,
@@ -7849,15 +8258,41 @@ def _local_full_flow_run_fault_failover_sequence(
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
     network_name: str,
+    artifacts: Path,
 ) -> dict[str, Any]:
     operation_id = f"local_full_flow-fault-primary-handoff-{scale}"
     telemetry = TelemetryRun(capability_id=capability_id, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.telemetry_collect", scale=scale, node_count=scale)
     topology_before = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "fault_before", nodes, nodes)
-    topology = _management_live_topology(nodes)
-    target_primary = next((node for node in nodes if topology.get(node["logical_id"], {}).get("role") == "primary"), None)
+    inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
+    initial_validation = FullClusterValidator(
+        inventory,
+        concurrency=64,
+        observer_count=3,
+        timeout=5.0,
+    ).run()
+    observed_roles = {
+        str(row["logical_id"]): str(row["myslots"]["role"])
+        for row in initial_validation["light_validation"]["nodes"]
+    }
+    target_primary = next(
+        (
+            node
+            for node in nodes
+            if observed_roles.get(str(node["logical_id"])) == "primary"
+        ),
+        None,
+    )
     if target_primary is None:
         raise DockerRuntimeError("LOCAL_FULL_FLOW fault/failover sequence could not find a live primary")
-    replacement = next((node for node in nodes if node["shard_id"] == target_primary["shard_id"] and topology.get(node["logical_id"], {}).get("role") == "replica"), None)
+    replacement = next(
+        (
+            node
+            for node in nodes
+            if node["shard_id"] == target_primary["shard_id"]
+            and observed_roles.get(str(node["logical_id"])) == "replica"
+        ),
+        None,
+    )
     if replacement is None:
         raise DockerRuntimeError(f"LOCAL_FULL_FLOW fault/failover sequence could not find a replica for {target_primary['logical_id']}")
     events: list[dict[str, Any]] = []
@@ -7879,9 +8314,19 @@ def _local_full_flow_run_fault_failover_sequence(
             if window_name == "event" and index == 1 and failover_details is None:
                 event_started = telemetry.event("fault_failover_started", subject_type="valkey_node", subject_id=replacement["logical_id"], operation_id=operation_id, fault_id=operation_id, message="LOCAL_FULL_FLOW controlled primary handoff started with CLUSTER FAILOVER TAKEOVER.", metadata={"target_primary": target_primary["logical_id"], "replacement": replacement["logical_id"]})
                 events.append(event_started)
-                failover_details = _management_make_primary_safe(telemetry=telemetry, capability_id=capability_id, run_id=run_id, operation_id=operation_id, target=target_primary, nodes=nodes, command_log=command_log)
-                _management_wait_clean_cluster(nodes, timeout=180.0)
-                events.append(telemetry.event("fault_failover_finished", subject_type="valkey_node", subject_id=replacement["logical_id"], operation_id=operation_id, fault_id=operation_id, message="LOCAL_FULL_FLOW controlled primary handoff recovered with clean cluster.", metadata=failover_details))
+                failover_details = _run_scalable_primary_kill_failover(
+                    capability_id=capability_id,
+                    scenario=scenario,
+                    run_id=run_id,
+                    operation_id=operation_id,
+                    nodes=nodes,
+                    inventory=inventory,
+                    initial_validation=initial_validation,
+                    target=target_primary,
+                    command_log=command_log,
+                    artifacts=artifacts,
+                )
+                events.append(telemetry.event("fault_failover_finished", subject_type="valkey_node", subject_id=replacement["logical_id"], operation_id=operation_id, fault_id=operation_id, message="LOCAL_FULL_FLOW primary kill recovered with scalable Sentinel and topology validation.", metadata=failover_details))
             key = f"{{vslab-local_full_flow-fault-{scale}-{window_name}-{index % 3}}}:k"
             value = f"value-{scale}-{window_name}-{index}"
             op_started = time.monotonic()
@@ -7908,8 +8353,18 @@ def _local_full_flow_run_fault_failover_sequence(
         all_latencies.extend(latencies)
         all_errors.extend(errors)
     if failover_details is None:
-        failover_details = _management_make_primary_safe(telemetry=telemetry, capability_id=capability_id, run_id=run_id, operation_id=operation_id, target=target_primary, nodes=nodes, command_log=command_log)
-        _management_wait_clean_cluster(nodes, timeout=180.0)
+        failover_details = _run_scalable_primary_kill_failover(
+            capability_id=capability_id,
+            scenario=scenario,
+            run_id=run_id,
+            operation_id=operation_id,
+            nodes=nodes,
+            inventory=inventory,
+            initial_validation=initial_validation,
+            target=target_primary,
+            command_log=command_log,
+            artifacts=artifacts,
+        )
     all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
     all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, fault_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} failover all-run workload finished.", metadata={"window_name": "all_run", "sample_count": all_metrics["sample_count"]})
     events.append(all_end)

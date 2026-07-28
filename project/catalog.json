@@ -186,6 +186,7 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
@@ -279,6 +280,7 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
@@ -381,6 +383,7 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
@@ -1992,6 +1995,27 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_m2_performance_capture.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.scalable_observability",
+      "description": "Unit scalable cluster observability checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_scalable_observability.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
