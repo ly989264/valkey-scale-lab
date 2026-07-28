@@ -160,6 +160,78 @@ def test_service_delegates_once_with_canonical_arguments_and_confined_paths(
             path.resolve().relative_to(artifact_root.resolve())
 
 
+def test_exact_2000_gate_passes_opt_in_to_preflight_and_runtime(
+    tmp_path: Path,
+) -> None:
+    artifact_root = tmp_path / "gate-artifacts"
+    calls: list[tuple[str, dict[str, Any]]] = []
+    plan = compile_gate_plan(load_local_full_flow_definition(), 2000)
+
+    def preflight(**kwargs: Any) -> dict[str, Any]:
+        calls.append(("preflight", dict(kwargs)))
+        report = {
+            "status": "PASS",
+            "can_run": True,
+            "nodes_requested": 2000,
+            "node_count": 2000,
+        }
+        Path(kwargs["out_path"]).write_text(json.dumps(report), encoding="utf-8")
+        return report
+
+    def execute(**kwargs: Any) -> dict[str, Any]:
+        calls.append(("create", dict(kwargs)))
+        state = {
+            "capability_id": kwargs["capability_id"],
+            "scenario_id": kwargs["scenario_id"],
+            "runtime": {"run_id": "runtime-2000"},
+            "nodes": [{"logical_id": f"node-{index:04d}"} for index in range(2000)],
+        }
+        Path(kwargs["state_out"]).write_text(
+            json.dumps(state, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return state
+
+    def cleanup(**kwargs: Any) -> dict[str, Any]:
+        calls.append(("cleanup", dict(kwargs)))
+        report = {"status": "PASS", "run_id": "runtime-2000"}
+        Path(kwargs["out_path"]).write_text(json.dumps(report), encoding="utf-8")
+        return report
+
+    request = GateRequest(
+        run_id="gate-run-2000",
+        ownership_id="owner-2000",
+        provenance_id="provenance-2000",
+        requested_nodes=2000,
+        artifact_root=artifact_root,
+        fault_scope=_scope("gate-run-2000", "owner-2000"),
+        profile_id="exact-2000",
+        operator_opt_in=True,
+        cost_acknowledged=True,
+    )
+
+    result = GateService().execute(
+        plan,
+        request,
+        build_product_adapter_bundle(
+            ProductRuntimeEntrypoints(
+                execute=execute,
+                cleanup=cleanup,
+                preflight=preflight,
+            )
+        ),
+    )
+
+    assert result.status is GateStatus.PASS
+    preflight_args = calls[0][1]
+    create_args = calls[1][1]
+    assert preflight_args["operator_opt_in"] is True
+    assert preflight_args["cost_acknowledged"] is True
+    assert create_args["operator_opt_in"] is True
+    assert create_args["cost_acknowledged"] is True
+    assert create_args["config_path"] == plan.config_template
+
+
 def test_adapter_rejects_owner_and_output_collisions_without_cleanup_takeover(
     tmp_path: Path,
 ) -> None:
@@ -252,9 +324,27 @@ def test_cli_exposes_product_neutral_exact_gate_execution() -> None:
             "--artifacts-dir", "out",
         ]
     )
+    exact_2000_args = cli.build_parser().parse_args(
+        [
+            "gate", "execute",
+            "--definition", "src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
+            "--nodes", "2000",
+            "--config", "templates/configs/scale_2000_local_full_flow_optin.yaml",
+            "--profile", "exact-2000",
+            "--run-id", "run-2000",
+            "--ownership-id", "owner-2000",
+            "--provenance-id", "capture-2000",
+            "--artifacts-dir", "out",
+            "--operator-opt-in",
+            "--cost-acknowledged",
+        ]
+    )
 
     assert gate_args.func is cli._gate_scenario
     assert real_args.func is cli._gate_execute
+    assert exact_2000_args.profile == "exact-2000"
+    assert exact_2000_args.operator_opt_in is True
+    assert exact_2000_args.cost_acknowledged is True
     assert cli.execute_scenario is docker_runtime.execute_scenario
     assert cli.cleanup_scenario is docker_runtime.cleanup_scenario
     assert cli.run_exact_gate is real_gate.run_exact_gate

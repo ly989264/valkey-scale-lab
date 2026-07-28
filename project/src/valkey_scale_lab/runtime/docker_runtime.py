@@ -25,12 +25,19 @@ from valkey_scale_lab.cluster_timeout import (
     valkey_cluster_timeout_config_lines,
 )
 from valkey_scale_lab.config.simple_yaml import parse_config_file
-from valkey_scale_lab.config.validation import load_effective_config, load_effective_config_with_timing, normalize_config, validate_semantics
+from valkey_scale_lab.config.validation import (
+    is_exact_2000_local_full_flow_profile,
+    load_effective_config,
+    load_effective_config_with_timing,
+    normalize_config,
+    validate_semantics,
+)
 from valkey_scale_lab.execution import (
     ExecutionProfile,
     PROFILES,
     SCENARIO_CAPABILITIES,
     exact_200_selection_allowed,
+    exact_2000_selection_allowed,
     profile_for_exact_nodes,
     validate_execution_selection,
 )
@@ -53,6 +60,11 @@ from valkey_scale_lab.observability.failover import (
     redundancy_recovery,
 )
 from valkey_scale_lab.observability.load import MemtierLoadLane
+from valkey_scale_lab.observability.resources import (
+    LocalResourceSampler,
+    ProcessSpec,
+    ResourceSamplerRunner,
+)
 from valkey_scale_lab.observability.sentinel import SentinelLane, build_sentinel_nodes
 from valkey_scale_lab.observability.stability import StabilityWindow
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
@@ -429,6 +441,8 @@ def execute_scenario(
     setup_timeline: SetupTimeline | None = None,
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> dict[str, Any]:
     """Execute one canonical scenario using an explicit backend and profile."""
     try:
@@ -511,6 +525,8 @@ def execute_scenario(
         setup_timeline=setup_timeline,
         global_config_path=global_config_path,
         cli_overrides=cli_overrides,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
     )
     state["scenario_id"] = scenario_id
     state["backend_id"] = backend_id
@@ -571,6 +587,8 @@ def _execute_runtime(
     setup_timeline: SetupTimeline | None = None,
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> dict[str, Any]:
     if SCENARIO_CAPABILITIES.get(scenario) != capability_id:
         raise DockerRuntimeError(f"runtime does not implement capability_id/scenario {capability_id}/{scenario}")
@@ -592,6 +610,8 @@ def _execute_runtime(
             capability_id=capability_id,
             scenario=scenario,
             profile_id=profile_id,
+            operator_opt_in=operator_opt_in,
+            cost_acknowledged=cost_acknowledged,
         )
         semantic_ms = round(max(time.perf_counter() - semantic_start, 0.0) * 1000.0, 3)
         config_timing_details.update(config_timings)
@@ -640,6 +660,8 @@ def _execute_runtime(
             profile_id=profile_id,
             setup_timeline=setup_timeline,
             image_preflight=image_preflight,
+            operator_opt_in=operator_opt_in,
+            cost_acknowledged=cost_acknowledged,
         )
 
     network_name = _network_name(capability_id, scenario)
@@ -886,16 +908,50 @@ def _runtime_semantic_errors(
     capability_id: str,
     scenario: str,
     profile_id: str | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> list[dict[str, Any]]:
     errors = validate_semantics(config)
+    exact_2000_exception = _is_exact_2000_runtime_exception(
+        config,
+        capability_id=capability_id,
+        scenario=scenario,
+        profile_id=profile_id,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
+    )
+    if is_exact_2000_local_full_flow_profile(config) and not exact_2000_exception:
+        errors.append(
+            {
+                "code": "EXACT_2000_LOCAL_FULL_FLOW_OPT_IN_REQUIRED",
+                "message": (
+                    "exact 2000-node real execution is allowed only for "
+                    "local_full_flow with exact-2000, docker_process, operator opt-in, "
+                    "and cost acknowledgement"
+                ),
+            }
+        )
     if not _is_exact_200_runtime_exception(
         config,
         capability_id=capability_id,
         scenario=scenario,
         profile_id=profile_id,
-    ):
+    ) and not exact_2000_exception:
         return errors
-    return [error for error in errors if error.get("code") != "NODE_CAP_EXCEEDED"]
+    allowed = {"NODE_CAP_EXCEEDED"}
+    if exact_2000_exception:
+        allowed.update(
+            {
+                "REAL_EXECUTION_ABOVE_200_FORBIDDEN",
+                "MISSING_200_PLUS_DRY_RUN_PROFILE",
+                "WORKLOAD_ABOVE_200_FORBIDDEN",
+                "MISSING_1000_ALLOW",
+                "MISSING_1000_ENV_GUARD",
+                "MISSING_1000_DRY_RUN",
+                "MISSING_1000_SCALE_PROFILE",
+            }
+        )
+    return [error for error in errors if error.get("code") not in allowed]
 
 
 def _is_failover_latency_exact_200_runtime_exception(config: dict[str, Any], *, capability_id: str, scenario: str) -> bool:
@@ -932,6 +988,37 @@ def _is_exact_200_runtime_exception(
         and safety.get("allow_1000_nodes") is False
         and runtime.get("dry_run") is False
     )
+
+
+def _is_exact_2000_runtime_exception(
+    config: dict[str, Any],
+    *,
+    capability_id: str,
+    scenario: str,
+    profile_id: str | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
+) -> bool:
+    cluster = config.get("cluster", {})
+    try:
+        node_count = int(cluster.get("shards", 0) or 0) * (
+            1 + int(cluster.get("replicas_per_shard", 0) or 0)
+        )
+    except (TypeError, ValueError):
+        node_count = 0
+    return (
+        node_count == 2000
+        and profile_id == "exact-2000"
+        and operator_opt_in is True
+        and cost_acknowledged is True
+        and exact_2000_selection_allowed(
+            capability_id=capability_id,
+            scenario_id=scenario,
+        )
+        and is_exact_2000_local_full_flow_profile(config)
+    )
+
+
 def _create_process_scenario(
     *,
     capability_id: str,
@@ -944,6 +1031,8 @@ def _create_process_scenario(
     profile_id: str,
     setup_timeline: SetupTimeline | None = None,
     image_preflight: dict[str, Any] | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> dict[str, Any]:
     network_name = _network_name(capability_id, scenario)
     management_profile = _management_matrix_profile(capability_id, scenario, len(nodes))
@@ -977,6 +1066,8 @@ def _create_process_scenario(
                 capability_id=capability_id,
                 scenario=scenario,
                 profile_id=profile_id,
+                operator_opt_in=operator_opt_in,
+                cost_acknowledged=cost_acknowledged,
             )
         if preflight.get("can_run") is not True:
             _write_full_flow_blocked_artifact(
@@ -1221,6 +1312,8 @@ def _create_process_scenario(
                 nodehosts=nodehosts,
                 state=state,
                 setup_timeline=setup_timeline,
+                operator_opt_in=operator_opt_in,
+                cost_acknowledged=cost_acknowledged,
             )
         if scenario == "scale_ladder" and not management_profile and not full_flow_profile:
             with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
@@ -5379,66 +5472,62 @@ def write_observability_artifacts(
     config: dict[str, Any],
     nodes: list[dict[str, Any]],
 ) -> None:
-    metrics_path = artifacts / "metrics_timeseries.jsonl"
-    events_path = artifacts / "events.jsonl"
-    log_dir = artifacts / "container_logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    metric_lines: list[dict[str, Any]] = []
+    artifacts.mkdir(parents=True, exist_ok=True)
     event_lines: list[dict[str, Any]] = [
         _event(capability_id, run_id, "observability_collection_started", "info", {"scenario": scenario, "nodes": len(nodes)}),
     ]
-
-    for node in nodes:
-        info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
-        cluster_info_raw = _node_command(node, "CLUSTER", "INFO", timeout=10)
-        cluster_nodes_raw = _node_command(node, "CLUSTER", "NODES", timeout=10)
-        cluster_info = _parse_info(cluster_info_raw)
-        docker_stats = _docker_stats(node["container_name"])
-        logs = run_docker(["logs", "--tail", "50", node["container_name"]], timeout=30, check=False)
-        log_path = log_dir / f"{node['logical_id']}.log"
-        log_path.write_text(logs.stdout + logs.stderr, encoding="utf-8", errors="replace")
-        metric_lines.append(
+    inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
+    validation = FullClusterValidator(
+        inventory,
+        concurrency=64,
+        observer_count=3,
+        timeout=5.0,
+    ).run()
+    result = {
+        "schema_version": "v1",
+        "artifact_type": "scalable_cluster_validation",
+        "capability_id": capability_id,
+        "scenario_name": scenario,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS",
+        "valkey_protocol_transport": "direct_tcp_resp",
+        "docker_exec_for_valkey_protocol": False,
+        "normal_path_cluster_nodes_command_count": 0,
+        "full_validation": validation,
+    }
+    _write_json_artifact(artifacts / "scalable_cluster_validation.json", result)
+    metrics = [
+        {
+            "schema_version": "v1",
+            "artifact_type": "metric_sample",
+            "capability_id": capability_id,
+            "run_id": run_id,
+            "source": "scalable_cluster_validation",
+            "metrics": {
+                "primary_count": validation["light_validation"]["primary_count"],
+                "replica_count": validation["light_validation"]["replica_count"],
+                "cluster_nodes_command_count": 0,
+                "light_command_count": validation["complexity"]["light_command_count"],
+                "cluster_shards_view_count": validation["complexity"]["cluster_shards_view_count"],
+            },
+        }
+    ]
+    event_lines.append(
+        _event(
+            capability_id,
+            run_id,
+            "observability_collection_finished",
+            "info",
             {
-                "schema_version": "v1",
-                "artifact_type": "metric_sample",
-                "capability_id": capability_id,
-                "run_id": run_id,
-                "timestamp": "2026-06-28T00:00:00Z",
-                "source": node["logical_id"],
-                "metrics": {
-                    "valkey": {
-                        "uptime_in_seconds": _int_or_missing(info.get("uptime_in_seconds")),
-                        "connected_clients": _int_or_missing(info.get("connected_clients")),
-                        "used_memory": _int_or_missing(info.get("used_memory")),
-                        "total_commands_processed": _int_or_missing(info.get("total_commands_processed")),
-                    },
-                    "cluster": {
-                        "cluster_state": cluster_info.get("cluster_state", "MISSING"),
-                        "cluster_known_nodes": _int_or_missing(cluster_info.get("cluster_known_nodes")),
-                        "cluster_slots_assigned": _int_or_missing(cluster_info.get("cluster_slots_assigned")),
-                        "cluster_nodes_line_count": len([line for line in cluster_nodes_raw.splitlines() if line.strip()]),
-                    },
-                    "docker": docker_stats,
-                    "logs": {
-                        "path": log_path.as_posix(),
-                        "status": "PASS" if log_path.exists() else "MISSING",
-                    },
-                },
-            }
+                "sample_count": len(metrics),
+                "cluster_nodes_command_count": 0,
+            },
         )
-        event_lines.append(
-            _event(
-                capability_id,
-                run_id,
-                "node_metrics_sampled",
-                "info",
-                {"logical_id": node["logical_id"], "cluster_state": cluster_info.get("cluster_state", "MISSING")},
-            )
-        )
-
-    event_lines.append(_event(capability_id, run_id, "observability_collection_finished", "info", {"sample_count": len(metric_lines)}))
-    metrics_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in metric_lines) + "\n", encoding="utf-8")
-    events_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in event_lines) + "\n", encoding="utf-8")
+    )
+    write_jsonl(artifacts / "metrics_timeseries.jsonl", metrics)
+    write_jsonl(artifacts / "events.jsonl", event_lines)
 
 
 SYSTEM_PROCESS_METRICS = [
@@ -7437,6 +7526,8 @@ def write_full_flow_artifacts(
     nodehosts: list[dict[str, Any]],
     state: dict[str, Any],
     setup_timeline: SetupTimeline | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> None:
     profile = _full_flow_profile(capability_id, scenario, len(nodes))
     if profile is None:
@@ -7451,6 +7542,8 @@ def write_full_flow_artifacts(
         capability_id=capability_id,
         scenario=scenario,
         profile_id=profile.profile_id,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
     )
     config_report = {
         "schema_version": "v1",
@@ -7468,11 +7561,27 @@ def write_full_flow_artifacts(
             "allowed": profile.requested_nodes == 200,
             "capability_id": capability_id if profile.requested_nodes == 200 else "SKIPPED_WITH_REASON",
             "scenario_name": scenario if profile.requested_nodes == 200 else "SKIPPED_WITH_REASON",
-            "reason": "LOCAL_FULL_FLOW exact 200-node full-flow bounded exception." if profile.requested_nodes == 200 else "No bounded exception required for this scale.",
+            "reason": "LOCAL_FULL_FLOW exact 200-node full-flow bounded exception." if profile.requested_nodes == 200 else "No exact-200 bounded exception used for this scale.",
+        },
+        "controlled_scale_exception": {
+            "allowed": profile.requested_nodes == 2000,
+            "capability_id": capability_id if profile.requested_nodes == 2000 else "SKIPPED_WITH_REASON",
+            "scenario_name": scenario if profile.requested_nodes == 2000 else "SKIPPED_WITH_REASON",
+            "operator_opt_in": operator_opt_in if profile.requested_nodes == 2000 else False,
+            "cost_acknowledged": cost_acknowledged if profile.requested_nodes == 2000 else False,
+            "reason": "LOCAL_FULL_FLOW exact 2000-node controlled opt-in path." if profile.requested_nodes == 2000 else "No exact-2000 controlled scale exception used for this scale.",
         },
     }
     _write_json_artifact(artifacts / "config_validation_report.json", config_report)
-    _write_management_matrix_cluster_plan(artifacts / "cluster_plan.json", config, capability_id, scenario, run_id)
+    _write_management_matrix_cluster_plan(
+        artifacts / "cluster_plan.json",
+        config,
+        capability_id,
+        scenario,
+        run_id,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
+    )
     _write_management_matrix_run_state(artifacts / "run_state.json", capability_id, scenario, run_id, state)
 
     events: list[dict[str, Any]] = []
@@ -7759,6 +7868,52 @@ def _local_full_flow_run_baseline_workload(capability_id: str, scenario: str, ru
     return {"events": [start, end], "metrics": _management_workload_metric_rows(telemetry, operation_id, "baseline", metrics), "windows": [window]}
 
 
+def _resource_runners_for_nodes(nodes: list[dict[str, Any]]) -> list[ResourceSamplerRunner]:
+    if not nodes:
+        return []
+    required_identity = all(
+        node.get("pid") is not None
+        and (
+            node.get("nodehost_container_id")
+            or node.get("container_id")
+            or node.get("nodehost_container_name")
+            or node.get("container_name")
+        )
+        for node in nodes
+    )
+    if not required_identity:
+        return []
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for node in nodes:
+        container = str(
+            node.get("nodehost_container_id")
+            or node.get("container_id")
+            or node.get("nodehost_container_name")
+            or node.get("container_name")
+        )
+        grouped.setdefault(container, []).append(node)
+    runners: list[ResourceSamplerRunner] = []
+    for container, hosted in grouped.items():
+        host_pid = _container_pid(container)
+        sampler_id = str(
+            hosted[0].get("nodehost_id")
+            or hosted[0].get("nodehost_container_name")
+            or container
+        )
+        processes = [
+            ProcessSpec(str(node["logical_id"]), int(node["pid"]))
+            for node in hosted
+        ]
+        sampler = LocalResourceSampler(
+            sampler_id=sampler_id,
+            processes=processes,
+            proc_root=Path(f"/proc/{host_pid}/root/proc"),
+            cgroup_root=Path(f"/proc/{host_pid}/root/sys/fs/cgroup"),
+        )
+        runners.append(ResourceSamplerRunner(sampler))
+    return runners
+
+
 def _local_full_flow_run_management_sequence(
     *,
     capability_id: str,
@@ -7845,6 +8000,7 @@ def _local_full_flow_run_management_sequence(
         light_probe=LightClusterProbe(inventory, concurrency=64, timeout=5.0),
         sentinel=sentinel,
         load=load,
+        resource_runners=_resource_runners_for_nodes(nodes),
     ).run()
     _write_json_artifact(
         artifacts / "scalable_stability_observation.json",
@@ -8032,6 +8188,7 @@ def _run_scalable_primary_kill_failover(
     )
     load_preflight = load.preflight()
     load_process = load.start(duration_seconds=300.0)
+    sentinel_restore_probe: dict[str, Any] | None = None
     actuator = ActuatorRecorder(target=target_logical, action="kill-primary")
     actuator.start()
     sentinel.mark_expected_down(target_logical)
@@ -8172,6 +8329,7 @@ def _run_scalable_primary_kill_failover(
             timeout=60,
         )
         _wait_process_replica_of(target, promoted_id, timeout=120.0)
+        sentinel_restore_probe = sentinel.reconnect_and_confirm(target_logical)
         _management_wait_clean_cluster(nodes, timeout=180.0)
         recovery_validation = FullClusterValidator(
             inventory,
@@ -8210,6 +8368,8 @@ def _run_scalable_primary_kill_failover(
         "actuator": actuator_record,
         "sentinel_prepare": sentinel_prepare,
         "sentinel_fault_probe": sentinel_result,
+        "sentinel_restore_probe": sentinel_restore_probe or {"status": "MISSING"},
+        "sentinel_connection_events": sentinel.connection_events(),
         "affected_shard_convergence": convergence_result,
         "failover_success": True,
         "redundancy_recovery": redundancy,
@@ -11015,7 +11175,16 @@ def _management_matrix_first_live_node(nodes: list[dict[str, Any]]) -> dict[str,
     raise DockerRuntimeError("management matrix runtime could not find a live Valkey node")
 
 
-def _write_management_matrix_cluster_plan(path: Path, config: dict[str, Any], capability_id: str, scenario: str, run_id: str) -> None:
+def _write_management_matrix_cluster_plan(
+    path: Path,
+    config: dict[str, Any],
+    capability_id: str,
+    scenario: str,
+    run_id: str,
+    *,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
+) -> None:
     cluster = config["cluster"]
     node_count = int(cluster["shards"]) * (1 + int(cluster["replicas_per_shard"]))
     profile = _runtime_scale_profile(node_count)
@@ -11029,6 +11198,8 @@ def _write_management_matrix_cluster_plan(path: Path, config: dict[str, Any], ca
         config_path=config_path,
         capability_id=capability_id,
         scenario=scenario,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
     )
     plan["capability_id"] = capability_id
     plan["run_id"] = run_id

@@ -40,16 +40,27 @@ def create_plan_file(
     out_path: str | Path,
     dry_run: bool = False,
     *,
+    capability_id: str | None = None,
+    scenario: str | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return planner.create_plan_file(
-        config_path,
-        out_path,
-        dry_run=dry_run,
-        global_config_path=global_config_path,
-        cli_overrides=cli_overrides,
-    )
+    kwargs: dict[str, Any] = {
+        "dry_run": dry_run,
+        "global_config_path": global_config_path,
+        "cli_overrides": cli_overrides,
+    }
+    if capability_id is not None:
+        kwargs["capability_id"] = capability_id
+    if scenario is not None:
+        kwargs["scenario"] = scenario
+    if operator_opt_in:
+        kwargs["operator_opt_in"] = operator_opt_in
+    if cost_acknowledged:
+        kwargs["cost_acknowledged"] = cost_acknowledged
+    return planner.create_plan_file(config_path, out_path, **kwargs)
 
 
 def create_scenario(
@@ -62,6 +73,8 @@ def create_scenario(
     setup_timeline: SetupTimeline | None = None,
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> dict[str, Any]:
     alias = resolve_phase_alias(alias_id, scenario)
     profile = resolve_profile(
@@ -80,6 +93,8 @@ def create_scenario(
         setup_timeline=setup_timeline,
         global_config_path=global_config_path,
         cli_overrides=cli_overrides,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
     )
 
 
@@ -96,20 +111,26 @@ def execute_scenario(
     setup_timeline: SetupTimeline | None = None,
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> dict[str, Any]:
-    return docker_runtime.execute_scenario(
-        capability_id=capability_id or SCENARIO_CAPABILITIES[scenario_id],
-        scenario_id=scenario_id,
-        backend_id=backend_id,
-        profile_id=profile_id,
-        requested_nodes=requested_nodes,
-        config_path=config_path,
-        artifacts_dir=artifacts_dir,
-        state_out=state_out,
-        setup_timeline=setup_timeline,
-        global_config_path=global_config_path,
-        cli_overrides=cli_overrides,
-    )
+    kwargs: dict[str, Any] = {
+        "capability_id": capability_id or SCENARIO_CAPABILITIES[scenario_id],
+        "scenario_id": scenario_id,
+        "backend_id": backend_id,
+        "profile_id": profile_id,
+        "requested_nodes": requested_nodes,
+        "config_path": config_path,
+        "artifacts_dir": artifacts_dir,
+        "state_out": state_out,
+        "setup_timeline": setup_timeline,
+        "global_config_path": global_config_path,
+        "cli_overrides": cli_overrides,
+    }
+    if requested_nodes > 200:
+        kwargs["operator_opt_in"] = operator_opt_in
+        kwargs["cost_acknowledged"] = cost_acknowledged
+    return docker_runtime.execute_scenario(**kwargs)
 
 
 def _configured_node_count(config_path: str | Path) -> int:

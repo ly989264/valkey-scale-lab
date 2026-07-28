@@ -48,7 +48,9 @@ class MemtierProcess:
         code = self.process.poll()
         if code is not None:
             self.close_files()
-            raise CollectionError(f"memtier exited during the formal window: {code}")
+            raise CollectionError(
+                f"memtier exited before the requested window completed: {code}"
+            )
 
     def stop(self, *, timeout: float = 15.0) -> int:
         if self.process.poll() is None:
@@ -153,6 +155,8 @@ class MemtierLoadLane:
     def preflight(self, *, duration_seconds: float = 5.0) -> dict[str, Any]:
         process = self._start("preflight", duration_seconds=duration_seconds)
         try:
+            time.sleep(min(max(duration_seconds * 0.1, 0.1), 1.0))
+            process.assert_running()
             code = process.process.wait(timeout=duration_seconds + 30.0)
         except subprocess.TimeoutExpired as exc:
             process.stop()
@@ -162,11 +166,19 @@ class MemtierLoadLane:
         if code != 0:
             raise CollectionError(f"memtier preflight exited with code {code}")
         self._validate_outputs(process.paths)
+        self._validate_preflight_logs(process.paths)
         return {
             "status": "OK",
             "primary_count": self.primary_count,
             "target_qps": TARGET_QPS,
             "per_connection_rate": per_connection_rate(self.primary_count),
+            "preflight_checks": {
+                "cluster_connection": True,
+                "process_stayed_running": True,
+                "json_output": True,
+                "hdr_output": True,
+                "fd_or_connection_init_errors": False,
+            },
             "command": process.command,
             "outputs": {
                 "stdout": process.paths.stdout.as_posix(),
@@ -233,6 +245,32 @@ class MemtierLoadLane:
         hdr_files = list(paths.hdr_prefix.parent.glob(f"{paths.hdr_prefix.name}*"))
         if not any(path.is_file() and path.stat().st_size > 0 for path in hdr_files):
             raise CollectionError("memtier did not write HDR latency output")
+
+    @staticmethod
+    def _validate_preflight_logs(paths: LoadLanePaths) -> None:
+        text = ""
+        for path in (paths.stdout, paths.stderr):
+            try:
+                text += "\n" + path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+        lowered = text.lower()
+        patterns = (
+            "too many open files",
+            "file descriptor",
+            "fd limit",
+            "connection refused",
+            "connection timed out",
+            "failed to connect",
+            "error connecting",
+            "connection initialization",
+            "connect failed",
+        )
+        for pattern in patterns:
+            if pattern in lowered:
+                raise CollectionError(
+                    "memtier preflight reported FD or connection initialization errors"
+                )
 
 
 def _read_qps(path: Path) -> float | None:

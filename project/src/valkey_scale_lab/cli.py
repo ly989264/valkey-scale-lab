@@ -52,7 +52,24 @@ def _config_emit_schema(args: argparse.Namespace) -> int:
 
 def _plan(args: argparse.Namespace) -> int:
     try:
-        cli_compat.create_plan_file(args.config, args.out, dry_run=args.dry_run, global_config_path=args.global_config, cli_overrides=_nodehost_cli_overrides(args))
+        kwargs: dict[str, object] = {
+            "dry_run": args.dry_run,
+            "global_config_path": args.global_config,
+            "cli_overrides": _nodehost_cli_overrides(args),
+        }
+        if args.capability_id is not None:
+            kwargs["capability_id"] = args.capability_id
+        if args.scenario is not None:
+            kwargs["scenario"] = args.scenario
+        if args.operator_opt_in:
+            kwargs["operator_opt_in"] = args.operator_opt_in
+        if args.cost_acknowledged:
+            kwargs["cost_acknowledged"] = args.cost_acknowledged
+        cli_compat.create_plan_file(
+            args.config,
+            args.out,
+            **kwargs,
+        )
     except PlannerError as exc:
         print(f"ERROR: plan: {exc}", file=sys.stderr)
         return 1
@@ -109,12 +126,21 @@ def _gate_scenario(args: argparse.Namespace) -> int:
                     **common,
                 )
             else:
+                opt_in_kwargs = (
+                    {
+                        "operator_opt_in": args.operator_opt_in,
+                        "cost_acknowledged": args.cost_acknowledged,
+                    }
+                    if profile.requested_nodes > 200
+                    else {}
+                )
                 state = cli_compat.execute_scenario(
                     scenario_id=scenario_id,
                     backend_id=args.backend,
                     profile_id=profile.profile_id,
                     requested_nodes=profile.requested_nodes,
                     **common,
+                    **opt_in_kwargs,
                 )
         run_id = str(state.get("cluster_id") or run_id)
         recorder.run_id = run_id
@@ -403,6 +429,10 @@ def _resource_preflight(args: argparse.Namespace) -> int:
             "capability_id": capability_id,
             "scenario": args.scenario,
         }
+        if args.operator_opt_in:
+            kwargs["operator_opt_in"] = args.operator_opt_in
+        if args.cost_acknowledged:
+            kwargs["cost_acknowledged"] = args.cost_acknowledged
         if args.profile is not None:
             kwargs["profile_id"] = args.profile
         if args.global_config is not None:
@@ -548,6 +578,10 @@ def build_parser() -> argparse.ArgumentParser:
     plan.add_argument("--config", required=True, help="Path to a run configuration file.")
     plan.add_argument("--out", required=True, help="Path for cluster_plan.json.")
     plan.add_argument("--dry-run", action="store_true", help="Plan without starting processes.")
+    plan.add_argument("--capability-id")
+    plan.add_argument("--scenario")
+    plan.add_argument("--operator-opt-in", action="store_true")
+    plan.add_argument("--cost-acknowledged", action="store_true")
     _add_nodehost_overrides(plan)
     plan.set_defaults(func=_plan)
 
@@ -563,6 +597,8 @@ def build_parser() -> argparse.ArgumentParser:
     scenario.add_argument("--phase", dest="legacy_alias_id", help=argparse.SUPPRESS)
     scenario.add_argument("--artifacts-dir", required=True)
     scenario.add_argument("--state-out", required=True)
+    scenario.add_argument("--operator-opt-in", action="store_true")
+    scenario.add_argument("--cost-acknowledged", action="store_true")
     _add_nodehost_overrides(scenario)
     scenario.set_defaults(func=_gate_scenario)
     cleanup = gate_sub.add_parser("cleanup", help="Cleanup a scenario from state.")
@@ -578,7 +614,7 @@ def build_parser() -> argparse.ArgumentParser:
     execute.add_argument("--nodes", required=True, type=int)
     execute.add_argument("--config", required=True)
     execute.add_argument("--backend", choices=["docker_process"], default="docker_process")
-    execute.add_argument("--profile", choices=["exact-50", "exact-100", "exact-200"])
+    execute.add_argument("--profile", choices=["exact-50", "exact-100", "exact-200", "exact-2000"])
     execute.add_argument("--run-id", required=True)
     execute.add_argument("--ownership-id", required=True)
     execute.add_argument("--provenance-id", required=True)
@@ -634,6 +670,8 @@ def build_parser() -> argparse.ArgumentParser:
     preflight.add_argument("--phase", dest="legacy_capability_alias", help=argparse.SUPPRESS)
     preflight.add_argument("--scenario")
     preflight.add_argument("--profile", choices=sorted(PROFILES))
+    preflight.add_argument("--operator-opt-in", action="store_true")
+    preflight.add_argument("--cost-acknowledged", action="store_true")
     _add_nodehost_overrides(preflight)
     preflight.set_defaults(func=_resource_preflight)
     _add_unimplemented(resource, "resource")

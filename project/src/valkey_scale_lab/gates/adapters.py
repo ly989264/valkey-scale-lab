@@ -208,6 +208,14 @@ class ProductGateAdapter:
                         config_path=config_template,
                         out_path=path,
                         requested_nodes=context.requested_nodes,
+                        **(
+                            {
+                                "operator_opt_in": context.operator_opt_in,
+                                "cost_acknowledged": context.cost_acknowledged,
+                            }
+                            if context.requested_nodes > 200
+                            else {}
+                        ),
                     )
             except Exception as exc:  # noqa: BLE001 - inability to prove safety blocks execution
                 return StepResult(
@@ -317,6 +325,9 @@ class ProductGateAdapter:
             "state_out": record.paths.state_path,
             "setup_timeline": record.setup_timeline,
         }
+        if context.requested_nodes > 200:
+            kwargs["operator_opt_in"] = context.operator_opt_in
+            kwargs["cost_acknowledged"] = context.cost_acknowledged
         global_config_path = _optional_path(
             context.configuration.get("global_config_path")
         )

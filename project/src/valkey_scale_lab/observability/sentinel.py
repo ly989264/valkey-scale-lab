@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Sequence
 
@@ -308,11 +309,40 @@ class SentinelLane:
         for client in self._clients.values():
             client.close()
 
+    def connection_events(self) -> list[dict[str, Any]]:
+        return [
+            dict(event)
+            for client in self._clients.values()
+            for event in client.events
+        ]
+
     def mark_expected_down(self, logical_id: str) -> None:
         self._clients[logical_id].mark_expected_down()
 
     def mark_restore_started(self, logical_id: str) -> None:
         self._clients[logical_id].mark_restore_started()
+
+    def reconnect_and_confirm(self, logical_id: str) -> dict[str, Any]:
+        client = self._clients[logical_id]
+        value = client.execute("GET", client.node.canary.key)
+        if _value_text(value) != client.node.canary.value:
+            raise SemanticFailure(
+                f"{logical_id} Sentinel restore read returned {value!r}"
+            )
+        connected = [
+            event
+            for event in client.events
+            if event.get("event") == "connected"
+        ]
+        return {
+            "status": "OK",
+            "logical_id": logical_id,
+            "value_ok": True,
+            "last_connected_role": (
+                connected[-1].get("role") if connected else "MISSING"
+            ),
+            "connection_events": self.connection_events(),
+        }
 
     def prepare(self, *, replica_timeout: float = 30.0) -> dict[str, Any]:
         primaries = [node for node in self.nodes if node.role == "primary"]
@@ -351,18 +381,15 @@ class SentinelLane:
             "node_count": len(self.nodes),
             "replicas_confirmed": len(self.nodes) - len(primaries),
             "writes_during_formal_window": 0,
+            "connection_events": self.connection_events(),
         }
 
     def rolling_sweep(self, *, duration_seconds: float = 60.0) -> dict[str, Any]:
         interval = duration_seconds / len(self.nodes)
         started = self._monotonic()
-        rows: list[dict[str, Any]] = []
-        for index, node in enumerate(self.nodes):
-            target = started + index * interval
-            delay = target - self._monotonic()
-            if delay > 0:
-                self._sleep(delay)
-            observed_at = self._monotonic()
+        rows: list[dict[str, Any] | None] = [None] * len(self.nodes)
+
+        def observe(node: SentinelNode, observed_at: float) -> dict[str, Any]:
             try:
                 value = self._clients[node.endpoint.logical_id].execute(
                     "GET", node.canary.key
@@ -372,18 +399,31 @@ class SentinelLane:
             except Exception as exc:  # observed node data-path failure
                 ok = False
                 error = f"{type(exc).__name__}: {exc}"
-            rows.append(
-                {
-                    "logical_id": node.endpoint.logical_id,
-                    "role": node.role,
-                    "shard_id": node.shard_id,
-                    "slot": node.canary.slot,
-                    "monotonic": observed_at,
-                    "status": "OK" if ok else "FAIL",
-                    "error": error,
-                }
-            )
-        failures = [row for row in rows if row["status"] != "OK"]
+            return {
+                "logical_id": node.endpoint.logical_id,
+                "role": node.role,
+                "shard_id": node.shard_id,
+                "slot": node.canary.slot,
+                "monotonic": observed_at,
+                "status": "OK" if ok else "FAIL",
+                "error": error,
+            }
+
+        with ThreadPoolExecutor(max_workers=min(64, len(self.nodes))) as executor:
+            futures: dict[Any, int] = {}
+            for index, node in enumerate(self.nodes):
+                target = started + index * interval
+                delay = target - self._monotonic()
+                if delay > 0:
+                    self._sleep(delay)
+                observed_at = self._monotonic()
+                futures[executor.submit(observe, node, observed_at)] = index
+            for future in as_completed(futures):
+                rows[futures[future]] = future.result()
+        if any(row is None for row in rows):
+            raise CollectionError("Sentinel sweep lost a node observation")
+        observed_rows = [row for row in rows if row is not None]
+        failures = [row for row in observed_rows if row["status"] != "OK"]
         if failures:
             raise SemanticFailure(
                 "Sentinel sweep failed: "
@@ -394,9 +434,10 @@ class SentinelLane:
         return {
             "status": "OK",
             "duration_seconds": duration_seconds,
-            "nodes_observed": len(rows),
-            "get_count": len(rows),
-            "rows": rows,
+            "nodes_observed": len(observed_rows),
+            "get_count": len(observed_rows),
+            "rows": observed_rows,
+            "connection_events": self.connection_events(),
         }
 
     def fault_probe(
@@ -476,6 +517,7 @@ class SentinelLane:
                         ),
                         "stable_confirmed_at_monotonic": round_started,
                         "samples": rows,
+                        "connection_events": self.connection_events(),
                     }
                 delay = interval_seconds - (self._monotonic() - round_started)
                 if delay > 0:

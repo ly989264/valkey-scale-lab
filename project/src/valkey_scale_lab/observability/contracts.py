@@ -42,6 +42,7 @@ class CheckResult:
 def run_check(name: str, operation: Callable[[], Any]) -> CheckResult:
     """Run one fixed check, retrying only technical collection failure once."""
 
+    last_collection_error: str | None = None
     for attempt in (1, 2):
         try:
             evidence = operation()
@@ -54,6 +55,7 @@ def run_check(name: str, operation: Callable[[], Any]) -> CheckResult:
                 attempts=attempt,
             )
         except CollectionError as exc:
+            last_collection_error = str(exc)
             if attempt == 2:
                 return CheckResult(
                     name=name,
@@ -62,12 +64,21 @@ def run_check(name: str, operation: Callable[[], Any]) -> CheckResult:
                     attempts=attempt,
                 )
         except Exception as exc:  # noqa: BLE001
-            return CheckResult(
-                name=name,
-                status=CheckStatus.ERROR,
-                reason=f"{type(exc).__name__}: {exc}",
-                attempts=attempt,
-            )
+            last_collection_error = f"{type(exc).__name__}: {exc}"
+            if attempt == 2:
+                return CheckResult(
+                    name=name,
+                    status=CheckStatus.ERROR,
+                    reason=last_collection_error,
+                    attempts=attempt,
+                )
+    if last_collection_error is not None:
+        return CheckResult(
+            name=name,
+            status=CheckStatus.ERROR,
+            reason=last_collection_error,
+            attempts=2,
+        )
     raise AssertionError("unreachable")
 
 

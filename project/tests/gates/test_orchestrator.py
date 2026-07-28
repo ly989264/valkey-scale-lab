@@ -269,6 +269,24 @@ def test_above_200_permissions_block_before_runtime_but_still_cleanup(
     assert result.primary_failure.code == "REQUEST_OPERATOR_OPT_IN_REQUIRED"
 
 
+def test_exact_2000_permissions_block_before_runtime_but_still_cleanup(
+    tmp_path: Path,
+) -> None:
+    adapters = RecordingAdapters()
+
+    result = GateOrchestrator().execute(
+        _plan(2000),
+        _request(tmp_path, 2000, profile_id="exact-2000"),
+        adapters.bundle,
+    )
+
+    assert result.status is GateStatus.BLOCKED
+    assert adapters.calls == ["cleanup"]
+    assert adapters.cleanup_count == 1
+    assert result.primary_failure is not None
+    assert result.primary_failure.code == "REQUEST_OPERATOR_OPT_IN_REQUIRED"
+
+
 def test_cost_acknowledgement_is_independently_required(tmp_path: Path) -> None:
     adapters = RecordingAdapters()
     result = GateOrchestrator().execute(

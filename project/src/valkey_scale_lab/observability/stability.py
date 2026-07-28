@@ -13,7 +13,10 @@ from valkey_scale_lab.observability.contracts import (
     run_check,
 )
 from valkey_scale_lab.observability.load import MemtierLoadLane
-from valkey_scale_lab.observability.resources import ResourceSamplerRunner
+from valkey_scale_lab.observability.resources import (
+    ResourceSamplerRunner,
+    analyze_resource_samples,
+)
 from valkey_scale_lab.observability.sentinel import SentinelLane
 
 
@@ -35,6 +38,18 @@ class StabilityWindow:
 
     def run(self) -> dict[str, Any]:
         checks: list[CheckResult] = []
+        if not self.resource_runners:
+            checks.append(
+                CheckResult(
+                    name="resource_sampler_configured",
+                    status=CheckStatus.ERROR,
+                    reason="formal stability window requires at least one resource sampler",
+                )
+            )
+            return {
+                **final_verdict(checks),
+                "formal_window_started": False,
+            }
         preflight = run_check("load_preflight", self.load.preflight)
         checks.append(preflight)
         if preflight.status is not CheckStatus.OK:
@@ -150,6 +165,40 @@ class StabilityWindow:
                         reason="; ".join(document["errors"]),
                     )
                 )
+                continue
+            samples = list(document.get("samples", []))
+            if (
+                not samples
+                or not any(sample.get("kind") == "host" for sample in samples)
+                or not any(sample.get("kind") == "process" for sample in samples)
+            ):
+                checks.append(
+                    CheckResult(
+                        name=f"resource_sampler:{document['static']['sampler_id']}",
+                        status=CheckStatus.ERROR,
+                        reason="resource sampler produced no host/process evidence",
+                    )
+                )
+                continue
+            try:
+                analysis = analyze_resource_samples(document["static"], samples)
+            except Exception as exc:  # noqa: BLE001 - analyzer failure is a tool error
+                checks.append(
+                    CheckResult(
+                        name=f"resource_analysis:{document['static']['sampler_id']}",
+                        status=CheckStatus.ERROR,
+                        reason=f"{type(exc).__name__}: {exc}",
+                    )
+                )
+                continue
+            checks.append(
+                CheckResult(
+                    name=f"resource_analysis:{document['static']['sampler_id']}",
+                    status=CheckStatus.OK,
+                    evidence=analysis,
+                    warnings=tuple(analysis.get("warnings", [])),
+                )
+            )
         warnings = _epoch_warnings(
             start_boundary.evidence,
             rounds[-1]["light"] if rounds else None,

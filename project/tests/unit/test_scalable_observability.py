@@ -27,6 +27,7 @@ from valkey_scale_lab.observability.failover import (
     ActuatorRecorder,
     AffectedShardObserver,
 )
+from valkey_scale_lab.observability import load as load_module
 from valkey_scale_lab.observability.load import MemtierLoadLane, per_connection_rate
 from valkey_scale_lab.observability.resources import (
     LocalResourceSampler,
@@ -40,6 +41,7 @@ from valkey_scale_lab.observability.sentinel import (
     key_slot,
     slot_tags,
 )
+from valkey_scale_lab.observability.stability import StabilityWindow
 from valkey_scale_lab.valkey.resp import Endpoint, read_response
 
 
@@ -315,6 +317,21 @@ def test_check_contract_retries_collection_once_and_preserves_fail() -> None:
     assert verdict["tool_errors"] == ["collector"]
 
 
+def test_check_contract_retries_technical_exception_once() -> None:
+    attempts = 0
+
+    def operation() -> None:
+        nonlocal attempts
+        attempts += 1
+        raise RuntimeError("parser crashed")
+
+    result = run_check("collector", operation)
+
+    assert result.status is CheckStatus.ERROR
+    assert result.attempts == 2
+    assert result.reason == "RuntimeError: parser crashed"
+
+
 def test_load_lane_uses_only_the_fixed_v1_parameters(tmp_path: Path) -> None:
     lane = MemtierLoadLane(
         host="127.0.0.1",
@@ -336,6 +353,130 @@ def test_load_lane_uses_only_the_fixed_v1_parameters(tmp_path: Path) -> None:
     assert "--rate-limiting=250" in command
     assert "--key-prefix=vsl:load:run-a:arm-b:" in command
     assert not any("preload" in value or "warmup" in value for value in command)
+
+
+class FakeMemtierProcess:
+    def __init__(
+        self,
+        command: list[str],
+        *,
+        stdout: Any,
+        stderr: Any,
+        poll_code: int | None = None,
+        stderr_text: str = "",
+    ) -> None:
+        self.command = command
+        self.returncode: int | None = poll_code
+        self._stdout = stdout
+        self._stderr = stderr
+        self._stderr_text = stderr_text
+
+    def poll(self) -> int | None:
+        return self.returncode
+
+    def wait(self, timeout: float | None = None) -> int:
+        json_path = next(
+            Path(value.split("=", 1)[1])
+            for value in self.command
+            if value.startswith("--json-out-file=")
+        )
+        hdr_prefix = next(
+            Path(value.split("=", 1)[1])
+            for value in self.command
+            if value.startswith("--hdr-file-prefix=")
+        )
+        json_path.write_text('{"Totals": {"Ops/sec": 10000}}\n', encoding="utf-8")
+        hdr_prefix.with_suffix(".hdr").write_text("hdr\n", encoding="utf-8")
+        self._stderr.write(self._stderr_text)
+        self._stderr.flush()
+        self.returncode = 0
+        return 0
+
+    def terminate(self) -> None:
+        self.returncode = -15
+
+    def kill(self) -> None:
+        self.returncode = -9
+
+
+def _patch_memtier_binary(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(load_module.shutil, "which", lambda _name: "/bin/memtier")
+    monkeypatch.setattr(load_module.time, "sleep", lambda _seconds: None)
+
+
+def test_memtier_preflight_checks_process_json_hdr_and_logs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_memtier_binary(monkeypatch)
+
+    def popen(command: list[str], *, stdout: Any, stderr: Any, text: bool) -> FakeMemtierProcess:
+        return FakeMemtierProcess(command, stdout=stdout, stderr=stderr)
+
+    lane = MemtierLoadLane(
+        host="127.0.0.1",
+        port=7000,
+        primary_count=10,
+        run_scope="run",
+        artifacts_dir=tmp_path,
+        popen=popen,  # type: ignore[arg-type]
+    )
+
+    result = lane.preflight(duration_seconds=5.0)
+
+    assert result["preflight_checks"] == {
+        "cluster_connection": True,
+        "process_stayed_running": True,
+        "json_output": True,
+        "hdr_output": True,
+        "fd_or_connection_init_errors": False,
+    }
+
+
+def test_memtier_preflight_rejects_early_process_exit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_memtier_binary(monkeypatch)
+
+    def popen(command: list[str], *, stdout: Any, stderr: Any, text: bool) -> FakeMemtierProcess:
+        return FakeMemtierProcess(command, stdout=stdout, stderr=stderr, poll_code=2)
+
+    lane = MemtierLoadLane(
+        host="127.0.0.1",
+        port=7000,
+        primary_count=10,
+        run_scope="run",
+        artifacts_dir=tmp_path,
+        popen=popen,  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(CollectionError, match="exited before"):
+        lane.preflight(duration_seconds=5.0)
+
+
+def test_memtier_preflight_rejects_fd_or_connection_init_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_memtier_binary(monkeypatch)
+
+    def popen(command: list[str], *, stdout: Any, stderr: Any, text: bool) -> FakeMemtierProcess:
+        return FakeMemtierProcess(
+            command,
+            stdout=stdout,
+            stderr=stderr,
+            stderr_text="Too many open files while initializing cluster connections",
+        )
+
+    lane = MemtierLoadLane(
+        host="127.0.0.1",
+        port=7000,
+        primary_count=10,
+        run_scope="run",
+        artifacts_dir=tmp_path,
+        popen=popen,  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(CollectionError, match="FD or connection initialization"):
+        lane.preflight(duration_seconds=5.0)
 
 
 def test_sentinel_keyspace_and_one_canary_per_shard() -> None:
@@ -427,6 +568,108 @@ def test_sentinel_prepares_once_and_fault_probe_requires_ten_rounds() -> None:
     assert result["stable_rounds"] == 10
     assert len(result["samples"]) == 10
     assert result["rto_ms"] == 0
+
+
+def test_sentinel_sweep_reconnect_failure_does_not_block_other_nodes() -> None:
+    clock = FakeClock()
+    canary_a = Canary("a" * 40, 0, "vsl:sentinel:r:{tag-a}:a", "value-a")
+    canary_b = Canary("b" * 40, 1, "vsl:sentinel:r:{tag-b}:b", "value-b")
+    nodes = [
+        SentinelNode(
+            NodeEndpoint("p0", "h", 1, "primary", "s0"),
+            "1" * 40,
+            "a" * 40,
+            "primary",
+            canary_a,
+        ),
+        SentinelNode(
+            NodeEndpoint("p1", "h", 2, "primary", "s1"),
+            "2" * 40,
+            "b" * 40,
+            "primary",
+            canary_b,
+        ),
+    ]
+    calls: list[tuple[str, tuple[Any, ...]]] = []
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        logical = "p0" if endpoint.port == 1 else "p1"
+        node_id = "1" * 40 if endpoint.port == 1 else "2" * 40
+        canary = canary_a if endpoint.port == 1 else canary_b
+        response: dict[tuple[Any, ...], Any] = {
+            ("CLUSTER", "MYID"): node_id.encode(),
+            ("ROLE",): [b"master", 0, []],
+            ("GET", canary.key): RuntimeError("disconnect"),
+        }
+        if endpoint.port == 2:
+            response[("GET", canary.key)] = canary.value
+        connection = FakeConnection(response)
+        original = connection.execute
+
+        def execute(*command: Any) -> Any:
+            calls.append((logical, tuple(command)))
+            return original(*command)
+
+        connection.execute = execute  # type: ignore[method-assign]
+        return connection
+
+    lane = SentinelLane(
+        nodes,
+        connection_factory=factory,
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+    )
+
+    with pytest.raises(SemanticFailure, match="p0"):
+        lane.rolling_sweep(duration_seconds=0.02)
+
+    assert ("p1", ("GET", canary_b.key)) in calls
+
+
+def test_sentinel_expected_down_pauses_then_restore_reconnects() -> None:
+    canary = Canary("a" * 40, 0, "vsl:sentinel:r:{tag-a}:a", "value-a")
+    node = SentinelNode(
+        NodeEndpoint("r0", "h", 1, "replica", "s0"),
+        "1" * 40,
+        "a" * 40,
+        "replica",
+        canary,
+    )
+    readonly_calls = 0
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        nonlocal readonly_calls
+        connection = FakeConnection(
+            {
+                ("CLUSTER", "MYID"): b"1" * 40,
+                ("ROLE",): [b"slave", b"h", 2, b"connected", 0],
+                ("READONLY",): "OK",
+                ("GET", canary.key): canary.value,
+            }
+        )
+        original = connection.execute
+
+        def execute(*command: Any) -> Any:
+            nonlocal readonly_calls
+            if command == ("READONLY",):
+                readonly_calls += 1
+            return original(*command)
+
+        connection.execute = execute  # type: ignore[method-assign]
+        return connection
+
+    lane = SentinelLane([node], connection_factory=factory)
+    lane.mark_expected_down("r0")
+    with pytest.raises(SemanticFailure, match="paused"):
+        lane.reconnect_and_confirm("r0")
+    lane.mark_restore_started("r0")
+
+    result = lane.reconnect_and_confirm("r0")
+
+    assert result["status"] == "OK"
+    assert result["last_connected_role"] == "replica"
+    assert readonly_calls == 1
+    assert any(event["event"] == "connected" for event in result["connection_events"])
 
 
 def test_affected_shard_converges_after_two_500ms_rounds() -> None:
@@ -522,3 +765,141 @@ def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     serialized = json.dumps(samples)
     assert "CLUSTER" not in serialized
     assert "valkey-cli" not in serialized
+
+
+class FakeLightProbe:
+    def collect(self) -> list[dict[str, Any]]:
+        return [{"logical_id": "node-a"}]
+
+    def collect_rolling(self, *, duration_seconds: float) -> list[dict[str, Any]]:
+        return [{"logical_id": "node-a", "round_seconds": duration_seconds}]
+
+    def validate(self, rows: list[dict[str, Any]]) -> dict[str, Any]:
+        return {
+            "status": "OK",
+            "nodes": [
+                {
+                    "logical_id": row["logical_id"],
+                    "cluster_info": {
+                        "cluster_current_epoch": "1",
+                        "cluster_my_epoch": "1",
+                    },
+                }
+                for row in rows
+            ],
+        }
+
+
+class FakeSentinelLane:
+    def prepare(self) -> dict[str, Any]:
+        return {"status": "OK"}
+
+    def rolling_sweep(self, *, duration_seconds: float) -> dict[str, Any]:
+        return {"status": "OK", "duration_seconds": duration_seconds}
+
+    def close(self) -> None:
+        return None
+
+
+class FakeLoadLane:
+    def preflight(self) -> dict[str, Any]:
+        return {"status": "OK"}
+
+    def start(self, *, duration_seconds: float) -> object:
+        return object()
+
+    def finish(self, process: object) -> dict[str, Any]:
+        return {"status": "OK", "warnings": []}
+
+
+def _resource_document() -> dict[str, Any]:
+    collector = {
+        "sample_duration_seconds": 0.001,
+        "cpu_time_seconds": 0.01,
+        "rss_bytes": 1000,
+        "overrun_seconds": 0.0,
+    }
+    return {
+        "static": {"sampler_id": "host-a", "network_interfaces": []},
+        "samples": [
+            {
+                "kind": "host",
+                "sampler_id": "host-a",
+                "wall_time": 1.0,
+                "monotonic": 1.0,
+                "cpu": {"user": 1, "system": 1, "idle": 10, "iowait": 0, "steal": 0},
+                "scheduler": {"running": 1, "blocked": 0},
+                "memory": {"mem_available_bytes": 1000, "swap_used_bytes": 0},
+                "cgroup": {
+                    "memory_current_bytes": 100,
+                    "memory_max_bytes": 1000,
+                    "cpu_throttled_usec": 0,
+                    "oom_kill_count": 0,
+                },
+                "network": {},
+                "collector": collector,
+            },
+            {
+                "kind": "process",
+                "sampler_id": "host-a",
+                "wall_time": 1.0,
+                "monotonic": 1.0,
+                "processes": [
+                    {
+                        "logical_id": "node-a",
+                        "pid": 123,
+                        "state": "S",
+                        "start_time_ticks": 10,
+                        "user_cpu_ticks": 1,
+                        "system_cpu_ticks": 2,
+                        "rss_bytes": 100,
+                        "fd_count": 3,
+                    }
+                ],
+                "collector": collector,
+            },
+        ],
+        "errors": [],
+    }
+
+
+class FakeResourceRunner:
+    def __init__(self, document: dict[str, Any]) -> None:
+        self.document = document
+        self.sampler = type("Sampler", (), {"sampler_id": "host-a"})()
+
+    def start(self) -> None:
+        return None
+
+    def stop(self) -> dict[str, Any]:
+        return self.document
+
+
+def test_stability_window_requires_resource_sampler() -> None:
+    result = StabilityWindow(
+        light_probe=FakeLightProbe(),  # type: ignore[arg-type]
+        sentinel=FakeSentinelLane(),  # type: ignore[arg-type]
+        load=FakeLoadLane(),  # type: ignore[arg-type]
+    ).run()
+
+    assert result["status"] == "ERROR"
+    assert result["formal_window_started"] is False
+    assert result["checks"][0]["name"] == "resource_sampler_configured"
+
+
+def test_stability_window_consumes_resource_analysis() -> None:
+    result = StabilityWindow(
+        light_probe=FakeLightProbe(),  # type: ignore[arg-type]
+        sentinel=FakeSentinelLane(),  # type: ignore[arg-type]
+        load=FakeLoadLane(),  # type: ignore[arg-type]
+        resource_runners=[FakeResourceRunner(_resource_document())],  # type: ignore[list-item]
+    ).run()
+
+    resource_checks = [
+        check
+        for check in result["checks"]
+        if check["name"] == "resource_analysis:host-a"
+    ]
+    assert result["status"] == "PASS"
+    assert resource_checks
+    assert resource_checks[0]["evidence"]["processes"]["node-a"]["fd_count_max"] == 3

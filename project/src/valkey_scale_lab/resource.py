@@ -12,10 +12,15 @@ from typing import Any
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout
-from valkey_scale_lab.config.validation import load_effective_config, validate_semantics
+from valkey_scale_lab.config.validation import (
+    is_exact_2000_local_full_flow_profile,
+    load_effective_config,
+    validate_semantics,
+)
 from valkey_scale_lab.execution import (
     ExecutionSelectionError,
     exact_200_selection_allowed,
+    exact_2000_selection_allowed,
     resolve_profile,
 )
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
@@ -37,6 +42,8 @@ def run_resource_preflight(
     capability_id: str | None = None,
     scenario: str | None = None,
     profile_id: str | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -59,7 +66,21 @@ def run_resource_preflight(
         scenario=scenario_name,
         profile_id=profile_id,
     )
-    semantic_errors = _semantic_errors_for_preflight(config, allow_exact_200=exact_200_exception)
+    exact_2000_exception = _is_exact_2000_local_full_flow_exception(
+        config,
+        node_count,
+        dry_run,
+        capability_id=capability_id,
+        scenario=scenario_name,
+        profile_id=profile_id,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
+    )
+    semantic_errors = _semantic_errors_for_preflight(
+        config,
+        allow_exact_200=exact_200_exception,
+        allow_exact_2000=exact_2000_exception,
+    )
     run_id = f"{capability_id}-resource-preflight-{node_count}-20260628"
     checks: list[dict[str, Any]] = []
     density_plan: dict[str, Any] | None = None
@@ -78,11 +99,15 @@ def run_resource_preflight(
     checks.append(
         _check(
             "node_count_limit",
-            node_count <= 100 or dry_run or exact_200_exception,
+            node_count <= 100 or dry_run or exact_200_exception or exact_2000_exception,
             {
                 "node_count": node_count,
                 "default_cap": 100,
-                "selected_capability_id": capability_id if exact_200_exception else "MISSING",
+                "selected_capability_id": (
+                    capability_id
+                    if exact_200_exception or exact_2000_exception
+                    else "MISSING"
+                ),
             },
         )
     )
@@ -97,6 +122,25 @@ def run_resource_preflight(
                     "scenario_name": scenario_name,
                     "profile_name": config.get("profile_name", "MISSING"),
                     "dry_run": dry_run or config.get("runtime", {}).get("dry_run") is True,
+                    "scale_profile": config.get("scale_profile", {}),
+                },
+            )
+        )
+    if node_count == 2000:
+        checks.append(
+            _check(
+                "exact_2000_local_full_flow_opt_in",
+                exact_2000_exception,
+                {
+                    "node_count": node_count,
+                    "capability_id": capability_id,
+                    "scenario_name": scenario_name,
+                    "profile_id": profile_id or "MISSING",
+                    "profile_name": config.get("profile_name", "MISSING"),
+                    "operator_opt_in": operator_opt_in,
+                    "cost_acknowledged": cost_acknowledged,
+                    "runtime_dry_run": config.get("runtime", {}).get("dry_run"),
+                    "workload_enabled": config.get("workload", {}).get("enabled"),
                     "scale_profile": config.get("scale_profile", {}),
                 },
             )
@@ -160,6 +204,16 @@ def run_resource_preflight(
             "node_count": 200 if exact_200_exception else "MISSING",
             "default_max_nodes": 100,
             "profile_exception_nodes": config.get("scale_profile", {}).get("bounded_exception_nodes", "MISSING"),
+        },
+        "controlled_scale_exception": {
+            "capability_id": capability_id if exact_2000_exception else "MISSING",
+            "scenario_name": scenario_name if exact_2000_exception else "MISSING",
+            "node_count": 2000 if exact_2000_exception else "MISSING",
+            "profile_id": profile_id if exact_2000_exception else "MISSING",
+            "operator_opt_in": operator_opt_in if exact_2000_exception else False,
+            "cost_acknowledged": cost_acknowledged if exact_2000_exception else False,
+            "runtime_dry_run": config.get("runtime", {}).get("dry_run", "MISSING"),
+            "workload_enabled": config.get("workload", {}).get("enabled", "MISSING"),
         },
         "host": _host_facts(),
         "resource_estimates": _resource_estimates(
@@ -241,16 +295,65 @@ def _is_exact_200_bounded_exception(
         and dry_run_arg is False
         and runtime.get("dry_run") is False
     )
-def _semantic_errors_for_preflight(config: dict[str, Any], *, allow_exact_200: bool) -> list[dict[str, Any]]:
+
+
+def _is_exact_2000_local_full_flow_exception(
+    config: dict[str, Any],
+    node_count: int,
+    dry_run_arg: bool,
+    *,
+    capability_id: str,
+    scenario: str,
+    profile_id: str | None,
+    operator_opt_in: bool,
+    cost_acknowledged: bool,
+) -> bool:
+    runtime = config.get("runtime", {})
+    return (
+        node_count == 2000
+        and profile_id == "exact-2000"
+        and exact_2000_selection_allowed(
+            capability_id=capability_id,
+            scenario_id=scenario,
+        )
+        and is_exact_2000_local_full_flow_profile(config)
+        and dry_run_arg is False
+        and runtime.get("dry_run") is False
+        and operator_opt_in is True
+        and cost_acknowledged is True
+    )
+
+
+def _semantic_errors_for_preflight(
+    config: dict[str, Any],
+    *,
+    allow_exact_200: bool,
+    allow_exact_2000: bool,
+) -> list[dict[str, Any]]:
     errors = validate_semantics(config)
-    if not allow_exact_200:
+    if not allow_exact_200 and not allow_exact_2000:
         return errors
+    allowed_codes = {"NODE_CAP_EXCEEDED"}
+    if allow_exact_2000:
+        allowed_codes.update(
+            {
+                "REAL_EXECUTION_ABOVE_200_FORBIDDEN",
+                "MISSING_200_PLUS_DRY_RUN_PROFILE",
+                "WORKLOAD_ABOVE_200_FORBIDDEN",
+                "MISSING_1000_ALLOW",
+                "MISSING_1000_ENV_GUARD",
+                "MISSING_1000_DRY_RUN",
+                "MISSING_1000_SCALE_PROFILE",
+            }
+        )
     filtered: list[dict[str, Any]] = []
     for error in errors:
-        if error.get("code") == "NODE_CAP_EXCEEDED":
+        if error.get("code") in allowed_codes:
             continue
         filtered.append(error)
     return filtered
+
+
 def _check(name: str, ok: bool, details: dict[str, Any]) -> dict[str, Any]:
     return {"name": name, "status": "PASS" if ok else "FAIL", "details": details}
 

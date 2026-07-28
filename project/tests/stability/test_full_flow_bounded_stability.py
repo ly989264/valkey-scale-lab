@@ -6,6 +6,34 @@ from typing import Any
 from valkey_scale_lab.runtime import docker_runtime
 
 
+def test_local_full_flow_resource_runners_use_nodehost_procfs(monkeypatch) -> None:
+    monkeypatch.setattr(docker_runtime, "_container_pid", lambda _container: 4242)
+
+    runners = docker_runtime._resource_runners_for_nodes(
+        [
+            {
+                "logical_id": "node-a",
+                "nodehost_id": "nodehost-a",
+                "nodehost_container_id": "container-a",
+                "pid": 101,
+            },
+            {
+                "logical_id": "node-b",
+                "nodehost_id": "nodehost-a",
+                "nodehost_container_id": "container-a",
+                "pid": 102,
+            },
+        ]
+    )
+
+    assert len(runners) == 1
+    assert runners[0].sampler.proc_root == Path("/proc/4242/root/proc")
+    assert [process.logical_id for process in runners[0].sampler.processes] == [
+        "node-a",
+        "node-b",
+    ]
+
+
 def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(
     monkeypatch, tmp_path: Path
 ) -> None:

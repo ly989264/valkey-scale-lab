@@ -9,13 +9,18 @@ from valkey_scale_lab import __version__
 from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout, cluster_timeout_node_fields
 from valkey_scale_lab.config.validation import (
     REQUIRED_1000_ENV_VALUE,
+    is_exact_2000_local_full_flow_profile,
     is_scale_projection_profile,
     load_effective_config,
     normalize_config,
     validate_semantics,
 )
-from valkey_scale_lab.execution import exact_200_selection_allowed
+from valkey_scale_lab.execution import (
+    exact_200_selection_allowed,
+    exact_2000_selection_allowed,
+)
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
+from valkey_scale_lab.observability.cluster import observation_complexity
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields
 
 CAPABILITY_ID = "cluster_planning"
@@ -32,6 +37,10 @@ def create_plan_file(
     out_path: str | Path,
     dry_run: bool = False,
     *,
+    capability_id: str | None = None,
+    scenario: str | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
     global_config_path: str | Path | None = None,
     cli_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -42,7 +51,15 @@ def create_plan_file(
     if errors:
         message = "; ".join(f"{item['code']}: {item['message']}" for item in errors)
         raise PlannerError(message)
-    plan = build_cluster_plan(config, config_path=Path(config_path), force_dry_run=dry_run)
+    plan = build_cluster_plan(
+        config,
+        config_path=Path(config_path),
+        force_dry_run=dry_run,
+        capability_id=capability_id,
+        scenario=scenario,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
+    )
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -56,6 +73,8 @@ def build_cluster_plan(
     *,
     capability_id: str | None = None,
     scenario: str | None = None,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> dict[str, Any]:
     cluster = config["cluster"]
     network = config["network"]
@@ -78,6 +97,15 @@ def build_cluster_plan(
         dry_run=dry_run,
         capability_id=capability_id,
         scenario=scenario,
+    )
+    exact_2000_local_full_flow = _is_exact_2000_local_full_flow_exception(
+        config,
+        node_count=node_count,
+        dry_run=dry_run,
+        capability_id=capability_id,
+        scenario=scenario,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
     )
 
     if network.get("virtual_az_mode") == "single" and replicas_per_shard > 0:
@@ -139,8 +167,9 @@ def build_cluster_plan(
         "dry_run": dry_run,
         "opt_in_1000": opt_in_1000,
         "scale_projection_200_plus": scale_projection_200_plus,
-        "above_200_dry_run_only": node_count > 200,
+        "above_200_dry_run_only": node_count > 200 and not exact_2000_local_full_flow,
         "exact_200_bounded_exception": exact_200_bounded_exception,
+        "exact_2000_local_full_flow_opt_in": exact_2000_local_full_flow,
         "no_execution": dry_run,
         "port_collision_checked": _ports_unique_per_host(planned_nodes),
         "az_balanced": _az_balanced(planned_nodes),
@@ -159,13 +188,29 @@ def build_cluster_plan(
     if exact_200_bounded_exception:
         constraints["selected_capability_id"] = capability_id
         constraints["selected_scenario_id"] = scenario
-    if node_count > 200 and not dry_run:
+    if exact_2000_local_full_flow:
+        constraints["selected_capability_id"] = capability_id
+        constraints["selected_scenario_id"] = scenario
+        constraints["operator_opt_in"] = operator_opt_in
+        constraints["cost_acknowledged"] = cost_acknowledged
+    if node_count > 200 and not dry_run and not exact_2000_local_full_flow:
         raise PlannerError("plans above 200 nodes must be dry-run only")
-    if node_count > 200 and dry_run and not scale_projection_200_plus and not opt_in_1000:
+    if (
+        node_count > 200
+        and dry_run
+        and not scale_projection_200_plus
+        and not opt_in_1000
+    ):
         raise PlannerError("above-200 dry-run plans require explicit scale-projection markers")
-    if node_count > int(safety["default_max_nodes"]) and not opt_in_1000 and not exact_200_bounded_exception and not scale_projection_200_plus:
+    if (
+        node_count > int(safety["default_max_nodes"])
+        and not opt_in_1000
+        and not exact_200_bounded_exception
+        and not exact_2000_local_full_flow
+        and not scale_projection_200_plus
+    ):
         raise PlannerError("node count exceeds default cap without 1000 opt-in")
-    if node_count >= 1000 and not dry_run:
+    if node_count >= 1000 and not dry_run and not exact_2000_local_full_flow:
         raise PlannerError("1000-node plans must be dry-run only")
     if not all(
         [
@@ -222,6 +267,7 @@ def build_cluster_plan(
         "effective_cluster_timeout": effective_timeout,
         "failover_timeline_observer": config.get("observability", {}).get("failover_timeline_observer", {}),
         "config_sources": config.get("_config_sources", {}),
+        "scalable_observability": observation_complexity(node_count, observer_count=3),
         "nodehosts": nodehosts,
         "nodes": planned_nodes,
         "constraints": constraints,
@@ -250,6 +296,31 @@ def _is_exact_200_bounded_exception(
         and runtime.get("dry_run") is False
         and dry_run is False
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
+    )
+
+
+def _is_exact_2000_local_full_flow_exception(
+    config: dict[str, Any],
+    *,
+    node_count: int,
+    dry_run: bool,
+    capability_id: str | None,
+    scenario: str | None,
+    operator_opt_in: bool,
+    cost_acknowledged: bool,
+) -> bool:
+    return (
+        capability_id is not None
+        and scenario is not None
+        and node_count == 2000
+        and dry_run is False
+        and operator_opt_in is True
+        and cost_acknowledged is True
+        and exact_2000_selection_allowed(
+            capability_id=capability_id,
+            scenario_id=scenario,
+        )
+        and is_exact_2000_local_full_flow_profile(config)
     )
 
 

@@ -278,7 +278,7 @@ class ResourceSamplerRunner:
         self.process_interval = process_interval
         self._sleep = sleep
         self._monotonic = monotonic
-        self.static = sampler.static()
+        self.static: dict[str, Any] | None = None
         self.samples: list[dict[str, Any]] = []
         self.errors: list[str] = []
         self._stop = threading.Event()
@@ -287,6 +287,12 @@ class ResourceSamplerRunner:
     def start(self) -> None:
         if self._thread is not None:
             raise RuntimeError("resource sampler is already running")
+        try:
+            self.static = self.sampler.static()
+        except CollectionError as exc:
+            self.errors.append(str(exc))
+            self._stop.set()
+            return
         self._thread = threading.Thread(
             target=self._run,
             name=f"resource-sampler-{self.sampler.sampler_id}",
@@ -301,7 +307,8 @@ class ResourceSamplerRunner:
             if self._thread.is_alive():
                 raise CollectionError("resource sampler did not stop")
         return {
-            "static": self.static,
+            "static": self.static
+            or {"sampler_id": self.sampler.sampler_id, "status": "MISSING"},
             "samples": list(self.samples),
             "errors": list(self.errors),
         }

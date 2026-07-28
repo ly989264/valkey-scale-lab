@@ -59,6 +59,12 @@ PROFILES: Mapping[str, ExecutionProfile] = MappingProxyType(
         "exact-200": ExecutionProfile(
             "exact-200", 200, "local-real", "templates/configs/scale_200.yaml"
         ),
+        "exact-2000": ExecutionProfile(
+            "exact-2000",
+            2000,
+            "local-real",
+            "templates/configs/scale_2000_local_full_flow_optin.yaml",
+        ),
     }
 )
 
@@ -103,6 +109,7 @@ EXACT_200_SCENARIOS = frozenset(
         "server_profile",
     }
 )
+EXACT_2000_SCENARIOS = frozenset({"local_full_flow"})
 
 
 def resolve_backend(backend_id: str) -> ExecutionBackend:
@@ -137,6 +144,14 @@ def exact_200_selection_allowed(*, capability_id: str, scenario_id: str) -> bool
     )
 
 
+def exact_2000_selection_allowed(*, capability_id: str, scenario_id: str) -> bool:
+    return (
+        scenario_id == capability_id
+        and scenario_id in EXACT_2000_SCENARIOS
+        and SCENARIO_CAPABILITIES.get(scenario_id) == capability_id
+    )
+
+
 def validate_execution_selection(
     *,
     scenario_id: str,
@@ -158,12 +173,14 @@ def validate_execution_selection(
 __all__ = [
     "BACKENDS",
     "EXACT_200_SCENARIOS",
+    "EXACT_2000_SCENARIOS",
     "PROFILES",
     "SCENARIO_CAPABILITIES",
     "ExecutionBackend",
     "ExecutionProfile",
     "ExecutionSelectionError",
     "exact_200_selection_allowed",
+    "exact_2000_selection_allowed",
     "profile_for_exact_nodes",
     "resolve_backend",
     "resolve_profile",

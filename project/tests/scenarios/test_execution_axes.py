@@ -4,9 +4,11 @@ import pytest
 
 from valkey_scale_lab.execution import (
     EXACT_200_SCENARIOS,
+    EXACT_2000_SCENARIOS,
     ExecutionSelectionError,
     PROFILES,
     exact_200_selection_allowed,
+    exact_2000_selection_allowed,
     resolve_profile,
     validate_execution_selection,
 )
@@ -20,6 +22,7 @@ def test_profiles_only_select_scale_and_environment() -> None:
     assert PROFILES["exact-30"].requested_nodes == 30
     assert PROFILES["exact-50"].requested_nodes == 50
     assert PROFILES["exact-200"].requested_nodes == 200
+    assert PROFILES["exact-2000"].requested_nodes == 2000
     assert set(PROFILES["exact-200"].__dataclass_fields__) == {
         "profile_id",
         "requested_nodes",
@@ -47,6 +50,18 @@ def test_exact_200_eligibility_is_owned_by_the_canonical_scenario_selection() ->
     assert not exact_200_selection_allowed(
         capability_id="local_full_flow",
         scenario_id="fault_matrix",
+    )
+
+
+def test_exact_2000_eligibility_is_only_local_full_flow() -> None:
+    assert EXACT_2000_SCENARIOS == frozenset({"local_full_flow"})
+    assert exact_2000_selection_allowed(
+        capability_id="local_full_flow",
+        scenario_id="local_full_flow",
+    )
+    assert not exact_2000_selection_allowed(
+        capability_id="management_matrix",
+        scenario_id="management_matrix",
     )
 
 

@@ -434,6 +434,69 @@ def test_full_flow_50_cluster_plan_writer_uses_the_registered_scale_profile(tmp_
     assert plan["node_count"] == 50
 
 
+def test_observability_writer_uses_scalable_validator_not_cluster_nodes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FakeValidator:
+        def __init__(self, *_args, **_kwargs) -> None:
+            pass
+
+        def run(self) -> dict:
+            return {
+                "status": "OK",
+                "complexity": {
+                    "light_command_count": 12,
+                    "cluster_shards_view_count": 2,
+                    "cluster_nodes_command_count": 0,
+                },
+                "light_validation": {
+                    "primary_count": 1,
+                    "replica_count": 1,
+                },
+                "topology_validation": {"status": "OK"},
+            }
+
+    monkeypatch.setattr(docker_runtime, "FullClusterValidator", FakeValidator)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_command",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("CLUSTER NODES path must not be used")
+        ),
+    )
+
+    docker_runtime.write_observability_artifacts(
+        tmp_path,
+        "observability",
+        "observability",
+        "run-observability",
+        {},
+        [
+            {
+                "logical_id": "node-a",
+                "host": "127.0.0.1",
+                "client_port": 7000,
+                "role": "primary",
+                "shard_id": "s0",
+            },
+            {
+                "logical_id": "node-b",
+                "host": "127.0.0.1",
+                "client_port": 7001,
+                "role": "replica",
+                "shard_id": "s0",
+            },
+        ],
+    )
+
+    report = docker_runtime.json.loads(
+        (tmp_path / "scalable_cluster_validation.json").read_text(encoding="utf-8")
+    )
+    assert report["status"] == "PASS"
+    assert report["normal_path_cluster_nodes_command_count"] == 0
+    assert report["docker_exec_for_valkey_protocol"] is False
+
+
 @pytest.mark.parametrize(
     "capability_id",
     [
@@ -463,6 +526,43 @@ def test_exact_200_runtime_semantic_exception_is_profile_and_scenario_bound(
             capability_id=capability_id,
             scenario=f"{capability_id}_other",
             profile_id="exact-200",
+        )
+    )
+
+
+def test_exact_2000_runtime_semantics_require_local_full_flow_opt_in() -> None:
+    config = docker_runtime.normalize_config(
+        docker_runtime.parse_config_file(
+            "templates/configs/scale_2000_local_full_flow_optin.yaml"
+        )
+    )
+
+    assert docker_runtime._runtime_semantic_errors(
+        config,
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        profile_id="exact-2000",
+        operator_opt_in=True,
+        cost_acknowledged=True,
+    ) == []
+    assert any(
+        error["code"] == "EXACT_2000_LOCAL_FULL_FLOW_OPT_IN_REQUIRED"
+        for error in docker_runtime._runtime_semantic_errors(
+            config,
+            capability_id="local_full_flow",
+            scenario="local_full_flow",
+            profile_id="exact-2000",
+        )
+    )
+    assert any(
+        error["code"] == "EXACT_2000_LOCAL_FULL_FLOW_OPT_IN_REQUIRED"
+        for error in docker_runtime._runtime_semantic_errors(
+            config,
+            capability_id="management_matrix",
+            scenario="management_matrix",
+            profile_id="exact-2000",
+            operator_opt_in=True,
+            cost_acknowledged=True,
         )
     )
 
