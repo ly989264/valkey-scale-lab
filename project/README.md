@@ -28,18 +28,6 @@ patch with zero fuzz, and produces
 `valkey-scale-lab/valkey:9.1.0-myslots`. Real runtime preflight requires this
 local image and never builds or falls back to the upstream image.
 
-## Scalable Observation
-
-`docs/scalable_cluster_observability_design.md` is the authoritative cluster
-validation, Sentinel, Load Lane, failover, resource, and verdict contract.
-Runtime adapters provide endpoints, actuation, and local resource access; they
-must not add observation layers or verdict states beyond that document.
-
-The current implementation covers cluster validation, Sentinel, Load Lane,
-failover, and verdict handling. Deployment of one persistent local resource
-sampler per nodehost/ECS is deferred to a separate change; the stability
-verdict in this change does not claim resource-sampling coverage.
-
 ## Product Commands
 
 Create a run and validate a configuration:
