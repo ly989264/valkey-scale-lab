@@ -96,13 +96,16 @@ Use a multi-stage Dockerfile with three targets.
 
 ### `builder`
 
-1. Download the fixed Valkey 9.1.0 release archive over HTTPS.
-2. Verify its pinned SHA-256 before extraction.
-3. Copy the repository patch into the build.
-4. Apply it with fuzz disabled so source drift fails the build.
-5. Compile `valkey-server` and `valkey-cli`.
-6. Run a binary/version smoke check.
-7. Record the source, patch, and binary digests in a build manifest.
+1. Use the official Valkey 9.1.0 base image by immutable multi-platform
+   digest and install build dependencies from its pinned Debian snapshot.
+2. Download the fixed Valkey 9.1.0 release archive over HTTPS.
+3. Verify its pinned SHA-256 before extraction.
+4. Copy the repository patch into the build.
+5. Apply it with fuzz disabled so source drift fails the build.
+6. Compile `valkey-server` and `valkey-cli` with Valkey's Linux-default
+   `jemalloc` allocator.
+7. Run binary, version, and allocator smoke checks.
+8. Record the source, patch, and binary digests in a build manifest.
 
 ### `runtime`
 
