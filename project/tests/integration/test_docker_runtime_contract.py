@@ -142,6 +142,8 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
             "ordinal": 0,
             "client_port": 7000,
             "role": "primary",
+            "shard_id": "shard-0000",
+            "az_id": "az-a",
             "nodehost_container_name": "nodehost-0",
             "pid": 100,
         },
@@ -150,6 +152,8 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
             "ordinal": 1,
             "client_port": 7001,
             "role": "primary",
+            "shard_id": "shard-0001",
+            "az_id": "az-b",
             "nodehost_container_name": "nodehost-1",
             "pid": 101,
         },
@@ -158,6 +162,8 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
             "ordinal": 2,
             "client_port": 7002,
             "role": "replica",
+            "shard_id": "shard-0000",
+            "az_id": "az-b",
             "nodehost_container_name": "nodehost-0",
             "pid": 102,
         },
@@ -166,6 +172,8 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
             "ordinal": 3,
             "client_port": 7003,
             "role": "replica",
+            "shard_id": "shard-0001",
+            "az_id": "az-a",
             "nodehost_container_name": "nodehost-1",
             "pid": 103,
         },
@@ -201,6 +209,57 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
         7002: response(node_ids[2], shard_ids[0], "replica", node_ids[0], primary_zero),
         7003: response(node_ids[3], shard_ids[1], "replica", node_ids[1], primary_one),
     }
+    light_rows = []
+    for node, raw in zip(nodes, responses.values()):
+        values = dict(zip(raw[0::2], raw[1::2]))
+        bitmap = bytes(values[b"slot-bitmap"])
+        light_rows.append(
+            {
+                "logical_id": node["logical_id"],
+                "cluster_info": {"cluster_state": "ok"},
+                "role": {
+                    "role": node["role"],
+                    "replication_state": (
+                        "not_applicable"
+                        if node["role"] == "primary"
+                        else "connected"
+                    ),
+                },
+                "myslots": {
+                    "node-id": bytes(values[b"node-id"]).decode(),
+                    "shard-id": bytes(values[b"shard-id"]).decode(),
+                    "role": bytes(values[b"role"]).decode(),
+                    "slot-owner-id": bytes(values[b"slot-owner-id"]).decode(),
+                    "slot-count": values[b"slot-count"],
+                    "bitmap-encoding": "lsb0",
+                    "slot-bitmap-bytes": 2048,
+                    "slot-bitmap-sha256": docker_runtime.hashlib.sha256(bitmap).hexdigest(),
+                    "slot-bitmap-base64": docker_runtime.base64.b64encode(bitmap).decode(),
+                },
+            }
+        )
+
+    class FakeValidator:
+        def __init__(self, *_args, **_kwargs) -> None:
+            pass
+
+        def run(self) -> dict:
+            return {
+                "status": "OK",
+                "light_validation": {
+                    "status": "OK",
+                    "nodes_observed": 4,
+                    "primary_count": 2,
+                    "replica_count": 2,
+                    "nodes": light_rows,
+                },
+                "topology_validation": {
+                    "status": "OK",
+                    "observer_count": 3,
+                },
+            }
+
+    monkeypatch.setattr(docker_runtime, "FullClusterValidator", FakeValidator)
     monkeypatch.setattr(
         docker_runtime,
         "_host_command_binary",
@@ -2058,7 +2117,7 @@ def test_system_metrics_batches_container_stats_once_per_window(tmp_path: Path, 
     assert report["source_refs"]["valkey_e2e_evidence"] == "valkey_e2e_evidence.json"
 
 
-def test_system_metrics_expose_numeric_container_cpu_and_cluster_source(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_system_resource_metrics_do_not_issue_valkey_commands(monkeypatch: pytest.MonkeyPatch) -> None:
     telemetry = docker_runtime.TelemetryRun(
         capability_id="local_full_flow",
         scenario_name="local_full_flow",
@@ -2069,15 +2128,8 @@ def test_system_metrics_expose_numeric_container_cpu_and_cluster_source(monkeypa
     )
     node = {"logical_id": "node-1", "container_name": "nodehost-1", "pid": 101}
 
-    def fake_node_command(_node, *args, timeout):
-        del timeout
-        if args == ("INFO", "default"):
-            return "connected_clients:2\nused_memory:100\nused_memory_rss:120\n"
-        if args == ("CLUSTER", "INFO"):
-            return "cluster_state:ok\ncluster_known_nodes:1\ncluster_slots_assigned:16384\ncluster_slots_ok:16384\ncluster_slots_fail:0\n"
-        if args == ("CLUSTER", "NODES"):
-            return "id 127.0.0.1:7000@17000 myself,master - 0 0 1 connected\n"
-        raise AssertionError(args)
+    def fake_node_command(*_args, **_kwargs):
+        raise AssertionError("resource collection must not issue Valkey commands")
 
     monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
     monkeypatch.setattr(docker_runtime, "_count_log_errors", lambda _node: 0)
@@ -2098,7 +2150,11 @@ def test_system_metrics_expose_numeric_container_cpu_and_cluster_source(monkeypa
     assert by_name["container_cpu_percent"]["source_type"] == "docker_stats"
     assert by_name["container_cpu_percent"]["metric_value"] == 12.5
     assert by_name["cluster_state"]["source_type"] == "cluster_info"
-    assert by_name["cluster_state"]["metric_value"] == 1
+    assert by_name["cluster_state"]["metric_value"] == docker_runtime.MISSING
+    assert (
+        by_name["tcp_connection_count"]["missing_reason"]
+        == "resource collection does not query Valkey topology"
+    )
     assert by_name["cpu_user_percent"]["metric_value"] == docker_runtime.MISSING
 
 
