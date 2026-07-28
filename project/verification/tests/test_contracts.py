@@ -76,7 +76,7 @@ def test_catalog_v2_loads_and_schema_document_is_current() -> None:
     )
 
     assert schema["properties"]["schema_version"]["const"] == "verification-catalog-v2"
-    assert len(catalog.tests) == 94
+    assert len(catalog.tests) == 95
     assert "real.local.full-flow" in catalog.tests
     assert "real.local.m2-cluster-formation" in catalog.tests
     assert "real.local.m2-automatic-failover" in catalog.tests
@@ -341,7 +341,7 @@ def test_m1_expands_every_product_test_once_and_real_check_twice() -> None:
     )
 
     assert plan.definition_status == "READY"
-    assert len(plan.tests) == 89
+    assert len(plan.tests) == 90
     product_ids = set(catalog.suites["product.all"].test_ids)
     assert "product.unit.m2_fault_client_sampler" in product_ids
     assert "product.unit.m2_performance_capture" in product_ids
@@ -363,7 +363,7 @@ def test_m1_expands_every_product_test_once_and_real_check_twice() -> None:
         for planned in real
     ] == ["templates/configs/scale_50.yaml", "templates/configs/scale_200.yaml"]
     assert real[0].artifacts_dir != real[1].artifacts_dir
-    assert len({planned.instance_id for planned in plan.tests}) == 89
+    assert len({planned.instance_id for planned in plan.tests}) == 90
 
 
 def test_m2_m3_and_m4_attach_only_executable_checks() -> None:
