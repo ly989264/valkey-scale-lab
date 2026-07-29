@@ -1439,6 +1439,100 @@ def test_management_wait_clean_cluster_uses_light_health_on_success(
     assert health_calls == [2]
 
 
+def test_management_forget_until_absent_uses_fixed_topology_observers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    survivors = [
+        {
+            "logical_id": f"node-{idx}",
+            "role": "primary" if idx % 2 == 0 else "replica",
+            "client_port": 7400 + idx,
+            "shard_id": f"shard-{idx // 2:04d}",
+            "az_id": f"az-{idx}",
+        }
+        for idx in range(1999)
+    ]
+    topology_checks: list[str] = []
+    forget_commands: list[str] = []
+
+    class FakeTelemetry:
+        def now_unix_ms(self) -> int:
+            return 1
+
+    def fake_node_command(node: dict, *args: object, timeout: float = 5.0) -> str:
+        if args[:2] == ("CLUSTER", "FORGET"):
+            forget_commands.append(str(node["logical_id"]))
+            return "OK"
+        raise AssertionError(f"unexpected command {args!r}")
+
+    def fake_contains(node: dict, removed_id: str) -> bool:
+        topology_checks.append(str(node["logical_id"]))
+        assert removed_id == "removed-id"
+        return False
+
+    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
+    monkeypatch.setattr(docker_runtime, "_management_cluster_nodes_contains", fake_contains)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_cluster_health",
+        lambda nodes: {
+            "cluster_state": "ok",
+            "known_nodes": len(nodes),
+            "primary_count": sum(node["role"] == "primary" for node in nodes),
+            "replica_count": sum(node["role"] == "replica" for node in nodes),
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": [],
+        },
+    )
+    command_log: list[dict[str, object]] = []
+
+    docker_runtime._management_forget_until_absent(
+        telemetry=FakeTelemetry(),  # type: ignore[arg-type]
+        capability_id="cap",
+        parent_run_id="run",
+        operation_id="remove",
+        survivors=survivors,
+        removed_id="removed-id",
+        expected_nodes=len(survivors),
+        expected_primaries=sum(node["role"] == "primary" for node in survivors),
+        expected_replicas=sum(node["role"] == "replica" for node in survivors),
+        command_log=command_log,  # type: ignore[arg-type]
+    )
+
+    assert len(topology_checks) == 3
+    assert len(forget_commands) == len(survivors)
+    assert {row["status"] for row in command_log} == {"PASS"}
+
+
+def test_management_forget_unknown_removed_node_is_absent_noop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeTelemetry:
+        def now_unix_ms(self) -> int:
+            return 1
+
+    def fake_node_command(*_args: object, **_kwargs: object) -> str:
+        raise DockerRuntimeError("ERR Unknown node removed-id")
+
+    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
+    command_log: list[dict[str, object]] = []
+
+    row = docker_runtime._management_log_forget_removed_node(
+        command_log,  # type: ignore[arg-type]
+        telemetry=FakeTelemetry(),  # type: ignore[arg-type]
+        capability_id="cap",
+        parent_run_id="run",
+        operation_id="remove",
+        target={"logical_id": "survivor"},
+        removed_id="removed-id",
+    )
+
+    assert row["status"] == "PASS"
+    assert command_log == [row]
+
+
 def test_large_cluster_create_retargets_replicas_after_primary_create(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
     meet_calls: list[tuple[list[str], list[str]]] = []

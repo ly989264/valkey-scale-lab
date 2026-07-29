@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -744,6 +745,7 @@ def _write(path: Path, content: str) -> None:
 
 def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     proc = tmp_path / "proc"
     cgroup = tmp_path / "cgroup"
@@ -764,6 +766,11 @@ def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     _write(proc / "123" / "stat", "123 (valkey server) S " + " ".join(["0"] * 30) + "\n")
     (proc / "123" / "fd").mkdir(parents=True)
     (proc / "123" / "fd" / "0").touch()
+    monkeypatch.setattr(
+        os,
+        "readlink",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("FD sampling must not readlink")),
+    )
     _write(cgroup / "cpu.max", "100000 100000\n")
     _write(cgroup / "cpu.stat", "usage_usec 10\nnr_throttled 1\nthrottled_usec 2\n")
     _write(cgroup / "memory.current", "100\n")
@@ -788,60 +795,6 @@ def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     serialized = json.dumps(samples)
     assert "CLUSTER" not in serialized
     assert "valkey-cli" not in serialized
-
-
-def test_resource_sampler_collects_m2_cluster_resource_metrics_when_opted_in(
-    tmp_path: Path,
-) -> None:
-    proc = tmp_path / "proc"
-    cgroup = tmp_path / "cgroup"
-    _write(
-        proc / "stat",
-        "cpu 10 1 5 100 2 1 1 0 0 0\nprocs_running 2\nprocs_blocked 1\n",
-    )
-    _write(
-        proc / "meminfo",
-        "MemTotal: 1000 kB\nMemAvailable: 800 kB\nSwapTotal: 0 kB\nSwapFree: 0 kB\n",
-    )
-    _write(
-        proc / "net" / "dev",
-        "Inter-| Receive | Transmit\n face |bytes packets errs drop fifo frame compressed multicast|bytes packets errs drop fifo colls carrier compressed\n"
-        "eth0: 100 10 0 0 0 0 0 0 200 20 0 0 0 0 0 0\n",
-    )
-    _write(proc / "123" / "stat", "123 (valkey server) S " + " ".join(["0"] * 30) + "\n")
-    (proc / "123" / "fd").mkdir(parents=True)
-    (proc / "123" / "fd" / "0").touch()
-    (proc / "123" / "fd" / "1").symlink_to("socket:[12345]")
-    _write(cgroup / "cpu.max", "max\n")
-    _write(cgroup / "cpu.stat", "usage_usec 10\nthrottled_usec 0\n")
-    _write(cgroup / "memory.events", "oom 0\noom_kill 0\n")
-    responses = {
-        ("CLUSTER", "INFO"): (
-            "cluster_stats_bytes_sent:100\n"
-            "cluster_stats_bytes_received:200\n"
-            "total_cluster_links_buffer_limit_exceeded:0\n"
-        ),
-        ("CLUSTER", "NODES"): (
-            "id-a 127.0.0.1:7400@17400 myself,master - 0 0 1 connected 0-16383\n"
-            "id-b 127.0.0.1:7401@17401 master - 0 0 2 disconnected\n"
-        ),
-    }
-
-    sampler = LocalResourceSampler(
-        sampler_id="host-a",
-        processes=[ProcessSpec("node-a", 123, client_port=7400)],
-        proc_root=proc,
-        cgroup_root=cgroup,
-        collect_valkey_cluster_metrics=True,
-        connection_factory=lambda endpoint, _timeout: FakeConnection(responses),
-    )
-
-    row = sampler.process_sample()["processes"][0]
-
-    assert row["connection_count"] == 1
-    assert row["cluster_bus_bytes"] == 300
-    assert row["cluster_link_errors"] == 1
-    assert row["buffer_overflows"] == 0
 
 
 def test_resource_analyzer_consumes_design_categories() -> None:
@@ -897,14 +850,14 @@ def test_resource_analyzer_consumes_design_categories() -> None:
             "kind": "process",
             "wall_time": 1.0,
             "monotonic": 1.0,
-            "processes": [{"logical_id": "node-a", "pid": 123, "status": "OK", "state": "S", "start_time_ticks": 10, "user_cpu_ticks": 1, "system_cpu_ticks": 2, "rss_bytes": 100, "fd_count": 3, "connection_count": 2, "cluster_bus_bytes": 1000, "cluster_link_errors": 0, "cluster_link_count": 2, "buffer_overflows": 0, "valkey_cluster_metrics_status": "OK"}],
+            "processes": [{"logical_id": "node-a", "pid": 123, "status": "OK", "state": "S", "start_time_ticks": 10, "user_cpu_ticks": 1, "system_cpu_ticks": 2, "rss_bytes": 100, "fd_count": 3}],
             "collector": collector,
         },
         {
             "kind": "process",
             "wall_time": 61.0,
             "monotonic": 61.0,
-            "processes": [{"logical_id": "node-a", "pid": 123, "status": "OK", "state": "S", "start_time_ticks": 10, "user_cpu_ticks": 4, "system_cpu_ticks": 6, "rss_bytes": 140, "fd_count": 5, "connection_count": 4, "cluster_bus_bytes": 1300, "cluster_link_errors": 0, "cluster_link_count": 2, "buffer_overflows": 0, "valkey_cluster_metrics_status": "OK"}],
+            "processes": [{"logical_id": "node-a", "pid": 123, "status": "OK", "state": "S", "start_time_ticks": 10, "user_cpu_ticks": 4, "system_cpu_ticks": 6, "rss_bytes": 140, "fd_count": 5}],
             "collector": collector,
         },
     ]
@@ -931,14 +884,7 @@ def test_resource_analyzer_consumes_design_categories() -> None:
     assert analysis["network"]["eth0"]["tx_errors"]["delta"] == 3
     assert analysis["timeline_correlation"]["network_error_or_drop_overlap_count"] == 4
     assert analysis["processes"]["node-a"]["cpu_ticks_delta"] == 7
-    assert analysis["processes"]["node-a"]["connection_count_max"] == 4
-    assert analysis["processes"]["node-a"]["cluster_bus_bytes_delta"] == 300
     assert analysis["process_totals"]["rss_bytes_max_sum"] == 140
-    assert analysis["process_totals"]["connection_count_max_sum"] == 4
-    assert analysis["process_totals"]["cluster_bus_bytes_delta_sum"] == 300
-    assert analysis["process_totals"]["cluster_link_errors_max"] == 0
-    assert analysis["process_totals"]["buffer_overflows_delta_sum"] == 0
-    assert analysis["process_totals"]["valkey_cluster_metric_sample_count"] == 2
     assert analysis["process_totals"]["max_fd_process"] == "node-a"
 
 

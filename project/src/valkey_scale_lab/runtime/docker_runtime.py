@@ -1208,10 +1208,7 @@ def _create_process_scenario(
                     capability_id=capability_id,
                     scenario_name=scenario,
                     run_id=run_id,
-                    runners=_resource_runners_for_nodes(
-                        nodes,
-                        include_m2_cluster_metrics=True,
-                    ),
+                    runners=_resource_runners_for_nodes(nodes),
                     duration_seconds=resource_seconds,
                     first_complete_sample_event=first_resource_sample,
                     monotonic=shared_monotonic,
@@ -6278,11 +6275,15 @@ def _management_forget_until_absent(
     last_health: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         for survivor in survivors:
-            try:
-                if _management_cluster_nodes_contains(survivor, removed_id):
-                    _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="cluster_forget_removed_node", target=survivor, args=["CLUSTER", "FORGET", removed_id], timeout=30)
-            except Exception:
-                pass
+            _management_log_forget_removed_node(
+                command_log,
+                telemetry=telemetry,
+                capability_id=capability_id,
+                parent_run_id=parent_run_id,
+                operation_id=operation_id,
+                target=survivor,
+                removed_id=removed_id,
+            )
         health = _management_cluster_health(survivors)
         last_health = health
         if (
@@ -6300,6 +6301,50 @@ def _management_forget_until_absent(
     raise DockerRuntimeError(f"MANAGEMENT_MATRIX removed node did not converge absent; removed_id={removed_id} last_health={last_health}")
 
 
+def _management_log_forget_removed_node(
+    command_log: list[dict[str, Any]],
+    *,
+    telemetry: TelemetryRun,
+    capability_id: str,
+    parent_run_id: str,
+    operation_id: str,
+    target: dict[str, Any],
+    removed_id: str,
+) -> dict[str, Any]:
+    started = telemetry.now_unix_ms()
+    command_id = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
+    try:
+        stdout = _node_command(target, "CLUSTER", "FORGET", removed_id, timeout=30)
+        stderr = ""
+        status = "PASS"
+    except Exception as exc:  # noqa: BLE001
+        stdout = ""
+        stderr = repr(exc)
+        status = "PASS" if "unknown node" in stderr.lower() else "FAIL"
+    entry = {
+        "schema_version": "v1",
+        "capability_id": capability_id,
+        "run_id": parent_run_id,
+        "command_id": command_id,
+        "operation_id": operation_id,
+        "command_kind": "cluster_forget_removed_node",
+        "target_logical_id": target.get("logical_id", MISSING),
+        "argv": ["CLUSTER", "FORGET", removed_id],
+        "started_at_unix_ms": started,
+        "ended_at_unix_ms": telemetry.now_unix_ms(),
+        "status": status,
+        "stdout_tail": stdout[-500:],
+        "stderr_tail": stderr[-500:],
+    }
+    command_log.append(entry)
+    if status == "FAIL":
+        raise DockerRuntimeError(
+            "MANAGEMENT_MATRIX command failed cluster_forget_removed_node "
+            f"target={target.get('logical_id')}: {stderr}"
+        )
+    return entry
+
+
 def _management_cluster_nodes_contains(node: dict[str, Any], node_id: str) -> bool:
     endpoint = Endpoint(str(node.get("host", "127.0.0.1")), int(node["client_port"]))
     with RespConnection(endpoint, timeout=5.0) as connection:
@@ -6315,10 +6360,15 @@ def _management_cluster_nodes_contains(node: dict[str, Any], node_id: str) -> bo
 
 
 def _management_removed_absent(nodes: list[dict[str, Any]], removed_id: str) -> bool:
-    for node in nodes:
+    for node in _management_absence_observers(nodes):
         if _management_cluster_nodes_contains(node, removed_id):
             return False
     return True
+
+
+def _management_absence_observers(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    representatives = _representative_nodes(nodes)
+    return representatives[: min(3, len(representatives))]
 
 
 
@@ -7506,7 +7556,6 @@ def _resource_runners_for_nodes(
     *,
     expected_gone_processes: list[dict[str, Any]] | None = None,
     expected_gone_active: Callable[[], bool] | None = None,
-    include_m2_cluster_metrics: bool = False,
 ) -> list[ResourceSamplerRunner]:
     if not nodes:
         return []
@@ -7540,28 +7589,11 @@ def _resource_runners_for_nodes(
             or container
         )
         processes = [
-            ProcessSpec(
-                str(node["logical_id"]),
-                int(node["pid"]),
-                host=str(node.get("host", "127.0.0.1")),
-                client_port=(
-                    int(node["client_port"])
-                    if include_m2_cluster_metrics and node.get("client_port") is not None
-                    else None
-                ),
-            )
+            ProcessSpec(str(node["logical_id"]), int(node["pid"]))
             for node in hosted
         ]
         expected_gone = [
-            ExpectedGoneProcess(
-                str(row["logical_id"]),
-                int(row["pid"]),
-                client_port=(
-                    int(row["client_port"])
-                    if include_m2_cluster_metrics and row.get("client_port") is not None
-                    else None
-                ),
-            )
+            ExpectedGoneProcess(str(row["logical_id"]), int(row["pid"]))
             for row in expected_gone_processes or []
             if any(
                 str(node["logical_id"]) == str(row.get("logical_id"))
@@ -7576,7 +7608,6 @@ def _resource_runners_for_nodes(
             cgroup_root=Path(f"/proc/{host_pid}/root/sys/fs/cgroup"),
             expected_gone_processes=expected_gone,
             expected_gone_active=expected_gone_active,
-            collect_valkey_cluster_metrics=include_m2_cluster_metrics,
         )
         runners.append(ResourceSamplerRunner(sampler))
     return runners

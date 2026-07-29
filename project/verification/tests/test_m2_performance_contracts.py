@@ -22,11 +22,6 @@ def _analysis() -> dict[str, Any]:
         "process_totals": {
             "rss_bytes_max_sum": 140,
             "fd_count_max_sum": 5,
-            "connection_count_max_sum": 3,
-            "cluster_bus_bytes_delta_sum": 40,
-            "cluster_link_errors_max": 0,
-            "buffer_overflows_delta_sum": 0,
-            "valkey_cluster_metric_sample_count": 1,
         },
         "collector": {"overrun_count": 0},
         "expected_gone_processes": [],
@@ -68,6 +63,22 @@ def _document() -> dict[str, Any]:
         "resource_analyses": [
             {"sampler_id": "host-a", "analysis": analysis}
         ],
+        "m2_protocol_metrics": {
+            "status": "PASS",
+            "metrics": {
+                "connection_count": 3,
+                "cluster_bus_bytes": 40,
+                "cluster_link_errors": 0,
+                "buffer_overflows": 0,
+            },
+            "coverage": {
+                "expected_live_node_count": 1,
+                "node_metric_count": 1,
+                "topology_observer_count": 1,
+                "missing_live_nodes": [],
+                "errors": [],
+            },
+        },
     }
 
 
@@ -102,9 +113,7 @@ def test_m2_observation_source_accepts_new_contract() -> None:
 
 def test_m2_observation_source_rejects_missing_valkey_cluster_metrics() -> None:
     document = _document()
-    document["resource_analyses"][0]["analysis"]["process_totals"][
-        "valkey_cluster_metric_sample_count"
-    ] = 0
+    document["m2_protocol_metrics"]["status"] = "ERROR"
     errors: list[str] = []
 
     M2._validate_resource_source(
@@ -116,7 +125,7 @@ def test_m2_observation_source_rejects_missing_valkey_cluster_metrics() -> None:
         errors=errors,
     )
 
-    assert any("Valkey cluster resource metrics" in error for error in errors)
+    assert any("protocol resource metrics" in error for error in errors)
 
 
 def test_m2_observation_source_rejects_missing_analyzer_output() -> None:

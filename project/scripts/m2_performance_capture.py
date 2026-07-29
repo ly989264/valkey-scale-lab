@@ -32,7 +32,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from valkey_scale_lab.observability.cluster import parse_info
 from valkey_scale_lab.runtime.setup_timeline import shared_monotonic
+from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -171,6 +173,12 @@ RESOURCE_METRICS = (
     "network_error_drop_delta",
     "collector_overrun_count",
 )
+M2_PROTOCOL_RESOURCE_METRICS = (
+    "connection_count",
+    "cluster_bus_bytes",
+    "cluster_link_errors",
+    "buffer_overflows",
+)
 FORMATION_CANDIDATE_SCREEN_VERSION = "v2"
 FORMATION_DIRECT_CANDIDATE_VERSION = "v3-direct-p16"
 DIRECT_FORMATION_CANDIDATE = {
@@ -178,6 +186,7 @@ DIRECT_FORMATION_CANDIDATE = {
     "value": "tree_meet_addslotsrange",
     "bounded_parallelism": 16,
 }
+M2_PROTOCOL_OBSERVER_COUNT = 3
 COMPRESSED_TRIAL_SOURCE_CATEGORIES = {
     "resource",
     "workload",
@@ -708,6 +717,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
             if _uses_setup_resource_observation(spec):
                 resource = _load_resource_observation(
                     trial_dir / "resource_observation.json",
+                    state=state,
                     allow_safety_failure_evidence=allow_candidate_safety_rejection,
                 )
                 if _needs_stability_observation(spec):
@@ -1167,15 +1177,14 @@ def _capture_resource_observation(
     from valkey_scale_lab.runtime.docker_runtime import _resource_runners_for_nodes
 
     expected = [
-        ExpectedGoneProcess(
-            str(row["logical_id"]),
-            int(row["pid"]),
-            client_port=(
-                int(row["client_port"]) if row.get("client_port") is not None else None
-            ),
-        )
+        ExpectedGoneProcess(str(row["logical_id"]), int(row["pid"]))
         for row in expected_gone_processes or []
     ]
+    protocol_start = _collect_m2_protocol_boundary(
+        state,
+        expected_gone_processes=expected_gone_processes,
+        expected_gone_active=False,
+    )
     report = write_resource_observation(
         trial_dir / "resource_observation.json",
         capability_id="m2_performance",
@@ -1187,7 +1196,6 @@ def _capture_resource_observation(
             expected_gone_active=window_start_event.is_set
             if window_start_event is not None
             else None,
-            include_m2_cluster_metrics=True,
         ),
         duration_seconds=duration_seconds,
         expected_gone_processes=expected,
@@ -1195,21 +1203,359 @@ def _capture_resource_observation(
         window_start_event=window_start_event,
         monotonic=shared_monotonic,
     )
+    _attach_m2_protocol_metrics(
+        report,
+        trial_dir / "resource_observation.json",
+        state,
+        expected_gone_processes=expected_gone_processes,
+        expected_gone_active=window_start_event.is_set
+        if window_start_event is not None
+        else False,
+        start_boundary=protocol_start,
+    )
     return _validate_resource_report(
         report,
         allow_safety_failure_evidence=allow_safety_failure_evidence,
     )
 
 
+def _attach_m2_protocol_metrics(
+    report: dict[str, Any],
+    path: Path,
+    state: Mapping[str, Any],
+    *,
+    expected_gone_processes: list[dict[str, Any]] | None = None,
+    expected_gone_active: bool = False,
+    start_boundary: Mapping[str, Any] | None = None,
+) -> None:
+    end_boundary = _collect_m2_protocol_boundary(
+        state,
+        expected_gone_processes=expected_gone_processes,
+        expected_gone_active=expected_gone_active,
+    )
+    protocol = _summarize_m2_protocol_boundaries(
+        start_boundary,
+        end_boundary,
+    )
+    report["m2_protocol_metrics"] = protocol
+    check = {
+        "name": "m2_protocol_metrics",
+        "status": "OK" if protocol["status"] == "PASS" else "ERROR",
+        "evidence": protocol.get("metrics", {}),
+    }
+    if protocol["status"] != "PASS":
+        report["status"] = "ERROR"
+        check["reason"] = "; ".join(protocol["coverage"].get("errors", []))
+    report.setdefault("checks", []).append(check)
+    _write_json(path, report)
+
+
+def _collect_m2_protocol_boundary(
+    state: Mapping[str, Any],
+    *,
+    expected_gone_processes: list[dict[str, Any]] | None = None,
+    expected_gone_active: bool = False,
+) -> dict[str, Any]:
+    nodes = _m2_metric_live_nodes(
+        state,
+        expected_gone_processes=expected_gone_processes,
+        expected_gone_active=expected_gone_active,
+    )
+    errors: list[str] = []
+    node_rows: list[dict[str, Any]] = []
+    for node in nodes:
+        logical_id = str(node.get("logical_id", "MISSING"))
+        port = _optional_int(node.get("client_port"))
+        if port is None:
+            errors.append(f"{logical_id} has no client_port")
+            continue
+        try:
+            endpoint = Endpoint(str(node.get("host", "127.0.0.1")), port)
+            with RespConnection(endpoint, timeout=5.0) as connection:
+                clients_raw, cluster_info_raw = connection.execute_many(
+                    [("INFO", "clients"), ("CLUSTER", "INFO")]
+                )
+            clients = parse_info(clients_raw)
+            cluster_info = parse_info(cluster_info_raw)
+            connected = _required_int_metric(
+                clients,
+                "connected_clients",
+                f"{logical_id} INFO clients",
+            )
+            sent = _required_int_metric(
+                cluster_info,
+                "cluster_stats_bytes_sent",
+                f"{logical_id} CLUSTER INFO",
+            )
+            received = _required_int_metric(
+                cluster_info,
+                "cluster_stats_bytes_received",
+                f"{logical_id} CLUSTER INFO",
+            )
+            overflows = _required_int_metric(
+                cluster_info,
+                "total_cluster_links_buffer_limit_exceeded",
+                f"{logical_id} CLUSTER INFO",
+            )
+            node_rows.append(
+                {
+                    "logical_id": logical_id,
+                    "connection_count": connected,
+                    "cluster_bus_bytes": sent + received,
+                    "buffer_overflows": overflows,
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{logical_id}: {type(exc).__name__}: {exc}")
+
+    expected_gone_ports = (
+        _expected_gone_ports(expected_gone_processes) if expected_gone_active else set()
+    )
+    observer_rows: list[dict[str, Any]] = []
+    observers = _m2_protocol_observers(nodes)
+    for observer in observers:
+        logical_id = str(observer.get("logical_id", "MISSING"))
+        port = _optional_int(observer.get("client_port"))
+        if port is None:
+            errors.append(f"{logical_id} observer has no client_port")
+            continue
+        try:
+            endpoint = Endpoint(str(observer.get("host", "127.0.0.1")), port)
+            with RespConnection(endpoint, timeout=5.0) as connection:
+                cluster_nodes = connection.execute("CLUSTER", "NODES")
+            observer_rows.append(
+                {
+                    "logical_id": logical_id,
+                    **_m2_cluster_link_counts(
+                        _text(cluster_nodes),
+                        expected_gone_ports=expected_gone_ports,
+                    ),
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{logical_id} topology observer: {type(exc).__name__}: {exc}")
+
+    expected_live = [str(node.get("logical_id", "MISSING")) for node in nodes]
+    observed_live = {row["logical_id"] for row in node_rows}
+    missing_live = [
+        logical_id for logical_id in expected_live if logical_id not in observed_live
+    ]
+    if missing_live:
+        errors.append(f"missing live M2 protocol node metrics: {missing_live}")
+    if len(observer_rows) != len(observers):
+        errors.append("M2 protocol topology observer coverage is incomplete")
+    return {
+        "status": "PASS" if not errors and nodes else "ERROR",
+        "expected_live_nodes": expected_live,
+        "node_metrics": node_rows,
+        "topology_observers": observer_rows,
+        "errors": errors or ([] if nodes else ["no live nodes for M2 protocol metrics"]),
+    }
+
+
+def _summarize_m2_protocol_boundaries(
+    start_boundary: Mapping[str, Any] | None,
+    end_boundary: Mapping[str, Any],
+) -> dict[str, Any]:
+    errors = [
+        str(error)
+        for boundary in (start_boundary, end_boundary)
+        if isinstance(boundary, Mapping)
+        for error in _array(boundary.get("errors"))
+    ]
+    end_rows = {
+        str(row.get("logical_id")): row
+        for row in _array(end_boundary.get("node_metrics"))
+        if isinstance(row, Mapping) and isinstance(row.get("logical_id"), str)
+    }
+    start_rows = {
+        str(row.get("logical_id")): row
+        for row in _array(_object(start_boundary).get("node_metrics"))
+        if isinstance(row, Mapping) and isinstance(row.get("logical_id"), str)
+    }
+    expected_live = [
+        str(value) for value in _array(end_boundary.get("expected_live_nodes"))
+    ]
+    missing_live = [logical_id for logical_id in expected_live if logical_id not in end_rows]
+    if start_boundary is not None:
+        missing_start = [
+            logical_id for logical_id in expected_live if logical_id not in start_rows
+        ]
+        if missing_start:
+            errors.append(f"missing start M2 protocol node metrics: {missing_start}")
+    if missing_live:
+        errors.append(f"missing end M2 protocol node metrics: {missing_live}")
+
+    connection_count = 0
+    cluster_bus_bytes = 0
+    buffer_overflows = 0
+    for logical_id in expected_live:
+        end = _object(end_rows.get(logical_id))
+        start = _object(start_rows.get(logical_id))
+        end_connections = _number(end.get("connection_count"))
+        end_bus = _number(end.get("cluster_bus_bytes"))
+        end_overflows = _number(end.get("buffer_overflows"))
+        if end_connections is None or end_bus is None or end_overflows is None:
+            errors.append(f"{logical_id} has incomplete end M2 protocol metrics")
+            continue
+        if start_boundary is None:
+            connection_count += end_connections
+            cluster_bus_bytes += end_bus
+            buffer_overflows += end_overflows
+            continue
+        start_connections = _number(start.get("connection_count"))
+        start_bus = _number(start.get("cluster_bus_bytes"))
+        start_overflows = _number(start.get("buffer_overflows"))
+        if start_connections is None or start_bus is None or start_overflows is None:
+            errors.append(f"{logical_id} has incomplete start M2 protocol metrics")
+            continue
+        connection_count += max(start_connections, end_connections)
+        cluster_bus_bytes += max(end_bus - start_bus, 0.0)
+        buffer_overflows += max(end_overflows - start_overflows, 0.0)
+
+    observer_rows = [
+        row
+        for boundary in (start_boundary, end_boundary)
+        if isinstance(boundary, Mapping)
+        for row in _array(boundary.get("topology_observers"))
+        if isinstance(row, Mapping)
+    ]
+    cluster_link_errors = max(
+        (_finite_number(_object(row).get("cluster_link_errors")) for row in observer_rows),
+        default=0.0,
+    )
+    status = "PASS" if not errors and expected_live else "ERROR"
+    return {
+        "status": status,
+        "metrics": {
+            "connection_count": connection_count,
+            "cluster_bus_bytes": cluster_bus_bytes,
+            "cluster_link_errors": cluster_link_errors,
+            "buffer_overflows": buffer_overflows,
+        },
+        "coverage": {
+            "expected_live_node_count": len(expected_live),
+            "node_metric_count": len(end_rows),
+            "topology_observer_count": len(_array(end_boundary.get("topology_observers"))),
+            "missing_live_nodes": missing_live,
+            "errors": errors,
+        },
+        "boundaries": {
+            "start": start_boundary,
+            "end": end_boundary,
+        },
+    }
+
+
+def _m2_metric_live_nodes(
+    state: Mapping[str, Any],
+    *,
+    expected_gone_processes: list[dict[str, Any]] | None,
+    expected_gone_active: bool,
+) -> list[dict[str, Any]]:
+    expected = {
+        (str(row.get("logical_id")), _optional_int(row.get("pid")))
+        for row in expected_gone_processes or []
+    }
+    nodes = []
+    for node in _array(_object(state).get("nodes")):
+        if not isinstance(node, Mapping):
+            continue
+        key = (str(node.get("logical_id")), _optional_int(node.get("pid")))
+        if expected_gone_active and key in expected:
+            continue
+        nodes.append(dict(node))
+    return nodes
+
+
+def _m2_protocol_observers(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return list(nodes[: min(M2_PROTOCOL_OBSERVER_COUNT, len(nodes))])
+
+
+def _expected_gone_ports(rows: list[dict[str, Any]] | None) -> set[int]:
+    ports: set[int] = set()
+    for row in rows or []:
+        port = _optional_int(row.get("client_port"))
+        if port is not None:
+            ports.add(port)
+    return ports
+
+
+def _m2_cluster_link_counts(
+    cluster_nodes: str, *, expected_gone_ports: set[int]
+) -> dict[str, int]:
+    link_count = 0
+    link_errors = 0
+    for line in cluster_nodes.splitlines():
+        parts = line.split()
+        if len(parts) < 8:
+            continue
+        link_count += 1
+        flags = set(parts[2].split(","))
+        state = parts[7]
+        port = _cluster_nodes_client_port(parts[1])
+        if port in expected_gone_ports:
+            continue
+        if "handshake" in flags and state == "disconnected":
+            continue
+        if state != "connected":
+            link_errors += 1
+    return {
+        "cluster_link_count": link_count,
+        "cluster_link_errors": link_errors,
+    }
+
+
+def _cluster_nodes_client_port(address: str) -> int | None:
+    host_port = address.split("@", 1)[0]
+    _, separator, port = host_port.rpartition(":")
+    if not separator:
+        return None
+    return _optional_int(port)
+
+
+def _required_int_metric(row: Mapping[str, Any], key: str, label: str) -> int:
+    value = _optional_int(row.get(key))
+    if value is None:
+        raise CaptureError(f"{label} missing {key}")
+    return value
+
+
+def _optional_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _text(value: Any) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
+
+
 def _load_resource_observation(
     path: Path,
     *,
+    state: Mapping[str, Any] | None = None,
     allow_safety_failure_evidence: bool = False,
 ) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink():
         raise CaptureError("M2 setup resource observation is missing or unsafe")
+    report = _load_object(path)
+    if state is not None and "m2_protocol_metrics" not in report:
+        _attach_m2_protocol_metrics(
+            report,
+            path,
+            state,
+            expected_gone_processes=None,
+            expected_gone_active=False,
+            start_boundary=None,
+        )
     return _validate_resource_report(
-        _load_object(path),
+        report,
         allow_safety_failure_evidence=allow_safety_failure_evidence,
     )
 
@@ -1222,6 +1568,10 @@ def _validate_resource_report(
     del allow_safety_failure_evidence
     if report.get("artifact_type") != "resource_observation":
         raise CaptureError("M2 resource observation source type is invalid")
+    protocol = _object(report.get("m2_protocol_metrics"))
+    protocol_metrics = _object(protocol.get("metrics"))
+    if report.get("status") != "PASS" and protocol.get("status") != "PASS":
+        raise CaptureError("M2 protocol resource metrics did not PASS")
     if report.get("status") != "PASS":
         raise CaptureError("M2 resource observation did not PASS")
     documents = report.get("resource_documents")
@@ -1240,8 +1590,11 @@ def _validate_resource_report(
         raise CaptureError("M2 resource analyzer was not called")
     if any(document.get("errors") for document in documents if isinstance(document, dict)):
         raise CaptureError("M2 resource sampler reported errors")
-    if _resource_cluster_metric_sample_count(report) <= 0:
-        raise CaptureError("M2 resource observation has no Valkey cluster resource metrics")
+    if protocol.get("status") != "PASS":
+        raise CaptureError("M2 protocol resource metrics did not PASS")
+    for field in M2_PROTOCOL_RESOURCE_METRICS:
+        if _number(protocol_metrics.get(field)) is None:
+            raise CaptureError(f"M2 protocol resource metric {field} is unavailable")
     metrics = _resource_observation_metrics(report)
     for field in RESOURCE_METRICS:
         value = metrics.get(field)
@@ -1254,24 +1607,6 @@ def _validate_resource_report(
             raise CaptureError(f"M2 resource metric {field} is unavailable")
     report["resource_summary"] = metrics
     return report
-
-
-def _resource_cluster_metric_sample_count(report: Mapping[str, Any]) -> int:
-    return int(
-        sum(
-            _finite_number(
-                _object(analysis.get("process_totals")).get(
-                    "valkey_cluster_metric_sample_count"
-                )
-            )
-            for analysis in (
-                row.get("analysis")
-                for row in report.get("resource_analyses", [])
-                if isinstance(row, Mapping) and isinstance(row.get("analysis"), Mapping)
-            )
-            if isinstance(analysis, Mapping)
-        )
-    )
 
 
 def _resource_observation_metrics(report: Mapping[str, Any]) -> dict[str, float]:
@@ -1292,6 +1627,7 @@ def _resource_observation_metrics(report: Mapping[str, Any]) -> dict[str, float]
         for process in _object(analysis.get("processes")).values():
             if isinstance(process, Mapping):
                 process_cpu_ticks += _finite_number(process.get("cpu_ticks_delta"))
+    protocol_metrics = _object(_object(report.get("m2_protocol_metrics")).get("metrics"))
     return {
         "duration_seconds": _finite_number(report.get("duration_seconds")),
         "process_rss_bytes_max_sum": sum(
@@ -1303,41 +1639,10 @@ def _resource_observation_metrics(report: Mapping[str, Any]) -> dict[str, float]
             for analysis in analyses
         ),
         "process_cpu_ticks_delta_sum": process_cpu_ticks,
-        "connection_count": sum(
-            _finite_number(
-                _object(analysis.get("process_totals")).get(
-                    "connection_count_max_sum"
-                )
-            )
-            for analysis in analyses
-        ),
-        "cluster_bus_bytes": sum(
-            _finite_number(
-                _object(analysis.get("process_totals")).get(
-                    "cluster_bus_bytes_delta_sum"
-                )
-            )
-            for analysis in analyses
-        ),
-        "cluster_link_errors": max(
-            (
-                _finite_number(
-                    _object(analysis.get("process_totals")).get(
-                        "cluster_link_errors_max"
-                    )
-                )
-                for analysis in analyses
-            ),
-            default=0.0,
-        ),
-        "buffer_overflows": sum(
-            _finite_number(
-                _object(analysis.get("process_totals")).get(
-                    "buffer_overflows_delta_sum"
-                )
-            )
-            for analysis in analyses
-        ),
+        "connection_count": _finite_number(protocol_metrics.get("connection_count")),
+        "cluster_bus_bytes": _finite_number(protocol_metrics.get("cluster_bus_bytes")),
+        "cluster_link_errors": _finite_number(protocol_metrics.get("cluster_link_errors")),
+        "buffer_overflows": _finite_number(protocol_metrics.get("buffer_overflows")),
         "cpu_throttled_usec_delta": sum(
             _finite_number(_object(analysis.get("cpu")).get("throttled_usec_delta"))
             for analysis in analyses
@@ -1359,6 +1664,17 @@ def _finite_number(value: Any) -> float:
 
 def _object(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
+
+
+def _array(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _number(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    return number if math.isfinite(number) and number >= 0 else None
 
 
 def _wait_for_resource_start(future: Any, first_sample_event: threading.Event) -> None:

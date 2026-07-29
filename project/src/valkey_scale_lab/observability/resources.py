@@ -9,8 +9,6 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from valkey_scale_lab.observability.contracts import CollectionError
-from valkey_scale_lab.observability.cluster import parse_info
-from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
 
 HOST_INTERVAL_SECONDS = 5.0
 PROCESS_INTERVAL_SECONDS = 60.0
@@ -20,15 +18,12 @@ PROCESS_INTERVAL_SECONDS = 60.0
 class ProcessSpec:
     logical_id: str
     pid: int
-    host: str = "127.0.0.1"
-    client_port: int | None = None
 
 
 @dataclass(frozen=True)
 class ExpectedGoneProcess:
     logical_id: str
     pid: int
-    client_port: int | None = None
 
 
 def _read(path: Path) -> str:
@@ -54,57 +49,8 @@ def _key_values(text: str) -> dict[str, int]:
     return result
 
 
-def _text(value: Any) -> str:
-    if isinstance(value, bytes):
-        return value.decode("utf-8", errors="replace")
-    return str(value)
-
-
-def _int_field(row: Mapping[str, Any], key: str) -> int:
-    try:
-        return int(str(row.get(key, 0)))
-    except (TypeError, ValueError):
-        return 0
-
-
-def _cluster_link_counts(
-    cluster_nodes: str, *, expected_gone_ports: set[int]
-) -> dict[str, int]:
-    link_count = 0
-    link_errors = 0
-    for line in cluster_nodes.splitlines():
-        parts = line.split()
-        if len(parts) < 8:
-            continue
-        link_count += 1
-        flags = set(parts[2].split(","))
-        state = parts[7]
-        port = _cluster_nodes_client_port(parts[1])
-        if port in expected_gone_ports:
-            continue
-        if "handshake" in flags and state == "disconnected":
-            continue
-        if state != "connected":
-            link_errors += 1
-    return {
-        "cluster_link_count": link_count,
-        "cluster_link_errors": link_errors,
-    }
-
-
-def _cluster_nodes_client_port(address: str) -> int | None:
-    host_port = address.split("@", 1)[0]
-    _, separator, port = host_port.rpartition(":")
-    if not separator:
-        return None
-    try:
-        return int(port)
-    except ValueError:
-        return None
-
-
 class LocalResourceSampler:
-    """Reads procfs/cgroupfs, with opt-in M2 Valkey resource counters."""
+    """Reads local procfs/cgroupfs only; it never issues a Valkey command."""
 
     def __init__(
         self,
@@ -117,9 +63,6 @@ class LocalResourceSampler:
         monotonic: Callable[[], float] = time.monotonic,
         expected_gone_processes: Sequence[ExpectedGoneProcess] = (),
         expected_gone_active: Callable[[], bool] | None = None,
-        collect_valkey_cluster_metrics: bool = False,
-        connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
-        valkey_timeout: float = 5.0,
     ) -> None:
         self.sampler_id = sampler_id
         self.processes = list(processes)
@@ -130,17 +73,7 @@ class LocalResourceSampler:
         self._expected_gone = {
             (process.logical_id, process.pid) for process in expected_gone_processes
         }
-        self._expected_gone_ports = {
-            int(process.client_port)
-            for process in expected_gone_processes
-            if process.client_port is not None
-        }
         self._expected_gone_active = expected_gone_active or (lambda: False)
-        self._collect_valkey_cluster_metrics = collect_valkey_cluster_metrics
-        self._connection_factory = connection_factory or (
-            lambda endpoint, timeout: RespConnection(endpoint, timeout=timeout)
-        )
-        self._valkey_timeout = valkey_timeout
         self._self_cpu_started = time.process_time()
 
     def static(self) -> dict[str, Any]:
@@ -190,23 +123,15 @@ class LocalResourceSampler:
         for process in self.processes:
             try:
                 stat = self._process_stat(process)
-                fd_count, connection_count = self._fd_counts(process.pid)
-                row = {
-                    "logical_id": process.logical_id,
-                    "pid": process.pid,
-                    "status": "OK",
-                    **stat,
-                    "fd_count": fd_count,
-                    "connection_count": connection_count,
-                }
-                if self._collect_valkey_cluster_metrics and process.client_port is not None:
-                    try:
-                        row.update(self._valkey_cluster_metrics(process))
-                    except Exception as exc:  # noqa: BLE001
-                        row["valkey_cluster_metrics_error"] = (
-                            f"{type(exc).__name__}: {exc}"
-                        )
-                rows.append(row)
+                rows.append(
+                    {
+                        "logical_id": process.logical_id,
+                        "pid": process.pid,
+                        "status": "OK",
+                        **stat,
+                        "fd_count": self._fd_count(process.pid),
+                    }
+                )
             except CollectionError as exc:
                 key = (process.logical_id, process.pid)
                 if key in self._expected_gone and self._expected_gone_active():
@@ -295,47 +220,12 @@ class LocalResourceSampler:
             "rss_bytes": int(fields[21]) * os.sysconf("SC_PAGE_SIZE"),
         }
 
-    def _fd_counts(self, pid: int) -> tuple[int, int]:
+    def _fd_count(self, pid: int) -> int:
         try:
             with os.scandir(self.proc_root / str(pid) / "fd") as entries:
-                fd_count = 0
-                socket_count = 0
-                for entry in entries:
-                    fd_count += 1
-                    try:
-                        target = os.readlink(entry.path)
-                    except OSError:
-                        continue
-                    if target.startswith("socket:["):
-                        socket_count += 1
-                return fd_count, socket_count
+                return sum(1 for _ in entries)
         except OSError as exc:
             raise CollectionError(f"cannot count fd entries for pid {pid}: {exc}") from exc
-
-    def _valkey_cluster_metrics(self, process: ProcessSpec) -> dict[str, Any]:
-        assert process.client_port is not None
-        endpoint = Endpoint(process.host, process.client_port)
-        with self._connection_factory(endpoint, self._valkey_timeout) as connection:
-            cluster_info_raw, cluster_nodes_raw = connection.execute_many(
-                [("CLUSTER", "INFO"), ("CLUSTER", "NODES")]
-            )
-        info = parse_info(cluster_info_raw)
-        sent = _int_field(info, "cluster_stats_bytes_sent")
-        received = _int_field(info, "cluster_stats_bytes_received")
-        link_counts = _cluster_link_counts(
-            _text(cluster_nodes_raw),
-            expected_gone_ports=(
-                self._expected_gone_ports if self._expected_gone_active() else set()
-            ),
-        )
-        return {
-            "valkey_cluster_metrics_status": "OK",
-            "cluster_bus_bytes": sent + received,
-            "buffer_overflows": _int_field(
-                info, "total_cluster_links_buffer_limit_exceeded"
-            ),
-            **link_counts,
-        }
 
     def _cgroup_limits(self) -> dict[str, Any]:
         return {
@@ -493,27 +383,6 @@ def _deltas(
         max(right - left, 0)
         for left, right in zip(numeric, numeric[1:])
     ]
-
-
-def _numeric_row_values(rows: Sequence[dict[str, Any]], key: str) -> list[int]:
-    values: list[int] = []
-    for row in rows:
-        value = row.get(key)
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            continue
-        values.append(int(value))
-    return values
-
-
-def _counter_delta_from_rows(rows: Sequence[dict[str, Any]], key: str) -> int:
-    return sum(
-        _deltas(
-            list(rows),
-            lambda row: int(row[key])
-            if isinstance(row.get(key), (int, float)) and not isinstance(row.get(key), bool)
-            else None,
-        )
-    )
 
 
 def _timeline_monotonic(event: Mapping[str, Any]) -> float | None:
@@ -747,16 +616,6 @@ def analyze_resource_samples(
         by_process.setdefault(str(row["logical_id"]), []).append(row)
     process_analysis: dict[str, dict[str, Any]] = {}
     for logical_id, rows in by_process.items():
-        connection_counts = _numeric_row_values(rows, "connection_count")
-        cluster_link_errors = _numeric_row_values(rows, "cluster_link_errors")
-        cluster_link_counts = _numeric_row_values(rows, "cluster_link_count")
-        buffer_overflows = _numeric_row_values(rows, "buffer_overflows")
-        cluster_metric_sample_count = sum(
-            1 for row in rows if row.get("valkey_cluster_metrics_status") == "OK"
-        )
-        cluster_metric_error_count = sum(
-            1 for row in rows if row.get("valkey_cluster_metrics_error")
-        )
         process_analysis[logical_id] = {
             "states": sorted({str(row["state"]) for row in rows}),
             "start_time_ticks": sorted(
@@ -779,17 +638,6 @@ def analyze_resource_samples(
             "fd_count_p95": _percentile(
                 [float(row["fd_count"]) for row in rows], 0.95
             ),
-            "connection_count_max": max(connection_counts, default=None),
-            "cluster_bus_bytes_delta": _counter_delta_from_rows(
-                rows, "cluster_bus_bytes"
-            ),
-            "cluster_link_count_max": max(cluster_link_counts, default=None),
-            "cluster_link_errors_max": max(cluster_link_errors, default=None),
-            "buffer_overflows_delta": _counter_delta_from_rows(
-                rows, "buffer_overflows"
-            ),
-            "valkey_cluster_metric_sample_count": cluster_metric_sample_count,
-            "valkey_cluster_metric_error_count": cluster_metric_error_count,
         }
     collector_durations = [
         float(sample["collector"]["sample_duration_seconds"])
@@ -867,29 +715,6 @@ def analyze_resource_samples(
             ),
             "fd_count_max_sum": sum(
                 row["fd_count_max"] for row in process_analysis.values()
-            ),
-            "connection_count_max_sum": sum(
-                row["connection_count_max"] or 0
-                for row in process_analysis.values()
-            ),
-            "cluster_bus_bytes_delta_sum": sum(
-                row["cluster_bus_bytes_delta"]
-                for row in process_analysis.values()
-            ),
-            "cluster_link_errors_max": max(
-                (
-                    row["cluster_link_errors_max"] or 0
-                    for row in process_analysis.values()
-                ),
-                default=0,
-            ),
-            "buffer_overflows_delta_sum": sum(
-                row["buffer_overflows_delta"]
-                for row in process_analysis.values()
-            ),
-            "valkey_cluster_metric_sample_count": sum(
-                row["valkey_cluster_metric_sample_count"]
-                for row in process_analysis.values()
             ),
             "max_rss_process": max(
                 process_analysis,

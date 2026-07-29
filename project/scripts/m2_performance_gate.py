@@ -132,6 +132,12 @@ RESOURCE_ZERO_SAFETY_METRICS = (
     "cluster_link_errors",
     "buffer_overflows",
 )
+M2_PROTOCOL_RESOURCE_METRICS = (
+    "connection_count",
+    "cluster_bus_bytes",
+    "cluster_link_errors",
+    "buffer_overflows",
+)
 FORMATION_MARKERS = (
     "last_process_ping",
     "first_membership_command",
@@ -1900,11 +1906,19 @@ def _validate_resource_source(
         not any(_object(document_row).get("errors") for document_row in _array(document.get("resource_documents"))),
         f"trial {trial_id} resource source reports sampler errors",
     )
+    protocol = _object(document.get("m2_protocol_metrics"))
+    protocol_metrics = _object(protocol.get("metrics"))
     _add(
         errors,
-        _resource_cluster_metric_sample_count(document) > 0,
-        f"trial {trial_id} resource source has no Valkey cluster resource metrics",
+        protocol.get("status") == "PASS",
+        f"trial {trial_id} M2 protocol resource metrics did not PASS",
     )
+    for metric in M2_PROTOCOL_RESOURCE_METRICS:
+        _add(
+            errors,
+            _number(protocol_metrics.get(metric)) is not None,
+            f"trial {trial_id} M2 protocol resource metric {metric} is unavailable",
+        )
     metrics = _resource_observation_metrics(document)
     _add(
         errors,
@@ -1981,24 +1995,6 @@ def _validate_resource_source(
     }
 
 
-def _resource_cluster_metric_sample_count(document: Mapping[str, Any]) -> int:
-    return int(
-        sum(
-            _finite_number(
-                _object(analysis.get("process_totals")).get(
-                    "valkey_cluster_metric_sample_count"
-                )
-            )
-            for analysis in (
-                row.get("analysis")
-                for row in _array(document.get("resource_analyses"))
-                if isinstance(row, Mapping) and isinstance(row.get("analysis"), Mapping)
-            )
-            if isinstance(analysis, Mapping)
-        )
-    )
-
-
 def _validate_equal_resource_observation_facts(
     baseline: Mapping[str, Any],
     candidate: Mapping[str, Any],
@@ -2046,6 +2042,7 @@ def _resource_observation_metrics(document: Mapping[str, Any]) -> dict[str, floa
         for process in _object(analysis.get("processes")).values():
             if isinstance(process, Mapping):
                 process_cpu_ticks += _finite_number(process.get("cpu_ticks_delta"))
+    protocol_metrics = _object(_object(document.get("m2_protocol_metrics")).get("metrics"))
     return {
         "process_rss_bytes_max_sum": sum(
             _finite_number(_object(analysis.get("process_totals")).get("rss_bytes_max_sum"))
@@ -2056,41 +2053,10 @@ def _resource_observation_metrics(document: Mapping[str, Any]) -> dict[str, floa
             for analysis in analyses
         ),
         "process_cpu_ticks_delta_sum": process_cpu_ticks,
-        "connection_count": sum(
-            _finite_number(
-                _object(analysis.get("process_totals")).get(
-                    "connection_count_max_sum"
-                )
-            )
-            for analysis in analyses
-        ),
-        "cluster_bus_bytes": sum(
-            _finite_number(
-                _object(analysis.get("process_totals")).get(
-                    "cluster_bus_bytes_delta_sum"
-                )
-            )
-            for analysis in analyses
-        ),
-        "cluster_link_errors": max(
-            (
-                _finite_number(
-                    _object(analysis.get("process_totals")).get(
-                        "cluster_link_errors_max"
-                    )
-                )
-                for analysis in analyses
-            ),
-            default=0.0,
-        ),
-        "buffer_overflows": sum(
-            _finite_number(
-                _object(analysis.get("process_totals")).get(
-                    "buffer_overflows_delta_sum"
-                )
-            )
-            for analysis in analyses
-        ),
+        "connection_count": _finite_number(protocol_metrics.get("connection_count")),
+        "cluster_bus_bytes": _finite_number(protocol_metrics.get("cluster_bus_bytes")),
+        "cluster_link_errors": _finite_number(protocol_metrics.get("cluster_link_errors")),
+        "buffer_overflows": _finite_number(protocol_metrics.get("buffer_overflows")),
         "cpu_throttled_usec_delta": sum(
             _finite_number(_object(analysis.get("cpu")).get("throttled_usec_delta"))
             for analysis in analyses
