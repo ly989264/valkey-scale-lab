@@ -197,6 +197,68 @@ def test_m2_protocol_metrics_complete_path_updates_resource_report(
     ]
 
 
+def test_m2_bootstrap_protocol_metrics_use_counter_deltas(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    def fake_collect(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "status": "PASS",
+            "expected_live_nodes": ["node-0"],
+            "node_metrics": [
+                {
+                    "logical_id": "node-0",
+                    "connection_count": 2,
+                    "cluster_bus_bytes": 420,
+                    "buffer_overflows": 5,
+                }
+            ],
+            "topology_observers": [
+                {"logical_id": "node-0", "cluster_link_count": 1, "cluster_link_errors": 0}
+            ],
+            "errors": [],
+        }
+
+    monkeypatch.setattr(capture, "_collect_m2_protocol_boundary", fake_collect)
+    report = _observation()
+
+    capture._attach_m2_protocol_metrics(
+        report,
+        tmp_path / "resource_observation.json",
+        _state(),
+        start_boundary=None,
+        counter_start_boundary={
+            "status": "PASS",
+            "expected_live_nodes": ["node-0"],
+            "node_metrics": [
+                {
+                    "logical_id": "node-0",
+                    "cluster_stats_bytes_sent": 100,
+                    "cluster_stats_bytes_received": 200,
+                    "total_cluster_links_buffer_limit_exceeded": 3,
+                }
+            ],
+            "errors": [],
+        },
+        counter_end_boundary={
+            "status": "PASS",
+            "expected_live_nodes": ["node-0"],
+            "node_metrics": [
+                {
+                    "logical_id": "node-0",
+                    "cluster_stats_bytes_sent": 160,
+                    "cluster_stats_bytes_received": 260,
+                    "total_cluster_links_buffer_limit_exceeded": 5,
+                }
+            ],
+            "errors": [],
+        },
+    )
+    validated = capture._validate_resource_report(report)
+
+    assert validated["resource_summary"]["cluster_bus_bytes"] == 120
+    assert validated["resource_summary"]["buffer_overflows"] == 2
+
+
 def test_m2_protocol_metric_failure_marks_observation_error(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
@@ -220,6 +282,124 @@ def test_m2_protocol_metric_failure_marks_observation_error(
         assert "protocol resource metrics" in str(exc)
     else:
         raise AssertionError("live-node M2 protocol failure must fail collection")
+
+
+def test_m2_setup_resource_observation_requires_start_boundary(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    def fake_collect(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "status": "PASS",
+            "expected_live_nodes": ["node-0"],
+            "node_metrics": [
+                {
+                    "logical_id": "node-0",
+                    "connection_count": 2,
+                    "cluster_bus_bytes": 420,
+                    "buffer_overflows": 5,
+                }
+            ],
+            "topology_observers": [
+                {"logical_id": "node-0", "cluster_link_count": 1, "cluster_link_errors": 0}
+            ],
+            "errors": [],
+        }
+
+    monkeypatch.setattr(capture, "_collect_m2_protocol_boundary", fake_collect)
+    report = _observation()
+    report.pop("m2_protocol_metrics")
+    report["m2_bootstrap_protocol_boundaries"] = {
+        "end": {
+            "status": "PASS",
+            "expected_live_nodes": ["node-0"],
+            "node_metrics": [
+                {
+                    "logical_id": "node-0",
+                    "cluster_stats_bytes_sent": 160,
+                    "cluster_stats_bytes_received": 260,
+                    "total_cluster_links_buffer_limit_exceeded": 5,
+                }
+            ],
+            "errors": [],
+        }
+    }
+    path = tmp_path / "resource_observation.json"
+    capture._write_json(path, report)
+
+    try:
+        capture._load_resource_observation(path, state=_state())
+    except capture.CaptureError as exc:
+        assert "protocol resource metrics" in str(exc)
+    else:
+        raise AssertionError("setup resource observation without start boundary must fail")
+
+
+def test_m2_bootstrap_protocol_counter_boundary_requires_full_node_coverage(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    def fake_collect(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "status": "PASS",
+            "expected_live_nodes": ["node-0", "node-1"],
+            "node_metrics": [
+                {
+                    "logical_id": "node-0",
+                    "connection_count": 2,
+                    "cluster_bus_bytes": 300,
+                    "buffer_overflows": 0,
+                },
+                {
+                    "logical_id": "node-1",
+                    "connection_count": 2,
+                    "cluster_bus_bytes": 300,
+                    "buffer_overflows": 0,
+                },
+            ],
+            "topology_observers": [
+                {"logical_id": "node-0", "cluster_link_count": 2, "cluster_link_errors": 0}
+            ],
+            "errors": [],
+        }
+
+    monkeypatch.setattr(capture, "_collect_m2_protocol_boundary", fake_collect)
+    complete = {
+        "status": "PASS",
+        "expected_live_nodes": ["node-0", "node-1"],
+        "node_metrics": [
+            {
+                "logical_id": "node-0",
+                "cluster_stats_bytes_sent": 100,
+                "cluster_stats_bytes_received": 100,
+                "total_cluster_links_buffer_limit_exceeded": 0,
+            },
+            {
+                "logical_id": "node-1",
+                "cluster_stats_bytes_sent": 100,
+                "cluster_stats_bytes_received": 100,
+                "total_cluster_links_buffer_limit_exceeded": 0,
+            },
+        ],
+        "errors": [],
+    }
+    missing_node = {
+        **complete,
+        "node_metrics": [complete["node_metrics"][0]],
+    }
+
+    for start_boundary, end_boundary in (
+        (missing_node, complete),
+        (complete, missing_node),
+    ):
+        report = _observation()
+        capture._attach_m2_protocol_metrics(
+            report,
+            tmp_path / "resource_observation.json",
+            _state(2),
+            start_boundary=None,
+            counter_start_boundary=start_boundary,
+            counter_end_boundary=end_boundary,
+        )
+        assert report["status"] == "ERROR"
 
 
 def test_m2_protocol_expected_gone_node_is_excluded(

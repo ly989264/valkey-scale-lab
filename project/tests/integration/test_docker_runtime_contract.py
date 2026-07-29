@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import threading
 from pathlib import Path
 
 import pytest
@@ -836,10 +837,12 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     scenario: str,
     expected_scale_writes: int,
 ) -> None:
-    nodes = [{"logical_id": "node-1"}]
+    nodes = [{"logical_id": "node-1", "host": "127.0.0.1", "client_port": 7400}]
     nodehosts = [{"nodehost_id": "host-1"}]
     scale_writes: list[tuple[str, str]] = []
     resource_clocks: list[object] = []
+    events: list[str] = []
+    allow_resource_finish = threading.Event()
 
     def fake_resource_observation(
         path: Path,
@@ -849,9 +852,40 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
         **_kwargs: object,
     ) -> dict[str, str]:
         resource_clocks.append(monotonic)
+        events.append("resource-first-sample")
         first_complete_sample_event.set()  # type: ignore[attr-defined]
+        assert allow_resource_finish.wait(timeout=1.0)
+        events.append("resource-end")
         path.write_text('{"status":"PASS"}\n', encoding="utf-8")
         return {"status": "PASS"}
+
+    def fake_protocol_boundary(
+        boundary_nodes: list[dict[str, object]],
+        label: str,
+    ) -> dict[str, object]:
+        events.append(f"boundary-{label}")
+        assert boundary_nodes == nodes
+        return {
+            "status": "PASS",
+            "label": label,
+            "expected_live_nodes": ["node-1"],
+            "node_metrics": [
+                {
+                    "logical_id": "node-1",
+                    "cluster_stats_bytes_sent": 10 if label == "start" else 20,
+                    "cluster_stats_bytes_received": 30 if label == "start" else 50,
+                    "total_cluster_links_buffer_limit_exceeded": 1
+                    if label == "start"
+                    else 3,
+                }
+            ],
+            "errors": [],
+        }
+
+    def fake_configure_process_cluster(*_args: object, **_kwargs: object) -> tuple[list[object], list[object]]:
+        events.append("configure")
+        allow_resource_finish.set()
+        return [], []
 
     monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda **_kwargs: None)
     monkeypatch.setattr(docker_runtime, "run_docker", lambda *_args, **_kwargs: None)
@@ -887,12 +921,13 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     monkeypatch.setattr(docker_runtime, "_write_state", lambda *_args: None)
     monkeypatch.setattr(docker_runtime, "_resource_runners_for_nodes", lambda *_args, **_kwargs: ["runner"])
     monkeypatch.setattr(docker_runtime, "write_resource_observation", fake_resource_observation)
+    monkeypatch.setattr(docker_runtime, "_m2_bootstrap_protocol_boundary", fake_protocol_boundary)
     monkeypatch.setattr(
         docker_runtime,
         "_m2_bootstrap_resource_seconds",
         lambda: 1.0 if scenario == "cluster_timeout" else None,
     )
-    monkeypatch.setattr(docker_runtime, "_configure_process_cluster", lambda *_args, **_kwargs: ([], []))
+    monkeypatch.setattr(docker_runtime, "_configure_process_cluster", fake_configure_process_cluster)
     monkeypatch.setattr(docker_runtime, "_write_runtime_timing_breakdown", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         docker_runtime,
@@ -915,6 +950,65 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
 
     assert scale_writes == [("scale_ladder", "scale_ladder")] * expected_scale_writes
     assert resource_clocks == ([shared_monotonic] if scenario == "cluster_timeout" else [])
+    if scenario == "cluster_timeout":
+        assert events == [
+            "resource-first-sample",
+            "boundary-start",
+            "configure",
+            "resource-end",
+            "boundary-end",
+        ]
+        resource_report = json.loads((tmp_path / "resource_observation.json").read_text())
+        assert resource_report["m2_bootstrap_protocol_boundaries"]["start"]["label"] == "start"
+        assert resource_report["m2_bootstrap_protocol_boundaries"]["end"]["label"] == "end"
+    else:
+        assert events == ["configure"]
+
+
+def test_m2_bootstrap_protocol_boundary_uses_direct_cluster_info(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[int, tuple[str, ...]]] = []
+
+    class FakeRespConnection:
+        def __init__(self, endpoint: object, *, timeout: float) -> None:
+            self.endpoint = endpoint
+
+        def __enter__(self) -> "FakeRespConnection":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def execute(self, *command: str) -> str:
+            port = int(self.endpoint.port)  # type: ignore[attr-defined]
+            calls.append((port, command))
+            return (
+                "cluster_stats_bytes_sent:100\n"
+                "cluster_stats_bytes_received:200\n"
+                "total_cluster_links_buffer_limit_exceeded:3\n"
+            )
+
+    def fail_node_command(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("bootstrap protocol boundary must use direct RESP")
+
+    monkeypatch.setattr(docker_runtime, "RespConnection", FakeRespConnection)
+    monkeypatch.setattr(docker_runtime, "_node_command", fail_node_command)
+
+    boundary = docker_runtime._m2_bootstrap_protocol_boundary(
+        [{"logical_id": "node-1", "host": "127.0.0.1", "client_port": 7400}],
+        "start",
+    )
+
+    assert calls == [(7400, ("CLUSTER", "INFO"))]
+    assert boundary["node_metrics"] == [
+        {
+            "logical_id": "node-1",
+            "cluster_stats_bytes_sent": 100,
+            "cluster_stats_bytes_received": 200,
+            "total_cluster_links_buffer_limit_exceeded": 3,
+        }
+    ]
 
 
 def test_process_runtime_state_records_required_node_fields(monkeypatch: pytest.MonkeyPatch) -> None:

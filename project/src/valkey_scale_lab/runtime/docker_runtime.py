@@ -353,6 +353,81 @@ def _m2_bootstrap_resource_seconds() -> float | None:
     return seconds
 
 
+def _m2_bootstrap_protocol_boundary(nodes: list[dict[str, Any]], label: str) -> dict[str, Any]:
+    expected_live = [str(node.get("logical_id", "MISSING")) for node in nodes]
+    rows: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for node in nodes:
+        logical_id = str(node.get("logical_id", "MISSING"))
+        port = _int_or_none(node.get("client_port"))
+        if port is None:
+            errors.append(f"{logical_id} has no client_port")
+            continue
+        try:
+            endpoint = Endpoint(str(node.get("host", "127.0.0.1")), port)
+            with RespConnection(endpoint, timeout=5.0) as connection:
+                raw_cluster_info = connection.execute("CLUSTER", "INFO")
+            cluster_info = _parse_info(_resp_text(raw_cluster_info))
+            rows.append(
+                {
+                    "logical_id": logical_id,
+                    "cluster_stats_bytes_sent": _required_int(
+                        cluster_info,
+                        "cluster_stats_bytes_sent",
+                        f"{logical_id} CLUSTER INFO",
+                    ),
+                    "cluster_stats_bytes_received": _required_int(
+                        cluster_info,
+                        "cluster_stats_bytes_received",
+                        f"{logical_id} CLUSTER INFO",
+                    ),
+                    "total_cluster_links_buffer_limit_exceeded": _required_int(
+                        cluster_info,
+                        "total_cluster_links_buffer_limit_exceeded",
+                        f"{logical_id} CLUSTER INFO",
+                    ),
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{logical_id}: {type(exc).__name__}: {exc}")
+    observed = {str(row.get("logical_id")) for row in rows}
+    missing = [logical_id for logical_id in expected_live if logical_id not in observed]
+    if missing:
+        errors.append(f"missing live M2 bootstrap protocol node metrics: {missing}")
+    if errors or not expected_live:
+        reason = "; ".join(errors or ["no live nodes for M2 bootstrap protocol metrics"])
+        raise DockerRuntimeError(f"M2 bootstrap protocol {label} boundary is incomplete: {reason}")
+    return {
+        "status": "PASS",
+        "label": label,
+        "expected_live_nodes": expected_live,
+        "node_metrics": rows,
+        "errors": [],
+    }
+
+
+def _required_int(row: dict[str, str], key: str, label: str) -> int:
+    value = _int_or_none(row.get(key))
+    if value is None:
+        raise DockerRuntimeError(f"{label} missing {key}")
+    return value
+
+
+def _int_or_none(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _resp_text(value: Any) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
+
+
 def _m2_setup_event(
     timeline: SetupTimeline | None,
     name: str,
@@ -1219,8 +1294,15 @@ def _create_process_scenario(
                     raise DockerRuntimeError(
                         "bootstrap resource observation did not capture every owned process before cluster formation"
                     )
+                protocol_start = _m2_bootstrap_protocol_boundary(nodes, "start")
                 operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
                 resource_report = resource_future.result()
+                protocol_end = _m2_bootstrap_protocol_boundary(nodes, "end")
+                resource_report["m2_bootstrap_protocol_boundaries"] = {
+                    "start": protocol_start,
+                    "end": protocol_end,
+                }
+                _write_json_artifact(artifacts / "resource_observation.json", resource_report)
             if resource_report.get("status") != "PASS":
                 raise DockerRuntimeError("bootstrap resource observation is incomplete")
         snapshots_path = artifacts / f"cluster_snapshots_{scenario}.json"

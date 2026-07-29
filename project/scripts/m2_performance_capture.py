@@ -1227,6 +1227,8 @@ def _attach_m2_protocol_metrics(
     expected_gone_processes: list[dict[str, Any]] | None = None,
     expected_gone_active: bool = False,
     start_boundary: Mapping[str, Any] | None = None,
+    counter_start_boundary: Mapping[str, Any] | None = None,
+    counter_end_boundary: Mapping[str, Any] | None = None,
 ) -> None:
     end_boundary = _collect_m2_protocol_boundary(
         state,
@@ -1236,6 +1238,8 @@ def _attach_m2_protocol_metrics(
     protocol = _summarize_m2_protocol_boundaries(
         start_boundary,
         end_boundary,
+        counter_start_boundary=counter_start_boundary,
+        counter_end_boundary=counter_end_boundary,
     )
     report["m2_protocol_metrics"] = protocol
     check = {
@@ -1356,10 +1360,18 @@ def _collect_m2_protocol_boundary(
 def _summarize_m2_protocol_boundaries(
     start_boundary: Mapping[str, Any] | None,
     end_boundary: Mapping[str, Any],
+    *,
+    counter_start_boundary: Mapping[str, Any] | None = None,
+    counter_end_boundary: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     errors = [
         str(error)
-        for boundary in (start_boundary, end_boundary)
+        for boundary in (
+            start_boundary,
+            end_boundary,
+            counter_start_boundary,
+            counter_end_boundary,
+        )
         if isinstance(boundary, Mapping)
         for error in _array(boundary.get("errors"))
     ]
@@ -1373,9 +1385,22 @@ def _summarize_m2_protocol_boundaries(
         for row in _array(_object(start_boundary).get("node_metrics"))
         if isinstance(row, Mapping) and isinstance(row.get("logical_id"), str)
     }
+    counter_start_rows = {
+        str(row.get("logical_id")): row
+        for row in _array(_object(counter_start_boundary).get("node_metrics"))
+        if isinstance(row, Mapping) and isinstance(row.get("logical_id"), str)
+    }
+    counter_end_rows = {
+        str(row.get("logical_id")): row
+        for row in _array(_object(counter_end_boundary).get("node_metrics"))
+        if isinstance(row, Mapping) and isinstance(row.get("logical_id"), str)
+    }
     expected_live = [
         str(value) for value in _array(end_boundary.get("expected_live_nodes"))
     ]
+    use_counter_boundaries = (
+        counter_start_boundary is not None or counter_end_boundary is not None
+    )
     missing_live = [logical_id for logical_id in expected_live if logical_id not in end_rows]
     if start_boundary is not None:
         missing_start = [
@@ -1383,6 +1408,27 @@ def _summarize_m2_protocol_boundaries(
         ]
         if missing_start:
             errors.append(f"missing start M2 protocol node metrics: {missing_start}")
+    elif not use_counter_boundaries:
+        errors.append("missing M2 protocol start boundary")
+    if use_counter_boundaries:
+        if counter_start_boundary is None:
+            errors.append("missing M2 bootstrap protocol start boundary")
+        if counter_end_boundary is None:
+            errors.append("missing M2 bootstrap protocol end boundary")
+        missing_counter_start = [
+            logical_id for logical_id in expected_live if logical_id not in counter_start_rows
+        ]
+        missing_counter_end = [
+            logical_id for logical_id in expected_live if logical_id not in counter_end_rows
+        ]
+        if missing_counter_start:
+            errors.append(
+                f"missing start M2 bootstrap protocol node metrics: {missing_counter_start}"
+            )
+        if missing_counter_end:
+            errors.append(
+                f"missing end M2 bootstrap protocol node metrics: {missing_counter_end}"
+            )
     if missing_live:
         errors.append(f"missing end M2 protocol node metrics: {missing_live}")
 
@@ -1400,18 +1446,48 @@ def _summarize_m2_protocol_boundaries(
             continue
         if start_boundary is None:
             connection_count += end_connections
-            cluster_bus_bytes += end_bus
-            buffer_overflows += end_overflows
-            continue
-        start_connections = _number(start.get("connection_count"))
-        start_bus = _number(start.get("cluster_bus_bytes"))
-        start_overflows = _number(start.get("buffer_overflows"))
-        if start_connections is None or start_bus is None or start_overflows is None:
-            errors.append(f"{logical_id} has incomplete start M2 protocol metrics")
-            continue
-        connection_count += max(start_connections, end_connections)
-        cluster_bus_bytes += max(end_bus - start_bus, 0.0)
-        buffer_overflows += max(end_overflows - start_overflows, 0.0)
+        else:
+            start_connections = _number(start.get("connection_count"))
+            start_bus = _number(start.get("cluster_bus_bytes"))
+            start_overflows = _number(start.get("buffer_overflows"))
+            if start_connections is None or start_bus is None or start_overflows is None:
+                errors.append(f"{logical_id} has incomplete start M2 protocol metrics")
+                continue
+            connection_count += max(start_connections, end_connections)
+        if use_counter_boundaries:
+            counter_start = _object(counter_start_rows.get(logical_id))
+            counter_end = _object(counter_end_rows.get(logical_id))
+            start_sent = _number(counter_start.get("cluster_stats_bytes_sent"))
+            end_sent = _number(counter_end.get("cluster_stats_bytes_sent"))
+            start_received = _number(counter_start.get("cluster_stats_bytes_received"))
+            end_received = _number(counter_end.get("cluster_stats_bytes_received"))
+            start_overflow_counter = _number(
+                counter_start.get("total_cluster_links_buffer_limit_exceeded")
+            )
+            end_overflow_counter = _number(
+                counter_end.get("total_cluster_links_buffer_limit_exceeded")
+            )
+            if (
+                start_sent is None
+                or end_sent is None
+                or start_received is None
+                or end_received is None
+            ):
+                errors.append(f"{logical_id} has incomplete M2 bootstrap bus counters")
+            else:
+                cluster_bus_bytes += max(end_sent - start_sent, 0.0) + max(
+                    end_received - start_received, 0.0
+                )
+            if start_overflow_counter is None or end_overflow_counter is None:
+                errors.append(f"{logical_id} has incomplete M2 bootstrap overflow counters")
+            else:
+                buffer_overflows += max(
+                    end_overflow_counter - start_overflow_counter,
+                    0.0,
+                )
+        elif start_boundary is not None:
+            cluster_bus_bytes += max(end_bus - start_bus, 0.0)
+            buffer_overflows += max(end_overflows - start_overflows, 0.0)
 
     observer_rows = [
         row
@@ -1536,6 +1612,22 @@ def _text(value: Any) -> str:
     return str(value)
 
 
+def _m2_bootstrap_counter_boundary(
+    report: Mapping[str, Any],
+    label: str,
+) -> Mapping[str, Any]:
+    boundaries = _object(report.get("m2_bootstrap_protocol_boundaries"))
+    boundary = boundaries.get(label)
+    if isinstance(boundary, Mapping):
+        return boundary
+    return {
+        "status": "ERROR",
+        "expected_live_nodes": [],
+        "node_metrics": [],
+        "errors": [f"M2 bootstrap protocol {label} boundary is missing"],
+    }
+
+
 def _load_resource_observation(
     path: Path,
     *,
@@ -1553,6 +1645,8 @@ def _load_resource_observation(
             expected_gone_processes=None,
             expected_gone_active=False,
             start_boundary=None,
+            counter_start_boundary=_m2_bootstrap_counter_boundary(report, "start"),
+            counter_end_boundary=_m2_bootstrap_counter_boundary(report, "end"),
         )
     return _validate_resource_report(
         report,
