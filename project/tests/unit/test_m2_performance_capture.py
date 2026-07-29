@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -153,6 +154,79 @@ def _state(node_count: int = 1) -> dict[str, Any]:
             for idx in range(node_count)
         ]
     }
+
+
+def test_m2_normal_observation_entries_use_scalable_observability_sources() -> None:
+    sources = {
+        "topology": inspect.getsource(capture._capture_topology),
+        "stability": inspect.getsource(capture._capture_stability_observation),
+        "fault": inspect.getsource(capture._capture_fault_window),
+    }
+
+    for source in sources.values():
+        assert "_probe_endpoint" not in source
+        assert '"CLUSTER", "NODES"' not in source
+        assert "CLUSTER NODES" not in source
+    assert "FullClusterValidator" in sources["topology"]
+    assert "LightClusterProbe" in sources["stability"]
+    assert "SentinelLane" in sources["stability"]
+    assert "_capture_data_path" not in sources["stability"]
+    assert "_capture_resource_observation" not in sources["stability"]
+    assert "AffectedShardObserver" in sources["fault"]
+    assert sources["fault"].count("FullClusterValidator(") == 1
+
+
+def test_fault_topology_facts_require_affected_shard_stability_before_full_validation() -> None:
+    logical_to_node_id = {"primary-0": "id-primary-0", "replica-0": "id-replica-0"}
+    replacement_by_shard = {"shard-0": "replica-0"}
+    target_node_ids = {"id-primary-0"}
+    unstable = [
+        {
+            "shard_id": "shard-0",
+            "observation": {
+                "monotonic": 10.0,
+                "rows": [{"logical_id": "replica-0", "status": "OK", "cluster_state": "ok"}],
+                "candidate": None,
+            },
+        }
+    ]
+    stable = [
+        {
+            "shard_id": "shard-0",
+            "observation": {
+                "monotonic": 10.5,
+                "rows": [{"logical_id": "replica-0", "status": "OK", "cluster_state": "ok"}],
+                "candidate": {"primary": "replica-0"},
+            },
+        }
+    ]
+
+    assert not capture._affected_shard_topology_facts(
+        unstable,
+        target_node_ids=target_node_ids,
+        replacement_by_shard=replacement_by_shard,
+        logical_to_node_id=logical_to_node_id,
+        expected_nodes=2,
+    )["cluster_ok_all_slots"]
+    stable_without_full = capture._affected_shard_topology_facts(
+        stable,
+        target_node_ids=target_node_ids,
+        replacement_by_shard=replacement_by_shard,
+        logical_to_node_id=logical_to_node_id,
+        expected_nodes=2,
+    )
+    stable_with_full = capture._affected_shard_topology_facts(
+        stable,
+        target_node_ids=target_node_ids,
+        replacement_by_shard=replacement_by_shard,
+        logical_to_node_id=logical_to_node_id,
+        expected_nodes=2,
+        full_validation_passed=True,
+    )
+
+    assert stable_without_full["cluster_ok_all_slots"] is True
+    assert stable_without_full["converged"] is False
+    assert stable_with_full["converged"] is True
 
 
 def test_m2_protocol_metrics_complete_path_updates_resource_report(

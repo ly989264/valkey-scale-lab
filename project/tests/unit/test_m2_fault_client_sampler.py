@@ -3,6 +3,7 @@ from __future__ import annotations
 import binascii
 import hashlib
 import importlib
+import inspect
 import json
 import multiprocessing
 import socket
@@ -222,6 +223,23 @@ def test_fault_client_loop_uses_parent_child_shared_monotonic_clock() -> None:
     assert capture._fault_client_loop.__kwdefaults__["monotonic_clock"] is (
         capture.shared_monotonic
     )
+
+
+def test_fault_window_defers_single_full_validation_until_all_affected_shards_are_stable() -> None:
+    source = inspect.getsource(capture._capture_fault_window)
+
+    assert "_probe_endpoint" not in source
+    assert '"CLUSTER", "NODES"' not in source
+    assert "AffectedShardObserver" in source
+    assert source.count("FullClusterValidator(") == 1
+    assert "and not full_validation" in source
+    assert "stable_relationships == set(replacement_by_shard)" in source
+
+
+def test_m2_fault_rate_target_counts_preserve_existing_rounding() -> None:
+    assert capture._failed_primary_count(200, "one") == 1
+    assert capture._failed_primary_count(200, "10_percent") == 10
+    assert capture._failed_primary_count(200, "33_percent") == 33
 
 
 def test_sampler_process_isolated_from_representative_and_49_node_full_probe(
