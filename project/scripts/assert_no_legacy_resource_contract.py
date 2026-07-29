@@ -20,8 +20,6 @@ FORBIDDEN = (
     "system_metrics_report",
     "system_metrics_timeseries",
     "directional_cluster_links",
-    "cluster_link_errors",
-    "buffer_overflows",
     "m2_resource_window",
     "CLUSTER LINKS",
 )

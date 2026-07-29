@@ -138,7 +138,6 @@
       "test_ids": [
         "product.report.final_report",
         "product.report.report_rendering",
-        "product.report.resource_analysis_report",
         "product.report.validated_evidence_pipeline_v9",
         "product.report.zh_offline_report_gate"
       ]
@@ -198,7 +197,6 @@
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
-        "product.unit.resource_observation",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
         "product.unit.workload_key_generator"
@@ -256,7 +254,6 @@
         "product.real_valkey.gate_small_real_parity",
         "product.report.final_report",
         "product.report.report_rendering",
-        "product.report.resource_analysis_report",
         "product.report.validated_evidence_pipeline_v9",
         "product.report.zh_offline_report_gate",
         "product.scale.review_o1_process_cleanup_missing_identity",
@@ -292,7 +289,6 @@
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
-        "product.unit.resource_observation",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
         "product.unit.workload_key_generator",
@@ -360,7 +356,6 @@
         "product.real_valkey.gate_small_real_parity",
         "product.report.final_report",
         "product.report.report_rendering",
-        "product.report.resource_analysis_report",
         "product.report.validated_evidence_pipeline_v9",
         "product.report.zh_offline_report_gate",
         "product.scale.review_o1_process_cleanup_missing_identity",
@@ -396,7 +391,6 @@
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
-        "product.unit.resource_observation",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
         "product.unit.workload_key_generator",
@@ -1424,27 +1418,6 @@
       }
     },
     {
-      "test_id": "product.report.resource_analysis_report",
-      "description": "Report resource analysis output checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/report/test_report_rendering.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
       "test_id": "product.report.validated_evidence_pipeline_v9",
       "description": "Report validated evidence pipeline v9 checks.",
       "parameters": {},
@@ -2172,27 +2145,6 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_setup_timing_accounting.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "product.unit.resource_observation",
-      "description": "Unit resource observation runtime checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/unit/test_scalable_observability.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",

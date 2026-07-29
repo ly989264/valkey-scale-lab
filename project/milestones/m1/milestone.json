@@ -30,6 +30,7 @@
       "check": [
         {"id": "product.failover"},
         {"id": "product.fault"},
+        {"id": "product.observability"},
         {"id": "product.stability"}
       ]
     },

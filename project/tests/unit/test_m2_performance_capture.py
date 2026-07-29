@@ -22,6 +22,11 @@ def _analysis() -> dict[str, Any]:
         "process_totals": {
             "rss_bytes_max_sum": 100,
             "fd_count_max_sum": 4,
+            "connection_count_max_sum": 2,
+            "cluster_bus_bytes_delta_sum": 30,
+            "cluster_link_errors_max": 0,
+            "buffer_overflows_delta_sum": 0,
+            "valkey_cluster_metric_sample_count": 1,
         },
         "collector": {"overrun_count": 0},
         "expected_gone_processes": [],
@@ -59,6 +64,8 @@ def test_validate_resource_report_accepts_new_observation_contract() -> None:
 
     assert report["resource_summary"]["process_rss_bytes_max_sum"] == 100
     assert report["resource_summary"]["process_fd_count_max_sum"] == 4
+    assert report["resource_summary"]["connection_count"] == 2
+    assert report["resource_summary"]["cluster_bus_bytes"] == 30
 
 
 def test_validate_resource_report_rejects_missing_analyzer() -> None:
@@ -74,6 +81,20 @@ def test_validate_resource_report_rejects_missing_analyzer() -> None:
         raise AssertionError("missing analyzer output must fail")
 
 
+def test_validate_resource_report_rejects_missing_valkey_cluster_metrics() -> None:
+    report = _observation()
+    report["resource_analyses"][0]["analysis"]["process_totals"][
+        "valkey_cluster_metric_sample_count"
+    ] = 0
+
+    try:
+        capture._validate_resource_report(report)
+    except capture.CaptureError as exc:
+        assert "Valkey cluster resource metrics" in str(exc)
+    else:
+        raise AssertionError("missing Valkey cluster metrics must fail")
+
+
 def test_discovery_safety_uses_correctness_not_resource_values() -> None:
     trial = {
         "correctness": {
@@ -85,10 +106,11 @@ def test_discovery_safety_uses_correctness_not_resource_values() -> None:
             "unexpected_promotions": 0,
         },
         "resource_observation": {
-            "process_rss_bytes_max_sum": 999999999,
-            "process_fd_count_max_sum": 999999,
+            metric: 0.0 for metric in capture.RESOURCE_METRICS
         },
     }
+    trial["resource_observation"]["process_rss_bytes_max_sum"] = 999999999
+    trial["resource_observation"]["process_fd_count_max_sum"] = 999999
 
     assert capture._discovery_safety_clean(trial)
 

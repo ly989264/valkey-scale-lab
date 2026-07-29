@@ -1208,7 +1208,10 @@ def _create_process_scenario(
                     capability_id=capability_id,
                     scenario_name=scenario,
                     run_id=run_id,
-                    runners=_resource_runners_for_nodes(nodes),
+                    runners=_resource_runners_for_nodes(
+                        nodes,
+                        include_m2_cluster_metrics=True,
+                    ),
                     duration_seconds=resource_seconds,
                     first_complete_sample_event=first_resource_sample,
                     monotonic=shared_monotonic,
@@ -6229,10 +6232,32 @@ def _management_workload_metric_rows(
 def _management_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) -> None:
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
-    _wait_cluster_known(nodes, expected=len(nodes), timeout=timeout, final_check=True)
-    _wait_cluster_slots_assigned(nodes, timeout=timeout, final_check=True)
-    _wait_cluster_ok(nodes, timeout=timeout, final_check=True)
-    _wait_cluster_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, final_check=True)
+    deadline = time.monotonic() + timeout
+    last_health: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        try:
+            health = _management_cluster_health(nodes)
+            last_health = health
+            if (
+                health["cluster_state"] == "ok"
+                and health["known_nodes"] == len(nodes)
+                and health["primary_count"] == len(primaries)
+                and health["replica_count"] == len(replicas)
+                and health["slots_assigned"] == 16384
+                and health["slots_ok"] == 16384
+                and health["slots_fail"] == 0
+            ):
+                return
+        except Exception as exc:  # noqa: BLE001
+            last_health = {"status": "ERROR", "error": repr(exc)}
+        time.sleep(1)
+    diagnostics = [
+        _process_node_snapshot(node) for node in _representative_nodes(nodes)
+    ]
+    raise DockerRuntimeError(
+        "MANAGEMENT_MATRIX cluster did not become clean; "
+        f"last_health={last_health} diagnostics={diagnostics}"
+    )
 
 
 
@@ -7481,6 +7506,7 @@ def _resource_runners_for_nodes(
     *,
     expected_gone_processes: list[dict[str, Any]] | None = None,
     expected_gone_active: Callable[[], bool] | None = None,
+    include_m2_cluster_metrics: bool = False,
 ) -> list[ResourceSamplerRunner]:
     if not nodes:
         return []
@@ -7514,11 +7540,28 @@ def _resource_runners_for_nodes(
             or container
         )
         processes = [
-            ProcessSpec(str(node["logical_id"]), int(node["pid"]))
+            ProcessSpec(
+                str(node["logical_id"]),
+                int(node["pid"]),
+                host=str(node.get("host", "127.0.0.1")),
+                client_port=(
+                    int(node["client_port"])
+                    if include_m2_cluster_metrics and node.get("client_port") is not None
+                    else None
+                ),
+            )
             for node in hosted
         ]
         expected_gone = [
-            ExpectedGoneProcess(str(row["logical_id"]), int(row["pid"]))
+            ExpectedGoneProcess(
+                str(row["logical_id"]),
+                int(row["pid"]),
+                client_port=(
+                    int(row["client_port"])
+                    if include_m2_cluster_metrics and row.get("client_port") is not None
+                    else None
+                ),
+            )
             for row in expected_gone_processes or []
             if any(
                 str(node["logical_id"]) == str(row.get("logical_id"))
@@ -7533,6 +7576,7 @@ def _resource_runners_for_nodes(
             cgroup_root=Path(f"/proc/{host_pid}/root/sys/fs/cgroup"),
             expected_gone_processes=expected_gone,
             expected_gone_active=expected_gone_active,
+            collect_valkey_cluster_metrics=include_m2_cluster_metrics,
         )
         runners.append(ResourceSamplerRunner(sampler))
     return runners

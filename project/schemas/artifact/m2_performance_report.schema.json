@@ -254,6 +254,10 @@
             "process_rss_bytes_max_sum",
             "process_fd_count_max_sum",
             "process_cpu_ticks_delta_sum",
+            "connection_count",
+            "cluster_bus_bytes",
+            "cluster_link_errors",
+            "buffer_overflows",
             "cpu_throttled_usec_delta",
             "network_error_drop_delta",
             "collector_overrun_count"
@@ -263,6 +267,10 @@
             "process_rss_bytes_max_sum": {"type": "number", "minimum": 0},
             "process_fd_count_max_sum": {"type": "number", "minimum": 0},
             "process_cpu_ticks_delta_sum": {"type": "number", "minimum": 0},
+            "connection_count": {"type": "number", "minimum": 0},
+            "cluster_bus_bytes": {"type": "number", "minimum": 0},
+            "cluster_link_errors": {"type": "number", "minimum": 0},
+            "buffer_overflows": {"type": "number", "minimum": 0},
             "cpu_throttled_usec_delta": {"type": "number", "minimum": 0},
             "network_error_drop_delta": {"type": "number", "minimum": 0},
             "collector_overrun_count": {"type": "number", "minimum": 0}

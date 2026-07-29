@@ -1386,6 +1386,59 @@ def test_large_cluster_uses_replicated_cluster_create(monkeypatch: pytest.Monkey
     assert [op["operation"] for op in operations] == ["cluster_create"]
 
 
+def test_management_wait_clean_cluster_uses_light_health_on_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nodes = [
+        {
+            "logical_id": "shard-0000-primary",
+            "role": "primary",
+            "client_port": 7400,
+            "shard_id": "shard-0000",
+        },
+        {
+            "logical_id": "shard-0001-replica-00",
+            "role": "replica",
+            "client_port": 7401,
+            "shard_id": "shard-0001",
+        },
+    ]
+    health_calls: list[int] = []
+
+    def light_health(probed: list[dict]) -> dict[str, object]:
+        health_calls.append(len(probed))
+        return {
+            "cluster_state": "ok",
+            "known_nodes": len(probed),
+            "primary_count": 1,
+            "replica_count": 1,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": [],
+        }
+
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", light_health)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_wait_cluster_role_counts",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("all-node CLUSTER NODES role wait must not run")
+        ),
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_process_node_snapshot",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("failure diagnostic must not run on success")
+        ),
+    )
+
+    docker_runtime._management_wait_clean_cluster(nodes, timeout=1)
+
+    assert health_calls == [2]
+
+
 def test_large_cluster_create_retargets_replicas_after_primary_create(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
     meet_calls: list[tuple[list[str], list[str]]] = []

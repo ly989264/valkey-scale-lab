@@ -22,6 +22,11 @@ def _analysis() -> dict[str, Any]:
         "process_totals": {
             "rss_bytes_max_sum": 140,
             "fd_count_max_sum": 5,
+            "connection_count_max_sum": 3,
+            "cluster_bus_bytes_delta_sum": 40,
+            "cluster_link_errors_max": 0,
+            "buffer_overflows_delta_sum": 0,
+            "valkey_cluster_metric_sample_count": 1,
         },
         "collector": {"overrun_count": 0},
         "expected_gone_processes": [],
@@ -93,6 +98,25 @@ def test_m2_observation_source_accepts_new_contract() -> None:
 
     assert errors == []
     assert facts["coverage"]["analysis_count"] == 1
+
+
+def test_m2_observation_source_rejects_missing_valkey_cluster_metrics() -> None:
+    document = _document()
+    document["resource_analyses"][0]["analysis"]["process_totals"][
+        "valkey_cluster_metric_sample_count"
+    ] = 0
+    errors: list[str] = []
+
+    M2._validate_resource_source(
+        document,
+        _trial(_document()),
+        fault_trial=False,
+        allow_initial_membership_transitions=False,
+        state_document={"nodes": [{"logical_id": "node-a", "pid": 123}]},
+        errors=errors,
+    )
+
+    assert any("Valkey cluster resource metrics" in error for error in errors)
 
 
 def test_m2_observation_source_rejects_missing_analyzer_output() -> None:
@@ -167,16 +191,42 @@ def test_resource_pair_facts_ignore_high_resource_values() -> None:
 
 def test_resource_regression_rejects_candidate_over_ten_percent() -> None:
     baseline = {"resource_observation": {metric: 10.0 for metric in M2.RESOURCE_METRICS}}
+    baseline["resource_observation"]["cluster_link_errors"] = 0.0
+    baseline["resource_observation"]["buffer_overflows"] = 0.0
     candidate = deepcopy(baseline)
     candidate["resource_observation"]["process_rss_bytes_max_sum"] = 11.1
 
     assert not M2._resource_regression_clean(baseline, candidate)
 
 
+def test_resource_regression_rejects_cluster_bus_over_ten_percent() -> None:
+    baseline = {"resource_observation": {metric: 10.0 for metric in M2.RESOURCE_METRICS}}
+    baseline["resource_observation"]["cluster_link_errors"] = 0.0
+    baseline["resource_observation"]["buffer_overflows"] = 0.0
+    candidate = deepcopy(baseline)
+    candidate["resource_observation"]["cluster_bus_bytes"] = 11.1
+
+    assert not M2._resource_regression_clean(baseline, candidate)
+
+
+def test_resource_regression_rejects_link_or_buffer_safety_events() -> None:
+    baseline = {"resource_observation": {metric: 10.0 for metric in M2.RESOURCE_METRICS}}
+    baseline["resource_observation"]["cluster_link_errors"] = 0.0
+    baseline["resource_observation"]["buffer_overflows"] = 0.0
+    candidate = deepcopy(baseline)
+    candidate["resource_observation"]["cluster_link_errors"] = 1.0
+
+    assert not M2._resource_regression_clean(baseline, candidate)
+
+
 def test_resource_regression_allows_candidate_at_ten_percent() -> None:
     baseline = {"resource_observation": {metric: 10.0 for metric in M2.RESOURCE_METRICS}}
+    baseline["resource_observation"]["cluster_link_errors"] = 0.0
+    baseline["resource_observation"]["buffer_overflows"] = 0.0
     candidate = deepcopy(baseline)
     candidate["resource_observation"]["process_fd_count_max_sum"] = 11.0
     candidate["resource_observation"]["process_cpu_ticks_delta_sum"] = 11.0
+    candidate["resource_observation"]["connection_count"] = 11.0
+    candidate["resource_observation"]["cluster_bus_bytes"] = 11.0
 
     assert M2._resource_regression_clean(baseline, candidate)

@@ -163,6 +163,10 @@ RESOURCE_METRICS = (
     "process_rss_bytes_max_sum",
     "process_fd_count_max_sum",
     "process_cpu_ticks_delta_sum",
+    "connection_count",
+    "cluster_bus_bytes",
+    "cluster_link_errors",
+    "buffer_overflows",
     "cpu_throttled_usec_delta",
     "network_error_drop_delta",
     "collector_overrun_count",
@@ -680,6 +684,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
                         {
                             "logical_id": str(node["logical_id"]),
                             "pid": int(node["pid"]),
+                            "client_port": int(node["client_port"]),
                         }
                         for node in target_nodes
                     ],
@@ -1162,7 +1167,13 @@ def _capture_resource_observation(
     from valkey_scale_lab.runtime.docker_runtime import _resource_runners_for_nodes
 
     expected = [
-        ExpectedGoneProcess(str(row["logical_id"]), int(row["pid"]))
+        ExpectedGoneProcess(
+            str(row["logical_id"]),
+            int(row["pid"]),
+            client_port=(
+                int(row["client_port"]) if row.get("client_port") is not None else None
+            ),
+        )
         for row in expected_gone_processes or []
     ]
     report = write_resource_observation(
@@ -1176,6 +1187,7 @@ def _capture_resource_observation(
             expected_gone_active=window_start_event.is_set
             if window_start_event is not None
             else None,
+            include_m2_cluster_metrics=True,
         ),
         duration_seconds=duration_seconds,
         expected_gone_processes=expected,
@@ -1228,6 +1240,8 @@ def _validate_resource_report(
         raise CaptureError("M2 resource analyzer was not called")
     if any(document.get("errors") for document in documents if isinstance(document, dict)):
         raise CaptureError("M2 resource sampler reported errors")
+    if _resource_cluster_metric_sample_count(report) <= 0:
+        raise CaptureError("M2 resource observation has no Valkey cluster resource metrics")
     metrics = _resource_observation_metrics(report)
     for field in RESOURCE_METRICS:
         value = metrics.get(field)
@@ -1240,6 +1254,24 @@ def _validate_resource_report(
             raise CaptureError(f"M2 resource metric {field} is unavailable")
     report["resource_summary"] = metrics
     return report
+
+
+def _resource_cluster_metric_sample_count(report: Mapping[str, Any]) -> int:
+    return int(
+        sum(
+            _finite_number(
+                _object(analysis.get("process_totals")).get(
+                    "valkey_cluster_metric_sample_count"
+                )
+            )
+            for analysis in (
+                row.get("analysis")
+                for row in report.get("resource_analyses", [])
+                if isinstance(row, Mapping) and isinstance(row.get("analysis"), Mapping)
+            )
+            if isinstance(analysis, Mapping)
+        )
+    )
 
 
 def _resource_observation_metrics(report: Mapping[str, Any]) -> dict[str, float]:
@@ -1271,6 +1303,41 @@ def _resource_observation_metrics(report: Mapping[str, Any]) -> dict[str, float]
             for analysis in analyses
         ),
         "process_cpu_ticks_delta_sum": process_cpu_ticks,
+        "connection_count": sum(
+            _finite_number(
+                _object(analysis.get("process_totals")).get(
+                    "connection_count_max_sum"
+                )
+            )
+            for analysis in analyses
+        ),
+        "cluster_bus_bytes": sum(
+            _finite_number(
+                _object(analysis.get("process_totals")).get(
+                    "cluster_bus_bytes_delta_sum"
+                )
+            )
+            for analysis in analyses
+        ),
+        "cluster_link_errors": max(
+            (
+                _finite_number(
+                    _object(analysis.get("process_totals")).get(
+                        "cluster_link_errors_max"
+                    )
+                )
+                for analysis in analyses
+            ),
+            default=0.0,
+        ),
+        "buffer_overflows": sum(
+            _finite_number(
+                _object(analysis.get("process_totals")).get(
+                    "buffer_overflows_delta_sum"
+                )
+            )
+            for analysis in analyses
+        ),
         "cpu_throttled_usec_delta": sum(
             _finite_number(_object(analysis.get("cpu")).get("throttled_usec_delta"))
             for analysis in analyses
