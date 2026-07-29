@@ -163,3 +163,20 @@ def test_resource_pair_facts_ignore_high_resource_values() -> None:
     candidate = deepcopy(baseline)
 
     assert M2._validate_equal_resource_observation_facts(baseline, candidate) == []
+
+
+def test_resource_regression_rejects_candidate_over_ten_percent() -> None:
+    baseline = {"resource_observation": {metric: 10.0 for metric in M2.RESOURCE_METRICS}}
+    candidate = deepcopy(baseline)
+    candidate["resource_observation"]["process_rss_bytes_max_sum"] = 11.1
+
+    assert not M2._resource_regression_clean(baseline, candidate)
+
+
+def test_resource_regression_allows_candidate_at_ten_percent() -> None:
+    baseline = {"resource_observation": {metric: 10.0 for metric in M2.RESOURCE_METRICS}}
+    candidate = deepcopy(baseline)
+    candidate["resource_observation"]["process_fd_count_max_sum"] = 11.0
+    candidate["resource_observation"]["process_cpu_ticks_delta_sum"] = 11.0
+
+    assert M2._resource_regression_clean(baseline, candidate)

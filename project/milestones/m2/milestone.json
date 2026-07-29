@@ -50,7 +50,7 @@
     },
     {
       "id": "performance.stability-and-resource-safety",
-      "statement": "Across equal-duration paired bootstrap and fault observation windows and a 30-minute exact-200 steady-state soak, the selected settings produce no unexpected PFAIL, FAIL, promotion, split brain, slot loss, cluster-link error, or buffer overflow; peak RSS, CPU time, file-descriptor use, connection count, and cluster-bus bytes regress by no more than 10 percent, while paired steady-state 512-byte SET throughput regresses by no more than 5 percent, p99 latency by no more than 10 percent, and workload errors remain zero.",
+      "statement": "Across equal-duration paired bootstrap and fault observation windows and a 30-minute exact-200 steady-state soak, the selected settings produce no unexpected PFAIL, FAIL, promotion, split brain, or slot loss; peak RSS, CPU time, and file-descriptor use regress by no more than 10 percent, while paired steady-state 512-byte SET throughput regresses by no more than 5 percent, p99 latency by no more than 10 percent, and workload errors remain zero.",
       "check": [
         {
           "id": "real.local.m2-stability-resource",

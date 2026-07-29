@@ -39,6 +39,7 @@ from valkey_scale_lab.observability import resource_observation as observation_m
 from valkey_scale_lab.observability.resource_observation import run_resource_observation
 from valkey_scale_lab.observability.sentinel import (
     Canary,
+    ClusterRouter,
     SentinelLane,
     SentinelNode,
     key_slot,
@@ -571,6 +572,25 @@ def test_sentinel_prepares_once_and_fault_probe_requires_ten_rounds() -> None:
     assert result["stable_rounds"] == 10
     assert len(result["samples"]) == 10
     assert result["rto_ms"] == 0
+
+
+def test_sentinel_cluster_router_tries_live_seed_after_dead_first_seed() -> None:
+    key = "vsl:sentinel:r:{tag-a}:a"
+    calls: list[int] = []
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        calls.append(endpoint.port)
+        if endpoint.port == 7000:
+            return FakeConnection({("GET", key): ConnectionError("dead seed")})
+        return FakeConnection({("GET", key): "value-a"})
+
+    router = ClusterRouter(
+        [Endpoint("127.0.0.1", 7000), Endpoint("127.0.0.1", 7001)],
+        connection_factory=factory,  # type: ignore[arg-type]
+    )
+
+    assert router.get(key) == "value-a"
+    assert calls == [7000, 7001]
 
 
 def test_sentinel_sweep_reconnect_failure_does_not_block_other_nodes() -> None:

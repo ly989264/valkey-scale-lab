@@ -117,6 +117,11 @@ RESOURCE_METRICS = (
     "network_error_drop_delta",
     "collector_overrun_count",
 )
+RESOURCE_REGRESSION_METRICS = (
+    "process_rss_bytes_max_sum",
+    "process_fd_count_max_sum",
+    "process_cpu_ticks_delta_sum",
+)
 FORMATION_MARKERS = (
     "last_process_ping",
     "first_membership_command",
@@ -303,6 +308,12 @@ def _resource_regression_clean(
             or candidate_value < 0
         ):
             return False
+        if metric in RESOURCE_REGRESSION_METRICS:
+            if baseline_value == 0:
+                if candidate_value > 0:
+                    return False
+            elif candidate_value > baseline_value * 1.10:
+                return False
     return True
 
 
@@ -1303,6 +1314,14 @@ def _validate_stability(
         _add(errors, cell.get("status") == "PASS", f"stability cell {cell_id} did not PASS")
         _add(errors, isinstance(cell.get("required_pairs"), int) and cell["required_pairs"] >= 1, f"stability cell {cell_id} requires fewer than one pair")
         _add(errors, len(pairs) >= 1, f"stability cell {cell_id} has no A/B pair")
+        for pair in pairs:
+            baseline_trial = trials_by_id.get(str(pair.get("baseline_trial_id")), {})
+            candidate_trial = trials_by_id.get(str(pair.get("candidate_trial_id")), {})
+            _add(
+                errors,
+                _resource_regression_clean(baseline_trial, candidate_trial),
+                f"stability pair {pair.get('pair_id', 'MISSING')} resource regression exceeds 10 percent",
+            )
         if cell.get("failure_rate") == "none":
             for pair in pairs:
                 validate_workload_pair(pair)

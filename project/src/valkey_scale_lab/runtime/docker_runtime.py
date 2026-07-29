@@ -88,6 +88,7 @@ CLUSTER_MEET_FANOUT = 4
 CLUSTER_ORCHESTRATION_PARALLELISM = 8
 ROLLING_RESTART_MAX_PARALLELISM = CLUSTER_ORCHESTRATION_PARALLELISM
 CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS = 2.0
+PROCESS_FULL_SNAPSHOT_NODE_LIMIT = 200
 CONTAINER_STOP_TIMEOUT_SECONDS = 45
 CONTAINER_REMOVE_TIMEOUT_SECONDS = 60
 NETWORK_REMOVE_TIMEOUT_SECONDS = 45
@@ -3269,6 +3270,12 @@ def _representative_nodes(nodes: list[dict[str, Any]], *, primaries_only: bool =
     return deduped
 
 
+def _process_normal_snapshot_nodes(nodes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+    if len(nodes) <= PROCESS_FULL_SNAPSHOT_NODE_LIMIT:
+        return nodes, "all_nodes"
+    return _representative_nodes(nodes), "representative_by_az"
+
+
 def _configure_process_cluster(
     nodes: list[dict[str, Any]],
     timings: dict[str, dict[str, Any]] | None = None,
@@ -3431,9 +3438,10 @@ def _configure_process_cluster(
     )
 
     final_started = time.monotonic()
-    with _timeline_span(setup_timeline, "cluster_final_full_snapshot", "cluster_formation", {"sample_scope": "all_nodes", "node_count": len(nodes)}):
+    summary_nodes, sample_scope = _process_normal_snapshot_nodes(nodes)
+    with _timeline_span(setup_timeline, "cluster_final_full_snapshot", "cluster_formation", {"sample_scope": sample_scope, "node_count": len(nodes)}):
         _wait_process_snapshot_clean(nodes, expected_nodes=len(nodes), expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, timings=timings)
-        snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
+        snapshots.append(_process_cluster_summary("final", summary_nodes, total_node_count=len(nodes), sample_scope=sample_scope))
     operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
     return operations, snapshots
 
@@ -3598,11 +3606,12 @@ def _configure_large_process_cluster(
     )
 
     final_started = time.monotonic()
+    summary_nodes, sample_scope = _process_normal_snapshot_nodes(nodes)
     with _timeline_span(
         setup_timeline,
         "cluster_final_full_snapshot",
         "cluster_formation",
-        {"sample_scope": "all_nodes", "node_count": len(nodes)},
+        {"sample_scope": sample_scope, "node_count": len(nodes)},
     ):
         _wait_process_snapshot_clean(
             nodes,
@@ -3612,7 +3621,7 @@ def _configure_large_process_cluster(
             timeout=timeout,
             timings=timings,
         )
-        snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
+        snapshots.append(_process_cluster_summary("final", summary_nodes, total_node_count=len(nodes), sample_scope=sample_scope))
     _m2_setup_event(
         setup_timeline,
         "every_node_clean",
@@ -3846,12 +3855,13 @@ def _wait_process_predicate(
             if not final_check:
                 return
             final_started = time.monotonic()
-            final_snapshots = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
+            final_nodes, sample_scope = _process_normal_snapshot_nodes(nodes)
+            final_snapshots = _process_node_snapshots_parallel(final_nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
             _record_timing(
                 timings,
                 "runtime_final_full_probe",
                 final_started,
-                details={"sample_scope": "all_nodes", "sample_count": len(nodes), "predicate": message},
+                details={"sample_scope": sample_scope, "sample_count": len(final_nodes), "node_count": len(nodes), "predicate": message},
             )
             final_failing = [snap for snap in final_snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
             if not final_failing:

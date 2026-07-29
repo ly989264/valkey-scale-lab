@@ -1234,6 +1234,38 @@ def test_process_wait_predicate_uses_representatives_then_full_check(monkeypatch
     assert calls == [["p0", "p1"], ["p0", "p1", "r0", "r1"]]
 
 
+def test_process_wait_predicate_above_200_avoids_all_node_cluster_nodes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+    nodes = [
+        {
+            "logical_id": f"node-{index:04d}",
+            "role": "primary" if index % 2 == 0 else "replica",
+            "az_id": f"az-{index % 3}",
+        }
+        for index in range(201)
+    ]
+
+    def fake_snapshots(sampled: list[dict], *, timeout: float = 60.0) -> list[dict]:
+        calls.append([node["logical_id"] for node in sampled])
+        return [
+            {
+                "logical_id": node["logical_id"],
+                "probe_status": "PASS",
+                "known_nodes": len(nodes),
+            }
+            for node in sampled
+        ]
+
+    monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", fake_snapshots)
+
+    docker_runtime._wait_process_known(nodes, expected=len(nodes), timeout=1)
+
+    assert len(calls) == 2
+    assert all(len(call) < len(nodes) for call in calls)
+
+
 
 
 def test_large_process_cluster_uses_cluster_create(monkeypatch: pytest.MonkeyPatch) -> None:

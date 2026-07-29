@@ -248,6 +248,11 @@ class ClusterRouter:
             self._connections[endpoint] = connection
         return connection
 
+    def _forget_connection(self, endpoint: Endpoint) -> None:
+        connection = self._connections.pop(endpoint, None)
+        if connection is not None:
+            connection.close()
+
     @staticmethod
     def _redirect(error: RespCommandError) -> tuple[str, int, Endpoint] | None:
         parts = str(error).split()
@@ -260,19 +265,38 @@ class ClusterRouter:
 
     def get(self, key: str) -> Any:
         slot = key_slot(key)
-        endpoint = self._slot_routes.get(slot, self.seeds[0])
-        for _ in range(3):
-            try:
-                return self._connection(endpoint).execute("GET", key)
-            except RespCommandError as exc:
-                redirect = self._redirect(exc)
-                if redirect is None:
-                    raise
-                kind, redirected_slot, endpoint = redirect
-                if kind == "MOVED":
-                    self._slot_routes[redirected_slot] = endpoint
-                else:
-                    self._connection(endpoint).execute("ASKING")
+        first = self._slot_routes.get(slot)
+        candidates = ([first] if first is not None else []) + [
+            seed for seed in self.seeds if seed != first
+        ]
+        last_error: Exception | None = None
+        for candidate in candidates:
+            endpoint = candidate
+            for _ in range(3):
+                try:
+                    return self._connection(endpoint).execute("GET", key)
+                except RespCommandError as exc:
+                    redirect = self._redirect(exc)
+                    if redirect is None:
+                        raise
+                    kind, redirected_slot, endpoint = redirect
+                    if kind == "MOVED":
+                        self._slot_routes[redirected_slot] = endpoint
+                    else:
+                        try:
+                            self._connection(endpoint).execute("ASKING")
+                        except Exception as ask_exc:  # noqa: BLE001
+                            last_error = ask_exc
+                            self._forget_connection(endpoint)
+                            break
+                except Exception as exc:  # noqa: BLE001
+                    last_error = exc
+                    self._forget_connection(endpoint)
+                    break
+        if last_error is not None:
+            raise SemanticFailure(
+                f"Sentinel cluster router could not reach a live seed for slot {slot}"
+            ) from last_error
         raise SemanticFailure(f"too many redirections for Sentinel key slot {slot}")
 
 
