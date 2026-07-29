@@ -20,6 +20,12 @@ class ProcessSpec:
     pid: int
 
 
+@dataclass(frozen=True)
+class ExpectedGoneProcess:
+    logical_id: str
+    pid: int
+
+
 def _read(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
@@ -55,6 +61,8 @@ class LocalResourceSampler:
         cgroup_root: Path = Path("/sys/fs/cgroup"),
         wall_clock: Callable[[], float] = time.time,
         monotonic: Callable[[], float] = time.monotonic,
+        expected_gone_processes: Sequence[ExpectedGoneProcess] = (),
+        expected_gone_active: Callable[[], bool] | None = None,
     ) -> None:
         self.sampler_id = sampler_id
         self.processes = list(processes)
@@ -62,6 +70,10 @@ class LocalResourceSampler:
         self.cgroup_root = cgroup_root
         self._wall = wall_clock
         self._monotonic = monotonic
+        self._expected_gone = {
+            (process.logical_id, process.pid) for process in expected_gone_processes
+        }
+        self._expected_gone_active = expected_gone_active or (lambda: False)
         self._self_cpu_started = time.process_time()
 
     def static(self) -> dict[str, Any]:
@@ -109,15 +121,30 @@ class LocalResourceSampler:
         started = self._monotonic()
         rows: list[dict[str, Any]] = []
         for process in self.processes:
-            stat = self._process_stat(process)
-            rows.append(
-                {
-                    "logical_id": process.logical_id,
-                    "pid": process.pid,
-                    **stat,
-                    "fd_count": self._fd_count(process.pid),
-                }
-            )
+            try:
+                stat = self._process_stat(process)
+                rows.append(
+                    {
+                        "logical_id": process.logical_id,
+                        "pid": process.pid,
+                        "status": "OK",
+                        **stat,
+                        "fd_count": self._fd_count(process.pid),
+                    }
+                )
+            except CollectionError as exc:
+                key = (process.logical_id, process.pid)
+                if key in self._expected_gone and self._expected_gone_active():
+                    rows.append(
+                        {
+                            "logical_id": process.logical_id,
+                            "pid": process.pid,
+                            "status": "EXPECTED_GONE",
+                            "reason": str(exc),
+                        }
+                    )
+                    continue
+                raise
         duration = max(self._monotonic() - started, 0.0)
         return {
             "kind": "process",
@@ -212,7 +239,6 @@ class LocalResourceSampler:
         return {
             "cpu_usage_usec": cpu_stat.get("usage_usec"),
             "cpu_throttled_usec": cpu_stat.get("throttled_usec"),
-            "cpu_throttled_periods": cpu_stat.get("nr_throttled"),
             "memory_current_bytes": self._optional_cgroup_number("memory.current"),
             "memory_max_bytes": self._optional_cgroup_number("memory.max"),
             "oom_count": memory_events.get("oom"),
@@ -359,8 +385,51 @@ def _deltas(
     ]
 
 
+def _timeline_monotonic(event: Mapping[str, Any]) -> float | None:
+    value = event.get("monotonic")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    value = event.get("monotonic_seconds")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    value = event.get("monotonic_ms")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value) / 1000.0
+    for key in ("action_start", "signal_or_request_sent", "action_completed"):
+        nested = event.get(key)
+        if not isinstance(nested, Mapping):
+            continue
+        nested_value = nested.get("monotonic")
+        if isinstance(nested_value, (int, float)) and not isinstance(
+            nested_value, bool
+        ):
+            return float(nested_value)
+    return None
+
+
+def _event_overlaps(
+    events: Sequence[Mapping[str, Any]], *, start: float, end: float
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for event in events:
+        monotonic = _timeline_monotonic(event)
+        if monotonic is None or monotonic < start or monotonic > end:
+            continue
+        result.append(
+            {
+                "event_type": event.get("event_type") or event.get("type"),
+                "event_id": event.get("event_id") or event.get("id"),
+                "monotonic": monotonic,
+            }
+        )
+    return result
+
+
 def analyze_resource_samples(
-    static: Mapping[str, Any], samples: Sequence[dict[str, Any]]
+    static: Mapping[str, Any],
+    samples: Sequence[dict[str, Any]],
+    *,
+    timeline_events: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     host = [sample for sample in samples if sample.get("kind") == "host"]
     process_samples = [
@@ -400,50 +469,150 @@ def analyze_resource_samples(
     throttle_deltas = _deltas(
         host, lambda sample: sample["cgroup"].get("cpu_throttled_usec")
     )
+    cpu_usage_deltas = _deltas(
+        host, lambda sample: sample["cgroup"].get("cpu_usage_usec")
+    )
     oom_deltas = _deltas(
+        host, lambda sample: sample["cgroup"].get("oom_count")
+    )
+    oom_kill_deltas = _deltas(
         host, lambda sample: sample["cgroup"].get("oom_kill_count")
     )
+    oom_events: list[dict[str, Any]] = []
+    for left, right in zip(host, host[1:]):
+        left_oom = left["cgroup"].get("oom_count")
+        right_oom = right["cgroup"].get("oom_count")
+        left_kill = left["cgroup"].get("oom_kill_count")
+        right_kill = right["cgroup"].get("oom_kill_count")
+        oom_delta = (
+            max(int(right_oom) - int(left_oom), 0)
+            if left_oom is not None and right_oom is not None
+            else 0
+        )
+        kill_delta = (
+            max(int(right_kill) - int(left_kill), 0)
+            if left_kill is not None and right_kill is not None
+            else 0
+        )
+        if oom_delta or kill_delta:
+            oom_events.append(
+                {
+                    "oom_delta": oom_delta,
+                    "oom_kill_delta": kill_delta,
+                    "wall_time": right.get("wall_time"),
+                    "monotonic": right.get("monotonic"),
+                    "overlapping_events": _event_overlaps(
+                        timeline_events,
+                        start=float(left.get("monotonic", 0.0)),
+                        end=float(right.get("monotonic", 0.0)),
+                    ),
+                }
+            )
     network_analysis: dict[str, Any] = {}
     for interface in static.get("network_interfaces", []):
         interface_samples = [
-            sample["network"][interface]
+            {
+                "counters": sample["network"][interface],
+                "monotonic": float(sample.get("monotonic", 0.0)),
+            }
             for sample in host
             if interface in sample.get("network", {})
         ]
-        network_analysis[interface] = {
-            field: {
-                "delta": sum(
-                    max(int(right[field]) - int(left[field]), 0)
-                    for left, right in zip(interface_samples, interface_samples[1:])
-                ),
+        field_analysis: dict[str, Any] = {}
+        for field in (
+            "rx_bytes",
+            "rx_packets",
+            "rx_errors",
+            "rx_drops",
+            "tx_bytes",
+            "tx_packets",
+            "tx_errors",
+            "tx_drops",
+        ):
+            intervals: list[dict[str, Any]] = []
+            for left, right in zip(interface_samples, interface_samples[1:]):
+                duration = max(right["monotonic"] - left["monotonic"], 0.0)
+                delta = max(
+                    int(right["counters"][field]) - int(left["counters"][field]),
+                    0,
+                )
+                rate = delta / duration if duration > 0 else None
+                intervals.append(
+                    {
+                        "delta": delta,
+                        "duration_seconds": duration,
+                        "rate_per_second": rate,
+                        "start_monotonic": left["monotonic"],
+                        "end_monotonic": right["monotonic"],
+                        "overlapping_events": (
+                            _event_overlaps(
+                                timeline_events,
+                                start=left["monotonic"],
+                                end=right["monotonic"],
+                            )
+                            if field.endswith("_errors") or field.endswith("_drops")
+                            else []
+                        ),
+                    }
+                )
+            rates = [
+                float(row["rate_per_second"])
+                for row in intervals
+                if row["rate_per_second"] is not None
+            ]
+            field_analysis[field] = {
+                "delta": sum(row["delta"] for row in intervals),
                 "peak_interval_delta": max(
-                    (
-                        max(int(right[field]) - int(left[field]), 0)
-                        for left, right in zip(
-                            interface_samples, interface_samples[1:]
-                        )
-                    ),
-                    default=0,
+                    (row["delta"] for row in intervals), default=0
                 ),
+                "throughput_per_second_p95": _percentile(rates, 0.95),
+                "throughput_per_second_peak": max(rates, default=None),
+                "intervals_with_timeline_overlap": [
+                    row
+                    for row in intervals
+                    if row["delta"] and row["overlapping_events"]
+                ],
             }
-            for field in (
-                "rx_bytes",
-                "rx_packets",
-                "rx_errors",
-                "rx_drops",
-                "tx_bytes",
-                "tx_packets",
-                "tx_errors",
-                "tx_drops",
-            )
+        network_analysis[interface] = {
+            **field_analysis,
+            "rx_bytes_throughput_p95": field_analysis["rx_bytes"][
+                "throughput_per_second_p95"
+            ],
+            "tx_bytes_throughput_p95": field_analysis["tx_bytes"][
+                "throughput_per_second_p95"
+            ],
+            "rx_pps_p95": field_analysis["rx_packets"][
+                "throughput_per_second_p95"
+            ],
+            "tx_pps_p95": field_analysis["tx_packets"][
+                "throughput_per_second_p95"
+            ],
+            "rx_bytes_throughput_peak": field_analysis["rx_bytes"][
+                "throughput_per_second_peak"
+            ],
+            "tx_bytes_throughput_peak": field_analysis["tx_bytes"][
+                "throughput_per_second_peak"
+            ],
+            "rx_pps_peak": field_analysis["rx_packets"][
+                "throughput_per_second_peak"
+            ],
+            "tx_pps_peak": field_analysis["tx_packets"][
+                "throughput_per_second_peak"
+            ],
         }
     process_rows = [
         row
         for sample in process_samples
         for row in sample.get("processes", [])
     ]
+    expected_gone_rows = [
+        row for row in process_rows if row.get("status") == "EXPECTED_GONE"
+    ]
+    live_process_rows = [
+        row for row in process_rows if row.get("status", "OK") != "EXPECTED_GONE"
+    ]
     by_process: dict[str, list[dict[str, Any]]] = {}
-    for row in process_rows:
+    for row in live_process_rows:
         by_process.setdefault(str(row["logical_id"]), []).append(row)
     process_analysis = {
         logical_id: {
@@ -510,6 +679,12 @@ def analyze_resource_samples(
                 default=None,
             ),
             "throttled_usec_delta": sum(throttle_deltas),
+            "usage_usec_delta": sum(cpu_usage_deltas),
+            "throttling_ratio": (
+                sum(throttle_deltas) / sum(cpu_usage_deltas)
+                if sum(cpu_usage_deltas)
+                else None
+            ),
         },
         "memory": {
             "mem_available_min": min(memory_available, default=None),
@@ -521,10 +696,20 @@ def analyze_resource_samples(
                 default=None,
             ),
             "cgroup_headroom_min": min(headroom, default=None),
-            "oom_kill_delta": sum(oom_deltas),
+            "oom_delta": sum(oom_deltas),
+            "oom_kill_delta": sum(oom_kill_deltas),
+            "oom_events": oom_events,
         },
         "network": network_analysis,
         "processes": process_analysis,
+        "expected_gone_processes": [
+            {
+                "logical_id": row.get("logical_id"),
+                "pid": row.get("pid"),
+                "reason": row.get("reason"),
+            }
+            for row in expected_gone_rows
+        ],
         "process_totals": {
             "rss_bytes_max_sum": sum(
                 row["rss_bytes_max"] for row in process_analysis.values()
@@ -545,6 +730,26 @@ def analyze_resource_samples(
                     "fd_count_max"
                 ],
                 default=None,
+            ),
+        },
+        "timeline_correlation": {
+            "event_count": len(timeline_events),
+            "resource_timestamp_count": len(samples),
+            "network_error_or_drop_overlap_count": sum(
+                len(metric["intervals_with_timeline_overlap"])
+                for interface in network_analysis.values()
+                for name, metric in interface.items()
+                if isinstance(metric, dict)
+                and name
+                in {
+                    "rx_errors",
+                    "rx_drops",
+                    "tx_errors",
+                    "tx_drops",
+                }
+            ),
+            "oom_event_overlap_count": sum(
+                1 for event in oom_events if event["overlapping_events"]
             ),
         },
         "collector": {

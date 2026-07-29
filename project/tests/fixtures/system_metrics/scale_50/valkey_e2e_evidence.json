@@ -1,9 +1,0 @@
-{
-  "cluster_state_observed": "ok",
-  "nodes_observed": 50,
-  "real_valkey": false,
-  "status": "PASS",
-  "valkey_versions": [
-    "fixture"
-  ]
-}

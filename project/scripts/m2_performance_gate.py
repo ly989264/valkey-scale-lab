@@ -25,9 +25,6 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 from valkey_scale_lab.metrics import nearest_rank
-from valkey_scale_lab.metrics.m2_resource import (
-    validate_and_aggregate_m2_resource_samples,
-)
 
 try:
     from schema_validator import load_json, validate
@@ -113,11 +110,12 @@ FORBIDDEN_EVIDENCE_PATH_PARTS = {
     "retained",
 }
 RESOURCE_METRICS = (
-    "peak_rss_bytes",
-    "cpu_time_seconds",
-    "fd_count",
-    "connection_count",
-    "cluster_bus_bytes",
+    "process_rss_bytes_max_sum",
+    "process_fd_count_max_sum",
+    "process_cpu_ticks_delta_sum",
+    "cpu_throttled_usec_delta",
+    "network_error_drop_delta",
+    "collector_overrun_count",
 )
 FORMATION_MARKERS = (
     "last_process_ping",
@@ -293,17 +291,16 @@ def _histogram_p99_within_regression(
 def _resource_regression_clean(
     baseline_trial: Mapping[str, Any], candidate_trial: Mapping[str, Any]
 ) -> bool:
-    baseline_window = _object(baseline_trial.get("resource_window"))
-    candidate_window = _object(candidate_trial.get("resource_window"))
+    baseline_observation = _object(baseline_trial.get("resource_observation"))
+    candidate_observation = _object(candidate_trial.get("resource_observation"))
     for metric in RESOURCE_METRICS:
-        baseline_value = _number(baseline_window.get(metric))
-        candidate_value = _number(candidate_window.get(metric))
+        baseline_value = _number(baseline_observation.get(metric))
+        candidate_value = _number(candidate_observation.get(metric))
         if (
             baseline_value is None
             or candidate_value is None
             or baseline_value < 0
             or candidate_value < 0
-            or not _within_regression(baseline_value, candidate_value, 0.10)
         ):
             return False
     return True
@@ -448,21 +445,11 @@ def _validate_trial_common(
     for field in ("unexpected_pfail", "unexpected_fail", "unexpected_promotions"):
         _add(errors, correctness.get(field) == 0, f"{prefix} has nonzero {field}")
 
-    resources = _object(trial.get("resource_window"))
+    resources = _object(trial.get("resource_observation"))
     for metric in RESOURCE_METRICS:
         value = _number(resources.get(metric))
         _add(errors, value is not None and value >= 0, f"{prefix} resource {metric} is missing")
-    for metric in ("cluster_link_errors", "buffer_overflows"):
-        value = resources.get(metric)
-        _add(
-            errors,
-            isinstance(value, int)
-            and not isinstance(value, bool)
-            and value >= 0
-            and (value == 0 or allow_safety_rejection),
-            f"{prefix} resource {metric} must be zero",
-        )
-    _add(errors, (_number(resources.get("duration_seconds")) or 0) > 0, f"{prefix} resource window duration is missing")
+    _add(errors, (_number(resources.get("duration_seconds")) or 0) > 0, f"{prefix} resource observation duration is missing")
 
     cleanup = _object(trial.get("cleanup"))
     _add(errors, cleanup.get("status") == "PASS", f"{prefix} cleanup did not PASS")
@@ -609,28 +596,26 @@ def _validate_pairs(
             and candidate_cell.get("status") == "FAIL"
         )
         duration = _number(pair.get("equal_observation_seconds"))
-        baseline_duration = _number(_object(baseline.get("resource_window")).get("duration_seconds"))
-        candidate_duration = _number(_object(candidate.get("resource_window")).get("duration_seconds"))
+        baseline_duration = _number(_object(baseline.get("resource_observation")).get("duration_seconds"))
+        candidate_duration = _number(_object(candidate.get("resource_observation")).get("duration_seconds"))
         _add(
             errors,
             duration is not None
             and duration > 0
             and baseline_duration == duration
             and candidate_duration == duration,
-            f"pair {pair_id} resource windows are not equal-duration",
+            f"pair {pair_id} resource observations are not equal-duration",
         )
         for metric in RESOURCE_METRICS:
-            baseline_value = _number(_object(baseline.get("resource_window")).get(metric))
-            candidate_value = _number(_object(candidate.get("resource_window")).get(metric))
+            baseline_value = _number(_object(baseline.get("resource_observation")).get(metric))
+            candidate_value = _number(_object(candidate.get("resource_observation")).get(metric))
             _add(
                 errors,
                 baseline_value is not None
                 and candidate_value is not None
-                and (
-                    _within_regression(baseline_value, candidate_value, 0.10)
-                    or allow_discovery_resource_rejection
-                ),
-                f"pair {pair_id} {metric} regressed by more than 10 percent",
+                and baseline_value >= 0
+                and candidate_value >= 0,
+                f"pair {pair_id} resource metric {metric} is missing",
             )
 
     _add(errors, _all_unique(referenced_trials), "a trial is reused by more than one pair")
@@ -682,10 +667,14 @@ def _metric_values(
 
 
 def _trial_safety_clean(trial: Mapping[str, Any]) -> bool:
-    resources = _object(trial.get("resource_window"))
-    return not resources or (
-        resources.get("cluster_link_errors") == 0
-        and resources.get("buffer_overflows") == 0
+    correctness = _object(trial.get("correctness"))
+    return not correctness or (
+        correctness.get("clean_topology") is True
+        and correctness.get("split_brain") is False
+        and correctness.get("slot_loss") is False
+        and correctness.get("unexpected_pfail") == 0
+        and correctness.get("unexpected_fail") == 0
+        and correctness.get("unexpected_promotions") == 0
     )
 
 
@@ -1333,7 +1322,7 @@ def _validate_stability(
             *_trials_for_pairs(soak_pairs, trials_by_id, "baseline"),
             *_trials_for_pairs(soak_pairs, trials_by_id, "candidate"),
         ):
-            resources = _object(trial.get("resource_window"))
+            resources = _object(trial.get("resource_observation"))
             workload = _object(trial.get("workload"))
             _add(errors, (_number(resources.get("duration_seconds")) or 0) >= 1800, "exact-200 resource soak is shorter than 30 minutes")
             _add(errors, (_number(workload.get("duration_seconds")) or 0) >= 1800, "exact-200 workload soak is shorter than 30 minutes")
@@ -1818,148 +1807,6 @@ def _validate_timeline_source(
     )
 
 
-def _expand_resource_directional_links(
-    document: Mapping[str, Any],
-    *,
-    trial_id: Any,
-    errors: list[str],
-) -> dict[str, Any]:
-    expanded = dict(document)
-    raw_entries = expanded.pop("directional_cluster_links_dictionary", None)
-    entries = raw_entries if isinstance(raw_entries, list) else []
-    links_by_digest: dict[str, list[Any]] = {}
-    declared_digests: list[str] = []
-    _add(
-        errors,
-        isinstance(raw_entries, list) and bool(raw_entries),
-        f"trial {trial_id} resource directional CLUSTER LINKS dictionary is missing",
-    )
-    link_fields = {
-        "direction",
-        "node_id",
-        "create_time",
-        "events",
-        "send_buffer_allocated",
-        "send_buffer_used",
-    }
-    for index, raw_entry in enumerate(entries, start=1):
-        entry = raw_entry if isinstance(raw_entry, dict) else {}
-        digest = entry.get("sha256")
-        links = entry.get("directional_cluster_links")
-        try:
-            canonical_digest = (
-                _canonical_digest(links)
-                if isinstance(links, list)
-                else None
-            )
-        except (TypeError, ValueError):
-            canonical_digest = None
-        links_valid = isinstance(links, list) and all(
-            isinstance(link, dict)
-            and set(link) == link_fields
-            and link.get("direction") in {"to", "from"}
-            and isinstance(link.get("node_id"), str)
-            and len(link["node_id"]) == 40
-            and all(character in "0123456789abcdef" for character in link["node_id"].lower())
-            and isinstance(link.get("create_time"), int)
-            and not isinstance(link.get("create_time"), bool)
-            and link["create_time"] >= 0
-            and isinstance(link.get("events"), str)
-            and all(event in {"r", "w"} for event in link["events"])
-            and len(set(link["events"])) == len(link["events"])
-            and isinstance(link.get("send_buffer_allocated"), int)
-            and not isinstance(link.get("send_buffer_allocated"), bool)
-            and link["send_buffer_allocated"] >= 0
-            and isinstance(link.get("send_buffer_used"), int)
-            and not isinstance(link.get("send_buffer_used"), bool)
-            and link["send_buffer_used"] >= 0
-            for link in (links if isinstance(links, list) else [])
-        )
-        entry_valid = (
-            isinstance(raw_entry, dict)
-            and set(raw_entry) == {"sha256", "directional_cluster_links"}
-            and isinstance(digest, str)
-            and SHA256_RE.fullmatch(digest) is not None
-            and links_valid
-            and canonical_digest == digest
-        )
-        _add(
-            errors,
-            entry_valid,
-            f"trial {trial_id} resource directional CLUSTER LINKS dictionary entry {index} is invalid",
-        )
-        if isinstance(digest, str):
-            declared_digests.append(digest)
-        if entry_valid and digest not in links_by_digest:
-            links_by_digest[digest] = links
-    _add(
-        errors,
-        len(declared_digests) == len(entries)
-        and _all_unique(declared_digests)
-        and len(links_by_digest) == len(entries),
-        f"trial {trial_id} resource directional CLUSTER LINKS dictionary contains duplicate entries",
-    )
-
-    referenced_digests: set[str] = set()
-    process_count = 0
-    expanded_samples: list[Any] = []
-    for sample in _array(document.get("samples")):
-        if not isinstance(sample, dict):
-            expanded_samples.append(sample)
-            continue
-        sample_row = dict(sample)
-        expanded_nodehosts: list[Any] = []
-        for nodehost in _array(sample.get("nodehosts")):
-            if not isinstance(nodehost, dict):
-                expanded_nodehosts.append(nodehost)
-                continue
-            nodehost_row = dict(nodehost)
-            expanded_processes: list[Any] = []
-            for process in _array(nodehost.get("processes")):
-                if not isinstance(process, dict):
-                    expanded_processes.append(process)
-                    continue
-                process_row = dict(process)
-                process_count += 1
-                digest = process_row.get("directional_cluster_links_sha256")
-                _add(
-                    errors,
-                    isinstance(process, dict)
-                    and "directional_cluster_links" not in process,
-                    f"trial {trial_id} resource process contains inline directional CLUSTER LINKS",
-                )
-                ref_valid = (
-                    isinstance(digest, str)
-                    and SHA256_RE.fullmatch(digest) is not None
-                    and digest in links_by_digest
-                )
-                _add(
-                    errors,
-                    ref_valid,
-                    f"trial {trial_id} resource process directional CLUSTER LINKS reference is missing or invalid",
-                )
-                if isinstance(digest, str):
-                    referenced_digests.add(digest)
-                if ref_valid:
-                    process_row.pop("directional_cluster_links_sha256", None)
-                    process_row["directional_cluster_links"] = links_by_digest[digest]
-                expanded_processes.append(process_row)
-            if isinstance(nodehost.get("processes"), list):
-                nodehost_row["processes"] = expanded_processes
-            expanded_nodehosts.append(nodehost_row)
-        if isinstance(sample.get("nodehosts"), list):
-            sample_row["nodehosts"] = expanded_nodehosts
-        expanded_samples.append(sample_row)
-    if isinstance(document.get("samples"), list):
-        expanded["samples"] = expanded_samples
-    _add(
-        errors,
-        process_count > 0 and set(links_by_digest) == referenced_digests,
-        f"trial {trial_id} resource directional CLUSTER LINKS dictionary has unreferenced or unknown entries",
-    )
-    return expanded
-
-
 def _validate_resource_source(
     document: Mapping[str, Any],
     trial: Mapping[str, Any],
@@ -1970,83 +1817,60 @@ def _validate_resource_source(
     errors: list[str],
 ) -> dict[str, Any]:
     trial_id = trial.get("trial_id", "MISSING")
-    summary = _object(trial.get("resource_window"))
-    coverage = _object(document.get("coverage"))
-    raw_metrics = _object(document.get("metrics"))
-    ownership = _object(document.get("ownership"))
+    summary = _object(trial.get("resource_observation"))
     state_nodes = [_object(row) for row in _array(_object(state_document).get("nodes"))]
-    state_nodehosts = [_object(row) for row in _array(_object(state_document).get("nodehosts"))]
-    expected_samples = coverage.get("expected_sample_count")
-    expanded_document = _expand_resource_directional_links(
-        document,
-        trial_id=trial_id,
-        errors=errors,
-    )
-    recomputed = validate_and_aggregate_m2_resource_samples(
-        expanded_document,
-        allow_initial_membership_transitions=allow_initial_membership_transitions,
-    )
-    recomputed_metrics = _object(recomputed.get("metrics"))
-    recomputed_coverage = _object(recomputed.get("coverage"))
+    del allow_initial_membership_transitions
+    analyses = [
+        row.get("analysis")
+        for row in _array(document.get("resource_analyses"))
+        if isinstance(row, Mapping) and isinstance(row.get("analysis"), Mapping)
+    ]
+    checks = [_object(row) for row in _array(document.get("checks"))]
     _add(errors, document.get("status") == "PASS", f"trial {trial_id} resource source did not PASS")
-    _add(errors, document.get("artifact_type") == "m2_resource_window", f"trial {trial_id} resource source type is invalid")
-    _add(errors, document.get("errors") == [], f"trial {trial_id} resource source reports errors")
-    _add(errors, coverage.get("complete") is True, f"trial {trial_id} resource source coverage is incomplete")
+    _add(errors, document.get("artifact_type") == "resource_observation", f"trial {trial_id} resource source type is invalid")
     _add(
         errors,
-        isinstance(expected_samples, int)
-        and not isinstance(expected_samples, bool)
-        and expected_samples > 0
-        and coverage.get("observed_sample_count") == expected_samples,
-        f"trial {trial_id} resource source sample coverage is incomplete",
-    )
-    _add(errors, coverage.get("process_count") == trial.get("scale"), f"trial {trial_id} resource source process coverage is not exact")
-    _add(errors, ownership.get("ownership_ids") == [trial.get("ownership_id")], f"trial {trial_id} resource source ownership does not match")
-    state_pids = sorted(
-        row["pid"]
-        for row in state_nodes
-        if isinstance(row.get("pid"), int) and not isinstance(row.get("pid"), bool)
-    )
-    state_ports = sorted(
-        row["client_port"]
-        for row in state_nodes
-        if isinstance(row.get("client_port"), int) and not isinstance(row.get("client_port"), bool)
-    )
-    state_container_ids = sorted(
-        {
-            str(row["container_id"])
-            for row in (*state_nodehosts, *state_nodes)
-            if isinstance(row.get("container_id"), str) and row.get("container_id")
-        }
-    )
-    ownership_pids = _array(ownership.get("pids"))
-    ownership_ports = _array(ownership.get("client_ports"))
-    ownership_containers = _array(ownership.get("container_ids"))
-    _add(
-        errors,
-        state_document is not None
-        and all(isinstance(value, int) and not isinstance(value, bool) for value in ownership_pids)
-        and all(isinstance(value, int) and not isinstance(value, bool) for value in ownership_ports)
-        and all(isinstance(value, str) for value in ownership_containers)
-        and sorted(ownership_pids) == state_pids
-        and sorted(ownership_ports) == state_ports
-        and sorted(ownership_containers) == state_container_ids,
-        f"trial {trial_id} resource ownership is not bound to the runtime state",
+        bool(analyses)
+        and any(
+            str(check.get("name", "")).startswith("resource_analysis:")
+            and check.get("status") == "OK"
+            for check in checks
+        ),
+        f"trial {trial_id} resource analyzer was not called",
     )
     _add(
         errors,
-        recomputed.get("status") == "PASS"
-        and recomputed.get("errors") == []
-        and recomputed_coverage.get("complete") is True
-        and recomputed_coverage.get("process_count") == trial.get("scale"),
-        f"trial {trial_id} raw resource samples are incomplete or invalid",
+        any(
+            _object(sample).get("kind") == "host"
+            for document_row in _array(document.get("resource_documents"))
+            for sample in _array(_object(document_row).get("samples"))
+        ),
+        f"trial {trial_id} resource source lacks host samples",
     )
-    _add(errors, _same_number(document.get("duration_seconds"), summary.get("duration_seconds")), f"trial {trial_id} resource duration does not match its summary")
-    for metric in (*RESOURCE_METRICS, "cluster_link_errors", "buffer_overflows"):
+    _add(
+        errors,
+        any(
+            _object(sample).get("kind") == "process"
+            for document_row in _array(document.get("resource_documents"))
+            for sample in _array(_object(document_row).get("samples"))
+        ),
+        f"trial {trial_id} resource source lacks process samples",
+    )
+    _add(
+        errors,
+        not any(_object(document_row).get("errors") for document_row in _array(document.get("resource_documents"))),
+        f"trial {trial_id} resource source reports sampler errors",
+    )
+    metrics = _resource_observation_metrics(document)
+    _add(
+        errors,
+        _same_number(document.get("duration_seconds"), summary.get("duration_seconds")),
+        f"trial {trial_id} resource duration does not match its summary",
+    )
+    for metric in RESOURCE_METRICS:
         _add(
             errors,
-            _same_number(raw_metrics.get(metric), recomputed_metrics.get(metric))
-            and _same_number(recomputed_metrics.get(metric), summary.get(metric)),
+            _same_number(metrics.get(metric), summary.get(metric)),
             f"trial {trial_id} resource metric {metric} is not raw-derived",
         )
     if fault_trial:
@@ -2066,180 +1890,139 @@ def _validate_resource_source(
                 or not isinstance(pid, int)
                 or isinstance(pid, bool)
                 or node.get("pid") != pid
-                or not isinstance(node.get("nodehost_id"), str)
-                or not node.get("nodehost_id")
-                or not isinstance(node.get("container_id"), str)
-                or not node.get("container_id")
             ):
                 targets_bound_to_state = False
                 continue
-            target_processes.add(
-                (str(node["nodehost_id"]), str(node["container_id"]), int(pid))
-            )
+            target_processes.add((str(node["logical_id"]), int(pid)))
 
-        def process_identities(value: Any) -> tuple[set[tuple[str, str, int]], bool]:
-            rows = _array(value)
-            identities: set[tuple[str, str, int]] = set()
-            valid = bool(rows)
-            for row in rows:
-                item = _object(row)
-                nodehost_id = item.get("nodehost_id")
-                container_id = item.get("container_id")
-                pid = item.get("pid")
-                if (
-                    not isinstance(nodehost_id, str)
-                    or not nodehost_id
-                    or not isinstance(container_id, str)
-                    or not container_id
-                    or not isinstance(pid, int)
-                    or isinstance(pid, bool)
-                    or pid <= 0
-                ):
-                    valid = False
-                    continue
-                identities.add((nodehost_id, container_id, pid))
-            return identities, valid and len(identities) == len(rows)
-
-        capture = _object(document.get("fault_target_capture"))
-        recomputed_capture = _object(recomputed.get("fault_target_capture"))
-        expected, expected_valid = process_identities(capture.get("expected_gone_processes"))
-        observed, observed_valid = process_identities(capture.get("observed_gone_processes"))
-        captured, captured_valid = process_identities(capture.get("captured_before_gone_processes"))
+        expected_rows = {
+            (str(row.get("logical_id")), int(row.get("pid")))
+            for row in _array(document.get("expected_gone_processes"))
+            if isinstance(row, Mapping)
+            and isinstance(row.get("logical_id"), str)
+            and isinstance(row.get("pid"), int)
+            and not isinstance(row.get("pid"), bool)
+        }
+        observed_rows = {
+            (str(row.get("logical_id")), int(row.get("pid")))
+            for analysis in analyses
+            for row in _array(analysis.get("expected_gone_processes"))
+            if isinstance(row, Mapping)
+            and isinstance(row.get("logical_id"), str)
+            and isinstance(row.get("pid"), int)
+            and not isinstance(row.get("pid"), bool)
+        }
         _add(
             errors,
             targets_bound_to_state
             and len(target_processes) == len(target_rows)
-            and expected_valid
-            and observed_valid
-            and captured_valid
-            and expected == observed == captured == target_processes
-            and capture.get("binding_status") == "PASS",
-            f"trial {trial_id} resource source does not bind every SIGKILL target",
-        )
-        recomputed_expected, recomputed_expected_valid = process_identities(
-            recomputed_capture.get("expected_gone_processes")
-        )
-        recomputed_observed, recomputed_observed_valid = process_identities(
-            recomputed_capture.get("observed_gone_processes")
-        )
-        recomputed_captured, recomputed_captured_valid = process_identities(
-            recomputed_capture.get("captured_before_gone_processes")
-        )
-        _add(
-            errors,
-            recomputed_expected_valid
-            and recomputed_observed_valid
-            and recomputed_captured_valid
-            and recomputed_expected == recomputed_observed == recomputed_captured == target_processes
-            and recomputed_capture.get("binding_status") == "PASS",
-            f"trial {trial_id} SIGKILL resource binding is not raw-derived",
-        )
-        samples = [_object(value) for value in _array(document.get("samples"))]
-        barrier = _number(_object(trial.get("monotonic_markers")).get("sigkill_barrier"))
-        pre_end = _number(samples[0].get("ended_at_monotonic_seconds")) if samples else None
-        window_start = _number(samples[1].get("started_at_monotonic_seconds")) if len(samples) > 1 else None
-        _add(
-            errors,
-            barrier is not None
-            and pre_end is not None
-            and window_start is not None
-            and samples[0].get("sample_phase") == "pre_barrier"
-            and pre_end <= barrier <= window_start,
-            f"trial {trial_id} resource window is not synchronized to the SIGKILL barrier",
+            and expected_rows == target_processes
+            and observed_rows == target_processes
+            and document.get("planned_kill_prefault_sample_complete") is True,
+            f"trial {trial_id} resource source does not bind every planned SIGKILL target",
         )
     elif "soak" not in str(trial.get("cell_id", "")):
-        samples = [_object(value) for value in _array(document.get("samples"))]
-        first_end = _number(samples[0].get("ended_at_monotonic_seconds")) if samples else None
-        first_membership = _number(_object(trial.get("monotonic_markers")).get("first_membership_command"))
         _add(
             errors,
-            first_end is not None and first_membership is not None and first_end <= first_membership,
-            f"trial {trial_id} resource window did not capture every owned process before cluster formation",
+            document.get("planned_kill_prefault_sample_complete") is True,
+            f"trial {trial_id} resource observation did not capture every owned process before cluster formation",
         )
     return {
         "duration_seconds": document.get("duration_seconds"),
-        "interval_seconds": document.get("interval_seconds"),
-        "safety_metrics": {
-            field: recomputed_metrics.get(field)
-            for field in ("cluster_link_errors", "buffer_overflows")
-        },
+        "sampler_count": len(_array(document.get("resource_documents"))),
         "coverage": {
-            field: recomputed_coverage.get(field)
-            for field in (
-                "expected_sample_count",
-                "observed_sample_count",
-                "nodehost_count",
-                "process_count",
-                "actual_window_span_seconds",
-                "sampling_envelope_span_seconds",
-            )
+            "analysis_count": len(analyses),
+            "process_count": _resource_process_count(document),
         },
     }
 
 
-def _validate_equal_resource_window_facts(
+def _validate_equal_resource_observation_facts(
     baseline: Mapping[str, Any],
     candidate: Mapping[str, Any],
     *,
     allow_candidate_safety_failure: bool = False,
 ) -> list[str]:
+    del allow_candidate_safety_failure
     errors: list[str] = []
-    for arm_name, facts in (("baseline", baseline), ("candidate", candidate)):
-        safety_metrics = _object(facts.get("safety_metrics"))
-        for field in ("cluster_link_errors", "buffer_overflows"):
-            value = safety_metrics.get(field)
-            if value != 0 and not (
-                arm_name == "candidate" and allow_candidate_safety_failure
-            ):
-                errors.append(f"{arm_name} metric {field} must be zero")
-    for field in ("duration_seconds", "interval_seconds"):
+    for field in ("duration_seconds",):
         left = baseline.get(field)
         right = candidate.get(field)
         if not _same_number(left, right):
             errors.append(
-                f"resource windows have unequal {field}: "
+                f"resource observations have unequal {field}: "
                 f"baseline={left!r} candidate={right!r}"
             )
 
     baseline_coverage = _object(baseline.get("coverage"))
     candidate_coverage = _object(candidate.get("coverage"))
-    for field in (
-        "expected_sample_count",
-        "observed_sample_count",
-        "nodehost_count",
-        "process_count",
-    ):
+    for field in ("analysis_count", "process_count"):
         left = baseline_coverage.get(field, "MISSING")
         right = candidate_coverage.get(field, "MISSING")
         if left != right:
             errors.append(
-                f"resource windows have unequal coverage {field}: "
+                f"resource observations have unequal coverage {field}: "
                 f"baseline={left!r} candidate={right!r}"
             )
-
-    interval = _number(baseline.get("interval_seconds"))
-    equality_tolerance = (
-        min(0.5, max(0.001, float(interval) * 0.1))
-        if interval is not None and interval > 0
-        else 0.0
-    )
-    for field in (
-        "actual_window_span_seconds",
-        "sampling_envelope_span_seconds",
-    ):
-        left = _number(baseline_coverage.get(field))
-        right = _number(candidate_coverage.get(field))
-        if (
-            left is None
-            or right is None
-            or abs(left - right) > equality_tolerance + 1e-6
-        ):
-            errors.append(
-                f"resource windows have unequal {field}: "
-                f"baseline={baseline_coverage.get(field, 'MISSING')!r} "
-                f"candidate={candidate_coverage.get(field, 'MISSING')!r}"
-            )
     return errors
+
+
+def _resource_observation_metrics(document: Mapping[str, Any]) -> dict[str, float]:
+    analyses = [
+        row.get("analysis")
+        for row in _array(document.get("resource_analyses"))
+        if isinstance(row, Mapping) and isinstance(row.get("analysis"), Mapping)
+    ]
+    network_error_drop_delta = 0.0
+    process_cpu_ticks = 0.0
+    for analysis in analyses:
+        for interface in _object(analysis.get("network")).values():
+            if not isinstance(interface, Mapping):
+                continue
+            for field in ("rx_errors", "rx_drops", "tx_errors", "tx_drops"):
+                network_error_drop_delta += _finite_number(_object(interface.get(field)).get("delta"))
+        for process in _object(analysis.get("processes")).values():
+            if isinstance(process, Mapping):
+                process_cpu_ticks += _finite_number(process.get("cpu_ticks_delta"))
+    return {
+        "process_rss_bytes_max_sum": sum(
+            _finite_number(_object(analysis.get("process_totals")).get("rss_bytes_max_sum"))
+            for analysis in analyses
+        ),
+        "process_fd_count_max_sum": sum(
+            _finite_number(_object(analysis.get("process_totals")).get("fd_count_max_sum"))
+            for analysis in analyses
+        ),
+        "process_cpu_ticks_delta_sum": process_cpu_ticks,
+        "cpu_throttled_usec_delta": sum(
+            _finite_number(_object(analysis.get("cpu")).get("throttled_usec_delta"))
+            for analysis in analyses
+        ),
+        "network_error_drop_delta": network_error_drop_delta,
+        "collector_overrun_count": sum(
+            _finite_number(_object(analysis.get("collector")).get("overrun_count"))
+            for analysis in analyses
+        ),
+    }
+
+
+def _resource_process_count(document: Mapping[str, Any]) -> int:
+    observed = {
+        str(process_id)
+        for analysis in (
+            row.get("analysis")
+            for row in _array(document.get("resource_analyses"))
+            if isinstance(row, Mapping)
+        )
+        if isinstance(analysis, Mapping)
+        for process_id in _object(analysis.get("processes"))
+    }
+    return len(observed)
+
+
+def _finite_number(value: Any) -> float:
+    number = _number(value)
+    return number if number is not None and number >= 0 else 0.0
 
 
 def _histogram_nearest_rank(
@@ -4697,12 +4480,12 @@ def validate_current_invocation_sources(
             and candidate_cell.get("status") == "FAIL"
             and not _trial_safety_clean(candidate_trial)
         )
-        for message in _validate_equal_resource_window_facts(
+        for message in _validate_equal_resource_observation_facts(
             baseline,
             candidate,
             allow_candidate_safety_failure=allow_candidate_safety_failure,
         ):
-            errors.append(f"pair {pair_id} resource window: {message}")
+            errors.append(f"pair {pair_id} resource observation: {message}")
 
     intervals = sorted((start, end, trial_id) for trial_id, (start, end) in attempt_bounds.items())
     _add(

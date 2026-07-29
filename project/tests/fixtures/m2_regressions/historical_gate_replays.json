@@ -53,7 +53,7 @@
       "invocation_run_id": "m2-discovery-gh-29845739384-attempt-1",
       "producer_head_sha": "2aa73b61f75b67aab050c6bd25644430a83b97d3",
       "original_status": "FAIL",
-      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: historical resource safety evidence was rejected",
       "evidence_artifact": {
         "id": 8501702417,
         "name": "m2-discovery-evidence-29845739384-1",
@@ -79,7 +79,7 @@
       "invocation_run_id": "m2-discovery-gh-29885627925-attempt-1",
       "producer_head_sha": "f37e561ded13e9982784d0f26398994739859bd5",
       "original_status": "FAIL",
-      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: historical resource safety evidence was rejected",
       "evidence_artifact": {
         "id": 8516544882,
         "name": "m2-discovery-evidence-29885627925-1",
@@ -105,7 +105,7 @@
       "invocation_run_id": "m2-discovery-gh-29901022395-attempt-1",
       "producer_head_sha": "a2cfab8f85f019b845273cd57c37fff48406cc5c",
       "original_status": "FAIL",
-      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: historical resource safety evidence was rejected",
       "evidence_artifact": {
         "id": 8522187901,
         "name": "m2-discovery-evidence-29901022395-1",
@@ -131,7 +131,7 @@
       "invocation_run_id": "m2-discovery-gh-29916936241-attempt-1",
       "producer_head_sha": "76b833a9bd89e94fb55710d43863fea3bae007bf",
       "original_status": "FAIL",
-      "original_capture_error": "DISCOVERY_FAILED: CaptureError: pair formation-discovery-1-pair-01 resource window: resource windows have unequal max_sample_collection_seconds: baseline=3.293813 candidate=2.790213",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: pair formation-discovery-1-pair-01 resource observation: resource observations have unequal max_sample_collection_seconds: baseline=3.293813 candidate=2.790213",
       "evidence_artifact": {
         "id": 8529062582,
         "name": "m2-discovery-evidence-29916936241-1",
@@ -152,11 +152,11 @@
       },
       "capacity_sources": {
         "baseline_resource": {
-          "path": "trials/m2-discovery-gh-29916936241-attempt-1-formation-discovery-1-pair-01-baseline/resource_window.json",
+          "path": "trials/m2-discovery-gh-29916936241-attempt-1-formation-discovery-1-pair-01-baseline/resource_observation.json",
           "sha256": "c9ae892289be89341d817d128b3db27bfcf0029120917f82a0b4f5d6286ff1d4"
         },
         "candidate_resource": {
-          "path": "trials/m2-discovery-gh-29916936241-attempt-1-formation-discovery-1-pair-01-candidate/resource_window.json",
+          "path": "trials/m2-discovery-gh-29916936241-attempt-1-formation-discovery-1-pair-01-candidate/resource_observation.json",
           "sha256": "330d86b98fe8448ee915a6da953e594ea68ed9704c8621ef14ec2890086ff08b"
         }
       }
@@ -167,7 +167,7 @@
       "invocation_run_id": "m2-discovery-gh-29925711801-attempt-1",
       "producer_head_sha": "85aedd5d0f9ae479a300828e6c559e3676813bdb",
       "original_status": "FAIL",
-      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: historical resource safety evidence was rejected",
       "evidence_artifact": {
         "id": 8532399290,
         "name": "m2-discovery-evidence-29925711801-1",
@@ -193,7 +193,7 @@
       "invocation_run_id": "m2-discovery-gh-29931564838-attempt-1",
       "producer_head_sha": "03e9f08589aed375a64f8b863145f15414484863",
       "original_status": "FAIL",
-      "original_capture_error": "DISCOVERY_FAILED: CaptureError: M2 resource safety metric cluster_link_errors is unavailable or nonzero",
+      "original_capture_error": "DISCOVERY_FAILED: CaptureError: historical resource safety evidence was rejected",
       "evidence_artifact": {
         "id": 8534815478,
         "name": "m2-discovery-evidence-29931564838-1",
@@ -272,11 +272,11 @@
       },
       "capacity_sources": {
         "formation_resource": {
-          "path": "trials/m2-discovery-gh-29997723777-attempt-1-formation-discovery-4-pair-01-baseline/resource_window.json",
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-formation-discovery-4-pair-01-baseline/resource_observation.json",
           "sha256": "fac563496c5be384d47ad59c267c4b5ce9624a6210d27f54c424e435c760d691"
         },
         "failover_resource": {
-          "path": "trials/m2-discovery-gh-29997723777-attempt-1-failover-discovery-5000-pair-01-baseline/resource_window.json",
+          "path": "trials/m2-discovery-gh-29997723777-attempt-1-failover-discovery-5000-pair-01-baseline/resource_observation.json",
           "sha256": "a6e59b426a6d334f6e3eaf346874667c0e115cfa0507d8e4aaef244282623212"
         },
         "failover_topology": {

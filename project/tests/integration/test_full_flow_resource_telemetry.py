@@ -10,12 +10,12 @@ def test_local_full_flow_analysis_reports_captured_resource_telemetry() -> None:
         "artifact_type": "metric_sample",
         "capability_id": docker_runtime.LOCAL_FULL_FLOW_CAPABILITY,
         "run_id": run_id,
-        "source_type": "system_process",
-        "source_id": "node-0001",
-        "metric_name": "rss_bytes",
+        "source_type": "resource_analysis",
+        "source_id": "local_resource",
+        "metric_name": "resource_process_rss_bytes_max_sum",
         "metric_value": 1024,
         "metric_unit": "bytes",
-        "labels": {"logical_node_id": "node-0001", "lifecycle_window": "baseline_workload"},
+        "labels": {"lifecycle_window": "full_flow"},
     }
     management = {
         "summary": {"status": "PASS", "result": {"duration_ms": 1}, "source_refs": []},
@@ -46,4 +46,4 @@ def test_local_full_flow_analysis_reports_captured_resource_telemetry() -> None:
 
     assert analysis["resources"]["status"] == "PASS"
     assert analysis["resources"]["sample_count"] == 1
-    assert analysis["resources"]["metric_names"] == ["rss_bytes"]
+    assert analysis["resources"]["metric_names"] == ["resource_process_rss_bytes_max_sum"]

@@ -30,10 +30,13 @@ from valkey_scale_lab.observability.failover import (
 from valkey_scale_lab.observability import load as load_module
 from valkey_scale_lab.observability.load import MemtierLoadLane, per_connection_rate
 from valkey_scale_lab.observability.resources import (
+    ExpectedGoneProcess,
     LocalResourceSampler,
     ProcessSpec,
     analyze_resource_samples,
 )
+from valkey_scale_lab.observability import resource_observation as observation_module
+from valkey_scale_lab.observability.resource_observation import run_resource_observation
 from valkey_scale_lab.observability.sentinel import (
     Canary,
     SentinelLane,
@@ -767,6 +770,97 @@ def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     assert "valkey-cli" not in serialized
 
 
+def test_resource_analyzer_consumes_design_categories() -> None:
+    static = {
+        "sampler_id": "host-a",
+        "network_interfaces": ["eth0"],
+        "cpu_count": 4,
+    }
+    collector = {
+        "sample_duration_seconds": 0.01,
+        "cpu_time_seconds": 0.1,
+        "rss_bytes": 1000,
+        "overrun_seconds": 0.0,
+    }
+    samples = [
+        {
+            "kind": "host",
+            "wall_time": 1.0,
+            "monotonic": 1.0,
+            "cpu": {"user": 10, "system": 10, "idle": 80, "iowait": 0, "steal": 0},
+            "scheduler": {"running": 1, "blocked": 0},
+            "memory": {"mem_available_bytes": 2000, "swap_used_bytes": 0},
+            "cgroup": {
+                "cpu_usage_usec": 100,
+                "cpu_throttled_usec": 10,
+                "memory_current_bytes": 1000,
+                "memory_max_bytes": 5000,
+                "oom_count": 0,
+                "oom_kill_count": 0,
+            },
+            "network": {"eth0": {"rx_bytes": 100, "rx_packets": 10, "rx_errors": 0, "rx_drops": 0, "tx_bytes": 200, "tx_packets": 20, "tx_errors": 0, "tx_drops": 0}},
+            "collector": collector,
+        },
+        {
+            "kind": "host",
+            "wall_time": 6.0,
+            "monotonic": 6.0,
+            "cpu": {"user": 60, "system": 20, "idle": 120, "iowait": 0, "steal": 0},
+            "scheduler": {"running": 3, "blocked": 1},
+            "memory": {"mem_available_bytes": 1500, "swap_used_bytes": 4},
+            "cgroup": {
+                "cpu_usage_usec": 300,
+                "cpu_throttled_usec": 30,
+                "memory_current_bytes": 2500,
+                "memory_max_bytes": 5000,
+                "oom_count": 1,
+                "oom_kill_count": 1,
+            },
+            "network": {"eth0": {"rx_bytes": 600, "rx_packets": 40, "rx_errors": 1, "rx_drops": 2, "tx_bytes": 1200, "tx_packets": 70, "tx_errors": 3, "tx_drops": 4}},
+            "collector": collector,
+        },
+        {
+            "kind": "process",
+            "wall_time": 1.0,
+            "monotonic": 1.0,
+            "processes": [{"logical_id": "node-a", "pid": 123, "status": "OK", "state": "S", "start_time_ticks": 10, "user_cpu_ticks": 1, "system_cpu_ticks": 2, "rss_bytes": 100, "fd_count": 3}],
+            "collector": collector,
+        },
+        {
+            "kind": "process",
+            "wall_time": 61.0,
+            "monotonic": 61.0,
+            "processes": [{"logical_id": "node-a", "pid": 123, "status": "OK", "state": "S", "start_time_ticks": 10, "user_cpu_ticks": 4, "system_cpu_ticks": 6, "rss_bytes": 140, "fd_count": 5}],
+            "collector": collector,
+        },
+    ]
+
+    analysis = analyze_resource_samples(
+        static,
+        samples,
+        timeline_events=[
+            {"event_type": "actuator_kill", "event_id": "fault-1", "monotonic": 6.0},
+            {"event_type": "sentinel_get", "event_id": "sweep-1", "monotonic": 61.0},
+        ],
+    )
+
+    assert analysis["cpu"]["utilization_p95"] == 60.0
+    assert analysis["cpu"]["throttled_usec_delta"] == 20
+    assert analysis["cpu"]["throttling_ratio"] == 0.1
+    assert analysis["memory"]["mem_available_min"] == 1500
+    assert analysis["memory"]["cgroup_headroom_min"] == 2500
+    assert analysis["memory"]["oom_delta"] == 1
+    assert analysis["memory"]["oom_kill_delta"] == 1
+    assert analysis["memory"]["oom_events"][0]["overlapping_events"][0]["event_type"] == "actuator_kill"
+    assert analysis["network"]["eth0"]["rx_bytes_throughput_p95"] == 100.0
+    assert analysis["network"]["eth0"]["rx_pps_p95"] == 6.0
+    assert analysis["network"]["eth0"]["tx_errors"]["delta"] == 3
+    assert analysis["timeline_correlation"]["network_error_or_drop_overlap_count"] == 4
+    assert analysis["processes"]["node-a"]["cpu_ticks_delta"] == 7
+    assert analysis["process_totals"]["rss_bytes_max_sum"] == 140
+    assert analysis["process_totals"]["max_fd_process"] == "node-a"
+
+
 class FakeLightProbe:
     def collect(self) -> list[dict[str, Any]]:
         return [{"logical_id": "node-a"}]
@@ -866,10 +960,43 @@ def _resource_document() -> dict[str, Any]:
 class FakeResourceRunner:
     def __init__(self, document: dict[str, Any]) -> None:
         self.document = document
-        self.sampler = type("Sampler", (), {"sampler_id": "host-a"})()
+        self.sampler = type(
+            "Sampler",
+            (),
+            {
+                "sampler_id": "host-a",
+                "processes": [ProcessSpec("node-a", 123)],
+            },
+        )()
 
     def start(self) -> None:
         return None
+
+    def stop(self) -> dict[str, Any]:
+        return self.document
+
+
+class ImmediateResourceRunner:
+    def __init__(
+        self,
+        document: dict[str, Any],
+        *,
+        logical_id: str = "node-a",
+        pid: int = 123,
+    ) -> None:
+        self.document = document
+        self.samples: list[dict[str, Any]] = []
+        self.sampler = type(
+            "Sampler",
+            (),
+            {
+                "sampler_id": "host-a",
+                "processes": [ProcessSpec(logical_id, pid)],
+            },
+        )()
+
+    def start(self) -> None:
+        self.samples = list(self.document.get("samples", []))
 
     def stop(self) -> dict[str, Any]:
         return self.document
@@ -903,3 +1030,93 @@ def test_stability_window_consumes_resource_analysis() -> None:
     assert result["status"] == "PASS"
     assert resource_checks
     assert resource_checks[0]["evidence"]["processes"]["node-a"]["fd_count_max"] == 3
+
+
+def test_resource_observation_positive_path_consumes_sampler_and_analyzer() -> None:
+    document = _resource_document()
+    document["samples"].append(
+        {
+            **document["samples"][-1],
+            "monotonic": 2.0,
+            "processes": [
+                {
+                    "logical_id": "node-a",
+                    "pid": 123,
+                    "status": "EXPECTED_GONE",
+                    "reason": "planned actuator kill",
+                }
+            ],
+        }
+    )
+    runner = ImmediateResourceRunner(document)
+
+    result = run_resource_observation(
+        runners=[runner],  # type: ignore[list-item]
+        duration_seconds=0.002,
+        expected_gone_processes=[ExpectedGoneProcess("node-a", 123)],
+        sleep_interval_seconds=0.001,
+    )
+
+    assert result["status"] == "PASS"
+    assert result["planned_kill_prefault_sample_complete"] is True
+    assert result["resource_analyses"][0]["analysis"]["expected_gone_processes"]
+
+
+def test_resource_observation_without_runner_is_error() -> None:
+    result = run_resource_observation(runners=[], duration_seconds=0.001)
+
+    assert result["status"] == "ERROR"
+    assert result["checks"][0]["name"] == "resource_sampler_configured"
+
+
+def test_resource_observation_analyzer_failure_is_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_analyzer(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("analysis broke")
+
+    monkeypatch.setattr(observation_module, "analyze_resource_samples", fail_analyzer)
+    result = run_resource_observation(
+        runners=[ImmediateResourceRunner(_resource_document())],  # type: ignore[list-item]
+        duration_seconds=0.002,
+        sleep_interval_seconds=0.001,
+    )
+
+    assert result["status"] == "ERROR"
+    assert result["checks"][-1]["name"] == "resource_analysis:host-a"
+
+
+def test_resource_observation_missing_live_process_sample_is_error() -> None:
+    document = _resource_document()
+    document["samples"][-1]["processes"] = []
+
+    result = run_resource_observation(
+        runners=[ImmediateResourceRunner(document)],  # type: ignore[list-item]
+        duration_seconds=0.002,
+        sleep_interval_seconds=0.001,
+    )
+
+    assert result["status"] == "ERROR"
+    assert "live process samples are missing" in result["checks"][-1]["reason"]
+
+
+def test_resource_observation_requires_planned_kill_prefault_sample() -> None:
+    document = _resource_document()
+    document["samples"][-1]["processes"] = [
+        {
+            "logical_id": "node-a",
+            "pid": 123,
+            "status": "EXPECTED_GONE",
+            "reason": "already gone",
+        }
+    ]
+
+    result = run_resource_observation(
+        runners=[ImmediateResourceRunner(document)],  # type: ignore[list-item]
+        duration_seconds=0.002,
+        expected_gone_processes=[ExpectedGoneProcess("node-a", 123)],
+        sleep_interval_seconds=0.001,
+    )
+
+    assert result["status"] == "ERROR"
+    assert result["checks"][0]["name"] == "resource_expected_gone_prefault_sample"

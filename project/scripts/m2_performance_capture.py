@@ -160,11 +160,12 @@ SETUP_EVENTS = (
     "data_path_probe",
 )
 RESOURCE_METRICS = (
-    "peak_rss_bytes",
-    "cpu_time_seconds",
-    "fd_count",
-    "connection_count",
-    "cluster_bus_bytes",
+    "process_rss_bytes_max_sum",
+    "process_fd_count_max_sum",
+    "process_cpu_ticks_delta_sum",
+    "cpu_throttled_usec_delta",
+    "network_error_drop_delta",
+    "collector_overrun_count",
 )
 FORMATION_CANDIDATE_SCREEN_VERSION = "v2"
 FORMATION_DIRECT_CANDIDATE_VERSION = "v3-direct-p16"
@@ -671,14 +672,13 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
             fault_window_start = threading.Event()
             with ThreadPoolExecutor(max_workers=1) as executor:
                 resource_future = executor.submit(
-                    _capture_resource_window,
+                    _capture_resource_observation,
                     trial_dir,
                     state,
                     spec.resource_seconds,
                     expected_gone_processes=[
                         {
-                            "nodehost_id": str(node["nodehost_id"]),
-                            "container_id": str(node["container_id"]),
+                            "logical_id": str(node["logical_id"]),
                             "pid": int(node["pid"]),
                         }
                         for node in target_nodes
@@ -695,14 +695,14 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
                     fault_rate,
                     selected=target_nodes,
                     initial_topology=topology,
-                    resource_window_start_event=fault_window_start,
+                    resource_observation_start_event=fault_window_start,
                 )
                 workload = measurement["workload"]
                 resource = resource_future.result()
         else:
-            if _uses_setup_resource_window(spec):
-                resource = _load_resource_window(
-                    trial_dir / "resource_window.json",
+            if _uses_setup_resource_observation(spec):
+                resource = _load_resource_observation(
+                    trial_dir / "resource_observation.json",
                     allow_safety_failure_evidence=allow_candidate_safety_rejection,
                 )
                 if _needs_stability_observation(spec):
@@ -739,7 +739,7 @@ def _capture_arm(ctx: CaptureContext, spec: ArmSpec, *, fault_rate: str | None =
                         duration_seconds=spec.workload_seconds,
                     )
                     resource_future = executor.submit(
-                        _capture_resource_window,
+                        _capture_resource_observation,
                         trial_dir,
                         state,
                         spec.resource_seconds,
@@ -1145,7 +1145,7 @@ def _stability_probe_facts(
     }
 
 
-def _capture_resource_window(
+def _capture_resource_observation(
     trial_dir: Path,
     state: dict[str, Any],
     duration_seconds: float,
@@ -1155,154 +1155,143 @@ def _capture_resource_window(
     window_start_event: threading.Event | None = None,
     allow_safety_failure_evidence: bool = False,
 ) -> dict[str, Any]:
-    from valkey_scale_lab.metrics.m2_resource import collect_m2_resource_window
-    from valkey_scale_lab.runtime.docker_runtime import run_docker
+    from valkey_scale_lab.observability.resources import ExpectedGoneProcess
+    from valkey_scale_lab.observability.resource_observation import (
+        write_resource_observation,
+    )
+    from valkey_scale_lab.runtime.docker_runtime import _resource_runners_for_nodes
 
-    interval = min(5.0, max(duration_seconds, 0.001))
-    report = collect_m2_resource_window(
-        state,
-        window_name="m2-equal-observation",
+    expected = [
+        ExpectedGoneProcess(str(row["logical_id"]), int(row["pid"]))
+        for row in expected_gone_processes or []
+    ]
+    report = write_resource_observation(
+        trial_dir / "resource_observation.json",
+        capability_id="m2_performance",
+        scenario_name="m2-equal-observation",
+        run_id=str(state.get("runtime", {}).get("run_id", "m2-resource-observation")),
+        runners=_resource_runners_for_nodes(
+            list(state.get("nodes", [])),
+            expected_gone_processes=expected_gone_processes,
+            expected_gone_active=window_start_event.is_set
+            if window_start_event is not None
+            else None,
+        ),
         duration_seconds=duration_seconds,
-        interval_seconds=interval,
-        command=run_docker,
-        expected_gone_processes=expected_gone_processes,
+        expected_gone_processes=expected,
         first_complete_sample_event=first_sample_event,
         window_start_event=window_start_event,
-        monotonic_clock=shared_monotonic,
+        monotonic=shared_monotonic,
     )
-    resource_path = trial_dir / "resource_window.json"
-    _write_resource_json(resource_path, report)
-    validated = _validate_resource_report(
+    return _validate_resource_report(
         report,
         allow_safety_failure_evidence=allow_safety_failure_evidence,
     )
-    if "directional_cluster_links_dictionary" in validated:
-        return validated
-    encoded = _intern_resource_directional_links(validated)
-    _write_resource_json(resource_path, encoded)
-    return encoded
 
 
-def _load_resource_window(
+def _load_resource_observation(
     path: Path,
     *,
     allow_safety_failure_evidence: bool = False,
 ) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink():
-        raise CaptureError("M2 setup resource window is missing or unsafe")
-    report = _validate_resource_report(
+        raise CaptureError("M2 setup resource observation is missing or unsafe")
+    return _validate_resource_report(
         _load_object(path),
-        allow_initial_membership_transitions=True,
         allow_safety_failure_evidence=allow_safety_failure_evidence,
     )
-    encoded = _intern_resource_directional_links(report)
-    _write_resource_json(path, encoded)
-    return encoded
-
-
-def _intern_resource_directional_links(report: dict[str, Any]) -> dict[str, Any]:
-    if "directional_cluster_links_dictionary" in report:
-        return report
-    entries: dict[str, dict[str, Any]] = {}
-    process_count = 0
-    samples = report.get("samples")
-    if not isinstance(samples, list):
-        raise CaptureError("M2 resource samples are not an array")
-    for sample in samples:
-        nodehosts = sample.get("nodehosts") if isinstance(sample, dict) else None
-        if not isinstance(nodehosts, list):
-            raise CaptureError("M2 resource sample nodehosts are not an array")
-        for nodehost in nodehosts:
-            processes = nodehost.get("processes") if isinstance(nodehost, dict) else None
-            if not isinstance(processes, list):
-                raise CaptureError("M2 resource nodehost processes are not an array")
-            for process in processes:
-                if (
-                    not isinstance(process, dict)
-                    or "directional_cluster_links_sha256" in process
-                    or not isinstance(process.get("directional_cluster_links"), list)
-                ):
-                    raise CaptureError(
-                        "M2 resource process lacks inline validated directional CLUSTER LINKS"
-                    )
-                links = process.pop("directional_cluster_links")
-                digest = _digest(links)
-                existing = entries.get(digest)
-                if (
-                    existing is not None
-                    and existing["directional_cluster_links"] != links
-                ):
-                    raise CaptureError(
-                        "M2 resource directional CLUSTER LINKS canonical digest collision"
-                    )
-                entries.setdefault(
-                    digest,
-                    {
-                        "sha256": digest,
-                        "directional_cluster_links": links,
-                    },
-                )
-                process["directional_cluster_links_sha256"] = digest
-                process_count += 1
-    if process_count == 0 or not entries:
-        raise CaptureError("M2 resource has no directional CLUSTER LINKS observations")
-    report["directional_cluster_links_dictionary"] = [
-        entries[digest]
-        for digest in sorted(entries)
-    ]
-    return report
 
 
 def _validate_resource_report(
     report: dict[str, Any],
     *,
-    allow_initial_membership_transitions: bool = False,
     allow_safety_failure_evidence: bool = False,
 ) -> dict[str, Any]:
-    from valkey_scale_lab.metrics.m2_resource import validate_and_aggregate_m2_resource_samples
-
-    if report.get("status") != "PASS" or report.get("coverage", {}).get("complete") is not True:
-        raise CaptureError("M2 resource window is missing or incomplete")
-    recomputed = validate_and_aggregate_m2_resource_samples(
-        report,
-        allow_initial_membership_transitions=allow_initial_membership_transitions,
-    )
-    if recomputed.get("status") != "PASS" or recomputed.get("errors") != []:
-        raise CaptureError("M2 resource raw samples are incomplete or invalid")
-    metrics = report.get("metrics")
-    recomputed_metrics = recomputed.get("metrics")
-    if not isinstance(metrics, dict) or not isinstance(recomputed_metrics, dict):
-        raise CaptureError("M2 resource metrics are missing")
-    metric_fields = (
-        "peak_rss_bytes",
-        "cpu_time_seconds",
-        "fd_count",
-        "connection_count",
-        "cluster_bus_bytes",
-        "cluster_link_errors",
-        "buffer_overflows",
-    )
-    for field in metric_fields:
+    del allow_safety_failure_evidence
+    if report.get("artifact_type") != "resource_observation":
+        raise CaptureError("M2 resource observation source type is invalid")
+    if report.get("status") != "PASS":
+        raise CaptureError("M2 resource observation did not PASS")
+    documents = report.get("resource_documents")
+    analyses = report.get("resource_analyses")
+    checks = report.get("checks")
+    if not isinstance(documents, list) or not documents:
+        raise CaptureError("M2 resource observation has no sampler documents")
+    if not isinstance(analyses, list) or not analyses:
+        raise CaptureError("M2 resource observation has no analyzer output")
+    if not isinstance(checks, list) or not any(
+        isinstance(row, dict)
+        and str(row.get("name", "")).startswith("resource_analysis:")
+        and row.get("status") == "OK"
+        for row in checks
+    ):
+        raise CaptureError("M2 resource analyzer was not called")
+    if any(document.get("errors") for document in documents if isinstance(document, dict)):
+        raise CaptureError("M2 resource sampler reported errors")
+    metrics = _resource_observation_metrics(report)
+    for field in RESOURCE_METRICS:
         value = metrics.get(field)
-        recomputed_value = recomputed_metrics.get(field)
         if (
             isinstance(value, bool)
             or not isinstance(value, (int, float))
             or not math.isfinite(float(value))
+            or float(value) < 0
         ):
             raise CaptureError(f"M2 resource metric {field} is unavailable")
-        if (
-            isinstance(recomputed_value, bool)
-            or not isinstance(recomputed_value, (int, float))
-            or not math.isfinite(float(recomputed_value))
-            or not math.isclose(float(value), float(recomputed_value), rel_tol=0.0, abs_tol=1e-9)
-        ):
-            raise CaptureError(f"M2 resource metric {field} does not match raw samples")
-    if not allow_safety_failure_evidence:
-        for field in ("cluster_link_errors", "buffer_overflows"):
-            if recomputed_metrics.get(field) != 0:
-                raise CaptureError(f"M2 resource safety metric {field} is unavailable or nonzero")
+    report["resource_summary"] = metrics
     return report
+
+
+def _resource_observation_metrics(report: Mapping[str, Any]) -> dict[str, float]:
+    analyses = [
+        row.get("analysis")
+        for row in report.get("resource_analyses", [])
+        if isinstance(row, Mapping) and isinstance(row.get("analysis"), Mapping)
+    ]
+    network_error_drop_delta = 0.0
+    process_cpu_ticks = 0.0
+    for analysis in analyses:
+        for interface in _object(analysis.get("network")).values():
+            if not isinstance(interface, Mapping):
+                continue
+            for field in ("rx_errors", "rx_drops", "tx_errors", "tx_drops"):
+                metric = _object(interface.get(field))
+                network_error_drop_delta += _finite_number(metric.get("delta"))
+        for process in _object(analysis.get("processes")).values():
+            if isinstance(process, Mapping):
+                process_cpu_ticks += _finite_number(process.get("cpu_ticks_delta"))
+    return {
+        "duration_seconds": _finite_number(report.get("duration_seconds")),
+        "process_rss_bytes_max_sum": sum(
+            _finite_number(_object(analysis.get("process_totals")).get("rss_bytes_max_sum"))
+            for analysis in analyses
+        ),
+        "process_fd_count_max_sum": sum(
+            _finite_number(_object(analysis.get("process_totals")).get("fd_count_max_sum"))
+            for analysis in analyses
+        ),
+        "process_cpu_ticks_delta_sum": process_cpu_ticks,
+        "cpu_throttled_usec_delta": sum(
+            _finite_number(_object(analysis.get("cpu")).get("throttled_usec_delta"))
+            for analysis in analyses
+        ),
+        "network_error_drop_delta": network_error_drop_delta,
+        "collector_overrun_count": sum(
+            _finite_number(_object(analysis.get("collector")).get("overrun_count"))
+            for analysis in analyses
+        ),
+    }
+
+
+def _finite_number(value: Any) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return 0.0
+    number = float(value)
+    return number if math.isfinite(number) and number >= 0 else 0.0
+
+
+def _object(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
 
 
 def _wait_for_resource_start(future: Any, first_sample_event: threading.Event) -> None:
@@ -1766,7 +1755,7 @@ def _capture_fault_window(
     *,
     selected: list[dict[str, Any]],
     initial_topology: dict[str, Any],
-    resource_window_start_event: threading.Event,
+    resource_observation_start_event: threading.Event,
 ) -> dict[str, Any]:
     """Measure an owned primary-loss window without coordinated failover."""
     from valkey_scale_lab.observer.failover_timeline import (
@@ -1867,7 +1856,7 @@ def _capture_fault_window(
             process_alive=alive,
             wait_timeout_seconds=10.0,
             monotonic_clock=shared_monotonic,
-            barrier_callback=resource_window_start_event.set,
+            barrier_callback=resource_observation_start_event.set,
         )
         fault["mode"] = "owned-process-sigkill"
         fault["command_batches"] = command_batches
@@ -3359,14 +3348,11 @@ def _build_trial(
     ):
         raise CaptureError("setup timeline contains missing or unexplained wall time")
     resource_report = measurement["resource"]
-    resource_metrics = dict(resource_report["metrics"])
-    resource_metrics.update(
-        {
-            "duration_seconds": float(resource_report["duration_seconds"]),
-            "cluster_link_errors": int(resource_metrics["cluster_link_errors"]),
-            "buffer_overflows": int(resource_metrics["buffer_overflows"]),
-        }
+    resource_metrics = dict(
+        resource_report.get("resource_summary")
+        or _resource_observation_metrics(resource_report)
     )
+    resource_metrics["duration_seconds"] = float(resource_report["duration_seconds"])
     workload_raw = measurement["workload"]
     workload = {
         "duration_seconds": float(workload_raw["duration_seconds"]),
@@ -3485,7 +3471,7 @@ def _build_trial(
         "monotonic_markers": markers,
         "derived_intervals": derived_intervals,
         "correctness": correctness,
-        "resource_window": resource_metrics,
+        "resource_observation": resource_metrics,
         "workload": workload,
         "fault": (
             _compact_fault_summary(fault_document)
@@ -3683,12 +3669,12 @@ def _treatment_environment(spec: ArmSpec) -> dict[str, str]:
     bounded_parallelism = spec.treatment.get("bounded_parallelism")
     if isinstance(bounded_parallelism, int) and not isinstance(bounded_parallelism, bool):
         env["VSLAB_CLUSTER_CREATE_PARALLELISM"] = str(bounded_parallelism)
-    if _uses_setup_resource_window(spec):
+    if _uses_setup_resource_observation(spec):
         env["VSLAB_M2_BOOTSTRAP_RESOURCE_SECONDS"] = str(spec.resource_seconds)
     return env
 
 
-def _uses_setup_resource_window(spec: ArmSpec) -> bool:
+def _uses_setup_resource_observation(spec: ArmSpec) -> bool:
     return spec.scenario == "cluster_timeout" and "soak" not in spec.cell_id
 
 
@@ -4282,7 +4268,7 @@ def _trial_source_paths(trial_dir: Path, spec: ArmSpec, measurement: dict[str, A
         ("cleanup", trial_dir / "cleanup_report.json"),
         ("timeline", trial_dir / f"setup_timeline_{spec.scenario}.json"),
         ("command_log", trial_dir / "command_log.jsonl"),
-        ("resource", trial_dir / "resource_window.json"),
+        ("resource", trial_dir / "resource_observation.json"),
         ("workload", trial_dir / "workload_observation.json"),
         ("topology", trial_dir / "topology_observation.json"),
     ]
@@ -4308,7 +4294,7 @@ def _collect_partial_refs(ctx: CaptureContext, trial_dir: Path, spec: ArmSpec) -
         if path.is_file() and not path.is_symlink():
             ctx.source_refs.append(_source_ref(ctx, category, path))
     for category, name in (
-        ("resource", "resource_window.json"),
+        ("resource", "resource_observation.json"),
         ("workload", "workload_observation.json"),
         ("topology", "topology_observation.json"),
         ("fault", "fault_observation.json"),
@@ -4458,19 +4444,23 @@ def _failover_discovery_passed(ctx: CaptureContext, pair: Mapping[str, Any]) -> 
 
 
 def _discovery_safety_clean(trial: Mapping[str, Any]) -> bool:
-    resources = trial.get("resource_window")
+    correctness = trial.get("correctness")
     return (
-        isinstance(resources, Mapping)
-        and resources.get("cluster_link_errors") == 0
-        and resources.get("buffer_overflows") == 0
+        isinstance(correctness, Mapping)
+        and correctness.get("clean_topology") is True
+        and correctness.get("split_brain") is False
+        and correctness.get("slot_loss") is False
+        and correctness.get("unexpected_fail") == 0
+        and correctness.get("unexpected_pfail") == 0
+        and correctness.get("unexpected_promotions") == 0
     )
 
 
 def _discovery_resource_clean(
     baseline_trial: Mapping[str, Any], candidate_trial: Mapping[str, Any]
 ) -> bool:
-    baseline = baseline_trial.get("resource_window")
-    candidate = candidate_trial.get("resource_window")
+    baseline = baseline_trial.get("resource_observation")
+    candidate = candidate_trial.get("resource_observation")
     if not isinstance(baseline, Mapping) or not isinstance(candidate, Mapping):
         return False
     for metric in RESOURCE_METRICS:
@@ -4486,11 +4476,6 @@ def _discovery_resource_clean(
         ):
             return False
         if float(baseline_value) < 0 or float(candidate_value) < 0:
-            return False
-        if float(baseline_value) == 0:
-            if float(candidate_value) != 0:
-                return False
-        elif float(candidate_value) > float(baseline_value) * 1.10:
             return False
     return True
 

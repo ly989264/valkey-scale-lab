@@ -87,15 +87,15 @@ def test_report_renderer_writes_index_tables_chart_and_run_summary(tmp_path: Pat
         "failover_latency_distribution.svg",
         "split_brain_window.svg",
         "fault_workload_impact.svg",
-        "system_metrics_by_window.csv",
-        "system_metrics_abnormal_nodes.csv",
-        "system_resource_trends.svg",
+        "resource_analysis_by_window.csv",
+        "resource_analysis_abnormal_nodes.csv",
+        "resource_trends.svg",
     } == report_paths
     assert "command_audit_report_inputs" in index
     assert "management_report_inputs" in index
     assert "workload_report_inputs" in index
     assert "fault_timeline_report_inputs" in index
-    assert "system_metrics_report_inputs" in index
+    assert "resource_analysis_report_inputs" in index
     assert index["offline_policy"]["artifact_only"] is True
     assert index["offline_policy"]["llm_used"] is False
     assert index["conclusion_summary"]["source"] == "artifact_derived"
@@ -106,7 +106,7 @@ def test_report_renderer_writes_index_tables_chart_and_run_summary(tmp_path: Pat
     assert "慢命令 TopN" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "Workload 基准压测" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "故障 Timeline" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
-    assert "系统资源趋势" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
+    assert "资源观测趋势" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "结论摘要" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
 
 

@@ -77,7 +77,15 @@ class StabilityWindow:
 
         load_process = None
         resource_documents: list[dict[str, Any]] = []
+        resource_analyses: list[dict[str, Any]] = []
+        expected_processes = {
+            runner.sampler.sampler_id: {
+                process.logical_id for process in runner.sampler.processes
+            }
+            for runner in self.resource_runners
+        }
         rounds: list[dict[str, Any]] = []
+        load_result: dict[str, Any] | None = None
         try:
             for runner in self.resource_runners:
                 runner.start()
@@ -157,10 +165,11 @@ class StabilityWindow:
             self.sentinel.close()
 
         for document in resource_documents:
+            sampler_id = str(document.get("static", {}).get("sampler_id", "MISSING"))
             if document.get("errors"):
                 checks.append(
                     CheckResult(
-                        name=f"resource_sampler:{document['static']['sampler_id']}",
+                        name=f"resource_sampler:{sampler_id}",
                         status=CheckStatus.ERROR,
                         reason="; ".join(document["errors"]),
                     )
@@ -174,26 +183,47 @@ class StabilityWindow:
             ):
                 checks.append(
                     CheckResult(
-                        name=f"resource_sampler:{document['static']['sampler_id']}",
+                        name=f"resource_sampler:{sampler_id}",
                         status=CheckStatus.ERROR,
                         reason="resource sampler produced no host/process evidence",
                     )
                 )
                 continue
+            missing_live = _missing_live_processes(
+                document, expected_processes.get(sampler_id, set())
+            )
+            if missing_live:
+                checks.append(
+                    CheckResult(
+                        name=f"resource_sampler:{sampler_id}",
+                        status=CheckStatus.ERROR,
+                        reason=f"live process samples are missing: {missing_live}",
+                    )
+                )
+                continue
             try:
-                analysis = analyze_resource_samples(document["static"], samples)
+                analysis = analyze_resource_samples(
+                    document["static"],
+                    samples,
+                    timeline_events=_resource_timeline_events(
+                        start_boundary.evidence,
+                        rounds,
+                        load_result,
+                    ),
+                )
             except Exception as exc:  # noqa: BLE001 - analyzer failure is a tool error
                 checks.append(
                     CheckResult(
-                        name=f"resource_analysis:{document['static']['sampler_id']}",
+                        name=f"resource_analysis:{sampler_id}",
                         status=CheckStatus.ERROR,
                         reason=f"{type(exc).__name__}: {exc}",
                     )
                 )
                 continue
+            resource_analyses.append({"sampler_id": sampler_id, "analysis": analysis})
             checks.append(
                 CheckResult(
-                    name=f"resource_analysis:{document['static']['sampler_id']}",
+                    name=f"resource_analysis:{sampler_id}",
                     status=CheckStatus.OK,
                     evidence=analysis,
                     warnings=tuple(analysis.get("warnings", [])),
@@ -220,6 +250,7 @@ class StabilityWindow:
                 "rounds": rounds,
                 "end_boundary": rounds[-1]["light"] if rounds else None,
                 "resource_documents": resource_documents,
+                "resource_analyses": resource_analyses,
                 "claim": "未观察到异常" if result["status"] == "PASS" else "",
             }
         )
@@ -248,3 +279,62 @@ def _epoch_warnings(
                     f"{row['logical_id']} {field} increased from {old} to {new}"
                 )
     return warnings
+
+
+def _missing_live_processes(
+    document: dict[str, Any], expected_logical_ids: set[str]
+) -> list[dict[str, Any]]:
+    process_samples = [
+        sample for sample in document.get("samples", []) if sample.get("kind") == "process"
+    ]
+    if not process_samples:
+        return [{"reason": "no process samples"}]
+    latest = process_samples[-1]
+    observed = {
+        str(row.get("logical_id"))
+        for row in latest.get("processes", [])
+        if isinstance(row, dict) and row.get("status", "OK") == "OK"
+    }
+    missing = [
+        {"logical_id": logical_id, "reason": "missing latest sample"}
+        for logical_id in sorted(expected_logical_ids - observed)
+    ]
+    for row in latest.get("processes", []):
+        if isinstance(row, dict) and row.get("status", "OK") != "OK":
+            missing.append(
+                {
+                    "logical_id": row.get("logical_id"),
+                    "pid": row.get("pid"),
+                    "status": row.get("status"),
+                }
+            )
+    return missing
+
+
+def _resource_timeline_events(
+    start_boundary: dict[str, Any] | None,
+    rounds: list[dict[str, Any]],
+    load_result: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    if start_boundary:
+        events.append({"event_type": "topology_start_boundary", "monotonic": _first_monotonic(start_boundary)})
+    if load_result:
+        events.append({"event_type": "load_formal_window", "monotonic": None})
+    for round_result in rounds:
+        for row in round_result.get("sentinel", {}).get("rows", []):
+            if isinstance(row, dict):
+                events.append({"event_type": "sentinel_get", "event_id": row.get("logical_id"), "monotonic": row.get("monotonic")})
+        for row in round_result.get("light", {}).get("nodes", []):
+            if isinstance(row, dict):
+                events.append({"event_type": "topology_light_probe", "event_id": row.get("logical_id"), "monotonic": row.get("monotonic")})
+    return events
+
+
+def _first_monotonic(document: dict[str, Any]) -> float | None:
+    values = [
+        row.get("monotonic")
+        for row in document.get("nodes", [])
+        if isinstance(row, dict) and isinstance(row.get("monotonic"), (int, float))
+    ]
+    return float(min(values)) if values else None

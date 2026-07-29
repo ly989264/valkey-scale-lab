@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-import threading
 from pathlib import Path
 
 import pytest
@@ -42,8 +41,6 @@ def test_cached_production_image_supports_m2_shell_kill_and_proc_probe() -> None
         "--daemonize no --logfile /tmp/vslab.log & pid=$!; "
         "attempt=0; until valkey-cli -p 6399 PING >/dev/null 2>&1; do "
         "attempt=$((attempt + 1)); [ \"$attempt\" -lt 50 ] || exit 82; sleep 0.1; done; "
-        "valkey-cli -3 --json -p 6399 CLUSTER LINKS >/tmp/vslab-links.json || exit 83; "
-        "awk 'BEGIN { if (1 != 1) exit 1 }' /tmp/vslab-links.json || exit 84; "
         "readlink /proc/$pid/exe >/dev/null || exit 85; "
         "stat_line=$(cat /proc/$pid/stat) && "
         'case "$stat_line" in *") "*) ;; *) exit 71;; esac; '
@@ -839,22 +836,21 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     scenario: str,
     expected_scale_writes: int,
 ) -> None:
-    import valkey_scale_lab.metrics.m2_resource as resource_module
-
     nodes = [{"logical_id": "node-1"}]
     nodehosts = [{"nodehost_id": "host-1"}]
     scale_writes: list[tuple[str, str]] = []
     resource_clocks: list[object] = []
 
-    def fake_collect(
-        _state: dict,
+    def fake_resource_observation(
+        path: Path,
         *,
-        monotonic_clock: object,
-        first_complete_sample_event: threading.Event,
+        monotonic: object,
+        first_complete_sample_event: object,
         **_kwargs: object,
     ) -> dict[str, str]:
-        resource_clocks.append(monotonic_clock)
-        first_complete_sample_event.set()
+        resource_clocks.append(monotonic)
+        first_complete_sample_event.set()  # type: ignore[attr-defined]
+        path.write_text('{"status":"PASS"}\n', encoding="utf-8")
         return {"status": "PASS"}
 
     monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda **_kwargs: None)
@@ -889,7 +885,8 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     monkeypatch.setattr(docker_runtime, "_write_effective_server_profile_artifact", lambda *_args: None)
     monkeypatch.setattr(docker_runtime, "_write_effective_cluster_timeout_artifact", lambda *_args: None)
     monkeypatch.setattr(docker_runtime, "_write_state", lambda *_args: None)
-    monkeypatch.setattr(resource_module, "collect_m2_resource_window", fake_collect)
+    monkeypatch.setattr(docker_runtime, "_resource_runners_for_nodes", lambda *_args, **_kwargs: ["runner"])
+    monkeypatch.setattr(docker_runtime, "write_resource_observation", fake_resource_observation)
     monkeypatch.setattr(
         docker_runtime,
         "_m2_bootstrap_resource_seconds",
@@ -897,7 +894,6 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     )
     monkeypatch.setattr(docker_runtime, "_configure_process_cluster", lambda *_args, **_kwargs: ([], []))
     monkeypatch.setattr(docker_runtime, "_write_runtime_timing_breakdown", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(docker_runtime, "write_system_metrics_artifacts", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         docker_runtime,
         "write_scale_ladder_artifacts",
@@ -1238,35 +1234,6 @@ def test_process_wait_predicate_uses_representatives_then_full_check(monkeypatch
     assert calls == [["p0", "p1"], ["p0", "p1", "r0", "r1"]]
 
 
-def test_process_cluster_link_counts_require_readable_bidirectional_peers() -> None:
-    peer_a = "a" * 40
-    peer_b = "b" * 40
-
-    counts = docker_runtime._process_cluster_link_counts(
-        [
-            ["direction", "to", "node", peer_a, "events", "r"],
-            ["direction", "from", "node", peer_a, "events", "r"],
-            ["direction", "to", "node", peer_b, "events", "rw"],
-            ["direction", "from", "node", peer_b, "events", "r"],
-        ]
-    )
-
-    assert counts == {
-        "cluster_link_to_count": 2,
-        "cluster_link_from_count": 2,
-        "cluster_link_bidirectional_peer_count": 2,
-        "cluster_link_invalid_count": 0,
-        "cluster_link_duplicate_count": 0,
-    }
-
-    incomplete = docker_runtime._process_cluster_link_counts(
-        [
-            ["direction", "to", "node", peer_a, "events", "r"],
-            ["direction", "from", "node", peer_a, "events", ""],
-        ]
-    )
-    assert incomplete["cluster_link_bidirectional_peer_count"] == 0
-    assert incomplete["cluster_link_invalid_count"] == 1
 
 
 def test_large_process_cluster_uses_cluster_create(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2168,101 +2135,6 @@ def test_docker_stats_rejects_non_object_json(monkeypatch: pytest.MonkeyPatch) -
 
     assert result["status"] == "MISSING"
     assert "not an object" in result["reason"]
-
-
-def test_system_metrics_batches_container_stats_once_per_window(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    batches: list[list[str]] = []
-    samples: list[tuple[str, str, dict[str, object]]] = []
-    nodes = [
-        {"logical_id": "node-a0", "container_name": "nodehost-a"},
-        {"logical_id": "node-a1", "container_name": "nodehost-a"},
-        {"logical_id": "node-b0", "container_name": "nodehost-b"},
-    ]
-
-    def fake_stats_many(containers):
-        batch = list(containers)
-        batches.append(batch)
-        return {container: {"status": "PASS", "memory_usage": container} for container in set(batch)}
-
-    def fake_rows(telemetry, node, window_name, *, docker_stats=None):
-        samples.append((node["logical_id"], window_name, docker_stats))
-        return [
-            {
-                "source_id": node["logical_id"],
-                "metric_name": "test_metric",
-                "metric_value": 0,
-                "labels": {"logical_node_id": node["logical_id"], "lifecycle_window": window_name},
-            }
-        ]
-
-    monkeypatch.setattr(docker_runtime, "_docker_stats_many", fake_stats_many)
-    monkeypatch.setattr(docker_runtime, "_system_metric_rows_for_node", fake_rows)
-
-    docker_runtime.write_system_metrics_artifacts(
-        tmp_path,
-        "local_full_flow",
-        "local_full_flow",
-        "run-1",
-        nodes,
-        lifecycle_windows=["setup", "workload"],
-    )
-
-    assert batches == [
-        ["nodehost-a", "nodehost-a", "nodehost-b"],
-        ["nodehost-a", "nodehost-a", "nodehost-b"],
-    ]
-    assert len(samples) == len(nodes) * 2
-    assert all(sample[2]["memory_usage"] == nodes[index % len(nodes)]["container_name"] for index, sample in enumerate(samples))
-    report = json.loads((tmp_path / "system_metrics_report.json").read_text(encoding="utf-8"))
-    assert report["source_refs"]["valkey_e2e_evidence"] == "valkey_e2e_evidence.json"
-
-
-def test_system_resource_metrics_do_not_issue_valkey_commands(monkeypatch: pytest.MonkeyPatch) -> None:
-    telemetry = docker_runtime.TelemetryRun(
-        capability_id="local_full_flow",
-        scenario_name="local_full_flow",
-        run_id="run-1",
-        coverage_id="system-metrics",
-        scale=1,
-        node_count=1,
-    )
-    node = {"logical_id": "node-1", "container_name": "nodehost-1", "pid": 101}
-
-    def fake_node_command(*_args, **_kwargs):
-        raise AssertionError("resource collection must not issue Valkey commands")
-
-    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
-    monkeypatch.setattr(docker_runtime, "_count_log_errors", lambda _node: 0)
-    rows = docker_runtime._system_metric_rows_for_node(
-        telemetry,
-        node,
-        "workload",
-        docker_stats={
-            "status": "PASS",
-            "cpu_percent": "12.50%",
-            "memory_usage": "10MiB / 1GiB",
-            "net_io": "1kB / 2kB",
-            "pids": "4",
-        },
-    )
-
-    by_name = {row["metric_name"]: row for row in rows}
-    assert by_name["container_cpu_percent"]["source_type"] == "docker_stats"
-    assert by_name["container_cpu_percent"]["metric_value"] == 12.5
-    assert by_name["cluster_state"]["source_type"] == "cluster_info"
-    assert by_name["cluster_state"]["metric_value"] == docker_runtime.MISSING
-    assert (
-        by_name["tcp_connection_count"]["missing_reason"]
-        == "resource collection does not query Valkey topology"
-    )
-    assert by_name["cpu_user_percent"]["metric_value"] == docker_runtime.MISSING
-
-
-def test_local_full_flow_posthoc_metrics_do_not_claim_unsampled_management_or_fault_windows(tmp_path: Path) -> None:
-    for name in ["management_sequence.json", "workload_windows.json", "fault_sequence.json"]:
-        (tmp_path / name).write_text("{}\n", encoding="utf-8")
-
-    assert docker_runtime._system_metric_windows_for_artifacts(tmp_path) == ["setup", "cleanup", "workload"]
 
 
 def test_cleanup_process_scan_parsing_and_zombie_exit(monkeypatch: pytest.MonkeyPatch) -> None:

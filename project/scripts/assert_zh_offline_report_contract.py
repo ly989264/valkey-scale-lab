@@ -21,8 +21,8 @@ REQUIRED_MD_SECTIONS = [
     "故障 Timeline",
     "Failover 延迟分布",
     "Workload 基准压测",
-    "系统资源趋势",
-    "系统异常节点 TopN",
+    "资源观测趋势",
+    "资源异常节点 TopN",
     "缺失指标",
     "结论摘要",
 ]
