@@ -42,8 +42,6 @@ def test_cached_production_image_supports_m2_shell_kill_and_proc_probe() -> None
         "--daemonize no --logfile /tmp/vslab.log & pid=$!; "
         "attempt=0; until valkey-cli -p 6399 PING >/dev/null 2>&1; do "
         "attempt=$((attempt + 1)); [ \"$attempt\" -lt 50 ] || exit 82; sleep 0.1; done; "
-        "valkey-cli -3 --json -p 6399 CLUSTER LINKS >/tmp/vslab-links.json || exit 83; "
-        "awk 'BEGIN { if (1 != 1) exit 1 }' /tmp/vslab-links.json || exit 84; "
         "readlink /proc/$pid/exe >/dev/null || exit 85; "
         "stat_line=$(cat /proc/$pid/stat) && "
         'case "$stat_line" in *") "*) ;; *) exit 71;; esac; '
@@ -142,6 +140,8 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
             "ordinal": 0,
             "client_port": 7000,
             "role": "primary",
+            "shard_id": "shard-0000",
+            "az_id": "az-a",
             "nodehost_container_name": "nodehost-0",
             "pid": 100,
         },
@@ -150,6 +150,8 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
             "ordinal": 1,
             "client_port": 7001,
             "role": "primary",
+            "shard_id": "shard-0001",
+            "az_id": "az-b",
             "nodehost_container_name": "nodehost-1",
             "pid": 101,
         },
@@ -158,6 +160,8 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
             "ordinal": 2,
             "client_port": 7002,
             "role": "replica",
+            "shard_id": "shard-0000",
+            "az_id": "az-b",
             "nodehost_container_name": "nodehost-0",
             "pid": 102,
         },
@@ -166,6 +170,8 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
             "ordinal": 3,
             "client_port": 7003,
             "role": "replica",
+            "shard_id": "shard-0001",
+            "az_id": "az-a",
             "nodehost_container_name": "nodehost-1",
             "pid": 103,
         },
@@ -201,6 +207,57 @@ def test_cluster_myslots_report_validates_full_coverage_and_replicas(
         7002: response(node_ids[2], shard_ids[0], "replica", node_ids[0], primary_zero),
         7003: response(node_ids[3], shard_ids[1], "replica", node_ids[1], primary_one),
     }
+    light_rows = []
+    for node, raw in zip(nodes, responses.values()):
+        values = dict(zip(raw[0::2], raw[1::2]))
+        bitmap = bytes(values[b"slot-bitmap"])
+        light_rows.append(
+            {
+                "logical_id": node["logical_id"],
+                "cluster_info": {"cluster_state": "ok"},
+                "role": {
+                    "role": node["role"],
+                    "replication_state": (
+                        "not_applicable"
+                        if node["role"] == "primary"
+                        else "connected"
+                    ),
+                },
+                "myslots": {
+                    "node-id": bytes(values[b"node-id"]).decode(),
+                    "shard-id": bytes(values[b"shard-id"]).decode(),
+                    "role": bytes(values[b"role"]).decode(),
+                    "slot-owner-id": bytes(values[b"slot-owner-id"]).decode(),
+                    "slot-count": values[b"slot-count"],
+                    "bitmap-encoding": "lsb0",
+                    "slot-bitmap-bytes": 2048,
+                    "slot-bitmap-sha256": docker_runtime.hashlib.sha256(bitmap).hexdigest(),
+                    "slot-bitmap-base64": docker_runtime.base64.b64encode(bitmap).decode(),
+                },
+            }
+        )
+
+    class FakeValidator:
+        def __init__(self, *_args, **_kwargs) -> None:
+            pass
+
+        def run(self) -> dict:
+            return {
+                "status": "OK",
+                "light_validation": {
+                    "status": "OK",
+                    "nodes_observed": 4,
+                    "primary_count": 2,
+                    "replica_count": 2,
+                    "nodes": light_rows,
+                },
+                "topology_validation": {
+                    "status": "OK",
+                    "observer_count": 3,
+                },
+            }
+
+    monkeypatch.setattr(docker_runtime, "FullClusterValidator", FakeValidator)
     monkeypatch.setattr(
         docker_runtime,
         "_host_command_binary",
@@ -375,6 +432,69 @@ def test_full_flow_50_cluster_plan_writer_uses_the_registered_scale_profile(tmp_
     assert plan["node_count"] == 50
 
 
+def test_observability_writer_uses_scalable_validator_not_cluster_nodes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FakeValidator:
+        def __init__(self, *_args, **_kwargs) -> None:
+            pass
+
+        def run(self) -> dict:
+            return {
+                "status": "OK",
+                "complexity": {
+                    "light_command_count": 12,
+                    "cluster_shards_view_count": 2,
+                    "cluster_nodes_command_count": 0,
+                },
+                "light_validation": {
+                    "primary_count": 1,
+                    "replica_count": 1,
+                },
+                "topology_validation": {"status": "OK"},
+            }
+
+    monkeypatch.setattr(docker_runtime, "FullClusterValidator", FakeValidator)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_command",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("CLUSTER NODES path must not be used")
+        ),
+    )
+
+    docker_runtime.write_observability_artifacts(
+        tmp_path,
+        "observability",
+        "observability",
+        "run-observability",
+        {},
+        [
+            {
+                "logical_id": "node-a",
+                "host": "127.0.0.1",
+                "client_port": 7000,
+                "role": "primary",
+                "shard_id": "s0",
+            },
+            {
+                "logical_id": "node-b",
+                "host": "127.0.0.1",
+                "client_port": 7001,
+                "role": "replica",
+                "shard_id": "s0",
+            },
+        ],
+    )
+
+    report = docker_runtime.json.loads(
+        (tmp_path / "scalable_cluster_validation.json").read_text(encoding="utf-8")
+    )
+    assert report["status"] == "PASS"
+    assert report["normal_path_cluster_nodes_command_count"] == 0
+    assert report["docker_exec_for_valkey_protocol"] is False
+
+
 @pytest.mark.parametrize(
     "capability_id",
     [
@@ -404,6 +524,43 @@ def test_exact_200_runtime_semantic_exception_is_profile_and_scenario_bound(
             capability_id=capability_id,
             scenario=f"{capability_id}_other",
             profile_id="exact-200",
+        )
+    )
+
+
+def test_exact_2000_runtime_semantics_require_local_full_flow_opt_in() -> None:
+    config = docker_runtime.normalize_config(
+        docker_runtime.parse_config_file(
+            "templates/configs/scale_2000_local_full_flow_optin.yaml"
+        )
+    )
+
+    assert docker_runtime._runtime_semantic_errors(
+        config,
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        profile_id="exact-2000",
+        operator_opt_in=True,
+        cost_acknowledged=True,
+    ) == []
+    assert any(
+        error["code"] == "EXACT_2000_LOCAL_FULL_FLOW_OPT_IN_REQUIRED"
+        for error in docker_runtime._runtime_semantic_errors(
+            config,
+            capability_id="local_full_flow",
+            scenario="local_full_flow",
+            profile_id="exact-2000",
+        )
+    )
+    assert any(
+        error["code"] == "EXACT_2000_LOCAL_FULL_FLOW_OPT_IN_REQUIRED"
+        for error in docker_runtime._runtime_semantic_errors(
+            config,
+            capability_id="management_matrix",
+            scenario="management_matrix",
+            profile_id="exact-2000",
+            operator_opt_in=True,
+            cost_acknowledged=True,
         )
     )
 
@@ -680,23 +837,55 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     scenario: str,
     expected_scale_writes: int,
 ) -> None:
-    import valkey_scale_lab.metrics.m2_resource as resource_module
-
-    nodes = [{"logical_id": "node-1"}]
+    nodes = [{"logical_id": "node-1", "host": "127.0.0.1", "client_port": 7400}]
     nodehosts = [{"nodehost_id": "host-1"}]
     scale_writes: list[tuple[str, str]] = []
     resource_clocks: list[object] = []
+    events: list[str] = []
+    allow_resource_finish = threading.Event()
 
-    def fake_collect(
-        _state: dict,
+    def fake_resource_observation(
+        path: Path,
         *,
-        monotonic_clock: object,
-        first_complete_sample_event: threading.Event,
+        monotonic: object,
+        first_complete_sample_event: object,
         **_kwargs: object,
     ) -> dict[str, str]:
-        resource_clocks.append(monotonic_clock)
-        first_complete_sample_event.set()
+        resource_clocks.append(monotonic)
+        events.append("resource-first-sample")
+        first_complete_sample_event.set()  # type: ignore[attr-defined]
+        assert allow_resource_finish.wait(timeout=1.0)
+        events.append("resource-end")
+        path.write_text('{"status":"PASS"}\n', encoding="utf-8")
         return {"status": "PASS"}
+
+    def fake_protocol_boundary(
+        boundary_nodes: list[dict[str, object]],
+        label: str,
+    ) -> dict[str, object]:
+        events.append(f"boundary-{label}")
+        assert boundary_nodes == nodes
+        return {
+            "status": "PASS",
+            "label": label,
+            "expected_live_nodes": ["node-1"],
+            "node_metrics": [
+                {
+                    "logical_id": "node-1",
+                    "cluster_stats_bytes_sent": 10 if label == "start" else 20,
+                    "cluster_stats_bytes_received": 30 if label == "start" else 50,
+                    "total_cluster_links_buffer_limit_exceeded": 1
+                    if label == "start"
+                    else 3,
+                }
+            ],
+            "errors": [],
+        }
+
+    def fake_configure_process_cluster(*_args: object, **_kwargs: object) -> tuple[list[object], list[object]]:
+        events.append("configure")
+        allow_resource_finish.set()
+        return [], []
 
     monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda **_kwargs: None)
     monkeypatch.setattr(docker_runtime, "run_docker", lambda *_args, **_kwargs: None)
@@ -730,15 +919,16 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
     monkeypatch.setattr(docker_runtime, "_write_effective_server_profile_artifact", lambda *_args: None)
     monkeypatch.setattr(docker_runtime, "_write_effective_cluster_timeout_artifact", lambda *_args: None)
     monkeypatch.setattr(docker_runtime, "_write_state", lambda *_args: None)
-    monkeypatch.setattr(resource_module, "collect_m2_resource_window", fake_collect)
+    monkeypatch.setattr(docker_runtime, "_resource_runners_for_nodes", lambda *_args, **_kwargs: ["runner"])
+    monkeypatch.setattr(docker_runtime, "write_resource_observation", fake_resource_observation)
+    monkeypatch.setattr(docker_runtime, "_m2_bootstrap_protocol_boundary", fake_protocol_boundary)
     monkeypatch.setattr(
         docker_runtime,
         "_m2_bootstrap_resource_seconds",
         lambda: 1.0 if scenario == "cluster_timeout" else None,
     )
-    monkeypatch.setattr(docker_runtime, "_configure_process_cluster", lambda *_args, **_kwargs: ([], []))
+    monkeypatch.setattr(docker_runtime, "_configure_process_cluster", fake_configure_process_cluster)
     monkeypatch.setattr(docker_runtime, "_write_runtime_timing_breakdown", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(docker_runtime, "write_system_metrics_artifacts", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         docker_runtime,
         "write_scale_ladder_artifacts",
@@ -760,6 +950,65 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
 
     assert scale_writes == [("scale_ladder", "scale_ladder")] * expected_scale_writes
     assert resource_clocks == ([shared_monotonic] if scenario == "cluster_timeout" else [])
+    if scenario == "cluster_timeout":
+        assert events == [
+            "resource-first-sample",
+            "boundary-start",
+            "configure",
+            "resource-end",
+            "boundary-end",
+        ]
+        resource_report = json.loads((tmp_path / "resource_observation.json").read_text())
+        assert resource_report["m2_bootstrap_protocol_boundaries"]["start"]["label"] == "start"
+        assert resource_report["m2_bootstrap_protocol_boundaries"]["end"]["label"] == "end"
+    else:
+        assert events == ["configure"]
+
+
+def test_m2_bootstrap_protocol_boundary_uses_direct_cluster_info(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[int, tuple[str, ...]]] = []
+
+    class FakeRespConnection:
+        def __init__(self, endpoint: object, *, timeout: float) -> None:
+            self.endpoint = endpoint
+
+        def __enter__(self) -> "FakeRespConnection":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def execute(self, *command: str) -> str:
+            port = int(self.endpoint.port)  # type: ignore[attr-defined]
+            calls.append((port, command))
+            return (
+                "cluster_stats_bytes_sent:100\n"
+                "cluster_stats_bytes_received:200\n"
+                "total_cluster_links_buffer_limit_exceeded:3\n"
+            )
+
+    def fail_node_command(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("bootstrap protocol boundary must use direct RESP")
+
+    monkeypatch.setattr(docker_runtime, "RespConnection", FakeRespConnection)
+    monkeypatch.setattr(docker_runtime, "_node_command", fail_node_command)
+
+    boundary = docker_runtime._m2_bootstrap_protocol_boundary(
+        [{"logical_id": "node-1", "host": "127.0.0.1", "client_port": 7400}],
+        "start",
+    )
+
+    assert calls == [(7400, ("CLUSTER", "INFO"))]
+    assert boundary["node_metrics"] == [
+        {
+            "logical_id": "node-1",
+            "cluster_stats_bytes_sent": 100,
+            "cluster_stats_bytes_received": 200,
+            "total_cluster_links_buffer_limit_exceeded": 3,
+        }
+    ]
 
 
 def test_process_runtime_state_records_required_node_fields(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1079,35 +1328,38 @@ def test_process_wait_predicate_uses_representatives_then_full_check(monkeypatch
     assert calls == [["p0", "p1"], ["p0", "p1", "r0", "r1"]]
 
 
-def test_process_cluster_link_counts_require_readable_bidirectional_peers() -> None:
-    peer_a = "a" * 40
-    peer_b = "b" * 40
+def test_process_wait_predicate_above_200_avoids_all_node_cluster_nodes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+    nodes = [
+        {
+            "logical_id": f"node-{index:04d}",
+            "role": "primary" if index % 2 == 0 else "replica",
+            "az_id": f"az-{index % 3}",
+        }
+        for index in range(201)
+    ]
 
-    counts = docker_runtime._process_cluster_link_counts(
-        [
-            ["direction", "to", "node", peer_a, "events", "r"],
-            ["direction", "from", "node", peer_a, "events", "r"],
-            ["direction", "to", "node", peer_b, "events", "rw"],
-            ["direction", "from", "node", peer_b, "events", "r"],
+    def fake_snapshots(sampled: list[dict], *, timeout: float = 60.0) -> list[dict]:
+        calls.append([node["logical_id"] for node in sampled])
+        return [
+            {
+                "logical_id": node["logical_id"],
+                "probe_status": "PASS",
+                "known_nodes": len(nodes),
+            }
+            for node in sampled
         ]
-    )
 
-    assert counts == {
-        "cluster_link_to_count": 2,
-        "cluster_link_from_count": 2,
-        "cluster_link_bidirectional_peer_count": 2,
-        "cluster_link_invalid_count": 0,
-        "cluster_link_duplicate_count": 0,
-    }
+    monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", fake_snapshots)
 
-    incomplete = docker_runtime._process_cluster_link_counts(
-        [
-            ["direction", "to", "node", peer_a, "events", "r"],
-            ["direction", "from", "node", peer_a, "events", ""],
-        ]
-    )
-    assert incomplete["cluster_link_bidirectional_peer_count"] == 0
-    assert incomplete["cluster_link_invalid_count"] == 1
+    docker_runtime._wait_process_known(nodes, expected=len(nodes), timeout=1)
+
+    assert len(calls) == 2
+    assert all(len(call) < len(nodes) for call in calls)
+
+
 
 
 def test_large_process_cluster_uses_cluster_create(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1226,6 +1478,153 @@ def test_large_cluster_uses_replicated_cluster_create(monkeypatch: pytest.Monkey
     assert len(create_calls[0][0]) == 25
     assert len(create_calls[0][1]) == 25
     assert [op["operation"] for op in operations] == ["cluster_create"]
+
+
+def test_management_wait_clean_cluster_uses_light_health_on_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nodes = [
+        {
+            "logical_id": "shard-0000-primary",
+            "role": "primary",
+            "client_port": 7400,
+            "shard_id": "shard-0000",
+        },
+        {
+            "logical_id": "shard-0001-replica-00",
+            "role": "replica",
+            "client_port": 7401,
+            "shard_id": "shard-0001",
+        },
+    ]
+    health_calls: list[int] = []
+
+    def light_health(probed: list[dict]) -> dict[str, object]:
+        health_calls.append(len(probed))
+        return {
+            "cluster_state": "ok",
+            "known_nodes": len(probed),
+            "primary_count": 1,
+            "replica_count": 1,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": [],
+        }
+
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", light_health)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_wait_cluster_role_counts",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("all-node CLUSTER NODES role wait must not run")
+        ),
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_process_node_snapshot",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("failure diagnostic must not run on success")
+        ),
+    )
+
+    docker_runtime._management_wait_clean_cluster(nodes, timeout=1)
+
+    assert health_calls == [2]
+
+
+def test_management_forget_until_absent_uses_fixed_topology_observers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    survivors = [
+        {
+            "logical_id": f"node-{idx}",
+            "role": "primary" if idx % 2 == 0 else "replica",
+            "client_port": 7400 + idx,
+            "shard_id": f"shard-{idx // 2:04d}",
+            "az_id": f"az-{idx}",
+        }
+        for idx in range(1999)
+    ]
+    topology_checks: list[str] = []
+    forget_commands: list[str] = []
+
+    class FakeTelemetry:
+        def now_unix_ms(self) -> int:
+            return 1
+
+    def fake_node_command(node: dict, *args: object, timeout: float = 5.0) -> str:
+        if args[:2] == ("CLUSTER", "FORGET"):
+            forget_commands.append(str(node["logical_id"]))
+            return "OK"
+        raise AssertionError(f"unexpected command {args!r}")
+
+    def fake_contains(node: dict, removed_id: str) -> bool:
+        topology_checks.append(str(node["logical_id"]))
+        assert removed_id == "removed-id"
+        return False
+
+    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
+    monkeypatch.setattr(docker_runtime, "_management_cluster_nodes_contains", fake_contains)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_cluster_health",
+        lambda nodes: {
+            "cluster_state": "ok",
+            "known_nodes": len(nodes),
+            "primary_count": sum(node["role"] == "primary" for node in nodes),
+            "replica_count": sum(node["role"] == "replica" for node in nodes),
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": [],
+        },
+    )
+    command_log: list[dict[str, object]] = []
+
+    docker_runtime._management_forget_until_absent(
+        telemetry=FakeTelemetry(),  # type: ignore[arg-type]
+        capability_id="cap",
+        parent_run_id="run",
+        operation_id="remove",
+        survivors=survivors,
+        removed_id="removed-id",
+        expected_nodes=len(survivors),
+        expected_primaries=sum(node["role"] == "primary" for node in survivors),
+        expected_replicas=sum(node["role"] == "replica" for node in survivors),
+        command_log=command_log,  # type: ignore[arg-type]
+    )
+
+    assert len(topology_checks) == 3
+    assert len(forget_commands) == len(survivors)
+    assert {row["status"] for row in command_log} == {"PASS"}
+
+
+def test_management_forget_unknown_removed_node_is_absent_noop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeTelemetry:
+        def now_unix_ms(self) -> int:
+            return 1
+
+    def fake_node_command(*_args: object, **_kwargs: object) -> str:
+        raise DockerRuntimeError("ERR Unknown node removed-id")
+
+    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
+    command_log: list[dict[str, object]] = []
+
+    row = docker_runtime._management_log_forget_removed_node(
+        command_log,  # type: ignore[arg-type]
+        telemetry=FakeTelemetry(),  # type: ignore[arg-type]
+        capability_id="cap",
+        parent_run_id="run",
+        operation_id="remove",
+        target={"logical_id": "survivor"},
+        removed_id="removed-id",
+    )
+
+    assert row["status"] == "PASS"
+    assert command_log == [row]
 
 
 def test_large_cluster_create_retargets_replicas_after_primary_create(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2009,104 +2408,6 @@ def test_docker_stats_rejects_non_object_json(monkeypatch: pytest.MonkeyPatch) -
 
     assert result["status"] == "MISSING"
     assert "not an object" in result["reason"]
-
-
-def test_system_metrics_batches_container_stats_once_per_window(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    batches: list[list[str]] = []
-    samples: list[tuple[str, str, dict[str, object]]] = []
-    nodes = [
-        {"logical_id": "node-a0", "container_name": "nodehost-a"},
-        {"logical_id": "node-a1", "container_name": "nodehost-a"},
-        {"logical_id": "node-b0", "container_name": "nodehost-b"},
-    ]
-
-    def fake_stats_many(containers):
-        batch = list(containers)
-        batches.append(batch)
-        return {container: {"status": "PASS", "memory_usage": container} for container in set(batch)}
-
-    def fake_rows(telemetry, node, window_name, *, docker_stats=None):
-        samples.append((node["logical_id"], window_name, docker_stats))
-        return [
-            {
-                "source_id": node["logical_id"],
-                "metric_name": "test_metric",
-                "metric_value": 0,
-                "labels": {"logical_node_id": node["logical_id"], "lifecycle_window": window_name},
-            }
-        ]
-
-    monkeypatch.setattr(docker_runtime, "_docker_stats_many", fake_stats_many)
-    monkeypatch.setattr(docker_runtime, "_system_metric_rows_for_node", fake_rows)
-
-    docker_runtime.write_system_metrics_artifacts(
-        tmp_path,
-        "local_full_flow",
-        "local_full_flow",
-        "run-1",
-        nodes,
-        lifecycle_windows=["setup", "workload"],
-    )
-
-    assert batches == [
-        ["nodehost-a", "nodehost-a", "nodehost-b"],
-        ["nodehost-a", "nodehost-a", "nodehost-b"],
-    ]
-    assert len(samples) == len(nodes) * 2
-    assert all(sample[2]["memory_usage"] == nodes[index % len(nodes)]["container_name"] for index, sample in enumerate(samples))
-    report = json.loads((tmp_path / "system_metrics_report.json").read_text(encoding="utf-8"))
-    assert report["source_refs"]["valkey_e2e_evidence"] == "valkey_e2e_evidence.json"
-
-
-def test_system_metrics_expose_numeric_container_cpu_and_cluster_source(monkeypatch: pytest.MonkeyPatch) -> None:
-    telemetry = docker_runtime.TelemetryRun(
-        capability_id="local_full_flow",
-        scenario_name="local_full_flow",
-        run_id="run-1",
-        coverage_id="system-metrics",
-        scale=1,
-        node_count=1,
-    )
-    node = {"logical_id": "node-1", "container_name": "nodehost-1", "pid": 101}
-
-    def fake_node_command(_node, *args, timeout):
-        del timeout
-        if args == ("INFO", "default"):
-            return "connected_clients:2\nused_memory:100\nused_memory_rss:120\n"
-        if args == ("CLUSTER", "INFO"):
-            return "cluster_state:ok\ncluster_known_nodes:1\ncluster_slots_assigned:16384\ncluster_slots_ok:16384\ncluster_slots_fail:0\n"
-        if args == ("CLUSTER", "NODES"):
-            return "id 127.0.0.1:7000@17000 myself,master - 0 0 1 connected\n"
-        raise AssertionError(args)
-
-    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
-    monkeypatch.setattr(docker_runtime, "_count_log_errors", lambda _node: 0)
-    rows = docker_runtime._system_metric_rows_for_node(
-        telemetry,
-        node,
-        "workload",
-        docker_stats={
-            "status": "PASS",
-            "cpu_percent": "12.50%",
-            "memory_usage": "10MiB / 1GiB",
-            "net_io": "1kB / 2kB",
-            "pids": "4",
-        },
-    )
-
-    by_name = {row["metric_name"]: row for row in rows}
-    assert by_name["container_cpu_percent"]["source_type"] == "docker_stats"
-    assert by_name["container_cpu_percent"]["metric_value"] == 12.5
-    assert by_name["cluster_state"]["source_type"] == "cluster_info"
-    assert by_name["cluster_state"]["metric_value"] == 1
-    assert by_name["cpu_user_percent"]["metric_value"] == docker_runtime.MISSING
-
-
-def test_local_full_flow_posthoc_metrics_do_not_claim_unsampled_management_or_fault_windows(tmp_path: Path) -> None:
-    for name in ["management_sequence.json", "workload_windows.json", "fault_sequence.json"]:
-        (tmp_path / name).write_text("{}\n", encoding="utf-8")
-
-    assert docker_runtime._system_metric_windows_for_artifacts(tmp_path) == ["setup", "cleanup", "workload"]
 
 
 def test_cleanup_process_scan_parsing_and_zombie_exit(monkeypatch: pytest.MonkeyPatch) -> None:

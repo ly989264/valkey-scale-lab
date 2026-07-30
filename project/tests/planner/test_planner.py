@@ -142,6 +142,62 @@ def test_local_full_flow_exact_200_plan_uses_bounded_exception_without_raising_c
     assert plan["runtime"]["dry_run"] is False
 
 
+def test_local_full_flow_exact_2000_plan_uses_controlled_opt_in_path() -> None:
+    config = normalize_config(
+        parse_config_file("templates/configs/scale_2000_local_full_flow_optin.yaml")
+    )
+
+    plan = build_cluster_plan(
+        config,
+        config_path=Path("templates/configs/scale_2000_local_full_flow_optin.yaml"),
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        operator_opt_in=True,
+        cost_acknowledged=True,
+    )
+
+    assert plan["node_count"] == 2000
+    assert plan["runtime"]["dry_run"] is False
+    assert plan["constraints"]["exact_2000_local_full_flow_opt_in"] is True
+    assert plan["constraints"]["selected_capability_id"] == "local_full_flow"
+    assert plan["constraints"]["selected_scenario_id"] == "local_full_flow"
+    assert plan["constraints"]["operator_opt_in"] is True
+    assert plan["constraints"]["cost_acknowledged"] is True
+    assert plan["scalable_observability"]["cluster_nodes_command_count"] == 0
+    assert plan["scalable_observability"]["light_command_count"] == 2000 * 6
+    assert plan["nodehost_density"]["actual_nodehost_count"] == 80
+
+
+def test_local_full_flow_exact_2000_plan_requires_explicit_opt_in() -> None:
+    config = normalize_config(
+        parse_config_file("templates/configs/scale_2000_local_full_flow_optin.yaml")
+    )
+
+    with pytest.raises(PlannerError, match="plans above 200 nodes"):
+        build_cluster_plan(
+            config,
+            config_path=Path("templates/configs/scale_2000_local_full_flow_optin.yaml"),
+            capability_id="local_full_flow",
+            scenario="local_full_flow",
+        )
+
+
+def test_exact_2000_plan_rejects_non_local_full_flow_scenario() -> None:
+    config = normalize_config(
+        parse_config_file("templates/configs/scale_2000_local_full_flow_optin.yaml")
+    )
+
+    with pytest.raises(PlannerError, match="plans above 200 nodes"):
+        build_cluster_plan(
+            config,
+            config_path=Path("templates/configs/scale_2000_local_full_flow_optin.yaml"),
+            capability_id="management_matrix",
+            scenario="management_matrix",
+            operator_opt_in=True,
+            cost_acknowledged=True,
+        )
+
+
 def test_management_matrix_200_exact_200_plan_rejects_wrong_scenario() -> None:
     config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
 

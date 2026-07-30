@@ -8,7 +8,7 @@
         "product.analysis.analysis_summary",
         "product.analysis.o5_admission_digest_binding",
         "product.analysis.o5_source_artifact_completeness",
-        "product.analysis.system_metrics_summary",
+        "product.analysis.resource_analysis_summary",
         "product.analysis.validated_analysis_v9",
         "product.analysis.workload_impact_analysis"
       ]
@@ -23,7 +23,7 @@
         "product.artifacts.management_matrix",
         "product.artifacts.run_metadata",
         "product.artifacts.setup_telemetry",
-        "product.artifacts.system_metrics_artifacts",
+        "product.artifacts.resource_observation_schema",
         "product.artifacts.workload_benchmark_artifacts"
       ]
     },
@@ -96,6 +96,13 @@
       ]
     },
     {
+      "suite_id": "product.observability",
+      "description": "All product observability tests.",
+      "test_ids": [
+        "product.observability.legacy_resource_removal"
+      ]
+    },
+    {
       "suite_id": "product.orchestrator",
       "description": "All product orchestrator tests.",
       "test_ids": [
@@ -131,7 +138,6 @@
       "test_ids": [
         "product.report.final_report",
         "product.report.report_rendering",
-        "product.report.system_metrics_report",
         "product.report.validated_evidence_pipeline_v9",
         "product.report.zh_offline_report_gate"
       ]
@@ -186,11 +192,11 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
-        "product.unit.system_metrics_runtime",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
         "product.unit.workload_key_generator"
@@ -203,7 +209,7 @@
         "product.analysis.analysis_summary",
         "product.analysis.o5_admission_digest_binding",
         "product.analysis.o5_source_artifact_completeness",
-        "product.analysis.system_metrics_summary",
+        "product.analysis.resource_analysis_summary",
         "product.analysis.validated_analysis_v9",
         "product.analysis.workload_impact_analysis",
         "product.artifacts.command_log",
@@ -212,7 +218,7 @@
         "product.artifacts.management_matrix",
         "product.artifacts.run_metadata",
         "product.artifacts.setup_telemetry",
-        "product.artifacts.system_metrics_artifacts",
+        "product.artifacts.resource_observation_schema",
         "product.artifacts.workload_benchmark_artifacts",
         "product.cli.compatibility_wrappers",
         "product.config.config_validation",
@@ -248,7 +254,6 @@
         "product.real_valkey.gate_small_real_parity",
         "product.report.final_report",
         "product.report.report_rendering",
-        "product.report.system_metrics_report",
         "product.report.validated_evidence_pipeline_v9",
         "product.report.zh_offline_report_gate",
         "product.scale.review_o1_process_cleanup_missing_identity",
@@ -279,14 +284,15 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
-        "product.unit.system_metrics_runtime",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
-        "product.unit.workload_key_generator"
+        "product.unit.workload_key_generator",
+        "product.observability.legacy_resource_removal"
       ]
     },
     {
@@ -305,7 +311,7 @@
         "product.analysis.analysis_summary",
         "product.analysis.o5_admission_digest_binding",
         "product.analysis.o5_source_artifact_completeness",
-        "product.analysis.system_metrics_summary",
+        "product.analysis.resource_analysis_summary",
         "product.analysis.validated_analysis_v9",
         "product.analysis.workload_impact_analysis",
         "product.artifacts.command_log",
@@ -314,7 +320,7 @@
         "product.artifacts.management_matrix",
         "product.artifacts.run_metadata",
         "product.artifacts.setup_telemetry",
-        "product.artifacts.system_metrics_artifacts",
+        "product.artifacts.resource_observation_schema",
         "product.artifacts.workload_benchmark_artifacts",
         "product.cli.compatibility_wrappers",
         "product.config.config_validation",
@@ -350,7 +356,6 @@
         "product.real_valkey.gate_small_real_parity",
         "product.report.final_report",
         "product.report.report_rendering",
-        "product.report.system_metrics_report",
         "product.report.validated_evidence_pipeline_v9",
         "product.report.zh_offline_report_gate",
         "product.scale.review_o1_process_cleanup_missing_identity",
@@ -381,17 +386,18 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
-        "product.unit.system_metrics_runtime",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
         "product.unit.workload_key_generator",
         "gate.contracts",
         "gate.executor",
-        "gate.m2.contracts"
+        "gate.m2.contracts",
+        "product.observability.legacy_resource_removal"
       ]
     },
     {
@@ -467,8 +473,8 @@
       }
     },
     {
-      "test_id": "product.analysis.system_metrics_summary",
-      "description": "Analysis system metrics summary checks.",
+      "test_id": "product.analysis.resource_analysis_summary",
+      "description": "Analysis resource observation summary checks.",
       "parameters": {},
       "runner": {
         "type": "pytest",
@@ -479,7 +485,7 @@
           "-q",
           "-p",
           "no:cacheprovider",
-          "tests/analysis/test_system_metrics_summary.py",
+          "tests/analysis/test_resource_analysis_summary.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
@@ -656,8 +662,8 @@
       }
     },
     {
-      "test_id": "product.artifacts.system_metrics_artifacts",
-      "description": "Artifacts system metrics artifacts checks.",
+      "test_id": "product.artifacts.resource_observation_schema",
+      "description": "Resource observation artifact schema checks.",
       "parameters": {},
       "runner": {
         "type": "pytest",
@@ -668,7 +674,7 @@
           "-q",
           "-p",
           "no:cacheprovider",
-          "tests/artifacts/test_system_metrics_artifacts.py",
+          "tests/observability/test_resource_observation_schema.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
@@ -1412,27 +1418,6 @@
       }
     },
     {
-      "test_id": "product.report.system_metrics_report",
-      "description": "Report system metrics report checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/report/test_system_metrics_report.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
       "test_id": "product.report.validated_evidence_pipeline_v9",
       "description": "Report validated evidence pipeline v9 checks.",
       "parameters": {},
@@ -2000,6 +1985,27 @@
       }
     },
     {
+      "test_id": "product.unit.scalable_observability",
+      "description": "Unit scalable cluster observability checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_scalable_observability.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
       "test_id": "product.unit.nodehost_density",
       "description": "Unit nodehost density checks.",
       "parameters": {},
@@ -2139,27 +2145,6 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_setup_timing_accounting.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "product.unit.system_metrics_runtime",
-      "description": "Unit system metrics runtime checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/unit/test_system_metrics_runtime.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
@@ -2447,6 +2432,27 @@
         "cwd": "{gate.project_root}",
         "timeout_seconds": 14400,
         "result": "exit_code"
+      }
+    },
+    {
+      "test_id": "product.observability.legacy_resource_removal",
+      "description": "Whole-project legacy resource contract removal scan.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/observability/test_legacy_resource_removal.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
       }
     }
   ]

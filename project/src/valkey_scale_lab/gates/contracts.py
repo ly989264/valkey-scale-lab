@@ -133,6 +133,8 @@ class ExecutionContext:
     config_template: Optional[str]
     configuration: Mapping[str, Any]
     metadata: Mapping[str, Any]
+    operator_opt_in: bool = False
+    cost_acknowledged: bool = False
 
     def __post_init__(self) -> None:
         _require_identifier("run_id", self.run_id)
@@ -144,6 +146,10 @@ class ExecutionContext:
             raise ValueError("fault scope ownership_id must match context ownership_id")
         _require_identifier("backend_id", self.backend_id)
         _require_identifier("profile_id", self.profile_id)
+        if not isinstance(self.operator_opt_in, bool):
+            raise TypeError("operator_opt_in must be a boolean")
+        if not isinstance(self.cost_acknowledged, bool):
+            raise TypeError("cost_acknowledged must be a boolean")
         if isinstance(self.requested_nodes, bool) or not isinstance(
             self.requested_nodes, int
         ):

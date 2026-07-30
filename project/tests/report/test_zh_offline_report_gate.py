@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import json
 from pathlib import Path
 
-from valkey_scale_lab.analysis.summary import create_analysis_summary
 from valkey_scale_lab.report.render import render_report
 
 
@@ -14,7 +14,29 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_zh_offline_report_gate_accepts_canonical_layout(tmp_path: Path) -> None:
     analysis_path = tmp_path / "analysis_summary.json"
     reports_dir = tmp_path / "reports"
-    create_analysis_summary(ROOT / "tests" / "fixtures" / "system_metrics" / "success", analysis_path)
+    analysis_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "v1",
+                "artifact_type": "analysis_summary",
+                "capability_id": "analysis_reporting",
+                "run_id": "analysis-reporting",
+                "created_at": "2026-06-28T00:00:00Z",
+                "status": "PASS",
+                "source": {"capability_id": "test"},
+                "findings": [],
+                "metrics": [],
+                "missing_metrics": [],
+                "baseline_comparison": {"comparisons": []},
+                "resource_analysis": {
+                    "status": "PASS",
+                    "per_window": [],
+                    "abnormal_nodes_topN": [],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
     render_report(analysis_path, reports_dir, reports_dir / "report_index.json")
     result = subprocess.run(
         [

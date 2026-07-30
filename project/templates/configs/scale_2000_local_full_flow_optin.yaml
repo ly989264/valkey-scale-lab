@@ -1,0 +1,52 @@
+schema_version: v1
+profile_name: scale_2000_local_full_flow_optin
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: docker
+  valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
+  sandbox_mode: container_namespace
+  dry_run: false
+  max_nodehosts: 80
+  nodehosts_per_az: 40
+  max_logical_nodes_per_nodehost: 25
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller, worker]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 1000
+  replicas_per_shard: 1
+  port_base: 12000
+  cluster_bus_port_base: 22000
+  node_memory_limit_mb: 32
+scale_profile:
+  exact_2000_local_full_flow_opt_in: true
+  target_nodes: 2000
+  execution_mode: operator_opt_in
+workload:
+  enabled: true
+  mode: benchmark
+  target_qps: 10000
+  duration_seconds: 120
+  read_ratio: 0.9
+  write_ratio: 0.1
+  pipeline: 1
+  connections: 1
+  keyspace: 100000
+  value_size: 32
+  hash_slot_distribution: multi_slot
+  timing: all_run
+faults: []

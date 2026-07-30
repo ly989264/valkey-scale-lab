@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://valkey-scale-lab.local/schemas/resource_observation.schema.json",
+  "title": "Resource observation",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "capability_id",
+    "scenario_name",
+    "run_id",
+    "producer",
+    "status",
+    "checks",
+    "resource_documents",
+    "resource_analyses"
+  ],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "artifact_type": {"const": "resource_observation"},
+    "capability_id": {"type": "string", "minLength": 1},
+    "scenario_name": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "producer": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "valkey-scale-lab"},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "ERROR"]},
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "status": {"type": "string", "enum": ["OK", "FAIL", "ERROR"]},
+          "reason": {"type": "string"},
+          "warnings": {"type": "array"}
+        }
+      }
+    },
+    "resource_documents": {"type": "array", "minItems": 1},
+    "resource_analyses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sampler_id", "analysis"],
+        "properties": {
+          "sampler_id": {"type": "string", "minLength": 1},
+          "analysis": {
+            "type": "object",
+            "required": [
+              "cpu",
+              "memory",
+              "network",
+              "processes",
+              "process_totals",
+              "collector",
+              "timestamps",
+              "timeline_correlation"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

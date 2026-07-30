@@ -20,6 +20,14 @@ def _patch_resource_preflight_host(monkeypatch) -> None:
     )
     monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
     monkeypatch.setattr(resource, "_host_available_memory_mb", lambda: 65536)
+    monkeypatch.setattr(
+        resource.os_resource,
+        "getrlimit",
+        lambda _kind: (
+            resource.os_resource.RLIM_INFINITY,
+            resource.os_resource.RLIM_INFINITY,
+        ),
+    )
 
 
 def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monkeypatch) -> None:
@@ -124,6 +132,77 @@ def test_local_full_flow_resource_preflight_allows_exact_200_full_flow_exception
     assert report["bounded_exception"]["capability_id"] == "local_full_flow"
     assert report["bounded_exception"]["scenario_name"] == "local_full_flow"
     assert report["bounded_exception"]["default_max_nodes"] == 100
+
+
+def test_local_full_flow_resource_preflight_allows_exact_2000_opt_in(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _patch_resource_preflight_host(monkeypatch)
+
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_2000_local_full_flow_optin.yaml",
+        tmp_path / "local_full_flow_2000_preflight.json",
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        profile_id="exact-2000",
+        operator_opt_in=True,
+        cost_acknowledged=True,
+    )
+
+    assert report["status"] == "PASS"
+    assert report["node_count"] == 2000
+    assert report["controlled_scale_exception"]["capability_id"] == "local_full_flow"
+    assert report["controlled_scale_exception"]["scenario_name"] == "local_full_flow"
+    assert report["controlled_scale_exception"]["operator_opt_in"] is True
+    assert any(
+        check["name"] == "exact_2000_local_full_flow_opt_in"
+        and check["status"] == "PASS"
+        for check in report["checks"]
+    )
+
+
+def test_local_full_flow_resource_preflight_rejects_exact_2000_without_opt_in(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _patch_resource_preflight_host(monkeypatch)
+
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_2000_local_full_flow_optin.yaml",
+        tmp_path / "local_full_flow_2000_preflight.json",
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        profile_id="exact-2000",
+    )
+
+    assert report["status"] == "FAIL"
+    assert any(
+        check["name"] == "exact_2000_local_full_flow_opt_in"
+        and check["status"] == "FAIL"
+        for check in report["checks"]
+    )
+
+
+def test_resource_preflight_rejects_exact_2000_wrong_scenario(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _patch_resource_preflight_host(monkeypatch)
+
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_2000_local_full_flow_optin.yaml",
+        tmp_path / "wrong_2000_preflight.json",
+        capability_id="management_matrix",
+        scenario="management_matrix",
+        profile_id="exact-2000",
+        operator_opt_in=True,
+        cost_acknowledged=True,
+    )
+
+    assert report["status"] == "FAIL"
+    assert any(
+        check["name"] == "exact_2000_local_full_flow_opt_in"
+        and check["status"] == "FAIL"
+        for check in report["checks"]
+    )
 
 
 def test_fault_matrix_200_resource_preflight_rejects_wrong_200_fault_scenario(tmp_path: Path, monkeypatch) -> None:

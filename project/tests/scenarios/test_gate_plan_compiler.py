@@ -56,6 +56,7 @@ def test_compiler_only_resolves_declared_existing_profiles() -> None:
     assert compile_gate_plan(definition, 50).config_template == "templates/configs/scale_50.yaml"
     assert compile_gate_plan(definition, 100).profile_id == "exact-100"
     assert compile_gate_plan(definition, 200).profile_id == "exact-200"
+    assert compile_gate_plan(definition, 2000).profile_id == "exact-2000"
     assert compile_gate_plan(definition, 201).profile is None
 
 

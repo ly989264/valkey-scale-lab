@@ -269,6 +269,8 @@ def _run_exact_preflight(
     config_path: str,
     out_path: Path,
     requested_nodes: int,
+    operator_opt_in: bool = False,
+    cost_acknowledged: bool = False,
 ) -> dict[str, Any]:
     report = run_resource_preflight(
         config_path,
@@ -276,6 +278,8 @@ def _run_exact_preflight(
         capability_id=capability_id,
         scenario=scenario_id,
         profile_id=profile_id,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
     )
     observed = report.get("nodes_requested", report.get("node_count"))
     if observed != requested_nodes:

@@ -1,0 +1,44 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "resource_observation",
+  "capability_id": "resource_observation",
+  "scenario_name": "unit",
+  "run_id": "unit-resource",
+  "created_at": "2026-06-28T00:00:00Z",
+  "producer": {"name": "valkey-scale-lab", "version": "test"},
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "resource_analysis:host-a",
+      "status": "OK",
+      "reason": "",
+      "warnings": [],
+      "evidence": {}
+    }
+  ],
+  "resource_documents": [
+    {
+      "static": {"sampler_id": "host-a"},
+      "samples": [
+        {"kind": "host"},
+        {"kind": "process"}
+      ],
+      "errors": []
+    }
+  ],
+  "resource_analyses": [
+    {
+      "sampler_id": "host-a",
+      "analysis": {
+        "cpu": {},
+        "memory": {},
+        "network": {},
+        "processes": {},
+        "process_totals": {},
+        "collector": {},
+        "timestamps": [],
+        "timeline_correlation": {}
+      }
+    }
+  ]
+}

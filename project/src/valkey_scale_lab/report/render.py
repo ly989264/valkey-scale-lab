@@ -56,8 +56,8 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_failover_latency_distribution_csv(report_dir / "failover_latency_distribution.csv", analysis.get("fault_timeline", {})),
         _write_split_brain_windows_csv(report_dir / "split_brain_windows.csv", analysis.get("fault_timeline", {})),
         _write_fault_workload_impact_csv(report_dir / "fault_workload_impact.csv", analysis.get("fault_timeline", {})),
-        _write_system_metrics_window_csv(report_dir / "system_metrics_by_window.csv", analysis.get("system_metrics", {})),
-        _write_system_metrics_node_csv(report_dir / "system_metrics_abnormal_nodes.csv", analysis.get("system_metrics", {})),
+        _write_resource_analysis_window_csv(report_dir / "resource_analysis_by_window.csv", analysis.get("resource_analysis", {})),
+        _write_resource_analysis_node_csv(report_dir / "resource_analysis_abnormal_nodes.csv", analysis.get("resource_analysis", {})),
         _write_chart(report_dir / "metric_chart.svg", metrics),
         _write_setup_waterfall_svg(report_dir / "setup_waterfall.svg", analysis.get("setup_aggregates", {})),
         _write_command_latency_svg(report_dir / "command_latency.svg", analysis.get("command_audit", {})),
@@ -68,7 +68,7 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_fault_distribution_svg(report_dir / "failover_latency_distribution.svg", analysis.get("fault_timeline", {})),
         _write_split_brain_svg(report_dir / "split_brain_window.svg", analysis.get("fault_timeline", {})),
         _write_fault_workload_svg(report_dir / "fault_workload_impact.svg", analysis.get("fault_timeline", {})),
-        _write_system_metrics_svg(report_dir / "system_resource_trends.svg", analysis.get("system_metrics", {})),
+        _write_resource_analysis_svg(report_dir / "resource_trends.svg", analysis.get("resource_analysis", {})),
         _write_markdown(report_dir / "report.md", analysis),
         _write_html(report_dir / "index.html", analysis),
     ]
@@ -171,11 +171,11 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
                 "fault_workload_impact.svg",
             ],
         },
-        "system_metrics_report_inputs": {
-            "system_metrics": analysis.get("system_metrics", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include system metrics aggregates"}),
-            "refs": analysis.get("system_metrics", {}).get("source_refs", {"system_metrics_timeseries": "system_metrics_timeseries.jsonl"}),
-            "csv": ["system_metrics_by_window.csv", "system_metrics_abnormal_nodes.csv"],
-            "svg": "system_resource_trends.svg",
+        "resource_analysis_report_inputs": {
+            "resource_analysis": analysis.get("resource_analysis", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include resource analysis aggregates"}),
+            "refs": analysis.get("resource_analysis", {}).get("source_refs", {"resource_observation": "resource_observation.json"}),
+            "csv": ["resource_analysis_by_window.csv", "resource_analysis_abnormal_nodes.csv"],
+            "svg": "resource_trends.svg",
         },
     }
     _write_json(index_path, index)
@@ -521,13 +521,13 @@ def _write_fault_workload_impact_csv(path: Path, fault: dict[str, Any]) -> Path:
     return path
 
 
-def _write_system_metrics_window_csv(path: Path, system: dict[str, Any]) -> Path:
+def _write_resource_analysis_window_csv(path: Path, system: dict[str, Any]) -> Path:
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["window", "sample_count", "node_count", "missing_count", "rss_bytes_max", "connected_clients_max", "total_net_input_bytes_max"])
+        writer = csv.DictWriter(f, fieldnames=["window", "sample_count", "node_count", "missing_count", "process_rss_bytes_max_sum", "process_fd_count_max_sum", "network_error_drop_delta"])
         writer.writeheader()
         rows = system.get("per_window", []) if isinstance(system, dict) else []
         if not rows:
-            writer.writerow({"window": "SKIPPED_WITH_REASON", "sample_count": 0, "node_count": 0, "missing_count": 0, "rss_bytes_max": "", "connected_clients_max": "", "total_net_input_bytes_max": ""})
+            writer.writerow({"window": "SKIPPED_WITH_REASON", "sample_count": 0, "node_count": 0, "missing_count": 0, "process_rss_bytes_max_sum": "", "process_fd_count_max_sum": "", "network_error_drop_delta": ""})
         for item in rows:
             metrics = item.get("metrics", {}) if isinstance(item, dict) else {}
             writer.writerow(
@@ -536,21 +536,21 @@ def _write_system_metrics_window_csv(path: Path, system: dict[str, Any]) -> Path
                     "sample_count": item.get("sample_count", 0),
                     "node_count": item.get("node_count", 0),
                     "missing_count": item.get("missing_count", 0),
-                    "rss_bytes_max": _metric_field(metrics, "rss_bytes", "max"),
-                    "connected_clients_max": _metric_field(metrics, "connected_clients", "max"),
-                    "total_net_input_bytes_max": _metric_field(metrics, "total_net_input_bytes", "max"),
+                    "process_rss_bytes_max_sum": _metric_field(metrics, "process_rss_bytes_max_sum", "max"),
+                    "process_fd_count_max_sum": _metric_field(metrics, "process_fd_count_max_sum", "max"),
+                    "network_error_drop_delta": _metric_field(metrics, "network_error_drop_delta", "max"),
                 }
             )
     return path
 
 
-def _write_system_metrics_node_csv(path: Path, system: dict[str, Any]) -> Path:
+def _write_resource_analysis_node_csv(path: Path, system: dict[str, Any]) -> Path:
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["node_id", "sample_count", "missing_count", "rss_bytes_max", "used_memory_max", "connected_clients_max", "windows"])
+        writer = csv.DictWriter(f, fieldnames=["node_id", "sample_count", "missing_count", "process_rss_bytes_max_sum", "process_fd_count_max_sum", "collector_overrun_count", "windows"])
         writer.writeheader()
         rows = system.get("abnormal_nodes_topN", []) if isinstance(system, dict) else []
         if not rows:
-            writer.writerow({"node_id": "SKIPPED_WITH_REASON", "sample_count": 0, "missing_count": 0, "rss_bytes_max": "", "used_memory_max": "", "connected_clients_max": "", "windows": ""})
+            writer.writerow({"node_id": "SKIPPED_WITH_REASON", "sample_count": 0, "missing_count": 0, "process_rss_bytes_max_sum": "", "process_fd_count_max_sum": "", "collector_overrun_count": "", "windows": ""})
         for item in rows:
             metrics = item.get("metrics", {}) if isinstance(item, dict) else {}
             writer.writerow(
@@ -558,9 +558,9 @@ def _write_system_metrics_node_csv(path: Path, system: dict[str, Any]) -> Path:
                     "node_id": item.get("node_id", "MISSING"),
                     "sample_count": item.get("sample_count", 0),
                     "missing_count": item.get("missing_count", 0),
-                    "rss_bytes_max": _metric_field(metrics, "rss_bytes", "max"),
-                    "used_memory_max": _metric_field(metrics, "used_memory", "max"),
-                    "connected_clients_max": _metric_field(metrics, "connected_clients", "max"),
+                    "process_rss_bytes_max_sum": _metric_field(metrics, "process_rss_bytes_max_sum", "max"),
+                    "process_fd_count_max_sum": _metric_field(metrics, "process_fd_count_max_sum", "max"),
+                    "collector_overrun_count": _metric_field(metrics, "collector_overrun_count", "max"),
                     "windows": ",".join(str(name) for name in item.get("windows", [])),
                 }
             )
@@ -578,7 +578,7 @@ def _conclusion_summary(analysis: dict[str, Any]) -> dict[str, Any]:
     management = analysis.get("management_ops", {})
     workload = analysis.get("workload_benchmark", {})
     fault = analysis.get("fault_timeline", {})
-    system = analysis.get("system_metrics", {})
+    system = analysis.get("resource_analysis", {})
     findings = {str(item.get("name")): item for item in analysis.get("findings", []) if isinstance(item, dict)}
     slow_setup = (setup.get("stage_duration_ranking") or [{}])[0] if isinstance(setup, dict) else {}
     slow_node = (setup.get("slowest_nodes_topN") or [{}])[0] if isinstance(setup, dict) else {}
@@ -629,7 +629,7 @@ def _conclusion_lines(analysis: dict[str, Any]) -> list[str]:
         f"- 最慢管理操作: {slow_mgmt.get('operation_name', 'MISSING')} = {slow_mgmt.get('operation_duration_ms', 'MISSING')} ms。",
         f"- Workload 瓶颈窗口: {worst_workload.get('profile', 'MISSING')} {worst_workload.get('window_name', 'MISSING')}，p99={worst_workload.get('latency_p99_ms', 'MISSING')} ms，错误率={worst_workload.get('error_rate', 'MISSING')}。",
         f"- Failover p95={summary.get('failover_latency_p95_ms', 'MISSING')} ms；split-brain max={summary.get('split_brain_window_max_ms', 'MISSING')} ms。",
-        f"- 资源异常节点: {top_resource.get('node_id', 'MISSING')}，rss_max={_metric_field(top_resource.get('metrics', {}) if isinstance(top_resource, dict) else {}, 'rss_bytes', 'max') or 'MISSING'} bytes。",
+        f"- 资源异常节点: {top_resource.get('node_id', 'MISSING')}，rss_sum={_metric_field(top_resource.get('metrics', {}) if isinstance(top_resource, dict) else {}, 'process_rss_bytes_max_sum', 'max') or 'MISSING'} bytes。",
         f"- Cleanup 状态: {summary.get('cleanup_status', 'MISSING')}，剩余资源={summary.get('cleanup_resources_remaining', 'MISSING')}。",
         f"- 缺失指标数量: {summary.get('missing_metric_count', 0)}；缺失项保留原因，不用估算值替代。",
     ]
@@ -912,32 +912,32 @@ def _write_fault_workload_svg(path: Path, fault: dict[str, Any]) -> Path:
     return path
 
 
-def _write_system_metrics_svg(path: Path, system: dict[str, Any]) -> Path:
+def _write_resource_analysis_svg(path: Path, system: dict[str, Any]) -> Path:
     rows = system.get("per_window", []) if isinstance(system, dict) else []
     plot_rows = rows[:10]
     max_value = max([
-        float(_metric_field(row.get("metrics", {}) if isinstance(row, dict) else {}, "rss_bytes", "max") or 0)
+        float(_metric_field(row.get("metrics", {}) if isinstance(row, dict) else {}, "process_rss_bytes_max_sum", "max") or 0)
         for row in plot_rows
-        if str(_metric_field(row.get("metrics", {}) if isinstance(row, dict) else {}, "rss_bytes", "max") or "").replace(".", "", 1).isdigit()
+        if str(_metric_field(row.get("metrics", {}) if isinstance(row, dict) else {}, "process_rss_bytes_max_sum", "max") or "").replace(".", "", 1).isdigit()
     ] or [1.0])
     height = 110 + max(len(plot_rows), 1) * 34
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="860" height="{height}" viewBox="0 0 860 {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="16" y="28" font-size="16" font-weight="700">系统资源趋势</text>',
+        '<text x="16" y="28" font-size="16" font-weight="700">资源观测趋势</text>',
     ]
     if not plot_rows:
-        parts.append('<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: 无 system_metrics_timeseries.jsonl 输入</text>')
+        parts.append('<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: 无 resource_observation.json 输入</text>')
     y = 56
     for row in plot_rows:
         metrics = row.get("metrics", {}) if isinstance(row, dict) else {}
-        rss = _metric_field(metrics, "rss_bytes", "max")
-        clients = _metric_field(metrics, "connected_clients", "max")
+        rss = _metric_field(metrics, "process_rss_bytes_max_sum", "max")
+        fds = _metric_field(metrics, "process_fd_count_max_sum", "max")
         missing = row.get("missing_count", 0)
         width = int(360 * (float(rss) / max_value)) if isinstance(rss, (int, float)) else 2
         parts.append(f'<text x="16" y="{y + 14}" font-size="12">{html.escape(str(row.get("window", "MISSING")))}</text>')
         parts.append(f'<rect x="170" y="{y}" width="{max(width, 2)}" height="18" fill="#28666e"/>')
-        parts.append(f'<text x="{180 + max(width, 2)}" y="{y + 14}" font-size="12">rss_max={html.escape(str(rss))} clients_max={html.escape(str(clients))} missing={html.escape(str(missing))}</text>')
+        parts.append(f'<text x="{180 + max(width, 2)}" y="{y + 14}" font-size="12">rss_sum={html.escape(str(rss))} fd_sum={html.escape(str(fds))} missing={html.escape(str(missing))}</text>')
         y += 34
     parts.append("</svg>")
     path.write_text("\n".join(parts), encoding="utf-8")
@@ -951,7 +951,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     management = analysis.get("management_ops", {})
     workload = analysis.get("workload_benchmark", {})
     fault = analysis.get("fault_timeline", {})
-    system = analysis.get("system_metrics", {})
+    system = analysis.get("resource_analysis", {})
     lines = [
         "# 中文自动化可视化分析报告",
         "",
@@ -1080,27 +1080,27 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             )
     else:
         lines.append(f"- {fault.get('status', 'SKIPPED_WITH_REASON')}: {fault.get('reason', '无故障期间 workload impact 输入')}")
-    lines.extend(["", "## 系统资源趋势", ""])
+    lines.extend(["", "## 资源观测趋势", ""])
     if system.get("per_window"):
-        lines.append("![系统资源趋势](system_resource_trends.svg)")
+        lines.append("![资源观测趋势](resource_trends.svg)")
         for item in system.get("per_window", [])[:10]:
             metrics = item.get("metrics", {}) if isinstance(item, dict) else {}
             lines.append(
                 f"- {item.get('window', 'MISSING')}: "
-                f"rss_max={_metric_field(metrics, 'rss_bytes', 'max') or 'MISSING'} bytes, "
-                f"connected_clients_max={_metric_field(metrics, 'connected_clients', 'max') or 'MISSING'}, "
+                f"rss_sum={_metric_field(metrics, 'process_rss_bytes_max_sum', 'max') or 'MISSING'} bytes, "
+                f"fd_sum={_metric_field(metrics, 'process_fd_count_max_sum', 'max') or 'MISSING'}, "
                 f"missing_count={item.get('missing_count', 0)}"
             )
     else:
-        lines.append(f"- {system.get('status', 'SKIPPED_WITH_REASON')}: {system.get('reason', '无 system metrics 输入')}")
-    lines.extend(["", "## 系统异常节点 TopN", ""])
+        lines.append(f"- {system.get('status', 'SKIPPED_WITH_REASON')}: {system.get('reason', '无 resource analysis 输入')}")
+    lines.extend(["", "## 资源异常节点 TopN", ""])
     if system.get("abnormal_nodes_topN"):
         for item in system.get("abnormal_nodes_topN", [])[:10]:
             metrics = item.get("metrics", {}) if isinstance(item, dict) else {}
             lines.append(
                 f"- {item.get('node_id', 'MISSING')}: "
-                f"rss_max={_metric_field(metrics, 'rss_bytes', 'max') or 'MISSING'} bytes, "
-                f"used_memory_max={_metric_field(metrics, 'used_memory', 'max') or 'MISSING'} bytes, "
+                f"rss_sum={_metric_field(metrics, 'process_rss_bytes_max_sum', 'max') or 'MISSING'} bytes, "
+                f"fd_sum={_metric_field(metrics, 'process_fd_count_max_sum', 'max') or 'MISSING'}, "
                 f"missing_count={item.get('missing_count', 0)}"
             )
     else:
@@ -1112,7 +1112,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_lifecycle_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- fault_timeline_events.csv", "- fault_timeline_summary.csv", "- failover_latency_distribution.csv", "- split_brain_windows.csv", "- fault_workload_impact.csv", "- system_metrics_by_window.csv", "- system_metrics_abnormal_nodes.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg", "- fault_timeline.svg", "- failover_latency_distribution.svg", "- split_brain_window.svg", "- fault_workload_impact.svg", "- system_resource_trends.svg"])
+    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_lifecycle_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- fault_timeline_events.csv", "- fault_timeline_summary.csv", "- failover_latency_distribution.csv", "- split_brain_windows.csv", "- fault_workload_impact.csv", "- resource_analysis_by_window.csv", "- resource_analysis_abnormal_nodes.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg", "- fault_timeline.svg", "- failover_latency_distribution.svg", "- split_brain_window.svg", "- fault_workload_impact.svg", "- resource_trends.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -1124,7 +1124,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     management = analysis.get("management_ops", {})
     workload = analysis.get("workload_benchmark", {})
     fault = analysis.get("fault_timeline", {})
-    system = analysis.get("system_metrics", {})
+    system = analysis.get("resource_analysis", {})
     metadata_rows = "\n".join(
         "<tr><td>{}</td><td><code>{}</code></td></tr>".format(
             html.escape(key),
@@ -1237,21 +1237,21 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         )
         for row in fault.get("rows", [])[:10]
     ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无故障期间 workload impact 输入</td></tr>'
-    system_window_rows = "\n".join(
+    resource_observation_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("window", "MISSING"))),
             html.escape(str(item.get("sample_count", 0))),
-            html.escape(str(_metric_field(item.get("metrics", {}) if isinstance(item, dict) else {}, "rss_bytes", "max") or "MISSING")),
-            html.escape(str(_metric_field(item.get("metrics", {}) if isinstance(item, dict) else {}, "connected_clients", "max") or "MISSING")),
+            html.escape(str(_metric_field(item.get("metrics", {}) if isinstance(item, dict) else {}, "process_rss_bytes_max_sum", "max") or "MISSING")),
+            html.escape(str(_metric_field(item.get("metrics", {}) if isinstance(item, dict) else {}, "process_fd_count_max_sum", "max") or "MISSING")),
             html.escape(str(item.get("missing_count", 0))),
         )
         for item in system.get("per_window", [])[:10]
-    ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无 system metrics 输入</td></tr>'
-    system_node_rows = "\n".join(
+    ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无 resource analysis 输入</td></tr>'
+    resource_node_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("node_id", "MISSING"))),
-            html.escape(str(_metric_field(item.get("metrics", {}) if isinstance(item, dict) else {}, "rss_bytes", "max") or "MISSING")),
-            html.escape(str(_metric_field(item.get("metrics", {}) if isinstance(item, dict) else {}, "used_memory", "max") or "MISSING")),
+            html.escape(str(_metric_field(item.get("metrics", {}) if isinstance(item, dict) else {}, "process_rss_bytes_max_sum", "max") or "MISSING")),
+            html.escape(str(_metric_field(item.get("metrics", {}) if isinstance(item, dict) else {}, "process_fd_count_max_sum", "max") or "MISSING")),
             html.escape(str(item.get("missing_count", 0))),
         )
         for item in system.get("abnormal_nodes_topN", [])[:10]
@@ -1320,11 +1320,11 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <h2>故障期间 Workload 影响</h2>
   <img src="fault_workload_impact.svg" alt="故障期间 Workload 影响">
   <table><thead><tr><th>故障类型</th><th>样本</th><th>客户端不可用 ms</th><th>workload 恢复 ms</th><th>状态</th></tr></thead><tbody>{fault_workload_rows}</tbody></table>
-  <h2>系统资源趋势</h2>
-  <img src="system_resource_trends.svg" alt="系统资源趋势">
-  <table><thead><tr><th>窗口</th><th>样本数</th><th>rss max bytes</th><th>connected clients max</th><th>缺失数</th></tr></thead><tbody>{system_window_rows}</tbody></table>
-  <h2>系统异常节点 TopN</h2>
-  <table><thead><tr><th>节点</th><th>rss max bytes</th><th>used_memory max bytes</th><th>缺失数</th></tr></thead><tbody>{system_node_rows}</tbody></table>
+  <h2>资源观测趋势</h2>
+  <img src="resource_trends.svg" alt="资源观测趋势">
+  <table><thead><tr><th>窗口</th><th>样本数</th><th>RSS 汇总 bytes</th><th>FD 汇总</th><th>缺失数</th></tr></thead><tbody>{resource_observation_rows}</tbody></table>
+  <h2>资源异常节点 TopN</h2>
+  <table><thead><tr><th>节点</th><th>RSS 汇总 bytes</th><th>FD 汇总</th><th>缺失数</th></tr></thead><tbody>{resource_node_rows}</tbody></table>
   <h2>图表</h2>
   <img src="metric_chart.svg" alt="ANALYSIS_REPORTING artifact metrics chart">
 </body>

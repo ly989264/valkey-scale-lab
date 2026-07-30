@@ -279,6 +279,8 @@ class GateOrchestrator:
             config_template=plan.config_template,
             configuration=request.configuration,
             metadata=request.metadata,
+            operator_opt_in=request.operator_opt_in,
+            cost_acknowledged=request.cost_acknowledged,
         )
 
     @staticmethod

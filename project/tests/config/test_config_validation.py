@@ -124,6 +124,24 @@ def test_1000_dry_run_template_validates(tmp_path: Path) -> None:
     assert report["total_nodes"] == 1000
 
 
+def test_exact_2000_local_full_flow_template_validates_as_controlled_profile(
+    tmp_path: Path,
+) -> None:
+    report = validate_config_file(
+        "templates/configs/scale_2000_local_full_flow_optin.yaml",
+        tmp_path / "report.json",
+    )
+
+    assert report["valid"] is True
+    assert report["total_nodes"] == 2000
+    normalized = json.loads(
+        Path(report["normalized_config_path"]).read_text(encoding="utf-8")
+    )
+    assert normalized["runtime"]["dry_run"] is False
+    assert normalized["workload"]["enabled"] is True
+    assert normalized["scale_profile"]["exact_2000_local_full_flow_opt_in"] is True
+
+
 def test_scale_projection_200_plus_profile_validates(tmp_path: Path) -> None:
     config = tmp_path / "scale_250_scale_projection.yaml"
     config.write_text(
