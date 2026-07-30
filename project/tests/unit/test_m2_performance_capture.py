@@ -303,12 +303,20 @@ def test_fault_topology_facts_require_affected_shard_stability_before_full_valid
             "observation": {
                 "monotonic": 10.0,
                 "rows": [
-                    {
-                        "logical_id": "replica-0",
-                        "status": "OK",
-                        "cluster_state": "ok",
-                        "failure_reports": {"id-primary-0": 0, "id-replica-0": 0},
-                    }
+                        {
+                            "logical_id": "replica-0",
+                            "status": "OK",
+                            "cluster_state": "ok",
+                            "role": {"role": "replica"},
+                            "cluster_info": {
+                                "cluster_nodes_pfail": "0",
+                                "cluster_nodes_fail": "0",
+                                "cluster_slots_assigned": "16384",
+                                "cluster_slots_ok": "16384",
+                                "cluster_slots_pfail": "0",
+                                "cluster_slots_fail": "0",
+                            },
+                        }
                 ],
                 "candidate": None,
             },
@@ -320,14 +328,22 @@ def test_fault_topology_facts_require_affected_shard_stability_before_full_valid
             "observation": {
                 "monotonic": 10.5,
                 "rows": [
-                    {
-                        "logical_id": "replica-0",
-                        "status": "OK",
-                        "cluster_state": "ok",
-                        "failure_reports": {"id-primary-0": 0, "id-replica-0": 0},
-                    }
+                        {
+                            "logical_id": "replica-0",
+                            "status": "OK",
+                            "cluster_state": "ok",
+                            "role": {"role": "primary"},
+                            "cluster_info": {
+                                "cluster_nodes_pfail": "0",
+                                "cluster_nodes_fail": "0",
+                                "cluster_slots_assigned": "16384",
+                                "cluster_slots_ok": "16384",
+                                "cluster_slots_pfail": "0",
+                                "cluster_slots_fail": "0",
+                            },
+                        }
                 ],
-                "candidate": {"primary": "replica-0"},
+                "candidate": {"primary": "replica-0", "relationships": {"replica-0": "primary"}},
             },
         }
     ]
@@ -337,21 +353,18 @@ def test_fault_topology_facts_require_affected_shard_stability_before_full_valid
         target_node_ids=target_node_ids,
         replacement_by_shard=replacement_by_shard,
         logical_to_node_id=logical_to_node_id,
-        expected_nodes=2,
     )["cluster_ok_all_slots"]
     stable_without_full = capture._affected_shard_topology_facts(
         stable,
         target_node_ids=target_node_ids,
         replacement_by_shard=replacement_by_shard,
         logical_to_node_id=logical_to_node_id,
-        expected_nodes=2,
     )
     stable_with_full = capture._affected_shard_topology_facts(
         stable,
         target_node_ids=target_node_ids,
         replacement_by_shard=replacement_by_shard,
         logical_to_node_id=logical_to_node_id,
-        expected_nodes=2,
         full_validation_passed=True,
     )
 
@@ -372,6 +385,14 @@ def _affected_round(*, at: float = 10.0, stable: bool = True) -> list[dict[str, 
                         "status": "OK",
                         "cluster_state": "ok",
                         "role": {"role": "primary"},
+                        "cluster_info": {
+                            "cluster_nodes_pfail": "0",
+                            "cluster_nodes_fail": "0",
+                            "cluster_slots_assigned": "16384",
+                            "cluster_slots_ok": "16384",
+                            "cluster_slots_pfail": "0",
+                            "cluster_slots_fail": "0",
+                        },
                     }
                 ],
                 "candidate": (
@@ -384,158 +405,95 @@ def _affected_round(*, at: float = 10.0, stable: bool = True) -> list[dict[str, 
     ]
 
 
-def _failure_observation(
-    *,
-    at: float,
-    pfail_slots: int = 0,
-    fail_slots: int = 0,
-    target_health: str = "online",
-    non_target_health: str = "online",
-) -> dict[str, Any]:
-    return {
-        "observer_count": 1,
-        "rows": [
-            {
-                "logical_id": "observer-0",
-                "observer_node_id": "id-primary-1",
-                "monotonic": at,
-                "status": "OK",
-                "cluster_info": {
-                    "cluster_slots_pfail": pfail_slots,
-                    "cluster_slots_fail": fail_slots,
-                },
-                "topology": {
-                    "shards": [
-                        {
-                            "primary_id": "id-replica-0",
-                            "slots": [[0, 8191]],
-                            "nodes": [
-                                {"node_id": "id-primary-0", "role": "primary", "health": target_health},
-                                {"node_id": "id-replica-0", "role": "primary", "health": "online"},
-                            ],
-                        },
-                        {
-                            "primary_id": "id-primary-1",
-                            "slots": [[8192, 16383]],
-                            "nodes": [
-                                {"node_id": "id-primary-1", "role": "primary", "health": non_target_health},
-                            ],
-                        },
-                    ]
-                },
-            }
-        ],
-    }
-
-
 def _combined_fault_facts(
-    failure_observation: dict[str, Any],
     *,
     affected: list[dict[str, Any]] | None = None,
     full: bool = False,
 ) -> dict[str, Any]:
-    common = {
-        "target_node_ids": {"id-primary-0"},
-        "replacement_by_shard": {"shard-0": "replica-0"},
-        "logical_to_node_id": {
+    shard_rows = affected or _affected_round()
+    affected_facts = capture._affected_shard_topology_facts(
+        shard_rows,
+        target_node_ids={"id-primary-0"},
+        replacement_by_shard={"shard-0": "replica-0"},
+        logical_to_node_id={
             "primary-0": "id-primary-0",
             "replica-0": "id-replica-0",
             "primary-1": "id-primary-1",
         },
-        "expected_nodes": 3,
-    }
-    affected_facts = capture._affected_shard_topology_facts(
-        affected or _affected_round(at=float(failure_observation["rows"][0]["monotonic"])),
-        **common,
         full_validation_passed=full,
     )
     return capture._fault_round_facts(
         affected_facts,
-        failure_observation,
+        shard_rows,
         target_node_ids={"id-primary-0"},
-        target_slot_count=8192,
-        replacement_node_ids={"id-replica-0"},
-        expected_roles_by_node_id={
-            "id-primary-0": "primary",
-            "id-replica-0": "replica",
-            "id-primary-1": "primary",
-        },
     )
 
 
-def test_fault_markers_require_raw_global_failure_observation() -> None:
-    none = _combined_fault_facts(_failure_observation(at=10.0))
-    pfail_only = _combined_fault_facts(_failure_observation(at=10.5, pfail_slots=8192))
-    failed = _combined_fault_facts(_failure_observation(at=11.0, fail_slots=8192, target_health="fail"))
-
-    assert none["target_pfail_observed"] is False
-    assert none["first_target_pfail_at_monotonic"] == "MISSING"
-    assert pfail_only["target_pfail_observed"] is True
-    assert pfail_only["target_fail_node_ids"] == []
-    assert pfail_only["first_target_pfail_at_monotonic"] == 10.5
-    assert pfail_only["first_target_fail_at_monotonic"] == "MISSING"
-    assert failed["target_fail_node_ids"] == ["id-primary-0"]
-    assert failed["first_target_fail_at_monotonic"] == 11.0
-
-
-def test_fault_global_observer_command_budget_is_not_per_affected_shard(
-    monkeypatch: Any,
-) -> None:
-    calls: list[tuple[int, tuple[str, ...]]] = []
-
-    class Observer:
-        def __init__(self, index: int) -> None:
-            self.logical_id = f"observer-{index}"
-            self.host = "127.0.0.1"
-            self.port = 7600 + index
-
-    class RecordingRespConnection:
-        def __init__(self, endpoint: Any, *, timeout: float) -> None:
-            self.endpoint = endpoint
-
-        def __enter__(self) -> "RecordingRespConnection":
-            return self
-
-        def __exit__(self, *_args: Any) -> None:
-            return None
-
-        def execute_many(self, commands: list[tuple[str, ...]]) -> list[Any]:
-            calls.extend((int(self.endpoint.port), tuple(command)) for command in commands)
-            assert commands == [("CLUSTER", "INFO"), ("CLUSTER", "SHARDS")]
-            return [
-                "cluster_slots_pfail:0\r\ncluster_slots_fail:0\r\n",
-                {"observer_port": int(self.endpoint.port)},
-            ]
-
-    monkeypatch.setattr(capture, "RespConnection", RecordingRespConnection)
-    observers = [Observer(index) for index in range(capture.M2_PROTOCOL_OBSERVER_COUNT)]
-    observation = capture._collect_fault_global_observation(
-        observers,
-        node_id_by_logical={observer.logical_id: f"id-{observer.logical_id}" for observer in observers},
-        allowed_unhealthy_node_ids=set(),
-        normalize_cluster_shards=lambda raw, **_kwargs: {"shards": [], "raw": raw},
-    )
-
-    assert observation["observer_count"] == capture.M2_PROTOCOL_OBSERVER_COUNT
-    assert len(observation["rows"]) == capture.M2_PROTOCOL_OBSERVER_COUNT
-    assert len(calls) == capture.M2_PROTOCOL_OBSERVER_COUNT * 2
-    assert all(command in {("CLUSTER", "INFO"), ("CLUSTER", "SHARDS")} for _port, command in calls)
-    assert all(command != ("CLUSTER", "COUNT-FAILURE-REPORTS") for _port, command in calls)
+def _with_fault_counters(
+    rows: list[dict[str, Any]],
+    *,
+    at: float,
+    pfail: int,
+    fail: int,
+) -> list[dict[str, Any]]:
+    result = deepcopy(rows)
+    observation = result[0]["observation"]
+    observation["monotonic"] = at
+    info = observation["rows"][0]["cluster_info"]
+    info["cluster_nodes_pfail"] = str(pfail)
+    info["cluster_nodes_fail"] = str(fail)
+    return result
 
 
-def test_fault_facts_detect_non_target_global_failure_observation() -> None:
-    facts = _combined_fault_facts(
-        _failure_observation(
-            at=11.0,
-            pfail_slots=16384,
-            fail_slots=16384,
-            target_health="fail",
-            non_target_health="fail",
+def test_fault_markers_require_raw_affected_failure_counters() -> None:
+    none = _combined_fault_facts(affected=_with_fault_counters(_affected_round(), at=10.0, pfail=0, fail=0))
+    pfail_only = _combined_fault_facts(affected=_with_fault_counters(_affected_round(), at=10.5, pfail=1, fail=0))
+    failed = _combined_fault_facts(affected=_with_fault_counters(_affected_round(), at=11.0, pfail=0, fail=1))
+
+    assert none["first_pfail_at_monotonic"] == "MISSING"
+    assert none["first_fail_at_monotonic"] == "MISSING"
+    assert pfail_only["first_pfail_at_monotonic"] == 10.5
+    assert pfail_only["first_fail_at_monotonic"] == "MISSING"
+    assert failed["first_pfail_at_monotonic"] == "MISSING"
+    assert failed["first_fail_at_monotonic"] == 11.0
+
+
+def test_fault_counter_extra_failure_math_uses_same_raw_row() -> None:
+    def facts(pfail: int, fail: int, target_count: int = 33) -> dict[str, Any]:
+        rows = _with_fault_counters(_affected_round(), at=10.0, pfail=pfail, fail=fail)
+        affected_facts = capture._affected_shard_topology_facts(
+            rows,
+            target_node_ids={f"id-primary-{index}" for index in range(target_count)},
+            replacement_by_shard={"shard-0": "replica-0"},
+            logical_to_node_id={"replica-0": "id-replica-0"},
+            full_validation_passed=False,
         )
-    )
+        return capture._fault_round_facts(
+            affected_facts,
+            rows,
+            target_node_ids={f"id-primary-{index}" for index in range(target_count)},
+        )
 
-    assert facts["unexpected_pfail"] == 1
-    assert facts["unexpected_fail"] == 2
+    assert facts(10, 23)["observed_extra_failures"] == 0
+    assert facts(4, 30)["observed_extra_failures"] == 1
+    assert facts(0, 33)["observed_extra_failures"] == 0
+    assert facts(0, 34)["observed_extra_failures"] == 1
+
+
+def test_fault_counter_extra_failure_does_not_add_cross_observer_maxima() -> None:
+    rows = _affected_round()
+    second = deepcopy(rows[0]["observation"]["rows"][0])
+    second["cluster_info"] = dict(second["cluster_info"])
+    second["cluster_info"]["cluster_nodes_pfail"] = "0"
+    second["cluster_info"]["cluster_nodes_fail"] = "1"
+    rows[0]["observation"]["rows"][0]["cluster_info"]["cluster_nodes_pfail"] = "1"
+    rows[0]["observation"]["rows"][0]["cluster_info"]["cluster_nodes_fail"] = "0"
+    rows[0]["observation"]["rows"].append(second)
+    facts = _combined_fault_facts(affected=rows)
+
+    assert facts["observed_pfail_count"] == 1
+    assert facts["observed_fail_count"] == 1
+    assert facts["observed_extra_failures"] == 0
     assert facts["converged"] is False
 
 
@@ -557,6 +515,14 @@ def test_exact_200_thirty_three_percent_affected_facts_cover_all_affected_shards
                         "status": "OK",
                         "cluster_state": "ok",
                         "role": {"role": "primary"},
+                        "cluster_info": {
+                            "cluster_nodes_pfail": "0",
+                            "cluster_nodes_fail": "0",
+                            "cluster_slots_assigned": "16384",
+                            "cluster_slots_ok": "16384",
+                            "cluster_slots_pfail": "0",
+                            "cluster_slots_fail": "0",
+                        },
                     }
                 ],
                 "candidate": {"primary": replacement, "relationships": {replacement: "primary"}},
@@ -570,7 +536,6 @@ def test_exact_200_thirty_three_percent_affected_facts_cover_all_affected_shards
         target_node_ids=target_ids,
         replacement_by_shard=replacement_by_shard,
         logical_to_node_id=logical_to_node_id,
-        expected_nodes=200,
     )
 
     assert facts["probe_count"] == 33
@@ -789,6 +754,56 @@ def test_m2_cluster_links_raw_evidence_fails_closed_when_missing_or_abnormal() -
 
     assert missing["cluster_link_errors"] == 1
     assert abnormal["cluster_link_errors"] == 1
+
+
+def test_m2_cluster_links_allow_planned_down_empty_events_but_not_bad_buffers() -> None:
+    planned_down = capture._m2_cluster_link_counts_from_links(
+        [
+            {
+                b"direction": direction.encode(),
+                b"node": b"id-survivor",
+                b"create-time": 1,
+                b"events": b"r",
+                b"send-buffer-allocated": 1,
+                b"send-buffer-used": 1,
+            }
+            for direction in ("from", "to")
+        ]
+        + [
+            {
+                b"direction": b"to",
+                b"node": b"id-target",
+                b"create-time": 1,
+                b"events": b"",
+                b"send-buffer-allocated": 1,
+                b"send-buffer-used": 1,
+            }
+        ],
+        observer_node_id="id-observer",
+        live_node_ids={"id-observer", "id-survivor"},
+        planned_down_node_ids={"id-target"},
+    )
+    bad_buffer = capture._m2_cluster_link_counts_from_links(
+        [
+            {
+                b"direction": b"to",
+                b"node": b"id-target",
+                b"create-time": 1,
+                b"events": b"",
+                b"send-buffer-allocated": 1,
+                b"send-buffer-used": 2,
+            }
+        ],
+        observer_node_id="id-observer",
+        live_node_ids={"id-observer"},
+        planned_down_node_ids={"id-target"},
+    )
+
+    assert planned_down["link_rows"][0]["status"] == "OK"
+    assert planned_down["link_rows"][2]["status"] == "OK"
+    assert planned_down["cluster_link_errors"] == 0
+    assert planned_down["missing_links"] == []
+    assert bad_buffer["link_rows"][0]["status"] == "ERROR"
 
 
 def test_m2_setup_resource_observation_requires_start_boundary(

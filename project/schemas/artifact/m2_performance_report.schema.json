@@ -229,6 +229,7 @@
             "split_brain",
             "unexpected_pfail",
             "unexpected_fail",
+            "observed_extra_failures",
             "unexpected_promotions",
             "slot_loss"
           ],
@@ -242,6 +243,7 @@
             "split_brain": {"type": "boolean"},
             "unexpected_pfail": {"type": "integer", "minimum": 0},
             "unexpected_fail": {"type": "integer", "minimum": 0},
+            "observed_extra_failures": {"type": "integer", "minimum": 0},
             "unexpected_promotions": {"type": "integer", "minimum": 0},
             "slot_loss": {"type": "boolean"}
           }

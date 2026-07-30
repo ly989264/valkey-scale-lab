@@ -474,7 +474,7 @@ def _validate_trial_common(
     _add(errors, correctness.get("data_path") is True, f"{prefix} data-path probe did not pass")
     _add(errors, correctness.get("split_brain") is False, f"{prefix} observed split brain")
     _add(errors, correctness.get("slot_loss") is False, f"{prefix} observed slot loss")
-    for field in ("unexpected_pfail", "unexpected_fail", "unexpected_promotions"):
+    for field in ("unexpected_pfail", "unexpected_fail", "observed_extra_failures", "unexpected_promotions"):
         _add(errors, correctness.get(field) == 0, f"{prefix} has nonzero {field}")
 
     resources = _object(trial.get("resource_observation"))
@@ -712,6 +712,7 @@ def _trial_safety_clean(trial: Mapping[str, Any]) -> bool:
         and correctness.get("slot_loss") is False
         and correctness.get("unexpected_pfail") == 0
         and correctness.get("unexpected_fail") == 0
+        and correctness.get("observed_extra_failures") == 0
         and correctness.get("unexpected_promotions") == 0
     )
 
@@ -1858,6 +1859,7 @@ def _recompute_m2_cluster_link_facts(
     *,
     expected_live_logical_ids: Sequence[str],
     node_id_by_logical: Mapping[str, str],
+    planned_down_node_ids: set[str] | None = None,
 ) -> dict[str, Any]:
     expected_observer_logicals = list(
         expected_live_logical_ids[: min(M2_PROTOCOL_OBSERVER_COUNT, len(expected_live_logical_ids))]
@@ -1868,6 +1870,7 @@ def _recompute_m2_cluster_link_facts(
         for logical_id, node_id in node_id_by_logical.items()
         if logical_id in expected_live_set and node_id
     }
+    planned_down_ids = set(planned_down_node_ids or set())
     observer_facts: list[dict[str, Any]] = []
     total_errors = 0
     for row in observer_rows:
@@ -1888,14 +1891,14 @@ def _recompute_m2_cluster_link_facts(
             send_allocated = _number(link.get("send_buffer_allocated"))
             send_used = _number(link.get("send_buffer_used"))
             ok = (
-                peer_id in live_node_ids
+                (peer_id in live_node_ids or peer_id in planned_down_ids)
                 and peer_id != observer_node_id
                 and direction in {"from", "to"}
                 and send_allocated is not None
                 and send_used is not None
                 and send_allocated >= 0
                 and 0 <= send_used <= send_allocated
-                and "r" in events
+                and (peer_id in planned_down_ids or "r" in events)
             )
             if not ok:
                 malformed += 1
@@ -1999,6 +2002,11 @@ def _validate_resource_source(
     protocol_end = _object(protocol_boundaries.get("end"))
     protocol_end_rows = [_object(row) for row in _array(protocol_end.get("node_metrics"))]
     expected_live = [str(value) for value in _array(protocol_end.get("expected_live_nodes"))]
+    planned_down_node_ids = {
+        str(value)
+        for value in _array(protocol_end.get("planned_down_node_ids"))
+        if isinstance(value, str) and value
+    }
     node_id_by_logical = {
         str(row.get("logical_id")): str(row.get("valkey_node_id"))
         for row in protocol_end_rows
@@ -2011,6 +2019,7 @@ def _validate_resource_source(
         link_observers,
         expected_live_logical_ids=expected_live,
         node_id_by_logical=node_id_by_logical,
+        planned_down_node_ids=planned_down_node_ids,
     )
     _add(
         errors,
@@ -3465,6 +3474,7 @@ def _recompute_affected_fault_facts(
     cluster_ok_times: list[float] = []
     clean = contract
     split_brain = False
+    slot_loss = False
     for row in parsed:
         shard_id = str(row.get("shard_id", ""))
         result = _object(row.get("observation"))
@@ -3472,11 +3482,10 @@ def _recompute_affected_fault_facts(
         rows = [_object(value) for value in _array(result.get("rows"))]
         observed_at = _number(result.get("monotonic"))
         expected_primary = replacement_by_shard.get(shard_id)
-        if (
-            observed_at is None
-            or not rows
-            or any(item.get("status") != "OK" or item.get("cluster_state") != "ok" for item in rows)
-        ):
+        expected_survivors = {expected_primary} if expected_primary else set()
+        row_logicals = {str(item.get("logical_id")) for item in rows if isinstance(item.get("logical_id"), str)}
+        coverage = observed_at is not None and row_logicals == expected_survivors
+        if observed_at is None or not rows:
             clean = False
         primary_rows = [
             item
@@ -3492,11 +3501,20 @@ def _recompute_affected_fault_facts(
             primary_node_id = logical_to_node_id.get(primary_logical_id)
             if primary_logical_id != expected_primary and primary_node_id not in target_node_ids:
                 unexpected_promotions.add(primary_node_id or primary_logical_id or "MISSING")
+        for item in rows:
+            if item.get("status") != "OK":
+                coverage = False
+                continue
+            if _object(item.get("role")).get("role") not in {"primary", "replica"}:
+                coverage = False
+            slot_loss = slot_loss or _cluster_info_row_has_slot_loss(_object(item.get("cluster_info")))
+            if item.get("cluster_state") != "ok":
+                clean = False
         primary = candidate.get("primary")
         relationships = _object(candidate.get("relationships"))
-        row_logicals = {str(item.get("logical_id")) for item in rows if isinstance(item.get("logical_id"), str)}
         if set(relationships) != row_logicals:
             clean = False
+        clean = clean and coverage
         if isinstance(primary, str) and primary == expected_primary:
             node_id = logical_to_node_id.get(primary)
             if node_id:
@@ -3525,12 +3543,12 @@ def _recompute_affected_fault_facts(
             "replacement_promotions_complete": replacement_complete,
             "exact_membership": converged,
             "observed_nodes": expected_nodes if converged else len(logical_to_node_id),
-            "slots_covered": 16384 if cluster_ok else 0,
+            "slots_covered": 16384 if not slot_loss else 0,
             "cluster_ok_all_slots": cluster_ok,
             "clean_topology": clean,
             "unexpected_promotions": len(unexpected_promotions),
             "split_brain": split_brain,
-            "slot_loss": not cluster_ok,
+            "slot_loss": slot_loss,
             "converged": converged,
             "first_promotion_at_monotonic": round(min(promotion_times), 6) if promotion_times else "MISSING",
             "cluster_ok_all_slots_at_monotonic": round(max(cluster_ok_times), 6) if cluster_ok and cluster_ok_times else "MISSING",
@@ -3547,126 +3565,113 @@ def _int_metric(value: Any) -> int | None:
     return int(number)
 
 
+def _raw_int_metric(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _cluster_info_row_has_slot_loss(info: Mapping[str, Any]) -> bool:
+    assigned = _raw_int_metric(info.get("cluster_slots_assigned"))
+    ok = _raw_int_metric(info.get("cluster_slots_ok"))
+    pfail = _raw_int_metric(info.get("cluster_slots_pfail"))
+    fail = _raw_int_metric(info.get("cluster_slots_fail"))
+    return (
+        assigned != 16384
+        or ok is None
+        or pfail is None
+        or fail is None
+        or ok < 0
+        or pfail < 0
+        or fail < 0
+        or ok + pfail + fail != 16384
+    )
+
+
+def _fault_counter_rows(raw_shard_rounds: Any) -> list[tuple[float, int, int]]:
+    rows: list[tuple[float, int, int]] = []
+    for shard_round in _array(raw_shard_rounds):
+        observation = _object(_object(shard_round).get("observation"))
+        observed_at = _number(observation.get("monotonic"))
+        if observed_at is None:
+            continue
+        for row in _array(observation.get("rows")):
+            item = _object(row)
+            info = _object(item.get("cluster_info"))
+            pfail = _raw_int_metric(info.get("cluster_nodes_pfail"))
+            fail = _raw_int_metric(info.get("cluster_nodes_fail"))
+            if (
+                item.get("status") == "OK"
+                and pfail is not None
+                and fail is not None
+                and pfail >= 0
+                and fail >= 0
+            ):
+                rows.append((observed_at, pfail, fail))
+    return rows
+
+
 def _recompute_fault_round_facts(
     affected_facts: Mapping[str, Any],
-    failure_observation: Mapping[str, Any],
+    raw_shard_rounds: Any,
     *,
     target_node_ids: set[str],
-    target_slot_count: int,
-    replacement_node_ids: set[str],
-    expected_roles_by_node_id: Mapping[str, str],
 ) -> dict[str, Any]:
-    rows = [_object(row) for row in _array(failure_observation.get("rows"))]
-    expected_observer_count = _int_metric(failure_observation.get("observer_count"))
-    coverage = (
-        expected_observer_count is not None
-        and expected_observer_count > 0
-        and len(rows) == expected_observer_count
-        and all(row.get("status") == "OK" for row in rows)
-    )
-    pfail_times: list[float] = []
-    fail_times: list[float] = []
-    target_fail: set[str] = set()
-    unexpected_fail: set[str] = set()
-    unexpected_promotions: set[str] = set()
-    unexpected_pfail = 0
-    split_brain = not coverage
-    slot_loss = not coverage
-    topologies: list[Any] = []
-    for row in rows:
-        observed_at = _number(row.get("monotonic"))
-        info = _object(row.get("cluster_info"))
-        pfail_slots = _int_metric(info.get("cluster_slots_pfail"))
-        fail_slots = _int_metric(info.get("cluster_slots_fail"))
-        if observed_at is None or pfail_slots is None or fail_slots is None:
-            split_brain = True
-            slot_loss = True
-            continue
-        if pfail_slots > 0:
-            if target_slot_count > 0 and pfail_slots <= target_slot_count:
-                pfail_times.append(observed_at)
-            else:
-                unexpected_pfail += 1
-        if fail_slots > target_slot_count:
-            unexpected_fail.add(f"slots:{fail_slots}")
-        topology = _object(row.get("topology"))
-        topologies.append(topology)
-        slot_owners: dict[int, str] = {}
-        for shard in _array(topology.get("shards")):
-            shard_row = _object(shard)
-            primary_id = str(shard_row.get("primary_id", ""))
-            primary_count = 0
-            planned_target_down = False
-            for slot_range in _array(shard_row.get("slots")):
-                if not isinstance(slot_range, (list, tuple)) or len(slot_range) != 2:
-                    slot_loss = True
-                    continue
-                start = _int_metric(slot_range[0])
-                end = _int_metric(slot_range[1])
-                if start is None or end is None or start < 0 or end > 16383 or start > end:
-                    slot_loss = True
-                    continue
-                for slot in range(start, end + 1):
-                    previous = slot_owners.get(slot)
-                    if previous is not None and previous != primary_id:
-                        split_brain = True
-                    slot_owners[slot] = primary_id
-            for member in _array(shard_row.get("nodes")):
-                member_row = _object(member)
-                node_id = str(member_row.get("node_id", ""))
-                role = str(member_row.get("role", ""))
-                health = str(member_row.get("health", "")).lower()
-                serving_primary = role == "primary" and not (
-                    node_id in target_node_ids and health == "fail"
-                )
-                if serving_primary:
-                    primary_count += 1
-                    if expected_roles_by_node_id.get(node_id) == "replica" and node_id not in replacement_node_ids:
-                        unexpected_promotions.add(node_id or "MISSING")
-                if health not in {"online", "healthy"}:
-                    if node_id in target_node_ids and health == "fail":
-                        planned_target_down = True
-                        target_fail.add(node_id)
-                        fail_times.append(observed_at)
-                    elif node_id not in target_node_ids:
-                        unexpected_fail.add(node_id or "MISSING")
-            if primary_count != 1 and not (primary_count == 0 and planned_target_down):
-                split_brain = True
-        if len(slot_owners) != 16384:
-            slot_loss = True
-    if topologies and any(topology != topologies[0] for topology in topologies[1:]):
-        split_brain = True
-    all_expected_targets_fail = bool(target_node_ids) and target_node_ids.issubset(target_fail)
+    valid_rows = _fault_counter_rows(raw_shard_rounds)
+    target_count = len(target_node_ids)
+    if valid_rows:
+        observed_pfail_count: int | str = max(pfail for _at, pfail, _fail in valid_rows)
+        observed_fail_count: int | str = max(fail for _at, _pfail, fail in valid_rows)
+        unexpected_pfail: int | str = max(max(0, pfail - target_count) for _at, pfail, _fail in valid_rows)
+        unexpected_fail: int | str = max(max(0, fail - target_count) for _at, _pfail, fail in valid_rows)
+        observed_extra_failures: int | str = max(
+            max(0, pfail + fail - target_count)
+            for _at, pfail, fail in valid_rows
+        )
+        first_pfail_at: float | str = round(
+            min(at for at, pfail, _fail in valid_rows if pfail > 0),
+            6,
+        ) if any(pfail > 0 for _at, pfail, _fail in valid_rows) else "MISSING"
+        first_fail_at: float | str = round(
+            min(at for at, _pfail, fail in valid_rows if fail > 0),
+            6,
+        ) if any(fail > 0 for _at, _pfail, fail in valid_rows) else "MISSING"
+    else:
+        observed_pfail_count = "MISSING"
+        observed_fail_count = "MISSING"
+        unexpected_pfail = "MISSING"
+        unexpected_fail = "MISSING"
+        observed_extra_failures = "MISSING"
+        first_pfail_at = "MISSING"
+        first_fail_at = "MISSING"
     combined = dict(affected_facts)
     combined.update(
         {
-            "target_pfail_observed": bool(pfail_times),
-            "target_fail_node_ids": sorted(target_fail),
-            "all_expected_targets_fail": all_expected_targets_fail,
+            "fault_counter_coverage": bool(valid_rows),
+            "observed_pfail_count": observed_pfail_count,
+            "observed_fail_count": observed_fail_count,
             "unexpected_pfail": unexpected_pfail,
-            "unexpected_fail": len(unexpected_fail),
-            "unexpected_promotions": max(
-                int(combined.get("unexpected_promotions", 0)),
-                len(unexpected_promotions),
-            ),
-            "split_brain": bool(combined.get("split_brain") is True or split_brain),
-            "slot_loss": bool(combined.get("slot_loss") is True or slot_loss),
-            "failure_observer_coverage": coverage,
-            "first_target_pfail_at_monotonic": round(min(pfail_times), 6) if pfail_times else "MISSING",
-            "first_target_fail_at_monotonic": round(min(fail_times), 6) if fail_times else "MISSING",
+            "unexpected_fail": unexpected_fail,
+            "observed_extra_failures": observed_extra_failures,
+            "first_pfail_at_monotonic": first_pfail_at,
+            "first_fail_at_monotonic": first_fail_at,
         }
     )
     safe = (
-        coverage
+        valid_rows
         and combined["unexpected_pfail"] == 0
         and combined["unexpected_fail"] == 0
+        and combined["observed_extra_failures"] == 0
         and combined["unexpected_promotions"] == 0
         and combined["split_brain"] is False
         and combined["slot_loss"] is False
     )
     combined["clean_topology"] = bool(combined.get("clean_topology") is True and safe)
     combined["cluster_ok_all_slots"] = bool(combined.get("cluster_ok_all_slots") is True and safe)
-    combined["converged"] = bool(combined.get("converged") is True and all_expected_targets_fail and safe)
+    combined["converged"] = bool(combined.get("converged") is True and safe)
     combined["exact_membership"] = combined["converged"]
     return combined
 
@@ -3685,12 +3690,26 @@ def _validate_fault_fact_row(
             facts.get(field) == value,
             f"trial {trial_id} {label} fact {field} is not derived from its scalable raw observations",
         )
-    counts_valid = all(
-        isinstance(facts.get(field), int)
-        and not isinstance(facts.get(field), bool)
-        and facts[field] >= 0
-        for field in ("unexpected_pfail", "unexpected_fail", "unexpected_promotions")
+    counter_fields = (
+        "observed_pfail_count",
+        "observed_fail_count",
+        "unexpected_pfail",
+        "unexpected_fail",
+        "observed_extra_failures",
     )
+    if facts.get("fault_counter_coverage") is True:
+        counts_valid = all(
+            isinstance(facts.get(field), int)
+            and not isinstance(facts.get(field), bool)
+            and facts[field] >= 0
+            for field in (*counter_fields, "unexpected_promotions")
+        )
+    else:
+        counts_valid = all(facts.get(field) == "MISSING" for field in counter_fields) and (
+            isinstance(facts.get("unexpected_promotions"), int)
+            and not isinstance(facts.get("unexpected_promotions"), bool)
+            and facts["unexpected_promotions"] >= 0
+        )
     booleans_valid = all(
         isinstance(facts.get(field), bool)
         for field in ("clean_topology", "split_brain", "converged")
@@ -3700,11 +3719,18 @@ def _validate_fault_fact_row(
         recomputed.get("exact_membership") is True
         and recomputed.get("cluster_ok_all_slots") is True
         and recomputed.get("replacement_promotions_complete") is True
-        and recomputed.get("all_expected_targets_fail") is True
         and recomputed.get("slot_loss") is False
         and facts.get("clean_topology") is True
         and facts.get("split_brain") is False
-        and all(facts.get(field) == 0 for field in ("unexpected_pfail", "unexpected_fail", "unexpected_promotions"))
+        and all(
+            facts.get(field) == 0
+            for field in (
+                "unexpected_pfail",
+                "unexpected_fail",
+                "observed_extra_failures",
+                "unexpected_promotions",
+            )
+        )
     )
     _add(
         errors,
@@ -3975,16 +4001,6 @@ def _validate_fault_source(
         },
         f"trial {trial_id} replacement shard mapping is not bound to scalable pre-fault topology",
     )
-    target_slot_count = 0
-    for shard in _array(_object(_object(topology_source.get("topology_validation")).get("normalized_topology")).get("shards")):
-        shard_row = _object(shard)
-        if str(shard_row.get("primary_id", "")) in target_node_ids:
-            target_slot_count += len(_range_slots(_array(shard_row.get("slots"))))
-    _add(
-        errors,
-        target_slot_count > 0,
-        f"trial {trial_id} fault target slot coverage is not bound to pre-fault topology",
-    )
     gone_values = [
         float(value) / 1000.0
         for value in (row.get("process_gone_at_monotonic_ms") for row in target_rows)
@@ -4008,6 +4024,7 @@ def _validate_fault_source(
     aggregate_safety: dict[str, Any] = {
         "unexpected_pfail": None,
         "unexpected_fail": None,
+        "observed_extra_failures": None,
         "unexpected_promotions": None,
         "split_brain": None,
     }
@@ -4051,11 +4068,8 @@ def _validate_fault_source(
         )
         recomputed = _recompute_fault_round_facts(
             affected_recomputed,
-            _object(round_row.get("failure_observation")),
+            round_row.get("affected_shards"),
             target_node_ids=target_node_ids,
-            target_slot_count=target_slot_count,
-            replacement_node_ids=replacement_node_ids,
-            expected_roles_by_node_id=initial_roles,
         )
         _add(
             errors,
@@ -4081,25 +4095,26 @@ def _validate_fault_source(
                 recomputed.get("converged") is True
                 and recomputed.get("unexpected_pfail") == 0
                 and recomputed.get("unexpected_fail") == 0
+                and recomputed.get("observed_extra_failures") == 0
                 and recomputed.get("unexpected_promotions") == 0
                 and recomputed.get("split_brain") is False
                 and recomputed.get("slot_loss") is False,
                 f"trial {trial_id} observer round {index} regressed after every-node convergence",
             )
         if observed_at is not None:
-            pfail_at = _number(recomputed.get("first_target_pfail_at_monotonic"))
-            fail_at = _number(recomputed.get("first_target_fail_at_monotonic"))
+            pfail_at = _number(recomputed.get("first_pfail_at_monotonic"))
+            fail_at = _number(recomputed.get("first_fail_at_monotonic"))
             promotion_at = _number(recomputed.get("first_promotion_at_monotonic"))
             cluster_ok_at = _number(recomputed.get("cluster_ok_all_slots_at_monotonic"))
-            if recomputed.get("target_pfail_observed") is True and pfail_at is not None:
+            if pfail_at is not None:
                 derived_markers.setdefault("first_pfail", pfail_at)
-            if "first_pfail" in derived_markers and recomputed["target_fail_node_ids"] and fail_at is not None:
+            if fail_at is not None:
                 derived_markers.setdefault("quorum_fail", fail_at)
             if "quorum_fail" in derived_markers and recomputed["promoted_replacement_node_ids"] and promotion_at is not None:
                 derived_markers.setdefault("first_promotion", promotion_at)
             if "first_promotion" in derived_markers and recomputed["cluster_ok_all_slots"] is True and cluster_ok_at is not None:
                 derived_markers.setdefault("all_slots_covered_cluster_ok", cluster_ok_at)
-        for field in ("unexpected_pfail", "unexpected_fail", "unexpected_promotions"):
+        for field in ("unexpected_pfail", "unexpected_fail", "observed_extra_failures", "unexpected_promotions"):
             value = recomputed.get(field)
             if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
                 current = aggregate_safety.get(field)
@@ -4139,7 +4154,7 @@ def _validate_fault_source(
         f"trial {trial_id} unexpected safety summary is not derived from raw observer rounds",
     )
     correctness = _object(trial.get("correctness"))
-    for field in ("unexpected_pfail", "unexpected_fail", "unexpected_promotions", "split_brain"):
+    for field in ("unexpected_pfail", "unexpected_fail", "observed_extra_failures", "unexpected_promotions", "split_brain"):
         _add(
             errors,
             correctness.get(field) == aggregate_safety[field],
@@ -4203,11 +4218,8 @@ def _validate_fault_source(
     )
     full_recomputed = _recompute_fault_round_facts(
         affected_full_recomputed,
-        _object(convergence_round.get("failure_observation")),
+        convergence_round.get("affected_shards"),
         target_node_ids=target_node_ids,
-        target_slot_count=target_slot_count,
-        replacement_node_ids=replacement_node_ids,
-        expected_roles_by_node_id=initial_roles,
     )
     _add(
         errors,
