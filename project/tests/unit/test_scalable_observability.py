@@ -325,6 +325,19 @@ def test_check_contract_retries_collection_once_and_preserves_fail() -> None:
     assert verdict["tool_errors"] == ["collector"]
 
 
+def test_check_contract_reports_error_only_tool_failures() -> None:
+    error = CheckResult(
+        name="collector",
+        status=CheckStatus.ERROR,
+        reason="collector unavailable",
+    )
+
+    verdict = final_verdict([error])
+
+    assert verdict["status"] == "ERROR"
+    assert verdict["tool_errors"] == ["collector"]
+
+
 def test_check_contract_retries_technical_exception_once() -> None:
     attempts = 0
 

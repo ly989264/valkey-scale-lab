@@ -96,5 +96,5 @@ def final_verdict(results: Iterable[CheckResult]) -> dict[str, Any]:
         "status": status,
         "checks": [row.as_dict() for row in rows],
         "warnings": [warning for row in rows for warning in row.warnings],
-        "tool_errors": [row.name for row in errors] if failures else [],
+        "tool_errors": [row.name for row in errors] if errors else [],
     }
