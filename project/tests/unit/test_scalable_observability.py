@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
@@ -922,6 +923,85 @@ def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     serialized = json.dumps(samples)
     assert "CLUSTER" not in serialized
     assert "valkey-cli" not in serialized
+
+
+def test_exact_200_process_sampling_is_bounded_complete_and_identity_safe(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    processes = [ProcessSpec(f"node-{index:03d}", 10_000 + index) for index in range(200)]
+    expected_gone = processes[-1]
+    sampler = LocalResourceSampler(
+        sampler_id="host-a",
+        processes=processes,
+        proc_root=tmp_path,
+        cgroup_root=tmp_path,
+        expected_gone_processes=[
+            ExpectedGoneProcess(expected_gone.logical_id, expected_gone.pid)
+        ],
+        expected_gone_active=lambda: True,
+    )
+
+    def process_stat(process: ProcessSpec) -> dict[str, Any]:
+        return {
+            "state": "S",
+            "user_cpu_ticks": 1,
+            "system_cpu_ticks": 2,
+            "start_time_ticks": process.pid * 10,
+            "rss_bytes": 4096,
+        }
+
+    def fd_count(pid: int) -> int:
+        time.sleep(0.03)
+        if pid == expected_gone.pid:
+            raise CollectionError("planned process is gone")
+        return 3
+
+    monkeypatch.setattr(sampler, "_process_stat", process_stat)
+    monkeypatch.setattr(sampler, "_fd_count", fd_count)
+
+    started = time.monotonic()
+    sample = sampler.process_sample()
+    elapsed = time.monotonic() - started
+
+    assert elapsed < 5.0
+    assert isinstance(sampler.processes, tuple)
+    assert [
+        (row["logical_id"], row["pid"]) for row in sample["processes"]
+    ] == [(process.logical_id, process.pid) for process in processes]
+    assert len(sample["processes"]) == 200
+    assert sample["processes"][-1]["status"] == "EXPECTED_GONE"
+
+
+def test_resource_sampler_rejects_reused_pid_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = ProcessSpec("node-a", 123)
+    sampler = LocalResourceSampler(
+        sampler_id="host-a",
+        processes=[process],
+        proc_root=tmp_path,
+        cgroup_root=tmp_path,
+    )
+    start_time = 10
+
+    def process_stat(_process: ProcessSpec) -> dict[str, Any]:
+        return {
+            "state": "S",
+            "user_cpu_ticks": 1,
+            "system_cpu_ticks": 2,
+            "start_time_ticks": start_time,
+            "rss_bytes": 4096,
+        }
+
+    monkeypatch.setattr(sampler, "_process_stat", process_stat)
+    monkeypatch.setattr(sampler, "_fd_count", lambda _pid: 3)
+    sampler.process_sample()
+    start_time = 20
+
+    with pytest.raises(CollectionError, match="process identity changed"):
+        sampler.process_sample()
 
 
 def test_resource_analyzer_consumes_design_categories() -> None:

@@ -4,6 +4,7 @@ import os
 import resource
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
@@ -65,7 +66,7 @@ class LocalResourceSampler:
         expected_gone_active: Callable[[], bool] | None = None,
     ) -> None:
         self.sampler_id = sampler_id
-        self.processes = list(processes)
+        self.processes = tuple(processes)
         self.proc_root = proc_root
         self.cgroup_root = cgroup_root
         self._wall = wall_clock
@@ -74,6 +75,7 @@ class LocalResourceSampler:
             (process.logical_id, process.pid) for process in expected_gone_processes
         }
         self._expected_gone_active = expected_gone_active or (lambda: False)
+        self._process_start_times: dict[tuple[str, int], int] = {}
         self._self_cpu_started = time.process_time()
 
     def static(self) -> dict[str, Any]:
@@ -120,19 +122,26 @@ class LocalResourceSampler:
     def process_sample(self) -> dict[str, Any]:
         started = self._monotonic()
         rows: list[dict[str, Any]] = []
-        for process in self.processes:
-            try:
-                stat = self._process_stat(process)
-                rows.append(
-                    {
-                        "logical_id": process.logical_id,
-                        "pid": process.pid,
-                        "status": "OK",
-                        **stat,
-                        "fd_count": self._fd_count(process.pid),
-                    }
-                )
-            except CollectionError as exc:
+        workers = min(len(self.processes), 32)
+        with ThreadPoolExecutor(
+            max_workers=max(workers, 1),
+            thread_name_prefix=f"resource-process-{self.sampler_id}",
+        ) as executor:
+            collected = zip(
+                self.processes,
+                executor.map(self._sample_process, self.processes),
+            )
+            for process, (stat, error) in collected:
+                if error is None:
+                    rows.append(
+                        {
+                            "logical_id": process.logical_id,
+                            "pid": process.pid,
+                            "status": "OK",
+                            **stat,
+                        }
+                    )
+                    continue
                 key = (process.logical_id, process.pid)
                 if key in self._expected_gone and self._expected_gone_active():
                     rows.append(
@@ -140,11 +149,11 @@ class LocalResourceSampler:
                             "logical_id": process.logical_id,
                             "pid": process.pid,
                             "status": "EXPECTED_GONE",
-                            "reason": str(exc),
+                            "reason": str(error),
                         }
                     )
                     continue
-                raise
+                raise error
         duration = max(self._monotonic() - started, 0.0)
         return {
             "kind": "process",
@@ -154,6 +163,30 @@ class LocalResourceSampler:
             "processes": rows,
             "collector": self._collector_metrics(duration),
         }
+
+    def _sample_process(
+        self, process: ProcessSpec
+    ) -> tuple[dict[str, Any], CollectionError | None]:
+        try:
+            stat = self._process_stat(process)
+            key = (process.logical_id, process.pid)
+            previous_start = self._process_start_times.setdefault(
+                key, int(stat["start_time_ticks"])
+            )
+            if int(stat["start_time_ticks"]) != previous_start:
+                raise CollectionError(
+                    f"process identity changed for {process.logical_id} pid {process.pid}"
+                )
+            fd_count = self._fd_count(process.pid)
+            confirmed = self._process_stat(process)
+            if confirmed["start_time_ticks"] != stat["start_time_ticks"]:
+                raise CollectionError(
+                    f"process identity changed while sampling {process.logical_id} "
+                    f"pid {process.pid}"
+                )
+            return {**stat, "fd_count": fd_count}, None
+        except CollectionError as exc:
+            return {}, exc
 
     def _cpu_and_scheduler(self) -> tuple[dict[str, int], dict[str, int]]:
         lines = _read(self.proc_root / "stat").splitlines()
