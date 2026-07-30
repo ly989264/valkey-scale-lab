@@ -497,6 +497,62 @@ def test_fault_counter_extra_failure_does_not_add_cross_observer_maxima() -> Non
     assert facts["converged"] is False
 
 
+def test_fault_missing_facts_uses_window_slot_loss_not_final_convergence() -> None:
+    early = _affected_round(at=10.5, stable=False)
+    early[0]["observation"]["rows"][0]["cluster_info"]["cluster_slots_assigned"] = "16000"
+    early_facts = _combined_fault_facts(affected=early)
+    later_facts = _combined_fault_facts(affected=_affected_round(at=12.5), full=True)
+    observed_safety = {
+        "unexpected_pfail": 0,
+        "unexpected_fail": 0,
+        "observed_extra_failures": 0,
+        "unexpected_promotions": 0,
+        "split_brain": False,
+        "slot_loss": None,
+    }
+    for facts in (early_facts, later_facts):
+        slot_loss = facts.get("slot_loss")
+        if isinstance(slot_loss, bool):
+            current_slot_loss = observed_safety.get("slot_loss")
+            observed_safety["slot_loss"] = (
+                slot_loss
+                if not isinstance(current_slot_loss, bool)
+                else bool(current_slot_loss or slot_loss)
+            )
+
+    assert early_facts["slot_loss"] is True
+    assert later_facts["slot_loss"] is False
+    assert observed_safety["slot_loss"] is True
+    assert "fault window observed slot loss" in capture._missing_fault_facts(
+        {
+            "sigkill_barrier": 10.0,
+            "all_processes_gone": 10.1,
+            "first_pfail": 10.2,
+            "quorum_fail": 10.3,
+            "first_promotion": 10.4,
+            "all_slots_covered_cluster_ok": 10.5,
+            "stable_client_recovery": 12.0,
+            "every_node_converged": 12.4,
+        },
+        {"first_affected_write": 11.0, "first_affected_read": 11.1},
+        {"status": "PASS", "required_shards": ["shard-0"]},
+        [
+            {
+                "shard_id": "shard-0",
+                "window_seconds": 1,
+                "consecutive_pairs": 10,
+                "errors": 0,
+                "timeouts": 0,
+                "earliest_qualifying": True,
+            }
+        ],
+        {"status": "PASS"},
+        [{"at_monotonic": 12.5, "facts": later_facts}],
+        later_facts,
+        observed_safety,
+    )
+
+
 def test_exact_200_thirty_three_percent_affected_facts_cover_all_affected_shards() -> None:
     replacement_by_shard = {f"shard-{index:02d}": f"replica-{index:02d}" for index in range(33)}
     logical_to_node_id = {

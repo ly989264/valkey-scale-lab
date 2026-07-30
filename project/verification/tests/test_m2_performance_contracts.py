@@ -396,6 +396,7 @@ def _m2_fault_source_and_trial() -> tuple[dict[str, Any], dict[str, Any]]:
             "observed_extra_failures": 0,
             "unexpected_promotions": 0,
             "split_brain": False,
+            "slot_loss": False,
         },
     }
     affected_topology_facts = M2._recompute_affected_fault_facts(
@@ -645,6 +646,41 @@ def test_m2_fault_source_rejects_raw_affected_slot_loss() -> None:
     )
 
     assert any("slot_loss" in error for error in errors)
+
+
+def test_m2_fault_source_rejects_pre_convergence_raw_slot_loss() -> None:
+    document, trial = _m2_fault_source_and_trial()
+    round_row = document["observer_rounds"][0]
+    info = round_row["affected_shards"][0]["observation"]["rows"][0]["cluster_info"]
+    info["cluster_slots_assigned"] = "16000"
+    affected_facts = M2._recompute_affected_fault_facts(
+        round_row["affected_shards"],
+        target_node_ids={"id-primary-0"},
+        replacement_by_shard={"shard-0": "replica-0"},
+        logical_to_node_id=_m2_logical_to_node_id(),
+        expected_nodes=5,
+        full_validation_passed=False,
+    )[0]
+    round_row["facts"] = M2._recompute_fault_round_facts(
+        affected_facts,
+        round_row["affected_shards"],
+        target_node_ids={"id-primary-0"},
+    )
+    document["observed_safety"]["slot_loss"] = True
+    trial["correctness"]["slot_loss"] = True
+    errors: list[str] = []
+
+    M2._validate_fault_source(
+        document,
+        trial,
+        topology_document=_m2_fault_topology_source(),
+        state_document=_m2_fault_state_source(),
+        errors=errors,
+    )
+
+    assert round_row["facts"]["slot_loss"] is True
+    assert document["topology_facts"]["slot_loss"] is False
+    assert any("fault window observed slot loss" in error for error in errors)
 
 
 def test_m2_fault_source_rejects_unexpected_global_observer_promotion() -> None:

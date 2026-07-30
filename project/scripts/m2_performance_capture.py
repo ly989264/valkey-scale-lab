@@ -2672,6 +2672,7 @@ def _capture_fault_window(
         "observed_extra_failures": None,
         "unexpected_promotions": None,
         "split_brain": None,
+        "slot_loss": None,
     }
     primary_error: BaseException | None = None
     try:
@@ -2779,6 +2780,14 @@ def _capture_fault_window(
                     split_brain
                     if not isinstance(current_split, bool)
                     else bool(current_split or split_brain)
+                )
+            slot_loss = facts.get("slot_loss")
+            if isinstance(slot_loss, bool):
+                current_slot_loss = observed_safety.get("slot_loss")
+                observed_safety["slot_loss"] = (
+                    slot_loss
+                    if not isinstance(current_slot_loss, bool)
+                    else bool(current_slot_loss or slot_loss)
                 )
             _advance_fault_markers(markers, observed_at, facts)
             for shard_row in shard_rounds:
@@ -2974,7 +2983,7 @@ def _capture_fault_window(
         "unexpected_fail": observed_safety["unexpected_fail"],
         "observed_extra_failures": observed_safety["observed_extra_failures"],
         "unexpected_promotions": observed_safety["unexpected_promotions"],
-        "slot_loss": full_convergence["slot_loss"],
+        "slot_loss": observed_safety["slot_loss"],
     }
     return {
         "fault": fault,
@@ -3881,8 +3890,8 @@ def _missing_fault_facts(
             missing.append(f"fault window has nonzero {field}")
     if observed_safety.get("split_brain") is not False:
         missing.append("fault window observed split brain")
-    if convergence.get("slot_loss") is not False:
-        missing.append("post-fault topology observed slot loss")
+    if observed_safety.get("slot_loss") is not False:
+        missing.append("fault window observed slot loss")
     return missing
 
 

@@ -4027,6 +4027,7 @@ def _validate_fault_source(
         "observed_extra_failures": None,
         "unexpected_promotions": None,
         "split_brain": None,
+        "slot_loss": None,
     }
     previous_at: float | None = None
     convergence_marker = _number(source_markers.get("every_node_converged"))
@@ -4127,6 +4128,14 @@ def _validate_fault_source(
                 if not isinstance(current_split, bool)
                 else bool(current_split or split_brain)
             )
+        slot_loss = recomputed.get("slot_loss")
+        if isinstance(slot_loss, bool):
+            current_slot_loss = aggregate_safety.get("slot_loss")
+            aggregate_safety["slot_loss"] = (
+                slot_loss
+                if not isinstance(current_slot_loss, bool)
+                else bool(current_slot_loss or slot_loss)
+            )
     _add(errors, bool(rounds), f"trial {trial_id} has no raw fault observer rounds")
     requested_duration = _number(_object(trial.get("workload")).get("duration_seconds"))
     _add(
@@ -4154,12 +4163,17 @@ def _validate_fault_source(
         f"trial {trial_id} unexpected safety summary is not derived from raw observer rounds",
     )
     correctness = _object(trial.get("correctness"))
-    for field in ("unexpected_pfail", "unexpected_fail", "observed_extra_failures", "unexpected_promotions", "split_brain"):
+    for field in ("unexpected_pfail", "unexpected_fail", "observed_extra_failures", "unexpected_promotions", "split_brain", "slot_loss"):
         _add(
             errors,
             correctness.get(field) == aggregate_safety[field],
             f"trial {trial_id} correctness {field} is not bound to raw fault safety",
         )
+    _add(
+        errors,
+        aggregate_safety.get("slot_loss") is False,
+        f"trial {trial_id} fault window observed slot loss",
+    )
 
     full_facts = _object(document.get("topology_facts"))
     stable_at = _number(source_markers.get("stable_client_recovery"))
@@ -4252,13 +4266,17 @@ def _validate_fault_source(
         ("slots_covered", "slots_covered"),
         ("replicas_synchronized", "replacement_promotions_complete"),
         ("clean_topology", "clean_topology"),
-        ("slot_loss", "slot_loss"),
     ):
         _add(
             errors,
             correctness.get(summary_field) == full_facts.get(fact_field),
             f"trial {trial_id} correctness {summary_field} is not bound to every-node convergence",
         )
+    _add(
+        errors,
+        full_facts.get("slot_loss") is False,
+        f"trial {trial_id} every-node convergence observed slot loss",
+    )
 
     _add(
         errors,
