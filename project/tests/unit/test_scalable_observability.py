@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -27,6 +29,7 @@ from valkey_scale_lab.observability.contracts import (
 from valkey_scale_lab.observability.failover import (
     ActuatorRecorder,
     AffectedShardObserver,
+    sample_affected_observers,
 )
 from valkey_scale_lab.observability import load as load_module
 from valkey_scale_lab.observability.load import MemtierLoadLane, per_connection_rate
@@ -728,6 +731,117 @@ def test_affected_shard_converges_after_two_500ms_rounds() -> None:
     )
     assert len(result["rounds"]) == 2
     assert result["round_interval_ms"] == 500
+
+
+def test_affected_shard_sampling_starts_other_observers_while_one_blocks() -> None:
+    release = threading.Event()
+    slow_started = threading.Event()
+    fast_started = threading.Event()
+
+    class Observer:
+        def __init__(self, name: str, started: threading.Event, *, block: bool = False) -> None:
+            self.name = name
+            self.started = started
+            self.block = block
+
+        def sample_round(self) -> dict[str, Any]:
+            self.started.set()
+            if self.block:
+                assert release.wait(timeout=1.0)
+            return {"monotonic": 1.0, "rows": [], "candidate": None}
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            sample_affected_observers,
+            {
+                "slow": Observer("slow", slow_started, block=True),  # type: ignore[arg-type]
+                "fast": Observer("fast", fast_started),  # type: ignore[arg-type]
+            },
+        )
+        assert slow_started.wait(timeout=0.5)
+        assert fast_started.wait(timeout=0.5)
+        assert not future.done()
+        release.set()
+
+    assert [row["shard_id"] for row in future.result(timeout=1.0)] == ["fast", "slow"]
+
+
+def test_exact_200_thirty_three_percent_affected_observers_all_start_same_round() -> None:
+    release = threading.Event()
+    started: list[str] = []
+    condition = threading.Condition()
+
+    class Observer:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def sample_round(self) -> dict[str, Any]:
+            with condition:
+                started.append(self.name)
+                condition.notify_all()
+            assert release.wait(timeout=1.0)
+            return {"monotonic": 1.0, "rows": [], "candidate": None}
+
+    observers = {
+        f"shard-{index:02d}": Observer(f"shard-{index:02d}")  # type: ignore[arg-type]
+        for index in range(33)
+    }
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(sample_affected_observers, observers)
+        with condition:
+            assert condition.wait_for(lambda: len(started) == 33, timeout=1.0)
+        assert len(set(started)) == 33
+        assert not future.done()
+        release.set()
+        rows = future.result(timeout=1.0)
+
+    assert len(rows) == 33
+
+
+def test_exact_200_thirty_three_percent_affected_command_budget_is_role_info_only() -> None:
+    calls: list[tuple[int, tuple[str, ...]]] = []
+    lock = threading.Lock()
+
+    class RecordingConnection:
+        def __init__(self, endpoint: Endpoint, _timeout: float) -> None:
+            self.endpoint = endpoint
+
+        def execute_many(self, commands: list[tuple[str, ...]]) -> list[Any]:
+            with lock:
+                calls.extend((self.endpoint.port, tuple(command)) for command in commands)
+            assert commands == [("ROLE",), ("CLUSTER", "INFO")]
+            return [
+                [b"master", 0, []],
+                b"cluster_state:ok\r\ncluster_slots_pfail:0\r\ncluster_slots_fail:0\r\n",
+            ]
+
+        def close(self) -> None:
+            return None
+
+    observers = {
+        f"shard-{index:02d}": AffectedShardObserver(
+            [
+                NodeEndpoint(
+                    f"replica-{index:02d}",
+                    "127.0.0.1",
+                    7300 + index,
+                    "replica",
+                    f"shard-{index:02d}",
+                )
+            ],
+            connection_factory=lambda endpoint, timeout: RecordingConnection(endpoint, timeout),  # type: ignore[arg-type]
+        )
+        for index in range(33)
+    }
+
+    rows = sample_affected_observers(observers)
+
+    assert len(rows) == 33
+    assert len(calls) == 66
+    assert sum(1 for _port, command in calls if command == ("ROLE",)) == 33
+    assert sum(1 for _port, command in calls if command == ("CLUSTER", "INFO")) == 33
+    assert all(command != ("CLUSTER", "COUNT-FAILURE-REPORTS") for _port, command in calls)
 
 
 def test_actuator_failure_is_a_collection_error() -> None:

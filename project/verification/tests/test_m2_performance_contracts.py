@@ -74,9 +74,34 @@ def _document() -> dict[str, Any]:
             "coverage": {
                 "expected_live_node_count": 1,
                 "node_metric_count": 1,
-                "topology_observer_count": 1,
+                "cluster_link_observer_count": 1,
                 "missing_live_nodes": [],
                 "errors": [],
+            },
+            "boundaries": {
+                "end": {
+                    "expected_live_nodes": ["node-a"],
+                    "node_metrics": [
+                        {
+                            "logical_id": "node-a",
+                            "valkey_node_id": "id-node-a",
+                        }
+                    ],
+                    "cluster_link_observers": [
+                        {
+                            "logical_id": "node-a",
+                            "valkey_node_id": "id-node-a",
+                            "monotonic": 1.0,
+                            "status": "OK",
+                            "link_rows": [],
+                            "expected_links": [],
+                            "missing_links": [],
+                            "cluster_link_count": 0,
+                            "cluster_link_errors": 0,
+                            "errors": [],
+                        }
+                    ],
+                }
             },
         },
     }
@@ -95,20 +120,22 @@ def _trial(document: dict[str, Any]) -> dict[str, Any]:
 
 
 def _m2_fault_topology_source() -> dict[str, Any]:
+    controls = [
+        {"logical_id": "primary-0", "shard_id": "shard-0", "role": "primary", "az_id": "az-a"},
+        {"logical_id": "replica-0", "shard_id": "shard-0", "role": "replica", "az_id": "az-b"},
+        {"logical_id": "primary-1", "shard_id": "shard-1", "role": "primary", "az_id": "az-a"},
+        {"logical_id": "primary-2", "shard_id": "shard-2", "role": "primary", "az_id": "az-b"},
+        {"logical_id": "primary-3", "shard_id": "shard-3", "role": "primary", "az_id": "az-c"},
+    ]
     return {
         "status": "PASS",
         "versions": ["9.1.0"],
         "valkey_binary_sha256s": ["a" * 64],
-        "topology_control": [
-            {"logical_id": "primary-0", "shard_id": "shard-0", "role": "primary", "az_id": "az-a"},
-            {"logical_id": "replica-0", "shard_id": "shard-0", "role": "replica", "az_id": "az-b"},
-            {"logical_id": "primary-1", "shard_id": "shard-1", "role": "primary", "az_id": "az-a"},
-            {"logical_id": "replica-1", "shard_id": "shard-1", "role": "replica", "az_id": "az-b"},
-        ],
+        "topology_control": controls,
         "light_validation": {
             "status": "OK",
-            "nodes_expected": 4,
-            "nodes_observed": 4,
+            "nodes_expected": 5,
+            "nodes_observed": 5,
             "coverage": {
                 "all_slots_covered_exactly_once": True,
                 "primary_bitmaps_pairwise_disjoint": True,
@@ -117,7 +144,8 @@ def _m2_fault_topology_source() -> dict[str, Any]:
                 _m2_light_node("primary-0", "id-primary-0", "primary", "shard-0"),
                 _m2_light_node("replica-0", "id-replica-0", "replica", "shard-0", owner="id-primary-0"),
                 _m2_light_node("primary-1", "id-primary-1", "primary", "shard-1"),
-                _m2_light_node("replica-1", "id-replica-1", "replica", "shard-1", owner="id-primary-1"),
+                _m2_light_node("primary-2", "id-primary-2", "primary", "shard-2"),
+                _m2_light_node("primary-3", "id-primary-3", "primary", "shard-3"),
             ],
         },
         "topology_validation": {
@@ -126,7 +154,7 @@ def _m2_fault_topology_source() -> dict[str, Any]:
                 "shards": [
                     {
                         "primary_id": "id-primary-0",
-                        "slots": [[0, 8191]],
+                        "slots": [[0, 4095]],
                         "nodes": [
                             {"node_id": "id-primary-0", "role": "primary", "health": "online"},
                             {"node_id": "id-replica-0", "role": "replica", "health": "online"},
@@ -134,10 +162,23 @@ def _m2_fault_topology_source() -> dict[str, Any]:
                     },
                     {
                         "primary_id": "id-primary-1",
-                        "slots": [[8192, 16383]],
+                        "slots": [[4096, 8191]],
                         "nodes": [
                             {"node_id": "id-primary-1", "role": "primary", "health": "online"},
-                            {"node_id": "id-replica-1", "role": "replica", "health": "online"},
+                        ],
+                    },
+                    {
+                        "primary_id": "id-primary-2",
+                        "slots": [[8192, 12287]],
+                        "nodes": [
+                            {"node_id": "id-primary-2", "role": "primary", "health": "online"},
+                        ],
+                    },
+                    {
+                        "primary_id": "id-primary-3",
+                        "slots": [[12288, 16383]],
+                        "nodes": [
+                            {"node_id": "id-primary-3", "role": "primary", "health": "online"},
                         ],
                     },
                 ],
@@ -177,7 +218,8 @@ def _m2_fault_state_source() -> dict[str, Any]:
         ("primary-0", 100, 7400),
         ("replica-0", 101, 7401),
         ("primary-1", 102, 7402),
-        ("replica-1", 103, 7403),
+        ("primary-2", 103, 7403),
+        ("primary-3", 104, 7404),
     ):
         rows.append(
             {
@@ -193,16 +235,90 @@ def _m2_fault_state_source() -> dict[str, Any]:
     return {"nodes": rows}
 
 
-def _m2_affected_round(at: float, *, stable: bool, full: bool = False) -> dict[str, Any]:
+def _m2_logical_to_node_id() -> dict[str, str]:
+    return {
+        "primary-0": "id-primary-0",
+        "replica-0": "id-replica-0",
+        "primary-1": "id-primary-1",
+        "primary-2": "id-primary-2",
+        "primary-3": "id-primary-3",
+    }
+
+
+def _m2_failure_observation(
+    at: float,
+    *,
+    pfail_slots: int = 0,
+    fail_slots: int = 0,
+    target_health: str = "online",
+    non_target_health: str = "online",
+    promoted: bool = False,
+) -> dict[str, Any]:
+    shard0_primary = "id-replica-0" if promoted else "id-primary-0"
+    return {
+        "observer_count": 1,
+        "rows": [
+            {
+                "logical_id": "primary-1",
+                "observer_node_id": "id-primary-1",
+                "monotonic": at,
+                "status": "OK",
+                "cluster_info": {
+                    "cluster_slots_pfail": pfail_slots,
+                    "cluster_slots_fail": fail_slots,
+                },
+                "topology": {
+                    "shards": [
+                        {
+                            "primary_id": shard0_primary,
+                            "slots": [[0, 4095]],
+                            "nodes": [
+                                {"node_id": "id-primary-0", "role": "primary", "health": target_health},
+                                {"node_id": "id-replica-0", "role": "primary" if promoted else "replica", "health": "online"},
+                            ],
+                        },
+                        {
+                            "primary_id": "id-primary-1",
+                            "slots": [[4096, 8191]],
+                            "nodes": [{"node_id": "id-primary-1", "role": "primary", "health": non_target_health}],
+                        },
+                        {
+                            "primary_id": "id-primary-2",
+                            "slots": [[8192, 12287]],
+                            "nodes": [{"node_id": "id-primary-2", "role": "primary", "health": "online"}],
+                        },
+                        {
+                            "primary_id": "id-primary-3",
+                            "slots": [[12288, 16383]],
+                            "nodes": [{"node_id": "id-primary-3", "role": "primary", "health": "online"}],
+                        },
+                    ]
+                },
+            }
+        ],
+    }
+
+
+def _m2_affected_round(
+    at: float,
+    *,
+    stable: bool,
+    full: bool = False,
+    pfail_slots: int = 0,
+    fail_slots: int = 0,
+    target_health: str = "online",
+    non_target_health: str = "online",
+) -> dict[str, Any]:
     observation = {
         "monotonic": at,
         "rows": [
-            {
-                "logical_id": "replica-0",
-                "status": "OK" if stable else "TRANSIENT",
-                "cluster_state": "ok" if stable else "fail",
-            }
-        ],
+                {
+                    "logical_id": "replica-0",
+                    "status": "OK" if stable else "TRANSIENT",
+                    "cluster_state": "ok" if stable else "fail",
+                    "role": {"role": "primary"} if stable else {"role": "replica"},
+                }
+            ],
         "candidate": (
             {"primary": "replica-0", "relationships": {"replica-0": "primary"}}
             if stable
@@ -210,24 +326,42 @@ def _m2_affected_round(at: float, *, stable: bool, full: bool = False) -> dict[s
         ),
     }
     affected_shards = [{"shard_id": "shard-0", "observation": observation}]
-    facts, _contract, _shards = M2._recompute_affected_fault_facts(
+    affected_facts, _contract, _shards = M2._recompute_affected_fault_facts(
         affected_shards,
         target_node_ids={"id-primary-0"},
         replacement_by_shard={"shard-0": "replica-0"},
-        logical_to_node_id={
-            "primary-0": "id-primary-0",
-            "replica-0": "id-replica-0",
-            "primary-1": "id-primary-1",
-            "replica-1": "id-replica-1",
-        },
-        expected_nodes=4,
+        logical_to_node_id=_m2_logical_to_node_id(),
+        expected_nodes=5,
         full_validation_passed=full,
+    )
+    failure_observation = _m2_failure_observation(
+        at,
+        pfail_slots=pfail_slots,
+        fail_slots=fail_slots,
+        target_health=target_health,
+        non_target_health=non_target_health,
+        promoted=stable,
+    )
+    facts = M2._recompute_fault_round_facts(
+        affected_facts,
+        failure_observation,
+        target_node_ids={"id-primary-0"},
+        target_slot_count=4096,
+        replacement_node_ids={"id-replica-0"},
+        expected_roles_by_node_id={
+            "id-primary-0": "primary",
+            "id-replica-0": "replica",
+            "id-primary-1": "primary",
+            "id-primary-2": "primary",
+            "id-primary-3": "primary",
+        },
     )
     return {
         "at_monotonic": at,
         "probe_started_at_monotonic": at - 0.01,
         "probe_duration_ms": 10.0,
         "affected_shards": affected_shards,
+        "failure_observation": failure_observation,
         "facts": facts,
     }
 
@@ -237,9 +371,9 @@ def _m2_fault_source_and_trial() -> tuple[dict[str, Any], dict[str, Any]]:
         "sigkill_barrier": 10.0,
         "all_processes_gone": 10.1,
         "first_pfail": 10.5,
-        "quorum_fail": 10.5,
-        "first_promotion": 11.0,
-        "all_slots_covered_cluster_ok": 11.0,
+        "quorum_fail": 11.0,
+        "first_promotion": 11.5,
+        "all_slots_covered_cluster_ok": 11.5,
         "stable_client_recovery": 12.0,
         "every_node_converged": 12.6,
     }
@@ -291,20 +425,23 @@ def _m2_fault_source_and_trial() -> tuple[dict[str, Any], dict[str, Any]]:
             "id-primary-0": "primary",
             "id-replica-0": "replica",
             "id-primary-1": "primary",
-            "id-replica-1": "replica",
+            "id-primary-2": "primary",
+            "id-primary-3": "primary",
         },
         "node_shards": {
             "id-primary-0": "shard-0",
             "id-replica-0": "shard-0",
             "id-primary-1": "shard-1",
-            "id-replica-1": "shard-1",
+            "id-primary-2": "shard-2",
+            "id-primary-3": "shard-3",
         },
         "monotonic_markers": markers,
         "observer_rounds": [
-            _m2_affected_round(10.5, stable=False),
-            _m2_affected_round(11.0, stable=True),
-            _m2_affected_round(12.0, stable=True),
-            _m2_affected_round(13.0, stable=True, full=True),
+            _m2_affected_round(10.5, stable=False, pfail_slots=4096),
+            _m2_affected_round(11.0, stable=False, fail_slots=4096, target_health="fail"),
+            _m2_affected_round(11.5, stable=True, target_health="fail"),
+            _m2_affected_round(12.0, stable=True, target_health="fail"),
+            _m2_affected_round(13.0, stable=True, target_health="fail", full=True),
         ],
         "full_validation": {
             "status": "OK",
@@ -323,29 +460,32 @@ def _m2_fault_source_and_trial() -> tuple[dict[str, Any], dict[str, Any]]:
             "split_brain": False,
         },
     }
-    document["topology_facts"] = M2._recompute_affected_fault_facts(
-        document["observer_rounds"][2]["affected_shards"],
+    affected_topology_facts = M2._recompute_affected_fault_facts(
+        document["observer_rounds"][3]["affected_shards"],
         target_node_ids={"id-primary-0"},
         replacement_by_shard={"shard-0": "replica-0"},
-        logical_to_node_id={
-            "primary-0": "id-primary-0",
-            "replica-0": "id-replica-0",
-            "primary-1": "id-primary-1",
-            "replica-1": "id-replica-1",
-        },
-        expected_nodes=4,
+        logical_to_node_id=_m2_logical_to_node_id(),
+        expected_nodes=5,
         full_validation_passed=True,
     )[0]
+    document["topology_facts"] = M2._recompute_fault_round_facts(
+        affected_topology_facts,
+        document["observer_rounds"][3]["failure_observation"],
+        target_node_ids={"id-primary-0"},
+        target_slot_count=4096,
+        replacement_node_ids={"id-replica-0"},
+        expected_roles_by_node_id=document["initial_roles"],
+    )
     trial = {
         "trial_id": "fault-trial",
-        "scale": 4,
+        "scale": 5,
         "ownership_id": "run-1",
         "fault": M2._compact_fault_summary(document),
-        "monotonic_markers": markers,
+        "monotonic_markers": dict(markers),
         "workload": {"duration_seconds": 3.0},
         "correctness": {
             "exact_membership": True,
-            "observed_nodes": 4,
+            "observed_nodes": 5,
             "slots_covered": 16384,
             "replicas_synchronized": True,
             "clean_topology": True,
@@ -517,6 +657,113 @@ def test_m2_fault_source_rejects_missing_scalable_full_validation() -> None:
     )
 
     assert any("scalable full validation" in error for error in errors)
+
+
+def test_m2_fault_source_rejects_tampered_raw_pfail_marker() -> None:
+    document, trial = _m2_fault_source_and_trial()
+    trial["monotonic_markers"]["first_pfail"] = 10.4
+    errors: list[str] = []
+
+    M2._validate_fault_source(
+        document,
+        trial,
+        topology_document=_m2_fault_topology_source(),
+        state_document=_m2_fault_state_source(),
+        errors=errors,
+    )
+
+    assert any("first_pfail" in error and "source" in error for error in errors)
+
+
+def test_m2_fault_source_rejects_non_target_failure_observation_regression() -> None:
+    document, trial = _m2_fault_source_and_trial()
+    row = document["observer_rounds"][-1]["failure_observation"]["rows"][0]
+    row["cluster_info"]["cluster_slots_fail"] = 8192
+    row["topology"]["shards"][1]["nodes"][0]["health"] = "fail"
+    errors: list[str] = []
+
+    M2._validate_fault_source(
+        document,
+        trial,
+        topology_document=_m2_fault_topology_source(),
+        state_document=_m2_fault_state_source(),
+        errors=errors,
+    )
+
+    assert any("regressed after every-node convergence" in error for error in errors)
+    assert any("unexpected_fail" in error for error in errors)
+
+
+def test_m2_fault_source_rejects_global_observer_slot_loss_or_split_brain() -> None:
+    document, trial = _m2_fault_source_and_trial()
+    document["observer_rounds"][-1]["failure_observation"]["rows"][0]["topology"]["shards"][3]["slots"] = [[12288, 16000]]
+    errors: list[str] = []
+
+    M2._validate_fault_source(
+        document,
+        trial,
+        topology_document=_m2_fault_topology_source(),
+        state_document=_m2_fault_state_source(),
+        errors=errors,
+    )
+
+    assert any("slot_loss" in error for error in errors)
+
+
+def test_m2_fault_source_rejects_unexpected_global_observer_promotion() -> None:
+    document, trial = _m2_fault_source_and_trial()
+    document["observer_rounds"][-1]["affected_shards"][0]["observation"]["rows"].append(
+        {
+            "logical_id": "primary-1",
+            "status": "OK",
+            "cluster_state": "ok",
+            "role": {"role": "primary"},
+        }
+    )
+    errors: list[str] = []
+
+    M2._validate_fault_source(
+        document,
+        trial,
+        topology_document=_m2_fault_topology_source(),
+        state_document=_m2_fault_state_source(),
+        errors=errors,
+    )
+
+    assert any("unexpected_promotions" in error for error in errors)
+
+
+def test_m2_fault_source_rejects_missing_global_failure_coverage() -> None:
+    document, trial = _m2_fault_source_and_trial()
+    document["observer_rounds"][-1]["failure_observation"]["rows"] = []
+    errors: list[str] = []
+
+    M2._validate_fault_source(
+        document,
+        trial,
+        topology_document=_m2_fault_topology_source(),
+        state_document=_m2_fault_state_source(),
+        errors=errors,
+    )
+
+    assert any("failure_observer_coverage" in error for error in errors)
+
+
+def test_m2_protocol_source_rejects_missing_cluster_link_raw_evidence() -> None:
+    document = _document()
+    document["m2_protocol_metrics"]["boundaries"]["end"]["cluster_link_observers"] = []
+    errors: list[str] = []
+
+    M2._validate_resource_source(
+        document,
+        _trial(_document()),
+        fault_trial=False,
+        allow_initial_membership_transitions=False,
+        state_document={"nodes": [{"logical_id": "node-a", "pid": 123}]},
+        errors=errors,
+    )
+
+    assert any("cluster-link raw evidence" in error for error in errors)
 
 
 def test_resource_pair_facts_ignore_high_resource_values() -> None:

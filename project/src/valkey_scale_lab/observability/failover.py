@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Callable, Sequence
 
@@ -122,6 +123,7 @@ class AffectedShardObserver:
                         "status": "OK",
                         "role": role,
                         "cluster_state": info.get("cluster_state"),
+                        "cluster_info": info,
                     }
                 )
             except Exception as exc:  # transient during failover is observed data
@@ -216,12 +218,40 @@ class AffectedShardObserver:
                 remaining = deadline - self._monotonic()
                 if remaining > 0:
                     self._sleep(min(self.interval_seconds, remaining))
+                else:
+                    break
         finally:
             self.close()
         raise SemanticFailure(
             "affected shard did not produce two identical healthy 500ms rounds "
             "and a passing full validation before the deadline"
         )
+
+
+def sample_affected_observers(
+    observers: dict[str, AffectedShardObserver],
+) -> list[dict[str, Any]]:
+    """Run one affected-shard observer round with bounded parallelism."""
+
+    if not observers:
+        raise ValueError("affected observer sampling requires at least one shard")
+    items = sorted(observers.items())
+    results: list[dict[str, Any] | None] = [None] * len(items)
+    with ThreadPoolExecutor(max_workers=len(items)) as executor:
+        futures = {
+            executor.submit(observer.sample_round): index
+            for index, (_shard_id, observer) in enumerate(items)
+        }
+        for future in as_completed(futures):
+            index = futures[future]
+            shard_id = items[index][0]
+            results[index] = {
+                "shard_id": shard_id,
+                "observation": future.result(),
+            }
+    if any(result is None for result in results):
+        raise CollectionError("affected observer sampling lost a shard result")
+    return [result for result in results if result is not None]
 
 
 def redundancy_recovery(

@@ -64,9 +64,34 @@ def _observation() -> dict[str, Any]:
             "coverage": {
                 "expected_live_node_count": 1,
                 "node_metric_count": 1,
-                "topology_observer_count": 1,
+                "cluster_link_observer_count": 1,
                 "missing_live_nodes": [],
                 "errors": [],
+            },
+            "boundaries": {
+                "end": {
+                    "expected_live_nodes": ["node-a"],
+                    "node_metrics": [
+                        {
+                            "logical_id": "node-a",
+                            "valkey_node_id": "id-node-a",
+                        }
+                    ],
+                    "cluster_link_observers": [
+                        {
+                            "logical_id": "node-a",
+                            "valkey_node_id": "id-node-a",
+                            "monotonic": 1.0,
+                            "status": "OK",
+                            "link_rows": [],
+                            "expected_links": [],
+                            "missing_links": [],
+                            "cluster_link_count": 0,
+                            "cluster_link_errors": 0,
+                            "errors": [],
+                        }
+                    ],
+                }
             },
         },
     }
@@ -126,17 +151,41 @@ class FakeRespConnection:
             raise OSError("connection refused")
         self.calls.extend((port, tuple(command)) for command in commands)
         bus = self.bus_by_port.get(port, 100)
-        return [
-            "connected_clients:2\n",
-            "cluster_stats_bytes_sent:%d\ncluster_stats_bytes_received:%d\n"
-            "total_cluster_links_buffer_limit_exceeded:0\n" % (bus, bus),
-        ]
+        values: list[Any] = []
+        for command in commands:
+            if tuple(command) == ("INFO", "clients"):
+                values.append("connected_clients:2\n")
+            elif tuple(command) == ("CLUSTER", "INFO"):
+                values.append(
+                    "cluster_stats_bytes_sent:%d\ncluster_stats_bytes_received:%d\n"
+                    "total_cluster_links_buffer_limit_exceeded:0\n" % (bus, bus)
+                )
+            elif tuple(command) == ("CLUSTER", "MYID"):
+                values.append(f"id-{port}")
+            elif tuple(command) == ("CLUSTER", "LINKS"):
+                values.append(
+                    [
+                        {
+                            b"direction": b"to",
+                            b"node": f"peer-{port}".encode(),
+                            b"create-time": 1,
+                            b"events": b"r",
+                            b"send-buffer-allocated": 48,
+                            b"send-buffer-used": 1,
+                        }
+                    ]
+                )
+            else:
+                raise AssertionError(f"unexpected command {command}")
+        return values
 
     def execute(self, *command: str) -> str:
         port = int(self.endpoint.port)
         if port in self.failures:
             raise OSError("connection refused")
         self.calls.append((port, tuple(command)))
+        if tuple(command) == ("CLUSTER", "LINKS"):
+            return []  # type: ignore[return-value]
         return (
             f"id-{port} 127.0.0.1:{port}@{port + 10000} myself,master - 0 0 1 connected 0-16383\n"
         )
@@ -153,6 +202,74 @@ def _state(node_count: int = 1) -> dict[str, Any]:
             }
             for idx in range(node_count)
         ]
+    }
+
+
+def _link_observer(logical_id: str, node_id: str, peers: list[str] | None = None) -> dict[str, Any]:
+    peer_ids = peers or []
+    expected_links = [
+        {"peer_node_id": peer_id, "direction": direction}
+        for peer_id in peer_ids
+        for direction in ("from", "to")
+    ]
+    link_rows = [
+        {
+            "peer_node_id": row["peer_node_id"],
+            "direction": row["direction"],
+            "events": "r",
+            "create_time": 1,
+            "send_buffer_allocated": 48,
+            "send_buffer_used": 1,
+            "read_event_registered": True,
+            "write_event_registered": False,
+            "status": "OK",
+        }
+        for row in expected_links
+    ]
+    return {
+        "logical_id": logical_id,
+        "valkey_node_id": node_id,
+        "monotonic": 1.0,
+        "status": "OK",
+        "link_rows": link_rows,
+        "expected_links": expected_links,
+        "missing_links": [],
+        "cluster_link_count": len(link_rows),
+        "cluster_link_errors": 0,
+        "errors": [],
+    }
+
+
+def _protocol_boundary(nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    expected_live = [str(node["logical_id"]) for node in nodes]
+    node_metrics = [
+        {
+            "logical_id": str(node["logical_id"]),
+            "valkey_node_id": str(node["valkey_node_id"]),
+            "connection_count": node.get("connection_count", 1),
+            "cluster_bus_bytes": node.get("cluster_bus_bytes", 200),
+            "buffer_overflows": node.get("buffer_overflows", 0),
+            "cluster_stats_bytes_sent": node.get("cluster_stats_bytes_sent", 100),
+            "cluster_stats_bytes_received": node.get("cluster_stats_bytes_received", 100),
+            "total_cluster_links_buffer_limit_exceeded": node.get("total_cluster_links_buffer_limit_exceeded", 0),
+        }
+        for node in nodes
+    ]
+    node_ids = [str(node["valkey_node_id"]) for node in nodes]
+    observers = [
+        _link_observer(
+            str(node["logical_id"]),
+            str(node["valkey_node_id"]),
+            [peer_id for peer_id in node_ids if peer_id != str(node["valkey_node_id"])],
+        )
+        for node in nodes[: min(capture.M2_PROTOCOL_OBSERVER_COUNT, len(nodes))]
+    ]
+    return {
+        "status": "PASS",
+        "expected_live_nodes": expected_live,
+        "node_metrics": node_metrics,
+        "cluster_link_observers": observers,
+        "errors": [],
     }
 
 
@@ -185,7 +302,14 @@ def test_fault_topology_facts_require_affected_shard_stability_before_full_valid
             "shard_id": "shard-0",
             "observation": {
                 "monotonic": 10.0,
-                "rows": [{"logical_id": "replica-0", "status": "OK", "cluster_state": "ok"}],
+                "rows": [
+                    {
+                        "logical_id": "replica-0",
+                        "status": "OK",
+                        "cluster_state": "ok",
+                        "failure_reports": {"id-primary-0": 0, "id-replica-0": 0},
+                    }
+                ],
                 "candidate": None,
             },
         }
@@ -195,7 +319,14 @@ def test_fault_topology_facts_require_affected_shard_stability_before_full_valid
             "shard_id": "shard-0",
             "observation": {
                 "monotonic": 10.5,
-                "rows": [{"logical_id": "replica-0", "status": "OK", "cluster_state": "ok"}],
+                "rows": [
+                    {
+                        "logical_id": "replica-0",
+                        "status": "OK",
+                        "cluster_state": "ok",
+                        "failure_reports": {"id-primary-0": 0, "id-replica-0": 0},
+                    }
+                ],
                 "candidate": {"primary": "replica-0"},
             },
         }
@@ -229,6 +360,223 @@ def test_fault_topology_facts_require_affected_shard_stability_before_full_valid
     assert stable_with_full["converged"] is True
 
 
+def _affected_round(*, at: float = 10.0, stable: bool = True) -> list[dict[str, Any]]:
+    return [
+        {
+            "shard_id": "shard-0",
+            "observation": {
+                "monotonic": at,
+                "rows": [
+                    {
+                        "logical_id": "replica-0",
+                        "status": "OK",
+                        "cluster_state": "ok",
+                        "role": {"role": "primary"},
+                    }
+                ],
+                "candidate": (
+                    {"primary": "replica-0", "relationships": {"replica-0": "primary"}}
+                    if stable
+                    else None
+                ),
+            },
+        }
+    ]
+
+
+def _failure_observation(
+    *,
+    at: float,
+    pfail_slots: int = 0,
+    fail_slots: int = 0,
+    target_health: str = "online",
+    non_target_health: str = "online",
+) -> dict[str, Any]:
+    return {
+        "observer_count": 1,
+        "rows": [
+            {
+                "logical_id": "observer-0",
+                "observer_node_id": "id-primary-1",
+                "monotonic": at,
+                "status": "OK",
+                "cluster_info": {
+                    "cluster_slots_pfail": pfail_slots,
+                    "cluster_slots_fail": fail_slots,
+                },
+                "topology": {
+                    "shards": [
+                        {
+                            "primary_id": "id-replica-0",
+                            "slots": [[0, 8191]],
+                            "nodes": [
+                                {"node_id": "id-primary-0", "role": "primary", "health": target_health},
+                                {"node_id": "id-replica-0", "role": "primary", "health": "online"},
+                            ],
+                        },
+                        {
+                            "primary_id": "id-primary-1",
+                            "slots": [[8192, 16383]],
+                            "nodes": [
+                                {"node_id": "id-primary-1", "role": "primary", "health": non_target_health},
+                            ],
+                        },
+                    ]
+                },
+            }
+        ],
+    }
+
+
+def _combined_fault_facts(
+    failure_observation: dict[str, Any],
+    *,
+    affected: list[dict[str, Any]] | None = None,
+    full: bool = False,
+) -> dict[str, Any]:
+    common = {
+        "target_node_ids": {"id-primary-0"},
+        "replacement_by_shard": {"shard-0": "replica-0"},
+        "logical_to_node_id": {
+            "primary-0": "id-primary-0",
+            "replica-0": "id-replica-0",
+            "primary-1": "id-primary-1",
+        },
+        "expected_nodes": 3,
+    }
+    affected_facts = capture._affected_shard_topology_facts(
+        affected or _affected_round(at=float(failure_observation["rows"][0]["monotonic"])),
+        **common,
+        full_validation_passed=full,
+    )
+    return capture._fault_round_facts(
+        affected_facts,
+        failure_observation,
+        target_node_ids={"id-primary-0"},
+        target_slot_count=8192,
+        replacement_node_ids={"id-replica-0"},
+        expected_roles_by_node_id={
+            "id-primary-0": "primary",
+            "id-replica-0": "replica",
+            "id-primary-1": "primary",
+        },
+    )
+
+
+def test_fault_markers_require_raw_global_failure_observation() -> None:
+    none = _combined_fault_facts(_failure_observation(at=10.0))
+    pfail_only = _combined_fault_facts(_failure_observation(at=10.5, pfail_slots=8192))
+    failed = _combined_fault_facts(_failure_observation(at=11.0, fail_slots=8192, target_health="fail"))
+
+    assert none["target_pfail_observed"] is False
+    assert none["first_target_pfail_at_monotonic"] == "MISSING"
+    assert pfail_only["target_pfail_observed"] is True
+    assert pfail_only["target_fail_node_ids"] == []
+    assert pfail_only["first_target_pfail_at_monotonic"] == 10.5
+    assert pfail_only["first_target_fail_at_monotonic"] == "MISSING"
+    assert failed["target_fail_node_ids"] == ["id-primary-0"]
+    assert failed["first_target_fail_at_monotonic"] == 11.0
+
+
+def test_fault_global_observer_command_budget_is_not_per_affected_shard(
+    monkeypatch: Any,
+) -> None:
+    calls: list[tuple[int, tuple[str, ...]]] = []
+
+    class Observer:
+        def __init__(self, index: int) -> None:
+            self.logical_id = f"observer-{index}"
+            self.host = "127.0.0.1"
+            self.port = 7600 + index
+
+    class RecordingRespConnection:
+        def __init__(self, endpoint: Any, *, timeout: float) -> None:
+            self.endpoint = endpoint
+
+        def __enter__(self) -> "RecordingRespConnection":
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+        def execute_many(self, commands: list[tuple[str, ...]]) -> list[Any]:
+            calls.extend((int(self.endpoint.port), tuple(command)) for command in commands)
+            assert commands == [("CLUSTER", "INFO"), ("CLUSTER", "SHARDS")]
+            return [
+                "cluster_slots_pfail:0\r\ncluster_slots_fail:0\r\n",
+                {"observer_port": int(self.endpoint.port)},
+            ]
+
+    monkeypatch.setattr(capture, "RespConnection", RecordingRespConnection)
+    observers = [Observer(index) for index in range(capture.M2_PROTOCOL_OBSERVER_COUNT)]
+    observation = capture._collect_fault_global_observation(
+        observers,
+        node_id_by_logical={observer.logical_id: f"id-{observer.logical_id}" for observer in observers},
+        allowed_unhealthy_node_ids=set(),
+        normalize_cluster_shards=lambda raw, **_kwargs: {"shards": [], "raw": raw},
+    )
+
+    assert observation["observer_count"] == capture.M2_PROTOCOL_OBSERVER_COUNT
+    assert len(observation["rows"]) == capture.M2_PROTOCOL_OBSERVER_COUNT
+    assert len(calls) == capture.M2_PROTOCOL_OBSERVER_COUNT * 2
+    assert all(command in {("CLUSTER", "INFO"), ("CLUSTER", "SHARDS")} for _port, command in calls)
+    assert all(command != ("CLUSTER", "COUNT-FAILURE-REPORTS") for _port, command in calls)
+
+
+def test_fault_facts_detect_non_target_global_failure_observation() -> None:
+    facts = _combined_fault_facts(
+        _failure_observation(
+            at=11.0,
+            pfail_slots=16384,
+            fail_slots=16384,
+            target_health="fail",
+            non_target_health="fail",
+        )
+    )
+
+    assert facts["unexpected_pfail"] == 1
+    assert facts["unexpected_fail"] == 2
+    assert facts["converged"] is False
+
+
+def test_exact_200_thirty_three_percent_affected_facts_cover_all_affected_shards() -> None:
+    replacement_by_shard = {f"shard-{index:02d}": f"replica-{index:02d}" for index in range(33)}
+    logical_to_node_id = {
+        **{f"primary-{index:02d}": f"id-primary-{index:02d}" for index in range(33)},
+        **{f"replica-{index:02d}": f"id-replica-{index:02d}" for index in range(33)},
+    }
+    target_ids = {f"id-primary-{index:02d}" for index in range(33)}
+    shard_rounds = [
+        {
+            "shard_id": shard_id,
+            "observation": {
+                "monotonic": 20.0 + index * 0.001,
+                "rows": [
+                    {
+                        "logical_id": replacement,
+                        "status": "OK",
+                        "cluster_state": "ok",
+                        "role": {"role": "primary"},
+                    }
+                ],
+                "candidate": {"primary": replacement, "relationships": {replacement: "primary"}},
+            },
+        }
+        for index, (shard_id, replacement) in enumerate(replacement_by_shard.items())
+    ]
+
+    facts = capture._affected_shard_topology_facts(
+        shard_rounds,
+        target_node_ids=target_ids,
+        replacement_by_shard=replacement_by_shard,
+        logical_to_node_id=logical_to_node_id,
+        expected_nodes=200,
+    )
+
+    assert facts["probe_count"] == 33
+    assert facts["replacement_promotions_complete"] is True
+
+
 def test_m2_protocol_metrics_complete_path_updates_resource_report(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
@@ -243,14 +591,13 @@ def test_m2_protocol_metrics_complete_path_updates_resource_report(
         "node_metrics": [
             {
                 "logical_id": "node-0",
+                "valkey_node_id": "id-7400",
                 "connection_count": 1,
                 "cluster_bus_bytes": 200,
                 "buffer_overflows": 0,
             }
         ],
-        "topology_observers": [
-            {"logical_id": "node-0", "cluster_link_count": 1, "cluster_link_errors": 0}
-        ],
+        "cluster_link_observers": [_link_observer("node-0", "id-7400")],
         "errors": [],
     }
 
@@ -267,30 +614,97 @@ def test_m2_protocol_metrics_complete_path_updates_resource_report(
     assert FakeRespConnection.calls == [
         (7400, ("INFO", "clients")),
         (7400, ("CLUSTER", "INFO")),
-        (7400, ("CLUSTER", "NODES")),
+        (7400, ("CLUSTER", "MYID")),
+        (7400, ("CLUSTER", "LINKS")),
     ]
+
+
+def test_m2_protocol_boundary_uses_fixed_cluster_link_observers_not_all_nodes(
+    monkeypatch: Any,
+) -> None:
+    calls: list[tuple[int, tuple[str, ...]]] = []
+    live_ids = {f"id-{7400 + index}" for index in range(10)}
+
+    class RecordingRespConnection:
+        def __init__(self, endpoint: Any, *, timeout: float) -> None:
+            self.endpoint = endpoint
+
+        def __enter__(self) -> "RecordingRespConnection":
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+        def execute_many(self, commands: list[tuple[str, ...]]) -> list[Any]:
+            port = int(self.endpoint.port)
+            calls.extend((port, tuple(command)) for command in commands)
+            assert commands == [
+                ("INFO", "clients"),
+                ("CLUSTER", "INFO"),
+                ("CLUSTER", "MYID"),
+            ]
+            return [
+                "connected_clients:2\r\n",
+                (
+                    "cluster_stats_bytes_sent:10\r\n"
+                    "cluster_stats_bytes_received:20\r\n"
+                    "total_cluster_links_buffer_limit_exceeded:0\r\n"
+                ),
+                f"id-{port}",
+            ]
+
+        def execute(self, *command: str) -> list[dict[bytes, Any]]:
+            port = int(self.endpoint.port)
+            calls.append((port, tuple(command)))
+            assert command == ("CLUSTER", "LINKS")
+            observer_id = f"id-{port}"
+            return [
+                {
+                    b"direction": direction.encode(),
+                    b"node": peer_id.encode(),
+                    b"create-time": 1,
+                    b"events": b"rw",
+                    b"send-buffer-allocated": 64,
+                    b"send-buffer-used": 0,
+                }
+                for peer_id in sorted(live_ids)
+                if peer_id != observer_id
+                for direction in ("from", "to")
+            ]
+
+    monkeypatch.setattr(capture, "RespConnection", RecordingRespConnection)
+    boundary = capture._collect_m2_protocol_boundary(
+        _state(10),
+        expected_gone_processes=None,
+        expected_gone_active=False,
+    )
+
+    link_calls = [call for call in calls if call[1] == ("CLUSTER", "LINKS")]
+    metric_calls = [call for call in calls if call[1] != ("CLUSTER", "LINKS")]
+    assert boundary["status"] == "PASS"
+    assert len(boundary["node_metrics"]) == 10
+    assert len(boundary["cluster_link_observers"]) == capture.M2_PROTOCOL_OBSERVER_COUNT
+    assert len(metric_calls) == 10 * 3
+    assert len(link_calls) == capture.M2_PROTOCOL_OBSERVER_COUNT
+    assert {port for port, _command in link_calls} == {7400, 7401, 7402}
+    assert all(command != ("CLUSTER", "NODES") for _port, command in calls)
 
 
 def test_m2_bootstrap_protocol_metrics_use_counter_deltas(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
     def fake_collect(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
-        return {
-            "status": "PASS",
-            "expected_live_nodes": ["node-0"],
-            "node_metrics": [
+        return _protocol_boundary(
+            [
                 {
                     "logical_id": "node-0",
+                    "valkey_node_id": "id-node-0",
                     "connection_count": 2,
                     "cluster_bus_bytes": 420,
                     "buffer_overflows": 5,
                 }
-            ],
-            "topology_observers": [
-                {"logical_id": "node-0", "cluster_link_count": 1, "cluster_link_errors": 0}
-            ],
-            "errors": [],
-        }
+            ]
+        )
 
     monkeypatch.setattr(capture, "_collect_m2_protocol_boundary", fake_collect)
     report = _observation()
@@ -358,26 +772,40 @@ def test_m2_protocol_metric_failure_marks_observation_error(
         raise AssertionError("live-node M2 protocol failure must fail collection")
 
 
+def test_m2_cluster_links_raw_evidence_fails_closed_when_missing_or_abnormal() -> None:
+    missing = capture._m2_cluster_link_counts_from_links("MISSING")
+    abnormal = capture._m2_cluster_link_counts_from_links(
+        [
+            {
+                b"direction": b"to",
+                b"node": b"id-peer",
+                b"create-time": 1,
+                b"events": b"",
+                b"send-buffer-allocated": 1,
+                b"send-buffer-used": 2,
+            }
+        ]
+    )
+
+    assert missing["cluster_link_errors"] == 1
+    assert abnormal["cluster_link_errors"] == 1
+
+
 def test_m2_setup_resource_observation_requires_start_boundary(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
     def fake_collect(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
-        return {
-            "status": "PASS",
-            "expected_live_nodes": ["node-0"],
-            "node_metrics": [
+        return _protocol_boundary(
+            [
                 {
                     "logical_id": "node-0",
+                    "valkey_node_id": "id-node-0",
                     "connection_count": 2,
                     "cluster_bus_bytes": 420,
                     "buffer_overflows": 5,
                 }
-            ],
-            "topology_observers": [
-                {"logical_id": "node-0", "cluster_link_count": 1, "cluster_link_errors": 0}
-            ],
-            "errors": [],
-        }
+            ]
+        )
 
     monkeypatch.setattr(capture, "_collect_m2_protocol_boundary", fake_collect)
     report = _observation()
@@ -412,28 +840,12 @@ def test_m2_bootstrap_protocol_counter_boundary_requires_full_node_coverage(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
     def fake_collect(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
-        return {
-            "status": "PASS",
-            "expected_live_nodes": ["node-0", "node-1"],
-            "node_metrics": [
-                {
-                    "logical_id": "node-0",
-                    "connection_count": 2,
-                    "cluster_bus_bytes": 300,
-                    "buffer_overflows": 0,
-                },
-                {
-                    "logical_id": "node-1",
-                    "connection_count": 2,
-                    "cluster_bus_bytes": 300,
-                    "buffer_overflows": 0,
-                },
-            ],
-            "topology_observers": [
-                {"logical_id": "node-0", "cluster_link_count": 2, "cluster_link_errors": 0}
-            ],
-            "errors": [],
-        }
+        return _protocol_boundary(
+            [
+                {"logical_id": "node-0", "valkey_node_id": "id-node-0", "connection_count": 2, "cluster_bus_bytes": 300},
+                {"logical_id": "node-1", "valkey_node_id": "id-node-1", "connection_count": 2, "cluster_bus_bytes": 300},
+            ]
+        )
 
     monkeypatch.setattr(capture, "_collect_m2_protocol_boundary", fake_collect)
     complete = {
@@ -488,11 +900,12 @@ def test_m2_protocol_expected_gone_node_is_excluded(
         "status": "PASS",
         "expected_live_nodes": ["node-0", "node-1"],
         "node_metrics": [
-            {"logical_id": "node-0", "connection_count": 1, "cluster_bus_bytes": 200, "buffer_overflows": 0},
-            {"logical_id": "node-1", "connection_count": 1, "cluster_bus_bytes": 200, "buffer_overflows": 0},
+            {"logical_id": "node-0", "valkey_node_id": "id-node-0", "connection_count": 1, "cluster_bus_bytes": 200, "buffer_overflows": 0},
+            {"logical_id": "node-1", "valkey_node_id": "id-node-1", "connection_count": 1, "cluster_bus_bytes": 200, "buffer_overflows": 0},
         ],
-        "topology_observers": [
-            {"logical_id": "node-0", "cluster_link_count": 2, "cluster_link_errors": 0}
+        "cluster_link_observers": [
+            _link_observer("node-0", "id-node-0", ["id-node-1"]),
+            _link_observer("node-1", "id-node-1", ["id-node-0"]),
         ],
         "errors": [],
     }
@@ -535,17 +948,9 @@ def test_m2_capture_uses_plain_resource_runners(
     monkeypatch.setattr(
         capture,
         "_collect_m2_protocol_boundary",
-        lambda *_args, **_kwargs: {
-            "status": "PASS",
-            "expected_live_nodes": ["node-0"],
-            "node_metrics": [
-                {"logical_id": "node-0", "connection_count": 1, "cluster_bus_bytes": 2, "buffer_overflows": 0}
-            ],
-            "topology_observers": [
-                {"logical_id": "node-0", "cluster_link_count": 1, "cluster_link_errors": 0}
-            ],
-            "errors": [],
-        },
+        lambda *_args, **_kwargs: _protocol_boundary(
+            [{"logical_id": "node-0", "valkey_node_id": "id-node-0", "connection_count": 1, "cluster_bus_bytes": 2}]
+        ),
     )
 
     capture._capture_resource_observation(

@@ -234,6 +234,8 @@ def test_fault_window_defers_single_full_validation_until_all_affected_shards_ar
     assert source.count("FullClusterValidator(") == 1
     assert "and not full_validation" in source
     assert "stable_relationships == set(replacement_by_shard)" in source
+    assert "shard_observed_at - first_seen >= 0.5" in source
+    assert " and observed_at - first_seen >= 0.5" not in source
 
 
 def test_m2_fault_rate_target_counts_preserve_existing_rounding() -> None:
