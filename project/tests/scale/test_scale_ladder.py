@@ -20,6 +20,14 @@ def _patch_resource_preflight_host(monkeypatch) -> None:
     )
     monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
     monkeypatch.setattr(resource, "_host_available_memory_mb", lambda: 65536)
+    monkeypatch.setattr(
+        resource.os_resource,
+        "getrlimit",
+        lambda _kind: (
+            resource.os_resource.RLIM_INFINITY,
+            resource.os_resource.RLIM_INFINITY,
+        ),
+    )
 
 
 def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monkeypatch) -> None:
