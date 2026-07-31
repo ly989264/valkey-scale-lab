@@ -33,10 +33,12 @@ from valkey_scale_lab.observability.failover import (
 )
 from valkey_scale_lab.observability import load as load_module
 from valkey_scale_lab.observability.load import MemtierLoadLane, per_connection_rate
+from valkey_scale_lab.observability import resources as resources_module
 from valkey_scale_lab.observability.resources import (
     ExpectedGoneProcess,
     LocalResourceSampler,
     ProcessSpec,
+    ResourceSamplerRunner,
     analyze_resource_samples,
 )
 from valkey_scale_lab.observability import resource_observation as observation_module
@@ -922,6 +924,235 @@ def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     serialized = json.dumps(samples)
     assert "CLUSTER" not in serialized
     assert "valkey-cli" not in serialized
+
+
+def test_resource_runner_host_sampling_continues_while_process_is_blocked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(resources_module, "HOST_INTERVAL_SECONDS", 0.01)
+    monkeypatch.setattr(resources_module, "PROCESS_INTERVAL_SECONDS", 0.05)
+    release_process = threading.Event()
+    process_started = threading.Event()
+    host_condition = threading.Condition()
+    host_count = 0
+
+    class BlockingSampler:
+        sampler_id = "host-a"
+
+        def static(self) -> dict[str, Any]:
+            return {"sampler_id": self.sampler_id}
+
+        def host_sample(self) -> dict[str, Any]:
+            nonlocal host_count
+            with host_condition:
+                host_count += 1
+                host_condition.notify_all()
+                count = host_count
+            return {"kind": "host", "monotonic": count}
+
+        def process_sample(self) -> dict[str, Any]:
+            process_started.set()
+            assert release_process.wait(timeout=1.0)
+            return {"kind": "process", "monotonic": 1.0, "processes": []}
+
+    runner = ResourceSamplerRunner(
+        BlockingSampler(),  # type: ignore[arg-type]
+        host_interval=0.01,
+        process_interval=0.05,
+    )
+    runner.start()
+    assert process_started.wait(timeout=0.5)
+    with host_condition:
+        assert host_condition.wait_for(lambda: host_count >= 3, timeout=0.5)
+    release_process.set()
+    document = runner.stop()
+
+    assert sum(1 for sample in document["samples"] if sample["kind"] == "host") >= 3
+    assert any(sample["kind"] == "process" for sample in document["samples"])
+
+
+def test_resource_runner_process_rounds_do_not_overlap_or_catch_up(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(resources_module, "HOST_INTERVAL_SECONDS", 0.01)
+    monkeypatch.setattr(resources_module, "PROCESS_INTERVAL_SECONDS", 0.05)
+    release_first = threading.Event()
+    first_started = threading.Event()
+    first_finished = threading.Event()
+    condition = threading.Condition()
+    process_calls = 0
+    active_process_calls = 0
+    overlap_detected = False
+
+    class SlowProcessSampler:
+        sampler_id = "host-a"
+
+        def static(self) -> dict[str, Any]:
+            return {"sampler_id": self.sampler_id}
+
+        def host_sample(self) -> dict[str, Any]:
+            return {"kind": "host", "monotonic": 1.0}
+
+        def process_sample(self) -> dict[str, Any]:
+            nonlocal active_process_calls, overlap_detected, process_calls
+            with condition:
+                process_calls += 1
+                active_process_calls += 1
+                if active_process_calls > 1:
+                    overlap_detected = True
+                condition.notify_all()
+                call_number = process_calls
+            if call_number == 1:
+                first_started.set()
+                assert release_first.wait(timeout=1.0)
+            with condition:
+                active_process_calls -= 1
+                condition.notify_all()
+            if call_number == 1:
+                first_finished.set()
+            return {"kind": "process", "monotonic": call_number, "processes": []}
+
+    runner = ResourceSamplerRunner(
+        SlowProcessSampler(),  # type: ignore[arg-type]
+        host_interval=0.01,
+        process_interval=0.05,
+    )
+    runner.start()
+    assert first_started.wait(timeout=0.5)
+    with condition:
+        assert not condition.wait_for(lambda: process_calls > 1, timeout=0.08)
+        assert process_calls == 1
+        assert active_process_calls == 1
+    release_first.set()
+    assert first_finished.wait(timeout=0.5)
+    with condition:
+        assert not condition.wait_for(lambda: process_calls > 1, timeout=0.02)
+    document = runner.stop()
+
+    assert not overlap_detected
+    assert sum(1 for sample in document["samples"] if sample["kind"] == "process") == 1
+    assert runner._host_thread is not None and not runner._host_thread.is_alive()
+    assert runner._process_thread is not None and not runner._process_thread.is_alive()
+
+
+def test_process_sampling_is_sequential_complete_and_preserves_expected_gone(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    processes = [ProcessSpec(f"node-{index:02d}", 10_000 + index) for index in range(25)]
+    expected_gone = processes[-1]
+    fd_order: list[int] = []
+    sampler = LocalResourceSampler(
+        sampler_id="host-a",
+        processes=processes,
+        proc_root=tmp_path,
+        cgroup_root=tmp_path,
+        expected_gone_processes=[
+            ExpectedGoneProcess(expected_gone.logical_id, expected_gone.pid)
+        ],
+        expected_gone_active=lambda: True,
+    )
+
+    def process_stat(process: ProcessSpec) -> dict[str, Any]:
+        return {
+            "state": "S",
+            "user_cpu_ticks": 1,
+            "system_cpu_ticks": 2,
+            "start_time_ticks": process.pid * 10,
+            "rss_bytes": 4096,
+        }
+
+    def fd_count(pid: int) -> int:
+        fd_order.append(pid)
+        if pid == expected_gone.pid:
+            raise CollectionError("planned process is gone")
+        return 3
+
+    monkeypatch.setattr(sampler, "_process_stat", process_stat)
+    monkeypatch.setattr(sampler, "_fd_count", fd_count)
+
+    sample = sampler.process_sample()
+
+    assert isinstance(sampler.processes, tuple)
+    assert [
+        (row["logical_id"], row["pid"]) for row in sample["processes"]
+    ] == [(process.logical_id, process.pid) for process in processes]
+    assert len(sample["processes"]) == 25
+    assert len({(row["logical_id"], row["pid"]) for row in sample["processes"]}) == 25
+    assert fd_order == [process.pid for process in processes]
+    assert sample["processes"][-1]["status"] == "EXPECTED_GONE"
+
+    failing = LocalResourceSampler(
+        sampler_id="host-b",
+        processes=[ProcessSpec("node-bad", 20_000)],
+        proc_root=tmp_path,
+        cgroup_root=tmp_path,
+    )
+    monkeypatch.setattr(failing, "_process_stat", process_stat)
+    monkeypatch.setattr(
+        failing,
+        "_fd_count",
+        lambda _pid: (_ for _ in ()).throw(CollectionError("unexpected failure")),
+    )
+    with pytest.raises(CollectionError, match="unexpected failure"):
+        failing.process_sample()
+
+
+def test_resource_sampler_rejects_pid_identity_changes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = ProcessSpec("node-a", 123)
+    sampler = LocalResourceSampler(
+        sampler_id="host-a",
+        processes=[process],
+        proc_root=tmp_path,
+        cgroup_root=tmp_path,
+    )
+    start_time = 10
+
+    def process_stat(_process: ProcessSpec) -> dict[str, Any]:
+        return {
+            "state": "S",
+            "user_cpu_ticks": 1,
+            "system_cpu_ticks": 2,
+            "start_time_ticks": start_time,
+            "rss_bytes": 4096,
+        }
+
+    monkeypatch.setattr(sampler, "_process_stat", process_stat)
+    monkeypatch.setattr(sampler, "_fd_count", lambda _pid: 3)
+    sampler.process_sample()
+    assert sampler._process_start_times[(process.logical_id, process.pid)] == 10
+    start_time = 20
+
+    with pytest.raises(CollectionError, match="process identity changed"):
+        sampler.process_sample()
+
+    mid_round = LocalResourceSampler(
+        sampler_id="host-b",
+        processes=[process],
+        proc_root=tmp_path,
+        cgroup_root=tmp_path,
+    )
+    stat_calls = 0
+
+    def changing_process_stat(_process: ProcessSpec) -> dict[str, Any]:
+        nonlocal stat_calls
+        stat_calls += 1
+        return {
+            "state": "S",
+            "user_cpu_ticks": 1,
+            "system_cpu_ticks": 2,
+            "start_time_ticks": 30 if stat_calls == 1 else 40,
+            "rss_bytes": 4096,
+        }
+
+    monkeypatch.setattr(mid_round, "_process_stat", changing_process_stat)
+    monkeypatch.setattr(mid_round, "_fd_count", lambda _pid: 3)
+
+    with pytest.raises(CollectionError, match="process identity changed while sampling"):
+        mid_round.process_sample()
 
 
 def test_resource_analyzer_consumes_design_categories() -> None:

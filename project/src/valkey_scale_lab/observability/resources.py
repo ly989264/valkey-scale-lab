@@ -65,7 +65,7 @@ class LocalResourceSampler:
         expected_gone_active: Callable[[], bool] | None = None,
     ) -> None:
         self.sampler_id = sampler_id
-        self.processes = list(processes)
+        self.processes = tuple(processes)
         self.proc_root = proc_root
         self.cgroup_root = cgroup_root
         self._wall = wall_clock
@@ -74,6 +74,7 @@ class LocalResourceSampler:
             (process.logical_id, process.pid) for process in expected_gone_processes
         }
         self._expected_gone_active = expected_gone_active or (lambda: False)
+        self._process_start_times: dict[tuple[str, int], int] = {}
         self._self_cpu_started = time.process_time()
 
     def static(self) -> dict[str, Any]:
@@ -121,30 +122,29 @@ class LocalResourceSampler:
         started = self._monotonic()
         rows: list[dict[str, Any]] = []
         for process in self.processes:
-            try:
-                stat = self._process_stat(process)
+            stat, error = self._sample_process(process)
+            if error is None:
                 rows.append(
                     {
                         "logical_id": process.logical_id,
                         "pid": process.pid,
                         "status": "OK",
                         **stat,
-                        "fd_count": self._fd_count(process.pid),
                     }
                 )
-            except CollectionError as exc:
-                key = (process.logical_id, process.pid)
-                if key in self._expected_gone and self._expected_gone_active():
-                    rows.append(
-                        {
-                            "logical_id": process.logical_id,
-                            "pid": process.pid,
-                            "status": "EXPECTED_GONE",
-                            "reason": str(exc),
-                        }
-                    )
-                    continue
-                raise
+                continue
+            key = (process.logical_id, process.pid)
+            if key in self._expected_gone and self._expected_gone_active():
+                rows.append(
+                    {
+                        "logical_id": process.logical_id,
+                        "pid": process.pid,
+                        "status": "EXPECTED_GONE",
+                        "reason": str(error),
+                    }
+                )
+                continue
+            raise error
         duration = max(self._monotonic() - started, 0.0)
         return {
             "kind": "process",
@@ -154,6 +154,30 @@ class LocalResourceSampler:
             "processes": rows,
             "collector": self._collector_metrics(duration),
         }
+
+    def _sample_process(
+        self, process: ProcessSpec
+    ) -> tuple[dict[str, Any], CollectionError | None]:
+        try:
+            stat = self._process_stat(process)
+            key = (process.logical_id, process.pid)
+            previous_start = self._process_start_times.setdefault(
+                key, int(stat["start_time_ticks"])
+            )
+            if int(stat["start_time_ticks"]) != previous_start:
+                raise CollectionError(
+                    f"process identity changed for {process.logical_id} pid {process.pid}"
+                )
+            fd_count = self._fd_count(process.pid)
+            confirmed = self._process_stat(process)
+            if confirmed["start_time_ticks"] != stat["start_time_ticks"]:
+                raise CollectionError(
+                    f"process identity changed while sampling {process.logical_id} "
+                    f"pid {process.pid}"
+                )
+            return {**stat, "fd_count": fd_count}, None
+        except CollectionError as exc:
+            return {}, exc
 
     def _cpu_and_scheduler(self) -> tuple[dict[str, int], dict[str, int]]:
         lines = _read(self.proc_root / "stat").splitlines()
@@ -307,63 +331,85 @@ class ResourceSamplerRunner:
         self.static: dict[str, Any] | None = None
         self.samples: list[dict[str, Any]] = []
         self.errors: list[str] = []
+        self._lock = threading.Lock()
         self._stop = threading.Event()
-        self._thread: threading.Thread | None = None
+        self._started = False
+        self._host_thread: threading.Thread | None = None
+        self._process_thread: threading.Thread | None = None
 
     def start(self) -> None:
-        if self._thread is not None:
+        if self._started:
             raise RuntimeError("resource sampler is already running")
+        self._started = True
         try:
             self.static = self.sampler.static()
         except CollectionError as exc:
-            self.errors.append(str(exc))
+            with self._lock:
+                self.errors.append(str(exc))
             self._stop.set()
             return
-        self._thread = threading.Thread(
-            target=self._run,
-            name=f"resource-sampler-{self.sampler.sampler_id}",
+        self._host_thread = threading.Thread(
+            target=self._run_host,
+            name=f"resource-host-{self.sampler.sampler_id}",
             daemon=True,
         )
-        self._thread.start()
+        self._process_thread = threading.Thread(
+            target=self._run_process,
+            name=f"resource-sampler-process-{self.sampler.sampler_id}",
+            daemon=True,
+        )
+        self._host_thread.start()
+        self._process_thread.start()
 
     def stop(self) -> dict[str, Any]:
         self._stop.set()
-        if self._thread is not None:
-            self._thread.join(timeout=self.host_interval * 2)
-            if self._thread.is_alive():
-                raise CollectionError("resource sampler did not stop")
-        return {
-            "static": self.static
-            or {"sampler_id": self.sampler.sampler_id, "status": "MISSING"},
-            "samples": list(self.samples),
-            "errors": list(self.errors),
-        }
+        for thread in (self._host_thread, self._process_thread):
+            if thread is not None:
+                thread.join(timeout=max(self.host_interval, self.process_interval) * 2)
+                if thread.is_alive():
+                    raise CollectionError("resource sampler did not stop")
+        with self._lock:
+            return {
+                "static": self.static
+                or {"sampler_id": self.sampler.sampler_id, "status": "MISSING"},
+                "samples": list(self.samples),
+                "errors": list(self.errors),
+            }
 
     def _collect_with_retry(self, operation: Callable[[], dict[str, Any]]) -> None:
         last_error: Exception | None = None
         for _ in (1, 2):
             try:
-                self.samples.append(operation())
+                sample = operation()
+                with self._lock:
+                    self.samples.append(sample)
                 return
             except CollectionError as exc:
                 last_error = exc
         assert last_error is not None
-        self.errors.append(str(last_error))
+        with self._lock:
+            self.errors.append(str(last_error))
         self._stop.set()
 
-    def _run(self) -> None:
+    def _run_host(self) -> None:
         next_host = self._monotonic()
-        next_process = next_host
         while not self._stop.is_set():
             now = self._monotonic()
             if now >= next_host:
                 self._collect_with_retry(self.sampler.host_sample)
-                next_host += self.host_interval
+                next_host = self._monotonic() + self.host_interval
+            delay = next_host - self._monotonic()
+            self._stop.wait(max(min(delay, self.host_interval), 0.01))
+
+    def _run_process(self) -> None:
+        next_process = self._monotonic()
+        while not self._stop.is_set():
+            now = self._monotonic()
             if now >= next_process:
                 self._collect_with_retry(self.sampler.process_sample)
-                next_process += self.process_interval
-            delay = min(next_host, next_process) - self._monotonic()
-            self._stop.wait(max(min(delay, self.host_interval), 0.01))
+                next_process = self._monotonic() + self.process_interval
+            delay = next_process - self._monotonic()
+            self._stop.wait(max(min(delay, self.process_interval), 0.01))
 
 
 def _percentile(values: Sequence[float], percentile: float) -> float | None:
