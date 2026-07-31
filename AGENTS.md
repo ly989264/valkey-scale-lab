@@ -1,29 +1,156 @@
-# Repository Entry Point
+# Valkey Scale Lab refactor rules
 
-This repository has one active product root and one immutable historical
-archive:
+## Product purpose
 
-- project/ 只包含产品、产品测试和 Milestone Checks。
-- .github/milestone-loop/ 包含当前启用的自动化控制面。
-- loop_evidence/ 仍然是不可修改的历史归档。
-- 控制面不能向 project/ 注入运行状态、prompt 或 controller policy。
+This repository is a Valkey cluster experiment harness.
 
-## GitHub Access
+The refactor must improve the correctness and maintainability of the
+currently used product paths. Optimize for direct, understandable code
+and reproducible behavior.
 
-- GitHub 读写操作优先使用已连接的 GitHub Connector，`gh` 仅作为 Connector
-  覆盖不足时的 fallback。
-- Codex sandbox 中的 `gh auth status` 可能无法访问宿主机 Keychain。不能仅凭
-  sandbox 内的认证失败判断用户宿主终端的 GitHub 登录已经失效；需要用户在
-  正常宿主终端复核，或使用 GitHub Connector 验证实际访问能力。
+## Current-stage rule
 
-## Interactive Codex Changes And Publishing
+Work only on the active stage in REFACTOR.md.
 
-- 修改 machine-readable 字段或契约时，必须全仓检查其直接 producer、
-  consumer 和 validator。最小修改是完成目标所需的最少完整修改，可以包含
-  必要的直接 consumer 和聚焦测试，但不能引入无关功能、抽象或重构。若需要
-  新增通用框架、迁移机制、命令或 workflow，必须先停止并向用户说明。
-- 创建或更新 GitHub Issue/PR 前，必须按仓库当前 coordinator 的约定核对
-  metadata、labels 和 changed paths；不得把 GitHub Actions 当作首次格式校验。
-- 成功创建 PR 后，必须显式调用 `$explain-diff-for-human-review`，以该 PR 的
-  `base...head` 为比较范围，并只在当前 Codex 任务中向用户展示结果；除非用户
-  明确要求，不得自动发布 PR comment。
+The active stage is the complete scope. Do not add adjacent cleanup,
+future features, speculative extensibility, or unrelated improvements.
+
+## Mandatory implementation rules
+
+1. Read this file and the complete active stage before editing.
+2. Trace the real production call path before changing code.
+3. Implement every completion condition in the active stage.
+4. Update all affected production call sites, tests, and active documentation.
+5. Use the smallest change that completely solves the stage.
+6. Prefer deleting, moving, or directly calling existing code.
+7. Preserve behavior during extraction-only stages.
+8. Run the stage verification commands before reporting completion.
+9. A partial implementation must be reported as BLOCKED, not COMPLETE.
+10. Tests must exercise the real implementation path.
+
+## Prohibited design
+
+Unless the active stage explicitly requires it, do not add:
+
+- controllers;
+- orchestration frameworks;
+- generic engines;
+- plugin systems;
+- registries;
+- dependency-injection layers;
+- state machines;
+- new artifact layers;
+- new status enums;
+- new schemas;
+- locks or leases;
+- identity or authorization protocols;
+- fallbacks;
+- compatibility layers;
+- future extension points;
+- abstractions for future ECS or 2000-node work.
+
+Do not create an abstraction for a single implementation.
+
+Do not add defensive handling for hypothetical adversarial agents,
+data tampering, identity theft, PID TOCTOU, malicious paths, hostile
+multi-tenancy, or other scenarios that are not part of the active stage
+and are not demonstrated by an existing reproducible failure.
+
+Preserve existing safeguards unless the active stage explicitly removes one.
+Do not expand their scope.
+
+## Completeness rules
+
+Before reporting COMPLETE:
+
+- search for all callers of every changed function or field;
+- search for duplicated implementations;
+- verify the active CLI and Gate paths;
+- verify that old and new code are not both active;
+- map every stage completion condition to code and a test;
+- inspect the complete diff from the stage base SHA.
+
+Passing one unit test is not proof of stage completion.
+
+## Test rules
+
+Do not:
+
+- hard-code expected outputs only for tests;
+- replace real execution with fixtures;
+- weaken assertions to obtain PASS;
+- mark a step PASS without executing it;
+- treat missing evidence as successful evidence;
+- silently skip required behavior.
+
+## Role rules
+
+### Goal controller
+
+The Goal controller coordinates only.
+
+It may:
+
+- read files;
+- start worker and reviewer sessions;
+- run verification commands;
+- update REFACTOR.md stage status;
+- commit and push a passed stage.
+
+It must not edit product code.
+
+### Worker
+
+The worker edits product code for exactly one stage.
+
+It must not:
+
+- commit;
+- push;
+- change stage scope;
+- mark the stage PASS;
+- edit the REFACTOR.md status table.
+
+### Reviewer
+
+The reviewer is read-only.
+
+It reviews the complete stage diff from the original stage base SHA.
+It must report all blocking findings in one review.
+It must not propose unrelated redesign or future hardening.
+
+## Worker response
+
+Return exactly:
+
+STATUS: COMPLETE | BLOCKED
+
+IMPLEMENTED:
+- completion condition -> files/functions
+
+TESTS:
+- command -> result
+
+REMAINING:
+- none, or exact blocker
+
+## Reviewer response
+
+Return exactly:
+
+VERDICT: PASS | FAIL
+
+BLOCKERS:
+- CATEGORY | stage requirement | file/function | concrete reason
+
+CATEGORY must be one of:
+
+- WRONG_DIRECTION
+- OVERDESIGN
+- INCOMPLETE
+- REGRESSION
+
+When there are no blockers, write:
+
+BLOCKERS:
+- none
