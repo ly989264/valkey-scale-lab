@@ -6,6 +6,67 @@ from typing import Any
 from scripts import m2_performance_gate as M2
 
 
+def test_v4_formation_discovery_candidate_set_is_accepted() -> None:
+    candidates = [
+        {"kind": "cluster_create_strategy", "value": "manual_tree_meet_parallel_slots"},
+        *[
+            {"kind": "cluster_create_strategy", "value": "tree_meet_addslotsrange", "bounded_parallelism": parallelism}
+            for parallelism in (2, 4, 8, 16)
+        ],
+        {
+            "kind": "cluster_create_strategy",
+            "value": "preseed_epoch_tree_meet_pipeline_replicas",
+            "bounded_parallelism": 8,
+        },
+    ]
+    resource_observation = {metric: 0 for metric in M2.RESOURCE_METRICS}
+    trials_by_id: dict[str, dict[str, Any]] = {}
+    pairs_by_cell: dict[str, list[dict[str, Any]]] = {}
+    cells_by_id: dict[str, dict[str, Any]] = {}
+    for index, candidate in enumerate(candidates):
+        cell_id = f"cell-{index}"
+        baseline_id = f"{cell_id}-baseline"
+        candidate_id = f"{cell_id}-candidate"
+        cells_by_id[cell_id] = {
+            "cell_id": cell_id,
+            "campaign_step": "discovery",
+            "scale": 50,
+            "failure_rate": "none",
+            "required_pairs": 1,
+            "candidate": candidate,
+            "status": "FAIL",
+        }
+        pairs_by_cell[cell_id] = [{"baseline_trial_id": baseline_id, "candidate_trial_id": candidate_id}]
+        trials_by_id[baseline_id] = {
+            "trial_id": baseline_id,
+            "derived_intervals": {"formation_seconds": 10.0},
+            "resource_observation": resource_observation,
+        }
+        trials_by_id[candidate_id] = {
+            "trial_id": candidate_id,
+            "derived_intervals": {"formation_seconds": 20.0},
+            "resource_observation": resource_observation,
+        }
+    errors: list[str] = []
+
+    survivors = M2._validate_formation_discovery(
+        {
+            "baseline": M2.BASELINE_FORMATION,
+            "candidates": candidates,
+            "selected_candidate": candidates[-1],
+            "candidate_screen_version": "v4-preseed-pipeline",
+        },
+        trials_by_id,
+        pairs_by_cell,
+        cells_by_id,
+        errors,
+        require_selected=False,
+    )
+
+    assert errors == []
+    assert survivors == set()
+
+
 def _analysis() -> dict[str, Any]:
     return {
         "cpu": {"throttled_usec_delta": 2},

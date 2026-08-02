@@ -179,7 +179,7 @@ M2_PROTOCOL_RESOURCE_METRICS = (
     "cluster_link_errors",
     "buffer_overflows",
 )
-FORMATION_CANDIDATE_SCREEN_VERSION = "v2"
+FORMATION_CANDIDATE_SCREEN_VERSION = "v4-preseed-pipeline"
 FORMATION_DIRECT_CANDIDATE_VERSION = "v3-direct-p16"
 DIRECT_FORMATION_CANDIDATE = {
     "kind": "cluster_create_strategy",
@@ -5066,7 +5066,7 @@ def _selected_strategy_parallelism(strategy_value: Any, parallelism_value: Any) 
         if strategy_value == "current-default"
         else str(strategy_value)
     )
-    if strategy != "tree_meet_addslotsrange":
+    if strategy not in {"tree_meet_addslotsrange", "preseed_epoch_tree_meet_pipeline_replicas"}:
         return None
     if parallelism_value == "current-default":
         selected = getattr(docker_runtime, "CLUSTER_CREATE_PARALLELISM_DEFAULT", None)
@@ -5342,6 +5342,11 @@ def _formation_candidates() -> list[dict[str, Any]]:
             }
             for parallelism in (2, 4, 8, 16)
         ],
+        {
+            "kind": "cluster_create_strategy",
+            "value": "preseed_epoch_tree_meet_pipeline_replicas",
+            "bounded_parallelism": 8,
+        },
     ]
 
 

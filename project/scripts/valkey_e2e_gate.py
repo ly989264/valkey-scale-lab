@@ -15,7 +15,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
-from valkey_probe_lib import endpoints_from_state, execute_cluster_command, load_state, probe_endpoint, wait_for_cluster_ok  # noqa: E402
+from valkey_probe_lib import endpoints_from_state, execute_cluster_command, load_state, natural_probe_key_from_topology, wait_for_cluster_ok  # noqa: E402
 from valkey_scale_lab.execution import PROFILES  # noqa: E402
 
 SETUP_TIMING_NAMES = [
@@ -27,8 +27,10 @@ SETUP_TIMING_NAMES = [
     "replica_meet",
     "replica_replicate",
     "runtime_representative_probe",
+    "runtime_all_node_light_probe",
     "runtime_final_full_probe",
     "runtime_diagnostic_full_probe",
+    "all_endpoint_light_probe",
     "wrapper_wait_cluster_ok",
     "wrapper_data_path_probe",
     "cleanup",
@@ -134,7 +136,14 @@ def write_text_timed(
 
 
 def role_counts_from_probes(probes: list[dict[str, Any]]) -> dict[str, int]:
+    light_counts = {"primary": 0, "replica": 0, "handshake": 0, "fail": 0, "pfail": 0}
+    light_seen = False
     for probe in probes:
+        role = probe.get("role")
+        if probe.get("status") == "PASS" and role in {"primary", "replica"}:
+            light_counts[str(role)] += 1
+            light_seen = True
+            continue
         cluster_nodes = probe.get("cluster_nodes")
         if probe.get("status") != "PASS" or not isinstance(cluster_nodes, dict):
             continue
@@ -153,7 +162,7 @@ def role_counts_from_probes(probes: list[dict[str, Any]]) -> dict[str, int]:
             if role in {"primary", "replica"}:
                 counts[role] += 1
         return counts
-    return {"primary": 0, "replica": 0, "handshake": 0, "fail": 0, "pfail": 0}
+    return light_counts if light_seen else {"primary": 0, "replica": 0, "handshake": 0, "fail": 0, "pfail": 0}
 
 
 def record_timing(
@@ -303,7 +312,7 @@ def write_setup_timing_breakdown(
             "diagnostic_full_probe_duration_seconds": diagnostic_full_probe_duration,
             "wait_cluster_ok_probe_counts": {
                 name: wait_timing.get(name, {}).get("count", 0)
-                for name in ["representative_probe", "final_full_probe", "diagnostic_full_probe"]
+                for name in ["representative_probe", "all_endpoint_light_probe", "final_full_probe", "diagnostic_full_probe"]
             },
         },
         "summary": {
@@ -317,6 +326,7 @@ def write_setup_timing_breakdown(
                 ["wrapper_wait_cluster_ok", "wrapper_data_path_probe"],
             ),
             "final_full_probe_duration_seconds": final_full_probe_duration,
+            "all_endpoint_light_probe_duration_seconds": timing_duration(wait_timing, "all_endpoint_light_probe"),
             "diagnostic_full_probe_duration_seconds": diagnostic_full_probe_duration,
         },
         "accounting": accounting,
@@ -535,6 +545,7 @@ def main() -> int:
                     "endpoint_count": len(endpoints),
                     "representative_probe_duration_seconds": timing_duration(wait_timing, "representative_probe"),
                     "final_full_probe_duration_seconds": timing_duration(wait_timing, "final_full_probe"),
+                    "all_endpoint_light_probe_duration_seconds": timing_duration(wait_timing, "all_endpoint_light_probe"),
                     "diagnostic_full_probe_duration_seconds": timing_duration(wait_timing, "diagnostic_full_probe"),
                 },
             )
@@ -550,13 +561,17 @@ def main() -> int:
             if bad_versions:
                 errors.append(f"observed Valkey versions do not match {args.expected_version_prefix}: {bad_versions}")
             if args.require_data_path:
-                key = f"{{vslab-probe}}:{args.capability_id}:{int(time.time())}"
+                target_logical_id, slot, key = natural_probe_key_from_topology(
+                    probes,
+                    prefix=f"{args.capability_id}:{int(time.time())}",
+                )
+                ordered_endpoints = sorted(endpoints, key=lambda endpoint: endpoint.logical_id != target_logical_id)
                 value = f"value-{args.scenario}"
                 data_path_started = time.monotonic()
                 data_path_status = "FAIL"
                 try:
-                    set_res = execute_cluster_command(endpoints, "SET", key, value, timeout=args.probe_timeout)
-                    get_res = execute_cluster_command(endpoints, "GET", key, timeout=args.probe_timeout)
+                    set_res = execute_cluster_command(ordered_endpoints, "SET", key, value, timeout=args.probe_timeout)
+                    get_res = execute_cluster_command(ordered_endpoints, "GET", key, timeout=args.probe_timeout)
                     if str(set_res).upper() == "OK" and get_res == value:
                         data_path_result = "PASS"
                         data_path_status = "PASS"
@@ -572,7 +587,7 @@ def main() -> int:
                         "wrapper_data_path_probe",
                         data_path_started,
                         status=data_path_status,
-                        details={"required": True},
+                        details={"required": True, "target_logical_id": target_logical_id, "slot": slot, "slot_source": "wrapper_light_probe_topology"},
                     )
             else:
                 skipped_started = time.monotonic()
