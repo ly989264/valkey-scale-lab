@@ -77,9 +77,16 @@ def test_setup_timing_breakdown_accounts_gate_wall_time(tmp_path: Path) -> None:
         node_count=50,
         runtime_entries=[
             {
-                "name": "runtime_final_full_probe",
+                "name": "runtime_all_node_light_probe",
                 "status": "PASS",
                 "duration_seconds": 0.2,
+                "count": 1,
+                "details": {},
+            },
+            {
+                "name": "runtime_final_full_probe",
+                "status": "PASS",
+                "duration_seconds": 0.0,
                 "count": 1,
                 "details": {},
             },
@@ -117,7 +124,8 @@ def test_setup_timing_breakdown_accounts_gate_wall_time(tmp_path: Path) -> None:
         accounting_timings=accounting_timings,
         wait_timing={
             "representative_probe": {"duration_seconds": 0.1, "count": 1},
-            "final_full_probe": {"duration_seconds": 0.2, "count": 1},
+            "all_endpoint_light_probe": {"duration_seconds": 0.2, "count": 1},
+            "final_full_probe": {"duration_seconds": 0.0, "count": 0},
             "diagnostic_full_probe": {"duration_seconds": 0.3, "count": 1},
         },
         status="PASS",
@@ -132,5 +140,18 @@ def test_setup_timing_breakdown_accounts_gate_wall_time(tmp_path: Path) -> None:
     assert summary["unattributed_seconds"] <= 10.0
     assert artifact["accounting"]["unattributed_status"] == "PASS"
     entries = {entry["name"]: entry for entry in artifact["timings"]}
+    assert entries["runtime_all_node_light_probe"]["status"] == "PASS"
     assert entries["runtime_final_full_probe"]["status"] == "PASS"
     assert entries["runtime_diagnostic_full_probe"]["status"] == "FAIL"
+
+
+def test_role_counts_from_light_probes() -> None:
+    gate = _load_valkey_e2e_gate()
+
+    assert gate.role_counts_from_probes(
+        [
+            {"status": "PASS", "role": "primary"},
+            {"status": "PASS", "role": "replica"},
+            {"status": "PASS", "role": "replica"},
+        ]
+    ) == {"primary": 1, "replica": 2, "handshake": 0, "fail": 0, "pfail": 0}

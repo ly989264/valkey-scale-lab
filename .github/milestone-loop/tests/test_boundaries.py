@@ -1955,6 +1955,24 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(result["disposition"], "CANDIDATE_SELECTION_ONLY")
         self.assertEqual(loaded["status"], "PASS")
 
+    def test_v4_formation_discovery_screen_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            result, sealed, evidence = self._seal_discovery_fixture(
+                temporary,
+                status="PASS",
+                formation_screen_version="v4-preseed-pipeline",
+            )
+            loaded = load_m2_discovery_result(
+                result_path=sealed,
+                evidence_root=evidence,
+                expected_sha="a" * 40,
+                expected_lease_sha256="b" * 64,
+                run_id="123",
+                run_attempt="2",
+            )
+        self.assertEqual(result["disposition"], "CANDIDATE_SELECTION_ONLY")
+        self.assertEqual(loaded["status"], "PASS")
+
     def test_unknown_formation_discovery_screen_version_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             result, _sealed, _evidence = self._seal_discovery_fixture(
