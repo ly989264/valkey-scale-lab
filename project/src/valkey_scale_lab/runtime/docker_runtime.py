@@ -3233,6 +3233,11 @@ def _timing_duration(timings: dict[str, dict[str, Any]], name: str) -> float | s
     return "MISSING"
 
 
+def _replica_meet_integrated_with_replicate_timing(timings: dict[str, dict[str, Any]]) -> bool:
+    details = timings.get("replica_replicate", {}).get("details", {})
+    return isinstance(details, dict) and details.get("replica_meet_integrated_with_pipeline") is True
+
+
 def _write_runtime_timing_breakdown(
     path: Path,
     capability_id: str,
@@ -3244,11 +3249,10 @@ def _write_runtime_timing_breakdown(
     *,
     status: str,
 ) -> None:
-    cluster_create_parts = [
-        _timing_duration(timings, "primary_cluster_create"),
-        _timing_duration(timings, "replica_meet"),
-        _timing_duration(timings, "replica_replicate"),
-    ]
+    cluster_create_parts = [_timing_duration(timings, "primary_cluster_create")]
+    if not _replica_meet_integrated_with_replicate_timing(timings):
+        cluster_create_parts.append(_timing_duration(timings, "replica_meet"))
+    cluster_create_parts.append(_timing_duration(timings, "replica_replicate"))
     cluster_create_duration: float | str
     if all(isinstance(part, (int, float)) for part in cluster_create_parts):
         cluster_create_duration = round(sum(float(part) for part in cluster_create_parts), 6)

@@ -147,37 +147,156 @@ def test_wait_for_cluster_ok_failure_runs_one_full_diagnostic(monkeypatch) -> No
     assert full_calls == ["n0", "n1", "n2"]
 
 
-def test_wait_for_cluster_ok_light_failure_runs_one_full_diagnostic(monkeypatch) -> None:
+def test_wait_for_cluster_ok_light_failure_then_success_does_not_run_full_diagnostic(monkeypatch) -> None:
     full_calls: list[str] = []
+    light_batches = [
+        [
+            {
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_known_nodes": 2,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "primary",
+            },
+            {
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_known_nodes": 2,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "replica",
+                "replication_state": "connected",
+            },
+        ],
+        [
+            {
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_known_nodes": 2,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "primary",
+            },
+            {
+                "status": "FAIL",
+                "cluster_state": "fail",
+                "cluster_known_nodes": 1,
+                "role": "replica",
+            },
+        ],
+        [
+            {
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_known_nodes": 2,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "primary",
+            },
+            {
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_known_nodes": 2,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "replica",
+                "replication_state": "connected",
+            },
+        ],
+        [
+            {
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_known_nodes": 2,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "primary",
+            },
+            {
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_known_nodes": 2,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "replica",
+                "replication_state": "connected",
+            },
+        ],
+    ]
 
-    def light(endpoint):
-        return {
-            "status": "PASS",
-            "cluster_state": "ok",
-            "cluster_known_nodes": 2,
-            "cluster_slots_assigned": 16384,
-            "cluster_slots_ok": 16384,
-            "cluster_slots_fail": 0,
-            "role": "primary",
-        }
-
-    def full(endpoint):
-        full_calls.append(endpoint.logical_id)
-        return {
-            "status": "PASS",
-            "cluster_state": "ok",
-            "cluster_known_nodes": 2,
-            "cluster_nodes": _cluster_nodes(2),
-        }
+    def concurrent(endpoints, *, probe):
+        if probe is valkey_probe_lib.probe_endpoint:
+            full_calls.append("full")
+            return [{"status": "PASS", "cluster_state": "ok", "cluster_known_nodes": 2} for _ in endpoints]
+        return [dict(item) for item in light_batches.pop(0)]
 
     endpoints = [
         valkey_probe_lib.Endpoint("p0", "127.0.0.1", 7000, role="primary"),
         valkey_probe_lib.Endpoint("r0", "127.0.0.1", 7001, role="replica"),
     ]
-    monkeypatch.setattr(valkey_probe_lib, "light_probe_endpoint", light)
-    monkeypatch.setattr(valkey_probe_lib, "probe_endpoint", full)
+    monkeypatch.setattr(valkey_probe_lib, "_probe_endpoints_concurrent", concurrent)
+    monkeypatch.setattr(valkey_probe_lib.time, "sleep", lambda _: None)
 
     ok, observed = valkey_probe_lib.wait_for_cluster_ok(endpoints, min_nodes=2, timeout_seconds=1)
+
+    assert ok is True
+    assert [probe["status"] for probe in observed] == ["PASS", "PASS"]
+    assert full_calls == []
+
+
+def test_wait_for_cluster_ok_light_failure_until_timeout_runs_one_full_diagnostic(monkeypatch) -> None:
+    full_calls: list[str] = []
+    now = {"value": 0.0}
+
+    def light_batch(all_clean: bool) -> list[dict[str, object]]:
+        return [
+            {
+                "status": "PASS",
+                "cluster_state": "ok",
+                "cluster_known_nodes": 2,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "primary",
+            },
+            {
+                "status": "PASS" if all_clean else "FAIL",
+                "cluster_state": "ok" if all_clean else "fail",
+                "cluster_known_nodes": 2 if all_clean else 1,
+                "cluster_slots_assigned": 16384,
+                "cluster_slots_ok": 16384,
+                "cluster_slots_fail": 0,
+                "role": "replica",
+                "replication_state": "connected",
+            },
+        ]
+
+    light_call = {"count": 0}
+
+    def concurrent(endpoints, *, probe):
+        if probe is valkey_probe_lib.probe_endpoint:
+            full_calls.extend(endpoint.logical_id for endpoint in endpoints)
+            return [{"status": "PASS", "cluster_state": "fail", "cluster_known_nodes": 1} for _ in endpoints]
+        light_call["count"] += 1
+        return light_batch(all_clean=light_call["count"] % 2 == 1)
+
+    endpoints = [
+        valkey_probe_lib.Endpoint("p0", "127.0.0.1", 7000, role="primary"),
+        valkey_probe_lib.Endpoint("r0", "127.0.0.1", 7001, role="replica"),
+    ]
+    monkeypatch.setattr(valkey_probe_lib, "_probe_endpoints_concurrent", concurrent)
+    monkeypatch.setattr(valkey_probe_lib.time, "monotonic", lambda: now["value"])
+    monkeypatch.setattr(valkey_probe_lib.time, "sleep", lambda interval: now.update(value=now["value"] + interval))
+
+    ok, observed = valkey_probe_lib.wait_for_cluster_ok(endpoints, min_nodes=2, timeout_seconds=0.15, interval=0.1)
 
     assert ok is False
     assert [probe["status"] for probe in observed] == ["PASS", "PASS"]

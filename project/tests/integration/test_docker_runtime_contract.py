@@ -2201,6 +2201,77 @@ def test_preseed_large_cluster_uses_replica_pipeline_without_global_replica_meet
     assert timings["replica_replicate"]["details"]["replica_meet_integrated_with_pipeline"] is True
 
 
+def test_preseed_runtime_timing_counts_integrated_replica_pipeline_once(tmp_path: Path) -> None:
+    timings = {
+        "primary_cluster_create": {
+            "name": "primary_cluster_create",
+            "status": "PASS",
+            "duration_seconds": 1.25,
+            "count": 1,
+            "details": {},
+        },
+        "replica_replicate": {
+            "name": "replica_replicate",
+            "status": "PASS",
+            "duration_seconds": 2.5,
+            "count": 1,
+            "details": {"replica_meet_integrated_with_pipeline": True},
+        },
+    }
+
+    path = tmp_path / "runtime_timing.json"
+    docker_runtime._write_runtime_timing_breakdown(
+        path,
+        "scale_ladder",
+        "scale_ladder",
+        "exact-50",
+        "run-1",
+        [{"logical_id": "p0"}],
+        timings,
+        status="PASS",
+    )
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+
+    assert artifact["summary"]["cluster_create_duration_seconds"] == 3.75
+    entries = {entry["name"]: entry for entry in artifact["timings"]}
+    assert entries["replica_meet"]["status"] == "MISSING"
+    assert entries["replica_replicate"]["details"]["replica_meet_integrated_with_pipeline"] is True
+
+
+def test_legacy_runtime_timing_still_requires_replica_meet(tmp_path: Path) -> None:
+    timings = {
+        "primary_cluster_create": {
+            "name": "primary_cluster_create",
+            "status": "PASS",
+            "duration_seconds": 1.25,
+            "count": 1,
+            "details": {},
+        },
+        "replica_replicate": {
+            "name": "replica_replicate",
+            "status": "PASS",
+            "duration_seconds": 2.5,
+            "count": 1,
+            "details": {},
+        },
+    }
+
+    path = tmp_path / "runtime_timing.json"
+    docker_runtime._write_runtime_timing_breakdown(
+        path,
+        "scale_ladder",
+        "scale_ladder",
+        "exact-50",
+        "run-1",
+        [{"logical_id": "p0"}],
+        timings,
+        status="PASS",
+    )
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+
+    assert artifact["summary"]["cluster_create_duration_seconds"] == "MISSING"
+
+
 def test_addslotsrange_primary_create_assigns_full_range_to_single_primary(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[object, ...]] = []
 

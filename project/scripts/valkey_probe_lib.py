@@ -340,6 +340,7 @@ def wait_for_cluster_ok(
 ) -> tuple[bool, list[dict[str, Any]]]:
     deadline = time.monotonic() + timeout_seconds
     last: list[dict[str, Any]] = []
+    last_failure_reason = "representative_timeout"
     expected_role_counts = _expected_role_counts(endpoints, min_nodes)
     representatives = _representative_endpoints(endpoints)
     while time.monotonic() < deadline:
@@ -402,29 +403,9 @@ def wait_for_cluster_ok(
                 "FAIL",
                 failed_reason="all_endpoint_light_probe_failed",
             )
-            diagnostic_started = time.monotonic()
-            diagnostic_started_unix_ms = int(time.time() * 1000)
-            diagnostic = _probe_endpoints_concurrent(endpoints, probe=probe_endpoint)
-            diagnostic_ended_unix_ms = int(time.time() * 1000)
-            _append_clean_gate_round(
-                diagnostic_rounds,
-                round_context,
-                diagnostic,
-                min_nodes,
-                expected_role_counts,
-                diagnostic_started_unix_ms,
-                diagnostic_ended_unix_ms,
-                "all_nodes",
-                "FAIL",
-                failed_reason="all_endpoint_light_probe_failed",
-            )
-            _record_wait_timing(
-                timing,
-                "diagnostic_full_probe",
-                diagnostic_started,
-                {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": "all_endpoint_light_probe_failed"},
-            )
-            return False, diagnostic or light_probes
+            last_failure_reason = "all_endpoint_light_probe_timeout"
+        else:
+            last_failure_reason = "representative_timeout"
         time.sleep(interval)
     diagnostic_started = time.monotonic()
     diagnostic_started_unix_ms = int(time.time() * 1000)
@@ -440,14 +421,14 @@ def wait_for_cluster_ok(
         diagnostic_ended_unix_ms,
         "all_nodes",
         "FAIL",
-        failed_reason="representative_timeout",
+        failed_reason=last_failure_reason,
         timed_out=True,
     )
     _record_wait_timing(
         timing,
         "diagnostic_full_probe",
         diagnostic_started,
-        {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": "representative_timeout"},
+        {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": last_failure_reason},
     )
     return False, diagnostic or last
 

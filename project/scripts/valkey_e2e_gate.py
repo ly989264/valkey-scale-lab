@@ -115,6 +115,8 @@ def encode_missing_nulls(value: Any, path: str = "$") -> Any:
             "status": "MISSING",
             "reason": f"{path} was null in probe output; value is not applicable or unavailable",
         }
+    if isinstance(value, (bytes, bytearray)):
+        return {"encoding": "hex", "byte_length": len(value), "hex": bytes(value).hex()}
     if isinstance(value, dict):
         return {key: encode_missing_nulls(item, f"{path}.{key}") for key, item in value.items()}
     if isinstance(value, list):
@@ -240,6 +242,14 @@ def sum_timing_durations(timings: dict[str, dict[str, Any]], names: list[str]) -
     return round(sum(float(value) for value in values), 6)
 
 
+def cluster_create_duration_seconds(timings: dict[str, dict[str, Any]]) -> float | str:
+    names = ["primary_cluster_create", "replica_replicate"]
+    details = timings.get("replica_replicate", {}).get("details", {})
+    if not (isinstance(details, dict) and details.get("replica_meet_integrated_with_pipeline") is True):
+        names.insert(1, "replica_meet")
+    return sum_timing_durations(timings, names)
+
+
 def accounting_summary(timings: dict[str, dict[str, Any]], total_gate_seconds: float) -> dict[str, Any]:
     accounted = 0.0
     missing: list[str] = []
@@ -316,10 +326,7 @@ def write_setup_timing_breakdown(
             },
         },
         "summary": {
-            "cluster_create_duration_seconds": sum_timing_durations(
-                timings,
-                ["primary_cluster_create", "replica_meet", "replica_replicate"],
-            ),
+            "cluster_create_duration_seconds": cluster_create_duration_seconds(timings),
             "replica_config_duration_seconds": timing_duration(timings, "replica_replicate"),
             "wrapper_probe_duration_seconds": sum_timing_durations(
                 timings,
@@ -561,23 +568,33 @@ def main() -> int:
             if bad_versions:
                 errors.append(f"observed Valkey versions do not match {args.expected_version_prefix}: {bad_versions}")
             if args.require_data_path:
-                target_logical_id, slot, key = natural_probe_key_from_topology(
-                    probes,
-                    prefix=f"{args.capability_id}:{int(time.time())}",
-                )
-                ordered_endpoints = sorted(endpoints, key=lambda endpoint: endpoint.logical_id != target_logical_id)
-                value = f"value-{args.scenario}"
                 data_path_started = time.monotonic()
                 data_path_status = "FAIL"
+                data_path_details: dict[str, Any] = {"required": True}
                 try:
-                    set_res = execute_cluster_command(ordered_endpoints, "SET", key, value, timeout=args.probe_timeout)
-                    get_res = execute_cluster_command(ordered_endpoints, "GET", key, timeout=args.probe_timeout)
-                    if str(set_res).upper() == "OK" and get_res == value:
-                        data_path_result = "PASS"
-                        data_path_status = "PASS"
-                    else:
+                    if not ok:
                         data_path_result = "FAIL"
-                        errors.append(f"SET/GET mismatch set={set_res!r} get={get_res!r}")
+                        data_path_details.update({"reason": "cluster wait failed", "cluster_wait_status": "FAIL"})
+                    else:
+                        target_logical_id, slot, key = natural_probe_key_from_topology(
+                            probes,
+                            prefix=f"{args.capability_id}:{int(time.time())}",
+                        )
+                        data_path_details.update({
+                            "target_logical_id": target_logical_id,
+                            "slot": slot,
+                            "slot_source": "wrapper_light_probe_topology",
+                        })
+                        ordered_endpoints = sorted(endpoints, key=lambda endpoint: endpoint.logical_id != target_logical_id)
+                        value = f"value-{args.scenario}"
+                        set_res = execute_cluster_command(ordered_endpoints, "SET", key, value, timeout=args.probe_timeout)
+                        get_res = execute_cluster_command(ordered_endpoints, "GET", key, timeout=args.probe_timeout)
+                        if str(set_res).upper() == "OK" and get_res == value:
+                            data_path_result = "PASS"
+                            data_path_status = "PASS"
+                        else:
+                            data_path_result = "FAIL"
+                            errors.append(f"SET/GET mismatch set={set_res!r} get={get_res!r}")
                 except Exception as exc:  # noqa: BLE001
                     data_path_result = "FAIL"
                     errors.append(f"data path probe failed: {exc!r}")
@@ -587,7 +604,7 @@ def main() -> int:
                         "wrapper_data_path_probe",
                         data_path_started,
                         status=data_path_status,
-                        details={"required": True, "target_logical_id": target_logical_id, "slot": slot, "slot_source": "wrapper_light_probe_topology"},
+                        details=data_path_details,
                     )
             else:
                 skipped_started = time.monotonic()
