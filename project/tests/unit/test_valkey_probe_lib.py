@@ -144,7 +144,7 @@ def test_wait_for_cluster_ok_failure_runs_one_full_diagnostic(monkeypatch) -> No
     ok, _observed = valkey_probe_lib.wait_for_cluster_ok(endpoints, min_nodes=3, timeout_seconds=0.01)
 
     assert ok is False
-    assert full_calls == ["n0", "n1", "n2"]
+    assert sorted(full_calls) == ["n0", "n1", "n2"]
 
 
 def test_wait_for_cluster_ok_light_failure_then_success_does_not_run_full_diagnostic(monkeypatch) -> None:

@@ -25,7 +25,7 @@ from valkey_scale_lab.execution import (  # noqa: E402
     resolve_profile,
 )
 from valkey_scale_lab.fault.network_proxy import ProxyRule, SandboxNetworkProxy  # noqa: E402
-from valkey_probe_lib import Endpoint, RespConnection, RespError, endpoints_from_state, load_state, moved_target, wait_for_cluster_ok  # noqa: E402
+from valkey_probe_lib import Endpoint, RespConnection, RespError, endpoints_from_state, load_state, moved_target, probe_endpoint, wait_for_cluster_ok  # noqa: E402
 
 
 def utc_now() -> str:
@@ -349,7 +349,10 @@ def wait_for_stable_cluster_ok(
         )
         last = probes
         if ok:
-            return True, probes
+            # Failover selection needs the replica and slot relationships that
+            # only the full topology probe exposes. Keep the generic health
+            # wait light, then take one full snapshot for these consumers.
+            return True, [probe_endpoint(endpoint) for endpoint in endpoints]
         time.sleep(interval)
     return False, last
 

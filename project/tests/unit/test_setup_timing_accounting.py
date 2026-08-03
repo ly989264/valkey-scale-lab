@@ -158,7 +158,13 @@ def test_role_counts_from_light_probes() -> None:
             {"status": "PASS", "role": "replica"},
             {"status": "PASS", "role": "replica"},
         ]
-    ) == {"primary": 1, "replica": 2, "handshake": 0, "fail": 0, "pfail": 0}
+    ) == {
+        "primary": 1,
+        "replica": 2,
+        "handshake": {"status": "MISSING", "reason": "light probes do not observe CLUSTER NODES failure flags"},
+        "fail": {"status": "MISSING", "reason": "light probes do not observe CLUSTER NODES failure flags"},
+        "pfail": {"status": "MISSING", "reason": "light probes do not observe CLUSTER NODES failure flags"},
+    }
 
 
 def test_wrapper_timing_counts_integrated_replica_pipeline_once() -> None:

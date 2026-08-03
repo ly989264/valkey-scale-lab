@@ -137,8 +137,15 @@ def write_text_timed(
     record_timing(timings, name, started, details=details or {"path": str(path)})
 
 
-def role_counts_from_probes(probes: list[dict[str, Any]]) -> dict[str, int]:
-    light_counts = {"primary": 0, "replica": 0, "handshake": 0, "fail": 0, "pfail": 0}
+def role_counts_from_probes(probes: list[dict[str, Any]]) -> dict[str, Any]:
+    missing_flags = {
+        name: {
+            "status": "MISSING",
+            "reason": "light probes do not observe CLUSTER NODES failure flags",
+        }
+        for name in ("handshake", "fail", "pfail")
+    }
+    light_counts: dict[str, Any] = {"primary": 0, "replica": 0, **missing_flags}
     light_seen = False
     for probe in probes:
         role = probe.get("role")
@@ -164,7 +171,7 @@ def role_counts_from_probes(probes: list[dict[str, Any]]) -> dict[str, int]:
             if role in {"primary", "replica"}:
                 counts[role] += 1
         return counts
-    return light_counts if light_seen else {"primary": 0, "replica": 0, "handshake": 0, "fail": 0, "pfail": 0}
+    return light_counts if light_seen else {"primary": 0, "replica": 0, **missing_flags}
 
 
 def record_timing(
