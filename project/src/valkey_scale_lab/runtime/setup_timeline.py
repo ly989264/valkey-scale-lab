@@ -160,6 +160,16 @@ def _required_setup_segments(scenario: str) -> list[str]:
     ]
 
 
+def _replica_meet_integrated_with_pipeline(segments: list[dict[str, Any]]) -> bool:
+    for segment in segments:
+        if str(segment.get("name")) != "replica_replicate":
+            continue
+        details = segment.get("details", {})
+        if isinstance(details, dict) and details.get("replica_meet_integrated_with_pipeline") is True:
+            return True
+    return False
+
+
 class SetupTimeline:
     """Sequential, leaf-only setup timeline recorder.
 
@@ -792,20 +802,26 @@ def build_stage_hierarchy(segments: list[dict[str, Any]]) -> list[dict[str, Any]
     by_name: dict[str, list[dict[str, Any]]] = {}
     for segment in segments:
         by_name.setdefault(str(segment["name"]), []).append(segment)
+    replica_meet_integrated = _replica_meet_integrated_with_pipeline(segments)
     hierarchy: list[dict[str, Any]] = []
     for group in DEFAULT_SETUP_GROUPS:
         children: list[dict[str, Any]] = []
         for child_name in group["children"]:
             duration = _round_seconds(sum(float(item["duration_seconds"]) for item in by_name.get(child_name, [])))
-            children.append(
-                {
-                    "name": child_name,
-                    "inclusive_duration_seconds": duration,
-                    "exclusive_duration_seconds": duration,
-                    "segment_ids": [item["id"] for item in by_name.get(child_name, [])],
-                    "status": "PASS" if duration > 0 or child_name in by_name else "MISSING",
+            child = {
+                "name": child_name,
+                "inclusive_duration_seconds": duration,
+                "exclusive_duration_seconds": duration,
+                "segment_ids": [item["id"] for item in by_name.get(child_name, [])],
+                "status": "PASS" if duration > 0 or child_name in by_name else "MISSING",
+            }
+            if child_name == "replica_meet" and child["status"] == "MISSING" and replica_meet_integrated:
+                child["status"] = "PASS"
+                child["details"] = {
+                    "replica_meet_integrated_with_pipeline": True,
+                    "source_segment": "replica_replicate",
                 }
-            )
+            children.append(child)
         inclusive = _round_seconds(sum(float(child["inclusive_duration_seconds"]) for child in children))
         hierarchy.append(
             {
@@ -828,8 +844,9 @@ def setup_timeline_coverage(
 ) -> dict[str, Any]:
     names = {str(segment["name"]) for segment in segments}
     groups = {str(item["name"]): item for item in hierarchy}
+    replica_meet_integrated = _replica_meet_integrated_with_pipeline(segments)
     segment_status = {
-        name: ("PASS" if name in names else "MISSING")
+        name: ("PASS" if name in names or (name == "replica_meet" and replica_meet_integrated) else "MISSING")
         for name in _required_setup_segments(scenario)
     }
     group_status = {
@@ -941,8 +958,9 @@ def validate_setup_timeline_artifact_data(artifact: dict[str, Any], *, require_w
                 errors.append(f"{segment['id']}: silent gap of {delta:.6f}s before non-gap segment")
         previous_end = end
     names = {str(segment.get("name")) for segment in segments if isinstance(segment, dict)}
+    replica_meet_integrated = _replica_meet_integrated_with_pipeline([segment for segment in segments if isinstance(segment, dict)])
     for name in _required_setup_segments(str(artifact.get("scenario", ""))):
-        if name not in names:
+        if name not in names and not (name == "replica_meet" and replica_meet_integrated):
             errors.append(f"missing required setup timeline segment: {name}")
     hierarchy = artifact.get("stage_hierarchy", [])
     groups = {str(item.get("name")): item for item in hierarchy if isinstance(item, dict)}
