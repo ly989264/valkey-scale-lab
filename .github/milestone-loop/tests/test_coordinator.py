@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from contracts import ContractError, PlannerOperation, PlannerOutput, verified_tree
-from github_api import MAX_ISSUE_COMMENTS, GitHubError
+from github_api import GitHubError
 from coordinator import (
     CONTROL_LABEL,
     DISCOVERY_REPAIR_LABEL,
@@ -155,13 +155,12 @@ class FakeClient:
             return {"total_count": len(check_runs), "check_runs": check_runs}
         if self.control_issue is not None and endpoint == f"issues/{self.control_issue['number']}":
             return dict(self.control_issue)
+        raise AssertionError(endpoint)
+
+    def api_list(self, endpoint):
         if (
             self.control_issue is not None
-            and endpoint
-            == (
-                f"issues/{self.control_issue['number']}/comments"
-                f"?per_page={MAX_ISSUE_COMMENTS + 1}"
-            )
+            and endpoint == f"issues/{self.control_issue['number']}/comments"
         ):
             return [
                 {
@@ -782,14 +781,14 @@ class CoordinatorTests(unittest.TestCase):
         with self.assertRaises(ContractError):
             parse_control({"number": 9, "body": body + "\nState: running"}, "m1")
 
-    def test_human_action_dedup_stays_within_the_authoritative_comment_bound(self) -> None:
+    def test_human_action_dedup_or_append_after_seventy_comments(self) -> None:
         control = {
             "number": 9,
             "body": render_control(empty_lease("m2"), 0),
             "labels": [CONTROL_LABEL],
             "comments": [
                 {"author": "human", "body": "note"}
-                for _ in range(MAX_ISSUE_COMMENTS - 1)
+                for _ in range(75)
             ],
         }
         state = self._m2_record_state(control)
@@ -807,68 +806,8 @@ class CoordinatorTests(unittest.TestCase):
         }
         self.assertTrue(record_human_action_state(**arguments))
         self.assertFalse(record_human_action_state(**arguments))
-        self.assertEqual(len(control["comments"]), MAX_ISSUE_COMMENTS)
+        self.assertEqual(len(control["comments"]), 76)
         self.assertEqual(len(client.writes), 1)
-
-        full = copy.deepcopy(control)
-        full["comments"][-1] = {"author": "human", "body": "another note"}
-        full_client = FakeClient(full)
-        with self.assertRaises(LoopBlocked):
-            record_human_action_state(
-                **{**arguments, "client": full_client, "target": "run:124:attempt:1"}
-            )
-        self.assertEqual(full_client.writes, [])
-
-        overflow = copy.deepcopy(full)
-        overflow["comments"].append({"author": "human", "body": "overflow"})
-        overflow_client = FakeClient(overflow)
-        with self.assertRaises(LoopBlocked):
-            record_human_action_state(
-                **{**arguments, "client": overflow_client, "target": "run:125:attempt:1"}
-            )
-        self.assertEqual(overflow_client.writes, [])
-
-    def test_discovery_record_refuses_a_partial_capacity_write(self) -> None:
-        control = {
-            "number": 9,
-            "body": render_control(empty_lease("m2"), 0),
-            "labels": [CONTROL_LABEL],
-            "comments": [
-                {"author": "human", "body": "note"}
-                for _ in range(MAX_ISSUE_COMMENTS - 1)
-            ],
-        }
-        state = self._m2_record_state(control)
-        client = FakeClient(control)
-        with patch("coordinator.collect_snapshot", return_value=state):
-            with self.assertRaises(LoopBlocked):
-                record_m2_discovery_result(
-                    client=client,
-                    result=self._discovery_result(),
-                )
-        self.assertEqual(client.writes, [])
-
-    def test_discovery_hard_block_refuses_a_partial_capacity_write(self) -> None:
-        for result, default_sha in (
-            (self._discovery_result(disposition="HUMAN_REQUIRED"), "a" * 40),
-            (self._discovery_result(), "b" * 40),
-        ):
-            with self.subTest(disposition=result["disposition"], default_sha=default_sha):
-                control = {
-                    "number": 9,
-                    "body": render_control(empty_lease("m2"), 0),
-                    "labels": [CONTROL_LABEL],
-                    "comments": [
-                        {"author": "human", "body": "note"}
-                        for _ in range(MAX_ISSUE_COMMENTS - 1)
-                    ],
-                }
-                state = self._m2_record_state(control, default_sha=default_sha)
-                client = FakeClient(control)
-                with patch("coordinator.collect_snapshot", return_value=state):
-                    with self.assertRaises(LoopBlocked):
-                        record_m2_discovery_result(client=client, result=result)
-                self.assertEqual(client.writes, [])
 
     def test_real_authorization_action_is_deduplicated_without_editing_lease(self) -> None:
         control = {
@@ -899,34 +838,6 @@ class CoordinatorTests(unittest.TestCase):
         self.assertIn("REAL_AUTHORIZATION_REQUIRED", comments[0][2])
         self.assertIn("/owner/repo/actions/runs/12345", comments[0][2])
         self.assertEqual(control["body"], original_body)
-
-    def test_real_authorization_checks_comment_capacity_before_recording(self) -> None:
-        control = {
-            "number": 9,
-            "title": "control",
-            "body": render_control(empty_lease("m1"), 0),
-            "state": "open",
-            "labels": [CONTROL_LABEL],
-            "comments": [
-                {"author": "human", "body": "note"}
-                for _ in range(MAX_ISSUE_COMMENTS - 2)
-            ],
-        }
-        state = snapshot([control])
-        client = FakeClient(control)
-        with (
-            patch("coordinator.collect_snapshot", return_value=state),
-            patch("coordinator._run", return_value="a" * 40),
-            self.assertRaises(LoopBlocked),
-        ):
-            prepare_real_authorization(
-                client=client,
-                repo_root=ROOT,
-                milestone="m1",
-                entrypoint="milestone",
-                control=parse_control(control, "m1"),
-            )
-        self.assertEqual(client.writes, [])
 
     def test_nonreplaceable_lease_hard_blocks_before_environment_review(self) -> None:
         active = {

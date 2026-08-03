@@ -11,9 +11,6 @@ from urllib.parse import quote
 from contracts import ContractError
 
 
-MAX_ISSUE_COMMENTS = 70
-
-
 class GitHubError(RuntimeError):
     pass
 
@@ -68,6 +65,19 @@ class GitHubClient:
             return json.loads(process.stdout)
         except json.JSONDecodeError as exc:
             raise GitHubError(f"gh api returned invalid JSON for {endpoint}: {exc}") from exc
+
+    def api_list(self, endpoint: str) -> list[Any]:
+        values: list[Any] = []
+        separator = "&" if "?" in endpoint else "?"
+        page = 1
+        while True:
+            current = self.api(f"{endpoint}{separator}per_page=100&page={page}")
+            if not isinstance(current, list):
+                raise GitHubError(f"{endpoint} response is not an array")
+            values.extend(current)
+            if len(current) < 100:
+                return values
+            page += 1
 
     def repository(self) -> dict[str, Any]:
         value = self.api("")
@@ -240,6 +250,12 @@ def _bounded_list(value: Any, *, location: str, maximum: int) -> list[Any]:
     return value
 
 
+def _list_response(value: Any, *, location: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise GitHubError(f"{location} response is not an array")
+    return value
+
+
 def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
     repo = client.repository()
     default_branch = repo.get("default_branch")
@@ -264,11 +280,7 @@ def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
     milestone_number = matches[0].get("number")
     if not isinstance(milestone_number, int):
         raise GitHubError("GitHub Milestone number is invalid")
-    raw_issues = _bounded_list(
-        client.api(f"issues?state=all&milestone={milestone_number}&per_page=100"),
-        location="Milestone Issues and PRs",
-        maximum=99,
-    )
+    raw_issues = client.api_list(f"issues?state=all&milestone={milestone_number}")
     issues: list[dict[str, Any]] = []
     prs: list[dict[str, Any]] = []
     for raw in raw_issues:
@@ -315,10 +327,9 @@ def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
                 merge_commit = client.api(f"git/commits/{merge_commit_sha}")
                 merge_tree = merge_commit.get("tree") if isinstance(merge_commit, dict) else None
                 merge_tree_sha = merge_tree.get("sha") if isinstance(merge_tree, dict) else None
-            comments = _bounded_list(
-                client.api(f"issues/{number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"),
+            comments = _list_response(
+                client.api_list(f"issues/{number}/comments"),
                 location=f"PR #{number} comments",
-                maximum=MAX_ISSUE_COMMENTS,
             )
             prs.append(
                 {
@@ -354,10 +365,9 @@ def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
         number = raw.get("number")
         if not isinstance(number, int):
             raise GitHubError("Issue number is invalid")
-        comments = _bounded_list(
-            client.api(f"issues/{number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"),
+        comments = _list_response(
+            client.api_list(f"issues/{number}/comments"),
             location=f"Issue #{number} comments",
-            maximum=MAX_ISSUE_COMMENTS,
         )
         issues.append(
             {
@@ -378,8 +388,6 @@ def collect_snapshot(client: GitHubClient, milestone: str) -> dict[str, Any]:
                 ],
             }
         )
-    if len(issues) > 40 or len(prs) > 20:
-        raise ContractError("authoritative Work Item or PR state exceeds the context limits")
     return {
         "repository": client.repo,
         "default_branch": default_branch,

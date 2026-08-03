@@ -21,7 +21,7 @@ from coordinator import (
     render_control,
     real_readiness_fingerprint,
 )
-from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError
+from github_api import GitHubClient, GitHubError, collect_snapshot
 from loop import main as loop_main, pr_metadata
 from milestone_runner import (
     LeaseConfirmationBlocked,
@@ -90,6 +90,78 @@ class InvocationClient:
     def assert_control(self, number: int) -> None:
         if number != self.control["number"]:
             raise AssertionError(number)
+
+
+class PagingClient(GitHubClient):
+    def __init__(self) -> None:
+        super().__init__("owner/repo")
+        self.endpoints: list[str] = []
+
+    def api(self, endpoint: str, **_kwargs):
+        self.endpoints.append(endpoint)
+        if endpoint == "":
+            return {"default_branch": "main"}
+        if endpoint == "branches/main":
+            return {"commit": {"sha": "a" * 40}}
+        if endpoint == "milestones?state=open&per_page=100":
+            return [{"number": 2, "title": "m2"}]
+        if endpoint == "issues?state=all&milestone=2&per_page=100&page=1":
+            return [
+                {"number": number, "pull_request": {}}
+                for number in range(1, 22)
+            ] + [
+                {
+                    "number": 100,
+                    "title": "Issue 100",
+                    "body": "not a Work Item",
+                    "state": "open",
+                    "labels": [],
+                }
+            ]
+        if endpoint == "issues?state=all&milestone=2&per_page=100&page=2":
+            return []
+        if endpoint.startswith("pulls/"):
+            number = int(endpoint.split("/", 1)[1])
+            return {
+                "number": number,
+                "title": f"PR {number}",
+                "body": "",
+                "state": "closed",
+                "merged_at": None,
+                "merge_commit_sha": None,
+                "labels": [],
+                "head": {"ref": f"pr-{number}", "sha": f"{number:040x}"},
+                "base": {"ref": "main", "sha": "a" * 40},
+                "mergeable_state": "clean",
+                "auto_merge": None,
+            }
+        if endpoint.startswith("git/commits/"):
+            sha = endpoint.rsplit("/", 1)[1]
+            return {"tree": {"sha": sha.replace("0", "1", 1)}}
+        if endpoint.startswith("commits/") and endpoint.endswith("/check-runs?per_page=100"):
+            return {"check_runs": []}
+        if endpoint.endswith("/comments?per_page=100&page=1"):
+            if endpoint == "issues/100/comments?per_page=100&page=1":
+                return [
+                    {
+                        "user": {"login": "github-actions[bot]"},
+                        "body": f"comment {index}",
+                        "created_at": "2026-08-03T00:00:00Z",
+                    }
+                    for index in range(100)
+                ]
+            return []
+        if endpoint == "issues/100/comments?per_page=100&page=2":
+            return [
+                {
+                    "user": {"login": "github-actions[bot]"},
+                    "body": "comment 100",
+                    "created_at": "2026-08-03T00:00:01Z",
+                }
+            ]
+        if endpoint == "issues/100/comments?per_page=100&page=3":
+            return []
+        raise AssertionError(endpoint)
 
 
 class BoundaryTests(unittest.TestCase):
@@ -203,6 +275,7 @@ class BoundaryTests(unittest.TestCase):
         live["state"] = "open"
         live["body"] = "Milestone: m2\nWork-Item: #7\nContract-Change: false\n"
         live["labels"] = []
+        live["milestone"] = {"title": "m2"}
         snapshot = {
             "issues": [
                 {
@@ -234,6 +307,19 @@ class BoundaryTests(unittest.TestCase):
                 (metadata["contract_change"], metadata["check"]),
                 (False, "product.unit"),
             )
+            live["milestone"] = None
+            with (
+                patch("loop.collect_snapshot", return_value=snapshot),
+                self.assertRaisesRegex(ContractError, "GitHub PR Milestone must be set"),
+            ):
+                pr_metadata(client, path)
+            live["milestone"] = {"title": "m1"}
+            with (
+                patch("loop.collect_snapshot", return_value=snapshot),
+                self.assertRaisesRegex(ContractError, "does not match GitHub PR Milestone"),
+            ):
+                pr_metadata(client, path)
+            live["milestone"] = {"title": "m2"}
             with (
                 patch("loop.collect_snapshot", return_value={"issues": []}),
                 self.assertRaises(ContractError),
@@ -279,6 +365,17 @@ class BoundaryTests(unittest.TestCase):
                 live["body"] = body
                 with self.assertRaises(ContractError):
                     pr_metadata(client, path)
+
+    def test_snapshot_paginates_comments_and_accepts_more_than_twenty_prs(self) -> None:
+        client = PagingClient()
+
+        state = collect_snapshot(client, "m2")
+
+        self.assertEqual(len(state["pull_requests"]), 21)
+        self.assertEqual(len(state["issues"]), 1)
+        self.assertEqual(len(state["issues"][0]["comments"]), 101)
+        self.assertIn("issues?state=all&milestone=2&per_page=100&page=1", client.endpoints)
+        self.assertIn("issues/100/comments?per_page=100&page=2", client.endpoints)
 
     def test_false_contract_metadata_rejects_protected_changes(self) -> None:
         base_sha = "a" * 40
@@ -737,7 +834,7 @@ class BoundaryTests(unittest.TestCase):
                 milestone_document=milestone,
             )
 
-    def test_context_accepts_the_control_comment_bound(self) -> None:
+    def test_context_accepts_large_control_comment_history(self) -> None:
         milestone = json.loads(
             (ROOT / "project" / "milestones" / "m2" / "milestone.json").read_text()
         )
@@ -754,7 +851,7 @@ class BoundaryTests(unittest.TestCase):
                     "labels": [CONTROL_LABEL],
                     "comments": [
                         {"author": "github-actions[bot]", "body": "x" * 1300}
-                        for _ in range(MAX_ISSUE_COMMENTS)
+                        for _ in range(70)
                     ],
                 }
             ],
