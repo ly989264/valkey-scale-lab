@@ -69,7 +69,13 @@ from valkey_scale_lab.observability.resources import (
 from valkey_scale_lab.observability.resource_observation import (
     write_resource_observation,
 )
-from valkey_scale_lab.observability.sentinel import SentinelLane, build_sentinel_nodes
+from valkey_scale_lab.observability.sentinel import (
+    SentinelLane,
+    build_sentinel_nodes,
+    key_slot as sentinel_key_slot,
+    representative_slot,
+    slot_tags,
+)
 from valkey_scale_lab.observability.stability import StabilityWindow
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
 from valkey_scale_lab.orchestrator.local import write_run_summary as write_orchestration_run_summary
@@ -100,12 +106,14 @@ REPLICA_REPLICATE_SLOWEST_COUNT = 5
 CLUSTER_CREATE_STRATEGY_DEFAULT = "valkey_cli_cluster_create_primaries"
 CLUSTER_CREATE_STRATEGY_MANUAL = "manual_tree_meet_parallel_slots"
 CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE = "tree_meet_addslotsrange"
+CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS = "preseed_epoch_tree_meet_pipeline_replicas"
 CLUSTER_CREATE_PARALLELISM_DEFAULT = CLUSTER_ORCHESTRATION_PARALLELISM
 CLUSTER_CREATE_PARALLELISM_CHOICES = (2, 4, 8, 16)
 CLUSTER_CREATE_STRATEGIES = {
     CLUSTER_CREATE_STRATEGY_DEFAULT,
     CLUSTER_CREATE_STRATEGY_MANUAL,
     CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE,
+    CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS,
 }
 PROCESS_BUNDLE_ROOT = "/tmp"
 PROCESS_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -162,6 +170,7 @@ SETUP_TIMING_NAMES = [
     "replica_meet",
     "replica_replicate",
     "runtime_representative_probe",
+    "runtime_all_node_light_probe",
     "runtime_final_full_probe",
     "runtime_diagnostic_full_probe",
     "wrapper_wait_cluster_ok",
@@ -1962,7 +1971,10 @@ def _process_runtime_state(
     effective_timeout = compute_effective_cluster_timeout(config)
     cluster_create_strategy = _cluster_create_strategy()
     cluster_create_details: dict[str, Any] = {}
-    if cluster_create_strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
+    if cluster_create_strategy in {
+        CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE,
+        CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS,
+    }:
         cluster_create_details = {
             "cluster_create_parallelism": _cluster_create_parallelism(),
             "cluster_create_parallelism_source": _cluster_create_parallelism_source(),
@@ -3221,6 +3233,11 @@ def _timing_duration(timings: dict[str, dict[str, Any]], name: str) -> float | s
     return "MISSING"
 
 
+def _replica_meet_integrated_with_replicate_timing(timings: dict[str, dict[str, Any]]) -> bool:
+    details = timings.get("replica_replicate", {}).get("details", {})
+    return isinstance(details, dict) and details.get("replica_meet_integrated_with_pipeline") is True
+
+
 def _write_runtime_timing_breakdown(
     path: Path,
     capability_id: str,
@@ -3232,11 +3249,10 @@ def _write_runtime_timing_breakdown(
     *,
     status: str,
 ) -> None:
-    cluster_create_parts = [
-        _timing_duration(timings, "primary_cluster_create"),
-        _timing_duration(timings, "replica_meet"),
-        _timing_duration(timings, "replica_replicate"),
-    ]
+    cluster_create_parts = [_timing_duration(timings, "primary_cluster_create")]
+    if not _replica_meet_integrated_with_replicate_timing(timings):
+        cluster_create_parts.append(_timing_duration(timings, "replica_meet"))
+    cluster_create_parts.append(_timing_duration(timings, "replica_replicate"))
     cluster_create_duration: float | str
     if all(isinstance(part, (int, float)) for part in cluster_create_parts):
         cluster_create_duration = round(sum(float(part) for part in cluster_create_parts), 6)
@@ -3258,6 +3274,7 @@ def _write_runtime_timing_breakdown(
             "cluster_create_duration_seconds": cluster_create_duration,
             "replica_config_duration_seconds": _timing_duration(timings, "replica_replicate"),
             "wrapper_probe_duration_seconds": "MISSING",
+            "all_node_light_probe_duration_seconds": _timing_duration(timings, "runtime_all_node_light_probe"),
             "final_full_probe_duration_seconds": _timing_duration(timings, "runtime_final_full_probe"),
             "diagnostic_full_probe_duration_seconds": _timing_duration(timings, "runtime_diagnostic_full_probe"),
         },
@@ -3353,8 +3370,6 @@ def _representative_nodes(nodes: list[dict[str, Any]], *, primaries_only: bool =
 
 
 def _process_normal_snapshot_nodes(nodes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
-    if len(nodes) <= PROCESS_FULL_SNAPSHOT_NODE_LIMIT:
-        return nodes, "all_nodes"
     return _representative_nodes(nodes), "representative_by_az"
 
 
@@ -3378,7 +3393,7 @@ def _configure_process_cluster(
 
     def meet_primaries() -> int:
         commands = _tree_fanout_meet_nodes(first, primaries[1:], timeout=timeout)
-        _wait_process_known(primaries, expected=len(primaries), timeout=timeout, final_check=False, timings=timings)
+        _wait_process_known(primaries, expected=len(primaries), timeout=timeout, timings=timings)
         meet_details.update({"meet_commands": commands})
         return commands
 
@@ -3421,8 +3436,8 @@ def _configure_process_cluster(
             timeout=timeout,
             label="parallel CLUSTER ADDSLOTS",
         )
-        _wait_process_slots_assigned(primaries, timeout=timeout, final_check=False, timings=timings)
-        _wait_process_cluster_ok(primaries, timeout=timeout, final_check=False, timings=timings)
+        _wait_process_slots_assigned(primaries, timeout=timeout, timings=timings)
+        _wait_process_cluster_ok(primaries, timeout=timeout, timings=timings)
 
     _run_timed_step(
         timings,
@@ -3455,7 +3470,7 @@ def _configure_process_cluster(
 
     def meet_replicas() -> int:
         commands = _tree_fanout_meet_nodes(first, replicas, timeout=timeout)
-        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False, timings=timings)
+        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, timings=timings)
         return commands
 
     replica_meet_commands = _run_timed_step(
@@ -3489,9 +3504,9 @@ def _configure_process_cluster(
     replica_started = time.monotonic()
     def replicate_nodes() -> None:
         _replicate_process_nodes_parallel(replicas, primary_ids, timeout=timeout)
-        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False, timings=timings)
-        _wait_process_cluster_ok(nodes, timeout=timeout, final_check=False, timings=timings)
-        _wait_process_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, final_check=False, timings=timings)
+        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, timings=timings)
+        _wait_process_cluster_ok(nodes, timeout=timeout, timings=timings)
+        _wait_process_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, timings=timings)
 
     _run_timed_step(
         timings,
@@ -3535,6 +3550,8 @@ def _process_cluster_startup_strategy(nodes: list[dict[str, Any]]) -> str:
             return "all_processes_ready_then_manual_tree_meet_parallel_slots_parallel_replicas_two_stage_probe"
         if strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
             return "all_processes_ready_then_tree_meet_addslotsrange_parallel_replicas_two_stage_probe"
+        if strategy == CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS:
+            return "all_processes_ready_then_preseed_epoch_tree_meet_replica_local_pipeline_two_stage_probe"
         return "all_processes_ready_then_valkey_cli_cluster_create_replicas_two_stage_probe"
     return "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe"
 
@@ -3646,15 +3663,14 @@ def _configure_large_process_cluster(
             "expected_replicas": len(replicas),
         },
     ):
-        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False, timings=timings)
-        _wait_process_slots_assigned(nodes, timeout=timeout, final_check=False, timings=timings)
-        _wait_process_cluster_ok(nodes, timeout=timeout, final_check=False, timings=timings)
+        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, timings=timings)
+        _wait_process_slots_assigned(nodes, timeout=timeout, timings=timings)
+        _wait_process_cluster_ok(nodes, timeout=timeout, timings=timings)
         _wait_process_role_counts(
             nodes,
             expected_primaries=len(primaries),
             expected_replicas=len(replicas),
             timeout=timeout,
-            final_check=False,
             timings=timings,
         )
     with _timeline_span(
@@ -3707,19 +3723,23 @@ def _configure_large_process_cluster(
     _m2_setup_event(
         setup_timeline,
         "every_node_clean",
-        {"node_count": len(nodes), "observation": "every-node clean topology snapshot"},
+        {"node_count": len(nodes), "observation": "every-node light probe"},
     )
     if _m2_measurement_enabled():
-        key = f"m2-formation-{nodes[0].get('run_id', 'run')}"
+        target = primaries[0]
+        slot, key = _natural_probe_key_for_primary(
+            target,
+            prefix=f"m2-formation-{nodes[0].get('run_id', 'run')}",
+        )
         value = "m2-cluster-aware-data-path"
-        set_result = run_node_cluster_cli(nodes[0], "SET", key, value, timeout=10)
-        get_result = run_node_cluster_cli(nodes[0], "GET", key, timeout=10)
+        set_result = run_node_cluster_cli(target, "SET", key, value, timeout=10)
+        get_result = run_node_cluster_cli(target, "GET", key, timeout=10)
         if str(set_result).strip().upper() != "OK" or str(get_result).strip() != value:
             raise DockerRuntimeError("M2 cluster-aware SET/GET observation failed")
         _m2_setup_event(
             setup_timeline,
             "data_path_probe",
-            {"entry_logical_id": nodes[0]["logical_id"], "key": key},
+            {"entry_logical_id": target["logical_id"], "key": key, "slot": slot, "slot_source": "target_primary_cluster_myslots"},
         )
     operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
     return operations, snapshots
@@ -3754,6 +3774,59 @@ def _add_slots_range_node(node: dict[str, Any], start: int, end: int) -> None:
         ) from exc
 
 
+def _set_config_epoch_node(node: dict[str, Any], epoch: int) -> None:
+    try:
+        _node_command(node, "CLUSTER", "SET-CONFIG-EPOCH", epoch, timeout=30)
+    except DockerRuntimeError as exc:
+        logical_id = node.get("logical_id", "MISSING")
+        raise DockerRuntimeError(
+            f"CLUSTER SET-CONFIG-EPOCH {epoch} failed for {logical_id}: {exc}"
+        ) from exc
+
+
+def _wait_primary_service_barrier(
+    observer: dict[str, Any],
+    *,
+    expected_primaries: int,
+    timeout: float,
+) -> None:
+    deadline = time.monotonic() + timeout
+    last: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        try:
+            info = _parse_info(_node_command(observer, "CLUSTER", "INFO", timeout=5))
+            endpoint = Endpoint(str(observer.get("host", "127.0.0.1")), int(observer["client_port"]))
+            with RespConnection(endpoint, timeout=5.0) as connection:
+                topology = normalize_cluster_shards(connection.execute("CLUSTER", "SHARDS"))
+            primary_count = sum(
+                1
+                for shard in topology["shards"]
+                for node in shard["nodes"]
+                if node["role"] == "primary"
+            )
+            last = {
+                "cluster_state": info.get("cluster_state"),
+                "cluster_known_nodes": _int_or_zero(info.get("cluster_known_nodes")),
+                "cluster_slots_assigned": _int_or_zero(info.get("cluster_slots_assigned")),
+                "cluster_slots_ok": _int_or_zero(info.get("cluster_slots_ok")),
+                "cluster_slots_fail": _int_or_zero(info.get("cluster_slots_fail")),
+                "primary_count": primary_count,
+            }
+            if (
+                last["primary_count"] == expected_primaries
+                and last["cluster_known_nodes"] == expected_primaries
+                and last["cluster_slots_assigned"] == 16384
+                and last["cluster_slots_ok"] == 16384
+                and last["cluster_slots_fail"] == 0
+                and last["cluster_state"] == "ok"
+            ):
+                return
+        except Exception as exc:  # noqa: BLE001
+            last = {"error": repr(exc)}
+        time.sleep(1)
+    raise DockerRuntimeError(f"primary service barrier did not converge; last={last}")
+
+
 def _cluster_node_ids_by_shard(
     nodes: list[dict[str, Any]],
     *,
@@ -3779,7 +3852,6 @@ def _replicate_process_nodes_parallel(replicas: list[dict[str, Any]], primary_id
     def replicate(replica: dict[str, Any]) -> None:
         master_id = primary_ids[replica["shard_id"]]
         local_timeout = max(10.0, min(120.0, _time_left(deadline, floor=10.0)))
-        _wait_process_knows_node_id(replica, master_id, timeout=local_timeout)
         _replicate_process_node(replica, master_id, timeout=local_timeout)
         _wait_process_replica_of(replica, master_id, timeout=local_timeout)
 
@@ -3819,7 +3891,6 @@ def _wait_process_known(
     expected: int,
     timeout: float,
     *,
-    final_check: bool = True,
     timings: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     _wait_process_predicate(
@@ -3827,7 +3898,6 @@ def _wait_process_known(
         timeout,
         f"cluster_known_nodes did not converge to {expected}",
         lambda snap: snap["known_nodes"] == expected,
-        final_check=final_check,
         timings=timings,
     )
 
@@ -3836,7 +3906,6 @@ def _wait_process_cluster_ok(
     nodes: list[dict[str, Any]],
     timeout: float,
     *,
-    final_check: bool = True,
     timings: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     _wait_process_predicate(
@@ -3844,7 +3913,6 @@ def _wait_process_cluster_ok(
         timeout,
         "cluster_state did not reach ok",
         lambda snap: snap["cluster_state"] == "ok",
-        final_check=final_check,
         timings=timings,
     )
 
@@ -3853,7 +3921,6 @@ def _wait_process_slots_assigned(
     nodes: list[dict[str, Any]],
     timeout: float,
     *,
-    final_check: bool = True,
     timings: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     _wait_process_predicate(
@@ -3861,7 +3928,6 @@ def _wait_process_slots_assigned(
         timeout,
         "cluster slots were not fully assigned",
         lambda snap: snap["slots_assigned"] == 16384 and snap["slots_ok"] == 16384 and snap["slots_fail"] == 0,
-        final_check=final_check,
         timings=timings,
     )
 
@@ -3872,7 +3938,6 @@ def _wait_process_role_counts(
     expected_primaries: int,
     expected_replicas: int,
     timeout: float,
-    final_check: bool = True,
     timings: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     _wait_process_predicate(
@@ -3880,7 +3945,6 @@ def _wait_process_role_counts(
         timeout,
         f"cluster role counts did not converge to {expected_primaries} primaries and {expected_replicas} replicas",
         lambda snap: snap["primary_count"] == expected_primaries and snap["replica_count"] == expected_replicas,
-        final_check=final_check,
         timings=timings,
     )
 
@@ -3894,21 +3958,101 @@ def _wait_process_snapshot_clean(
     timeout: float,
     timings: dict[str, dict[str, Any]] | None = None,
 ) -> None:
-    def clean(snap: dict[str, Any]) -> bool:
-        return (
-            snap["cluster_state"] == "ok"
-            and snap["known_nodes"] == expected_nodes
-            and snap["primary_count"] == expected_primaries
-            and snap["replica_count"] == expected_replicas
-            and snap["handshake_count"] == 0
-            and snap["fail_count"] == 0
-            and snap["pfail_count"] == 0
-            and snap["slots_assigned"] == 16384
-            and snap["slots_ok"] == 16384
-            and snap["slots_fail"] == 0
+    _wait_process_light_clean(
+        nodes,
+        expected_nodes=expected_nodes,
+        expected_primaries=expected_primaries,
+        expected_replicas=expected_replicas,
+        timeout=timeout,
+        timings=timings,
+    )
+    deadline = time.monotonic() + timeout
+    final_nodes, sample_scope = _process_normal_snapshot_nodes(nodes)
+    last: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        started = time.monotonic()
+        snapshots = _process_node_snapshots_parallel(
+            final_nodes,
+            timeout=max(1.0, min(60.0, _time_left(deadline))),
         )
+        failing = [
+            snap for snap in snapshots
+            if snap.get("probe_status") != "PASS"
+            or snap.get("cluster_state") != "ok"
+            or snap.get("known_nodes") != expected_nodes
+            or snap.get("primary_count") != expected_primaries
+            or snap.get("replica_count") != expected_replicas
+            or snap.get("handshake_count") != 0
+            or snap.get("fail_count") != 0
+            or snap.get("pfail_count") != 0
+            or snap.get("slots_assigned") != 16384
+            or snap.get("slots_ok") != 16384
+            or snap.get("slots_fail") != 0
+        ]
+        _record_timing(
+            timings,
+            "runtime_final_full_probe",
+            started,
+            status="PASS" if not failing else "FAIL",
+            details={"sample_scope": sample_scope, "sample_count": len(final_nodes), "node_count": len(nodes), "predicate": "cluster clean snapshot"},
+        )
+        if not failing:
+            return
+        last = failing[0]
+        time.sleep(1)
+    raise DockerRuntimeError(f"cluster clean snapshot did not converge; last_snapshot={last}")
 
-    _wait_process_predicate(nodes, timeout, "cluster clean snapshot did not converge", clean, final_check=True, timings=timings)
+
+def _wait_process_light_clean(
+    nodes: list[dict[str, Any]],
+    *,
+    expected_nodes: int,
+    expected_primaries: int,
+    expected_replicas: int,
+    timeout: float,
+    timings: dict[str, dict[str, Any]] | None = None,
+) -> None:
+    deadline = time.monotonic() + timeout
+    inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
+    last_error = "MISSING"
+    while time.monotonic() < deadline:
+        started = time.monotonic()
+        try:
+            result = LightClusterProbe(inventory, concurrency=64, timeout=5.0).run()
+            _record_timing(
+                timings,
+                "runtime_all_node_light_probe",
+                started,
+                details={"sample_scope": "all_nodes_light", "sample_count": len(nodes), "predicate": "cluster clean snapshot"},
+            )
+            if (
+                result.get("nodes_observed") == expected_nodes
+                and result.get("primary_count") == expected_primaries
+                and result.get("replica_count") == expected_replicas
+                and result.get("status") == "OK"
+            ):
+                return
+            last_error = json.dumps(result, sort_keys=True, default=str)[-1000:]
+        except Exception as exc:  # noqa: BLE001
+            _record_timing(
+                timings,
+                "runtime_all_node_light_probe",
+                started,
+                status="FAIL",
+                details={"sample_scope": "all_nodes_light", "sample_count": len(nodes), "predicate": "cluster clean snapshot", "error": repr(exc)},
+            )
+            last_error = repr(exc)
+        time.sleep(1)
+    diagnostic_started = time.monotonic()
+    snapshots = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, timeout)))
+    _record_timing(
+        timings,
+        "runtime_diagnostic_full_probe",
+        diagnostic_started,
+        status="FAIL",
+        details={"sample_scope": "all_nodes", "sample_count": len(nodes), "predicate": "cluster clean snapshot", "mode": "diagnostic"},
+    )
+    raise DockerRuntimeError(f"cluster clean snapshot did not converge; last_error={last_error}; diagnostic={snapshots[:3]}")
 
 
 def _wait_process_predicate(
@@ -3917,7 +4061,6 @@ def _wait_process_predicate(
     message: str,
     predicate: Any,
     *,
-    final_check: bool = True,
     timings: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     deadline = time.monotonic() + timeout
@@ -3934,39 +4077,21 @@ def _wait_process_predicate(
         )
         failing = [snap for snap in snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
         if not failing:
-            if not final_check:
-                return
-            final_started = time.monotonic()
-            final_nodes, sample_scope = _process_normal_snapshot_nodes(nodes)
-            final_snapshots = _process_node_snapshots_parallel(final_nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
-            _record_timing(
-                timings,
-                "runtime_final_full_probe",
-                final_started,
-                details={"sample_scope": sample_scope, "sample_count": len(final_nodes), "node_count": len(nodes), "predicate": message},
-            )
-            final_failing = [snap for snap in final_snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
-            if not final_failing:
-                return
-            last = final_failing[0]
-            break
-        last = failing[0]
-        time.sleep(1)
-    while time.monotonic() < deadline:
-        diagnostic_started = time.monotonic()
-        snapshots = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
-        _record_timing(
-            timings,
-            "runtime_diagnostic_full_probe",
-            diagnostic_started,
-            status="FAIL",
-            details={"sample_scope": "all_nodes", "sample_count": len(nodes), "predicate": message, "mode": "diagnostic"},
-        )
-        failing = [snap for snap in snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
-        if not failing:
             return
         last = failing[0]
-        time.sleep(CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS)
+        time.sleep(1)
+    diagnostic_started = time.monotonic()
+    snapshots = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, timeout)))
+    _record_timing(
+        timings,
+        "runtime_diagnostic_full_probe",
+        diagnostic_started,
+        status="FAIL",
+        details={"sample_scope": "all_nodes", "sample_count": len(nodes), "predicate": message, "mode": "diagnostic"},
+    )
+    failing = [snap for snap in snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
+    if failing:
+        last = failing[0]
     raise DockerRuntimeError(f"{message}; last_snapshot={last}")
 
 
@@ -3995,21 +4120,6 @@ def _replicate_process_node(node: dict[str, Any], master_id: str, timeout: float
     raise DockerRuntimeError(f"CLUSTER REPLICATE did not succeed for {node['logical_id']}: {last_error}")
 
 
-def _wait_process_knows_node_id(node: dict[str, Any], node_id: str, timeout: float) -> None:
-    deadline = time.monotonic() + timeout
-    last_snapshot: dict[str, Any] | None = None
-    while time.monotonic() < deadline:
-        try:
-            text = _node_command(node, "CLUSTER", "NODES", timeout=5)
-            if any(line.startswith(node_id + " ") for line in text.splitlines()):
-                return
-            last_snapshot = _process_node_snapshot(node)
-        except Exception:
-            pass
-        time.sleep(1)
-    raise DockerRuntimeError(f"{node['logical_id']} did not learn node id {node_id}; last_snapshot={last_snapshot}")
-
-
 def _wait_process_replica_of(node: dict[str, Any], master_id: str, timeout: float) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -4032,6 +4142,25 @@ def _process_node_is_replica_of(node: dict[str, Any], master_id: str) -> bool:
         and role["replication_state"] == "connected"
         and myslots.slot_owner_id == master_id
     )
+
+
+def _natural_probe_key_for_primary(node: dict[str, Any], *, prefix: str) -> tuple[int, str]:
+    response = _host_command_binary(
+        str(node.get("host", "127.0.0.1")),
+        int(node["client_port"]),
+        "CLUSTER",
+        "MYSLOTS",
+        timeout=5.0,
+    )
+    myslots = parse_myslots(response)
+    if myslots.role != "primary" or myslots.node_id != myslots.slot_owner_id:
+        raise DockerRuntimeError(f"{node.get('logical_id', 'primary')} is not a primary slot owner")
+    slot = representative_slot(myslots.bitmap)
+    tag = slot_tags([slot])[slot]
+    key = f"{{{tag}}}:{prefix}"
+    if sentinel_key_slot(key) != slot or not (myslots.bitmap[slot >> 3] & (1 << (slot & 7))):
+        raise DockerRuntimeError(f"generated probe key does not hit owned slot {slot}")
+    return slot, key
 
 
 def _process_node_snapshot(node: dict[str, Any]) -> dict[str, Any]:
@@ -4183,7 +4312,10 @@ def _create_large_cluster(
     strategy = _cluster_create_strategy()
     cluster_create_parallelism = (
         _cluster_create_parallelism()
-        if strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE
+        if strategy in {
+            CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE,
+            CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS,
+        }
         else CLUSTER_ORCHESTRATION_PARALLELISM
     )
     primary_create_details: dict[str, Any] = {
@@ -4191,7 +4323,10 @@ def _create_large_cluster(
         "strategy": strategy,
     }
     primary_timeline_details = dict(primary_create_details)
-    if strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
+    if strategy in {
+        CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE,
+        CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS,
+    }:
         primary_create_details.update({
             "parallelism": cluster_create_parallelism,
             "parallelism_source": _cluster_create_parallelism_source(),
@@ -4201,11 +4336,12 @@ def _create_large_cluster(
         primary_timeline_details["parallelism"] = cluster_create_parallelism
 
     def create_primaries() -> None:
-        _m2_setup_event(
-            setup_timeline,
-            "first_membership_command",
-            {"strategy": strategy, "primary_count": len(primaries)},
-        )
+        if strategy != CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS:
+            _m2_setup_event(
+                setup_timeline,
+                "first_membership_command",
+                {"strategy": strategy, "primary_count": len(primaries)},
+            )
         if strategy == CLUSTER_CREATE_STRATEGY_MANUAL:
             create_output, details = _create_primary_cluster_manual_tree_meet_parallel_slots(primaries, timeout=timeout)
         elif strategy == CLUSTER_CREATE_STRATEGY_ADDSLOTSRANGE:
@@ -4213,6 +4349,13 @@ def _create_large_cluster(
                 primaries,
                 timeout=timeout,
                 parallelism=cluster_create_parallelism,
+            )
+        elif strategy == CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS:
+            create_output, details = _create_primary_cluster_preseed_epoch_tree_meet(
+                primaries,
+                timeout=timeout,
+                parallelism=cluster_create_parallelism,
+                setup_timeline=setup_timeline,
             )
         else:
             create_output, details = _create_primary_cluster_valkey_cli(primaries, timeout=timeout)
@@ -4236,15 +4379,45 @@ def _create_large_cluster(
         _m2_setup_event(
             setup_timeline,
             "all_primaries_known",
-            {"primary_count": len(primaries), "observation": "all-primary full probe"},
+            {"primary_count": len(primaries), "observation": "representative primary probe"},
         )
         _wait_process_slots_assigned(primaries, timeout=timeout, timings=timings)
         _m2_setup_event(
             setup_timeline,
             "all_slots_assigned",
-            {"slot_count": 16384, "observation": "all-primary full probe"},
+            {"slot_count": 16384, "observation": "representative primary probe"},
         )
-    if replicas:
+    if replicas and strategy == CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS:
+        replica_parallelism = _replica_replicate_parallelism()
+        replica_details: dict[str, Any] = {
+            "replica_count": len(replicas),
+            "parallelism": replica_parallelism,
+            "parallelism_source": _replica_replicate_parallelism_source(),
+            "supported_parallelism": list(REPLICA_REPLICATE_PARALLELISM_CHOICES),
+            "bounded_parallelism": True,
+            "replica_meet_integrated_with_pipeline": True,
+        }
+
+        def configure_replicas_pipeline() -> str:
+            text, details = _configure_replicas_local_meet_replicate_pipeline(primaries, replicas, timeout=timeout)
+            replica_details.update(details)
+            return text
+
+        output.append(
+            _run_timed_step(
+                timings,
+                "replica_replicate",
+                lambda: _timeline_call(
+                    setup_timeline,
+                    "replica_replicate",
+                    "cluster_formation",
+                    configure_replicas_pipeline,
+                    {"replica_count": len(replicas), "parallelism": replica_parallelism, "replica_meet_integrated_with_pipeline": True},
+                ),
+                replica_details,
+            )
+        )
+    elif replicas:
         def meet_replicas() -> int:
             meet_commands = _tree_fanout_meet_nodes(primaries[0], replicas, timeout=timeout)
             _wait_cluster_known(nodes, expected=len(nodes), timeout=min(360.0, timeout), final_check=False)
@@ -4317,11 +4490,7 @@ def _create_primary_cluster_valkey_cli(primaries: list[dict[str, Any]], timeout:
     convergence_started = time.monotonic()
     _wait_cluster_known(primaries, expected=len(primaries), timeout=min(360.0, timeout), final_check=False)
     _record_substep(details, "primary_convergence_seconds", convergence_started)
-
-    probe_started = time.monotonic()
-    probe_output = _assign_probe_slot_to_first_primary(primaries, timeout=timeout)
-    details["probe_slot_assignment_seconds"] = round(max(time.monotonic() - probe_started, 0.0), 6)
-    return "\n".join(part for part in [output, probe_output] if part), details
+    return output, details
 
 
 def _create_primary_cluster_manual_tree_meet_parallel_slots(primaries: list[dict[str, Any]], timeout: float) -> tuple[str, dict[str, Any]]:
@@ -4419,9 +4588,77 @@ def _create_primary_cluster_tree_meet_addslotsrange(
     )
 
 
+def _create_primary_cluster_preseed_epoch_tree_meet(
+    primaries: list[dict[str, Any]],
+    *,
+    timeout: float,
+    parallelism: int,
+    setup_timeline: SetupTimeline | None = None,
+) -> tuple[str, dict[str, Any]]:
+    details: dict[str, Any] = {
+        "cluster_create_command_seconds": 0.0,
+        "parallelism": parallelism,
+        "parallelism_source": _cluster_create_parallelism_source(),
+        "supported_parallelism": list(CLUSTER_CREATE_PARALLELISM_CHOICES),
+        "bounded_parallelism": True,
+    }
+    primary_slot_ranges = list(zip(primaries, _slot_ranges(len(primaries))))
+
+    slots_started = time.monotonic()
+    _bounded_parallel(
+        primary_slot_ranges,
+        lambda item: _add_slots_range_node(item[0], item[1][0], item[1][1]),
+        parallelism=parallelism,
+        timeout=timeout,
+        label="parallel primary CLUSTER ADDSLOTSRANGE preseed",
+    )
+    _record_substep(details, "slot_preseed_seconds", slots_started)
+    details["slot_assignment_seconds"] = details["slot_preseed_seconds"]
+
+    epoch_started = time.monotonic()
+    epoch_items = list(enumerate(primaries, start=1))
+    _bounded_parallel(
+        epoch_items,
+        lambda item: _set_config_epoch_node(item[1], item[0]),
+        parallelism=parallelism,
+        timeout=timeout,
+        label="parallel primary CLUSTER SET-CONFIG-EPOCH preseed",
+    )
+    _record_substep(details, "epoch_preseed_seconds", epoch_started)
+    details["config_epochs"] = [epoch for epoch, _primary in epoch_items]
+
+    meet_commands = 0
+    meet_started = time.monotonic()
+    if len(primaries) > 1:
+        _m2_setup_event(
+            setup_timeline,
+            "first_membership_command",
+            {"strategy": CLUSTER_CREATE_STRATEGY_PRESEED_EPOCH_PIPELINE_REPLICAS, "primary_count": len(primaries)},
+        )
+        meet_commands = _tree_fanout_meet_nodes(
+            primaries[0],
+            primaries[1:],
+            timeout=timeout,
+            parallelism=parallelism,
+        )
+    _record_substep(details, "primary_meet_seconds", meet_started)
+
+    barrier_started = time.monotonic()
+    _wait_primary_service_barrier(primaries[0], expected_primaries=len(primaries), timeout=min(360.0, timeout))
+    _record_substep(details, "primary_service_barrier_seconds", barrier_started)
+    details["primary_convergence_seconds"] = details["primary_service_barrier_seconds"]
+    details["meet_commands"] = meet_commands
+    details["slot_assignment_commands"] = len(primary_slot_ranges)
+    details["slot_assignment_scope"] = "parallel_cluster_addslotsrange_before_epoch_preseed"
+    details["membership_order"] = "addslotsrange_all_then_set_config_epoch_all_then_tree_meet"
+    return (
+        f"preseed epoch tree meet primaries={len(primaries)} meet_commands={meet_commands} parallelism={parallelism}",
+        details,
+    )
+
+
 def _create_primary_cluster(primaries: list[dict[str, Any]], timeout: float) -> str:
-    create_primaries = _cluster_create_primary_order(primaries)
-    addresses = [_cluster_create_address(node) for node in create_primaries]
+    addresses = [_cluster_create_address(node) for node in primaries]
     args = [
         "exec",
         primaries[0]["container_name"],
@@ -4444,39 +4681,6 @@ def _cluster_create_address(node: dict[str, Any]) -> str:
     return f"{_cluster_meet_address(node)}:{_cluster_meet_port(node)}"
 
 
-def _assign_probe_slot_to_first_primary(primaries: list[dict[str, Any]], *, timeout: float) -> str:
-    probe_slot = 8014
-    target_id = _node_command(primaries[0], "CLUSTER", "MYID", timeout=30)
-
-    def assign(node: dict[str, Any]) -> str:
-        return _node_command(node, "CLUSTER", "SETSLOT", probe_slot, "NODE", target_id, timeout=30)
-
-    _bounded_parallel(
-        primaries,
-        assign,
-        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=timeout,
-        label="parallel CLUSTER SETSLOT probe slot",
-    )
-    return f"probe slot {probe_slot} assigned to {primaries[0]['logical_id']}"
-
-
-def _cluster_create_primary_order(primaries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    if len(primaries) <= 1:
-        return list(primaries)
-    probe_index = _probe_slot_primary_index(len(primaries))
-    ordered = list(primaries)
-    first = ordered.pop(0)
-    ordered.insert(probe_index, first)
-    return ordered
-
-
-def _probe_slot_primary_index(primary_count: int) -> int:
-    probe_slot = 8014
-    ranges = _sequential_slot_ranges(primary_count)
-    return next((idx for idx, (lo, hi) in enumerate(ranges) if lo <= probe_slot <= hi), 0)
-
-
 def _configure_large_cluster_replicas(primaries: list[dict[str, Any]], replicas: list[dict[str, Any]], timeout: float) -> str:
     output, _details = _configure_large_cluster_replicas_with_diagnostics(primaries, replicas, timeout=timeout)
     return output
@@ -4490,7 +4694,6 @@ def _configure_large_cluster_replicas_with_diagnostics(
     if not replicas:
         return "", {
             "replica_primary_id_lookup_seconds": 0.0,
-            "replica_knows_master_wait_seconds": 0.0,
             "replica_replicate_command_seconds": 0.0,
             "replica_replicaof_wait_seconds": 0.0,
             "replica_replicate_total_seconds": 0.0,
@@ -4552,14 +4755,6 @@ def _configure_large_cluster_replicas_with_diagnostics(
         )
         return round(max(time.monotonic() - stage_started, 0.0), 6)
 
-    replica_knows_master_wait_seconds = run_replica_stage(
-        field="replica_knows_master_wait_seconds",
-        label="bounded replica master visibility wait",
-        worker=lambda replica, master_id, local_timeout: (
-            _wait_process_knows_node_id(replica, master_id, timeout=local_timeout) or "master_visible"
-        ),
-    )
-
     def replicate_command(replica: dict[str, Any], master_id: str, local_timeout: float) -> str:
         if _process_node_is_replica_of(replica, master_id):
             return "already_replica"
@@ -4583,8 +4778,7 @@ def _configure_large_cluster_replicas_with_diagnostics(
     for idx, replica in enumerate(replicas):
         diagnostic = diagnostics[replica["logical_id"]]
         diagnostic["replica_replicate_total_seconds"] = round(
-            float(diagnostic.get("replica_knows_master_wait_seconds", 0.0))
-            + float(diagnostic.get("replica_replicate_command_seconds", 0.0))
+            float(diagnostic.get("replica_replicate_command_seconds", 0.0))
             + float(diagnostic.get("replica_replicaof_wait_seconds", 0.0)),
             6,
         )
@@ -4598,7 +4792,6 @@ def _configure_large_cluster_replicas_with_diagnostics(
     )[:REPLICA_REPLICATE_SLOWEST_COUNT]
     details = {
         "replica_primary_id_lookup_seconds": replica_primary_id_lookup_seconds,
-        "replica_knows_master_wait_seconds": replica_knows_master_wait_seconds,
         "replica_replicate_command_seconds": replica_replicate_command_seconds,
         "replica_replicaof_wait_seconds": replica_replicaof_wait_seconds,
         "replica_replicate_total_seconds": round(max(time.monotonic() - total_started, 0.0), 6),
@@ -4612,6 +4805,95 @@ def _configure_large_cluster_replicas_with_diagnostics(
         "breakdown_semantics": "wall-clock stage durations from bounded parallel replica configuration plus per-replica timings",
     }
     return "\n".join(text for _, text in sorted(outputs, key=lambda item: item[0])), details
+
+
+def _configure_replicas_local_meet_replicate_pipeline(
+    primaries: list[dict[str, Any]],
+    replicas: list[dict[str, Any]],
+    timeout: float,
+) -> tuple[str, dict[str, Any]]:
+    if not replicas:
+        return "", {
+            "replica_primary_id_lookup_seconds": 0.0,
+            "replica_pipeline_seconds": 0.0,
+            "replica_replicate_total_seconds": 0.0,
+            "replica_diagnostics": [],
+            "replica_meet_integrated_with_pipeline": True,
+        }
+
+    parallelism = _replica_replicate_parallelism()
+    deadline = time.monotonic() + timeout
+    total_started = time.monotonic()
+    lookup_started = time.monotonic()
+    primary_ids = _cluster_node_ids_by_shard(
+        primaries,
+        timeout=max(10.0, min(120.0, _time_left(deadline, floor=10.0))),
+        parallelism=parallelism,
+    )
+    replica_primary_id_lookup_seconds = round(max(time.monotonic() - lookup_started, 0.0), 6)
+    primary_by_shard = {str(primary["shard_id"]): primary for primary in primaries}
+    diagnostics: dict[str, dict[str, Any]] = {}
+
+    def configure(replica: dict[str, Any]) -> str:
+        logical_id = replica["logical_id"]
+        master_id = primary_ids[replica["shard_id"]]
+        primary = primary_by_shard[str(replica["shard_id"])]
+        local_timeout = max(10.0, min(120.0, _time_left(deadline, floor=10.0)))
+        row: dict[str, Any] = {
+            "logical_id": logical_id,
+            "shard_id": replica["shard_id"],
+            "master_id": master_id,
+            "status": "PASS",
+            "operation_sequence": ["CLUSTER MEET", "CLUSTER REPLICATE", "ROLE+CLUSTER MYSLOTS"],
+        }
+        meet_started = time.monotonic()
+        _meet_node_pair(replica, primary)
+        row["replica_local_meet_seconds"] = round(max(time.monotonic() - meet_started, 0.0), 6)
+        replicate_started = time.monotonic()
+        _replicate_process_node(replica, master_id, timeout=local_timeout)
+        row["replica_replicate_command_seconds"] = round(max(time.monotonic() - replicate_started, 0.0), 6)
+        confirm_started = time.monotonic()
+        _wait_process_replica_of(replica, master_id, timeout=local_timeout)
+        row["replica_replicaof_wait_seconds"] = round(max(time.monotonic() - confirm_started, 0.0), 6)
+        row["replica_replicate_total_seconds"] = round(
+            row["replica_local_meet_seconds"]
+            + row["replica_replicate_command_seconds"]
+            + row["replica_replicaof_wait_seconds"],
+            6,
+        )
+        diagnostics[logical_id] = row
+        return f"replica {logical_id} local-meet pipelined for primary {replica['shard_id']}"
+
+    outputs = _bounded_parallel(
+        replicas,
+        configure,
+        parallelism=parallelism,
+        timeout=max(10.0, _time_left(deadline, floor=10.0)),
+        label="bounded replica-local MEET/REPLICATE pipelines",
+    )
+    ordered_diagnostics = [diagnostics[replica["logical_id"]] for replica in replicas]
+    slowest = sorted(
+        ordered_diagnostics,
+        key=lambda item: float(item.get("replica_replicate_total_seconds", 0.0)),
+        reverse=True,
+    )[:REPLICA_REPLICATE_SLOWEST_COUNT]
+    details = {
+        "replica_primary_id_lookup_seconds": replica_primary_id_lookup_seconds,
+        "replica_pipeline_seconds": round(max(time.monotonic() - total_started, 0.0), 6),
+        "replica_replicate_total_seconds": round(max(time.monotonic() - total_started, 0.0), 6),
+        "replica_meet_commands": len(replicas),
+        "replica_meet_integrated_with_pipeline": True,
+        "replica_meet_scope": "replica_local_pipeline",
+        "parallelism": parallelism,
+        "parallelism_source": _replica_replicate_parallelism_source(),
+        "supported_parallelism": list(REPLICA_REPLICATE_PARALLELISM_CHOICES),
+        "bounded_parallelism": True,
+        "slowest_replicas": slowest,
+        "replica_diagnostics": ordered_diagnostics,
+        "slowest_count": REPLICA_REPLICATE_SLOWEST_COUNT,
+        "breakdown_semantics": "replica-local CLUSTER MEET and CLUSTER REPLICATE are measured once as one bounded pipeline",
+    }
+    return "\n".join(outputs), details
 
 
 def _meet_new_node(first: dict[str, Any], node: dict[str, Any]) -> None:
@@ -5033,9 +5315,7 @@ def _scale_timeout(nodes: list[dict[str, Any]], *, floor: float, per_node: float
 
 
 def _slot_ranges(primary_count: int) -> list[tuple[int, int]]:
-    ranges = _sequential_slot_ranges(primary_count)
-    probe_index = _probe_slot_primary_index(primary_count)
-    return ranges[probe_index:] + ranges[:probe_index]
+    return _sequential_slot_ranges(primary_count)
 
 
 def _sequential_slot_ranges(primary_count: int) -> list[tuple[int, int]]:
@@ -10938,7 +11218,7 @@ def _management_matrix_rejoin_as_replica(
 ) -> None:
     seed = _management_matrix_first_live_node([node for node in nodes if node["logical_id"] != target["logical_id"]])
     _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_meet_restored_node", target=seed, args=["CLUSTER", "MEET", _cluster_meet_address(target), _cluster_meet_port(target)], timeout=30)
-    _wait_process_known(nodes, expected=len(nodes), timeout=120.0, final_check=False)
+    _wait_process_known(nodes, expected=len(nodes), timeout=120.0)
     topology = _management_live_topology(nodes)
     primary = next(node for node in nodes if node["shard_id"] == target["shard_id"] and node["logical_id"] != target["logical_id"] and topology.get(node["logical_id"], {}).get("role") == "primary")
     master_id = _node_command(primary, "CLUSTER", "MYID", timeout=30).strip()

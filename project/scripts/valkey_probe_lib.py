@@ -9,6 +9,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from valkey_scale_lab.observability.cluster import parse_myslots, parse_role
+from valkey_scale_lab.observability.sentinel import key_slot, representative_slot, slot_tags
+from valkey_scale_lab.valkey.resp import Endpoint as BinaryEndpoint
+from valkey_scale_lab.valkey.resp import RespConnection as BinaryRespConnection
+
 
 class RespError(Exception):
     def __init__(self, message: str):
@@ -195,6 +200,89 @@ def probe_endpoint(endpoint: Endpoint, timeout: float = 2.0) -> dict[str, Any]:
     return result
 
 
+def light_probe_endpoint(endpoint: Endpoint, timeout: float = 2.0) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "logical_id": endpoint.logical_id,
+        "host": endpoint.host,
+        "port": endpoint.port,
+        "status": "FAIL",
+    }
+    try:
+        commands: list[tuple[Any, ...]] = []
+        if endpoint.password:
+            commands.append(("AUTH", endpoint.password))
+        commands.extend([
+            ("PING",),
+            ("INFO", "server"),
+            ("CLUSTER", "INFO"),
+            ("ROLE",),
+            ("CLUSTER", "MYID"),
+            ("CLUSTER", "MYSHARDID"),
+            ("CLUSTER", "MYSLOTS"),
+        ])
+        with BinaryRespConnection(BinaryEndpoint(endpoint.host, endpoint.port), timeout=timeout) as conn:
+            responses = conn.execute_many(commands)
+        if endpoint.password:
+            auth, *responses = responses
+            if auth not in {b"OK", "OK"}:
+                raise RespProtocolError(f"AUTH returned {auth!r}")
+        pong, info_raw, cluster_info_raw, role_raw, node_id_raw, shard_id_raw, myslots_raw = responses
+        info = parse_info(_text(info_raw))
+        cinfo = parse_cluster_info(_text(cluster_info_raw))
+        role = parse_role(role_raw)
+        myslots = parse_myslots(myslots_raw)
+        node_id = _text(node_id_raw)
+        shard_id = _text(shard_id_raw)
+        if pong not in {b"PONG", "PONG"}:
+            raise RespProtocolError(f"PING returned {pong!r}")
+        if node_id != myslots.node_id or shard_id != myslots.shard_id:
+            raise RespProtocolError("CLUSTER MYID/MYSHARDID disagree with CLUSTER MYSLOTS")
+        if role["role"] != myslots.role:
+            raise RespProtocolError("ROLE disagrees with CLUSTER MYSLOTS")
+        version = info.get("valkey_version") or info.get("redis_version") or "unknown"
+        result.update({
+            "status": "PASS",
+            "ping": _text(pong),
+            "version": version,
+            "cluster_state": cinfo.get("cluster_state", "unknown"),
+            "cluster_known_nodes": int(cinfo.get("cluster_known_nodes", "0") or 0),
+            "cluster_slots_assigned": int(cinfo.get("cluster_slots_assigned", "0") or 0),
+            "cluster_slots_ok": int(cinfo.get("cluster_slots_ok", "0") or 0),
+            "cluster_slots_fail": int(cinfo.get("cluster_slots_fail", "0") or 0),
+            "myself_node_id": node_id,
+            "shard_id": shard_id,
+            "role": role["role"],
+            "replication_state": role.get("replication_state", "not_applicable"),
+            "slot_owner_id": myslots.slot_owner_id,
+            "slot_count": myslots.slot_count,
+            "slot_bitmap": myslots.bitmap,
+        })
+    except Exception as exc:  # noqa: BLE001 - gate evidence should include exact probe failure
+        result["error"] = repr(exc)
+    return result
+
+
+def _text(value: Any) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
+
+
+def natural_probe_key_from_topology(probes: list[dict[str, Any]], *, prefix: str) -> tuple[str, int, str]:
+    for probe in probes:
+        if probe.get("status") != "PASS" or probe.get("role") != "primary":
+            continue
+        bitmap = probe.get("slot_bitmap")
+        if not isinstance(bitmap, bytes):
+            continue
+        slot = representative_slot(bitmap)
+        tag = slot_tags([slot])[slot]
+        key = f"{{{tag}}}:{prefix}"
+        if key_slot(key) == slot and (bitmap[slot >> 3] & (1 << (slot & 7))):
+            return str(probe["logical_id"]), slot, key
+    raise RuntimeError("no primary light probe exposed a natural owned slot for data path")
+
+
 def moved_target(message: str) -> tuple[str, int] | None:
     # MOVED 12182 127.0.0.1:7002 or ASK 12182 127.0.0.1:7002
     parts = message.split()
@@ -259,12 +347,13 @@ def wait_for_cluster_ok(
 ) -> tuple[bool, list[dict[str, Any]]]:
     deadline = time.monotonic() + timeout_seconds
     last: list[dict[str, Any]] = []
+    last_failure_reason = "representative_timeout"
     expected_role_counts = _expected_role_counts(endpoints, min_nodes)
     representatives = _representative_endpoints(endpoints)
     while time.monotonic() < deadline:
         rep_started = time.monotonic()
         rep_started_unix_ms = int(time.time() * 1000)
-        probes = _probe_endpoints_concurrent(representatives)
+        probes = _probe_endpoints_concurrent(representatives, probe=light_probe_endpoint)
         rep_ended_unix_ms = int(time.time() * 1000)
         _record_wait_timing(
             timing,
@@ -281,58 +370,53 @@ def wait_for_cluster_ok(
             rep_started_unix_ms,
             rep_ended_unix_ms,
             "representative",
-            "PASS" if _all_probes_have_full_membership(probes, min_nodes, expected_role_counts) else "FAIL",
+            "PASS" if _representative_probes_clean(probes, min_nodes) else "FAIL",
         )
         last = probes
-        if _all_probes_have_full_membership(probes, min_nodes, expected_role_counts):
-            full_started = time.monotonic()
-            full_started_unix_ms = int(time.time() * 1000)
-            full_probes = _probe_endpoints_concurrent(endpoints)
-            full_ended_unix_ms = int(time.time() * 1000)
+        if _representative_probes_clean(probes, min_nodes):
+            light_started = time.monotonic()
+            light_started_unix_ms = int(time.time() * 1000)
+            light_probes = _probe_endpoints_concurrent(endpoints, probe=light_probe_endpoint)
+            light_ended_unix_ms = int(time.time() * 1000)
             _record_wait_timing(
                 timing,
-                "final_full_probe",
-                full_started,
-                {"endpoint_count": len(endpoints), "sample_scope": "all_nodes"},
+                "all_endpoint_light_probe",
+                light_started,
+                {"endpoint_count": len(endpoints), "sample_scope": "all_nodes_light"},
             )
-            last = full_probes
-            if _enough_probes_have_full_membership(full_probes, min_nodes, expected_role_counts):
+            last = light_probes
+            if _all_light_probes_clean(light_probes, min_nodes, expected_role_counts):
                 _append_clean_gate_round(
                     diagnostic_rounds,
                     round_context,
-                    full_probes,
+                    light_probes,
                     min_nodes,
                     expected_role_counts,
-                    full_started_unix_ms,
-                    full_ended_unix_ms,
-                    "all_nodes",
+                    light_started_unix_ms,
+                    light_ended_unix_ms,
+                    "all_nodes_light",
                     "PASS",
                 )
-                return True, full_probes
+                return True, light_probes
             _append_clean_gate_round(
                 diagnostic_rounds,
                 round_context,
-                full_probes,
+                light_probes,
                 min_nodes,
                 expected_role_counts,
-                full_started_unix_ms,
-                full_ended_unix_ms,
-                "all_nodes",
+                light_started_unix_ms,
+                light_ended_unix_ms,
+                "all_nodes_light",
                 "FAIL",
-                failed_reason="final_full_probe_failed",
+                failed_reason="all_endpoint_light_probe_failed",
             )
-            _record_wait_timing(
-                timing,
-                "diagnostic_full_probe",
-                full_started,
-                {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": "final_full_probe_failed"},
-                duration_override=0.0,
-            )
-            return False, full_probes
+            last_failure_reason = "all_endpoint_light_probe_timeout"
+        else:
+            last_failure_reason = "representative_timeout"
         time.sleep(interval)
     diagnostic_started = time.monotonic()
     diagnostic_started_unix_ms = int(time.time() * 1000)
-    diagnostic = _probe_endpoints_concurrent(endpoints)
+    diagnostic = _probe_endpoints_concurrent(endpoints, probe=probe_endpoint)
     diagnostic_ended_unix_ms = int(time.time() * 1000)
     _append_clean_gate_round(
         diagnostic_rounds,
@@ -344,14 +428,14 @@ def wait_for_cluster_ok(
         diagnostic_ended_unix_ms,
         "all_nodes",
         "FAIL",
-        failed_reason="representative_timeout",
+        failed_reason=last_failure_reason,
         timed_out=True,
     )
     _record_wait_timing(
         timing,
         "diagnostic_full_probe",
         diagnostic_started,
-        {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": "representative_timeout"},
+        {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": last_failure_reason},
     )
     return False, diagnostic or last
 
@@ -396,7 +480,7 @@ def _append_clean_gate_round(
             and int(probe.get("cluster_slots_ok", 0) or 0) == 16384
             for probe in probes
         ),
-        "all_nodes_clean": status == "PASS",
+        "all_nodes_clean": status == "PASS" and sample_scope.startswith("all_nodes"),
     }
     if context:
         base.update(context)
@@ -427,13 +511,13 @@ def _slowest_probe(probes: list[dict[str, Any]], fallback_ms: int) -> tuple[str,
     return str(probes[-1].get("logical_id", "MISSING")), max(0, fallback_ms)
 
 
-def _probe_endpoints_concurrent(endpoints: list[Endpoint]) -> list[dict[str, Any]]:
+def _probe_endpoints_concurrent(endpoints: list[Endpoint], *, probe: Any = probe_endpoint) -> list[dict[str, Any]]:
     if not endpoints:
         return []
     max_workers = max(1, min(16, len(endpoints)))
     results: list[dict[str, Any] | None] = [None] * len(endpoints)
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(probe_endpoint, endpoint): (idx, endpoint) for idx, endpoint in enumerate(endpoints)}
+        futures = {executor.submit(probe, endpoint): (idx, endpoint) for idx, endpoint in enumerate(endpoints)}
         for future in as_completed(futures):
             idx, endpoint = futures[future]
             try:
@@ -510,6 +594,55 @@ def _expected_role_counts(endpoints: list[Endpoint], min_nodes: int) -> dict[str
     return counts
 
 
+def _representative_probes_clean(probes: list[dict[str, Any]], min_nodes: int) -> bool:
+    required = min(min_nodes, len(probes))
+    healthy = sum(
+        probe.get("status") == "PASS"
+        and probe.get("cluster_state") == "ok"
+        and int(probe.get("cluster_known_nodes", 0) or 0) >= min_nodes
+        and int(probe.get("cluster_slots_assigned", 0) or 0) == 16384
+        and int(probe.get("cluster_slots_ok", 0) or 0) == 16384
+        and int(probe.get("cluster_slots_fail", 0) or 0) == 0
+        for probe in probes
+    )
+    return required > 0 and healthy >= required
+
+
+def _all_light_probes_clean(
+    probes: list[dict[str, Any]],
+    min_nodes: int,
+    expected_role_counts: dict[str, int] | None = None,
+) -> bool:
+    if len(probes) < min_nodes or not _representative_probes_clean(probes, min_nodes):
+        return False
+    if expected_role_counts:
+        observed: dict[str, int] = {}
+        for probe in probes:
+            role = str(probe.get("role", ""))
+            if role in {"primary", "replica"}:
+                observed[role] = observed.get(role, 0) + 1
+            if role == "replica" and probe.get("replication_state") != "connected":
+                return False
+        for role, expected in expected_role_counts.items():
+            if observed.get(role, 0) != expected:
+                return False
+    primary_bitmaps = [
+        probe.get("slot_bitmap")
+        for probe in probes
+        if probe.get("role") == "primary" and isinstance(probe.get("slot_bitmap"), bytes)
+    ]
+    if primary_bitmaps:
+        union = bytearray(2048)
+        for bitmap in primary_bitmaps:
+            for index, byte in enumerate(bitmap):
+                if union[index] & byte:
+                    return False
+                union[index] |= byte
+        if bytes(union) != bytes([0xFF]) * 2048:
+            return False
+    return True
+
+
 def _all_probes_have_full_membership(
     probes: list[dict[str, Any]],
     min_nodes: int,
@@ -534,6 +667,13 @@ def _probe_has_full_membership(probe: dict[str, Any], min_nodes: int, expected_r
         known_nodes = int(probe.get("cluster_known_nodes") or 0)
     except (TypeError, ValueError):
         return False
+    if "cluster_nodes" not in probe:
+        return (
+            known_nodes >= min_nodes
+            and int(probe.get("cluster_slots_assigned", 0) or 0) == 16384
+            and int(probe.get("cluster_slots_ok", 0) or 0) == 16384
+            and int(probe.get("cluster_slots_fail", 0) or 0) == 0
+        )
     cluster_nodes = probe.get("cluster_nodes")
     if not isinstance(cluster_nodes, dict):
         return False

@@ -173,6 +173,49 @@ def test_missing_required_stage_fails_validation() -> None:
     assert any("primary_cluster_create" in error for error in errors)
 
 
+def test_integrated_replica_pipeline_timeline_allows_missing_replica_meet() -> None:
+    artifact = _complete_timeline_artifact()
+    segments = [segment for segment in artifact["segments"] if segment["name"] != "replica_meet"]
+    cursor = float(segments[0]["start_monotonic"])
+    for index, segment in enumerate(segments, start=1):
+        duration = float(segment["duration_seconds"])
+        segment["id"] = f"segment_{index:03d}"
+        segment["start_monotonic"] = round(cursor, 6)
+        segment["end_monotonic"] = round(cursor + duration, 6)
+        cursor += duration
+    for segment in segments:
+        if segment["name"] == "replica_replicate":
+            segment["details"]["replica_meet_integrated_with_pipeline"] = True
+    rebuilt = setup_timeline_module.build_setup_timeline_artifact(
+        capability_id=artifact["capability_id"],
+        run_id=artifact["run_id"],
+        scenario=artifact["scenario"],
+        profile_id=artifact["profile_id"],
+        node_count=artifact["node_count"],
+        status="PASS",
+        segments=segments,
+        setup_command_wall_seconds=sum(float(segment["duration_seconds"]) for segment in segments),
+        real_valkey_evidence_summary=_evidence(),
+    )
+
+    assert rebuilt["status"] == "PASS"
+    assert rebuilt["required_stage_coverage"]["required_segments"]["replica_meet"] == "PASS"
+    cluster_group = next(group for group in rebuilt["stage_hierarchy"] if group["name"] == "cluster_formation")
+    replica_meet = next(child for child in cluster_group["children"] if child["name"] == "replica_meet")
+    assert replica_meet["status"] == "PASS"
+    assert replica_meet["details"]["replica_meet_integrated_with_pipeline"] is True
+    assert validate_setup_timeline_artifact(rebuilt) == []
+
+
+def test_missing_replica_meet_without_integrated_marker_still_fails_validation() -> None:
+    artifact = _complete_timeline_artifact()
+    artifact["segments"] = [segment for segment in artifact["segments"] if segment["name"] != "replica_meet"]
+
+    errors = validate_setup_timeline_artifact(artifact)
+
+    assert "missing required setup timeline segment: replica_meet" in errors
+
+
 @pytest.mark.parametrize("scenario", ["cluster_timeout", "failover_timeline"])
 def test_non_scale_ladder_timeline_does_not_require_scale_artifact_stage(
     scenario: str,

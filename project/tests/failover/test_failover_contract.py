@@ -5,6 +5,8 @@ import importlib.util
 from argparse import Namespace
 from pathlib import Path
 
+import pytest
+
 
 def load_fault_failover_gate():
     script = Path(__file__).resolve().parents[2] / "scripts" / "fault_failover_gate.py"
@@ -49,6 +51,22 @@ def test_failover_report_shape_allows_measured_or_missing_duration(tmp_path: Pat
     assert loaded["artifact_type"] == "failover_report"
     assert loaded["summary"]["promotion_observed"] is True
     assert loaded["summary"]["split_brain_duration_ms"]["status"] == "MISSING"
+
+
+def test_full_topology_after_light_health_prefers_healthy_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    gate = load_fault_failover_gate()
+    endpoints = [object(), object(), object()]
+    probes = iter([
+        {"status": "PASS", "cluster_nodes": {"node-1": {"role": "primary"}}},
+    ])
+    monkeypatch.setattr(gate, "probe_endpoint", lambda endpoint: next(probes))
+
+    observed = gate.full_topology_after_light_health(
+        endpoints,
+        [{"status": "FAIL"}, {"status": "PASS"}, {"status": "PASS"}],
+    )
+
+    assert [probe["status"] for probe in observed] == ["PASS"]
 
 
 def test_fault_matrix_profiles_select_scale_without_changing_scenario_semantics() -> None:

@@ -235,12 +235,12 @@ def _validate_discovery_campaign(
     if not isinstance(campaign, dict):
         raise ContractError(f"M2 {kind} discovery campaign fields are invalid")
     fields = set(campaign)
-    v2_formation = (
+    versioned_formation = (
         kind == "formation"
         and fields == _M2_DISCOVERY_V2_FORMATION_CAMPAIGN_FIELDS
-        and campaign.get("candidate_screen_version") == "v2"
+        and campaign.get("candidate_screen_version") in {"v2", "v4-preseed-pipeline"}
     )
-    if fields != _M2_DISCOVERY_CAMPAIGN_FIELDS and not v2_formation:
+    if fields != _M2_DISCOVERY_CAMPAIGN_FIELDS and not versioned_formation:
         raise ContractError(f"M2 {kind} discovery campaign fields are invalid")
     if (
         campaign.get("campaign_id") != invocation_id
