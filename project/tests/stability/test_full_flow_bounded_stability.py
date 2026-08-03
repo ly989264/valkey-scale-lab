@@ -8,6 +8,14 @@ from valkey_scale_lab.runtime import docker_runtime
 
 def test_local_full_flow_resource_runners_use_nodehost_procfs(monkeypatch) -> None:
     monkeypatch.setattr(docker_runtime, "_container_pid", lambda _container: 4242)
+    original_is_file = Path.is_file
+    monkeypatch.setattr(
+        Path,
+        "is_file",
+        lambda path: True
+        if path == Path("/proc/4242/root/proc/meminfo")
+        else original_is_file(path),
+    )
 
     runners = docker_runtime._resource_runners_for_nodes(
         [

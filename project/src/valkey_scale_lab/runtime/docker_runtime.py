@@ -54,6 +54,7 @@ from valkey_scale_lab.observability.cluster import (
     parse_myslots,
     parse_role,
 )
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.observability.failover import (
     ActuatorRecorder,
     AffectedShardObserver,
@@ -7945,6 +7946,8 @@ def _resource_runners_for_nodes(
     runners: list[ResourceSamplerRunner] = []
     for container, hosted in grouped.items():
         host_pid = _container_pid(container)
+        host_proc_root = Path(f"/proc/{host_pid}/root/proc")
+        container_namespace = not (host_proc_root / "meminfo").is_file()
         sampler_id = str(
             hosted[0].get("nodehost_id")
             or hosted[0].get("nodehost_container_name")
@@ -7966,13 +7969,73 @@ def _resource_runners_for_nodes(
         sampler = LocalResourceSampler(
             sampler_id=sampler_id,
             processes=processes,
-            proc_root=Path(f"/proc/{host_pid}/root/proc"),
-            cgroup_root=Path(f"/proc/{host_pid}/root/sys/fs/cgroup"),
+            proc_root=Path("/proc") if container_namespace else host_proc_root,
+            cgroup_root=(
+                Path("/sys/fs/cgroup")
+                if container_namespace
+                else Path(f"/proc/{host_pid}/root/sys/fs/cgroup")
+            ),
             expected_gone_processes=expected_gone,
             expected_gone_active=expected_gone_active,
+            read_text=(
+                _container_resource_text_reader(container)
+                if container_namespace
+                else None
+            ),
+            fd_count=(
+                _container_resource_fd_counter(container)
+                if container_namespace
+                else None
+            ),
         )
         runners.append(ResourceSamplerRunner(sampler))
     return runners
+
+
+def _container_resource_text_reader(container: str) -> Callable[[Path], str]:
+    def read_text(path: Path) -> str:
+        result = run_docker(
+            ["exec", container, "cat", path.as_posix()],
+            timeout=10,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise CollectionError(
+                f"cannot read {path} in owned nodehost {container}: "
+                f"{result.stderr.strip()[-300:]}"
+            )
+        return result.stdout
+
+    return read_text
+
+
+def _container_resource_fd_counter(container: str) -> Callable[[int], int]:
+    def fd_count(pid: int) -> int:
+        safe_pid = _safe_process_pid(pid)
+        result = run_docker(
+            [
+                "exec",
+                container,
+                "sh",
+                "-c",
+                f"find /proc/{safe_pid}/fd -mindepth 1 -maxdepth 1 -print | wc -l",
+            ],
+            timeout=10,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise CollectionError(
+                f"cannot count fd entries for pid {safe_pid} in owned nodehost "
+                f"{container}: {result.stderr.strip()[-300:]}"
+            )
+        try:
+            return int(result.stdout.strip())
+        except ValueError as exc:
+            raise CollectionError(
+                f"invalid fd count for pid {safe_pid} in owned nodehost {container}"
+            ) from exc
+
+    return fd_count
 
 
 def _local_full_flow_run_management_sequence(

@@ -63,6 +63,8 @@ class LocalResourceSampler:
         monotonic: Callable[[], float] = time.monotonic,
         expected_gone_processes: Sequence[ExpectedGoneProcess] = (),
         expected_gone_active: Callable[[], bool] | None = None,
+        read_text: Callable[[Path], str] | None = None,
+        fd_count: Callable[[int], int] | None = None,
     ) -> None:
         self.sampler_id = sampler_id
         self.processes = tuple(processes)
@@ -74,14 +76,16 @@ class LocalResourceSampler:
             (process.logical_id, process.pid) for process in expected_gone_processes
         }
         self._expected_gone_active = expected_gone_active or (lambda: False)
+        self._read_text = read_text or _read
+        self._fd_count_override = fd_count
         self._process_start_times: dict[tuple[str, int], int] = {}
         self._self_cpu_started = time.process_time()
 
     def static(self) -> dict[str, Any]:
-        meminfo = _key_values(_read(self.proc_root / "meminfo"))
+        meminfo = _key_values(self._read_text(self.proc_root / "meminfo"))
         interfaces = [
             line.split(":", 1)[0].strip()
-            for line in _read(self.proc_root / "net" / "dev").splitlines()
+            for line in self._read_text(self.proc_root / "net" / "dev").splitlines()
             if ":" in line and line.split(":", 1)[0].strip() != "lo"
         ]
         return {
@@ -96,7 +100,7 @@ class LocalResourceSampler:
     def host_sample(self) -> dict[str, Any]:
         started = self._monotonic()
         cpu, scheduler = self._cpu_and_scheduler()
-        memory = _key_values(_read(self.proc_root / "meminfo"))
+        memory = _key_values(self._read_text(self.proc_root / "meminfo"))
         network = self._network()
         cgroup = self._cgroup_dynamic()
         duration = max(self._monotonic() - started, 0.0)
@@ -180,7 +184,7 @@ class LocalResourceSampler:
             return {}, exc
 
     def _cpu_and_scheduler(self) -> tuple[dict[str, int], dict[str, int]]:
-        lines = _read(self.proc_root / "stat").splitlines()
+        lines = self._read_text(self.proc_root / "stat").splitlines()
         cpu_parts = lines[0].split()
         if not cpu_parts or cpu_parts[0] != "cpu" or len(cpu_parts) < 9:
             raise CollectionError("procfs cpu counters are incomplete")
@@ -206,7 +210,7 @@ class LocalResourceSampler:
 
     def _network(self) -> dict[str, dict[str, int]]:
         result: dict[str, dict[str, int]] = {}
-        for line in _read(self.proc_root / "net" / "dev").splitlines():
+        for line in self._read_text(self.proc_root / "net" / "dev").splitlines():
             if ":" not in line:
                 continue
             name, raw = line.split(":", 1)
@@ -229,7 +233,7 @@ class LocalResourceSampler:
         return result
 
     def _process_stat(self, process: ProcessSpec) -> dict[str, Any]:
-        raw = _read(self.proc_root / str(process.pid) / "stat").strip()
+        raw = self._read_text(self.proc_root / str(process.pid) / "stat").strip()
         close = raw.rfind(")")
         if close < 0:
             raise CollectionError(f"invalid stat for {process.logical_id}")
@@ -245,6 +249,8 @@ class LocalResourceSampler:
         }
 
     def _fd_count(self, pid: int) -> int:
+        if self._fd_count_override is not None:
+            return self._fd_count_override(pid)
         try:
             with os.scandir(self.proc_root / str(pid) / "fd") as entries:
                 return sum(1 for _ in entries)
@@ -271,8 +277,8 @@ class LocalResourceSampler:
 
     def _optional_cgroup_text(self, name: str) -> str | None:
         try:
-            return (self.cgroup_root / name).read_text(encoding="utf-8").strip()
-        except OSError:
+            return self._read_text(self.cgroup_root / name).strip()
+        except (CollectionError, OSError):
             return None
 
     def _optional_cgroup_number(self, name: str) -> int | None:

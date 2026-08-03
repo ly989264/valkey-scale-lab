@@ -2905,3 +2905,72 @@ def test_local_full_flow_network_disconnect_reconnects_when_side_observation_fai
 
     assert ["network", "connect", "--ip", "172.18.0.2", "owned-network", "nodehost-a"] in calls
     assert recovered == [(2, 180.0)]
+
+
+def test_resource_runners_use_owned_container_namespace_without_host_procfs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(docker_runtime, "_container_pid", lambda _container: 99999999)
+    process_fields = ["S"] + ["0"] * 18 + ["123", "0", "2"]
+    process_stat = f"48 (valkey-server) {' '.join(process_fields)}\n"
+
+    def run_docker(args: list[str], **_kwargs: object) -> docker_runtime.DockerResult:
+        path = args[-1] if args[:3] == ["exec", "nodehost-1", "cat"] else ""
+        payloads = {
+            "/proc/meminfo": "MemTotal: 1024 kB\nMemAvailable: 512 kB\nSwapTotal: 0 kB\nSwapFree: 0 kB\n",
+            "/proc/net/dev": "Inter-| Receive | Transmit\neth0: 1 2 0 0 0 0 0 0 3 4 0 0 0 0 0 0\n",
+            "/proc/48/stat": process_stat,
+        }
+        if path in payloads:
+            return docker_runtime.DockerResult(payloads[path], "", 0)
+        if args[:4] == ["exec", "nodehost-1", "sh", "-c"]:
+            return docker_runtime.DockerResult("7\n", "", 0)
+        return docker_runtime.DockerResult("", "missing", 1)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", run_docker)
+    runners = docker_runtime._resource_runners_for_nodes(
+        [
+            {
+                "logical_id": "shard-0000-primary",
+                "pid": 48,
+                "nodehost_id": "nodehost-az-a-00",
+                "nodehost_container_name": "nodehost-1",
+            }
+        ]
+    )
+
+    sampler = runners[0].sampler
+    assert sampler.proc_root == Path("/proc")
+    assert sampler.static()["mem_total_bytes"] == 1024 * 1024
+    sample = sampler.process_sample()
+    assert sample["processes"][0]["logical_id"] == "shard-0000-primary"
+    assert sample["processes"][0]["fd_count"] == 7
+
+
+def test_resource_runners_keep_direct_host_namespace_when_accessible(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(docker_runtime, "_container_pid", lambda _container: 123)
+    original_is_file = Path.is_file
+    monkeypatch.setattr(
+        Path,
+        "is_file",
+        lambda path: True
+        if path == Path("/proc/123/root/proc/meminfo")
+        else original_is_file(path),
+    )
+
+    runners = docker_runtime._resource_runners_for_nodes(
+        [
+            {
+                "logical_id": "shard-0000-primary",
+                "pid": 48,
+                "nodehost_id": "nodehost-az-a-00",
+                "nodehost_container_name": "nodehost-1",
+            }
+        ]
+    )
+
+    sampler = runners[0].sampler
+    assert sampler.proc_root == Path("/proc/123/root/proc")
+    assert sampler._fd_count_override is None
