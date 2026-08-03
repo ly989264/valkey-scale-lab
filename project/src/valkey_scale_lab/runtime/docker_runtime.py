@@ -3966,6 +3966,41 @@ def _wait_process_snapshot_clean(
         timeout=timeout,
         timings=timings,
     )
+    deadline = time.monotonic() + timeout
+    final_nodes, sample_scope = _process_normal_snapshot_nodes(nodes)
+    last: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        started = time.monotonic()
+        snapshots = _process_node_snapshots_parallel(
+            final_nodes,
+            timeout=max(1.0, min(60.0, _time_left(deadline))),
+        )
+        failing = [
+            snap for snap in snapshots
+            if snap.get("probe_status") != "PASS"
+            or snap.get("cluster_state") != "ok"
+            or snap.get("known_nodes") != expected_nodes
+            or snap.get("primary_count") != expected_primaries
+            or snap.get("replica_count") != expected_replicas
+            or snap.get("handshake_count") != 0
+            or snap.get("fail_count") != 0
+            or snap.get("pfail_count") != 0
+            or snap.get("slots_assigned") != 16384
+            or snap.get("slots_ok") != 16384
+            or snap.get("slots_fail") != 0
+        ]
+        _record_timing(
+            timings,
+            "runtime_final_full_probe",
+            started,
+            status="PASS" if not failing else "FAIL",
+            details={"sample_scope": sample_scope, "sample_count": len(final_nodes), "node_count": len(nodes), "predicate": "cluster clean snapshot"},
+        )
+        if not failing:
+            return
+        last = failing[0]
+        time.sleep(1)
+    raise DockerRuntimeError(f"cluster clean snapshot did not converge; last_snapshot={last}")
 
 
 def _wait_process_light_clean(

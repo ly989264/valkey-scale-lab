@@ -1268,7 +1268,7 @@ def test_wait_process_predicate_timeout_runs_one_all_node_diagnostic(monkeypatch
     assert sample_counts == [4]
 
 
-def test_wait_process_snapshot_clean_uses_all_node_light_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_wait_process_snapshot_clean_uses_light_probe_then_bounded_topology_probe(monkeypatch: pytest.MonkeyPatch) -> None:
     nodes = [
         {"logical_id": "p0", "host": "127.0.0.1", "client_port": 7400, "role": "primary", "shard_id": "s0"},
         {"logical_id": "r0", "host": "127.0.0.1", "client_port": 7401, "role": "replica", "shard_id": "s0"},
@@ -1283,7 +1283,23 @@ def test_wait_process_snapshot_clean_uses_all_node_light_probe(monkeypatch: pyte
             return {"status": "OK", "nodes_observed": 2, "primary_count": 1, "replica_count": 1}
 
     monkeypatch.setattr(docker_runtime, "LightClusterProbe", FakeLightProbe)
-    monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", lambda *args, **kwargs: pytest.fail("success path must not run CLUSTER NODES diagnostic"))
+    monkeypatch.setattr(
+        docker_runtime,
+        "_process_node_snapshots_parallel",
+        lambda probe_nodes, **kwargs: [{
+            "probe_status": "PASS",
+            "cluster_state": "ok",
+            "known_nodes": 2,
+            "primary_count": 1,
+            "replica_count": 1,
+            "handshake_count": 0,
+            "fail_count": 0,
+            "pfail_count": 0,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+        }],
+    )
 
     docker_runtime._wait_process_snapshot_clean(
         nodes,

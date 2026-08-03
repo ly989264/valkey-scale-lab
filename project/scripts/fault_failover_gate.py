@@ -357,6 +357,20 @@ def wait_for_stable_cluster_ok(
     return False, last
 
 
+def full_topology_after_light_health(endpoints: list[Any], light_probes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    probes: list[dict[str, Any]] = []
+    ordered = sorted(
+        zip(endpoints, light_probes),
+        key=lambda pair: pair[1].get("status") != "PASS",
+    )
+    for endpoint, _light_probe in ordered:
+        probe = probe_endpoint(endpoint)
+        probes.append(probe)
+        if probe.get("status") == "PASS" and probe.get("cluster_nodes"):
+            break
+    return probes
+
+
 def apply_failover_node_timeout(endpoints: list[Any], timeout_ms: int) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for endpoint in endpoints:
@@ -2503,9 +2517,10 @@ def run_fault_matrix_controller(args: argparse.Namespace) -> int:
             recovery_probes: list[dict[str, Any]] = []
             while time.monotonic() < deadline:
                 ok_after, current = wait_for_cluster_ok(endpoints, profile.scale - 1, timeout_seconds=5, interval=1)
-                recovery_probes = current
-                promoted = promoted_from_old_primary(current, old_primary_id, expected_replica_id)
-                if promoted and (ok_after or any(p.get("cluster_state") == "ok" for p in current if p.get("status") == "PASS")):
+                health_ok = ok_after or any(p.get("cluster_state") == "ok" for p in current if p.get("status") == "PASS")
+                recovery_probes = full_topology_after_light_health(endpoints, current) if health_ok else current
+                promoted = promoted_from_old_primary(recovery_probes, old_primary_id, expected_replica_id)
+                if promoted and health_ok:
                     promoted_id = promoted
                     recovered_at_ms = unix_ms()
                     break
@@ -3147,14 +3162,15 @@ def main() -> int:
                     ok_after, current_probes = wait_for_cluster_ok(endpoints, max(1, args.min_nodes - 1), timeout_seconds=5, interval=1)
                     if not probes_during:
                         probes_during = current_probes
-                    probes_after = current_probes
-                    promoted_id = promoted_from_old_primary(current_probes, old_primary_id or "", expected_replica_id or "")
                     cluster_ok_after = any(
                         p.get("cluster_state") == "ok"
                         for p in current_probes
                         if p.get("status") == "PASS"
                     )
-                    if promoted_id and (ok_after or cluster_ok_after):
+                    health_ok = ok_after or cluster_ok_after
+                    probes_after = full_topology_after_light_health(endpoints, current_probes) if health_ok else current_probes
+                    promoted_id = promoted_from_old_primary(probes_after, old_primary_id or "", expected_replica_id or "")
+                    if promoted_id and health_ok:
                         recovery_at = time.monotonic()
                         recovery_unix_ms = unix_ms()
                         break
