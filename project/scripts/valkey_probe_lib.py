@@ -11,8 +11,6 @@ from typing import Any
 
 from valkey_scale_lab.observability.cluster import parse_myslots, parse_role
 from valkey_scale_lab.observability.sentinel import key_slot, representative_slot, slot_tags
-from valkey_scale_lab.valkey.resp import Endpoint as BinaryEndpoint
-from valkey_scale_lab.valkey.resp import RespConnection as BinaryRespConnection
 
 
 class RespError(Exception):
@@ -208,8 +206,8 @@ def light_probe_endpoint(endpoint: Endpoint, timeout: float = 2.0) -> dict[str, 
         "status": "FAIL",
     }
     try:
-        with BinaryRespConnection(BinaryEndpoint(endpoint.host, endpoint.port), timeout=timeout) as conn:
-            pong, info_raw, cluster_info_raw, role_raw, node_id_raw, shard_id_raw, myslots_raw = conn.execute_many(
+        conn = RespConnection(endpoint.host, endpoint.port, endpoint.password, timeout=timeout)
+        pong, info_raw, cluster_info_raw, role_raw, node_id_raw, shard_id_raw, myslots_raw = conn.execute_pipeline(
                 [
                     ("PING",),
                     ("INFO", "server"),
@@ -588,7 +586,8 @@ def _expected_role_counts(endpoints: list[Endpoint], min_nodes: int) -> dict[str
 
 
 def _representative_probes_clean(probes: list[dict[str, Any]], min_nodes: int) -> bool:
-    return bool(probes) and all(
+    required = min(min_nodes, len(probes))
+    healthy = sum(
         probe.get("status") == "PASS"
         and probe.get("cluster_state") == "ok"
         and int(probe.get("cluster_known_nodes", 0) or 0) >= min_nodes
@@ -597,6 +596,7 @@ def _representative_probes_clean(probes: list[dict[str, Any]], min_nodes: int) -
         and int(probe.get("cluster_slots_fail", 0) or 0) == 0
         for probe in probes
     )
+    return required > 0 and healthy >= required
 
 
 def _all_light_probes_clean(

@@ -39,6 +39,40 @@ def test_probe_endpoint_uses_single_pipelined_connection(monkeypatch) -> None:
     assert calls == [[("PING",), ("INFO", "server"), ("CLUSTER", "INFO"), ("CLUSTER", "NODES")]]
 
 
+def test_light_probe_endpoint_passes_endpoint_password(monkeypatch) -> None:
+    passwords: list[str | None] = []
+
+    class FakeConnection:
+        def __init__(self, host: str, port: int, password: str | None = None, timeout: float = 2.0) -> None:
+            passwords.append(password)
+
+        def execute_pipeline(self, commands: list[tuple[object, ...]]) -> list[object]:
+            raise RuntimeError("stop after connection construction")
+
+    monkeypatch.setattr(valkey_probe_lib, "RespConnection", FakeConnection)
+
+    valkey_probe_lib.light_probe_endpoint(
+        valkey_probe_lib.Endpoint("p0", "127.0.0.1", 7000, password="secret")
+    )
+
+    assert passwords == ["secret"]
+
+
+def test_representative_probe_gate_honors_minimum_survivor_count() -> None:
+    healthy = {
+        "status": "PASS",
+        "cluster_state": "ok",
+        "cluster_known_nodes": 2,
+        "cluster_slots_assigned": 16384,
+        "cluster_slots_ok": 16384,
+        "cluster_slots_fail": 0,
+    }
+    failed = {"status": "FAIL"}
+
+    assert valkey_probe_lib._representative_probes_clean([healthy, healthy, failed], min_nodes=2) is True
+    assert valkey_probe_lib._representative_probes_clean([healthy, failed, failed], min_nodes=2) is False
+
+
 @pytest.mark.slow
 def test_wait_for_cluster_ok_rejects_fragmented_membership(monkeypatch) -> None:
     probe = {
