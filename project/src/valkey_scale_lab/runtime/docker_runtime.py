@@ -5434,22 +5434,38 @@ def _wait_cluster_predicate(nodes: list[dict[str, Any]], timeout: float, message
                 label=f"{message} representative probes",
             )
             if fast and all(bool(item) for item in fast):
-                return
+                if not final_check:
+                    return
+                final = _bounded_parallel(
+                    nodes,
+                    predicate,
+                    parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+                    timeout=max(1.0, min(60.0, _time_left(deadline))),
+                    label=f"{message} final probes",
+                )
+                if final and all(bool(item) for item in final):
+                    return
+                last_error = f"final probes failed {sum(1 for item in final if item)}/{len(final)}"
+                break
             last_error = f"representative probes failed {sum(1 for item in fast if item)}/{len(fast)}"
         except Exception as exc:  # noqa: BLE001
             last_error = repr(exc)
         time.sleep(1)
-    try:
-        diagnostic = _bounded_parallel(
-            nodes,
-            predicate,
-            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-            timeout=max(1.0, min(60.0, timeout)),
-            label=f"{message} diagnostic probes",
-        )
-        last_error = f"diagnostic probes failed {sum(1 for item in diagnostic if item)}/{len(diagnostic)}"
-    except Exception as exc:  # noqa: BLE001
-        last_error = repr(exc)
+    while time.monotonic() < deadline:
+        try:
+            diagnostic = _bounded_parallel(
+                nodes,
+                predicate,
+                parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+                timeout=max(1.0, min(60.0, _time_left(deadline))),
+                label=f"{message} diagnostic probes",
+            )
+            if diagnostic and all(bool(item) for item in diagnostic):
+                return
+            last_error = f"diagnostic probes failed {sum(1 for item in diagnostic if item)}/{len(diagnostic)}"
+        except Exception as exc:  # noqa: BLE001
+            last_error = repr(exc)
+        time.sleep(CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS)
     raise DockerRuntimeError(f"{message}; last_error={last_error}")
 
 

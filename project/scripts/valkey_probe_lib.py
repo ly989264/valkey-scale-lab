@@ -11,6 +11,8 @@ from typing import Any
 
 from valkey_scale_lab.observability.cluster import parse_myslots, parse_role
 from valkey_scale_lab.observability.sentinel import key_slot, representative_slot, slot_tags
+from valkey_scale_lab.valkey.resp import Endpoint as BinaryEndpoint
+from valkey_scale_lab.valkey.resp import RespConnection as BinaryRespConnection
 
 
 class RespError(Exception):
@@ -206,18 +208,25 @@ def light_probe_endpoint(endpoint: Endpoint, timeout: float = 2.0) -> dict[str, 
         "status": "FAIL",
     }
     try:
-        conn = RespConnection(endpoint.host, endpoint.port, endpoint.password, timeout=timeout)
-        pong, info_raw, cluster_info_raw, role_raw, node_id_raw, shard_id_raw, myslots_raw = conn.execute_pipeline(
-                [
-                    ("PING",),
-                    ("INFO", "server"),
-                    ("CLUSTER", "INFO"),
-                    ("ROLE",),
-                    ("CLUSTER", "MYID"),
-                    ("CLUSTER", "MYSHARDID"),
-                    ("CLUSTER", "MYSLOTS"),
-                ]
-            )
+        commands: list[tuple[Any, ...]] = []
+        if endpoint.password:
+            commands.append(("AUTH", endpoint.password))
+        commands.extend([
+            ("PING",),
+            ("INFO", "server"),
+            ("CLUSTER", "INFO"),
+            ("ROLE",),
+            ("CLUSTER", "MYID"),
+            ("CLUSTER", "MYSHARDID"),
+            ("CLUSTER", "MYSLOTS"),
+        ])
+        with BinaryRespConnection(BinaryEndpoint(endpoint.host, endpoint.port), timeout=timeout) as conn:
+            responses = conn.execute_many(commands)
+        if endpoint.password:
+            auth, *responses = responses
+            if auth not in {b"OK", "OK"}:
+                raise RespProtocolError(f"AUTH returned {auth!r}")
+        pong, info_raw, cluster_info_raw, role_raw, node_id_raw, shard_id_raw, myslots_raw = responses
         info = parse_info(_text(info_raw))
         cinfo = parse_cluster_info(_text(cluster_info_raw))
         role = parse_role(role_raw)

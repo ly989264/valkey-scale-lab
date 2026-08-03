@@ -39,23 +39,52 @@ def test_probe_endpoint_uses_single_pipelined_connection(monkeypatch) -> None:
     assert calls == [[("PING",), ("INFO", "server"), ("CLUSTER", "INFO"), ("CLUSTER", "NODES")]]
 
 
-def test_light_probe_endpoint_passes_endpoint_password(monkeypatch) -> None:
-    passwords: list[str | None] = []
+def test_light_probe_endpoint_authenticates_and_preserves_binary_myslots(monkeypatch) -> None:
+    calls: list[list[tuple[object, ...]]] = []
+    bitmap = bytes(2048)
+    node_id = b"1" * 40
+    shard_id = b"a" * 40
 
     class FakeConnection:
-        def __init__(self, host: str, port: int, password: str | None = None, timeout: float = 2.0) -> None:
-            passwords.append(password)
+        def __init__(self, endpoint, timeout: float = 2.0) -> None:
+            self.endpoint = endpoint
 
-        def execute_pipeline(self, commands: list[tuple[object, ...]]) -> list[object]:
-            raise RuntimeError("stop after connection construction")
+        def __enter__(self):
+            return self
 
-    monkeypatch.setattr(valkey_probe_lib, "RespConnection", FakeConnection)
+        def __exit__(self, *_args) -> None:
+            pass
 
-    valkey_probe_lib.light_probe_endpoint(
+        def execute_many(self, commands: list[tuple[object, ...]]) -> list[object]:
+            calls.append(commands)
+            return [
+                b"OK",
+                "PONG",
+                b"valkey_version:9.1.0\r\n",
+                b"cluster_state:ok\r\ncluster_known_nodes:1\r\ncluster_slots_assigned:16384\r\ncluster_slots_ok:16384\r\ncluster_slots_fail:0\r\n",
+                [b"master", 0, []],
+                node_id,
+                shard_id,
+                [
+                    b"node-id", node_id,
+                    b"shard-id", shard_id,
+                    b"role", b"primary",
+                    b"slot-owner-id", node_id,
+                    b"slot-count", 0,
+                    b"bitmap-encoding", b"lsb0",
+                    b"slot-bitmap", bitmap,
+                ],
+            ]
+
+    monkeypatch.setattr(valkey_probe_lib, "BinaryRespConnection", FakeConnection)
+
+    probe = valkey_probe_lib.light_probe_endpoint(
         valkey_probe_lib.Endpoint("p0", "127.0.0.1", 7000, password="secret")
     )
 
-    assert passwords == ["secret"]
+    assert probe["status"] == "PASS"
+    assert probe["slot_bitmap"] == bitmap
+    assert calls[0][0] == ("AUTH", "secret")
 
 
 def test_representative_probe_gate_honors_minimum_survivor_count() -> None:
