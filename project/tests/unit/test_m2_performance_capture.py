@@ -8,6 +8,28 @@ from typing import Any
 from scripts import m2_performance_capture as capture
 
 
+def test_formation_candidates_include_v4_preseed_pipeline_screen() -> None:
+    candidates = capture._formation_candidates()
+    assert capture.FORMATION_CANDIDATE_SCREEN_VERSION == "v4-preseed-pipeline"
+    assert {"kind": "cluster_create_strategy", "value": "manual_tree_meet_parallel_slots"} in candidates
+    assert {
+        item.get("bounded_parallelism")
+        for item in candidates
+        if item.get("value") == "tree_meet_addslotsrange"
+    } == {2, 4, 8, 16}
+    assert [
+        item
+        for item in candidates
+        if item.get("value") == "preseed_epoch_tree_meet_pipeline_replicas"
+    ] == [
+        {
+            "kind": "cluster_create_strategy",
+            "value": "preseed_epoch_tree_meet_pipeline_replicas",
+            "bounded_parallelism": 8,
+        }
+    ]
+
+
 def _analysis() -> dict[str, Any]:
     return {
         "cpu": {"throttled_usec_delta": 1},

@@ -737,24 +737,32 @@ def _validate_formation_discovery(
         if isinstance(item.get("value"), str)
         and "addslotsrange" in item["value"].lower()
     ]
+    preseed_candidates = [
+        item
+        for item in candidates
+        if item.get("value") == "preseed_epoch_tree_meet_pipeline_replicas"
+    ]
     candidate_keys = [_treatment_key(item) for item in candidates]
     screen_version = report.get("candidate_screen_version")
     legacy_screen = allow_legacy_screen and screen_version is None
     if screen_version == "v3-direct-p16":
         _add(errors, not manual, "direct formation screen must not include the manual-tree diagnostic")
+        _add(errors, not preseed_candidates, "direct formation screen must not include the preseed pipeline diagnostic")
         _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == {16}, "direct formation screen must contain only ADDSLOTSRANGE parallelism 16")
         expected_candidate_keys = {
             ("cluster_create_strategy", "tree_meet_addslotsrange", 16, None, None),
         }
     else:
         expected_parallelism = {4, 8, 16} if legacy_screen else {2, 4, 8, 16}
+        expected_preseed = set() if (legacy_screen or screen_version == "v2") else {8}
         _add(
             errors,
-            screen_version == "v2" or legacy_screen,
-            "formation discovery candidate screen version must be 'v2' or 'v3-direct-p16'",
+            screen_version in {"v2", "v4-preseed-pipeline"} or legacy_screen,
+            "formation discovery candidate screen version must be 'v2', 'v3-direct-p16', or 'v4-preseed-pipeline'",
         )
         _add(errors, len(manual) == 1, "formation discovery must include the existing manual-tree diagnostic")
         _add(errors, {item.get("bounded_parallelism") for item in range_candidates} == expected_parallelism, "formation discovery must include the declared bounded ADDSLOTSRANGE parallelism screen")
+        _add(errors, {item.get("bounded_parallelism") for item in preseed_candidates} == expected_preseed, "formation discovery must include exactly the declared preseed pipeline parallelism screen")
         expected_candidate_keys = {
             ("cluster_create_strategy", "manual_tree_meet_parallel_slots", None, None, None),
             *{
@@ -767,12 +775,22 @@ def _validate_formation_discovery(
                 )
                 for parallelism in sorted(expected_parallelism)
             },
+            *{
+                (
+                    "cluster_create_strategy",
+                    "preseed_epoch_tree_meet_pipeline_replicas",
+                    parallelism,
+                    None,
+                    None,
+                )
+                for parallelism in sorted(expected_preseed)
+            },
         }
     _add(
         errors,
         len(candidate_keys) == len(expected_candidate_keys)
         and set(candidate_keys) == expected_candidate_keys,
-        "formation discovery must contain exactly the fixed manual-tree and ADDSLOTSRANGE candidates",
+        "formation discovery must contain exactly the fixed manual-tree, ADDSLOTSRANGE, and preseed pipeline candidates",
     )
     _add(errors, _all_unique(candidate_keys), "formation candidate treatments must be unique")
     selected = _object(report.get("selected_candidate"))
