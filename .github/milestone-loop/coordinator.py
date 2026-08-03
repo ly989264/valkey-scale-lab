@@ -36,7 +36,7 @@ from contracts import (
     validate_transition,
     verified_tree,
 )
-from github_api import MAX_ISSUE_COMMENTS, GitHubClient, GitHubError, collect_snapshot
+from github_api import GitHubClient, GitHubError, collect_snapshot
 
 
 CONTROL_LABEL = "milestone-loop:control"
@@ -224,16 +224,6 @@ def _trusted_comment_payloads(
     return payloads
 
 
-def _require_control_comment_capacity(
-    control_issue: Mapping[str, Any], additions: int
-) -> None:
-    comments = control_issue.get("comments")
-    if not isinstance(comments, list) or additions < 0:
-        raise ContractError("Control Issue comment state is invalid")
-    if len(comments) + additions > MAX_ISSUE_COMMENTS:
-        raise LoopBlocked("Control Issue comment capacity is exhausted")
-
-
 def _human_action_value(
     *, snapshot: Mapping[str, Any], state: str, target: str, sha: str
 ) -> dict[str, Any]:
@@ -312,13 +302,9 @@ def record_human_action_state(
         or live_control.no_progress_count != control.no_progress_count
     ):
         raise LoopBlocked("Control Issue changed before human-action recording")
-    raw_comments = client.api(
-        f"issues/{control.issue_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
-    )
+    raw_comments = client.api_list(f"issues/{control.issue_number}/comments")
     if not isinstance(raw_comments, list):
         raise GitHubError("cannot read Control Issue before human-action recording")
-    if len(raw_comments) > MAX_ISSUE_COMMENTS:
-        raise LoopBlocked("Control Issue comment history exceeds its authoritative bound")
     live = {
         "comments": [
             {
@@ -335,8 +321,6 @@ def record_human_action_state(
         for payload in _trusted_comment_payloads(live, HUMAN_ACTION_RE)
     ):
         return False
-    if len(raw_comments) >= MAX_ISSUE_COMMENTS:
-        raise LoopBlocked("Control Issue comment capacity is exhausted")
     client.comment(
         control.issue_number,
         f"Human action required: **{state}**\n\n{action}\n\n"
@@ -534,7 +518,6 @@ def prepare_real_authorization(
             "milestone": milestone,
             "reason": "authorization-lease",
         }
-    _require_control_comment_capacity(control_issues[0], additions=3)
     readiness_sha256 = real_readiness_fingerprint(snapshot)
     record_real_authorization_required(client, snapshot, live_control)
     live = collect_snapshot(client, milestone)
@@ -2377,14 +2360,11 @@ def _m2_discovery_diagnosis_completed(
 def _publish_m2_discovery_result_comment(
     client: GitHubClient, issue_number: int, body: str, marker: str
 ) -> None:
-    endpoint = f"issues/{issue_number}/comments?per_page={MAX_ISSUE_COMMENTS + 1}"
     eof: GitHubError | None = None
     for attempt in range(3):
-        comments = client.api(endpoint)
+        comments = client.api_list(f"issues/{issue_number}/comments")
         if not isinstance(comments, list):
             raise GitHubError("cannot read Control Issue after M2 discovery comment EOF")
-        if len(comments) > MAX_ISSUE_COMMENTS:
-            raise LoopBlocked("Control Issue comment history exceeds its authoritative bound")
         if any(
             isinstance(comment, dict)
             and isinstance(comment.get("user"), dict)
@@ -2524,19 +2504,6 @@ def record_m2_discovery_result(
     human_action_exists = human_action_value is not None and any(
         payload.get("key") == human_action_value["key"]
         for payload in _trusted_comment_payloads(control_issue, HUMAN_ACTION_RE)
-    )
-    _require_control_comment_capacity(
-        control_issue,
-        (0 if existing else 1)
-        + (
-            1
-            if repairable
-            and not existing
-            and not diagnosis_completed
-            and not dispatched
-            else 0
-        )
-        + (1 if human_action_value is not None and not human_action_exists else 0),
     )
     summary = str(result["summary"])[:4000]
     if not existing:

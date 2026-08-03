@@ -193,6 +193,16 @@ def pr_metadata(client: GitHubClient, event_path: Path) -> dict[str, Any]:
         raise ContractError("pull request body is invalid")
     milestone = milestone_from_pr_body(body)
     fixed_milestone_path(REPO_ROOT, milestone)
+    github_milestone = pr.get("milestone")
+    github_milestone_title = (
+        github_milestone.get("title") if isinstance(github_milestone, dict) else None
+    )
+    if not isinstance(github_milestone_title, str) or not github_milestone_title:
+        raise ContractError(f"GitHub PR Milestone must be set to {milestone}")
+    if github_milestone_title != milestone:
+        raise ContractError(
+            f"PR body Milestone {milestone} does not match GitHub PR Milestone {github_milestone_title}"
+        )
     labels = {
         item.get("name")
         for item in pr.get("labels", [])
