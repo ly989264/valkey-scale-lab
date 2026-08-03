@@ -37,6 +37,7 @@ from valkey_scale_lab.observability import resources as resources_module
 from valkey_scale_lab.observability.resources import (
     ExpectedGoneProcess,
     LocalResourceSampler,
+    NodehostResourceSampler,
     ProcessSpec,
     ResourceSamplerRunner,
     analyze_resource_samples,
@@ -872,6 +873,16 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def _proc_stat(pid: int, *, start_ticks: int, rss_pages: int = 7) -> str:
+    fields = ["0"] * 30
+    fields[0] = "S"
+    fields[11] = "3"
+    fields[12] = "4"
+    fields[19] = str(start_ticks)
+    fields[21] = str(rss_pages)
+    return f"{pid} (valkey server) " + " ".join(fields)
+
+
 def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -924,6 +935,162 @@ def test_resource_sampler_reads_only_fixed_proc_fields_and_analyzes_them(
     serialized = json.dumps(samples)
     assert "CLUSTER" not in serialized
     assert "valkey-cli" not in serialized
+
+
+def test_nodehost_resource_sampler_parses_one_batch_snapshot_per_sample() -> None:
+    calls: list[str] = []
+    processes = [ProcessSpec("node-a", 101), ProcessSpec("node-b", 102)]
+
+    sampler = NodehostResourceSampler(
+        sampler_id="nodehost-a",
+        processes=processes,
+        static_snapshot=lambda: calls.append("static")
+        or {
+            "cpu_count": "8",
+            "meminfo": "MemTotal: 1000 kB\nSwapTotal: 0 kB\n",
+            "net_dev": "Inter-| Receive | Transmit\neth0: 1 2 0 0 0 0 0 0 3 4 0 0 0 0 0 0\n",
+            "cgroup_cpu_max": "max 100000",
+            "cgroup_memory_max": "max",
+        },
+        host_snapshot=lambda: calls.append("host")
+        or {
+            "proc_stat": "cpu 10 1 5 100 2 1 1 0 0 0\nprocs_running 2\nprocs_blocked 1\n",
+            "meminfo": "MemTotal: 1000 kB\nMemAvailable: 800 kB\nSwapTotal: 100 kB\nSwapFree: 90 kB\n",
+            "net_dev": "Inter-| Receive | Transmit\neth0: 100 10 1 2 0 0 0 0 200 20 3 4 0 0 0 0\n",
+            "cgroup_cpu_stat": "usage_usec 10\nthrottled_usec 2\n",
+            "cgroup_memory_current": "100",
+            "cgroup_memory_max": "1000",
+            "cgroup_memory_events": "oom 0\noom_kill 0\n",
+        },
+        process_snapshot=lambda requested: calls.append(f"process:{len(requested)}")
+        or {
+            "page_size": 4096,
+            "processes": [
+                {
+                    "status": "OK",
+                    "logical_id": process.logical_id,
+                    "pid": process.pid,
+                    "fd_count": 2,
+                    "stat_before": _proc_stat(process.pid, start_ticks=process.pid * 10),
+                    "stat_after": _proc_stat(process.pid, start_ticks=process.pid * 10),
+                }
+                for process in requested
+            ],
+        },
+    )
+
+    static = sampler.static()
+    host = sampler.host_sample()
+    process = sampler.process_sample()
+
+    assert calls == ["static", "host", "process:2"]
+    assert static["cpu_count"] == 8
+    assert static["network_interfaces"] == ["eth0"]
+    assert host["scheduler"] == {"running": 2, "blocked": 1}
+    assert [row["logical_id"] for row in process["processes"]] == ["node-a", "node-b"]
+    assert process["processes"][0]["rss_bytes"] == 7 * 4096
+
+
+def test_nodehost_process_batch_preserves_expected_gone_and_propagates_errors() -> None:
+    processes = [ProcessSpec("node-a", 101), ProcessSpec("node-b", 102)]
+    sampler = NodehostResourceSampler(
+        sampler_id="nodehost-a",
+        processes=processes,
+        static_snapshot=lambda: {},
+        host_snapshot=lambda: {},
+        process_snapshot=lambda requested: {
+            "page_size": 4096,
+            "processes": [
+                {
+                    "status": "OK",
+                    "logical_id": requested[0].logical_id,
+                    "pid": requested[0].pid,
+                    "fd_count": 2,
+                    "stat_before": _proc_stat(101, start_ticks=10),
+                    "stat_after": _proc_stat(101, start_ticks=10),
+                },
+                {
+                    "status": "ERR",
+                    "logical_id": requested[1].logical_id,
+                    "pid": requested[1].pid,
+                    "error": "planned process is gone",
+                },
+            ],
+        },
+        expected_gone_processes=[ExpectedGoneProcess("node-b", 102)],
+        expected_gone_active=lambda: True,
+    )
+
+    sample = sampler.process_sample()
+
+    assert sample["processes"][1]["status"] == "EXPECTED_GONE"
+    assert sample["processes"][1]["reason"] == "planned process is gone"
+
+    failing = NodehostResourceSampler(
+        sampler_id="nodehost-b",
+        processes=[ProcessSpec("node-c", 103)],
+        static_snapshot=lambda: {},
+        host_snapshot=lambda: {},
+        process_snapshot=lambda _requested: {
+            "page_size": 4096,
+            "processes": [
+                {
+                    "status": "ERR",
+                    "logical_id": "node-c",
+                    "pid": 103,
+                    "error": "unexpected failure",
+                }
+            ],
+        },
+    )
+    with pytest.raises(CollectionError, match="unexpected failure"):
+        failing.process_sample()
+
+
+def test_nodehost_process_batch_requires_complete_coverage_and_stable_identity() -> None:
+    missing = NodehostResourceSampler(
+        sampler_id="nodehost-a",
+        processes=[ProcessSpec("node-a", 101), ProcessSpec("node-b", 102)],
+        static_snapshot=lambda: {},
+        host_snapshot=lambda: {},
+        process_snapshot=lambda _requested: {
+            "page_size": 4096,
+            "processes": [
+                {
+                    "status": "OK",
+                    "logical_id": "node-a",
+                    "pid": 101,
+                    "fd_count": 2,
+                    "stat_before": _proc_stat(101, start_ticks=10),
+                    "stat_after": _proc_stat(101, start_ticks=10),
+                }
+            ],
+        },
+    )
+    with pytest.raises(CollectionError, match="coverage mismatch"):
+        missing.process_sample()
+
+    changing = NodehostResourceSampler(
+        sampler_id="nodehost-b",
+        processes=[ProcessSpec("node-a", 101)],
+        static_snapshot=lambda: {},
+        host_snapshot=lambda: {},
+        process_snapshot=lambda _requested: {
+            "page_size": 4096,
+            "processes": [
+                {
+                    "status": "OK",
+                    "logical_id": "node-a",
+                    "pid": 101,
+                    "fd_count": 2,
+                    "stat_before": _proc_stat(101, start_ticks=10),
+                    "stat_after": _proc_stat(101, start_ticks=11),
+                }
+            ],
+        },
+    )
+    with pytest.raises(CollectionError, match="identity changed while sampling"):
+        changing.process_sample()
 
 
 def test_resource_runner_host_sampling_continues_while_process_is_blocked(
@@ -1033,6 +1200,39 @@ def test_resource_runner_process_rounds_do_not_overlap_or_catch_up(
     assert sum(1 for sample in document["samples"] if sample["kind"] == "process") == 1
     assert runner._host_thread is not None and not runner._host_thread.is_alive()
     assert runner._process_thread is not None and not runner._process_thread.is_alive()
+
+
+def test_resource_runner_records_first_collection_error_without_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(resources_module, "HOST_INTERVAL_SECONDS", 0.01)
+    monkeypatch.setattr(resources_module, "PROCESS_INTERVAL_SECONDS", 0.05)
+    host_calls = 0
+
+    class FailingHostSampler:
+        sampler_id = "host-a"
+
+        def static(self) -> dict[str, Any]:
+            return {"sampler_id": self.sampler_id}
+
+        def host_sample(self) -> dict[str, Any]:
+            nonlocal host_calls
+            host_calls += 1
+            raise CollectionError("host snapshot failed")
+
+        def process_sample(self) -> dict[str, Any]:
+            return {"kind": "process", "monotonic": 1.0, "processes": []}
+
+    runner = ResourceSamplerRunner(
+        FailingHostSampler(),  # type: ignore[arg-type]
+        host_interval=0.01,
+        process_interval=0.05,
+    )
+    runner.start()
+    document = runner.stop()
+
+    assert host_calls == 1
+    assert document["errors"] == ["host snapshot failed"]
 
 
 def test_process_sampling_is_sequential_complete_and_preserves_expected_gone(

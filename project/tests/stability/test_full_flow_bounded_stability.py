@@ -6,8 +6,22 @@ from typing import Any
 from valkey_scale_lab.runtime import docker_runtime
 
 
-def test_local_full_flow_resource_runners_use_nodehost_procfs(monkeypatch) -> None:
-    monkeypatch.setattr(docker_runtime, "_container_pid", lambda _container: 4242)
+def _stat(pid: int, start_time: int) -> str:
+    fields = ["0"] * 30
+    fields[0] = "S"
+    fields[19] = str(start_time)
+    fields[21] = "1"
+    return f"{pid} (valkey server) " + " ".join(fields)
+
+
+def test_local_full_flow_resource_runners_use_nodehost_snapshots(monkeypatch) -> None:
+    monkeypatch.setattr(
+        docker_runtime,
+        "_container_pid",
+        lambda _container: (_ for _ in ()).throw(
+            AssertionError("resource sampling must not use host procfs")
+        ),
+    )
 
     runners = docker_runtime._resource_runners_for_nodes(
         [
@@ -27,11 +41,58 @@ def test_local_full_flow_resource_runners_use_nodehost_procfs(monkeypatch) -> No
     )
 
     assert len(runners) == 1
-    assert runners[0].sampler.proc_root == Path("/proc/4242/root/proc")
     assert [process.logical_id for process in runners[0].sampler.processes] == [
         "node-a",
         "node-b",
     ]
+
+
+def test_exact_200_process_round_exec_count_scales_with_nodehosts(monkeypatch) -> None:
+    exec_calls: list[list[str]] = []
+
+    def fake_run_docker(args: list[str], **_kwargs: Any) -> docker_runtime.DockerResult:
+        exec_calls.append(args)
+        assert args[:3] == ["exec", args[1], "sh"]
+        specs = args[6:]
+        rows = ["__VSLAB_PROCESS_SNAPSHOT__:v1:4096"]
+        for spec in specs:
+            logical_id, pid_text = spec.rsplit(":", 1)
+            pid = int(pid_text)
+            rows.append(
+                "\t".join(
+                    [
+                        "OK",
+                        logical_id,
+                        pid_text,
+                        "3",
+                        _stat(pid, pid * 10),
+                        _stat(pid, pid * 10),
+                    ]
+                )
+            )
+        return docker_runtime.DockerResult("\n".join(rows) + "\n", "", 0)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    nodes: list[dict[str, Any]] = []
+    for index in range(200):
+        nodehost = index % 8
+        nodes.append(
+            {
+                "logical_id": f"node-{index:03d}",
+                "nodehost_id": f"nodehost-{nodehost}",
+                "nodehost_container_id": f"container-{nodehost}",
+                "pid": 10_000 + index,
+            }
+        )
+
+    runners = docker_runtime._resource_runners_for_nodes(nodes)
+    for runner in runners:
+        runner.sampler.process_sample()
+
+    assert len(runners) == 8
+    assert len(exec_calls) == 8
+    assert sorted(len(call[6:]) for call in exec_calls) == [25] * 8
 
 
 def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(

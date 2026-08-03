@@ -16,7 +16,7 @@ from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, ContextManager, Iterable, TypeVar
+from typing import Any, Callable, ContextManager, Iterable, Sequence, TypeVar
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.cluster_timeout import (
@@ -50,10 +50,12 @@ from valkey_scale_lab.observability.cluster import (
     FullClusterValidator,
     LightClusterProbe,
     NodeEndpoint,
+    TopologyObserver,
     normalize_cluster_shards,
     parse_myslots,
     parse_role,
 )
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.observability.failover import (
     ActuatorRecorder,
     AffectedShardObserver,
@@ -62,7 +64,7 @@ from valkey_scale_lab.observability.failover import (
 from valkey_scale_lab.observability.load import MemtierLoadLane
 from valkey_scale_lab.observability.resources import (
     ExpectedGoneProcess,
-    LocalResourceSampler,
+    NodehostResourceSampler,
     ProcessSpec,
     ResourceSamplerRunner,
 )
@@ -118,6 +120,60 @@ CLUSTER_CREATE_STRATEGIES = {
 PROCESS_BUNDLE_ROOT = "/tmp"
 PROCESS_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 CLUSTER_NODE_ID_RE = re.compile(r"^[0-9a-f]{40}$")
+NODEHOST_RESOURCE_STATIC_SCRIPT = r"""
+section() { printf '__VSLAB_SECTION__:%s\n' "$1"; }
+section cpu_count
+getconf _NPROCESSORS_ONLN || exit 10
+section meminfo
+cat /proc/meminfo || exit 11
+section net_dev
+cat /proc/net/dev || exit 12
+section cgroup_cpu_max
+cat /sys/fs/cgroup/cpu.max 2>/dev/null || true
+section cgroup_memory_max
+cat /sys/fs/cgroup/memory.max 2>/dev/null || true
+"""
+NODEHOST_RESOURCE_HOST_SCRIPT = r"""
+section() { printf '__VSLAB_SECTION__:%s\n' "$1"; }
+section proc_stat
+cat /proc/stat || exit 20
+section meminfo
+cat /proc/meminfo || exit 21
+section net_dev
+cat /proc/net/dev || exit 22
+section cgroup_cpu_stat
+cat /sys/fs/cgroup/cpu.stat 2>/dev/null || true
+section cgroup_memory_current
+cat /sys/fs/cgroup/memory.current 2>/dev/null || true
+section cgroup_memory_max
+cat /sys/fs/cgroup/memory.max 2>/dev/null || true
+section cgroup_memory_events
+cat /sys/fs/cgroup/memory.events 2>/dev/null || true
+"""
+NODEHOST_RESOURCE_PROCESS_SCRIPT = r"""
+page_size=$(getconf PAGESIZE) || exit 30
+printf '__VSLAB_PROCESS_SNAPSHOT__:v1:%s\n' "$page_size"
+for spec in "$@"; do
+  logical_id=${spec%:*}
+  pid=${spec#*:}
+  stat_before=$(cat "/proc/$pid/stat" 2>&1)
+  if [ $? -ne 0 ]; then
+    printf 'ERR\t%s\t%s\t%s\n' "$logical_id" "$pid" "cannot read stat before: $stat_before"
+    continue
+  fi
+  if [ ! -d "/proc/$pid/fd" ]; then
+    printf 'ERR\t%s\t%s\t%s\n' "$logical_id" "$pid" "cannot count fd entries"
+    continue
+  fi
+  fd_count=$(find "/proc/$pid/fd" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
+  stat_after=$(cat "/proc/$pid/stat" 2>&1)
+  if [ $? -ne 0 ]; then
+    printf 'ERR\t%s\t%s\t%s\n' "$logical_id" "$pid" "cannot read stat after: $stat_after"
+    continue
+  fi
+  printf 'OK\t%s\t%s\t%s\t%s\t%s\n' "$logical_id" "$pid" "$fd_count" "$stat_before" "$stat_after"
+done
+"""
 MANAGEMENT_MATRIX_CAPABILITY = "management_matrix"
 MANAGEMENT_MATRIX_SCENARIO = "management_matrix"
 FAULT_MATRIX_CAPABILITY = "fault_matrix"
@@ -6591,8 +6647,10 @@ def _management_workload_metric_rows(
 def _management_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) -> None:
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
+    inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
     deadline = time.monotonic() + timeout
     last_health: dict[str, Any] | None = None
+    last_topology_error: str | None = None
     while time.monotonic() < deadline:
         try:
             health = _management_cluster_health(nodes)
@@ -6606,7 +6664,15 @@ def _management_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) 
                 and health["slots_ok"] == 16384
                 and health["slots_fail"] == 0
             ):
-                return
+                try:
+                    TopologyObserver(
+                        inventory,
+                        observer_count=3,
+                        timeout=5.0,
+                    ).run(expected_node_count=len(nodes))
+                    return
+                except Exception as exc:  # noqa: BLE001
+                    last_topology_error = repr(exc)
         except Exception as exc:  # noqa: BLE001
             last_health = {"status": "ERROR", "error": repr(exc)}
         time.sleep(1)
@@ -6615,7 +6681,8 @@ def _management_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) 
     ]
     raise DockerRuntimeError(
         "MANAGEMENT_MATRIX cluster did not become clean; "
-        f"last_health={last_health} diagnostics={diagnostics}"
+        f"last_health={last_health} last_topology_error={last_topology_error} "
+        f"diagnostics={diagnostics}"
     )
 
 
@@ -7868,6 +7935,120 @@ def _local_full_flow_resource_analysis_metrics(
     return rows
 
 
+def _nodehost_snapshot_sections(container: str, script: str, *, timeout: int) -> dict[str, str]:
+    try:
+        output = run_docker(
+            ["exec", container, "sh", "-c", script],
+            timeout=timeout,
+        ).stdout
+    except DockerRuntimeError as exc:
+        raise CollectionError(f"nodehost {container} resource snapshot failed: {exc}") from exc
+    sections: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in output.splitlines():
+        if line.startswith("__VSLAB_SECTION__:"):
+            current = line.split(":", 1)[1]
+            sections[current] = []
+            continue
+        if current is not None:
+            sections[current].append(line)
+    return {key: "\n".join(value).strip() for key, value in sections.items()}
+
+
+def _nodehost_static_snapshot(container: str) -> dict[str, Any]:
+    sections = _nodehost_snapshot_sections(
+        container,
+        NODEHOST_RESOURCE_STATIC_SCRIPT,
+        timeout=30,
+    )
+    return {
+        "cpu_count": sections.get("cpu_count"),
+        "meminfo": sections.get("meminfo", ""),
+        "net_dev": sections.get("net_dev", ""),
+        "cgroup_cpu_max": sections.get("cgroup_cpu_max"),
+        "cgroup_memory_max": sections.get("cgroup_memory_max"),
+    }
+
+
+def _nodehost_host_snapshot(container: str) -> dict[str, Any]:
+    sections = _nodehost_snapshot_sections(
+        container,
+        NODEHOST_RESOURCE_HOST_SCRIPT,
+        timeout=30,
+    )
+    return {
+        "proc_stat": sections.get("proc_stat", ""),
+        "meminfo": sections.get("meminfo", ""),
+        "net_dev": sections.get("net_dev", ""),
+        "cgroup_cpu_stat": sections.get("cgroup_cpu_stat"),
+        "cgroup_memory_current": sections.get("cgroup_memory_current"),
+        "cgroup_memory_max": sections.get("cgroup_memory_max"),
+        "cgroup_memory_events": sections.get("cgroup_memory_events"),
+    }
+
+
+def _nodehost_process_snapshot(
+    container: str, processes: Sequence[ProcessSpec]
+) -> dict[str, Any]:
+    specs = [
+        f"{_safe_process_token(process.logical_id, 'logical_id')}:{int(process.pid)}"
+        for process in processes
+    ]
+    try:
+        output = run_docker(
+            [
+                "exec",
+                container,
+                "sh",
+                "-c",
+                NODEHOST_RESOURCE_PROCESS_SCRIPT,
+                "vslab-process-snapshot",
+                *specs,
+            ],
+            timeout=30,
+        ).stdout
+    except DockerRuntimeError as exc:
+        raise CollectionError(f"nodehost {container} process snapshot failed: {exc}") from exc
+    lines = output.splitlines()
+    if not lines or not lines[0].startswith("__VSLAB_PROCESS_SNAPSHOT__:v1:"):
+        raise CollectionError(f"nodehost {container} process snapshot header is invalid")
+    page_size = lines[0].rsplit(":", 1)[1]
+    rows: list[dict[str, Any]] = []
+    for line in lines[1:]:
+        parts = line.split("\t", 5)
+        if len(parts) < 4:
+            raise CollectionError(f"nodehost {container} process snapshot row is invalid")
+        status, logical_id, pid_text = parts[:3]
+        if status == "OK":
+            if len(parts) != 6:
+                raise CollectionError(
+                    f"nodehost {container} process snapshot OK row is invalid"
+                )
+            rows.append(
+                {
+                    "status": "OK",
+                    "logical_id": logical_id,
+                    "pid": int(pid_text),
+                    "fd_count": int(parts[3]),
+                    "stat_before": parts[4],
+                    "stat_after": parts[5],
+                }
+            )
+            continue
+        if status == "ERR":
+            rows.append(
+                {
+                    "status": "ERR",
+                    "logical_id": logical_id,
+                    "pid": int(pid_text),
+                    "error": parts[3],
+                }
+            )
+            continue
+        raise CollectionError(f"nodehost {container} process snapshot status is invalid")
+    return {"page_size": page_size, "processes": rows}
+
+
 def _local_full_flow_operation_ids_for_refs(
     events: list[dict[str, Any]],
     commands: list[dict[str, Any]],
@@ -7944,7 +8125,6 @@ def _resource_runners_for_nodes(
         grouped.setdefault(container, []).append(node)
     runners: list[ResourceSamplerRunner] = []
     for container, hosted in grouped.items():
-        host_pid = _container_pid(container)
         sampler_id = str(
             hosted[0].get("nodehost_id")
             or hosted[0].get("nodehost_container_name")
@@ -7963,11 +8143,15 @@ def _resource_runners_for_nodes(
                 for node in hosted
             )
         ]
-        sampler = LocalResourceSampler(
+        sampler = NodehostResourceSampler(
             sampler_id=sampler_id,
             processes=processes,
-            proc_root=Path(f"/proc/{host_pid}/root/proc"),
-            cgroup_root=Path(f"/proc/{host_pid}/root/sys/fs/cgroup"),
+            static_snapshot=lambda container=container: _nodehost_static_snapshot(container),
+            host_snapshot=lambda container=container: _nodehost_host_snapshot(container),
+            process_snapshot=lambda processes, container=container: _nodehost_process_snapshot(
+                container,
+                processes,
+            ),
             expected_gone_processes=expected_gone,
             expected_gone_active=expected_gone_active,
         )

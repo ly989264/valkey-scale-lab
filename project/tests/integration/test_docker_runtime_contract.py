@@ -1,16 +1,90 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import socket
 import subprocess
 import threading
+import time
 from pathlib import Path
 
 import pytest
 
+from valkey_scale_lab.observability.cluster import (
+    FullClusterValidator,
+    NodeEndpoint,
+    TopologyObserver,
+)
+from valkey_scale_lab.observability.contracts import SemanticFailure
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
+
+
+def _boundary_docker(args: list[str], *, timeout: int = 60) -> str:
+    completed = subprocess.run(
+        ["docker", *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return completed.stdout.strip()
+
+
+def _boundary_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def _boundary_valkey_ports(count: int) -> list[int]:
+    ports: list[int] = []
+    used: set[int] = set()
+    while len(ports) < count:
+        port = _boundary_free_port()
+        if port > 55000 or port + 10000 > 65535:
+            continue
+        if port in used or port + 10000 in used:
+            continue
+        used.add(port)
+        used.add(port + 10000)
+        ports.append(port)
+    return ports
+
+
+def _boundary_wait_ping(container: str, port: int) -> None:
+    deadline = time.monotonic() + 20.0
+    while time.monotonic() < deadline:
+        ping = subprocess.run(
+            ["docker", "exec", container, "valkey-cli", "-p", str(port), "PING"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if ping.returncode == 0 and ping.stdout.strip() == "PONG":
+            return
+        time.sleep(0.2)
+    raise AssertionError(f"Valkey port {port} did not answer PING")
+
+
+def _boundary_wait_topology(endpoints: list[NodeEndpoint]) -> dict[str, object]:
+    deadline = time.monotonic() + 30.0
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            return TopologyObserver(endpoints, observer_count=3, timeout=5.0).run(
+                expected_node_count=len(endpoints)
+            )
+        except SemanticFailure as exc:
+            last_error = exc
+            time.sleep(0.5)
+    raise AssertionError(f"CLUSTER SHARDS did not become healthy: {last_error}")
 
 
 def test_cached_production_image_supports_m2_shell_kill_and_proc_probe() -> None:
@@ -60,6 +134,152 @@ def test_cached_production_image_supports_m2_shell_kill_and_proc_probe() -> None
     )
 
     assert completed.returncode == 0, completed.stderr
+
+
+@pytest.mark.skipif(
+    os.environ.get("VSLAB_RUN_REAL_BOUNDARY_SMOKE") != "1",
+    reason="set VSLAB_RUN_REAL_BOUNDARY_SMOKE=1 to run Docker/Valkey boundary smoke",
+)
+def test_nodehost_resource_and_topology_boundary_smoke() -> None:
+    docker = shutil.which("docker")
+    if docker is None:
+        pytest.skip("Docker CLI is unavailable")
+    image = docker_runtime.CUSTOM_VALKEY_IMAGE
+    inspected = subprocess.run(
+        [docker, "image", "inspect", image],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if inspected.returncode != 0:
+        pytest.skip(f"cached production image {image} is unavailable")
+
+    run_id = f"vslab-boundary-{os.getpid()}-{int(time.time())}"
+    container = f"{run_id}-nodehost"
+    ports = _boundary_valkey_ports(6)
+    docker_args = ["run", "-d", "--name", container]
+    for port in ports:
+        docker_args.extend(["-p", f"127.0.0.1:{port}:{port}"])
+        docker_args.extend(["-p", f"127.0.0.1:{port + 10000}:{port + 10000}"])
+    docker_args.extend([image, "sleep", "600"])
+
+    try:
+        container_id = _boundary_docker(docker_args, timeout=60)
+        for port in ports:
+            _boundary_docker(
+                [
+                    "exec",
+                    container,
+                    "valkey-server",
+                    "--port",
+                    str(port),
+                    "--bind",
+                    "0.0.0.0",
+                    "--protected-mode",
+                    "no",
+                    "--cluster-enabled",
+                    "yes",
+                    "--cluster-config-file",
+                    f"/tmp/vslab-nodes-{port}.conf",
+                    "--cluster-announce-ip",
+                    "127.0.0.1",
+                    "--cluster-announce-port",
+                    str(port),
+                    "--cluster-announce-bus-port",
+                    str(port + 10000),
+                    "--appendonly",
+                    "no",
+                    "--daemonize",
+                    "yes",
+                    "--pidfile",
+                    f"/tmp/vslab-{port}.pid",
+                ],
+                timeout=30,
+            )
+            _boundary_wait_ping(container, port)
+
+        create_targets = " ".join(f"127.0.0.1:{port}" for port in ports)
+        _boundary_docker(
+            [
+                "exec",
+                container,
+                "sh",
+                "-c",
+                f"printf 'yes\\n' | valkey-cli --cluster create {create_targets} --cluster-replicas 1",
+            ],
+            timeout=60,
+        )
+
+        provisional = [
+            NodeEndpoint(
+                logical_id=f"node-{index}",
+                host="127.0.0.1",
+                port=port,
+                expected_role="primary",
+                expected_shard=f"shard-{index}",
+                placement_id=container,
+            )
+            for index, port in enumerate(ports)
+        ]
+        topology = _boundary_wait_topology(provisional)
+
+        node_ids_by_port: dict[int, dict[str, object]] = {}
+        normalized = topology["normalized_topology"]
+        assert isinstance(normalized, dict)
+        for shard_index, shard in enumerate(normalized["shards"]):
+            for member in shard["nodes"]:
+                node_ids_by_port[int(member["port"])] = {
+                    "role": member["role"],
+                    "shard_id": f"shard-{shard_index}",
+                }
+        assert set(node_ids_by_port) == set(ports)
+
+        nodes: list[dict[str, object]] = []
+        for index, port in enumerate(ports):
+            pid = int(_boundary_docker(["exec", container, "cat", f"/tmp/vslab-{port}.pid"]))
+            actual = node_ids_by_port[port]
+            nodes.append(
+                {
+                    "logical_id": f"node-{index}",
+                    "host": "127.0.0.1",
+                    "client_port": port,
+                    "role": actual["role"],
+                    "shard_id": actual["shard_id"],
+                    "nodehost_id": container,
+                    "nodehost_container_id": container_id,
+                    "nodehost_container_name": container,
+                    "pid": pid,
+                }
+            )
+
+        runners = docker_runtime._resource_runners_for_nodes(nodes)
+        assert len(runners) == 1
+        sampler = runners[0].sampler
+        static = sampler.static()
+        samples = [sampler.host_sample(), sampler.process_sample()]
+        assert static["sampler_id"] == container
+        assert samples[0]["kind"] == "host"
+        assert samples[1]["kind"] == "process"
+        assert len(samples[1]["processes"]) == 6
+        assert all(row["status"] == "OK" for row in samples[1]["processes"])
+
+        inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
+        consistent = _boundary_wait_topology(inventory)
+        assert consistent["observer_count"] == 3
+        assert FullClusterValidator(
+            inventory,
+            concurrency=32,
+            observer_count=3,
+            timeout=5.0,
+        ).run()["status"] == "OK"
+    finally:
+        subprocess.run(
+            ["docker", "rm", "-f", container],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=30,
+            check=False,
+        )
 
 
 def test_custom_valkey_image_preflight_verifies_labels_binaries_and_command(
@@ -1660,6 +1880,7 @@ def test_management_wait_clean_cluster_uses_light_health_on_success(
         },
     ]
     health_calls: list[int] = []
+    topology_calls: list[tuple[int, int]] = []
 
     def light_health(probed: list[dict]) -> dict[str, object]:
         health_calls.append(len(probed))
@@ -1674,7 +1895,16 @@ def test_management_wait_clean_cluster_uses_light_health_on_success(
             "snapshots": [],
         }
 
+    class FakeTopologyObserver:
+        def __init__(self, endpoints, *, observer_count: int, timeout: float):
+            topology_calls.append((len(endpoints), observer_count))
+
+        def run(self, *, expected_node_count: int) -> dict[str, object]:
+            assert expected_node_count == 2
+            return {"status": "OK"}
+
     monkeypatch.setattr(docker_runtime, "_management_cluster_health", light_health)
+    monkeypatch.setattr(docker_runtime, "TopologyObserver", FakeTopologyObserver)
     monkeypatch.setattr(
         docker_runtime,
         "_wait_cluster_role_counts",
@@ -1693,6 +1923,165 @@ def test_management_wait_clean_cluster_uses_light_health_on_success(
     docker_runtime._management_wait_clean_cluster(nodes, timeout=1)
 
     assert health_calls == [2]
+    assert topology_calls == [(2, 3)]
+
+
+def test_management_wait_clean_cluster_waits_for_topology_health(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nodes = [
+        {
+            "logical_id": f"node-{idx}",
+            "role": "primary" if idx == 0 else "replica",
+            "client_port": 7400 + idx,
+            "shard_id": "shard-0000",
+        }
+        for idx in range(6)
+    ]
+    health_calls = 0
+    topology_calls = 0
+
+    def light_health(probed: list[dict]) -> dict[str, object]:
+        nonlocal health_calls
+        health_calls += 1
+        return {
+            "cluster_state": "ok",
+            "known_nodes": len(probed),
+            "primary_count": 1,
+            "replica_count": 5,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": [],
+        }
+
+    class FakeTopologyObserver:
+        def __init__(self, endpoints, *, observer_count: int, timeout: float):
+            assert len(endpoints) == 6
+            assert observer_count == 3
+
+        def run(self, *, expected_node_count: int) -> dict[str, object]:
+            nonlocal topology_calls
+            topology_calls += 1
+            assert expected_node_count == 6
+            if topology_calls == 1:
+                raise RuntimeError("CLUSTER SHARDS contains unhealthy nodes: node-5")
+            return {"status": "OK"}
+
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", light_health)
+    monkeypatch.setattr(docker_runtime, "TopologyObserver", FakeTopologyObserver)
+    monkeypatch.setattr(docker_runtime.time, "sleep", lambda _seconds: None)
+
+    docker_runtime._management_wait_clean_cluster(nodes, timeout=1)
+
+    assert health_calls == 2
+    assert topology_calls == 2
+
+
+def test_management_wait_clean_cluster_timeout_reports_last_topology_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nodes = [
+        {
+            "logical_id": "node-0",
+            "role": "primary",
+            "client_port": 7400,
+            "shard_id": "shard-0000",
+        },
+        {
+            "logical_id": "node-1",
+            "role": "replica",
+            "client_port": 7401,
+            "shard_id": "shard-0000",
+        },
+    ]
+    monotonic = iter([0.0, 0.1, 1.1])
+
+    monkeypatch.setattr(docker_runtime.time, "monotonic", lambda: next(monotonic))
+    monkeypatch.setattr(docker_runtime.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_process_node_snapshot",
+        lambda node: {"logical_id": node["logical_id"]},
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_cluster_health",
+        lambda probed: {
+            "cluster_state": "ok",
+            "known_nodes": len(probed),
+            "primary_count": 1,
+            "replica_count": 1,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": [{"probe_status": "PASS"}],
+        },
+    )
+
+    class FailingTopologyObserver:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def run(self, *, expected_node_count: int) -> dict[str, object]:
+            raise RuntimeError("CLUSTER SHARDS observers disagree on normalized topology")
+
+    monkeypatch.setattr(docker_runtime, "TopologyObserver", FailingTopologyObserver)
+
+    with pytest.raises(
+        DockerRuntimeError,
+        match="last_topology_error=.*observers disagree",
+    ):
+        docker_runtime._management_wait_clean_cluster(nodes, timeout=1)
+
+
+def test_management_wait_clean_cluster_success_path_does_not_use_cluster_nodes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nodes = [
+        {
+            "logical_id": f"node-{idx}",
+            "role": "primary" if idx == 0 else "replica",
+            "client_port": 7400 + idx,
+            "shard_id": "shard-0000",
+        }
+        for idx in range(3)
+    ]
+
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_command",
+        lambda _node, *args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("CLUSTER NODES must not be used")
+        )
+        if args == ("CLUSTER", "NODES")
+        else "",
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_cluster_health",
+        lambda probed: {
+            "cluster_state": "ok",
+            "known_nodes": len(probed),
+            "primary_count": 1,
+            "replica_count": 2,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": [],
+        },
+    )
+
+    class FakeTopologyObserver:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def run(self, *, expected_node_count: int) -> dict[str, object]:
+            return {"status": "OK", "expected_node_count": expected_node_count}
+
+    monkeypatch.setattr(docker_runtime, "TopologyObserver", FakeTopologyObserver)
+
+    docker_runtime._management_wait_clean_cluster(nodes, timeout=1)
 
 
 def test_management_forget_until_absent_uses_fixed_topology_observers(

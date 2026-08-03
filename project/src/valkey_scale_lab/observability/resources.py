@@ -79,11 +79,7 @@ class LocalResourceSampler:
 
     def static(self) -> dict[str, Any]:
         meminfo = _key_values(_read(self.proc_root / "meminfo"))
-        interfaces = [
-            line.split(":", 1)[0].strip()
-            for line in _read(self.proc_root / "net" / "dev").splitlines()
-            if ":" in line and line.split(":", 1)[0].strip() != "lo"
-        ]
+        interfaces = _network_interfaces(_read(self.proc_root / "net" / "dev"))
         return {
             "sampler_id": self.sampler_id,
             "cpu_count": os.cpu_count() or 1,
@@ -180,69 +176,14 @@ class LocalResourceSampler:
             return {}, exc
 
     def _cpu_and_scheduler(self) -> tuple[dict[str, int], dict[str, int]]:
-        lines = _read(self.proc_root / "stat").splitlines()
-        cpu_parts = lines[0].split()
-        if not cpu_parts or cpu_parts[0] != "cpu" or len(cpu_parts) < 9:
-            raise CollectionError("procfs cpu counters are incomplete")
-        values = [int(value) for value in cpu_parts[1:]]
-        scheduler: dict[str, int] = {}
-        for line in lines[1:]:
-            key, _, value = line.partition(" ")
-            if key in {"procs_running", "procs_blocked"}:
-                scheduler[key] = int(value.strip())
-        return (
-            {
-                "user": values[0] + values[1],
-                "system": values[2] + values[5] + values[6],
-                "idle": values[3],
-                "iowait": values[4],
-                "steal": values[7],
-            },
-            {
-                "running": scheduler.get("procs_running", 0),
-                "blocked": scheduler.get("procs_blocked", 0),
-            },
-        )
+        return _cpu_and_scheduler_from_text(_read(self.proc_root / "stat"))
 
     def _network(self) -> dict[str, dict[str, int]]:
-        result: dict[str, dict[str, int]] = {}
-        for line in _read(self.proc_root / "net" / "dev").splitlines():
-            if ":" not in line:
-                continue
-            name, raw = line.split(":", 1)
-            name = name.strip()
-            if name == "lo":
-                continue
-            values = [int(value) for value in raw.split()]
-            if len(values) < 16:
-                raise CollectionError(f"network counters for {name} are incomplete")
-            result[name] = {
-                "rx_bytes": values[0],
-                "rx_packets": values[1],
-                "rx_errors": values[2],
-                "rx_drops": values[3],
-                "tx_bytes": values[8],
-                "tx_packets": values[9],
-                "tx_errors": values[10],
-                "tx_drops": values[11],
-            }
-        return result
+        return _network_from_text(_read(self.proc_root / "net" / "dev"))
 
     def _process_stat(self, process: ProcessSpec) -> dict[str, Any]:
         raw = _read(self.proc_root / str(process.pid) / "stat").strip()
-        close = raw.rfind(")")
-        if close < 0:
-            raise CollectionError(f"invalid stat for {process.logical_id}")
-        fields = raw[close + 2 :].split()
-        if len(fields) < 22:
-            raise CollectionError(f"incomplete stat for {process.logical_id}")
-        return {
-            "state": fields[0],
-            "user_cpu_ticks": int(fields[11]),
-            "system_cpu_ticks": int(fields[12]),
-            "start_time_ticks": int(fields[19]),
-            "rss_bytes": int(fields[21]) * os.sysconf("SC_PAGE_SIZE"),
-        }
+        return _process_stat_from_text(raw, process)
 
     def _fd_count(self, pid: int) -> int:
         try:
@@ -258,16 +199,12 @@ class LocalResourceSampler:
         }
 
     def _cgroup_dynamic(self) -> dict[str, Any]:
-        cpu_stat = self._optional_cgroup_key_values("cpu.stat")
-        memory_events = self._optional_cgroup_key_values("memory.events")
-        return {
-            "cpu_usage_usec": cpu_stat.get("usage_usec"),
-            "cpu_throttled_usec": cpu_stat.get("throttled_usec"),
-            "memory_current_bytes": self._optional_cgroup_number("memory.current"),
-            "memory_max_bytes": self._optional_cgroup_number("memory.max"),
-            "oom_count": memory_events.get("oom"),
-            "oom_kill_count": memory_events.get("oom_kill"),
-        }
+        return _cgroup_dynamic_from_values(
+            cpu_stat=self._optional_cgroup_key_values("cpu.stat"),
+            memory_events=self._optional_cgroup_key_values("memory.events"),
+            memory_current=self._optional_cgroup_number("memory.current"),
+            memory_max=self._optional_cgroup_number("memory.max"),
+        )
 
     def _optional_cgroup_text(self, name: str) -> str | None:
         try:
@@ -285,18 +222,7 @@ class LocalResourceSampler:
             return None
 
     def _optional_cgroup_key_values(self, name: str) -> dict[str, int]:
-        text = self._optional_cgroup_text(name)
-        if text is None:
-            return {}
-        result: dict[str, int] = {}
-        for line in text.splitlines():
-            parts = line.split()
-            if len(parts) == 2:
-                try:
-                    result[parts[0]] = int(parts[1])
-                except ValueError:
-                    continue
-        return result
+        return _optional_cgroup_key_values_from_text(self._optional_cgroup_text(name))
 
     def _collector_metrics(self, duration: float) -> dict[str, Any]:
         usage = resource.getrusage(resource.RUSAGE_SELF)
@@ -307,6 +233,342 @@ class LocalResourceSampler:
             "sample_duration_seconds": duration,
             "overrun_seconds": max(duration - HOST_INTERVAL_SECONDS, 0.0),
         }
+
+
+class NodehostResourceSampler(LocalResourceSampler):
+    """Parses one pre-collected nodehost snapshot per resource sample."""
+
+    def __init__(
+        self,
+        *,
+        sampler_id: str,
+        processes: Sequence[ProcessSpec],
+        static_snapshot: Callable[[], Mapping[str, Any]],
+        host_snapshot: Callable[[], Mapping[str, Any]],
+        process_snapshot: Callable[[Sequence[ProcessSpec]], Mapping[str, Any]],
+        wall_clock: Callable[[], float] = time.time,
+        monotonic: Callable[[], float] = time.monotonic,
+        expected_gone_processes: Sequence[ExpectedGoneProcess] = (),
+        expected_gone_active: Callable[[], bool] | None = None,
+    ) -> None:
+        super().__init__(
+            sampler_id=sampler_id,
+            processes=processes,
+            wall_clock=wall_clock,
+            monotonic=monotonic,
+            expected_gone_processes=expected_gone_processes,
+            expected_gone_active=expected_gone_active,
+        )
+        self._static_snapshot = static_snapshot
+        self._host_snapshot = host_snapshot
+        self._process_snapshot = process_snapshot
+
+    def static(self) -> dict[str, Any]:
+        snapshot = self._static_snapshot()
+        meminfo = _key_values(_required_text(snapshot, "meminfo"))
+        return {
+            "sampler_id": self.sampler_id,
+            "cpu_count": _positive_int(snapshot.get("cpu_count"), "cpu_count"),
+            "mem_total_bytes": meminfo.get("MemTotal"),
+            "swap_total_bytes": meminfo.get("SwapTotal"),
+            "cgroup_limits": {
+                "cpu_max": _optional_text(snapshot.get("cgroup_cpu_max")),
+                "memory_max": _optional_number(snapshot.get("cgroup_memory_max")),
+            },
+            "network_interfaces": _network_interfaces(
+                _required_text(snapshot, "net_dev")
+            ),
+        }
+
+    def host_sample(self) -> dict[str, Any]:
+        started = self._monotonic()
+        snapshot = self._host_snapshot()
+        cpu, scheduler = _cpu_and_scheduler_from_text(
+            _required_text(snapshot, "proc_stat")
+        )
+        memory = _key_values(_required_text(snapshot, "meminfo"))
+        network = _network_from_text(_required_text(snapshot, "net_dev"))
+        cgroup = _cgroup_dynamic_from_values(
+            cpu_stat=_optional_cgroup_key_values_from_text(
+                _optional_text(snapshot.get("cgroup_cpu_stat"))
+            ),
+            memory_events=_optional_cgroup_key_values_from_text(
+                _optional_text(snapshot.get("cgroup_memory_events"))
+            ),
+            memory_current=_optional_number(snapshot.get("cgroup_memory_current")),
+            memory_max=_optional_number(snapshot.get("cgroup_memory_max")),
+        )
+        duration = max(self._monotonic() - started, 0.0)
+        return {
+            "kind": "host",
+            "sampler_id": self.sampler_id,
+            "wall_time": self._wall(),
+            "monotonic": started,
+            "cpu": cpu,
+            "scheduler": scheduler,
+            "memory": {
+                "mem_available_bytes": memory.get("MemAvailable"),
+                "swap_used_bytes": max(
+                    memory.get("SwapTotal", 0) - memory.get("SwapFree", 0), 0
+                ),
+            },
+            "cgroup": cgroup,
+            "network": network,
+            "collector": self._collector_metrics(duration),
+        }
+
+    def process_sample(self) -> dict[str, Any]:
+        started = self._monotonic()
+        snapshot = self._process_snapshot(self.processes)
+        page_size = _positive_int(snapshot.get("page_size"), "page_size")
+        raw_rows = snapshot.get("processes")
+        if not isinstance(raw_rows, Sequence) or isinstance(raw_rows, (str, bytes)):
+            raise CollectionError("process snapshot did not return process rows")
+        by_identity: dict[tuple[str, int], Mapping[str, Any]] = {}
+        for raw_row in raw_rows:
+            if not isinstance(raw_row, Mapping):
+                raise CollectionError("process snapshot row is not a mapping")
+            logical_id = str(raw_row.get("logical_id", ""))
+            try:
+                pid = int(raw_row.get("pid"))
+            except (TypeError, ValueError) as exc:
+                raise CollectionError("process snapshot row has invalid pid") from exc
+            key = (logical_id, pid)
+            if key in by_identity:
+                raise CollectionError(
+                    f"process snapshot returned duplicate row for {logical_id} pid {pid}"
+                )
+            by_identity[key] = raw_row
+        expected = {(process.logical_id, process.pid) for process in self.processes}
+        missing = expected.difference(by_identity)
+        extras = set(by_identity).difference(expected)
+        if missing or extras:
+            raise CollectionError(
+                "process snapshot coverage mismatch: "
+                f"missing={sorted(missing)} extras={sorted(extras)}"
+            )
+        rows: list[dict[str, Any]] = []
+        for process in self.processes:
+            raw_row = by_identity[(process.logical_id, process.pid)]
+            stat, error = self._sample_snapshot_process(process, raw_row, page_size)
+            if error is None:
+                rows.append(
+                    {
+                        "logical_id": process.logical_id,
+                        "pid": process.pid,
+                        "status": "OK",
+                        **stat,
+                    }
+                )
+                continue
+            key = (process.logical_id, process.pid)
+            if key in self._expected_gone and self._expected_gone_active():
+                rows.append(
+                    {
+                        "logical_id": process.logical_id,
+                        "pid": process.pid,
+                        "status": "EXPECTED_GONE",
+                        "reason": str(error),
+                    }
+                )
+                continue
+            raise error
+        duration = max(self._monotonic() - started, 0.0)
+        return {
+            "kind": "process",
+            "sampler_id": self.sampler_id,
+            "wall_time": self._wall(),
+            "monotonic": started,
+            "processes": rows,
+            "collector": self._collector_metrics(duration),
+        }
+
+    def _sample_snapshot_process(
+        self, process: ProcessSpec, raw_row: Mapping[str, Any], page_size: int
+    ) -> tuple[dict[str, Any], CollectionError | None]:
+        try:
+            status = str(raw_row.get("status", ""))
+            if status != "OK":
+                raise CollectionError(
+                    str(raw_row.get("error") or f"process {process.logical_id} is unavailable")
+                )
+            stat = _process_stat_from_text(
+                _required_text(raw_row, "stat_before"),
+                process,
+                page_size=page_size,
+            )
+            key = (process.logical_id, process.pid)
+            previous_start = self._process_start_times.setdefault(
+                key, int(stat["start_time_ticks"])
+            )
+            if int(stat["start_time_ticks"]) != previous_start:
+                raise CollectionError(
+                    f"process identity changed for {process.logical_id} pid {process.pid}"
+                )
+            try:
+                fd_count = int(raw_row.get("fd_count"))
+            except (TypeError, ValueError) as exc:
+                raise CollectionError(
+                    f"invalid fd count for {process.logical_id} pid {process.pid}"
+                ) from exc
+            confirmed = _process_stat_from_text(
+                _required_text(raw_row, "stat_after"),
+                process,
+                page_size=page_size,
+            )
+            if confirmed["start_time_ticks"] != stat["start_time_ticks"]:
+                raise CollectionError(
+                    f"process identity changed while sampling {process.logical_id} "
+                    f"pid {process.pid}"
+                )
+            return {**stat, "fd_count": fd_count}, None
+        except CollectionError as exc:
+            return {}, exc
+
+
+def _network_interfaces(text: str) -> list[str]:
+    return [
+        line.split(":", 1)[0].strip()
+        for line in text.splitlines()
+        if ":" in line and line.split(":", 1)[0].strip() != "lo"
+    ]
+
+
+def _cpu_and_scheduler_from_text(text: str) -> tuple[dict[str, int], dict[str, int]]:
+    lines = text.splitlines()
+    if not lines:
+        raise CollectionError("procfs cpu counters are incomplete")
+    cpu_parts = lines[0].split()
+    if not cpu_parts or cpu_parts[0] != "cpu" or len(cpu_parts) < 9:
+        raise CollectionError("procfs cpu counters are incomplete")
+    values = [int(value) for value in cpu_parts[1:]]
+    scheduler: dict[str, int] = {}
+    for line in lines[1:]:
+        key, _, value = line.partition(" ")
+        if key in {"procs_running", "procs_blocked"}:
+            scheduler[key] = int(value.strip())
+    return (
+        {
+            "user": values[0] + values[1],
+            "system": values[2] + values[5] + values[6],
+            "idle": values[3],
+            "iowait": values[4],
+            "steal": values[7],
+        },
+        {
+            "running": scheduler.get("procs_running", 0),
+            "blocked": scheduler.get("procs_blocked", 0),
+        },
+    )
+
+
+def _network_from_text(text: str) -> dict[str, dict[str, int]]:
+    result: dict[str, dict[str, int]] = {}
+    for line in text.splitlines():
+        if ":" not in line:
+            continue
+        name, raw = line.split(":", 1)
+        name = name.strip()
+        if name == "lo":
+            continue
+        values = [int(value) for value in raw.split()]
+        if len(values) < 16:
+            raise CollectionError(f"network counters for {name} are incomplete")
+        result[name] = {
+            "rx_bytes": values[0],
+            "rx_packets": values[1],
+            "rx_errors": values[2],
+            "rx_drops": values[3],
+            "tx_bytes": values[8],
+            "tx_packets": values[9],
+            "tx_errors": values[10],
+            "tx_drops": values[11],
+        }
+    return result
+
+
+def _process_stat_from_text(
+    raw: str, process: ProcessSpec, *, page_size: int | None = None
+) -> dict[str, Any]:
+    raw = raw.strip()
+    close = raw.rfind(")")
+    if close < 0:
+        raise CollectionError(f"invalid stat for {process.logical_id}")
+    fields = raw[close + 2 :].split()
+    if len(fields) < 22:
+        raise CollectionError(f"incomplete stat for {process.logical_id}")
+    return {
+        "state": fields[0],
+        "user_cpu_ticks": int(fields[11]),
+        "system_cpu_ticks": int(fields[12]),
+        "start_time_ticks": int(fields[19]),
+        "rss_bytes": int(fields[21]) * (page_size or os.sysconf("SC_PAGE_SIZE")),
+    }
+
+
+def _cgroup_dynamic_from_values(
+    *,
+    cpu_stat: Mapping[str, int],
+    memory_events: Mapping[str, int],
+    memory_current: int | None,
+    memory_max: int | None,
+) -> dict[str, Any]:
+    return {
+        "cpu_usage_usec": cpu_stat.get("usage_usec"),
+        "cpu_throttled_usec": cpu_stat.get("throttled_usec"),
+        "memory_current_bytes": memory_current,
+        "memory_max_bytes": memory_max,
+        "oom_count": memory_events.get("oom"),
+        "oom_kill_count": memory_events.get("oom_kill"),
+    }
+
+
+def _optional_cgroup_key_values_from_text(text: str | None) -> dict[str, int]:
+    if text is None:
+        return {}
+    result: dict[str, int] = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) == 2:
+            try:
+                result[parts[0]] = int(parts[1])
+            except ValueError:
+                continue
+    return result
+
+
+def _required_text(row: Mapping[str, Any], name: str) -> str:
+    value = row.get(name)
+    if not isinstance(value, str) or value == "":
+        raise CollectionError(f"snapshot is missing {name}")
+    return value
+
+
+def _optional_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text if text else None
+
+
+def _optional_number(value: Any) -> int | None:
+    text = _optional_text(value)
+    if text in {None, "max"}:
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
+
+def _positive_int(value: Any, name: str) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise CollectionError(f"snapshot has invalid {name}") from exc
+    if number <= 0:
+        raise CollectionError(f"snapshot has invalid {name}")
+    return number
 
 
 class ResourceSamplerRunner:
@@ -376,17 +638,14 @@ class ResourceSamplerRunner:
                 "errors": list(self.errors),
             }
 
-    def _collect_with_retry(self, operation: Callable[[], dict[str, Any]]) -> None:
-        last_error: Exception | None = None
-        for _ in (1, 2):
-            try:
-                sample = operation()
-                with self._lock:
-                    self.samples.append(sample)
-                return
-            except CollectionError as exc:
-                last_error = exc
-        assert last_error is not None
+    def _collect_once(self, operation: Callable[[], dict[str, Any]]) -> None:
+        try:
+            sample = operation()
+            with self._lock:
+                self.samples.append(sample)
+            return
+        except CollectionError as exc:
+            last_error = exc
         with self._lock:
             self.errors.append(str(last_error))
         self._stop.set()
@@ -396,7 +655,7 @@ class ResourceSamplerRunner:
         while not self._stop.is_set():
             now = self._monotonic()
             if now >= next_host:
-                self._collect_with_retry(self.sampler.host_sample)
+                self._collect_once(self.sampler.host_sample)
                 next_host = self._monotonic() + self.host_interval
             delay = next_host - self._monotonic()
             self._stop.wait(max(min(delay, self.host_interval), 0.01))
@@ -406,7 +665,7 @@ class ResourceSamplerRunner:
         while not self._stop.is_set():
             now = self._monotonic()
             if now >= next_process:
-                self._collect_with_retry(self.sampler.process_sample)
+                self._collect_once(self.sampler.process_sample)
                 next_process = self._monotonic() + self.process_interval
             delay = next_process - self._monotonic()
             self._stop.wait(max(min(delay, self.process_interval), 0.01))
