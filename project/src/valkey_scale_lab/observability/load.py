@@ -116,7 +116,9 @@ class MemtierLoadLane:
             "1",
             "--pipeline=1",
             "--ratio=1:9",
-            "--key-minimum=0",
+            # memtier_benchmark rejects a key-minimum of zero before it opens a
+            # connection: "key-minimum must be greater than zero".
+            "--key-minimum=1",
             "--key-maximum=99999",
             "--data-size=32",
             f"--rate-limiting={per_connection_rate(self.primary_count)}",

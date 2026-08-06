@@ -250,6 +250,14 @@ def test_full_cluster_validation_is_linear_plus_fixed_observers() -> None:
     assert all(command != ("CLUSTER", "NODES") for _, command in calls)
 
 
+def _option_value(command: list[str], name: str) -> str:
+    """The value of a `--name=value` option in a built command line."""
+    prefix = f"{name}="
+    matches = [item[len(prefix):] for item in command if item.startswith(prefix)]
+    assert len(matches) == 1, f"{name} appears {len(matches)} times in {command}"
+    return matches[0]
+
+
 def _shards_with_loading_replica(node_ids: list[str]) -> list[Any]:
     """CLUSTER SHARDS where one replica has not finished its initial sync."""
     shards = copy.deepcopy(_shards(node_ids))
@@ -529,8 +537,13 @@ def test_load_lane_uses_only_the_fixed_v1_parameters(tmp_path: Path) -> None:
     assert "-t" in command and command[command.index("-t") + 1] == "1"
     assert "--pipeline=1" in command
     assert "--ratio=1:9" in command
-    assert "--key-minimum=0" in command
-    assert "--key-maximum=99999" in command
+    # memtier_benchmark refuses to start on a key-minimum of zero, so assert the
+    # constraint rather than pinning whatever string the command happens to use.
+    key_minimum = int(_option_value(command, "--key-minimum"))
+    key_maximum = int(_option_value(command, "--key-maximum"))
+    assert key_minimum > 0
+    assert key_maximum > key_minimum
+    assert key_maximum == 99999
     assert "--data-size=32" in command
     assert "--rate-limiting=250" in command
     assert "--key-prefix=vsl:load:run-a:arm-b:" in command
