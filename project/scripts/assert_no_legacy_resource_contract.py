@@ -65,7 +65,7 @@ def scan(root: Path) -> list[str]:
 
 
 def _ignored_path(path: Path) -> bool:
-    if any(part in {".pytest_cache", "__pycache__", ".DS_Store"} for part in path.parts):
+    if any(part in {".pytest_cache", "__pycache__", ".DS_Store", ".git", ".claude"} for part in path.parts):
         return True
     return bool(path.parts and path.parts[0] == "artifacts")
 
