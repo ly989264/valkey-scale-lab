@@ -24,6 +24,7 @@ from valkey_scale_lab.observability.contracts import (
     CheckResult,
     CheckStatus,
     CollectionError,
+    ConvergenceFailure,
     SemanticFailure,
     final_verdict,
     run_check,
@@ -256,6 +257,57 @@ def _shards_with_loading_replica(node_ids: list[str]) -> list[Any]:
     assert replica[-2] == b"health"
     replica[-1] = b"loading"
     return shards
+
+
+def test_permanent_role_mismatch_fails_without_waiting_for_convergence() -> None:
+    nodes, responses = _cluster_fixture()
+    # The node planned as a primary is observed as a replica, as it would be
+    # after an intentional promotion. That never resolves by looking again.
+    nodes[0] = NodeEndpoint("p0", "127.0.0.1", 7000, "replica", "s0", "az-a", "h0")
+    attempts = [0]
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        if endpoint.port == 7000:
+            attempts[0] += 1
+        return FakeConnection(responses[endpoint.port])
+
+    with pytest.raises(SemanticFailure) as excinfo:
+        FullClusterValidator(
+            nodes,
+            concurrency=32,
+            observer_count=3,
+            convergence_timeout=30.0,
+            convergence_poll_seconds=1.0,
+            connection_factory=factory,
+        ).run()
+
+    message = str(excinfo.value)
+    assert "role is primary, expected replica" in message
+    # Reported as-is, not wrapped in a convergence timeout, and observed once.
+    assert "did not converge" not in message
+    assert not isinstance(excinfo.value, ConvergenceFailure)
+    assert attempts[0] == 1
+
+
+def test_plan_role_mismatch_is_accepted_when_plan_roles_are_not_required() -> None:
+    nodes, responses = _cluster_fixture()
+    nodes[0] = NodeEndpoint("p0", "127.0.0.1", 7000, "replica", "s0", "az-a", "h0")
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        return FakeConnection(responses[endpoint.port])
+
+    result = FullClusterValidator(
+        nodes, concurrency=32, observer_count=3, connection_factory=factory
+    ).run(require_plan_roles=False)
+
+    # Dropping the inventory role plan must not drop the structural contract.
+    assert result["status"] == "OK"
+    coverage = result["light_validation"]["coverage"]
+    assert coverage["all_slots_covered_exactly_once"] is True
+    assert coverage["primary_bitmaps_pairwise_disjoint"] is True
+    assert coverage["inventory_roles_and_shards_match"] is False
+    assert result["light_validation"]["primary_count"] == 2
+    assert result["light_validation"]["shard_count"] == 2
 
 
 def test_cluster_shards_membership_ignores_unrelated_node_health() -> None:

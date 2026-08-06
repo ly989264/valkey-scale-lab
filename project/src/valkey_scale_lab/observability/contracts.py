@@ -19,6 +19,16 @@ class SemanticFailure(RuntimeError):
     """A successful observation did not match the current check expectation."""
 
 
+class ConvergenceFailure(SemanticFailure):
+    """A node is still converging and the same check may hold once it settles.
+
+    Reserved for states a healthy cluster leaves on its own - a replica whose
+    link is still connecting, or one an observer has not yet learned is online.
+    Every other semantic failure is permanent: a role, slot, identity or
+    coverage mismatch does not resolve by observing it again.
+    """
+
+
 @dataclass(frozen=True)
 class CheckResult:
     name: str

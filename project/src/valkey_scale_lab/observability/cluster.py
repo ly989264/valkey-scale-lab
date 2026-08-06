@@ -7,7 +7,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from valkey_scale_lab.observability.contracts import CollectionError, SemanticFailure
+from valkey_scale_lab.observability.contracts import (
+    CollectionError,
+    ConvergenceFailure,
+    SemanticFailure,
+)
 from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
 
 LIGHT_COMMANDS: tuple[tuple[str, ...], ...] = (
@@ -384,7 +388,7 @@ class LightClusterProbe:
                 and myslots.role == "replica"
                 and row["role"]["replication_state"] != "connected"
             ):
-                raise SemanticFailure(
+                raise ConvergenceFailure(
                     f"{expected.logical_id} replica link is "
                     f"{row['role']['replication_state']!r}"
                 )
@@ -562,7 +566,7 @@ def normalize_cluster_shards(
             and member["node_id"] not in allowed_unhealthy
         ]
         if unhealthy:
-            raise SemanticFailure(
+            raise ConvergenceFailure(
                 "CLUSTER SHARDS contains unhealthy nodes: "
                 + ", ".join(member["node_id"] for member in unhealthy)
             )
@@ -712,12 +716,15 @@ class FullClusterValidator:
     def run(self, **validation_options: Any) -> dict[str, Any]:
         """Validate the cluster, allowing a bounded wait for it to converge.
 
-        A node that is still joining reports a transient health such as
-        ``loading`` until its initial sync completes. The health contract is
-        unchanged - every node must still report ``online`` or ``healthy`` - so
-        the full validation is retried until it holds for every node or the
-        deadline expires. A cluster that never converges fails with the last
-        observed semantic failure rather than being admitted.
+        Only a `ConvergenceFailure` is retried: a node still joining reports a
+        transient health such as ``loading`` until its initial sync completes.
+        The health contract is unchanged - every node must still report
+        ``online`` or ``healthy`` - so the validation is repeated until it holds
+        for every node or the deadline expires.
+
+        Every other semantic failure is permanent and raises immediately. A
+        role, slot, identity or coverage mismatch will not resolve by looking
+        again, so retrying it would only delay the report by the full deadline.
         """
         deadline = time.monotonic() + self.convergence_timeout
         attempts = 0
@@ -725,9 +732,9 @@ class FullClusterValidator:
             attempts += 1
             try:
                 return self._run_once(**validation_options)
-            except SemanticFailure as failure:
+            except ConvergenceFailure as failure:
                 if time.monotonic() >= deadline:
-                    raise SemanticFailure(
+                    raise ConvergenceFailure(
                         f"cluster did not converge within "
                         f"{self.convergence_timeout:g}s over {attempts} validation "
                         f"attempts: {failure}"

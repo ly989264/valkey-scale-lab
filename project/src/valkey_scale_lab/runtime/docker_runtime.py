@@ -8479,12 +8479,18 @@ def _local_full_flow_run_fault_failover_sequence(
     telemetry = TelemetryRun(capability_id=capability_id, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.telemetry_collect", scale=scale, node_count=scale)
     topology_before = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "fault_before", nodes, nodes)
     inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
+    # The management matrix legitimately promotes replicas before this runs, and
+    # proves each promotion as it happens, so the original node-to-role plan no
+    # longer holds. This sequence selects its target from observed roles below
+    # for that reason. Every structural invariant is still enforced here: one
+    # primary per shard, primaries owning their slots, exact 16384 coverage,
+    # membership, and connected replicas.
     initial_validation = FullClusterValidator(
         inventory,
         concurrency=64,
         observer_count=3,
         timeout=5.0,
-    ).run()
+    ).run(require_plan_roles=False)
     observed_roles = {
         str(row["logical_id"]): str(row["myslots"]["role"])
         for row in initial_validation["light_validation"]["nodes"]
