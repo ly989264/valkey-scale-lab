@@ -62,11 +62,14 @@ def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(
         return {"operation_status": "PASS"}, [], [], [], [], {}
 
     monkeypatch.setattr(docker_runtime, "_management_matrix_run_operation_with_workload", run_operation)
+    validation_options: list[dict[str, Any]] = []
+
     class FakeValidator:
         def __init__(self, *_args: Any, **_kwargs: Any) -> None:
             pass
 
-        def run(self) -> dict[str, Any]:
+        def run(self, **options: Any) -> dict[str, Any]:
+            validation_options.append(options)
             return {
                 "status": "OK",
                 "light_validation": {
@@ -126,6 +129,10 @@ def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(
     stability = [
         row for row in command_log if row.get("scenario_id") == "bounded_stability"
     ]
+    # Management operations have already moved roles by this point, so the
+    # bounded-stability validation must not assert the original role plan.
+    # Every other invariant stays on: nothing else is relaxed.
+    assert validation_options == [{"require_plan_roles": False}]
     assert len(stability) == 1
     assert result["summary"]["stability"]["duration_ms"] > 0
     assert result["summary"]["stability"]["health_criteria"] == {

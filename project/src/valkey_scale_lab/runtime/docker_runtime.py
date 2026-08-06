@@ -8029,12 +8029,18 @@ def _local_full_flow_run_management_sequence(
     events.append(stability_started)
     stability_monotonic_started = time.monotonic()
     inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
+    # Bounded stability is the last management scenario, so the preceding
+    # operations - ending in remove_primary_drained_or_safe_replaced - have
+    # already moved roles and proved each promotion where it happened. The
+    # planned node-to-role assignment is no longer authoritative here, and
+    # build_sentinel_nodes below selects primaries by observed role anyway.
+    # Every structural invariant stays enabled.
     complete_validation = FullClusterValidator(
         inventory,
         concurrency=64,
         observer_count=3,
         timeout=5.0,
-    ).run()
+    ).run(require_plan_roles=False)
     sentinel = SentinelLane(
         build_sentinel_nodes(
             complete_validation["light_validation"],
