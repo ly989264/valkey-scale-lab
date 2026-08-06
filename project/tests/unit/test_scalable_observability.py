@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import os
 import threading
@@ -245,6 +246,86 @@ def test_full_cluster_validation_is_linear_plus_fixed_observers() -> None:
     assert sum(command == ("CLUSTER", "MYSLOTS") for _, command in calls) == 4
     assert sum(command == ("CLUSTER", "SHARDS") for _, command in calls) == 3
     assert all(command != ("CLUSTER", "NODES") for _, command in calls)
+
+
+def _shards_with_loading_replica(node_ids: list[str]) -> list[Any]:
+    """CLUSTER SHARDS where one replica has not finished its initial sync."""
+    shards = copy.deepcopy(_shards(node_ids))
+    replica = shards[0][3][1]
+    assert replica[-2] == b"health"
+    replica[-1] = b"loading"
+    return shards
+
+
+def _loading_then_healthy_factory(
+    nodes: list[NodeEndpoint],
+    responses: dict[int, dict[tuple[Any, ...], Any]],
+    node_ids: list[str],
+    *,
+    loading_observations: int,
+) -> tuple[Any, list[int]]:
+    """Report `loading` for the first N CLUSTER SHARDS observations, then `online`."""
+    observed = [0]
+    loading = _shards_with_loading_replica(node_ids)
+    healthy = _shards(node_ids)
+
+    def shards_response() -> list[Any]:
+        observed[0] += 1
+        return loading if observed[0] <= loading_observations else healthy
+
+    for node in nodes:
+        responses[node.port][("CLUSTER", "SHARDS")] = shards_response
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        return FakeConnection(responses[endpoint.port])
+
+    return factory, observed
+
+
+def test_full_cluster_validation_waits_for_transient_loading_to_converge() -> None:
+    nodes, responses = _cluster_fixture()
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    factory, observed = _loading_then_healthy_factory(
+        nodes, responses, node_ids, loading_observations=1
+    )
+
+    result = FullClusterValidator(
+        nodes,
+        concurrency=32,
+        observer_count=3,
+        convergence_timeout=5.0,
+        convergence_poll_seconds=0.01,
+        connection_factory=factory,
+    ).run()
+
+    assert result["status"] == "OK"
+    # The first observation failed the health contract, so validation retried.
+    assert observed[0] > 3
+
+
+def test_full_cluster_validation_fails_when_loading_never_converges() -> None:
+    nodes, responses = _cluster_fixture()
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    factory, observed = _loading_then_healthy_factory(
+        nodes, responses, node_ids, loading_observations=10**6
+    )
+
+    with pytest.raises(SemanticFailure) as excinfo:
+        FullClusterValidator(
+            nodes,
+            concurrency=32,
+            observer_count=3,
+            convergence_timeout=0.05,
+            convergence_poll_seconds=0.01,
+            connection_factory=factory,
+        ).run()
+
+    message = str(excinfo.value)
+    assert "did not converge" in message
+    # `loading` is never admitted as a terminal healthy state.
+    assert "CLUSTER SHARDS contains unhealthy nodes" in message
+    assert node_ids[2] in message
+    assert observed[0] >= 2
 
 
 def test_observation_plan_remains_linear_for_any_supported_scale() -> None:

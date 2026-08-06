@@ -28,6 +28,16 @@ MYSLOTS_FIELDS = (
     "slot-bitmap",
 )
 FULL_SLOT_BITMAP = bytes([0xFF]) * 2048
+# A freshly formed cluster reports every replica as `loading` until each
+# observer learns that replica's non-zero replication offset through gossip.
+# Measured exact-50 convergence after formation: 28.3s, 32.4s, 46.5s, 50.2s,
+# with a gate run still unconverged at 60s. The bound keeps roughly 3x headroom
+# over that tail so a real cluster is never rejected for gossip lag, while a
+# cluster that genuinely never converges still fails.
+CONVERGENCE_TIMEOUT_SECONDS = 180.0
+# Each attempt re-probes every node, so polling too fast adds load to the very
+# cluster being measured.
+CONVERGENCE_POLL_SECONDS = 2.0
 
 
 def observation_complexity(
@@ -655,6 +665,8 @@ class FullClusterValidator:
         concurrency: int = 64,
         observer_count: int = 3,
         timeout: float = 5.0,
+        convergence_timeout: float = CONVERGENCE_TIMEOUT_SECONDS,
+        convergence_poll_seconds: float = CONVERGENCE_POLL_SECONDS,
         connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
     ) -> None:
         self.light = LightClusterProbe(
@@ -669,8 +681,35 @@ class FullClusterValidator:
             timeout=timeout,
             connection_factory=connection_factory,
         )
+        self.convergence_timeout = convergence_timeout
+        self.convergence_poll_seconds = convergence_poll_seconds
 
     def run(self, **validation_options: Any) -> dict[str, Any]:
+        """Validate the cluster, allowing a bounded wait for it to converge.
+
+        A node that is still joining reports a transient health such as
+        ``loading`` until its initial sync completes. The health contract is
+        unchanged - every node must still report ``online`` or ``healthy`` - so
+        the full validation is retried until it holds for every node or the
+        deadline expires. A cluster that never converges fails with the last
+        observed semantic failure rather than being admitted.
+        """
+        deadline = time.monotonic() + self.convergence_timeout
+        attempts = 0
+        while True:
+            attempts += 1
+            try:
+                return self._run_once(**validation_options)
+            except SemanticFailure as failure:
+                if time.monotonic() >= deadline:
+                    raise SemanticFailure(
+                        f"cluster did not converge within "
+                        f"{self.convergence_timeout:g}s over {attempts} validation "
+                        f"attempts: {failure}"
+                    ) from failure
+            time.sleep(self.convergence_poll_seconds)
+
+    def _run_once(self, **validation_options: Any) -> dict[str, Any]:
         allowed_unhealthy = set(
             validation_options.pop("allowed_unhealthy_node_ids", ())
         )
