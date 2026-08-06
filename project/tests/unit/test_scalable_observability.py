@@ -15,6 +15,7 @@ from valkey_scale_lab.observability.cluster import (
     FullClusterValidator,
     LightClusterProbe,
     NodeEndpoint,
+    cluster_shards_node_ids,
     normalize_cluster_shards,
     observation_complexity,
     parse_myslots,
@@ -255,6 +256,31 @@ def _shards_with_loading_replica(node_ids: list[str]) -> list[Any]:
     assert replica[-2] == b"health"
     replica[-1] = b"loading"
     return shards
+
+
+def test_cluster_shards_membership_ignores_unrelated_node_health() -> None:
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    raw = _shards_with_loading_replica(node_ids)
+
+    # Membership answers only who is known, so a converging replica elsewhere
+    # cannot decide whether some other node is still in the cluster.
+    assert cluster_shards_node_ids(raw) == set(node_ids)
+
+    # The health contract itself is untouched for callers that ask for it.
+    with pytest.raises(SemanticFailure, match="contains unhealthy nodes"):
+        normalize_cluster_shards(raw)
+
+
+def test_cluster_shards_membership_reports_a_removed_node_absent() -> None:
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    removed = node_ids[2]
+    raw = copy.deepcopy(_shards(node_ids))
+    raw[0][3] = [member for member in raw[0][3] if member[1] != removed.encode()]
+
+    known = cluster_shards_node_ids(raw)
+
+    assert removed not in known
+    assert known == {node_ids[0], node_ids[1], node_ids[3]}
 
 
 def _loading_then_healthy_factory(

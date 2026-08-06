@@ -50,6 +50,7 @@ from valkey_scale_lab.observability.cluster import (
     FullClusterValidator,
     LightClusterProbe,
     NodeEndpoint,
+    cluster_shards_node_ids,
     normalize_cluster_shards,
     parse_myslots,
     parse_role,
@@ -6710,15 +6711,8 @@ def _management_log_forget_removed_node(
 def _management_cluster_nodes_contains(node: dict[str, Any], node_id: str) -> bool:
     endpoint = Endpoint(str(node.get("host", "127.0.0.1")), int(node["client_port"]))
     with RespConnection(endpoint, timeout=5.0) as connection:
-        topology = normalize_cluster_shards(
-            connection.execute("CLUSTER", "SHARDS"),
-            allowed_unhealthy_node_ids={node_id},
-        )
-    return any(
-        member["node_id"] == node_id
-        for shard in topology["shards"]
-        for member in shard["nodes"]
-    )
+        known = cluster_shards_node_ids(connection.execute("CLUSTER", "SHARDS"))
+    return node_id in known
 
 
 def _management_removed_absent(nodes: list[dict[str, Any]], removed_id: str) -> bool:

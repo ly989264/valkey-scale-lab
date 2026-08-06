@@ -489,6 +489,31 @@ def _integer(value: Any, label: str) -> int:
         raise SemanticFailure(f"{label} is not an integer") from exc
 
 
+def cluster_shards_node_ids(value: Any) -> set[str]:
+    """The node ids an observer still knows, from a CLUSTER SHARDS reply.
+
+    Membership is a different question from health. Whether one node is still
+    known to the cluster cannot depend on whether some unrelated node has
+    finished converging, so this reads ids only and asserts no health contract.
+    Callers that need the health contract use `normalize_cluster_shards`.
+    """
+    if not isinstance(value, (list, tuple)):
+        raise SemanticFailure("CLUSTER SHARDS response is not an array")
+    node_ids: set[str] = set()
+    for shard_value in value:
+        shard = _pairs(shard_value, label="CLUSTER SHARDS shard")
+        nodes_raw = shard.get("nodes")
+        if not isinstance(nodes_raw, (list, tuple)) or not nodes_raw:
+            raise SemanticFailure("CLUSTER SHARDS shard has no nodes")
+        for node_value in nodes_raw:
+            node = _pairs(node_value, label="CLUSTER SHARDS node")
+            node_id = _text(node.get("id", ""))
+            if not node_id:
+                raise SemanticFailure("CLUSTER SHARDS node has invalid id or role")
+            node_ids.add(node_id)
+    return node_ids
+
+
 def normalize_cluster_shards(
     value: Any, *, allowed_unhealthy_node_ids: Iterable[str] = ()
 ) -> dict[str, Any]:
