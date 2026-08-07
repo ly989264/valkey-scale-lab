@@ -2901,6 +2901,11 @@ def test_local_full_flow_fault_recovery_uses_one_strict_snapshot(monkeypatch: py
         "expected_primaries": 3,
         "expected_replicas": 3,
         "timeout": 180.0,
+        # Still one strict snapshot: exact counts, full slot coverage and node
+        # health. Only the original role plan is dropped, because the
+        # management matrix and the failover have already moved roles by the
+        # time a partition is healed.
+        "validation_options": {"require_plan_roles": False},
     }
 
 

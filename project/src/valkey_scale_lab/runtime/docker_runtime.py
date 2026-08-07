@@ -18,7 +18,7 @@ from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, ContextManager, Iterable, TypeVar
+from typing import Any, Callable, ContextManager, Iterable, Mapping, TypeVar
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.cluster_timeout import (
@@ -3960,6 +3960,7 @@ def _wait_process_snapshot_clean(
     expected_replicas: int,
     timeout: float,
     timings: dict[str, dict[str, Any]] | None = None,
+    validation_options: Mapping[str, Any] | None = None,
 ) -> None:
     _wait_process_light_clean(
         nodes,
@@ -3968,6 +3969,7 @@ def _wait_process_snapshot_clean(
         expected_replicas=expected_replicas,
         timeout=timeout,
         timings=timings,
+        validation_options=validation_options,
     )
     deadline = time.monotonic() + timeout
     final_nodes, sample_scope = _process_normal_snapshot_nodes(nodes)
@@ -4014,6 +4016,7 @@ def _wait_process_light_clean(
     expected_replicas: int,
     timeout: float,
     timings: dict[str, dict[str, Any]] | None = None,
+    validation_options: Mapping[str, Any] | None = None,
 ) -> None:
     deadline = time.monotonic() + timeout
     inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
@@ -4021,7 +4024,9 @@ def _wait_process_light_clean(
     while time.monotonic() < deadline:
         started = time.monotonic()
         try:
-            result = LightClusterProbe(inventory, concurrency=64, timeout=5.0).run()
+            result = LightClusterProbe(inventory, concurrency=64, timeout=5.0).run(
+                **(validation_options or {})
+            )
             _record_timing(
                 timings,
                 "runtime_all_node_light_probe",
@@ -9132,6 +9137,11 @@ def _local_full_flow_wait_clean_cluster_snapshot(nodes: list[dict[str, Any]], ti
         expected_primaries=expected_primaries,
         expected_replicas=len(nodes) - expected_primaries,
         timeout=timeout,
+        # This runs after the management matrix and the failover have moved
+        # roles, so the original plan no longer describes the cluster. The
+        # counts, slot coverage and health this wait checks are what "clean"
+        # means here; the callers that run before any promotion keep the plan.
+        validation_options={"require_plan_roles": False},
     )
 
 

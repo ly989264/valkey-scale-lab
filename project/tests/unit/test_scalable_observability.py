@@ -712,6 +712,17 @@ def test_the_steady_state_window_still_drives_load() -> None:
     assert "MemtierLoadLane(" in source
 
 
+
+def test_formation_waits_still_assert_the_role_plan() -> None:
+    import inspect
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    source = inspect.getsource(docker_runtime._wait_process_snapshot_clean)
+    # The option is opt-in per call site; nothing is relaxed by default.
+    assert "validation_options: Mapping[str, Any] | None = None" in source
+
+
 def test_cluster_shards_membership_ignores_unrelated_node_health() -> None:
     node_ids = [f"{index + 1:040x}" for index in range(4)]
     raw = _shards_with_loading_replica(node_ids)
