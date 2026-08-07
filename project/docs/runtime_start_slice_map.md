@@ -117,3 +117,58 @@ Stage-owned artifacts for the diff: the `runtime_start` entry of
 `runtime_timing_breakdown_local_full_flow.json`, `nodehost_density_plan.json`,
 `generated_valkey_configs_manifest.json`, the nodehost bundle manifests, and
 `state.json` as written before cluster formation.
+
+## Slice 1 is accepted
+
+Measured against the bar above:
+
+| Bar item | Result |
+| --- | --- |
+| `./gate suite repository.all` | 91/91 |
+| Targeted hermetic tests | two, both driving the stage with a recording backend while `run_docker` raises |
+| Real six-node smoke | PASS, all seventeen segments in order, zero residue |
+| Real exact-50 against the baseline | two consecutive runs, 867.67s and 862.85s, each seven of seven stage-owned views identical |
+| exact-200 | the stage passed; the run did not - see below |
+| Old path removed | no Docker name survives in the stage's lifecycle region |
+
+The exact-50 diff was calibrated before it was trusted: baseline run-1 against
+run-2 is seven of seven identical under the same normalisation, so a difference
+in a candidate would have been real. Only timestamps, durations, run ids and
+temporary paths are ignored. Two things that also vary per run are named rather
+than dropped, because dropping them would have hidden their absence: a pid
+becomes a placeholder, and a nodehost address becomes the id of the nodehost
+holding it, since Docker hands out the subnet in nodehost start order.
+
+## The exact-200 limitation
+
+exact-200 is accepted for `runtime_start` on the evidence that the stage is
+clean at that scale, not on a passing full flow. Three runs were measured, and
+`runtime_start` passed in all three while the full flow failed three different
+ways downstream:
+
+| Run | `runtime_start` | Full flow failed at |
+| --- | --- | --- |
+| this slice | PASS, 200 of 200 nodes, 8 of 8 nodehosts | rolling restart, 392s, `live role changed ... actual=MISSING` |
+| frozen baseline, first attempt | PASS | `Errno 49 Can't assign requested address`, 311s |
+| frozen baseline, second attempt | PASS, 200 of 200, 8 of 8 | cluster convergence, 307s, `CLUSTER SHARDS contains unhealthy nodes` |
+
+So exact-200 is not green on the frozen baseline either, and this slice did not
+regress it. The stage rows agree across commits to within a tenth of a second
+(`nodehost_start` 4.3s here against 4.2s at the baseline), which is independent
+confirmation that the extraction preserves behaviour at 200 nodes.
+
+The three downstream failures are deliberately not fixed here. They belong to
+the management matrix and to cluster convergence, not to this stage, and
+folding them into a refactor slice would hide what the refactor actually
+changed. Of the three, the rolling restart one is the only one whose semantics
+were run down: `_management_live_topology` drops any node whose light probe is
+not `OK` within its five-second timeout, and the strict check then reports that
+absence as a role change. That is the same shape as the already-landed fixes
+that stopped judging a healed partition, a bounded stability lane and a
+post-failover topology against a role plan. It wants its own change, on
+evidence, and the other two want their own measurement before anyone guesses.
+
+A consequence for later slices: `cluster_form` and `stabilize` also require
+exact-200, and they sit downstream of these failures. Their bar cannot be read
+as a passing full flow until the failures above are resolved, so either they
+are judged the same stage-scoped way or the downstream work comes first.
