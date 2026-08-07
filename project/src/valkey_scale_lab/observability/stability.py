@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from valkey_scale_lab.observability.cluster import LightClusterProbe
 from valkey_scale_lab.observability.contracts import (
@@ -30,11 +30,15 @@ class StabilityWindow:
         sentinel: SentinelLane,
         load: MemtierLoadLane,
         resource_runners: Sequence[ResourceSamplerRunner] = (),
+        validation_options: Mapping[str, Any] | None = None,
     ) -> None:
         self.light_probe = light_probe
         self.sentinel = sentinel
         self.load = load
         self.resource_runners = list(resource_runners)
+        # Applied to every boundary and per-round probe, so the window observes
+        # the cluster under the same contract throughout.
+        self.validation_options = dict(validation_options or {})
 
     def run(self) -> dict[str, Any]:
         checks: list[CheckResult] = []
@@ -66,7 +70,9 @@ class StabilityWindow:
             }
         start_boundary = run_check(
             "light_start_boundary",
-            lambda: self.light_probe.validate(self.light_probe.collect()),
+            lambda: self.light_probe.validate(
+                self.light_probe.collect(), **self.validation_options
+            ),
         )
         checks.append(start_boundary)
         if start_boundary.status is not CheckStatus.OK:
@@ -100,7 +106,9 @@ class StabilityWindow:
                     )
                     light_rows = light_future.result()
                     sentinel_result = sentinel_future.result()
-                light_result = self.light_probe.validate(light_rows)
+                light_result = self.light_probe.validate(
+                    light_rows, **self.validation_options
+                )
                 rounds.append(
                     {
                         "round": round_index + 1,

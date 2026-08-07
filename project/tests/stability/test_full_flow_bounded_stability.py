@@ -63,6 +63,7 @@ def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(
 
     monkeypatch.setattr(docker_runtime, "_management_matrix_run_operation_with_workload", run_operation)
     validation_options: list[dict[str, Any]] = []
+    stability_windows: list[dict[str, Any]] = []
 
     class FakeValidator:
         def __init__(self, *_args: Any, **_kwargs: Any) -> None:
@@ -88,8 +89,8 @@ def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(
             pass
 
     class FakeWindow:
-        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
-            pass
+        def __init__(self, *_args: Any, **kwargs: Any) -> None:
+            stability_windows.append(dict(kwargs.get("validation_options") or {}))
 
         def run(self) -> dict[str, Any]:
             return {
@@ -136,6 +137,9 @@ def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(
     # bounded-stability validation must not assert the original role plan.
     # Every other invariant stays on: nothing else is relaxed.
     assert validation_options == [{"require_plan_roles": False}]
+    # The window's own boundary and per-round probes observe under the same
+    # contract as the validation that precedes them.
+    assert stability_windows == [{"require_plan_roles": False}]
     assert len(stability) == 1
     assert result["summary"]["stability"]["duration_ms"] > 0
     assert result["summary"]["stability"]["health_criteria"] == {

@@ -8077,6 +8077,9 @@ def _local_full_flow_run_management_sequence(
         sentinel=sentinel,
         load=load,
         resource_runners=_resource_runners_for_nodes(nodes),
+        # Same reason as the validation above: management operations have
+        # already moved roles, so the window observes structure, not the plan.
+        validation_options={"require_plan_roles": False},
     ).run()
     _write_json_artifact(
         artifacts / "scalable_stability_observation.json",
