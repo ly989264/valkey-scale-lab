@@ -6,9 +6,7 @@ from typing import Any
 from valkey_scale_lab.runtime import docker_runtime
 
 
-def test_local_full_flow_resource_runners_use_nodehost_procfs(monkeypatch) -> None:
-    monkeypatch.setattr(docker_runtime, "_container_pid", lambda _container: 4242)
-
+def test_local_full_flow_resource_runners_are_nodehost_local_agents() -> None:
     runners = docker_runtime._resource_runners_for_nodes(
         [
             {
@@ -26,8 +24,12 @@ def test_local_full_flow_resource_runners_use_nodehost_procfs(monkeypatch) -> No
         ]
     )
 
+    # One long-lived sampler per nodehost, running on the nodehost itself, so
+    # it reads that nodehost's own procfs rather than another machine's.
     assert len(runners) == 1
-    assert runners[0].sampler.proc_root == Path("/proc/4242/root/proc")
+    assert isinstance(runners[0], docker_runtime.NodehostResourceAgent)
+    assert runners[0].container == "container-a"
+    assert runners[0].sampler.sampler_id == "nodehost-a"
     assert [process.logical_id for process in runners[0].sampler.processes] == [
         "node-a",
         "node-b",

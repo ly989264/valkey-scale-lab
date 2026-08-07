@@ -5,10 +5,12 @@ import json
 import hashlib
 import math
 import os
+import shlex
 import re
 import shutil
 import socket
 import subprocess
+import tempfile
 import threading
 import time
 import binascii
@@ -7920,6 +7922,130 @@ def _local_full_flow_run_baseline_workload(capability_id: str, scenario: str, ru
     return {"events": [start, end], "metrics": _management_workload_metric_rows(telemetry, operation_id, "baseline", metrics), "windows": [window]}
 
 
+RESOURCE_AGENT_DIR = "/tmp/vslab-resource-agent"
+RESOURCE_AGENT_STOP_ATTEMPTS = 120
+
+
+class _AgentSamplerSpec:
+    """The identity the stability window reads off a runner."""
+
+    def __init__(self, sampler_id: str, processes: list[ProcessSpec]) -> None:
+        self.sampler_id = sampler_id
+        self.processes = tuple(processes)
+
+
+def _watch_expected_gone_active(
+    agent: "NodehostResourceAgent", is_active: Callable[[], bool]
+) -> None:
+    """Relay a host-side expected-gone signal to the nodehost agent, once.
+
+    The sampler runs in another process, so it cannot call a host predicate. It
+    reads a marker file instead, and this creates that file the first time the
+    predicate holds - one container session, not one per sample.
+    """
+
+    def relay() -> None:
+        while True:
+            if is_active():
+                agent.mark_expected_gone_active()
+                return
+            time.sleep(1.0)
+
+    threading.Thread(target=relay, name=f"expected-gone-{agent.sampler.sampler_id}", daemon=True).start()
+
+
+class NodehostResourceAgent:
+    """One long-lived sampler process on a nodehost, started and collected once.
+
+    The sampler itself is unchanged: this runs the same LocalResourceSampler and
+    ResourceSamplerRunner on their defaults, inside the nodehost, so it reads
+    that nodehost's own procfs and cgroupfs. Only two container sessions exist
+    per window - one to start the agent and one to stop it - never one per
+    sample.
+    """
+
+    def __init__(
+        self,
+        *,
+        container: str,
+        sampler_id: str,
+        processes: list[ProcessSpec],
+        expected_gone_processes: list[ExpectedGoneProcess] | None = None,
+    ) -> None:
+        self.container = container
+        self.sampler = _AgentSamplerSpec(sampler_id, processes)
+        self.expected_gone_processes = list(expected_gone_processes or [])
+        self._dir = f"{RESOURCE_AGENT_DIR}/{sampler_id}"
+        self._out = f"{self._dir}/resource_samples.json"
+        self._pidfile = f"{self._dir}/agent.pid"
+        self._active_file = f"{self._dir}/expected_gone_active"
+        self._started = False
+
+    def start(self) -> None:
+        if self._started:
+            raise DockerRuntimeError(f"resource agent for {self.sampler.sampler_id} is already running")
+        spec = {
+            "sampler_id": self.sampler.sampler_id,
+            "processes": [
+                {"logical_id": process.logical_id, "pid": process.pid}
+                for process in self.sampler.processes
+            ],
+            "expected_gone_processes": [
+                {"logical_id": process.logical_id, "pid": process.pid}
+                for process in self.expected_gone_processes
+            ],
+        }
+        package = Path(__file__).resolve().parents[1]
+        run_docker(["exec", self.container, "mkdir", "-p", self._dir], timeout=60)
+        run_docker(
+            ["cp", str(package), f"{self.container}:{RESOURCE_AGENT_DIR}/valkey_scale_lab"],
+            timeout=120,
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
+            json.dump(spec, handle, sort_keys=True)
+            spec_path = handle.name
+        try:
+            run_docker(["cp", spec_path, f"{self.container}:{self._dir}/spec.json"], timeout=60)
+        finally:
+            os.unlink(spec_path)
+        launch = (
+            f"cd {shlex.quote(RESOURCE_AGENT_DIR)} && "
+            f"PYTHONPATH={shlex.quote(RESOURCE_AGENT_DIR)} "
+            "nohup python3 -m valkey_scale_lab.observability.resource_agent "
+            f"--spec {shlex.quote(self._dir)}/spec.json "
+            f"--out {shlex.quote(self._out)} "
+            f"--expected-gone-active-file {shlex.quote(self._active_file)} "
+            f">{shlex.quote(self._dir)}/agent.log 2>&1 & echo $! > {shlex.quote(self._pidfile)}"
+        )
+        run_docker(["exec", self.container, "sh", "-c", launch], timeout=120)
+        self._started = True
+
+    def mark_expected_gone_active(self) -> None:
+        run_docker(["exec", self.container, "touch", self._active_file], timeout=60)
+
+    def stop(self) -> dict[str, Any]:
+        if not self._started:
+            raise DockerRuntimeError(f"resource agent for {self.sampler.sampler_id} was never started")
+        stop_script = (
+            f"pid=$(cat {shlex.quote(self._pidfile)}) && kill -TERM \"$pid\" && "
+            f"for _ in $(seq 1 {RESOURCE_AGENT_STOP_ATTEMPTS}); do "
+            f"  [ -f {shlex.quote(self._out)} ] && exit 0; sleep 1; done; "
+            f"cat {shlex.quote(self._dir)}/agent.log >&2; exit 1"
+        )
+        result = run_docker(
+            ["exec", self.container, "sh", "-c", stop_script], timeout=180, check=False
+        )
+        if result.returncode != 0:
+            raise DockerRuntimeError(
+                f"resource agent {self.sampler.sampler_id} did not write its samples: "
+                f"{result.stderr.strip()[:500]}"
+            )
+        with tempfile.TemporaryDirectory() as tmp:
+            local = Path(tmp) / "resource_samples.json"
+            run_docker(["cp", f"{self.container}:{self._out}", str(local)], timeout=120)
+            return json.loads(local.read_text(encoding="utf-8"))
+
+
 def _resource_runners_for_nodes(
     nodes: list[dict[str, Any]],
     *,
@@ -7951,7 +8077,6 @@ def _resource_runners_for_nodes(
         grouped.setdefault(container, []).append(node)
     runners: list[ResourceSamplerRunner] = []
     for container, hosted in grouped.items():
-        host_pid = _container_pid(container)
         sampler_id = str(
             hosted[0].get("nodehost_id")
             or hosted[0].get("nodehost_container_name")
@@ -7970,15 +8095,15 @@ def _resource_runners_for_nodes(
                 for node in hosted
             )
         ]
-        sampler = LocalResourceSampler(
+        agent = NodehostResourceAgent(
+            container=container,
             sampler_id=sampler_id,
             processes=processes,
-            proc_root=Path(f"/proc/{host_pid}/root/proc"),
-            cgroup_root=Path(f"/proc/{host_pid}/root/sys/fs/cgroup"),
             expected_gone_processes=expected_gone,
-            expected_gone_active=expected_gone_active,
         )
-        runners.append(ResourceSamplerRunner(sampler))
+        if expected_gone_active is not None:
+            _watch_expected_gone_active(agent, expected_gone_active)
+        runners.append(agent)
     return runners
 
 

@@ -115,6 +115,9 @@ COPY --from=builder --chmod=0755 /out/memtier_benchmark /usr/local/bin/memtier_b
 COPY --from=builder /out/build-manifest.txt /usr/local/share/valkey-scale-lab/build-manifest.txt
 
 # memtier links against libevent, which the Valkey base image does not carry.
+# python3 runs the nodehost-local resource sampler: the design requires one
+# long-lived sampler per nodehost reading its own procfs, not a session per
+# sample from outside.
 RUN sed -i \
         -e "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}|" \
         -e "s|URIs: http://deb.debian.org/debian-security$|URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}|" \
@@ -129,6 +132,7 @@ RUN sed -i \
         libevent-extra-2.1-7 \
         libevent-openssl-2.1-7 \
         libevent-pthreads-2.1-7 \
+        python3 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN test -n "${VALKEY_SERVER_SHA256}" \
@@ -142,7 +146,8 @@ RUN test -n "${VALKEY_SERVER_SHA256}" \
     && grep -Fx "patch_sha256=${VALKEY_PATCH_SHA256}" /usr/local/share/valkey-scale-lab/build-manifest.txt \
     && grep -Fx "memtier_version=${MEMTIER_VERSION}" /usr/local/share/valkey-scale-lab/build-manifest.txt \
     && grep -Fx "memtier_source_sha256=${MEMTIER_SOURCE_SHA256}" /usr/local/share/valkey-scale-lab/build-manifest.txt \
-    && memtier_benchmark --version | grep -F "memtier_benchmark v=${MEMTIER_VERSION}"
+    && memtier_benchmark --version | grep -F "memtier_benchmark v=${MEMTIER_VERSION}" \
+    && python3 -c "import json, pathlib, threading, resource; print('python3 ok')"
 
 LABEL org.valkey-scale-lab.valkey.version="${VALKEY_VERSION}" \
       org.valkey-scale-lab.valkey.source.sha256="${VALKEY_SOURCE_SHA256}" \

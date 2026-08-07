@@ -192,6 +192,7 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.resource_agent",
         "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
@@ -216,9 +217,9 @@
         "product.artifacts.fault_timeline_artifacts",
         "product.artifacts.management_add_node_gap",
         "product.artifacts.management_matrix",
+        "product.artifacts.resource_observation_schema",
         "product.artifacts.run_metadata",
         "product.artifacts.setup_telemetry",
-        "product.artifacts.resource_observation_schema",
         "product.artifacts.workload_benchmark_artifacts",
         "product.cli.compatibility_wrappers",
         "product.config.config_validation",
@@ -246,6 +247,7 @@
         "product.integration.full_flow_resource_telemetry",
         "product.integration.gate_orchestration",
         "product.integration.rolling_restart_scaling",
+        "product.observability.legacy_resource_removal",
         "product.orchestrator.local_orchestrator",
         "product.planner.planner",
         "product.provenance.exact_gate_measured_sources",
@@ -284,6 +286,7 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.resource_agent",
         "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
@@ -291,8 +294,7 @@
         "product.unit.setup_timing_accounting",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
-        "product.unit.workload_key_generator",
-        "product.observability.legacy_resource_removal"
+        "product.unit.workload_key_generator"
       ]
     },
     {
@@ -308,6 +310,9 @@
       "suite_id": "repository.all",
       "description": "Every product and Gate pytest test; real resource runs are excluded.",
       "test_ids": [
+        "gate.contracts",
+        "gate.executor",
+        "gate.m2.contracts",
         "product.analysis.analysis_summary",
         "product.analysis.o5_admission_digest_binding",
         "product.analysis.o5_source_artifact_completeness",
@@ -318,9 +323,9 @@
         "product.artifacts.fault_timeline_artifacts",
         "product.artifacts.management_add_node_gap",
         "product.artifacts.management_matrix",
+        "product.artifacts.resource_observation_schema",
         "product.artifacts.run_metadata",
         "product.artifacts.setup_telemetry",
-        "product.artifacts.resource_observation_schema",
         "product.artifacts.workload_benchmark_artifacts",
         "product.cli.compatibility_wrappers",
         "product.config.config_validation",
@@ -348,6 +353,7 @@
         "product.integration.full_flow_resource_telemetry",
         "product.integration.gate_orchestration",
         "product.integration.rolling_restart_scaling",
+        "product.observability.legacy_resource_removal",
         "product.orchestrator.local_orchestrator",
         "product.planner.planner",
         "product.provenance.exact_gate_measured_sources",
@@ -386,6 +392,7 @@
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
+        "product.unit.resource_agent",
         "product.unit.scalable_observability",
         "product.unit.server_profile",
         "product.unit.server_profile_assertions",
@@ -393,11 +400,7 @@
         "product.unit.setup_timing_accounting",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
-        "product.unit.workload_key_generator",
-        "gate.contracts",
-        "gate.executor",
-        "gate.m2.contracts",
-        "product.observability.legacy_resource_removal"
+        "product.unit.workload_key_generator"
       ]
     },
     {
@@ -409,6 +412,69 @@
     }
   ],
   "tests": [
+    {
+      "test_id": "gate.contracts",
+      "description": "Gate contracts checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "verification/tests/test_contracts.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "gate.executor",
+      "description": "Gate executor checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "verification/tests/test_executor.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "gate.m2.contracts",
+      "description": "M2 performance artifact, pairing, percentile, budget, and fail-closed contract checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "verification/tests/test_m2_performance_contracts.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
     {
       "test_id": "product.analysis.analysis_summary",
       "description": "Analysis analysis summary checks.",
@@ -620,6 +686,27 @@
       }
     },
     {
+      "test_id": "product.artifacts.resource_observation_schema",
+      "description": "Resource observation artifact schema checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/observability/test_resource_observation_schema.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
       "test_id": "product.artifacts.run_metadata",
       "description": "Artifacts run metadata checks.",
       "parameters": {},
@@ -654,27 +741,6 @@
           "-p",
           "no:cacheprovider",
           "tests/artifacts/test_setup_telemetry.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "product.artifacts.resource_observation_schema",
-      "description": "Resource observation artifact schema checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/observability/test_resource_observation_schema.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
@@ -1242,6 +1308,27 @@
           "-p",
           "no:cacheprovider",
           "tests/integration/test_rolling_restart_scaling.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.observability.legacy_resource_removal",
+      "description": "Whole-project legacy resource contract removal scan.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/observability/test_legacy_resource_removal.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
@@ -1985,27 +2072,6 @@
       }
     },
     {
-      "test_id": "product.unit.scalable_observability",
-      "description": "Unit scalable cluster observability checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/unit/test_scalable_observability.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
       "test_id": "product.unit.nodehost_density",
       "description": "Unit nodehost density checks.",
       "parameters": {},
@@ -2061,6 +2127,48 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_process_bootstrap_batching.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.resource_agent",
+      "description": "Prove the nodehost-local resource sampler agent model and its bounded container sessions.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_resource_agent.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.scalable_observability",
+      "description": "Unit scalable cluster observability checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_scalable_observability.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
@@ -2216,180 +2324,6 @@
       }
     },
     {
-      "test_id": "gate.contracts",
-      "description": "Gate contracts checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "verification/tests/test_contracts.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "gate.executor",
-      "description": "Gate executor checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "verification/tests/test_executor.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "gate.m2.contracts",
-      "description": "M2 performance artifact, pairing, percentile, budget, and fail-closed contract checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "verification/tests/test_m2_performance_contracts.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "real.local.m2-cluster-formation",
-      "description": "Run the current-invocation paired real M2 cluster-formation matrix and enforce its protocol and budgets.",
-      "parameters": {
-        "selected_strategy": {
-          "type": "string",
-          "required": true
-        },
-        "selected_parallelism": {
-          "type": "string",
-          "required": true
-        }
-      },
-      "runner": {
-        "type": "command",
-        "argv": [
-          "/usr/bin/env",
-          "PYTHONPATH={gate.project_root}/src",
-          "python3",
-          "scripts/m2_performance_gate.py",
-          "formation",
-          "--selected-strategy",
-          "{param.selected_strategy}",
-          "--selected-parallelism",
-          "{param.selected_parallelism}",
-          "--run-id",
-          "{gate.run_id}",
-          "--artifacts-dir",
-          "{gate.artifacts_dir}",
-          "--result-path",
-          "{gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 86400,
-        "result": "json"
-      }
-    },
-    {
-      "test_id": "real.local.m2-automatic-failover",
-      "description": "Run the current-invocation paired real M2 automatic-failover matrix and enforce its protocol and budgets.",
-      "parameters": {
-        "selected_timeout_ms": {
-          "type": "string",
-          "required": true
-        }
-      },
-      "runner": {
-        "type": "command",
-        "argv": [
-          "/usr/bin/env",
-          "PYTHONPATH={gate.project_root}/src",
-          "python3",
-          "scripts/m2_performance_gate.py",
-          "failover",
-          "--selected-timeout-ms",
-          "{param.selected_timeout_ms}",
-          "--run-id",
-          "{gate.run_id}",
-          "--artifacts-dir",
-          "{gate.artifacts_dir}",
-          "--result-path",
-          "{gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 172800,
-        "result": "json"
-      }
-    },
-    {
-      "test_id": "real.local.m2-stability-resource",
-      "description": "Run the current-invocation real M2 stability, resource, and exact-200 soak checks.",
-      "parameters": {
-        "selected_strategy": {
-          "type": "string",
-          "required": true
-        },
-        "selected_parallelism": {
-          "type": "string",
-          "required": true
-        },
-        "selected_timeout_ms": {
-          "type": "string",
-          "required": true
-        }
-      },
-      "runner": {
-        "type": "command",
-        "argv": [
-          "/usr/bin/env",
-          "PYTHONPATH={gate.project_root}/src",
-          "python3",
-          "scripts/m2_performance_gate.py",
-          "stability",
-          "--selected-strategy",
-          "{param.selected_strategy}",
-          "--selected-parallelism",
-          "{param.selected_parallelism}",
-          "--selected-timeout-ms",
-          "{param.selected_timeout_ms}",
-          "--run-id",
-          "{gate.run_id}",
-          "--artifacts-dir",
-          "{gate.artifacts_dir}",
-          "--result-path",
-          "{gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 14400,
-        "result": "json"
-      }
-    },
-    {
       "test_id": "real.local.full-flow",
       "description": "Execute the exact local real full flow for 30 through 200 nodes.",
       "parameters": {
@@ -2435,24 +2369,114 @@
       }
     },
     {
-      "test_id": "product.observability.legacy_resource_removal",
-      "description": "Whole-project legacy resource contract removal scan.",
-      "parameters": {},
+      "test_id": "real.local.m2-automatic-failover",
+      "description": "Run the current-invocation paired real M2 automatic-failover matrix and enforce its protocol and budgets.",
+      "parameters": {
+        "selected_timeout_ms": {
+          "type": "string",
+          "required": true
+        }
+      },
       "runner": {
-        "type": "pytest",
+        "type": "command",
         "argv": [
+          "/usr/bin/env",
+          "PYTHONPATH={gate.project_root}/src",
           "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/observability/test_legacy_resource_removal.py",
-          "--junitxml={gate.result_path}"
+          "scripts/m2_performance_gate.py",
+          "failover",
+          "--selected-timeout-ms",
+          "{param.selected_timeout_ms}",
+          "--run-id",
+          "{gate.run_id}",
+          "--artifacts-dir",
+          "{gate.artifacts_dir}",
+          "--result-path",
+          "{gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
+        "timeout_seconds": 172800,
+        "result": "json"
+      }
+    },
+    {
+      "test_id": "real.local.m2-cluster-formation",
+      "description": "Run the current-invocation paired real M2 cluster-formation matrix and enforce its protocol and budgets.",
+      "parameters": {
+        "selected_strategy": {
+          "type": "string",
+          "required": true
+        },
+        "selected_parallelism": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "runner": {
+        "type": "command",
+        "argv": [
+          "/usr/bin/env",
+          "PYTHONPATH={gate.project_root}/src",
+          "python3",
+          "scripts/m2_performance_gate.py",
+          "formation",
+          "--selected-strategy",
+          "{param.selected_strategy}",
+          "--selected-parallelism",
+          "{param.selected_parallelism}",
+          "--run-id",
+          "{gate.run_id}",
+          "--artifacts-dir",
+          "{gate.artifacts_dir}",
+          "--result-path",
+          "{gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 86400,
+        "result": "json"
+      }
+    },
+    {
+      "test_id": "real.local.m2-stability-resource",
+      "description": "Run the current-invocation real M2 stability, resource, and exact-200 soak checks.",
+      "parameters": {
+        "selected_strategy": {
+          "type": "string",
+          "required": true
+        },
+        "selected_parallelism": {
+          "type": "string",
+          "required": true
+        },
+        "selected_timeout_ms": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "runner": {
+        "type": "command",
+        "argv": [
+          "/usr/bin/env",
+          "PYTHONPATH={gate.project_root}/src",
+          "python3",
+          "scripts/m2_performance_gate.py",
+          "stability",
+          "--selected-strategy",
+          "{param.selected_strategy}",
+          "--selected-parallelism",
+          "{param.selected_parallelism}",
+          "--selected-timeout-ms",
+          "{param.selected_timeout_ms}",
+          "--run-id",
+          "{gate.run_id}",
+          "--artifacts-dir",
+          "{gate.artifacts_dir}",
+          "--result-path",
+          "{gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 14400,
+        "result": "json"
       }
     }
   ]
