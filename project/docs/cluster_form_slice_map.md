@@ -79,14 +79,14 @@ fixes the boundary:
 
 So the MEET fanout, the slot ranges, the replica attach, the convergence waits
 and the snapshots are **not** backend surface. They are RESP against endpoints,
-and they stay in the lifecycle. Only three things in this stage are
+and they stay in the lifecycle. Only two things in this stage are
 backend-specific:
 
 1. **`client_host(node) -> str`** — where this process connects to speak RESP to
    a node. Under Docker that is loopback, because `start_nodehost` publishes
    every hosted port as `127.0.0.1:port:port`; under `native_multi_ecs` it is
    the node's own address. §15 names endpoint discovery as the adapter's job.
-2. **`run_cluster_admin(node, argv, *, timeout) -> str`** — run a `valkey-cli`
+2. **`run_cluster_admin(node, argv, *, timeout, operation_id, record_node)`** — run a `valkey-cli`
    that must sit *inside* the cluster network, for commands the lifecycle
    cannot issue from outside it. Two callers, both real: `valkey-cli --cluster
    create` in the default strategy (`_create_primary_cluster`), and the
@@ -263,7 +263,8 @@ where exact-200 was accepted on "the stage passed" alone.
    segment set rather than a shared one. Agreed at review: the branch gap is
    closed hermetically, not by adding a second real smoke.
 3. A real six-node smoke (`templates/configs/single_mac_6node.yaml`), which
-   proves the ≤30 branch: segments in order, zero residue.
+   proves the ≤30 branch: segments in order, zero residue. The artifact's own
+   status cannot pass at six nodes at any commit; see below.
 4. Real exact-50 against `artifacts/baselines/exact-50-6b6f57fd`, all five views
    identical, with the two excluded `runtime_all_node_light_probe` numbers
    reported.
@@ -278,7 +279,47 @@ where exact-200 was accepted on "the stage passed" alone.
 
 Then stop and report. The baseline stays frozen at 6b6f57fd; do not re-baseline.
 
-## Report, do not fix
+## The ≤30 branch: a flaky replica attach, and an unsatisfiable contract
+
+Four six-node runs, two per commit:
+
+| Commit | Run | Result |
+| --- | --- | --- |
+| this slice | 1 | FAIL, `shard-0000-replica-00 did not become replica of 3c7ab66a…` |
+| this slice | 2 | **PASS**, cluster formed, all five segments in order |
+| frozen baseline 6b6f57fd | 1 | FAIL, `shard-0002-replica-00 did not become replica of 66c94d38…` |
+| frozen baseline 6b6f57fd | 2 | FAIL, `shard-0000-replica-00 did not become replica of f01e9ce9…` |
+
+So the failure is **flaky and pre-existing**, not a regression: the baseline
+failed both attempts, this slice failed one and passed one, and the only
+six-node run that has ever completed is on this slice's code. It is in
+`_wait_process_replica_of` inside `replica_replicate`, which requires all three
+of `role == replica`, `replication_state == connected` and
+`myslots.slot_owner_id == master_id`. Which of the three loses the race was not
+run down: that is a fix on its own evidence, not a refactor slice's to make.
+Every run cleaned up with zero residue.
+
+The passing run confirms the map's branch prediction exactly. Its
+`cluster_formation` segments are
+
+    primary_cluster_create  cluster_slots_assign  replica_meet
+    replica_replicate       cluster_final_full_snapshot
+
+which is the ≤30 set this map predicted and the hermetic test asserts, and its
+cluster reached 6 known nodes, state `ok`, 16384 slots, 3 primaries and 3
+replicas across five snapshots.
+
+It also shows the branch contract is unsatisfiable, at both commits. The setup
+timeline artifact is `status: FAIL` on the passing run, for exactly two reasons:
+
+    missing required setup timeline segment: cluster_convergence_wait
+    missing required setup timeline segment: cluster_final_snapshot
+
+`REQUIRED_SETUP_SEGMENTS` demands both, and only the >30 branch emits them. The
+baseline's timeline is `FAIL` for the same two segments. A six-node run can
+therefore form a correct cluster and still never produce a passing setup
+timeline — which is why bar item 3 was written as "segments in order" and is met
+in that sense, while the artifact's own status cannot be.
 
 Three pre-existing things this slice will surface and must not quietly change:
 
