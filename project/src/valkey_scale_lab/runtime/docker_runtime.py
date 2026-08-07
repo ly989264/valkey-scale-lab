@@ -8404,14 +8404,11 @@ def _run_scalable_primary_kill_failover(
     )
     fault_started_unix = _unix_ms_runtime()
     command_id = f"{operation_id}-actuator-kill-primary"
+    # There is no kill binary in the image, only the shell builtin, which is
+    # why every other signal site in this module goes through sh -c.
+    kill_argv = ["sh", "-c", f"kill -KILL {_safe_process_pid(target['pid'])}"]
     kill_result = run_docker(
-        [
-            "exec",
-            str(target["nodehost_container_name"]),
-            "kill",
-            "-KILL",
-            str(_safe_process_pid(target["pid"])),
-        ],
+        ["exec", str(target["nodehost_container_name"]), *kill_argv],
         timeout=10,
         check=False,
     )
@@ -8434,7 +8431,7 @@ def _run_scalable_primary_kill_failover(
             "scenario_id": "primary_failover",
             "command_id": command_id,
             "command_kind": "actuator_kill_primary",
-            "argv": ["kill", "-KILL", str(target["pid"])],
+            "argv": kill_argv,
             "status": "PASS",
             "started_at_unix_ms": fault_started_unix,
             "ended_at_unix_ms": _unix_ms_runtime(),

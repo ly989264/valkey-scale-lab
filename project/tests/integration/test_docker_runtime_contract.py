@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 import json
 import shutil
 import subprocess
@@ -2817,6 +2819,39 @@ def test_management_stop_uses_shell_builtin_for_term_fallback(
         ],
         ["exec", "nodehost-a", "sh", "-c", "kill -TERM 101"],
     ]
+
+
+def test_kill_primary_actuator_signals_through_the_shell(monkeypatch) -> None:
+    """The image ships no kill binary, only the shell builtin.
+
+    `docker exec <container> kill ...` therefore exits 127 and the primary is
+    never killed, so the fault is recorded as failing to execute. Every other
+    signal in this module already goes through `sh -c`; this one must too.
+    """
+    calls: list[list[str]] = []
+
+    class Result:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run_docker(args, **_kwargs):
+        calls.append(list(args))
+        return Result()
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    source = inspect.getsource(docker_runtime._run_scalable_primary_kill_failover)
+    assert 'kill_argv = ["sh", "-c", f"kill -KILL' in source
+    # The bare-binary form is what exits 127 and leaves the primary alive.
+    assert '"kill",\n' not in source
+
+    docker_runtime.run_docker(
+        ["exec", "nodehost-a", "sh", "-c", "kill -KILL 101"], timeout=10, check=False
+    )
+    assert calls == [["exec", "nodehost-a", "sh", "-c", "kill -KILL 101"]]
+    # A bare exec of the binary is what fails with 127.
+    assert calls[0][2] != "kill"
 
 
 def test_cleanup_residual_scan_treats_unreadable_process_as_uncertain() -> None:
