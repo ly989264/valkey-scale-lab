@@ -427,7 +427,7 @@ def test_a_shard_awaiting_promotion_is_a_convergence_state() -> None:
 
     # The failover tests create this deliberately, and it resolves when the
     # promotion lands, so it must be observable again rather than fatal.
-    with pytest.raises(ConvergenceFailure, match="has no primary"):
+    with pytest.raises(ConvergenceFailure, match="has no serving primary"):
         normalize_cluster_shards(_shards_with_no_primary(node_ids))
 
 
@@ -446,7 +446,7 @@ def test_two_primaries_in_one_shard_is_permanent() -> None:
 
 
 
-def test_a_failed_primary_beside_its_promoted_replica_is_transient() -> None:
+def test_a_failed_primary_beside_its_promoted_replica_is_accepted() -> None:
     node_ids = [f"{index + 1:040x}" for index in range(4)]
     shards = copy.deepcopy(_shards(node_ids))
     # The killed primary is still known and still flagged a primary, while its
@@ -458,14 +458,31 @@ def test_a_failed_primary_beside_its_promoted_replica_is_transient() -> None:
     assert promoted[-4] == b"role"
     promoted[-3] = b"master"
 
-    with pytest.raises(ConvergenceFailure) as excinfo:
-        normalize_cluster_shards(
-            shards, allowed_unhealthy_node_ids={node_ids[0]}
-        )
+    result = normalize_cluster_shards(
+        shards, allowed_unhealthy_node_ids={node_ids[0]}
+    )
 
-    message = str(excinfo.value)
-    assert "awaiting failover convergence" in message
-    assert "(failed)" in message and "(online)" in message
+    # The shard settles into this state and stays there until the dead node is
+    # removed, so it is the correct post-failover shape, not a wait.
+    shard = next(s for s in result["shards"] if (0, 8191) in {tuple(r) for r in s["slots"]})
+    # The serving node owns the shard, never the corpse.
+    assert shard["primary_id"] == node_ids[2]
+    assert node_ids[0] in {member["node_id"] for member in shard["nodes"]}
+
+
+
+def test_a_shard_whose_only_primary_failed_is_not_serving() -> None:
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    shards = copy.deepcopy(_shards(node_ids))
+    primary = shards[0][3][0]
+    primary[-1] = b"failed"
+
+    # Nothing is serving the shard, so this waits rather than being admitted.
+    with pytest.raises(ConvergenceFailure) as excinfo:
+        normalize_cluster_shards(shards, allowed_unhealthy_node_ids={node_ids[0]})
+
+    assert "no serving primary" in str(excinfo.value)
+    assert "(failed)" in str(excinfo.value)
 
 
 def test_two_healthy_primaries_stay_fatal_even_mid_failover() -> None:

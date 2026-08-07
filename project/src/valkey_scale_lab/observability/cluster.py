@@ -570,36 +570,37 @@ def normalize_cluster_shards(
                 "CLUSTER SHARDS contains unhealthy nodes: "
                 + ", ".join(member["node_id"] for member in unhealthy)
             )
+        # A shard is described by the primary actually serving it. A primary the
+        # cluster has marked failed stays in the shard until something removes
+        # it, so counting every primary would reject the correct state a shard
+        # settles into after a failover. Anything unhealthy that the caller did
+        # not declare expected-down has already failed the health check above,
+        # so a failed member reaching this point is one the caller named.
         primaries = [member for member in members if member["role"] == "primary"]
-        if not primaries:
-            # A shard sits between losing its primary and promoting a replica.
-            # The failover tests create this state deliberately and it resolves
-            # when the promotion lands, so it is worth observing again.
-            raise ConvergenceFailure("CLUSTER SHARDS shard has no primary")
-        if len(primaries) > 1:
-            healthy_primaries = [
-                member
-                for member in primaries
-                if member["health"].lower() in {"online", "healthy"}
-            ]
-            detail = ", ".join(
-                f"{member['node_id']}({member['health'] or 'MISSING'})"
-                for member in primaries
+        healthy_primaries = [
+            member
+            for member in primaries
+            if member["health"].lower() in {"online", "healthy"}
+        ]
+        detail = ", ".join(
+            f"{member['node_id']}({member['health'] or 'MISSING'})"
+            for member in primaries
+        )
+        if len(healthy_primaries) > 1:
+            # Two primaries both serving is split brain. It does not resolve by
+            # looking again, and must never be waited out.
+            raise SemanticFailure(
+                f"CLUSTER SHARDS shard has {len(healthy_primaries)} healthy "
+                f"primaries: {detail}"
             )
-            if len(healthy_primaries) > 1:
-                # Two primaries both serving is split brain. It does not resolve
-                # by looking again, and must never be waited out.
-                raise SemanticFailure(
-                    f"CLUSTER SHARDS shard has {len(healthy_primaries)} healthy "
-                    f"primaries: {detail}"
-                )
-            # A promoted replica beside the failed primary it replaced, which
-            # the cluster has not dropped from the shard yet.
+        if not healthy_primaries:
+            # Nothing is serving the shard: either a promotion is in flight or
+            # the shard is down. Both are worth observing again.
             raise ConvergenceFailure(
-                f"CLUSTER SHARDS shard has {len(primaries)} primaries awaiting "
-                f"failover convergence: {detail}"
+                "CLUSTER SHARDS shard has no serving primary"
+                + (f": {detail}" if primaries else "")
             )
-        primary_id = primaries[0]["node_id"]
+        primary_id = healthy_primaries[0]["node_id"]
         shards.append(
             {
                 "shard_id": primary_id,
