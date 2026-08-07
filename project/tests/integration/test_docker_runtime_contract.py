@@ -738,14 +738,16 @@ def _assert_process_bootstrap_uses_nodehost_bundle(
     monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
 
+    backend = docker_runtime.DockerNodeBackend()
     config_details = docker_runtime._prepare_process_nodehost_bundles(
+        backend=backend,
         nodes=nodes,
         nodehosts=nodehosts,
         nodehost_by_id=nodehost_by_id,
         artifacts=tmp_path,
         run_id=run_id,
     )
-    start_details = docker_runtime._start_process_nodes_batched(nodes=nodes, nodehosts=nodehosts)
+    start_details = docker_runtime._start_process_nodes_batched(backend=backend, nodes=nodes, nodehosts=nodehosts)
     summary = docker_runtime._process_bootstrap_batching_details(
         nodes=nodes,
         nodehosts=nodehosts,
@@ -818,7 +820,9 @@ def test_process_bootstrap_records_setup_timeline_child_spans(tmp_path: Path, mo
     monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
 
+    backend = docker_runtime.DockerNodeBackend()
     docker_runtime._prepare_process_nodehost_bundles(
+        backend=backend,
         nodes=nodes,
         nodehosts=nodehosts,
         nodehost_by_id=nodehost_by_id,
@@ -826,7 +830,9 @@ def test_process_bootstrap_records_setup_timeline_child_spans(tmp_path: Path, mo
         run_id=run_id,
         setup_timeline=timeline,
     )
-    docker_runtime._start_process_nodes_batched(nodes=nodes, nodehosts=nodehosts, setup_timeline=timeline)
+    docker_runtime._start_process_nodes_batched(
+        backend=backend, nodes=nodes, nodehosts=nodehosts, setup_timeline=timeline
+    )
 
     names = [segment["name"] for segment in timeline.segments]
     assert "node_config_local_generate" in names
@@ -835,6 +841,109 @@ def test_process_bootstrap_records_setup_timeline_child_spans(tmp_path: Path, mo
     assert "nodehost_bundle_install" in names
     assert "nodehost_start_all" in names
     assert "pidfile_collect" in names
+
+
+class RecordingNodeBackend:
+    """A runtime that records the operations runtime_start asks of a backend."""
+
+    def __init__(self, *, pids: dict[str, dict[str, int]] | None = None) -> None:
+        self.operations: list[str] = []
+        self.pids = pids or {}
+
+    def verify_image(self, image: str) -> dict[str, object]:
+        self.operations.append("verify_image")
+        return {"status": "PASS"}
+
+    def reclaim_run(self, *, capability_id: str, run_id: str) -> None:
+        self.operations.append("reclaim_run")
+
+    def create_network(self, *, network_name: str, capability_id: str, run_id: str) -> None:
+        self.operations.append("create_network")
+
+    def start_nodehost(
+        self,
+        nodehost: dict[str, object],
+        *,
+        network_name: str,
+        image: str,
+        capability_id: str,
+        scenario: str,
+        run_id: str,
+    ) -> docker_runtime.NodehostAddress:
+        self.operations.append("start_nodehost")
+        return docker_runtime.NodehostAddress(handle="container-1", address="127.0.0.1")
+
+    def send_bundle(self, nodehost: dict[str, object]) -> None:
+        self.operations.append("send_bundle")
+
+    def install_bundle(self, nodehost: dict[str, object]) -> None:
+        self.operations.append("install_bundle")
+
+    def start_node_processes(self, nodehost: dict[str, object]) -> None:
+        self.operations.append("start_node_processes")
+
+    def collect_node_pids(self, nodehost: dict[str, object]) -> dict[str, int]:
+        self.operations.append("collect_node_pids")
+        return self.pids.get(str(nodehost["nodehost_id"]), {})
+
+    def wait_nodes_ready(self, nodes: list[dict[str, object]], *, timeout: float) -> None:
+        self.operations.append("wait_nodes_ready")
+
+
+def test_process_bootstrap_reaches_the_runtime_only_through_the_backend(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_10.yaml"))
+    run_id = "scale_ladder-scale_10-20260628"
+    nodes = docker_runtime._node_specs(config, "scale_ladder", "scale_10", run_id)
+    nodehosts = docker_runtime._process_nodehosts(config, nodes, "scale_ladder", "scale_10", run_id)
+    for index, nodehost in enumerate(nodehosts):
+        nodehost["container_id"] = f"cid-{index}"
+        nodehost["container_ip"] = f"172.18.0.{index + 2}"
+    nodehost_by_id = {nodehost["nodehost_id"]: nodehost for nodehost in nodehosts}
+    pids = {
+        str(nodehost["nodehost_id"]): {
+            str(node["logical_id"]): 5000 + offset
+            for offset, node in enumerate(nodes)
+            if node["nodehost_id"] == nodehost["nodehost_id"]
+        }
+        for nodehost in nodehosts
+    }
+    backend = RecordingNodeBackend(pids=pids)
+
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("bundle install and process start must go through the backend")
+        ),
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_bounded_parallel",
+        lambda items, worker, **_kwargs: [worker(item) for item in list(items)],
+    )
+
+    docker_runtime._prepare_process_nodehost_bundles(
+        backend=backend,
+        nodes=nodes,
+        nodehosts=nodehosts,
+        nodehost_by_id=nodehost_by_id,
+        artifacts=tmp_path,
+        run_id=run_id,
+    )
+    docker_runtime._start_process_nodes_batched(backend=backend, nodes=nodes, nodehosts=nodehosts)
+
+    # Every bundle is sent before any is installed, and every nodehost starts
+    # before any pid is collected: that is what the four timeline segments of
+    # this stage measure.
+    assert backend.operations == (
+        ["send_bundle"] * len(nodehosts)
+        + ["install_bundle"] * len(nodehosts)
+        + ["start_node_processes"] * len(nodehosts)
+        + ["collect_node_pids"] * len(nodehosts)
+    )
+    assert [node["pid"] for node in nodes] == [5000 + offset for offset in range(len(nodes))]
 
 
 @pytest.mark.parametrize(
@@ -901,12 +1010,17 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
         allow_resource_finish.set()
         return [], []
 
-    monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda **_kwargs: None)
-    monkeypatch.setattr(docker_runtime, "run_docker", lambda *_args, **_kwargs: None)
+    # runtime_start owns no Docker call of its own: every one goes through the
+    # backend seam, so a direct run_docker from the lifecycle is a failure.
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("runtime_start must reach the runtime through the backend")
+        ),
+    )
     monkeypatch.setattr(docker_runtime, "_process_nodehosts", lambda *_args: nodehosts)
     monkeypatch.setattr(docker_runtime, "_write_nodehost_density_plan_artifact", lambda *_args: None)
-    monkeypatch.setattr(docker_runtime, "_start_nodehost", lambda *_args: "container-1")
-    monkeypatch.setattr(docker_runtime, "_container_ip", lambda *_args: "127.0.0.1")
     monkeypatch.setattr(
         docker_runtime,
         "_bounded_parallel",
@@ -928,7 +1042,6 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
         "_process_bootstrap_batching_details",
         lambda **_kwargs: {"status": "PASS"},
     )
-    monkeypatch.setattr(docker_runtime, "_wait_process_nodes_ready", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(docker_runtime, "_process_runtime_state", lambda *_args, **_kwargs: {"runtime": {}})
     monkeypatch.setattr(docker_runtime, "_write_effective_server_profile_artifact", lambda *_args: None)
     monkeypatch.setattr(docker_runtime, "_write_effective_cluster_timeout_artifact", lambda *_args: None)
@@ -951,7 +1064,10 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
         ),
     )
 
+    backend = RecordingNodeBackend()
+
     docker_runtime._create_process_scenario(
+        backend=backend,
         capability_id=capability_id,
         scenario=scenario,
         run_id="real-path-test",
@@ -962,6 +1078,12 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
         profile_id="exact-50",
     )
 
+    assert backend.operations == [
+        "reclaim_run",
+        "create_network",
+        "start_nodehost",
+        "wait_nodes_ready",
+    ]
     assert scale_writes == [("scale_ladder", "scale_ladder")] * expected_scale_writes
     assert resource_clocks == ([shared_monotonic] if scenario == "cluster_timeout" else [])
     if scenario == "cluster_timeout":
@@ -2871,16 +2993,17 @@ def test_nodehost_runtime_uses_init_for_process_reaping(monkeypatch: pytest.Monk
         lambda args, timeout=120, check=True: calls.append(args) or docker_runtime.DockerResult("cid\n", "", 0),
     )
 
-    docker_runtime._start_nodehost(
+    started = docker_runtime.DockerNodeBackend().start_nodehost(
         {"container_name": "nodehost-a", "nodehost_id": "nodehost-a", "ports": []},
-        "network-a",
-        "valkey:9.1",
-        "local_full_flow",
-        "local_full_flow",
-        "run-1",
+        network_name="network-a",
+        image="valkey:9.1",
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        run_id="run-1",
     )
 
     assert calls[0][:4] == ["run", "-d", "--init", "--name"]
+    assert started.handle == "cid"
 
 
 def test_local_full_flow_fault_recovery_uses_one_strict_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:

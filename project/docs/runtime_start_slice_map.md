@@ -70,6 +70,30 @@ Planning which nodes live on which nodehost is not I/O and stays in the
 lifecycle. `native_multi_ecs` replaces the seven operations above and nothing
 else.
 
+Two of the seven are a pair of calls rather than one, observed while extracting
+them. The lifecycle sends every bundle before installing any, and starts every
+nodehost before collecting any pid; those barriers are exactly what the
+`docker_cp_bundle` / `nodehost_bundle_install` and `nodehost_start_all` /
+`pidfile_collect` segments measure. Fusing either pair inside a backend would
+erase evidence the acceptance diff checks, so `NodeBackend` in
+`runtime/node_backend.py` states them as nine methods for the seven operations.
+
+## What the slice changed
+
+`runtime/node_backend.py` holds `NodeBackend` and `NodehostAddress` and depends
+on nothing. `DockerNodeBackend` in `docker_runtime.py` is the one implementation;
+it absorbed `_start_nodehost`, the bundle copy and install helpers, the two
+inline `docker exec` closures of the process start, and the ready-wait loop, so
+none of those survive as a second path.
+
+The lifecycle sequencing stays in `_create_process_scenario` for now. The same
+function still runs `cluster_form` and everything after it, and those stages
+still call Docker directly, so moving the file before they are converted would
+split one function across two modules. What this slice fixes is the direction of
+the dependency inside the stage: `runtime_start` no longer names a Docker
+primitive, and a hermetic test drives it with a recording backend while
+`run_docker` raises.
+
 ## Blast radius
 
 One test file imports the four helpers

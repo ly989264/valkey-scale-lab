@@ -85,6 +85,7 @@ from valkey_scale_lab.orchestrator.local import write_run_summary as write_orche
 from valkey_scale_lab.planner.plan import build_cluster_plan
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
+from valkey_scale_lab.runtime.node_backend import NodeBackend, NodehostAddress
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
 from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
@@ -684,6 +685,7 @@ def _execute_runtime(
 ) -> dict[str, Any]:
     if SCENARIO_CAPABILITIES.get(scenario) != capability_id:
         raise DockerRuntimeError(f"runtime does not implement capability_id/scenario {capability_id}/{scenario}")
+    backend: NodeBackend = DockerNodeBackend()
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"capability_id": capability_id, "scenario": scenario}):
         run_id = _run_id(capability_id, scenario)
         artifacts = Path(artifacts_dir)
@@ -738,10 +740,11 @@ def _execute_runtime(
         "preflight",
         {"image": config["runtime"]["valkey_image"]},
     ):
-        image_preflight = _verify_custom_valkey_image(str(config["runtime"]["valkey_image"]))
+        image_preflight = backend.verify_image(str(config["runtime"]["valkey_image"]))
 
     if backend_id == "docker_process":
         return _create_process_scenario(
+            backend=backend,
             capability_id=capability_id,
             scenario=scenario,
             run_id=run_id,
@@ -1105,6 +1108,7 @@ def _is_exact_2000_runtime_exception(
 
 def _create_process_scenario(
     *,
+    backend: NodeBackend,
     capability_id: str,
     scenario: str,
     run_id: str,
@@ -1162,22 +1166,9 @@ def _create_process_scenario(
                 f"{full_flow_profile.requested_nodes} nodes; execution is blocked"
             )
     with _timeline_span(setup_timeline, "pre_cleanup_by_label", "docker_cleanup", {"run_id": run_id}):
-        cleanup_by_label(capability_id=capability_id, run_id=run_id)
+        backend.reclaim_run(capability_id=capability_id, run_id=run_id)
     with _timeline_span(setup_timeline, "docker_network_create", "docker_network", {"network_name": network_name}):
-        run_docker(
-            [
-                "network",
-                "create",
-                "--label",
-                f"{LABEL_PREFIX}.project={PROJECT}",
-                "--label",
-                f"{LABEL_PREFIX}.capability_id={capability_id}",
-                "--label",
-                f"{LABEL_PREFIX}.run_id={run_id}",
-                network_name,
-            ],
-            timeout=120,
-        )
+        backend.create_network(network_name=network_name, capability_id=capability_id, run_id=run_id)
     with _timeline_span(setup_timeline, "nodehost_plan", "planning", {"node_count": len(nodes)}):
         nodehosts = _process_nodehosts(config, nodes, capability_id, scenario, run_id)
         _write_nodehost_density_plan_artifact(artifacts / "nodehost_density_plan.json", config, nodes, nodehosts, run_id)
@@ -1185,9 +1176,17 @@ def _create_process_scenario(
     timings: dict[str, dict[str, Any]] = {}
     try:
         def start_nodehost(nodehost: dict[str, Any]) -> None:
-            container_id = _start_nodehost(nodehost, network_name, config["runtime"]["valkey_image"], capability_id, scenario, run_id)
-            nodehost["container_id"] = container_id
-            nodehost["container_ip"] = _container_ip(container_id, network_name)
+            started = backend.start_nodehost(
+                nodehost,
+                network_name=network_name,
+                image=config["runtime"]["valkey_image"],
+                capability_id=capability_id,
+                scenario=scenario,
+                run_id=run_id,
+            )
+            # The artifact contract names these container_id and container_ip.
+            nodehost["container_id"] = started.handle
+            nodehost["container_ip"] = started.address
 
         _run_timed_step(
             timings,
@@ -1215,6 +1214,7 @@ def _create_process_scenario(
             "process_config_prepare",
             lambda: config_prepare_details.update(
                 _prepare_process_nodehost_bundles(
+                    backend=backend,
                     nodes=nodes,
                     nodehosts=nodehosts,
                     nodehost_by_id=nodehost_by_id,
@@ -1233,6 +1233,7 @@ def _create_process_scenario(
             "process_start",
             lambda: process_start_details.update(
                 _start_process_nodes_batched(
+                    backend=backend,
                     nodes=nodes,
                     nodehosts=nodehosts,
                     setup_timeline=setup_timeline,
@@ -1255,7 +1256,7 @@ def _create_process_scenario(
                 setup_timeline,
                 "process_ready_wait",
                 "process_ready_wait",
-                lambda: _wait_process_nodes_ready(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0)),
+                lambda: backend.wait_nodes_ready(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0)),
                 {"node_count": len(nodes)},
             ),
             {"node_count": len(nodes)},
@@ -1401,7 +1402,7 @@ def _create_process_scenario(
                 write_scale_ladder_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
         return state
     except Exception:
-        cleanup_by_label(capability_id=capability_id, run_id=run_id)
+        backend.reclaim_run(capability_id=capability_id, run_id=run_id)
         raise
 
 
@@ -1479,37 +1480,113 @@ def _write_nodehost_density_plan_artifact(path: Path, config: dict[str, Any], no
     path.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _start_nodehost(
-    nodehost: dict[str, Any],
-    network_name: str,
-    image: str,
-    capability_id: str,
-    scenario: str,
-    run_id: str,
-) -> str:
-    args = [
-        "run",
-        "-d",
-        "--init",
-        "--name",
-        nodehost["container_name"],
-        "--network",
-        network_name,
-        "--label",
-        f"{LABEL_PREFIX}.project={PROJECT}",
-        "--label",
-        f"{LABEL_PREFIX}.capability_id={capability_id}",
-        "--label",
-        f"{LABEL_PREFIX}.run_id={run_id}",
-        "--label",
-        f"{LABEL_PREFIX}.scenario={scenario}",
-        "--label",
-        f"{LABEL_PREFIX}.nodehost_id={nodehost['nodehost_id']}",
-    ]
-    for port in nodehost["ports"]:
-        args.extend(["-p", f"127.0.0.1:{port}:{port}"])
-    args.extend([image, "sleep", "infinity"])
-    return run_docker(args, timeout=180).stdout.strip()
+class DockerNodeBackend:
+    """Runs `runtime_start`'s node operations as Docker containers and execs."""
+
+    def verify_image(self, image: str) -> dict[str, Any]:
+        return _verify_custom_valkey_image(image)
+
+    def reclaim_run(self, *, capability_id: str, run_id: str) -> None:
+        cleanup_by_label(capability_id=capability_id, run_id=run_id)
+
+    def create_network(self, *, network_name: str, capability_id: str, run_id: str) -> None:
+        run_docker(
+            [
+                "network",
+                "create",
+                "--label",
+                f"{LABEL_PREFIX}.project={PROJECT}",
+                "--label",
+                f"{LABEL_PREFIX}.capability_id={capability_id}",
+                "--label",
+                f"{LABEL_PREFIX}.run_id={run_id}",
+                network_name,
+            ],
+            timeout=120,
+        )
+
+    def start_nodehost(
+        self,
+        nodehost: dict[str, Any],
+        *,
+        network_name: str,
+        image: str,
+        capability_id: str,
+        scenario: str,
+        run_id: str,
+    ) -> NodehostAddress:
+        args = [
+            "run",
+            "-d",
+            "--init",
+            "--name",
+            nodehost["container_name"],
+            "--network",
+            network_name,
+            "--label",
+            f"{LABEL_PREFIX}.project={PROJECT}",
+            "--label",
+            f"{LABEL_PREFIX}.capability_id={capability_id}",
+            "--label",
+            f"{LABEL_PREFIX}.run_id={run_id}",
+            "--label",
+            f"{LABEL_PREFIX}.scenario={scenario}",
+            "--label",
+            f"{LABEL_PREFIX}.nodehost_id={nodehost['nodehost_id']}",
+        ]
+        for port in nodehost["ports"]:
+            args.extend(["-p", f"127.0.0.1:{port}:{port}"])
+        args.extend([image, "sleep", "infinity"])
+        container_id = run_docker(args, timeout=180).stdout.strip()
+        return NodehostAddress(handle=container_id, address=_container_ip(container_id, network_name))
+
+    def send_bundle(self, nodehost: dict[str, Any]) -> None:
+        container = str(nodehost["container_name"])
+        run_docker(["cp", str(nodehost["bundle_artifact_dir"]), f"{container}:{PROCESS_BUNDLE_ROOT}/"], timeout=120)
+
+    def install_bundle(self, nodehost: dict[str, Any]) -> None:
+        container = str(nodehost["container_name"])
+        run_docker(["exec", container, "sh", f"{nodehost['remote_bundle_dir']}/install.sh"], timeout=120)
+
+    def start_node_processes(self, nodehost: dict[str, Any]) -> None:
+        run_docker(
+            ["exec", str(nodehost["container_name"]), "sh", f"{nodehost['remote_bundle_dir']}/start_all.sh"],
+            timeout=max(30, int(nodehost.get("logical_node_count", 1)) * 3),
+        )
+
+    def collect_node_pids(self, nodehost: dict[str, Any]) -> dict[str, int]:
+        result = run_docker(
+            ["exec", str(nodehost["container_name"]), "sh", f"{nodehost['remote_bundle_dir']}/collect_pidfiles.sh"],
+            timeout=max(45, int(nodehost.get("logical_node_count", 1)) * 3),
+        )
+        collected: dict[str, int] = {}
+        for line in result.stdout.splitlines():
+            parts = line.strip().split()
+            if len(parts) != 2:
+                continue
+            logical_id = _safe_process_token(parts[0], "logical_id")
+            try:
+                collected[logical_id] = int(parts[1])
+            except ValueError as exc:
+                raise DockerRuntimeError(f"invalid pidfile value for {logical_id}: {parts[1]!r}") from exc
+        return collected
+
+    def wait_nodes_ready(self, nodes: list[dict[str, Any]], *, timeout: float) -> None:
+        deadline = time.monotonic() + timeout
+        last_ready = 0
+        while time.monotonic() < deadline:
+            ready = 0
+            for node in nodes:
+                try:
+                    if _node_command(node, "PING", timeout=2.0) == "PONG":
+                        ready += 1
+                except Exception:
+                    pass
+            if ready == len(nodes):
+                return
+            last_ready = ready
+            time.sleep(1)
+        raise DockerRuntimeError(f"process runtime nodes ready timeout reached {last_ready}/{len(nodes)}")
 
 
 def _safe_process_token(value: Any, field: str) -> str:
@@ -1572,10 +1649,6 @@ def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
             "",
         ]
     )
-
-
-def _prepare_process_node(node: dict[str, Any], nodehost: dict[str, Any], artifacts: Path, run_id: str) -> None:
-    _prepare_process_node_metadata(node, nodehost, artifacts, run_id)
 
 
 def _prepare_process_node_metadata(node: dict[str, Any], nodehost: dict[str, Any], artifacts: Path, run_id: str) -> None:
@@ -1701,24 +1774,9 @@ def _write_nodehost_bundle(nodehost: dict[str, Any], hosted_nodes: list[dict[str
     }
 
 
-def _copy_nodehost_bundle(nodehost: dict[str, Any]) -> None:
-    container = str(nodehost["container_name"])
-    remote_bundle_parent = PROCESS_BUNDLE_ROOT
-    run_docker(["cp", str(nodehost["bundle_artifact_dir"]), f"{container}:{remote_bundle_parent}/"], timeout=120)
-
-
-def _run_nodehost_bundle_install(nodehost: dict[str, Any]) -> None:
-    container = str(nodehost["container_name"])
-    run_docker(["exec", container, "sh", f"{nodehost['remote_bundle_dir']}/install.sh"], timeout=120)
-
-
-def _install_nodehost_bundle(nodehost: dict[str, Any]) -> None:
-    _copy_nodehost_bundle(nodehost)
-    _run_nodehost_bundle_install(nodehost)
-
-
 def _prepare_process_nodehost_bundles(
     *,
+    backend: NodeBackend,
     nodes: list[dict[str, Any]],
     nodehosts: list[dict[str, Any]],
     nodehost_by_id: dict[str, dict[str, Any]],
@@ -1760,7 +1818,7 @@ def _prepare_process_nodehost_bundles(
     ):
         _bounded_parallel(
             nodehosts,
-            _copy_nodehost_bundle,
+            backend.send_bundle,
             parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
             timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
             label="nodehost config bundle docker cp",
@@ -1776,7 +1834,7 @@ def _prepare_process_nodehost_bundles(
     ):
         _bounded_parallel(
             nodehosts,
-            _run_nodehost_bundle_install,
+            backend.install_bundle,
             parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
             timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
             label="nodehost config bundle install",
@@ -1815,17 +1873,12 @@ def _prepare_process_nodehost_bundles(
 
 def _start_process_nodes_batched(
     *,
+    backend: NodeBackend,
     nodes: list[dict[str, Any]],
     nodehosts: list[dict[str, Any]],
     setup_timeline: SetupTimeline | None = None,
 ) -> dict[str, Any]:
     start_started = time.monotonic()
-
-    def start_nodehost(nodehost: dict[str, Any]) -> None:
-        run_docker(
-            ["exec", str(nodehost["container_name"]), "sh", f"{nodehost['remote_bundle_dir']}/start_all.sh"],
-            timeout=max(30, int(nodehost.get("logical_node_count", 1)) * 3),
-        )
 
     with _timeline_span(
         setup_timeline,
@@ -1835,7 +1888,7 @@ def _start_process_nodes_batched(
     ):
         _bounded_parallel(
             nodehosts,
-            start_nodehost,
+            backend.start_node_processes,
             parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
             timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
             label="nodehost bulk Valkey process startup",
@@ -1845,23 +1898,6 @@ def _start_process_nodes_batched(
     collect_started = time.monotonic()
     pid_by_logical_id: dict[str, int] = {}
 
-    def collect_nodehost(nodehost: dict[str, Any]) -> dict[str, int]:
-        result = run_docker(
-            ["exec", str(nodehost["container_name"]), "sh", f"{nodehost['remote_bundle_dir']}/collect_pidfiles.sh"],
-            timeout=max(45, int(nodehost.get("logical_node_count", 1)) * 3),
-        )
-        collected: dict[str, int] = {}
-        for line in result.stdout.splitlines():
-            parts = line.strip().split()
-            if len(parts) != 2:
-                continue
-            logical_id = _safe_process_token(parts[0], "logical_id")
-            try:
-                collected[logical_id] = int(parts[1])
-            except ValueError as exc:
-                raise DockerRuntimeError(f"invalid pidfile value for {logical_id}: {parts[1]!r}") from exc
-        return collected
-
     with _timeline_span(
         setup_timeline,
         "pidfile_collect",
@@ -1870,7 +1906,7 @@ def _start_process_nodes_batched(
     ):
         collected_by_nodehost = _bounded_parallel(
             nodehosts,
-            collect_nodehost,
+            backend.collect_node_pids,
             parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
             timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
             label="nodehost pidfile collection",
@@ -3869,24 +3905,6 @@ def _replicate_process_nodes_parallel(replicas: list[dict[str, Any]], primary_id
 
 def _replicate_nodes_parallel(replicas: list[dict[str, Any]], primary_ids: dict[str, str], *, timeout: float) -> None:
     _replicate_process_nodes_parallel(replicas, primary_ids, timeout=timeout)
-
-
-def _wait_process_nodes_ready(nodes: list[dict[str, Any]], timeout: float) -> None:
-    deadline = time.monotonic() + timeout
-    last_ready = 0
-    while time.monotonic() < deadline:
-        ready = 0
-        for node in nodes:
-            try:
-                if _node_command(node, "PING", timeout=2.0) == "PONG":
-                    ready += 1
-            except Exception:
-                pass
-        if ready == len(nodes):
-            return
-        last_ready = ready
-        time.sleep(1)
-    raise DockerRuntimeError(f"process runtime nodes ready timeout reached {last_ready}/{len(nodes)}")
 
 
 def _wait_process_known(
