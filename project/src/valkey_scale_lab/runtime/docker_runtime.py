@@ -377,7 +377,7 @@ def _m2_bootstrap_protocol_boundary(nodes: list[dict[str, Any]], label: str) -> 
             errors.append(f"{logical_id} has no client_port")
             continue
         try:
-            endpoint = Endpoint(str(node.get("host", "127.0.0.1")), port)
+            endpoint = Endpoint(str(node["host"]), port)
             with RespConnection(endpoint, timeout=5.0) as connection:
                 raw_cluster_info = connection.execute("CLUSTER", "INFO")
             cluster_info = _parse_info(_resp_text(raw_cluster_info))
@@ -1286,7 +1286,7 @@ def _create_process_scenario(
             _write_state(state_out, state)
         resource_seconds = _m2_bootstrap_resource_seconds()
         if resource_seconds is None:
-            operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
+            operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline, backend=backend)
         else:
             first_resource_sample = threading.Event()
             with ThreadPoolExecutor(max_workers=1) as executor:
@@ -1308,7 +1308,7 @@ def _create_process_scenario(
                         "bootstrap resource observation did not capture every owned process before cluster formation"
                     )
                 protocol_start = _m2_bootstrap_protocol_boundary(nodes, "start")
-                operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
+                operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline, backend=backend)
                 resource_report = resource_future.result()
                 protocol_end = _m2_bootstrap_protocol_boundary(nodes, "end")
                 resource_report["m2_bootstrap_protocol_boundaries"] = {
@@ -1571,6 +1571,28 @@ class DockerNodeBackend:
                 raise DockerRuntimeError(f"invalid pidfile value for {logical_id}: {parts[1]!r}") from exc
         return collected
 
+    def client_host(self, node: dict[str, Any]) -> str:
+        # start_nodehost publishes every hosted port as 127.0.0.1:port:port.
+        return "127.0.0.1"
+
+    def run_cluster_admin(
+        self,
+        node: dict[str, Any],
+        argv: list[str],
+        *,
+        timeout: float,
+        operation_id: str,
+        record_node: dict[str, Any] | None = None,
+    ) -> str:
+        container = str(node.get("nodehost_container_name") or node["container_name"])
+        result = run_docker(
+            ["exec", container, "valkey-cli", *[str(arg) for arg in argv]],
+            timeout=max(1, min(900, int(timeout))),
+            operation_id=operation_id,
+            node=record_node,
+        )
+        return result.stdout.strip()
+
     def wait_nodes_ready(self, nodes: list[dict[str, Any]], *, timeout: float) -> None:
         deadline = time.monotonic() + timeout
         last_ready = 0
@@ -1651,7 +1673,14 @@ def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
     )
 
 
-def _prepare_process_node_metadata(node: dict[str, Any], nodehost: dict[str, Any], artifacts: Path, run_id: str) -> None:
+def _prepare_process_node_metadata(
+    node: dict[str, Any],
+    nodehost: dict[str, Any],
+    artifacts: Path,
+    run_id: str,
+    *,
+    client_host: str,
+) -> None:
     logical_id = _safe_process_token(node["logical_id"], "logical_id")
     node["run_id"] = _safe_process_token(run_id, "run_id")
     data_dir = _process_data_dir(run_id, logical_id)
@@ -1665,6 +1694,9 @@ def _prepare_process_node_metadata(node: dict[str, Any], nodehost: dict[str, Any
     local_config.write_text(_process_config_text(node, nodehost), encoding="utf-8")
     node.update(
         {
+            # Where this run reaches the node. The peer address the cluster
+            # announces is nodehost_container_ip below, and they differ.
+            "host": client_host,
             "nodehost_container_id": nodehost["container_id"],
             "nodehost_container_name": nodehost["container_name"],
             "nodehost_container_ip": nodehost["container_ip"],
@@ -1795,7 +1827,13 @@ def _prepare_process_nodehost_bundles(
     ):
         for node in nodes:
             nodehost = nodehost_by_id[str(node["nodehost_id"])]
-            _prepare_process_node_metadata(node, nodehost, artifacts, run_id)
+            _prepare_process_node_metadata(
+                node,
+                nodehost,
+                artifacts,
+                run_id,
+                client_host=backend.client_host(node),
+            )
     local_generate_seconds = round(max(time.monotonic() - local_generate_started, 0.0), 6)
 
     bundle_write_started = time.monotonic()
@@ -2075,7 +2113,7 @@ def _process_runtime_state(
                 "logical_id": node["logical_id"],
                 "nodehost_id": node["nodehost_id"],
                 "host_id": node.get("host_id", "local"),
-                "host": "127.0.0.1",
+                "host": node["host"],
                 "client_port": node["client_port"],
                 "cluster_bus_port": node["cluster_bus_port"],
                 "az_id": node["az_id"],
@@ -3109,7 +3147,9 @@ def run_node_cluster_cli(node: dict[str, Any], *args: Any, timeout: int = 60, ch
 
 
 def _node_host_command(node: dict[str, Any], *args: Any, timeout: float = 2.0) -> Any:
-    return _host_command(str(node.get("host", "127.0.0.1")), int(node["client_port"]), *args, timeout=timeout)
+    # No default host: the endpoint is inventory the backend supplies, and a
+    # missing one must fail rather than quietly resolve to Docker's loopback.
+    return _host_command(str(node["host"]), int(node["client_port"]), *args, timeout=timeout)
 
 
 def _node_response(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> Any:
@@ -3118,7 +3158,7 @@ def _node_response(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> An
             recorder = current_command_recorder()
             if recorder is None:
                 return _node_host_command(node, *args, timeout=timeout)
-            argv = ["valkey-cli", "-h", str(node.get("host", "127.0.0.1")), "-p", str(node["client_port"]), *[str(arg) for arg in args]]
+            argv = ["valkey-cli", "-h", str(node["host"]), "-p", str(node["client_port"]), *[str(arg) for arg in args]]
             started = int(time.time() * 1000)
             started_monotonic_ms = time.monotonic() * 1000.0
             try:
@@ -3416,9 +3456,13 @@ def _configure_process_cluster(
     nodes: list[dict[str, Any]],
     timings: dict[str, dict[str, Any]] | None = None,
     setup_timeline: SetupTimeline | None = None,
+    *,
+    backend: NodeBackend,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if len(nodes) > 30:
-        return _configure_large_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
+        return _configure_large_process_cluster(
+            nodes, timings=timings, setup_timeline=setup_timeline, backend=backend
+        )
 
     operations: list[dict[str, Any]] = []
     snapshots: list[dict[str, Any]] = []
@@ -3651,6 +3695,8 @@ def _configure_large_process_cluster(
     nodes: list[dict[str, Any]],
     timings: dict[str, dict[str, Any]] | None = None,
     setup_timeline: SetupTimeline | None = None,
+    *,
+    backend: NodeBackend,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     operations: list[dict[str, Any]] = []
     snapshots: list[dict[str, Any]] = []
@@ -3660,11 +3706,11 @@ def _configure_large_process_cluster(
 
     create_started = time.monotonic()
     if timings is None and setup_timeline is None:
-        create_output = _create_large_cluster(primaries, replicas, timeout=timeout)
+        create_output = _create_large_cluster(primaries, replicas, timeout=timeout, backend=backend)
     elif timings is None:
-        create_output = _create_large_cluster(primaries, replicas, timeout=timeout, setup_timeline=setup_timeline)
+        create_output = _create_large_cluster(primaries, replicas, timeout=timeout, setup_timeline=setup_timeline, backend=backend)
     else:
-        create_output = _create_large_cluster(primaries, replicas, timeout=timeout, timings=timings, setup_timeline=setup_timeline)
+        create_output = _create_large_cluster(primaries, replicas, timeout=timeout, timings=timings, setup_timeline=setup_timeline, backend=backend)
     if _m2_measurement_enabled():
         _m2_setup_event(
             setup_timeline,
@@ -3771,8 +3817,19 @@ def _configure_large_process_cluster(
             prefix=f"m2-formation-{nodes[0].get('run_id', 'run')}",
         )
         value = "m2-cluster-aware-data-path"
-        set_result = run_node_cluster_cli(target, "SET", key, value, timeout=10)
-        get_result = run_node_cluster_cli(target, "GET", key, timeout=10)
+        # -c follows the MOVED, which points at an address the host cannot
+        # route, so this client has to run inside the cluster's own network.
+        port = ["-p", str(target["client_port"])]
+        # run_node_cluster_cli attributed these to cluster_setup and to the
+        # target node; the extraction keeps both exactly.
+        set_result = backend.run_cluster_admin(
+            target, ["-c", *port, "SET", key, value],
+            timeout=10, operation_id="cluster_setup", record_node=target,
+        )
+        get_result = backend.run_cluster_admin(
+            target, ["-c", *port, "GET", key],
+            timeout=10, operation_id="cluster_setup", record_node=target,
+        )
         if str(set_result).strip().upper() != "OK" or str(get_result).strip() != value:
             raise DockerRuntimeError("M2 cluster-aware SET/GET observation failed")
         _m2_setup_event(
@@ -3834,7 +3891,7 @@ def _wait_primary_service_barrier(
     while time.monotonic() < deadline:
         try:
             info = _parse_info(_node_command(observer, "CLUSTER", "INFO", timeout=5))
-            endpoint = Endpoint(str(observer.get("host", "127.0.0.1")), int(observer["client_port"]))
+            endpoint = Endpoint(str(observer["host"]), int(observer["client_port"]))
             with RespConnection(endpoint, timeout=5.0) as connection:
                 topology = normalize_cluster_shards(connection.execute("CLUSTER", "SHARDS"))
             primary_count = sum(
@@ -4156,7 +4213,7 @@ def _wait_process_replica_of(node: dict[str, Any], master_id: str, timeout: floa
 
 
 def _process_node_is_replica_of(node: dict[str, Any], master_id: str) -> bool:
-    endpoint = Endpoint(str(node.get("host", "127.0.0.1")), int(node["client_port"]))
+    endpoint = Endpoint(str(node["host"]), int(node["client_port"]))
     with RespConnection(endpoint, timeout=5.0) as connection:
         role_raw, myslots_raw = connection.execute_many(
             [("ROLE",), ("CLUSTER", "MYSLOTS")]
@@ -4172,7 +4229,7 @@ def _process_node_is_replica_of(node: dict[str, Any], master_id: str) -> bool:
 
 def _natural_probe_key_for_primary(node: dict[str, Any], *, prefix: str) -> tuple[int, str]:
     response = _host_command_binary(
-        str(node.get("host", "127.0.0.1")),
+        str(node["host"]),
         int(node["client_port"]),
         "CLUSTER",
         "MYSLOTS",
@@ -4330,6 +4387,8 @@ def _create_large_cluster(
     timeout: float,
     timings: dict[str, dict[str, Any]] | None = None,
     setup_timeline: SetupTimeline | None = None,
+    *,
+    backend: NodeBackend,
 ) -> str:
     if not primaries:
         raise DockerRuntimeError("large cluster create requires at least one primary")
@@ -4384,7 +4443,9 @@ def _create_large_cluster(
                 setup_timeline=setup_timeline,
             )
         else:
-            create_output, details = _create_primary_cluster_valkey_cli(primaries, timeout=timeout)
+            create_output, details = _create_primary_cluster_valkey_cli(
+                primaries, timeout=timeout, backend=backend
+            )
         primary_create_details.update(details)
         output.append(create_output)
 
@@ -4503,14 +4564,19 @@ def _record_substep(details: dict[str, Any], key: str, started: float) -> None:
     details[key] = round(max(time.monotonic() - started, 0.0), 6)
 
 
-def _create_primary_cluster_valkey_cli(primaries: list[dict[str, Any]], timeout: float) -> tuple[str, dict[str, Any]]:
+def _create_primary_cluster_valkey_cli(
+    primaries: list[dict[str, Any]],
+    timeout: float,
+    *,
+    backend: NodeBackend,
+) -> tuple[str, dict[str, Any]]:
     details: dict[str, Any] = {
         "primary_meet_seconds": 0.0,
         "slot_assignment_seconds": 0.0,
         "slot_assignment_scope": "inside_valkey_cli_cluster_create",
     }
     command_started = time.monotonic()
-    output = _create_primary_cluster(primaries, timeout=timeout)
+    output = _create_primary_cluster(primaries, timeout=timeout, backend=backend)
     _record_substep(details, "cluster_create_command_seconds", command_started)
 
     convergence_started = time.monotonic()
@@ -4683,19 +4749,25 @@ def _create_primary_cluster_preseed_epoch_tree_meet(
     )
 
 
-def _create_primary_cluster(primaries: list[dict[str, Any]], timeout: float) -> str:
+def _create_primary_cluster(
+    primaries: list[dict[str, Any]],
+    timeout: float,
+    *,
+    backend: NodeBackend,
+) -> str:
+    # Every address here is on the cluster network, which the host cannot
+    # route, so the client has to run from inside it.
     addresses = [_cluster_create_address(node) for node in primaries]
-    args = [
-        "exec",
-        primaries[0]["container_name"],
-        "valkey-cli",
-        "--cluster",
-        "create",
-        *addresses,
-    ]
-    args.append("--cluster-yes")
     try:
-        return run_docker(args, timeout=max(1, min(900, int(timeout)))).stdout.strip()
+        return backend.run_cluster_admin(
+            primaries[0],
+            ["--cluster", "create", *addresses, "--cluster-yes"],
+            timeout=timeout,
+            # What run_docker inferred for this command before the extraction.
+            # It is arguably cluster_setup, but re-attributing recorded evidence
+            # is its own change on its own evidence, not a refactor's to make.
+            operation_id="runtime",
+        )
     except DockerRuntimeError as exc:
         if "timed out" not in str(exc):
             raise

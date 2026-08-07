@@ -82,32 +82,49 @@ and the snapshots are **not** backend surface. They are RESP against endpoints,
 and they stay in the lifecycle. Only three things in this stage are
 backend-specific:
 
-1. **`client_endpoint(node) -> Endpoint`** — where this process connects to
-   speak RESP to a node. Under Docker that is `127.0.0.1:<published port>`;
-   under `native_multi_ecs` it is the node's own address. §15 names endpoint
-   discovery as the adapter's job. Replaces `node["host"]` / `node["client_port"]`
-   being read directly at the call sites.
-2. **`peer_address(node) -> str`** — what *other nodes* must be told to reach
-   this one, which is not the same thing: the nodehost container IP plus the
-   client port, because the macOS host cannot route `172.18.0.0/16`. Replaces
-   `_cluster_meet_address` / `_cluster_meet_port` / `_cluster_create_address`.
-3. **`run_cluster_admin(node, argv, *, timeout) -> str`** — run a `valkey-cli`
+1. **`client_host(node) -> str`** — where this process connects to speak RESP to
+   a node. Under Docker that is loopback, because `start_nodehost` publishes
+   every hosted port as `127.0.0.1:port:port`; under `native_multi_ecs` it is
+   the node's own address. §15 names endpoint discovery as the adapter's job.
+2. **`run_cluster_admin(node, argv, *, timeout) -> str`** — run a `valkey-cli`
    that must sit *inside* the cluster network, for commands the lifecycle
    cannot issue from outside it. Two callers, both real: `valkey-cli --cluster
    create` in the default strategy (`_create_primary_cluster`), and the
    M2-only cluster-aware `SET`/`GET` data-path probe, which follows a `MOVED`
    to an unroutable address.
 
-Three operations, three methods. Unlike Slice 1's pair case, none of these three
-is a barrier the timeline measures, so none splits: the segments around them are
-opened by the lifecycle, and the same method being called twice from two
-different segments erases nothing.
+Neither is a barrier the timeline measures, so unlike Slice 1's pair case
+neither splits: the segments around them are opened by the lifecycle, and the
+same method called twice from two different segments erases nothing.
 
-`operations 1 and 2 are one concept split in two on purpose.` Fusing them into a
-single `address(node)` would be wrong, not merely coarse: they resolve to
-different values under Docker, and a backend that returned one where the other
-was meant would produce a cluster that forms and then cannot be reached, or one
-that is reachable and never forms.
+### The third operation dissolved, and a worse gap took its place
+
+Mapping predicted a third, `peer_address(node)` — what *other* nodes are told,
+which under Docker is the nodehost's address on its own network and is not the
+same value as the client host. Reading the code closed that: the peer address is
+**already** backend-supplied through the Slice 1 seam. It arrives as
+`NodehostAddress.address` when a nodehost starts, and the lifecycle records it
+on every node the nodehost holds as `nodehost_container_ip`, which
+`_cluster_meet_address` then reads. Adding a method would have been a second way
+to fetch a value the backend already provides. It is inventory, not a call.
+
+That is the map's own rule working — enumerate what the regions actually call
+rather than design ahead of use — so the seam is two operations, not three.
+
+The client host turned out to be the real defect, and a larger one than
+"endpoint resolution is inlined". `host` was written **only into the state
+artifact**, hardcoded as `"127.0.0.1"` at two places, and never onto the live
+node dicts at all. Every reader in the run therefore took the default arm of
+`node.get("host", "127.0.0.1")`. A second backend would not have failed; it
+would have silently talked to loopback. The fix is what §15 asks for: the
+backend fills in the inventory once, at the point the node becomes reachable,
+and the readers stop defaulting. `_process_runtime_state` now writes the
+backend's value through instead of a constant.
+
+The defaults are removed at the four sites this stage owns. Five remain, in
+`management_matrix`, `fault_matrix` and `recovery`; they now read a real value
+because the key exists, and removing the dead default arm belongs to those
+stages' slices, not to a refactor of this one.
 
 ## What stays in the lifecycle
 

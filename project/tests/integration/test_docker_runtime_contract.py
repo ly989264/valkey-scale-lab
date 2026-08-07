@@ -848,6 +848,7 @@ class RecordingNodeBackend:
 
     def __init__(self, *, pids: dict[str, dict[str, int]] | None = None) -> None:
         self.operations: list[str] = []
+        self.cluster_admin: list[list[str]] = []
         self.pids = pids or {}
 
     def verify_image(self, image: str) -> dict[str, object]:
@@ -888,6 +889,23 @@ class RecordingNodeBackend:
 
     def wait_nodes_ready(self, nodes: list[dict[str, object]], *, timeout: float) -> None:
         self.operations.append("wait_nodes_ready")
+
+    def client_host(self, node: dict[str, object]) -> str:
+        self.operations.append("client_host")
+        return "10.0.0.1"
+
+    def run_cluster_admin(
+        self,
+        node: dict[str, object],
+        argv: list[str],
+        *,
+        timeout: float,
+        operation_id: str,
+        record_node: dict[str, object] | None = None,
+    ) -> str:
+        self.cluster_admin.append(list(argv))
+        self.operations.append("run_cluster_admin")
+        return "OK"
 
 
 def test_process_bootstrap_reaches_the_runtime_only_through_the_backend(
@@ -937,13 +955,20 @@ def test_process_bootstrap_reaches_the_runtime_only_through_the_backend(
     # Every bundle is sent before any is installed, and every nodehost starts
     # before any pid is collected: that is what the four timeline segments of
     # this stage measure.
-    assert backend.operations == (
+    barriers = [item for item in backend.operations if item != "client_host"]
+    assert barriers == (
         ["send_bundle"] * len(nodehosts)
         + ["install_bundle"] * len(nodehosts)
         + ["start_node_processes"] * len(nodehosts)
         + ["collect_node_pids"] * len(nodehosts)
     )
     assert [node["pid"] for node in nodes] == [5000 + offset for offset in range(len(nodes))]
+    # The endpoint this run connects to is the backend's to name, and it is not
+    # the address the cluster announces. Nothing may default it to loopback.
+    assert {node["host"] for node in nodes} == {"10.0.0.1"}
+    assert {node["nodehost_container_ip"] for node in nodes} == {
+        f"172.18.0.{index + 2}" for index in range(len(nodehosts))
+    }
 
 
 @pytest.mark.parametrize(
@@ -1169,6 +1194,7 @@ def test_process_runtime_state_records_required_node_fields(monkeypatch: pytest.
             "nodehost_container_id": "cid",
             "nodehost_container_name": "nodehost",
             "nodehost_container_ip": "172.18.0.2",
+            "host": "127.0.0.1",
         }
     ]
     nodehosts = [
@@ -1232,6 +1258,7 @@ def test_process_runtime_state_records_large_cluster_create_strategy() -> None:
             "nodehost_container_id": "cid",
             "nodehost_container_name": "nodehost",
             "nodehost_container_ip": "172.18.0.2",
+            "host": "127.0.0.1",
         }
         for idx in range(31)
     ]
@@ -1287,6 +1314,7 @@ def test_process_runtime_state_records_preseed_strategy_parallelism(monkeypatch:
             "nodehost_container_id": "cid",
             "nodehost_container_name": "nodehost",
             "nodehost_container_ip": "172.18.0.2",
+            "host": "127.0.0.1",
         }
         for idx in range(31)
     ]
@@ -1459,7 +1487,7 @@ def test_replicate_with_retry_succeeds_after_transient_failure(monkeypatch: pyte
 def test_mesh_meet_connects_each_distinct_pair(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
 
-    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True, **_kwargs) -> docker_runtime.DockerResult:
         calls.append(args)
         return docker_runtime.DockerResult("OK", "", 0)
 
@@ -1671,7 +1699,7 @@ def test_large_process_cluster_uses_cluster_create(monkeypatch: pytest.MonkeyPat
         for idx in range(20)
     )
 
-    def fake_create(primaries: list[dict], replicas: list[dict], timeout: float) -> str:
+    def fake_create(primaries: list[dict], replicas: list[dict], timeout: float, **_kwargs) -> str:
         create_calls.append(
             (
                 [node["logical_id"] for node in primaries],
@@ -1700,7 +1728,7 @@ def test_large_process_cluster_uses_cluster_create(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(docker_runtime, "_wait_process_snapshot_clean", lambda *args, **kwargs: waits.append("clean"))
     monkeypatch.setattr(docker_runtime, "_process_cluster_summary", fake_summary)
 
-    operations, snapshots = docker_runtime._configure_process_cluster(nodes)
+    operations, snapshots = docker_runtime._configure_process_cluster(nodes, backend=RecordingNodeBackend())
 
     assert len(create_calls) == 1
     assert len(create_calls[0][0]) == 20
@@ -1722,7 +1750,7 @@ def test_large_cluster_uses_replicated_cluster_create(monkeypatch: pytest.Monkey
             return "cluster_state:ok\ncluster_known_nodes:50\ncluster_slots_assigned:16384\n"
         return "OK"
 
-    def fake_create(primaries: list[dict], replicas: list[dict], timeout: float) -> str:
+    def fake_create(primaries: list[dict], replicas: list[dict], timeout: float, **_kwargs) -> str:
         create_calls.append(
             (
                 [node["logical_id"] for node in primaries],
@@ -1919,7 +1947,7 @@ def test_large_cluster_create_retargets_replicas_after_primary_create(monkeypatc
     ensured: list[tuple[str, str]] = []
     parallel_labels: list[str] = []
 
-    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True, **_kwargs) -> docker_runtime.DockerResult:
         calls.append(args)
         return docker_runtime.DockerResult("OK", "", 0)
 
@@ -1963,7 +1991,9 @@ def test_large_cluster_create_retargets_replicas_after_primary_create(monkeypatc
 
     monkeypatch.setattr(docker_runtime, "_bounded_parallel", capture_parallel)
 
-    docker_runtime._create_large_cluster(primaries, replicas, timeout=30)
+    docker_runtime._create_large_cluster(
+        primaries, replicas, timeout=30, backend=docker_runtime.DockerNodeBackend()
+    )
 
     assert calls[0][:6] == ["exec", "p0", "valkey-cli", "--cluster", "create", "172.18.0.2:6379"]
     assert "172.18.0.4:6379" not in calls[0]
@@ -2077,7 +2107,7 @@ def test_large_cluster_replica_configuration_records_breakdown_and_slowest(monke
 def test_primary_cluster_create_uses_process_node_addresses(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
 
-    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True, **_kwargs) -> docker_runtime.DockerResult:
         calls.append(args)
         return docker_runtime.DockerResult("OK", "", 0)
 
@@ -2099,7 +2129,9 @@ def test_primary_cluster_create_uses_process_node_addresses(monkeypatch: pytest.
     ]
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
 
-    docker_runtime._create_primary_cluster(primaries, timeout=30)
+    docker_runtime._create_primary_cluster(
+        primaries, timeout=30, backend=docker_runtime.DockerNodeBackend()
+    )
 
     assert calls[0][:5] == ["exec", "nodehost-a", "valkey-cli", "--cluster", "create"]
     assert "172.18.0.2:7400" in calls[0]
@@ -2110,7 +2142,7 @@ def test_primary_cluster_create_uses_process_node_addresses(monkeypatch: pytest.
 def test_primary_cluster_create_keeps_process_addresses_in_primary_order(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
 
-    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True, **_kwargs) -> docker_runtime.DockerResult:
         calls.append(args)
         return docker_runtime.DockerResult("OK", "", 0)
 
@@ -2126,7 +2158,9 @@ def test_primary_cluster_create_keeps_process_addresses_in_primary_order(monkeyp
     ]
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
 
-    docker_runtime._create_primary_cluster(primaries, timeout=30)
+    docker_runtime._create_primary_cluster(
+        primaries, timeout=30, backend=docker_runtime.DockerNodeBackend()
+    )
 
     address_start = calls[0].index("create") + 1
     addresses = calls[0][address_start : address_start + len(primaries)]
@@ -2135,10 +2169,18 @@ def test_primary_cluster_create_keeps_process_addresses_in_primary_order(monkeyp
 
 def test_default_primary_create_records_strategy_subtimings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("VSLAB_CLUSTER_CREATE_STRATEGY", raising=False)
-    monkeypatch.setattr(docker_runtime, "_create_primary_cluster", lambda primaries, timeout: "cluster create OK")
+    monkeypatch.setattr(
+        docker_runtime,
+        "_create_primary_cluster",
+        lambda primaries, timeout, backend: "cluster create OK",
+    )
     monkeypatch.setattr(docker_runtime, "_wait_cluster_known", lambda *args, **kwargs: None)
 
-    output, details = docker_runtime._create_primary_cluster_valkey_cli([{"logical_id": "p0"}, {"logical_id": "p1"}], timeout=30)
+    output, details = docker_runtime._create_primary_cluster_valkey_cli(
+        [{"logical_id": "p0"}, {"logical_id": "p1"}],
+        timeout=30,
+        backend=RecordingNodeBackend(),
+    )
 
     assert "cluster create OK" in output
     assert details["primary_meet_seconds"] == 0.0
@@ -2195,7 +2237,7 @@ def test_non_range_strategy_does_not_report_unused_range_parallelism(monkeypatch
     )
     timings: dict[str, dict] = {}
 
-    docker_runtime._create_large_cluster([{"logical_id": "p0"}], [], timeout=30, timings=timings)
+    docker_runtime._create_large_cluster([{"logical_id": "p0"}], [], timeout=30, timings=timings, backend=RecordingNodeBackend())
 
     details = timings["primary_cluster_create"]["details"]
     assert details["strategy"] == docker_runtime.CLUSTER_CREATE_STRATEGY_MANUAL
@@ -2334,7 +2376,7 @@ def test_preseed_large_cluster_uses_replica_pipeline_without_global_replica_meet
     monkeypatch.setattr(docker_runtime, "_wait_process_role_counts", lambda *args, **kwargs: None)
 
     timings: dict[str, dict] = {}
-    output = docker_runtime._create_large_cluster(primaries, replicas, timeout=30, timings=timings)
+    output = docker_runtime._create_large_cluster(primaries, replicas, timeout=30, timings=timings, backend=RecordingNodeBackend())
 
     assert output == "primaries\nreplicas"
     assert "replica_meet" not in timings
@@ -3068,3 +3110,118 @@ def test_local_full_flow_network_disconnect_reconnects_when_side_observation_fai
 
     assert ["network", "connect", "--ip", "172.18.0.2", "owned-network", "nodehost-a"] in calls
     assert recovered == [(2, 180.0)]
+
+
+def _cluster_form_nodes(shards: int) -> list[dict[str, object]]:
+    """Nodes as runtime_start leaves them: a client host and a peer address."""
+    nodes: list[dict[str, object]] = []
+    for role, suffix in (("primary", "primary"), ("replica", "replica-00")):
+        for idx in range(shards):
+            nodes.append(
+                {
+                    "logical_id": f"shard-{idx:04d}-{suffix}",
+                    "role": role,
+                    "shard_id": f"shard-{idx:04d}",
+                    "az_id": "az-a" if idx % 2 == 0 else "az-b",
+                    "host": "10.0.0.1",
+                    "client_port": 7400 + idx + (1000 if role == "replica" else 0),
+                    "container_name": f"nodehost-{idx % 2}",
+                    "nodehost_container_name": f"nodehost-{idx % 2}",
+                    "nodehost_container_ip": f"172.18.0.{2 + idx % 2}",
+                }
+            )
+    return nodes
+
+
+def _silence_cluster_form_probes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Answer the RESP layer so the stage's own structure is what is measured."""
+    for name in (
+        "_wait_process_known",
+        "_wait_process_slots_assigned",
+        "_wait_process_cluster_ok",
+        "_wait_process_role_counts",
+        "_wait_process_snapshot_clean",
+        "_wait_cluster_known",
+        "_add_slots_node",
+        "_replicate_process_nodes_parallel",
+    ):
+        monkeypatch.setattr(docker_runtime, name, lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_tree_fanout_meet_nodes", lambda *args, **kwargs: 3)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_cluster_node_ids_by_shard",
+        lambda nodes, **kwargs: {str(node["shard_id"]): f"id-{node['logical_id']}" for node in nodes},
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_configure_large_cluster_replicas_with_diagnostics",
+        lambda primaries, replicas, timeout: ("replicas OK", {}),
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_process_cluster_summary",
+        lambda label, sampled, **kwargs: {"label": label, "samples": []},
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("cluster_form must reach the runtime only through the backend")
+        ),
+    )
+
+
+def test_cluster_form_small_branch_segments_and_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    """At or below thirty nodes the stage assigns slots itself and never creates."""
+    _silence_cluster_form_probes(monkeypatch)
+    timeline = SetupTimeline(clock=iter(float(tick) for tick in range(1, 200)).__next__)
+    backend = RecordingNodeBackend()
+
+    docker_runtime._configure_process_cluster(
+        _cluster_form_nodes(3), setup_timeline=timeline, backend=backend
+    )
+
+    assert [segment["name"] for segment in timeline.segments if segment["kind"] == "span"] == [
+        "primary_cluster_create",
+        "cluster_slots_assign",
+        "replica_meet",
+        "replica_replicate",
+        "cluster_final_full_snapshot",
+    ]
+    assert {segment["category"] for segment in timeline.segments if segment["kind"] == "span"} == {
+        "cluster_formation"
+    }
+    # This branch forms the cluster by RESP alone, so it asks the backend for
+    # nothing at all. cluster_convergence_wait and cluster_final_snapshot are
+    # the large branch's, and REQUIRED_SETUP_SEGMENTS asks for both.
+    assert backend.operations == []
+
+
+def test_cluster_form_large_branch_segments_and_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Above thirty nodes the stage creates the cluster through the backend."""
+    monkeypatch.delenv("VSLAB_CLUSTER_CREATE_STRATEGY", raising=False)
+    _silence_cluster_form_probes(monkeypatch)
+    timeline = SetupTimeline(clock=iter(float(tick) for tick in range(1, 200)).__next__)
+    backend = RecordingNodeBackend()
+    nodes = _cluster_form_nodes(20)
+
+    docker_runtime._configure_process_cluster(nodes, setup_timeline=timeline, backend=backend)
+
+    assert [segment["name"] for segment in timeline.segments if segment["kind"] == "span"] == [
+        "primary_cluster_create",
+        "replica_meet",
+        "replica_replicate",
+        "cluster_convergence_wait",
+        "cluster_final_snapshot",
+        "cluster_final_full_snapshot",
+    ]
+    assert backend.operations == ["run_cluster_admin"]
+    argv = backend.cluster_admin[0]
+    assert argv[:2] == ["--cluster", "create"]
+    assert argv[-1] == "--cluster-yes"
+    # The addresses handed to cluster create are the peer addresses the cluster
+    # announces, never the client host this run connects to.
+    assert argv[2:-1] == [
+        f"172.18.0.{2 + idx % 2}:{7400 + idx}" for idx in range(20)
+    ]
+    assert not any(address.startswith("10.0.0.1") for address in argv[2:-1])

@@ -3,7 +3,15 @@
 Derived from `runtime_start`, the stage that exercises the real primitives:
 process start, node inspection, ownership registration and cleanup binding.
 `project/docs/runtime_start_slice_map.md` records why that stage was chosen and
-which segments it owns.
+which segments it owns. `cluster_form` extended it by two operations; see
+`project/docs/cluster_form_slice_map.md`.
+
+§15 of `docs/scalable_cluster_observability_design.md` fixes how far this seam
+reaches. A runtime adapter replaces inventory and endpoint discovery, process
+lifecycle, the actuator, sampler deployment and evidence upload. It does not
+replace RESP commands or the verification logic, so cluster formation itself -
+the MEET fanout, the slot ranges, the replica attach, the convergence waits -
+stays in the lifecycle and is not part of this protocol.
 
 The lifecycle keeps everything that is not I/O against a runtime: planning which
 logical nodes live on which nodehost, generating configuration, writing bundles,
@@ -78,3 +86,43 @@ class NodeBackend(Protocol):
 
     def wait_nodes_ready(self, nodes: list[dict[str, Any]], *, timeout: float) -> None:
         """Wait until every started node answers, or raise once `timeout` passes."""
+
+    def client_host(self, node: dict[str, Any]) -> str:
+        """The address this process connects to in order to speak RESP to a node.
+
+        This is not the address other nodes use to reach it. Under Docker the
+        two differ: the run connects to a published port on loopback, while the
+        cluster announces the nodehost's address on its own network, because
+        the macOS host cannot route it. A backend that returned one where the
+        other was meant would produce a cluster that forms but cannot be
+        reached, or one that is reachable and never forms.
+
+        The peer address is not a method here. It is already inventory: it
+        arrives as `NodehostAddress.address` when a nodehost starts, and the
+        lifecycle records it on every node the nodehost holds. This is the same
+        kind of value, so the lifecycle records it the same way, once, rather
+        than calling back per command.
+        """
+
+    def run_cluster_admin(
+        self,
+        node: dict[str, Any],
+        argv: list[str],
+        *,
+        timeout: float,
+        operation_id: str,
+        record_node: dict[str, Any] | None = None,
+    ) -> str:
+        """Run a `valkey-cli` from inside the cluster's own network.
+
+        For the commands the lifecycle cannot issue from outside it: cluster
+        creation, which addresses every primary on the cluster network, and any
+        client that must follow a `MOVED` to an address the host cannot route.
+        `argv` is the `valkey-cli` argument list, so the caller owns `-c`, `-p`
+        and `--cluster`; the backend owns only where the client runs.
+
+        `operation_id` and `record_node` are the command's attribution in the
+        recorded evidence. They are the caller's because the two call sites
+        attributed differently before this seam existed, and quietly agreeing
+        them would edit the evidence under cover of a refactor.
+        """
