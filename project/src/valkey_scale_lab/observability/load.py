@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 import shutil
 import subprocess
 import time
@@ -26,6 +27,9 @@ class LoadLanePaths:
     stderr: Path
     json: Path
     hdr_prefix: Path
+    # Set when memtier runs inside a container: the directory it writes its JSON
+    # and HDR output to over there, to be copied back to the host paths above.
+    remote_dir: str | None = None
 
 
 class MemtierProcess:
@@ -72,7 +76,13 @@ class MemtierProcess:
 
 
 class MemtierLoadLane:
-    """Fixed V1 Load Lane; no runtime fallback or dynamic concurrency."""
+    """Fixed V1 Load Lane; no runtime fallback or dynamic concurrency.
+
+    In cluster mode memtier follows the addresses the cluster advertises, which
+    are the Docker network addresses of the nodehosts. A macOS host cannot route
+    those, so `container` runs memtier inside a nodehost container, where they
+    resolve exactly as they do for the cluster itself.
+    """
 
     def __init__(
         self,
@@ -84,6 +94,8 @@ class MemtierLoadLane:
         artifacts_dir: Path,
         executable: str = "memtier_benchmark",
         popen: Callable[..., subprocess.Popen[str]] = subprocess.Popen,
+        container: str | None = None,
+        container_dir: str = "/tmp/vslab-load-lane",
     ) -> None:
         self.host = host
         self.port = port
@@ -92,6 +104,8 @@ class MemtierLoadLane:
         self.artifacts_dir = artifacts_dir
         self.executable = executable
         self._popen = popen
+        self.container = container
+        self.container_dir = container_dir
 
     def paths(self, label: str) -> LoadLanePaths:
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -100,9 +114,37 @@ class MemtierLoadLane:
             stderr=self.artifacts_dir / f"memtier_{label}.stderr.log",
             json=self.artifacts_dir / f"memtier_{label}.json",
             hdr_prefix=self.artifacts_dir / f"memtier_{label}_latency",
+            remote_dir=(
+                None if self.container is None else f"{self.container_dir}/{label}"
+            ),
         )
 
     def command(self, paths: LoadLanePaths, *, duration_seconds: float) -> list[str]:
+        memtier = self._memtier_argv(paths, duration_seconds=duration_seconds)
+        if paths.remote_dir is None:
+            return memtier
+        return [
+            "docker",
+            "exec",
+            str(self.container),
+            "sh",
+            "-c",
+            f"mkdir -p {shlex.quote(paths.remote_dir)} && exec {shlex.join(memtier)}",
+        ]
+
+    def _output_prefix(self, paths: LoadLanePaths) -> tuple[str, str]:
+        """Where memtier writes its JSON and HDR output, from its own vantage."""
+        if paths.remote_dir is None:
+            return paths.json.as_posix(), paths.hdr_prefix.as_posix()
+        return (
+            f"{paths.remote_dir}/{paths.json.name}",
+            f"{paths.remote_dir}/{paths.hdr_prefix.name}",
+        )
+
+    def _memtier_argv(
+        self, paths: LoadLanePaths, *, duration_seconds: float
+    ) -> list[str]:
+        json_out, hdr_prefix = self._output_prefix(paths)
         return [
             self.executable,
             "--server",
@@ -123,14 +165,15 @@ class MemtierLoadLane:
             "--data-size=32",
             f"--rate-limiting={per_connection_rate(self.primary_count)}",
             f"--key-prefix=vsl:load:{self.run_scope}:",
-            f"--json-out-file={paths.json}",
-            f"--hdr-file-prefix={paths.hdr_prefix}",
+            f"--json-out-file={json_out}",
+            f"--hdr-file-prefix={hdr_prefix}",
             f"--test-time={duration_seconds:g}",
         ]
 
     def _start(self, label: str, *, duration_seconds: float) -> MemtierProcess:
-        if shutil.which(self.executable) is None:
-            raise CollectionError(f"{self.executable} is not installed")
+        launcher = "docker" if self.container is not None else self.executable
+        if shutil.which(launcher) is None:
+            raise CollectionError(f"{launcher} is not installed")
         paths = self.paths(label)
         stdout_file = paths.stdout.open("w", encoding="utf-8")
         stderr_file = paths.stderr.open("w", encoding="utf-8")
@@ -167,6 +210,7 @@ class MemtierLoadLane:
             process.close_files()
         if code != 0:
             raise CollectionError(f"memtier preflight exited with code {code}")
+        self._collect_outputs(process.paths)
         self._validate_outputs(process.paths)
         self._validate_preflight_logs(process.paths)
         return {
@@ -213,6 +257,7 @@ class MemtierLoadLane:
             process.close_files()
         if code != 0 and not (planned_stop and code == -15):
             raise CollectionError(f"memtier formal window exited with code {code}")
+        self._collect_outputs(process.paths)
         self._validate_outputs(process.paths)
         observed_qps = _read_qps(process.paths.json)
         warnings: list[str] = []
@@ -235,6 +280,27 @@ class MemtierLoadLane:
             "warnings": warnings,
             "command": process.command,
         }
+
+    def _collect_outputs(self, paths: LoadLanePaths) -> None:
+        """Bring container-written JSON and HDR output back to the host paths."""
+        if paths.remote_dir is None:
+            return
+        result = subprocess.run(
+            [
+                "docker",
+                "cp",
+                f"{self.container}:{paths.remote_dir}/.",
+                self.artifacts_dir.as_posix(),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            raise CollectionError(
+                "could not copy memtier output out of "
+                f"{self.container}: {result.stderr.strip()}"
+            )
 
     @staticmethod
     def _validate_outputs(paths: LoadLanePaths) -> None:

@@ -7876,6 +7876,19 @@ def _local_full_flow_operation_ids_for_refs(
     }
 
 
+def _load_lane_seed(nodes: list[dict[str, Any]]) -> tuple[str, str, int]:
+    """Where to run memtier, and a seed endpoint reachable from in there.
+
+    memtier follows the addresses the cluster advertises, which are nodehost
+    addresses on the Docker network. Running it inside a nodehost container puts
+    it on that network, and a node hosted in the same container answers on
+    loopback there.
+    """
+    seed = nodes[0]
+    container = str(seed["container_name"])
+    return container, "127.0.0.1", int(seed["client_port"])
+
+
 def _local_full_flow_run_baseline_workload(capability_id: str, scenario: str, run_id: str, scale: int, nodes: list[dict[str, Any]]) -> dict[str, Any]:
     telemetry = TelemetryRun(capability_id=capability_id, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.baseline_workload", scale=scale, node_count=scale)
     operation_id = f"local_full_flow-baseline-workload-{scale}"
@@ -8048,14 +8061,16 @@ def _local_full_flow_run_management_sequence(
             run_scope=f"{run_id}:stability",
         )
     )
+    load_container, load_host, load_port = _load_lane_seed(nodes)
     load = MemtierLoadLane(
-        host=inventory[0].host,
-        port=inventory[0].port,
+        host=load_host,
+        port=load_port,
         primary_count=int(
             complete_validation["light_validation"]["primary_count"]
         ),
         run_scope=f"{run_id}:stability",
         artifacts_dir=artifacts / "load_lane",
+        container=load_container,
     )
     stability_result = StabilityWindow(
         light_probe=LightClusterProbe(inventory, concurrency=64, timeout=5.0),
@@ -8240,12 +8255,14 @@ def _run_scalable_primary_kill_failover(
             "primary failover Sentinel requires an unaffected control shard"
         )
     primary_count = int(initial_validation["light_validation"]["primary_count"])
+    load_container, load_host, load_port = _load_lane_seed(nodes)
     load = MemtierLoadLane(
-        host=inventory[0].host,
-        port=inventory[0].port,
+        host=load_host,
+        port=load_port,
         primary_count=primary_count,
         run_scope=f"{run_id}:failover",
         artifacts_dir=artifacts / "load_lane_failover",
+        container=load_container,
     )
     load_preflight = load.preflight()
     load_process = load.start(duration_seconds=300.0)

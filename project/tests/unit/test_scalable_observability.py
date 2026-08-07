@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
@@ -265,6 +266,92 @@ def _shards_with_loading_replica(node_ids: list[str]) -> list[Any]:
     assert replica[-2] == b"health"
     replica[-1] = b"loading"
     return shards
+
+
+
+def test_load_lane_runs_inside_a_nodehost_container(tmp_path: Path) -> None:
+    lane = MemtierLoadLane(
+        host="127.0.0.1",
+        port=7401,
+        primary_count=25,
+        run_scope="run:stability",
+        artifacts_dir=tmp_path,
+        container="vslab-run-nodehost-az-a-00",
+    )
+    paths = lane.paths("formal")
+    command = lane.command(paths, duration_seconds=120)
+
+    # The cluster advertises Docker network addresses, so memtier has to run
+    # where those resolve rather than on the host.
+    assert command[:3] == ["docker", "exec", "vslab-run-nodehost-az-a-00"]
+    script = command[-1]
+    assert "memtier_benchmark" in script
+    assert "--cluster-mode" in script
+
+    # Output goes to a container path and is copied back to the host paths.
+    assert paths.remote_dir == "/tmp/vslab-load-lane/formal"
+    assert f"--json-out-file={paths.remote_dir}/{paths.json.name}" in script
+    assert f"--hdr-file-prefix={paths.remote_dir}/{paths.hdr_prefix.name}" in script
+    assert str(tmp_path) not in script
+
+    # stdout and stderr still stream straight back over the exec channel.
+    assert paths.stdout.parent == tmp_path
+    assert paths.stderr.parent == tmp_path
+
+
+def test_load_lane_copies_container_output_back_to_the_host(tmp_path: Path) -> None:
+    lane = MemtierLoadLane(
+        host="127.0.0.1",
+        port=7401,
+        primary_count=25,
+        run_scope="run:stability",
+        artifacts_dir=tmp_path,
+        container="vslab-run-nodehost-az-a-00",
+    )
+    paths = lane.paths("formal")
+    calls: list[list[str]] = []
+
+    def fake_run(command: list[str], **_kwargs: Any) -> Any:
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    try:
+        lane._collect_outputs(paths)
+    finally:
+        monkeypatch.undo()
+
+    assert calls == [
+        [
+            "docker",
+            "cp",
+            "vslab-run-nodehost-az-a-00:/tmp/vslab-load-lane/formal/.",
+            tmp_path.as_posix(),
+        ]
+    ]
+
+
+def test_load_lane_reports_a_failed_output_copy(tmp_path: Path) -> None:
+    lane = MemtierLoadLane(
+        host="127.0.0.1",
+        port=7401,
+        primary_count=25,
+        run_scope="run:stability",
+        artifacts_dir=tmp_path,
+        container="vslab-run-nodehost-az-a-00",
+    )
+
+    def fake_run(command: list[str], **_kwargs: Any) -> Any:
+        return subprocess.CompletedProcess(command, 1, "", "no such container")
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    try:
+        with pytest.raises(CollectionError, match="could not copy memtier output"):
+            lane._collect_outputs(lane.paths("formal"))
+    finally:
+        monkeypatch.undo()
 
 
 def test_permanent_role_mismatch_fails_without_waiting_for_convergence() -> None:
@@ -530,7 +617,9 @@ def test_load_lane_uses_only_the_fixed_v1_parameters(tmp_path: Path) -> None:
         run_scope="run-a:arm-b",
         artifacts_dir=tmp_path,
     )
-    command = lane.command(lane.paths("formal"), duration_seconds=120)
+    paths = lane.paths("formal")
+    assert paths.remote_dir is None
+    command = lane.command(paths, duration_seconds=120)
 
     assert per_connection_rate(40) == 250
     assert "-c" in command and command[command.index("-c") + 1] == "1"

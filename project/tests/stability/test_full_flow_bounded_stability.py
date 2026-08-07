@@ -120,6 +120,9 @@ def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(
                 "client_port": 7000,
                 "role": "primary",
                 "shard_id": "shard-0000",
+                # The load lane runs memtier inside the node's own nodehost
+                # container, where the cluster's advertised addresses resolve.
+                "container_name": "vslab-review-o3-nodehost-az-a-00",
             }
         ],
         command_log=command_log,

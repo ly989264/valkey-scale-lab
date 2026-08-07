@@ -1,0 +1,8 @@
+# The image build copies exactly one file out of the context: the Valkey
+# CLUSTER MYSLOTS patch. Everything else is transfer cost, and artifacts/ alone
+# passes 700 MB after a handful of real runs, which stalls the build on macOS
+# before a single step executes.
+*
+!patches
+!patches/valkey
+!patches/valkey/0001-add-cluster-myslots.patch
