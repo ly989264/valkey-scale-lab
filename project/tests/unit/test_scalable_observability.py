@@ -437,8 +437,51 @@ def test_two_primaries_in_one_shard_is_permanent() -> None:
     with pytest.raises(SemanticFailure) as excinfo:
         normalize_cluster_shards(_shards_with_two_primaries(node_ids))
 
-    # Split brain never resolves by looking again, so it must not be retried.
-    assert "2 primaries" in str(excinfo.value)
+    # Split brain never resolves by looking again, so it must not be retried,
+    # and the failure names both primaries and their health.
+    message = str(excinfo.value)
+    assert "2 healthy primaries" in message
+    assert message.count("(online)") == 2
+    assert not isinstance(excinfo.value, ConvergenceFailure)
+
+
+
+def test_a_failed_primary_beside_its_promoted_replica_is_transient() -> None:
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    shards = copy.deepcopy(_shards(node_ids))
+    # The killed primary is still known and still flagged a primary, while its
+    # replica has already been promoted. Both were observed together at t+44.3s
+    # in a real exact-10 failover.
+    old_primary, promoted = shards[0][3]
+    assert old_primary[-2] == b"health"
+    old_primary[-1] = b"failed"
+    assert promoted[-4] == b"role"
+    promoted[-3] = b"master"
+
+    with pytest.raises(ConvergenceFailure) as excinfo:
+        normalize_cluster_shards(
+            shards, allowed_unhealthy_node_ids={node_ids[0]}
+        )
+
+    message = str(excinfo.value)
+    assert "awaiting failover convergence" in message
+    assert "(failed)" in message and "(online)" in message
+
+
+def test_two_healthy_primaries_stay_fatal_even_mid_failover() -> None:
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    shards = copy.deepcopy(_shards(node_ids))
+    promoted = shards[0][3][1]
+    promoted[-3] = b"master"
+
+    # Allowing the old primary to be unhealthy must not turn split brain into
+    # something the validator waits out.
+    with pytest.raises(SemanticFailure) as excinfo:
+        normalize_cluster_shards(
+            shards, allowed_unhealthy_node_ids={node_ids[0]}
+        )
+
+    assert "healthy primaries" in str(excinfo.value)
     assert not isinstance(excinfo.value, ConvergenceFailure)
 
 

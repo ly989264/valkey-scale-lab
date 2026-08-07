@@ -577,10 +577,27 @@ def normalize_cluster_shards(
             # when the promotion lands, so it is worth observing again.
             raise ConvergenceFailure("CLUSTER SHARDS shard has no primary")
         if len(primaries) > 1:
-            # Two primaries in one shard is split brain, which never resolves by
-            # looking again.
-            raise SemanticFailure(
-                f"CLUSTER SHARDS shard has {len(primaries)} primaries"
+            healthy_primaries = [
+                member
+                for member in primaries
+                if member["health"].lower() in {"online", "healthy"}
+            ]
+            detail = ", ".join(
+                f"{member['node_id']}({member['health'] or 'MISSING'})"
+                for member in primaries
+            )
+            if len(healthy_primaries) > 1:
+                # Two primaries both serving is split brain. It does not resolve
+                # by looking again, and must never be waited out.
+                raise SemanticFailure(
+                    f"CLUSTER SHARDS shard has {len(healthy_primaries)} healthy "
+                    f"primaries: {detail}"
+                )
+            # A promoted replica beside the failed primary it replaced, which
+            # the cluster has not dropped from the shard yet.
+            raise ConvergenceFailure(
+                f"CLUSTER SHARDS shard has {len(primaries)} primaries awaiting "
+                f"failover convergence: {detail}"
             )
         primary_id = primaries[0]["node_id"]
         shards.append(
