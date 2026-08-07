@@ -759,6 +759,10 @@ class FullClusterValidator:
                 return self._run_once(**validation_options)
             except ConvergenceFailure as failure:
                 if time.monotonic() >= deadline:
+                    if self.convergence_timeout <= 0:
+                        # A caller that owns the waiting asked for a single
+                        # observation, so report what was seen as it was seen.
+                        raise
                     raise ConvergenceFailure(
                         f"cluster did not converge within "
                         f"{self.convergence_timeout:g}s over {attempts} validation "

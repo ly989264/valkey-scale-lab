@@ -8491,11 +8491,16 @@ def _run_scalable_primary_kill_failover(
     observer = AffectedShardObserver(survivors)
 
     def full_validation_while_target_down() -> dict[str, Any]:
+        # wait_for_convergence below is itself a bounded retry loop and owns the
+        # deadline for this window, so this is a single observation. Giving it a
+        # convergence wait of its own would nest two bounded waits and let the
+        # fault window run past the load lane's own window.
         return FullClusterValidator(
             inventory,
             concurrency=64,
             observer_count=3,
             timeout=5.0,
+            convergence_timeout=0.0,
         ).run(
             require_plan_roles=False,
             require_replica_connected=True,

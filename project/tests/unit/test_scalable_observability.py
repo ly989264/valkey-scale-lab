@@ -642,6 +642,42 @@ def test_runtime_resolves_announced_nodehost_addresses() -> None:
     assert resolve(Endpoint("127.0.0.1", 7205)) == Endpoint("127.0.0.1", 7205)
 
 
+
+def test_a_single_observation_reports_what_it_saw_unwrapped() -> None:
+    nodes, responses = _cluster_fixture()
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    factory, observed = _loading_then_healthy_factory(
+        nodes, responses, node_ids, loading_observations=10**6
+    )
+
+    # A caller that owns the deadline asks for one observation. Nesting a wait
+    # inside its retry loop would double the worst case for that window.
+    with pytest.raises(ConvergenceFailure) as excinfo:
+        FullClusterValidator(
+            nodes,
+            concurrency=32,
+            observer_count=3,
+            convergence_timeout=0.0,
+            connection_factory=factory,
+        ).run()
+
+    message = str(excinfo.value)
+    assert "did not converge within" not in message
+    assert "CLUSTER SHARDS contains unhealthy nodes" in message
+    # Exactly one round of observers, never a second attempt.
+    assert observed[0] == 1
+
+
+def test_the_nested_failover_validation_does_not_wait() -> None:
+    import inspect
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    source = inspect.getsource(docker_runtime._run_scalable_primary_kill_failover)
+    validation = source.split("def full_validation_while_target_down")[1]
+    assert "convergence_timeout=0.0" in validation.split(".run(")[0]
+
+
 def test_cluster_shards_membership_ignores_unrelated_node_health() -> None:
     node_ids = [f"{index + 1:040x}" for index in range(4)]
     raw = _shards_with_loading_replica(node_ids)
