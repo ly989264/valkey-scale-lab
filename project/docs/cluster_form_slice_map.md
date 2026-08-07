@@ -321,7 +321,43 @@ therefore form a correct cluster and still never produce a passing setup
 timeline — which is why bar item 3 was written as "segments in order" and is met
 in that sense, while the artifact's own status cannot be.
 
-Three pre-existing things this slice will surface and must not quietly change:
+## Slice 2 is measured
+
+| Bar item | Result |
+| --- | --- |
+| `./gate suite repository.all` | 91/91 |
+| Targeted hermetic tests | two, one per branch, each asserting its own segment set while `run_docker` raises |
+| Real six-node smoke (≤30 branch) | cluster formed, five segments in order, zero residue; artifact `status: FAIL` for the two segments this branch cannot emit, at both commits |
+| Real exact-50 against the frozen baseline | **PASS, 884.78s**; five of five views identical against run-1 and against run-2 |
+| exact-200, stage-scoped | **four of four comparable views identical**, one unavailable; the stage passed, the run did not |
+| `runtime_start` not regressed | seven of seven at exact-50, six of six at exact-200 |
+| Old path removed | no Docker name and no loopback default survives in the stage's regions |
+| Residue | zero after every run, `cleanup_report` PASS |
+
+The exact-50 run passed outright, and both the stage's own views and Slice 1's
+are identical to the frozen baseline under the calibrated normalisation. The
+excluded convergence-retry row is reported rather than diffed, as designed:
+baseline run-1 `count=30 FAIL`, run-2 `count=1 PASS`, candidate `count=5 FAIL` -
+three values across three runs of two commits, which is why it is not a diff.
+
+exact-200 failed at 363.4s with `[Errno 49] Can't assign requested address`, the
+second of the three pre-existing downstream failures the Slice 1 map recorded,
+and the same one the frozen baseline hit at 311s. It is strictly downstream:
+`primary_cluster_create` PASS 107.7s, `replica_meet` PASS, `replica_replicate`
+PASS, both snapshots at 200 known nodes, state `ok`, 16384 slots, 100 primaries
+and 100 replicas, and `cluster_myslots_report` PASS 200 of 200. The stage's own
+evidence is complete and passing at 200 nodes and diffs clean against the
+reference, which is the stage-scoped bar agreed at review.
+
+`primary_cluster_create` took 107.7s here against 51.7s in the reference run.
+That is a duration, which this diff ignores by design, and the same command took
+30.4s at exact-50 against 84.8s in the frozen exact-50 baseline - it moves by
+more than 2x between runs in both directions, so it reads as host load rather
+than a signal.
+
+## Report, do not fix
+
+Three pre-existing things this slice surfaced and did not quietly change:
 
 - **`_node_response` falls back to `docker exec valkey-cli` on any exception**,
   including a RESP error reply, because `_read_resp` raises `DockerRuntimeError`
@@ -330,7 +366,7 @@ Three pre-existing things this slice will surface and must not quietly change:
   paths, not this stage's, and removing it is its own change on its own evidence.
 - **The M2 data-path probe uses `docker exec valkey-cli -c`** for the same
   reason it must: following a `MOVED` needs a client inside the cluster network.
-  Operation 3 gives it a home, but whether a redirect-following probe counts as
+  `run_cluster_admin` gives it a home, but whether a redirect-following probe counts as
   a §16.2 "protocol check" is a contract question, and M2 is parked.
 - **`_configure_process_cluster`'s `>30` branch is scale-dispatched, not
   configured**, so the two branches can drift and only one is diffed. Naming it
