@@ -7878,6 +7878,32 @@ def _local_full_flow_operation_ids_for_refs(
     }
 
 
+def _advertised_endpoint_resolver(
+    nodes: list[dict[str, Any]]
+) -> Callable[[Endpoint], Endpoint]:
+    """Map an address the cluster advertises to one this observer can reach.
+
+    Nodes announce themselves with cluster-announce-ip set to their nodehost's
+    address on the Docker network, so a MOVED after a promotion names the new
+    primary by that address. An observer outside the network cannot route it.
+    Endpoint discovery is the runtime adapter's responsibility, so the mapping
+    is built here from the inventory and handed to the lane, which keeps its own
+    RESP connections and its protocol checks unchanged.
+    """
+    reachable: dict[tuple[str, int], Endpoint] = {}
+    for node in nodes:
+        port = int(node["client_port"])
+        target = Endpoint(str(node.get("host", "127.0.0.1")), port)
+        advertised = node.get("nodehost_container_ip") or node.get("container_ip")
+        if advertised:
+            reachable[(str(advertised), port)] = target
+
+    def resolve(endpoint: Endpoint) -> Endpoint:
+        return reachable.get((endpoint.host, endpoint.port), endpoint)
+
+    return resolve
+
+
 def _load_lane_seed(nodes: list[dict[str, Any]]) -> tuple[str, str, int]:
     """Where to run memtier, and a seed endpoint reachable from in there.
 
@@ -8184,7 +8210,8 @@ def _local_full_flow_run_management_sequence(
             complete_validation["light_validation"],
             inventory,
             run_scope=f"{run_id}:stability",
-        )
+        ),
+        endpoint_resolver=_advertised_endpoint_resolver(nodes),
     )
     load_container, load_host, load_port = _load_lane_seed(nodes)
     load = MemtierLoadLane(
@@ -8364,7 +8391,11 @@ def _run_scalable_primary_kill_failover(
         inventory,
         run_scope=f"{run_id}:failover",
     )
-    sentinel = SentinelLane(sentinel_nodes)
+    # This is the lane that measures recovery, so it is the one that must be
+    # able to follow the promotion's MOVED to the new primary.
+    sentinel = SentinelLane(
+        sentinel_nodes, endpoint_resolver=_advertised_endpoint_resolver(nodes)
+    )
     sentinel_prepare = sentinel.prepare()
     affected_canary = next(
         node.canary for node in sentinel_nodes if node.shard_id == affected_shard

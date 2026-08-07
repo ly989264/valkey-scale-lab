@@ -499,6 +499,89 @@ def test_sentinel_recovery_timeout_reports_what_it_observed() -> None:
     assert "CLUSTERDOWN" in diagnosis
 
 
+
+def test_router_follows_a_promotion_to_an_advertised_address(tmp_path: Path) -> None:
+    from valkey_scale_lab.observability.sentinel import ClusterRouter
+    from valkey_scale_lab.valkey.resp import RespCommandError
+
+    seed = Endpoint("127.0.0.1", 7200)
+    advertised = Endpoint("172.18.0.3", 7205)
+    reachable = Endpoint("127.0.0.1", 7205)
+    dialled: list[Endpoint] = []
+
+    class Conn:
+        def __init__(self, endpoint: Endpoint) -> None:
+            self.endpoint = endpoint
+
+        def execute(self, *command: Any) -> Any:
+            if self.endpoint == seed:
+                # After the promotion the cluster names the new primary by the
+                # address it announces, which the observer cannot route.
+                raise RespCommandError(f"MOVED 0 {advertised.host}:{advertised.port}")
+            return b"canary-value"
+
+        def close(self) -> None:
+            return None
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Conn:
+        dialled.append(endpoint)
+        return Conn(endpoint)
+
+    router = ClusterRouter(
+        [seed],
+        connection_factory=factory,  # type: ignore[arg-type]
+        endpoint_resolver=lambda e: reachable if e == advertised else e,
+    )
+
+    assert router.get("probe") == b"canary-value"
+    # It dialled the reachable address, never the advertised one.
+    assert advertised not in dialled
+    assert reachable in dialled
+
+
+def test_router_without_a_resolver_dials_what_the_cluster_advertised() -> None:
+    from valkey_scale_lab.observability.sentinel import ClusterRouter
+
+    seed = Endpoint("127.0.0.1", 7200)
+    dialled: list[Endpoint] = []
+
+    class Conn:
+        def execute(self, *command: Any) -> Any:
+            return b"v"
+
+        def close(self) -> None:
+            return None
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Conn:
+        dialled.append(endpoint)
+        return Conn()
+
+    router = ClusterRouter([seed], connection_factory=factory)  # type: ignore[arg-type]
+    router.get("probe")
+
+    assert dialled == [seed]
+
+
+def test_runtime_resolves_announced_nodehost_addresses() -> None:
+    from valkey_scale_lab.runtime.docker_runtime import _advertised_endpoint_resolver
+
+    resolve = _advertised_endpoint_resolver(
+        [
+            {
+                "logical_id": "shard-0000-replica-00",
+                "host": "127.0.0.1",
+                "client_port": 7205,
+                "nodehost_container_ip": "172.18.0.3",
+            }
+        ]
+    )
+
+    assert resolve(Endpoint("172.18.0.3", 7205)) == Endpoint("127.0.0.1", 7205)
+    # Anything the inventory does not describe is left exactly as it came.
+    assert resolve(Endpoint("172.18.0.9", 7300)) == Endpoint("172.18.0.9", 7300)
+    assert resolve(Endpoint("127.0.0.1", 7205)) == Endpoint("127.0.0.1", 7205)
+
+
 def test_cluster_shards_membership_ignores_unrelated_node_health() -> None:
     node_ids = [f"{index + 1:040x}" for index in range(4)]
     raw = _shards_with_loading_replica(node_ids)

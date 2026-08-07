@@ -225,6 +225,7 @@ class ClusterRouter:
         *,
         timeout: float = 1.0,
         connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
+        endpoint_resolver: Callable[[Endpoint], Endpoint] | None = None,
     ) -> None:
         if not seeds:
             raise ValueError("cluster router requires a seed")
@@ -233,6 +234,12 @@ class ClusterRouter:
         self._factory = connection_factory or (
             lambda endpoint, timeout: RespConnection(endpoint, timeout=timeout)
         )
+        # A MOVED after a promotion names the node by the address the cluster
+        # advertises, which is not necessarily an address this observer can
+        # reach. Turning an advertised endpoint into a reachable one is endpoint
+        # discovery, which belongs to the runtime adapter, so it is supplied
+        # rather than assumed here.
+        self._resolve = endpoint_resolver or (lambda endpoint: endpoint)
         self._connections: dict[Endpoint, RespConnection] = {}
         self._slot_routes: dict[int, Endpoint] = {}
 
@@ -244,7 +251,7 @@ class ClusterRouter:
     def _connection(self, endpoint: Endpoint) -> RespConnection:
         connection = self._connections.get(endpoint)
         if connection is None:
-            connection = self._factory(endpoint, self.timeout)
+            connection = self._factory(self._resolve(endpoint), self.timeout)
             self._connections[endpoint] = connection
         return connection
 
@@ -309,11 +316,13 @@ class SentinelLane:
         connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
+        endpoint_resolver: Callable[[Endpoint], Endpoint] | None = None,
     ) -> None:
         if not nodes:
             raise ValueError("Sentinel Lane requires nodes")
         self.nodes = list(nodes)
         self.timeout = timeout
+        self.endpoint_resolver = endpoint_resolver
         self._factory = connection_factory or (
             lambda endpoint, timeout: RespConnection(endpoint, timeout=timeout)
         )
@@ -489,6 +498,7 @@ class SentinelLane:
                 ],
                 timeout=self.timeout,
                 connection_factory=self._factory,
+                endpoint_resolver=self.endpoint_resolver,
             )
         deadline = fault_monotonic + recovery_deadline_seconds
         streak = 0
