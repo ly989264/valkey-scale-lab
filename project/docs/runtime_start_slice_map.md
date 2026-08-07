@@ -43,11 +43,11 @@ that.
 
 | Segments | Location |
 | --- | --- |
-| `setup_entry` .. `custom_valkey_image_preflight` | `_execute_runtime()` L687-737 |
-| `resource_preflight` .. `nodehost_start` | `_create_process_scenario()` L1146-1195 |
-| `node_config_local_generate` .. `nodehost_bundle_install` | `_prepare_process_nodehost_bundles()` L1720 |
-| `nodehost_start_all` .. `process_ready_wait` | `_start_process_nodes_batched()` L1816 |
-| `state_write_before_cluster` | `_create_process_scenario()` L1284 |
+| `setup_entry` .. `custom_valkey_image_preflight` | `_execute_runtime()` |
+| `resource_preflight` .. `nodehost_start` | `_create_process_scenario()` |
+| `node_config_local_generate` .. `nodehost_bundle_install` | `_prepare_process_nodehost_bundles()` |
+| `nodehost_start_all` .. `process_ready_wait` | `_start_process_nodes_batched()` |
+| `state_write_before_cluster` | `_create_process_scenario()` |
 
 The stage is therefore already factored into four helpers plus the sequencing
 around them. The sequencing, the timeline segments and the state write belong to
