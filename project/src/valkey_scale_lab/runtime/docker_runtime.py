@@ -8413,18 +8413,20 @@ def _run_scalable_primary_kill_failover(
         raise DockerRuntimeError(
             "primary failover Sentinel requires an unaffected control shard"
         )
-    primary_count = int(initial_validation["light_validation"]["primary_count"])
-    load_container, load_host, load_port = _load_lane_seed(nodes)
-    load = MemtierLoadLane(
-        host=load_host,
-        port=load_port,
-        primary_count=primary_count,
-        run_scope=f"{run_id}:failover",
-        artifacts_dir=artifacts / "load_lane_failover",
-        container=load_container,
-    )
-    load_preflight = load.preflight()
-    load_process = load.start(duration_seconds=300.0)
+    # The Load Lane observes steady-state workload and is not the failover
+    # mechanism. memtier stops issuing operations for good once any endpoint
+    # disappears - measured at 0 ops/sec for 120s after a kill, unchanged by
+    # reconnect, retry or more threads - so running it across the fault would
+    # record an outage of the client rather than of the cluster. Continuity and
+    # recovery across the fault are the Sentinel canaries' job, which probe the
+    # affected and control shards every 100ms.
+    load_not_applicable = {
+        "status": "NOT_APPLICABLE",
+        "reason": (
+            "the Load Lane observes steady-state workload; the Sentinel canaries "
+            "carry continuity and recovery measurement across the fault"
+        ),
+    }
     sentinel_restore_probe: dict[str, Any] | None = None
     actuator = ActuatorRecorder(target=target_logical, action="kill-primary")
     actuator.start()
@@ -8494,7 +8496,7 @@ def _run_scalable_primary_kill_failover(
         # wait_for_convergence below is itself a bounded retry loop and owns the
         # deadline for this window, so this is a single observation. Giving it a
         # convergence wait of its own would nest two bounded waits and let the
-        # fault window run past the load lane's own window.
+        # fault window run to twice its intended bound.
         return FullClusterValidator(
             inventory,
             concurrency=64,
@@ -8524,7 +8526,6 @@ def _run_scalable_primary_kill_failover(
             )
             sentinel_result = sentinel_future.result()
             convergence_result = convergence_future.result()
-        load_process.assert_running()
         promoted_logical = str(
             convergence_result["converged_relationship"]["primary"]
         )
@@ -8588,11 +8589,7 @@ def _run_scalable_primary_kill_failover(
                 0,
             ),
         )
-        load_result = load.finish(load_process, planned_stop=True)
-        load_process = None
     finally:
-        if load_process is not None:
-            load_process.stop()
         sentinel.close()
         observer.close()
     report = {
@@ -8613,8 +8610,8 @@ def _run_scalable_primary_kill_failover(
         "failover_success": True,
         "redundancy_recovery": redundancy,
         "recovery_validation": recovery_validation,
-        "load_preflight": load_preflight,
-        "load_result": load_result,
+        "load_preflight": load_not_applicable,
+        "load_result": load_not_applicable,
     }
     _write_json_artifact(
         artifacts / "scalable_primary_failover_observation.json", report

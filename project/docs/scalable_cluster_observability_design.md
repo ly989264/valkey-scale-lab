@@ -333,7 +333,7 @@ V1 使用 `memtier_benchmark`：
 -t 1
 --pipeline=1
 --ratio=1:9
---key-minimum=0
+--key-minimum=1
 --key-maximum=99999
 --data-size=32
 --rate-limiting=<adapter-computed-per-connection-rate>
@@ -342,6 +342,8 @@ V1 使用 `memtier_benchmark`：
 
 其他固定规则：
 
+- Load Lane 只观察稳态负载，不跨故障窗口运行；
+- 故障窗口的连续性与恢复由 Sentinel canary 承担；
 - 全局目标约 10000 QPS；
 - 该目标适用于所有准入规格，不按 200、1000、2000 节点分别写死；
 - 不预填充；
@@ -380,7 +382,22 @@ QPS 允许约 `±30%` 的参考偏差。QPS 偏差本身：
 - 不记录每个业务请求；
 - 不开启 debug 或每 client 详细日志。
 
-### 8.4 preflight 与失败
+### 8.4 稳态范围
+
+Load Lane 是工作负载观察，不是故障转移正确性或 RTO 机制。
+
+memtier 在 `--cluster-mode` 下一旦有 endpoint 消失就永久停止发送请求。实测：
+kill 之后 120 秒内 0 ops/sec，`--reconnect-on-error`、`--retry-on-error` 和
+提高线程数都不改变该行为。因此让 Load Lane 跨故障窗口运行只会记录客户端自身
+的中断，而不是集群的中断。
+
+Load Lane 因此只在稳态窗口运行。故障窗口内：
+
+- 不启动 Load Lane；
+- `load_preflight` 和 `load_result` 记为 `NOT_APPLICABLE` 并附原因；
+- 连续性和恢复由 Sentinel 的 affected/control canary 以 100ms 轮次测量。
+
+### 8.5 preflight 与失败
 
 正式实验前必须执行目标规格的 memtier preflight：
 

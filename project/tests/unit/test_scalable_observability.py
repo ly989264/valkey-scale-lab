@@ -678,6 +678,40 @@ def test_the_nested_failover_validation_does_not_wait() -> None:
     assert "convergence_timeout=0.0" in validation.split(".run(")[0]
 
 
+
+def test_the_fault_sequence_leaves_the_load_lane_to_steady_state() -> None:
+    import inspect
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    source = inspect.getsource(docker_runtime._run_scalable_primary_kill_failover)
+
+    # memtier stops issuing operations for good once an endpoint disappears, so
+    # running it across the fault would record the client's outage, not the
+    # cluster's. The Sentinel canaries carry the fault window instead.
+    assert "MemtierLoadLane(" not in source
+    assert "load.start(" not in source
+    assert "NOT_APPLICABLE" in source
+
+    # The Sentinel still probes affected and control shards through the fault.
+    assert "sentinel.fault_probe" in source
+    assert "affected=affected_canary" in source
+    assert "control=control_canary" in source
+
+
+def test_the_steady_state_window_still_drives_load() -> None:
+    import inspect
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    source = inspect.getsource(
+        docker_runtime._local_full_flow_run_management_sequence
+    )
+
+    # Scoping the lane to steady state must not remove it from steady state.
+    assert "MemtierLoadLane(" in source
+
+
 def test_cluster_shards_membership_ignores_unrelated_node_health() -> None:
     node_ids = [f"{index + 1:040x}" for index in range(4)]
     raw = _shards_with_loading_replica(node_ids)
