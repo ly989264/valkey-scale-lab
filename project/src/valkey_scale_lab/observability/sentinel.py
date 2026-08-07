@@ -549,10 +549,35 @@ class SentinelLane:
         finally:
             if owned_router:
                 router.close()
+        # The rounds are the only record of what the cluster actually did during
+        # the window, so a timeout must report them rather than discard them.
         raise SemanticFailure(
-            "Sentinel affected/control canaries did not form 10 stable "
-            "100ms rounds before the recovery deadline"
+            "Sentinel affected/control canaries did not form "
+            f"{stable_rounds} stable 100ms rounds before the recovery deadline: "
+            f"{_recovery_diagnosis(rows, stable_rounds)}"
         )
+
+
+
+def _recovery_diagnosis(rows: list[dict[str, Any]], stable_rounds: int) -> str:
+    """What the canaries saw, so a timeout says why it timed out."""
+    if not rows:
+        return "no rounds were observed"
+    ok_rounds = sum(1 for row in rows if row["status"] == "OK")
+    best_streak = max((int(row["stable_streak"]) for row in rows), default=0)
+    affected_ok = sum(1 for row in rows if row.get("affected_value_ok"))
+    control_ok = sum(1 for row in rows if row.get("control_value_ok"))
+    error_counts: dict[str, int] = {}
+    for row in rows:
+        for label, message in (row.get("errors") or {}).items():
+            key = f"{label}:{message.split(chr(10))[0][:80]}"
+            error_counts[key] = error_counts.get(key, 0) + 1
+    ranked = sorted(error_counts.items(), key=lambda item: -item[1])[:3]
+    return (
+        f"rounds={len(rows)} ok={ok_rounds} best_streak={best_streak}/{stable_rounds} "
+        f"affected_value_ok={affected_ok} control_value_ok={control_ok} "
+        f"errors={ranked or 'none'}"
+    )
 
 
 def _value_text(value: Any) -> str | None:

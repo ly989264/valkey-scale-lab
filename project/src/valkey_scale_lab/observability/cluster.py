@@ -571,7 +571,14 @@ def normalize_cluster_shards(
                 + ", ".join(member["node_id"] for member in unhealthy)
             )
         primaries = [member for member in members if member["role"] == "primary"]
-        if len(primaries) != 1:
+        if not primaries:
+            # A shard sits between losing its primary and promoting a replica.
+            # The failover tests create this state deliberately and it resolves
+            # when the promotion lands, so it is worth observing again.
+            raise ConvergenceFailure("CLUSTER SHARDS shard has no primary")
+        if len(primaries) > 1:
+            # Two primaries in one shard is split brain, which never resolves by
+            # looking again.
             raise SemanticFailure(
                 f"CLUSTER SHARDS shard has {len(primaries)} primaries"
             )

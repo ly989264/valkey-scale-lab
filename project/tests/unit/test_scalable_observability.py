@@ -405,6 +405,100 @@ def test_plan_role_mismatch_is_accepted_when_plan_roles_are_not_required() -> No
     assert result["light_validation"]["shard_count"] == 2
 
 
+
+def _shards_with_no_primary(node_ids: list[str]) -> list[Any]:
+    """A shard between losing its primary and promoting its replica."""
+    shards = copy.deepcopy(_shards(node_ids))
+    shards[0][3] = [m for m in shards[0][3] if m[1] != node_ids[0].encode()]
+    return shards
+
+
+def _shards_with_two_primaries(node_ids: list[str]) -> list[Any]:
+    """Split brain: both members of a shard claim to be its primary."""
+    shards = copy.deepcopy(_shards(node_ids))
+    replica = shards[0][3][1]
+    assert replica[-4] == b"role"
+    replica[-3] = b"master"
+    return shards
+
+
+def test_a_shard_awaiting_promotion_is_a_convergence_state() -> None:
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+
+    # The failover tests create this deliberately, and it resolves when the
+    # promotion lands, so it must be observable again rather than fatal.
+    with pytest.raises(ConvergenceFailure, match="has no primary"):
+        normalize_cluster_shards(_shards_with_no_primary(node_ids))
+
+
+def test_two_primaries_in_one_shard_is_permanent() -> None:
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+
+    with pytest.raises(SemanticFailure) as excinfo:
+        normalize_cluster_shards(_shards_with_two_primaries(node_ids))
+
+    # Split brain never resolves by looking again, so it must not be retried.
+    assert "2 primaries" in str(excinfo.value)
+    assert not isinstance(excinfo.value, ConvergenceFailure)
+
+
+def test_validation_waits_out_a_promotion_then_succeeds() -> None:
+    nodes, responses = _cluster_fixture()
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    observed = [0]
+    promoting = _shards_with_no_primary(node_ids)
+    promoted = _shards(node_ids)
+
+    def shards_response() -> list[Any]:
+        observed[0] += 1
+        return promoting if observed[0] <= 1 else promoted
+
+    for node in nodes:
+        responses[node.port][("CLUSTER", "SHARDS")] = shards_response
+
+    result = FullClusterValidator(
+        nodes,
+        concurrency=32,
+        observer_count=3,
+        convergence_timeout=5.0,
+        convergence_poll_seconds=0.01,
+        connection_factory=lambda endpoint, _t: FakeConnection(responses[endpoint.port]),
+    ).run()
+
+    assert result["status"] == "OK"
+    assert observed[0] > 3
+
+
+
+def test_sentinel_recovery_timeout_reports_what_it_observed() -> None:
+    from valkey_scale_lab.observability.sentinel import _recovery_diagnosis
+
+    assert _recovery_diagnosis([], 10) == "no rounds were observed"
+
+    rows = [
+        {
+            "status": "FAIL",
+            "stable_streak": 0,
+            "affected_value_ok": False,
+            "control_value_ok": True,
+            "errors": {"affected": "CLUSTERDOWN The cluster is down"},
+        },
+        {
+            "status": "OK",
+            "stable_streak": 1,
+            "affected_value_ok": True,
+            "control_value_ok": True,
+            "errors": {},
+        },
+    ]
+    diagnosis = _recovery_diagnosis(rows, 10)
+
+    # A timeout has to say why it timed out, not just that it did.
+    assert "rounds=2" in diagnosis
+    assert "best_streak=1/10" in diagnosis
+    assert "CLUSTERDOWN" in diagnosis
+
+
 def test_cluster_shards_membership_ignores_unrelated_node_health() -> None:
     node_ids = [f"{index + 1:040x}" for index in range(4)]
     raw = _shards_with_loading_replica(node_ids)
