@@ -292,9 +292,42 @@ PID_FIELDS = {"pid", "process_pid_before", "process_pid_after"}
 # `master_sync_in_progress: 0` and the caught-up verdict, all of which stay
 # compared. The byte offsets themselves differ by tens of bytes per run.
 REPL_OFFSET_FIELDS = {"primary_repl_offset", "replica_repl_offset"}
-# `_management_matrix_wait_rolling_restart_health` lists the nodes it probed in
-# completion order, which is not evidence. Same fix as the snapshot samples.
-ORDERLESS_FIELDS = {"probed_node_ids"}
+ORDERLESS_FIELDS: set[str] = set()
+# How many probes a health gate needed depends on whether the first
+# representative round came back clean; when it does not, the gate falls back to
+# one diagnostic round over the whole fleet. That is a retry counter, and the
+# two frozen baseline runs happening to agree on it (50 and 376) is not evidence
+# that it is deterministic - a third run recorded 100 and 482. `cluster_form`
+# already reports `runtime_all_node_light_probe` for the same reason instead of
+# diffing it, so these are reported by `main` rather than compared. The gate's
+# verdict, its cluster state, its known nodes and its slot count are all still
+# compared in full.
+PROBE_COUNT_FIELDS = {
+    "retry_count",
+    "full_probe_count",
+    "representative_probe_count",
+    "node_command_count",
+}
+# A health gate's *retry record* is non-deterministic in every part: how many
+# rounds it took, what each round saw mid-restart, and whether it had to
+# escalate from the representative sample to a diagnostic sweep. Its *verdict*
+# is not, and that is what this stage owes: that every batch was gated, and that
+# the gate ended with a clean cluster. So the fields below are compared and the
+# retry record around them is replaced - drawn once, here, rather than field by
+# field as each new run turns up another one that moves.
+PROBE_VERDICT_FIELDS = {
+    "status",
+    "gate_kind",
+    "batch_id",
+    "cluster_state",
+    "known_nodes",
+    "slots_assigned",
+    "command_ref",
+}
+# Matched anywhere in a string, not anchored: a reference is often carried as
+# `management_command_log.jsonl#<command_id>`, and the artifact it names is
+# evidence that must survive while the ordinal inside it does not.
+COMMAND_ID = re.compile(r"[A-Za-z0-9_.]+(?:-[A-Za-z0-9_.]+)*-cmd-\d{4}")
 
 
 def management_scrub(value: Any) -> Any:
@@ -310,6 +343,20 @@ def management_scrub(value: Any) -> Any:
                 result[key] = "<PID>"
             elif key in REPL_OFFSET_FIELDS and isinstance(item, int):
                 result[key] = "<OFFSET>"
+            elif key == "attempts" and isinstance(item, list):
+                # The rounds a gate needed, and what each saw before the cluster
+                # settled. A run that restarts a replica may observe
+                # replica_count 24 once and 25 the next round; both are correct.
+                result[key] = "<PROBE_ATTEMPTS>"
+            elif key in PROBE_COUNT_FIELDS and isinstance(item, int):
+                result[key] = "<PROBE_COUNT>"
+            elif key == "sample_scope":
+                # Which sample a gate settled on depends on whether the first
+                # representative round was clean. Reported with the counts.
+                result[key] = "<PROBE_SCOPE>"
+            elif key == "probed_node_ids" and isinstance(item, list):
+                # Which nodes a gate sampled follows from the scope above.
+                result[key] = "<PROBE_NODES>"
             elif key in ORDERLESS_FIELDS and isinstance(item, list):
                 result[key] = sorted(management_scrub(entry) for entry in item)
             elif key == "workload_impact" and isinstance(item, dict):
@@ -348,6 +395,33 @@ def load_jsonl(path: Path) -> list[Any]:
     ]
 
 
+def command_kind_by_id(root: Path) -> dict[str, str]:
+    """A command id is its position in the log, which is not what a reference
+    to it means. Every added command shifts every later id, so comparing the
+    ordinals makes an unrelated view differ for a reason that has nothing to do
+    with it - which is what a pid, a node id and a gate run id are already
+    renamed to avoid. What a `command_ref` carries is *which command* a probe or
+    a handoff points at, so it is resolved to that command's kind."""
+    return {
+        str(row["command_id"]): str(row.get("command_kind", "UNKNOWN"))
+        for row in load_jsonl(root / "management_command_log.jsonl")
+        if row.get("command_id")
+    }
+
+
+def rename_command_ids(value: Any, kinds: dict[str, str]) -> Any:
+    if isinstance(value, dict):
+        return {key: rename_command_ids(item, kinds) for key, item in value.items()}
+    if isinstance(value, list):
+        return [rename_command_ids(item, kinds) for item in value]
+    if isinstance(value, str):
+        # An unresolvable reference becomes UNKNOWN rather than disappearing.
+        return COMMAND_ID.sub(
+            lambda match: f"<cmd:{kinds.get(match.group(0), 'UNKNOWN')}>", value
+        )
+    return value
+
+
 def management_view(root: Path, document: Any) -> Any:
     """Every `management_matrix` view is normalised the same way.
 
@@ -357,6 +431,7 @@ def management_view(root: Path, document: Any) -> Any:
     `nodehost_id_by_address` give.
     """
     value = rename_node_ids(management_scrub(document), node_id_names(root))
+    value = rename_command_ids(value, command_kind_by_id(root))
     return rename_addresses(value, nodehost_id_by_address(root))
 
 
@@ -433,6 +508,19 @@ def management_stability_observation(root: Path) -> Any:
     )
 
 
+def management_probe_counts(root: Path) -> str:
+    """Reported, not diffed - see `PROBE_COUNT_FIELDS`."""
+    plan = json.loads((root / "rolling_restart_plan.json").read_text(encoding="utf-8"))
+    return " ".join(
+        f"{operation['operation_name'].replace('rolling_restart_', '')}="
+        f"rep{operation['health_probe_summary']['representative_probe_count']}"
+        f"/full{operation['health_probe_summary']['full_probe_count']}"
+        f"/retry{operation['health_probe_summary']['retry_count']}"
+        f"/cmds{operation['health_probe_summary']['node_command_count']}"
+        for operation in plan["operations"]
+    )
+
+
 def management_workload_counters(root: Path) -> str:
     """Reported, not diffed - see `management_workload_impact`."""
     document = json.loads((root / "management_sequence.json").read_text(encoding="utf-8"))
@@ -498,7 +586,10 @@ STAGE_VIEWS: dict[str, dict[str, Callable[[Path], Any]]] = {
 # A stage may have evidence that cannot be diffed but must not go unreported.
 STAGE_REPORTED: dict[str, dict[str, Callable[[Path], str]]] = {
     "cluster_form": {"runtime_all_node_light_probe": light_probe_retries},
-    "management_matrix": {"workload_impact_samples/errors": management_workload_counters},
+    "management_matrix": {
+        "workload_impact_samples/errors": management_workload_counters,
+        "rolling_restart_probe_counts": management_probe_counts,
+    },
 }
 
 
