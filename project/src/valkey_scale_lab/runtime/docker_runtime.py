@@ -8457,6 +8457,7 @@ def _run_scalable_primary_kill_failover(
     target: dict[str, Any],
     command_log: list[dict[str, Any]],
     artifacts: Path,
+    backend: NodeBackend,
 ) -> dict[str, Any]:
     inventory_by_logical = {node.logical_id: node for node in inventory}
     target_logical = str(target["logical_id"])
@@ -8801,6 +8802,7 @@ def _local_full_flow_run_fault_failover_sequence(
                     target=target_primary,
                     command_log=command_log,
                     artifacts=artifacts,
+                    backend=backend,
                 )
                 events.append(telemetry.event("fault_failover_finished", subject_type="valkey_node", subject_id=replacement["logical_id"], operation_id=operation_id, fault_id=operation_id, message="LOCAL_FULL_FLOW primary kill recovered with scalable Sentinel and topology validation.", metadata=failover_details))
             key = f"{{vslab-local_full_flow-fault-{scale}-{window_name}-{index % 3}}}:k"
@@ -8840,6 +8842,7 @@ def _local_full_flow_run_fault_failover_sequence(
             target=target_primary,
             command_log=command_log,
             artifacts=artifacts,
+            backend=backend,
         )
     all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
     all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, fault_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} failover all-run workload finished.", metadata={"window_name": "all_run", "sample_count": all_metrics["sample_count"]})
