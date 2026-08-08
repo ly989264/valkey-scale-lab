@@ -3588,6 +3588,137 @@ def _recording_telemetry() -> TelemetryRun:
     )
 
 
+def test_an_error_reply_is_the_node_s_answer_and_is_not_retried(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A `-ERR` must not be re-sent down a second transport.
+
+    Measured once at exact-50: a `CLUSTER REPLICATE` that had already taken
+    effect was re-run through `docker exec`, the second attempt replied
+    `ERR ... must be empty`, and because docker exited 0 the lifecycle stored a
+    failed Valkey command as `status: PASS` and raised nothing. Every command
+    this path carries - REPLICATE, FAILOVER, FORGET, SETSLOT, MIGRATE - changes
+    state when it runs, so a retry is not free either.
+    """
+    node = {
+        "logical_id": "node-a",
+        "host": "127.0.0.1",
+        "client_port": 7000,
+        "nodehost_container_name": "nodehost-a",
+        "runtime_type": "docker_process",
+    }
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_host_command",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            docker_runtime.ValkeyErrorReply(
+                "ERR To set a master the node must be empty and without assigned slots."
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_node_cli",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            AssertionError("an error reply must not be re-executed through docker exec")
+        ),
+    )
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="must be empty"):
+        docker_runtime._node_command(node, "CLUSTER", "REPLICATE", "abc")
+
+    # and the lifecycle records it as the failure it is
+    class Telemetry:
+        def now_unix_ms(self) -> int:
+            return 0
+
+    log: list[dict[str, Any]] = []
+    with pytest.raises(docker_runtime.DockerRuntimeError):
+        docker_runtime._management_log_node_command(
+            log,
+            telemetry=Telemetry(),
+            capability_id="local_full_flow",
+            parent_run_id="r",
+            operation_id="op",
+            command_kind="cluster_replicate_restored_node",
+            target=node,
+            args=["CLUSTER", "REPLICATE", "abc"],
+            timeout=60,
+        )
+    assert log[0]["status"] == "FAIL"
+
+
+def test_forget_of_an_unknown_node_is_tolerated_now_that_it_is_reachable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`_management_log_forget_removed_node` has always meant to tolerate
+    `ERR Unknown node`, and every survivor is asked to forget in each round, so
+    it happens routinely. The swallow made that handler unreachable: the error
+    arrived as a passing stdout instead of an exception."""
+    node = {
+        "logical_id": "node-a",
+        "host": "127.0.0.1",
+        "client_port": 7000,
+        "nodehost_container_name": "nodehost-a",
+        "runtime_type": "docker_process",
+    }
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_host_command",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            docker_runtime.ValkeyErrorReply("ERR Unknown node abc123")
+        ),
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_node_cli",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("no docker exec")),
+    )
+
+    class Telemetry:
+        def now_unix_ms(self) -> int:
+            return 0
+
+    log: list[dict[str, Any]] = []
+    row = docker_runtime._management_log_forget_removed_node(
+        log,
+        telemetry=Telemetry(),
+        capability_id="local_full_flow",
+        parent_run_id="r",
+        operation_id="op",
+        target=node,
+        removed_id="abc123",
+    )
+    assert row["status"] == "PASS"
+
+
+def test_being_unable_to_reach_a_node_still_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The scope boundary, asserted so it is deliberate rather than assumed.
+
+    Only the error-reply case changed. Whether the `docker exec` fallback
+    should exist at all for transport failures is a separate question - §16.2
+    says no, 85d5096a showed it reaching through a partition - and it is not
+    settled here.
+    """
+    node = {
+        "logical_id": "node-a",
+        "host": "127.0.0.1",
+        "client_port": 7000,
+        "nodehost_container_name": "nodehost-a",
+        "runtime_type": "docker_process",
+    }
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_host_command",
+        lambda *_a, **_k: (_ for _ in ()).throw(TimeoutError("timed out")),
+    )
+    monkeypatch.setattr(docker_runtime, "run_node_cli", lambda *_a, **_k: "PONG")
+
+    assert docker_runtime._node_command(node, "PING") == "PONG"
+
+
 def test_reshard_drains_every_key_from_a_slot_before_reassigning_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

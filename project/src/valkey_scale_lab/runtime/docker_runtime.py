@@ -202,6 +202,21 @@ class DockerRuntimeError(RuntimeError):
     pass
 
 
+class ValkeyErrorReply(DockerRuntimeError):
+    """A `-ERR` the server sent back: its answer, not a failure to reach it.
+
+    Separated from every other reason a RESP call can raise because those two
+    want opposite handling. Being unable to talk to a node may be worth another
+    attempt; being told `ERR To set a master the node must be empty` is the
+    node's reply, and asking again down a second transport neither changes it
+    nor is safe - `CLUSTER REPLICATE`, `FAILOVER`, `FORGET`, `SETSLOT` and
+    `MIGRATE` all change state when they run.
+
+    Kept a `DockerRuntimeError` so that every existing handler still catches it;
+    only the one place that must tell the two apart looks at the type.
+    """
+
+
 def _verify_custom_valkey_image(image: str) -> dict[str, Any]:
     build_command = "./project/scripts/build_valkey_image.sh"
     if image != CUSTOM_VALKEY_IMAGE:
@@ -3330,6 +3345,16 @@ def _node_response(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> An
                 ended_at_monotonic_ms=ended_monotonic_ms,
             )
             return value
+        except ValkeyErrorReply:
+            # The node answered. Re-running the command through `docker exec`
+            # would execute it a second time and then report the second
+            # attempt's error with docker's exit code, which is 0 - so a failed
+            # Valkey command was recorded as a passing one and nothing raised.
+            # Measured once at exact-50: a CLUSTER REPLICATE that had already
+            # taken effect was re-sent and its `ERR ... must be empty` reply
+            # stored as `status: PASS`. §16.2 also forbids reaching a node's
+            # protocol through `docker exec` at all.
+            raise
         except Exception:
             if node.get("runtime_type") == "docker_process" or node.get("nodehost_container_name"):
                 return run_node_cli(node, *args, timeout=max(1, int(timeout)))
@@ -5251,7 +5276,7 @@ def _read_resp(fp: Any, *, decode_bulk: bool = True) -> Any:
     if prefix == b"+":
         return _read_resp_line(fp).decode("utf-8", errors="replace")
     if prefix == b"-":
-        raise DockerRuntimeError(_read_resp_line(fp).decode("utf-8", errors="replace"))
+        raise ValkeyErrorReply(_read_resp_line(fp).decode("utf-8", errors="replace"))
     if prefix == b":":
         return int(_read_resp_line(fp))
     if prefix == b"$":
