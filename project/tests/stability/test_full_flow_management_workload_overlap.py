@@ -31,12 +31,14 @@ def test_management_event_window_exercises_workload_during_operation(monkeypatch
 
     monkeypatch.setattr(docker_runtime, "_management_matrix_execute_operation", execute_operation)
 
-    def workload_command(*args: Any, **kwargs: Any) -> str:
-        nonlocal workload_overlapped_operation
-        workload_overlapped_operation |= operation_active
-        return "OK" if args[1] == "SET" else "value"
+    class Backend:
+        """The workload reaches the cluster only through the seam now, so the
+        probe that proves the overlap sits on the backend's own method."""
 
-    monkeypatch.setattr(docker_runtime, "run_node_cluster_cli", workload_command)
+        def run_cluster_admin(self, node, argv, **_kwargs: Any) -> str:
+            nonlocal workload_overlapped_operation
+            workload_overlapped_operation |= operation_active
+            return "OK" if "SET" in argv else "value"
 
     telemetry = TelemetryRun(
         capability_id="LOCAL_FULL_FLOW_LOCAL_FULL_FLOW",
@@ -53,8 +55,9 @@ def test_management_event_window_exercises_workload_during_operation(monkeypatch
         scenario="full_flow_50",
         operation_name="reshard_slot_range",
         operation_id="review-reshard",
-        nodes=[{"logical_id": "node-0000"}],
+        nodes=[{"logical_id": "node-0000", "client_port": 7000}],
         command_log=[],
+        backend=Backend(),
     )
 
     assert workload_overlapped_operation, (

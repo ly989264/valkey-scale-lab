@@ -7,9 +7,12 @@ import shutil
 import subprocess
 import threading
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from valkey_scale_lab.metrics import TelemetryRun
+from valkey_scale_lab.runtime.command_recorder import classify_command_kind
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
@@ -849,6 +852,7 @@ class RecordingNodeBackend:
     def __init__(self, *, pids: dict[str, dict[str, int]] | None = None) -> None:
         self.operations: list[str] = []
         self.cluster_admin: list[list[str]] = []
+        self.samplers: list[tuple[str, list, list]] = []
         self.pids = pids or {}
 
     def verify_image(self, image: str) -> dict[str, object]:
@@ -902,10 +906,57 @@ class RecordingNodeBackend:
         timeout: float,
         operation_id: str,
         record_node: dict[str, object] | None = None,
+        command_kind: str | None = None,
     ) -> str:
         self.cluster_admin.append(list(argv))
         self.operations.append("run_cluster_admin")
         return "OK"
+
+    def stop_node(self, node: dict[str, object], *, command_kind: str) -> list[dict[str, object]]:
+        self.operations.append(f"stop_node:{node['logical_id']}")
+        return [
+            {
+                "command_kind": f"{command_kind}_shutdown_nosave",
+                "argv": ["docker", "exec", "recorded"],
+                "started_at_unix_ms": 1,
+                "ended_at_unix_ms": 2,
+                "status": "PASS",
+                "stdout_tail": "",
+                "stderr_tail": "",
+                "returncode": 0,
+            }
+        ]
+
+    def start_node(
+        self, node: dict[str, object], *, fresh_cluster_identity: bool
+    ) -> tuple[int, list[dict[str, object]]]:
+        self.operations.append(
+            f"start_node:{node['logical_id']}:fresh={fresh_cluster_identity}"
+        )
+        return int(node.get("pid", 0)) + 1000, [
+            {
+                "command_kind": "owned_valkey_process_start",
+                "argv": ["docker", "exec", "recorded"],
+                "started_at_unix_ms": 3,
+                "ended_at_unix_ms": 4,
+                "status": "PASS",
+                "stdout_tail": "",
+                "stderr_tail": "",
+                "returncode": 0,
+            }
+        ]
+
+    def resource_sampler(
+        self,
+        nodes: list[dict[str, object]],
+        *,
+        sampler_id: str,
+        processes: object,
+        expected_gone: object,
+    ) -> object:
+        self.operations.append(f"resource_sampler:{sampler_id}")
+        self.samplers.append((sampler_id, list(processes), list(expected_gone)))
+        return object()
 
 
 def test_process_bootstrap_reaches_the_runtime_only_through_the_backend(
@@ -2926,48 +2977,42 @@ def test_single_process_wait_observes_alive_then_gone(
     )
 
 
-def test_management_stop_uses_shell_builtin_for_term_fallback(
+def test_backend_stop_node_uses_shell_builtin_for_term_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """The image ships no kill binary, only the shell builtin.
+
+    Stopping a node is the backend's now, so the mechanism is asserted where it
+    lives. What the lifecycle still owns is the evidence: `stop_node` returns a
+    record per command it ran, because those rows are compared against the
+    frozen baseline.
+    """
     calls: list[list[str]] = []
     gone = iter([False, True])
 
-    def record_command(
-        _log,
-        _telemetry,
-        _capability,
-        _run,
-        _operation,
-        _kind,
-        _target,
-        args,
-        **_kwargs,
-    ):
-        calls.append(args)
+    class Result:
+        returncode = 0
+        stdout = ""
+        stderr = ""
 
-    monkeypatch.setattr(
-        docker_runtime,
-        "_management_matrix_log_docker_exec",
-        record_command,
-    )
+    def fake_run_docker(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(list(args))
+        return Result()
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
     monkeypatch.setattr(
         docker_runtime,
         "_wait_container_pid_gone",
         lambda *_args, **_kwargs: next(gone),
     )
 
-    docker_runtime._management_matrix_stop_process(
+    records = docker_runtime.DockerNodeBackend().stop_node(
         {
             "logical_id": "node-a",
             "nodehost_container_name": "nodehost-a",
             "pid": 101,
             "client_port": 7000,
         },
-        object(),
-        "management_matrix",
-        "run-1",
-        "operation-1",
-        [],
         command_kind="owned_valkey_process_stop",
     )
 
@@ -2983,6 +3028,13 @@ def test_management_stop_uses_shell_builtin_for_term_fallback(
         ],
         ["exec", "nodehost-a", "sh", "-c", "kill -TERM 101"],
     ]
+    assert [record["command_kind"] for record in records] == [
+        "owned_valkey_process_stop_shutdown_nosave",
+        "owned_valkey_process_stop_kill_term_fallback",
+    ]
+    assert [record["argv"][:2] for record in records] == [["docker", "exec"]] * 2
+    assert {record["status"] for record in records} == {"PASS"}
+
 
 
 def test_kill_primary_actuator_signals_through_the_shell(monkeypatch) -> None:
@@ -3307,3 +3359,230 @@ def test_cluster_form_large_branch_segments_and_backend(monkeypatch: pytest.Monk
         f"172.18.0.{2 + idx % 2}:{7400 + idx}" for idx in range(20)
     ]
     assert not any(address.startswith("10.0.0.1") for address in argv[2:-1])
+
+
+def _management_nodes(node_count: int) -> list[dict[str, Any]]:
+    nodes: list[dict[str, Any]] = []
+    for shard_index in range(node_count // 2):
+        shard_id = f"shard-{shard_index:04d}"
+        for role in ("primary", "replica"):
+            logical_id = f"{shard_id}-{role}"
+            nodes.append(
+                {
+                    "logical_id": logical_id,
+                    "role": role,
+                    "shard_id": shard_id,
+                    "az_id": f"az-{shard_index % 3}",
+                    "host": "127.0.0.1",
+                    "client_port": 7000 + len(nodes),
+                    "pid": 100 + len(nodes),
+                    "nodehost_id": f"nodehost-{shard_index % 2}",
+                    "nodehost_container_id": f"cid-{shard_index % 2}",
+                    "nodehost_container_name": f"nodehost-{shard_index % 2}",
+                    "nodehost_container_ip": f"172.18.0.{2 + shard_index % 2}",
+                    "container_name": f"nodehost-{shard_index % 2}",
+                    "data_dir": f"/tmp/{logical_id}",
+                    "config_file": f"/tmp/{logical_id}.conf",
+                    "pid_file": f"/tmp/{logical_id}.pid",
+                }
+            )
+    return nodes
+
+
+def _no_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("management_matrix must reach the runtime only through the backend")
+        ),
+    )
+
+
+def test_rolling_restart_stops_and_starts_each_node_through_the_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The pair the rolling restart does run back to back, and its evidence.
+
+    The 212 `docker` rows this stage writes at exact-50 all come from here, so
+    the backend returning records rather than logging them is what keeps them
+    in `management_command_log.jsonl`.
+    """
+    _no_runtime(monkeypatch)
+    nodes = _management_nodes(4)
+    backend = RecordingNodeBackend()
+    command_rows: list[dict[str, Any]] = []
+
+    result = docker_runtime._management_matrix_restart_process_target(
+        entry={"sequence": 1},
+        target=nodes[0],
+        telemetry=_recording_telemetry(),
+        capability_id="local_full_flow",
+        run_id="slice-3",
+        operation_id="restart-1",
+        backend=backend,
+    )
+    docker_runtime._management_matrix_merge_parallel_command_rows(
+        command_rows, result.pop("command_rows")
+    )
+
+    assert backend.operations == [
+        "stop_node:shard-0000-primary",
+        "start_node:shard-0000-primary:fresh=False",
+    ]
+    # A restart's evidence is that the pid changed, and both commands are named.
+    assert result["process_pid_before"] == 100
+    assert result["process_pid_after"] == 1100
+    assert nodes[0]["pid"] == 1100
+    assert [row["command_kind"] for row in command_rows] == [
+        "owned_valkey_process_restart_stop_shutdown_nosave",
+        "owned_valkey_process_start",
+    ]
+    assert [row["command_id"] for row in command_rows] == [
+        "restart-1-cmd-0001",
+        "restart-1-cmd-0002",
+    ]
+    assert {row["target_logical_id"] for row in command_rows} == {"shard-0000-primary"}
+
+
+def test_remove_and_restore_separates_stop_from_start_across_the_forget_wait(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Why `stop_node` and `start_node` are two operations and not `restart_node`.
+
+    Between them this row forgets the node on every survivor and waits for the
+    cluster to be clean without it. A fused restart could not express that.
+    """
+    _no_runtime(monkeypatch)
+    nodes = _management_nodes(4)
+    backend = RecordingNodeBackend()
+    order: list[str] = []
+
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_live_topology",
+        lambda probe_nodes: {
+            node["logical_id"]: {"role": node["role"]} for node in nodes
+        },
+    )
+    monkeypatch.setattr(docker_runtime, "_node_command", lambda *_a, **_k: "node-id-1")
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_forget_until_absent",
+        lambda **_kwargs: order.append("forget_until_absent"),
+    )
+    monkeypatch.setattr(docker_runtime, "_management_removed_absent", lambda *_a: True)
+    monkeypatch.setattr(
+        docker_runtime, "_management_matrix_rejoin_as_replica", lambda *_a, **_k: None
+    )
+    monkeypatch.setattr(
+        docker_runtime, "_management_wait_clean_cluster", lambda *_a, **_k: None
+    )
+
+    original_stop = backend.stop_node
+    original_start = backend.start_node
+    backend.stop_node = lambda node, **kw: (order.append("stop"), original_stop(node, **kw))[1]
+    backend.start_node = lambda node, **kw: (order.append("start"), original_start(node, **kw))[1]
+
+    row = docker_runtime._management_matrix_remove_and_restore_row(
+        _recording_telemetry(),
+        "local_full_flow",
+        "slice-3",
+        "remove_replica",
+        "remove-1",
+        nodes,
+        [],
+        backend,
+    )
+
+    assert order == ["stop", "forget_until_absent", "start"]
+    assert row["operation_status"] == "PASS"
+
+
+def test_bounded_stability_asks_the_backend_for_one_sampler_per_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """§11.1 puts one long-lived sampler on each host; §15 makes deploying it
+    the adapter's job. Which nodes share a host is inventory, and `nodehost_id`
+    names it without naming a container."""
+    _no_runtime(monkeypatch)
+    nodes = _management_nodes(8)
+    backend = RecordingNodeBackend()
+
+    runners = docker_runtime._resource_runners_for_nodes(
+        nodes,
+        backend=backend,
+        expected_gone_processes=[{"logical_id": nodes[0]["logical_id"], "pid": nodes[0]["pid"]}],
+    )
+
+    assert len(runners) == 2
+    assert backend.operations == ["resource_sampler:nodehost-0", "resource_sampler:nodehost-1"]
+    first_id, first_processes, first_expected_gone = backend.samplers[0]
+    assert first_id == "nodehost-0"
+    assert first_processes == [
+        ("shard-0000-primary", 100),
+        ("shard-0000-replica", 101),
+        ("shard-0002-primary", 104),
+        ("shard-0002-replica", 105),
+    ]
+    # The expected-gone process is only handed to the host that runs it.
+    assert first_expected_gone == [("shard-0000-primary", 100)]
+    assert backend.samplers[1][2] == []
+
+
+def test_management_workload_reaches_the_cluster_through_the_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The workload beside each operation follows a MOVED, so it needs a client
+    inside the cluster network - which is `run_cluster_admin`, not a Docker
+    call the stage makes itself. Its recorded attribution is unchanged."""
+    _no_runtime(monkeypatch)
+    nodes = _management_nodes(2)
+    backend = RecordingNodeBackend()
+    recorded: list[dict[str, Any]] = []
+
+    def run_cluster_admin(node, argv, **kwargs):
+        recorded.append({"argv": list(argv), **kwargs})
+        return "OK" if "SET" in argv else "value"
+
+    backend.run_cluster_admin = run_cluster_admin
+    monkeypatch.setattr(
+        docker_runtime, "_management_topology_snapshot", lambda *_a, **_k: {}
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_matrix_execute_operation",
+        lambda **_kwargs: ({"operation_status": "PASS", "real_execution_verified": True}, {}),
+    )
+
+    docker_runtime._management_matrix_run_operation_with_workload(
+        telemetry=_recording_telemetry(),
+        capability_id="local_full_flow",
+        run_id="slice-3",
+        scenario="local_full_flow",
+        operation_name="reshard_slot_range",
+        operation_id="workload-1",
+        nodes=nodes,
+        command_log=[],
+        backend=backend,
+    )
+
+    assert recorded, "the workload must run"
+    first = recorded[0]
+    assert first["argv"][:3] == ["-c", "-p", str(nodes[0]["client_port"])]
+    assert first["operation_id"] == "cluster_setup"
+    assert first["record_node"] is nodes[0]
+    # The classification is taken from the Valkey command words, as
+    # run_node_cluster_cli took it, and not from the docker argv around them.
+    assert first["command_kind"] == classify_command_kind(["valkey-cli", *first["argv"][3:]])
+
+
+def _recording_telemetry() -> TelemetryRun:
+    return TelemetryRun(
+        capability_id="local_full_flow",
+        scenario_name="local_full_flow",
+        run_id="slice-3",
+        coverage_id="4.management.slice-3",
+        scale=4,
+        node_count=4,
+    )

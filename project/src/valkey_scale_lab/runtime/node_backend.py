@@ -4,7 +4,9 @@ Derived from `runtime_start`, the stage that exercises the real primitives:
 process start, node inspection, ownership registration and cleanup binding.
 `project/docs/runtime_start_slice_map.md` records why that stage was chosen and
 which segments it owns. `cluster_form` extended it by two operations; see
-`project/docs/cluster_form_slice_map.md`.
+`project/docs/cluster_form_slice_map.md`. `management_matrix` extended it by
+three more - stopping and starting one already-known node, and deploying the
+local resource sampler; see `project/docs/management_matrix_slice_map.md`.
 
 §15 of `docs/scalable_cluster_observability_design.md` fixes how far this seam
 reaches. A runtime adapter replaces inventory and endpoint discovery, process
@@ -33,7 +35,27 @@ reads `nodehost_id`, `container_name` (the planned name for the nodehost), and
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Protocol, Sequence
+
+
+class ResourceSampler(Protocol):
+    """A long-lived local sampler, deployed by a backend, driven by the run.
+
+    §11.1 forbids creating a session per sample, so a backend starts one agent
+    on each host and collects it once. The observation layer only needs to
+    start it, tell it a planned process exit has begun, and stop it for its
+    samples; declaring that here rather than importing the observation layer's
+    class keeps this module dependent on nothing.
+    """
+
+    def start(self) -> None:
+        """Deploy and launch the sampler."""
+
+    def mark_expected_gone_active(self) -> None:
+        """Tell the sampler a planned process exit has started."""
+
+    def stop(self) -> dict[str, Any]:
+        """Stop the sampler and return the samples it recorded."""
 
 
 @dataclass(frozen=True)
@@ -112,6 +134,7 @@ class NodeBackend(Protocol):
         timeout: float,
         operation_id: str,
         record_node: dict[str, Any] | None = None,
+        command_kind: str | None = None,
     ) -> str:
         """Run a `valkey-cli` from inside the cluster's own network.
 
@@ -121,8 +144,68 @@ class NodeBackend(Protocol):
         `argv` is the `valkey-cli` argument list, so the caller owns `-c`, `-p`
         and `--cluster`; the backend owns only where the client runs.
 
-        `operation_id` and `record_node` are the command's attribution in the
-        recorded evidence. They are the caller's because the two call sites
-        attributed differently before this seam existed, and quietly agreeing
-        them would edit the evidence under cover of a refactor.
+        `operation_id`, `record_node` and `command_kind` are the command's
+        attribution in the recorded evidence. They are the caller's because the
+        call sites attributed differently before this seam existed, and quietly
+        agreeing them would edit the evidence under cover of a refactor: the
+        management workload and the reshard key path classified themselves by
+        the Valkey command they were sending, and still must.
+        """
+
+    def stop_node(self, node: dict[str, Any], *, command_kind: str) -> list[dict[str, Any]]:
+        """Stop the owned Valkey process on one node, and confirm it is gone.
+
+        The backend owns the mechanism and how it observes the process; the
+        lifecycle owns when to stop and what stopping means. Confirming is the
+        reason this cannot stay above the seam: it reads the host's own process
+        table, and there is no `/proc` on the machine this run drives from.
+
+        Not fused with `start_node`. The rolling restart does call them back to
+        back, but the remove-and-restore rows stop a node, run `CLUSTER FORGET`
+        against every survivor until it is absent and the cluster is clean, and
+        only then start it again - a wait bounded at 120s that a single
+        `restart_node` could not express.
+
+        Returns one record per command it ran, so the run's evidence keeps
+        naming each of them. A record carries `command_kind`, `argv`,
+        `started_at_unix_ms`, `ended_at_unix_ms`, `status`, `stdout_tail`,
+        `stderr_tail` and `returncode`; the lifecycle adds the ids and the
+        attribution. `command_kind` here is the caller's prefix for those
+        records, because which management operation asked is not the backend's
+        to know.
+        """
+
+    def start_node(
+        self, node: dict[str, Any], *, fresh_cluster_identity: bool
+    ) -> tuple[int, list[dict[str, Any]]]:
+        """Start the owned Valkey process on one node and report its new pid.
+
+        With `fresh_cluster_identity`, the node's recorded cluster identity is
+        discarded first, so it rejoins as a new node rather than the one that
+        was forgotten. It is a flag rather than its own operation because it is
+        only correct while the process is stopped, and only the backend knows
+        where that state physically lives.
+
+        Returns when the node answers, for the reason `wait_nodes_ready` does:
+        a backend is responsible for its own processes being up before it says
+        they are. Returns the pid and the command records, as `stop_node` does.
+        """
+
+    def resource_sampler(
+        self,
+        nodes: list[dict[str, Any]],
+        *,
+        sampler_id: str,
+        processes: Sequence[tuple[str, int]],
+        expected_gone: Sequence[tuple[str, int]],
+    ) -> ResourceSampler:
+        """Deploy the local resource sampler for the host `nodes` share.
+
+        §11.1 puts one long-lived sampler on each host, reading that host's own
+        procfs and cgroupfs, and forbids a session per sample; §15 makes
+        deploying it the adapter's job. Which logical nodes share a host, and
+        which processes are expected to disappear during the window, are
+        planning and stay in the lifecycle - so they arrive as plain
+        `(logical_id, pid)` pairs and the backend resolves only where to put
+        the agent.
         """

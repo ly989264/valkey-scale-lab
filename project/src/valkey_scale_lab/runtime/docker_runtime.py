@@ -18,7 +18,7 @@ from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, ContextManager, Iterable, Mapping, TypeVar
+from typing import Any, Callable, ContextManager, Iterable, Mapping, Sequence, TypeVar
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.cluster_timeout import (
@@ -65,9 +65,7 @@ from valkey_scale_lab.observability.failover import (
 from valkey_scale_lab.observability.load import MemtierLoadLane
 from valkey_scale_lab.observability.resources import (
     ExpectedGoneProcess,
-    LocalResourceSampler,
     ProcessSpec,
-    ResourceSamplerRunner,
 )
 from valkey_scale_lab.observability.resource_observation import (
     write_resource_observation,
@@ -85,7 +83,11 @@ from valkey_scale_lab.orchestrator.local import write_run_summary as write_orche
 from valkey_scale_lab.planner.plan import build_cluster_plan
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
-from valkey_scale_lab.runtime.node_backend import NodeBackend, NodehostAddress
+from valkey_scale_lab.runtime.node_backend import (
+    NodeBackend,
+    NodehostAddress,
+    ResourceSampler,
+)
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
 from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
@@ -1296,7 +1298,7 @@ def _create_process_scenario(
                     capability_id=capability_id,
                     scenario_name=scenario,
                     run_id=run_id,
-                    runners=_resource_runners_for_nodes(nodes),
+                    runners=_resource_runners_for_nodes(nodes, backend=backend),
                     duration_seconds=resource_seconds,
                     first_complete_sample_event=first_resource_sample,
                     monotonic=shared_monotonic,
@@ -1382,6 +1384,7 @@ def _create_process_scenario(
                 nodes=nodes,
                 nodehosts=nodehosts,
                 state=state,
+                backend=backend,
             )
         if full_flow_profile:
             write_full_flow_artifacts(
@@ -1393,6 +1396,7 @@ def _create_process_scenario(
                 nodes=nodes,
                 nodehosts=nodehosts,
                 state=state,
+                backend=backend,
                 setup_timeline=setup_timeline,
                 operator_opt_in=operator_opt_in,
                 cost_acknowledged=cost_acknowledged,
@@ -1583,15 +1587,136 @@ class DockerNodeBackend:
         timeout: float,
         operation_id: str,
         record_node: dict[str, Any] | None = None,
+        command_kind: str | None = None,
     ) -> str:
         container = str(node.get("nodehost_container_name") or node["container_name"])
         result = run_docker(
             ["exec", container, "valkey-cli", *[str(arg) for arg in argv]],
             timeout=max(1, min(900, int(timeout))),
             operation_id=operation_id,
+            step_id=command_kind,
+            command_kind=command_kind,
             node=record_node,
         )
         return result.stdout.strip()
+
+    def stop_node(self, node: dict[str, Any], *, command_kind: str) -> list[dict[str, Any]]:
+        container = str(node["nodehost_container_name"])
+        pid = _safe_process_pid(node["pid"])
+        records = [
+            self._exec_record(
+                f"{command_kind}_shutdown_nosave",
+                container,
+                ["valkey-cli", "-p", str(node["client_port"]), "SHUTDOWN", "NOSAVE"],
+                timeout=10,
+            )
+        ]
+        if _wait_container_pid_gone(container, pid, timeout=10.0):
+            return records
+        # There is no kill binary in the image, only the shell builtin.
+        records.append(
+            self._exec_record(
+                f"{command_kind}_kill_term_fallback",
+                container,
+                ["sh", "-c", f"kill -TERM {pid}"],
+                timeout=10,
+            )
+        )
+        if not _wait_container_pid_gone(container, pid, timeout=30.0):
+            raise DockerRuntimeError(
+                f"owned process {node['logical_id']} pid={pid} did not stop"
+            )
+        return records
+
+    def start_node(
+        self, node: dict[str, Any], *, fresh_cluster_identity: bool
+    ) -> tuple[int, list[dict[str, Any]]]:
+        container = str(node["nodehost_container_name"])
+        records: list[dict[str, Any]] = []
+        if fresh_cluster_identity:
+            records.append(
+                self._exec_record(
+                    "owned_valkey_process_remove_nodes_conf",
+                    container,
+                    ["rm", "-f", f"{node['data_dir']}/nodes.conf"],
+                    timeout=10,
+                    check=True,
+                )
+            )
+        records.append(
+            self._exec_record(
+                "owned_valkey_process_start",
+                container,
+                ["valkey-server", str(node["config_file"])],
+                timeout=30,
+                check=True,
+            )
+        )
+        deadline = time.monotonic() + 30.0
+        while time.monotonic() < deadline:
+            try:
+                if _node_command(node, "PING", timeout=2.0) == "PONG":
+                    pid = int(
+                        run_docker(
+                            ["exec", container, "cat", str(node["pid_file"])], timeout=5
+                        ).stdout.strip()
+                    )
+                    return pid, records
+            except Exception:  # noqa: BLE001 - not up yet is the normal case here
+                pass
+            time.sleep(0.5)
+        raise DockerRuntimeError(f"owned process {node['logical_id']} did not restart")
+
+    def resource_sampler(
+        self,
+        nodes: list[dict[str, Any]],
+        *,
+        sampler_id: str,
+        processes: Sequence[tuple[str, int]],
+        expected_gone: Sequence[tuple[str, int]],
+    ) -> NodehostResourceAgent:
+        return NodehostResourceAgent(
+            container=str(nodes[0]["nodehost_container_id"]),
+            sampler_id=sampler_id,
+            processes=[ProcessSpec(logical_id, pid) for logical_id, pid in processes],
+            expected_gone_processes=[
+                ExpectedGoneProcess(logical_id, pid) for logical_id, pid in expected_gone
+            ],
+        )
+
+    def _exec_record(
+        self,
+        command_kind: str,
+        container: str,
+        argv: list[str],
+        *,
+        timeout: int,
+        check: bool = False,
+    ) -> dict[str, Any]:
+        """One `docker exec`, described the way the run's evidence records it.
+
+        The record is returned rather than logged: the command log is the
+        lifecycle's, and 212 of its 1,592 rows at exact-50 come from here, so a
+        backend that swallowed them would delete evidence the acceptance diff
+        compares.
+        """
+        args = ["exec", container, *argv]
+        started = _unix_ms_runtime()
+        result = run_docker(args, timeout=timeout, check=False)
+        if check and result.returncode != 0:
+            raise DockerRuntimeError(
+                f"docker command failed {command_kind}: {result.stderr.strip()}"
+            )
+        return {
+            "command_kind": command_kind,
+            "argv": ["docker", *args],
+            "started_at_unix_ms": started,
+            "ended_at_unix_ms": _unix_ms_runtime(),
+            "status": "PASS" if result.returncode == 0 else "FAIL",
+            "stdout_tail": result.stdout[-500:],
+            "stderr_tail": result.stderr[-500:],
+            "returncode": result.returncode,
+        }
 
     def wait_nodes_ready(self, nodes: list[dict[str, Any]], *, timeout: float) -> None:
         deadline = time.monotonic() + timeout
@@ -5635,56 +5760,6 @@ def _cluster_info_value(node: dict[str, Any], key: str) -> str | None:
     return _info_value(info, key)
 
 
-def _run_management_ops(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    operations: list[dict[str, Any]] = []
-    check_started = time.monotonic()
-    _wait_cluster_ok(nodes, timeout=30)
-    operations.append(_operation("convergence_check", "PASS", check_started, {"cluster_state": "ok"}))
-
-    nodes_started = time.monotonic()
-    cluster_nodes = _node_command(nodes[0], "CLUSTER", "NODES", timeout=30)
-    operations.append(
-        _operation(
-            "cluster_nodes",
-            "PASS",
-            nodes_started,
-            {"line_count": len([line for line in cluster_nodes.splitlines() if line.strip()])},
-        )
-    )
-
-    info_started = time.monotonic()
-    cluster_info = _node_command(nodes[0], "CLUSTER", "INFO", timeout=30)
-    operations.append(
-        _operation(
-            "cluster_info",
-            "PASS",
-            info_started,
-            {
-                "cluster_state": _info_value(cluster_info, "cluster_state"),
-                "cluster_known_nodes": _info_value(cluster_info, "cluster_known_nodes"),
-            },
-        )
-    )
-
-    for name, reason in [
-        ("remove_node", "MANAGEMENT_CONTRACT records taxonomy only; destructive removal is deferred until a dedicated lifecycle capability_id."),
-        ("reshard", "MANAGEMENT_CONTRACT smoke cluster keeps slot ownership stable for wrapper data-path proof."),
-        ("rebalance", "Valkey cluster rebalance orchestration is deferred until management expansion."),
-        ("rolling_restart", "Restart orchestration is deferred to later stability/fault capabilities."),
-    ]:
-        operations.append(
-            {
-                "operation": name,
-                "status": "SKIPPED_WITH_REASON",
-                "duration_seconds": 0.0,
-                "reason": reason,
-                "started_at": "2026-06-28T00:00:00Z",
-                "finished_at": "2026-06-28T00:00:00Z",
-            }
-        )
-    return operations
-
-
 def write_management_ops_report(path: Path, capability_id: str, scenario: str, run_id: str, operations: list[dict[str, Any]]) -> None:
     passed = sum(1 for op in operations if op.get("status") == "PASS")
     skipped = sum(1 for op in operations if op.get("status") == "SKIPPED_WITH_REASON")
@@ -6941,37 +7016,6 @@ def _management_topology_snapshot(
     }
 
 
-def _management_parse_cluster_nodes_text(text: str, all_nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for line in text.splitlines():
-        parts = line.split()
-        if len(parts) < 8:
-            continue
-        flags = parts[2].split(",")
-        role = "primary" if "master" in flags else "replica" if ("slave" in flags or "replica" in flags) else "unknown"
-        address = parts[1]
-        rows.append(
-            {
-                "node_id": parts[0],
-                "role": role,
-                "flags": flags,
-                "master_id": parts[3],
-                "link_state": parts[7],
-                "slots": parts[8:],
-                "logical_id": next(
-                    (
-                        item["logical_id"]
-                        for item in all_nodes
-                        if item.get("client_port")
-                        and f":{item['client_port']}@" in address
-                    ),
-                    next((item["logical_id"] for item in all_nodes if item.get("container_ip") and str(item["container_ip"]) in address), MISSING),
-                ),
-            }
-        )
-    return rows
-
-
 def _management_log_node_command(
     command_log: list[dict[str, Any]],
     *,
@@ -7012,43 +7056,6 @@ def _management_log_node_command(
     command_log.append(entry)
     if status == "FAIL":
         raise DockerRuntimeError(f"MANAGEMENT_MATRIX command failed {command_kind} target={target.get('logical_id')}: {stderr}")
-    return entry
-
-
-def _management_log_docker_command(
-    command_log: list[dict[str, Any]],
-    *,
-    telemetry: TelemetryRun,
-    capability_id: str,
-    parent_run_id: str,
-    operation_id: str,
-    command_kind: str,
-    target: dict[str, Any],
-    args: list[str],
-    timeout: int,
-) -> dict[str, Any]:
-    started = telemetry.now_unix_ms()
-    command_id = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
-    result = run_docker(args, timeout=timeout, check=False)
-    entry = {
-        "schema_version": "v1",
-        "capability_id": capability_id,
-        "run_id": parent_run_id,
-        "command_id": command_id,
-        "operation_id": operation_id,
-        "command_kind": command_kind,
-        "target_logical_id": target.get("logical_id", MISSING),
-        "argv": ["docker", *args],
-        "started_at_unix_ms": started,
-        "ended_at_unix_ms": telemetry.now_unix_ms(),
-        "status": "PASS" if result.returncode == 0 else "FAIL",
-        "stdout_tail": result.stdout[-500:],
-        "stderr_tail": result.stderr[-500:],
-        "returncode": result.returncode,
-    }
-    command_log.append(entry)
-    if result.returncode != 0:
-        raise DockerRuntimeError(f"MANAGEMENT_MATRIX docker command failed {command_kind}: {result.stderr.strip()}")
     return entry
 
 
@@ -7155,6 +7162,7 @@ def _management_reshard_execute_operation(
     node_count: int,
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
+    backend: NodeBackend,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any] | None]:
     before = _management_cluster_health(nodes)
     if before["cluster_state"] != "ok" or before["slots_assigned"] != 16384:
@@ -7176,10 +7184,10 @@ def _management_reshard_execute_operation(
 
     if operation_name == "reshard_slot_range":
         selected_slots = source_slots[:4]
-        moved_slots, seeded_keys, movements = _management_reshard_move_slots(telemetry, capability_id, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=False, movement_kind="reshard_slot_range")
+        moved_slots, seeded_keys, movements = _management_reshard_move_slots(backend, telemetry, capability_id, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=False, movement_kind="reshard_slot_range")
     elif operation_name == "reshard_with_keys":
         selected_slots = source_slots[12:16] if len(source_slots) >= 16 else source_slots[:4]
-        moved_slots, seeded_keys, movements = _management_reshard_move_slots(telemetry, capability_id, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=True, movement_kind="reshard_with_keys")
+        moved_slots, seeded_keys, movements = _management_reshard_move_slots(backend, telemetry, capability_id, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=True, movement_kind="reshard_with_keys")
     elif operation_name == "rebalance_after_imbalance":
         setup_source = primaries[1]
         setup_target = primaries[0]
@@ -7187,11 +7195,11 @@ def _management_reshard_execute_operation(
         setup_target_id = _node_command(setup_target, "CLUSTER", "MYID", timeout=30).strip()
         setup_slots = _management_reshard_primary_owned_slots(setup_source, setup_source_id)
         imbalance_setup_slots = setup_slots[:20]
-        _management_reshard_move_slots(telemetry, capability_id, run_id, f"{operation_id}-setup", nodes, setup_source, setup_target, setup_source_id, setup_target_id, imbalance_setup_slots, command_log, seed_keys=False, movement_kind="create_imbalance")
+        _management_reshard_move_slots(backend, telemetry, capability_id, run_id, f"{operation_id}-setup", nodes, setup_source, setup_target, setup_source_id, setup_target_id, imbalance_setup_slots, command_log, seed_keys=False, movement_kind="create_imbalance")
         counts_imbalanced = _management_reshard_primary_slot_counts(nodes)
         imbalance_before = _management_reshard_imbalance(counts_imbalanced)
         selected_slots = imbalance_setup_slots[:10]
-        moved_slots, seeded_keys, movements = _management_reshard_move_slots(telemetry, capability_id, run_id, operation_id, nodes, setup_target, setup_source, setup_target_id, setup_source_id, selected_slots, command_log, seed_keys=False, movement_kind="rebalance_after_imbalance")
+        moved_slots, seeded_keys, movements = _management_reshard_move_slots(backend, telemetry, capability_id, run_id, operation_id, nodes, setup_target, setup_source, setup_target_id, setup_source_id, selected_slots, command_log, seed_keys=False, movement_kind="rebalance_after_imbalance")
         counts_after_rebalance = _management_reshard_primary_slot_counts(nodes)
         imbalance_after = _management_reshard_imbalance(counts_after_rebalance)
         rebalance = {
@@ -7209,8 +7217,8 @@ def _management_reshard_execute_operation(
     after = _management_cluster_health(nodes)
     counts_after = _management_reshard_primary_slot_counts(nodes)
     errors_by_type = _management_errors_by_type(command_log, operation_id)
-    readable = _management_reshard_verify_keys_readable(nodes[0], seeded_keys)
-    writable = all(_management_reshard_verify_slot_writable(nodes[0], slot, operation_id) for slot in moved_slots[: min(3, len(moved_slots))])
+    readable = _management_reshard_verify_keys_readable(nodes[0], seeded_keys, backend=backend)
+    writable = all(_management_reshard_verify_slot_writable(nodes[0], slot, operation_id, backend=backend) for slot in moved_slots[: min(3, len(moved_slots))])
     slot_coverage_complete = after["cluster_state"] == "ok" and after["slots_assigned"] == 16384 and after["slots_ok"] == 16384 and after["slots_fail"] == 0
     pass_status = bool(
         moved_slots
@@ -7265,6 +7273,7 @@ def _management_reshard_execute_operation(
 
 
 def _management_reshard_move_slots(
+    backend: NodeBackend,
     telemetry: TelemetryRun,
     capability_id: str,
     run_id: str,
@@ -7287,7 +7296,7 @@ def _management_reshard_move_slots(
         keys: list[str] = []
         if seed_keys:
             key = _management_reshard_key_for_slot(source, slot, operation_id)
-            response = run_node_cluster_cli(source, "SET", key, f"value-{operation_id}-{slot}", timeout=10)
+            response = _cluster_client_command(backend, source, "SET", key, f"value-{operation_id}-{slot}", timeout=10)
             if str(response).upper() != "OK":
                 raise DockerRuntimeError(f"MANAGEMENT_MATRIX seed key failed slot={slot}: {response}")
             keys.append(key)
@@ -7295,8 +7304,11 @@ def _management_reshard_move_slots(
         _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_importing", target, ["CLUSTER", "SETSLOT", slot, "IMPORTING", source_id])
         _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_migrating", source, ["CLUSTER", "SETSLOT", slot, "MIGRATING", target_id])
         if keys:
-            migrate_port = str(target["client_port"]) if target.get("runtime_type") == "docker_process" or target.get("nodehost_container_name") else "6379"
-            _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_migrate_keys", source, ["MIGRATE", target["container_ip"], migrate_port, "", "0", "5000", "KEYS", *keys], timeout=30)
+            # Where the *source node* reaches the target, which is inventory the
+            # backend already supplies - the same value CLUSTER MEET is given.
+            # Deriving it from the runtime type here was the last place this
+            # stage decided a peer endpoint for itself.
+            _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_migrate_keys", source, ["MIGRATE", _cluster_meet_address(target), _cluster_meet_port(target), "", "0", "5000", "KEYS", *keys], timeout=30)
         for node in [item for item in nodes if item["role"] == "primary"]:
             _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_node", node, ["CLUSTER", "SETSLOT", slot, "NODE", target_id])
         _management_wait_clean_cluster(nodes, timeout=60.0)
@@ -7348,17 +7360,42 @@ def _management_reshard_key_slot(key: str) -> int:
     return binascii.crc_hqx(encoded, 0) % 16384
 
 
-def _management_reshard_verify_keys_readable(node: dict[str, Any], keys: list[str]) -> bool:
+def _cluster_client_command(
+    backend: NodeBackend, node: dict[str, Any], *args: Any, timeout: int = 60
+) -> str:
+    """Speak RESP to the cluster from inside its own network.
+
+    For the management callers that must follow a `MOVED`: `-c`, addressed at
+    the node's own port. The attribution is the one `run_node_cluster_cli`
+    already recorded for these call sites, kept verbatim, so moving them onto
+    the seam does not quietly edit the evidence.
+    """
+    words = [str(arg) for arg in args]
+    return backend.run_cluster_admin(
+        node,
+        ["-c", "-p", str(node["client_port"]), *words],
+        timeout=timeout,
+        operation_id="cluster_setup",
+        record_node=node,
+        command_kind=classify_command_kind(["valkey-cli", *words]),
+    )
+
+
+def _management_reshard_verify_keys_readable(
+    node: dict[str, Any], keys: list[str], *, backend: NodeBackend
+) -> bool:
     for key in keys:
-        value = run_node_cluster_cli(node, "GET", key, timeout=10)
+        value = _cluster_client_command(backend, node, "GET", key, timeout=10)
         if value is None or value == "":
             return False
     return True
 
 
-def _management_reshard_verify_slot_writable(node: dict[str, Any], slot: int, operation_id: str) -> bool:
+def _management_reshard_verify_slot_writable(
+    node: dict[str, Any], slot: int, operation_id: str, *, backend: NodeBackend
+) -> bool:
     key = _management_reshard_key_for_slot(node, slot, f"{operation_id}-post")
-    return str(run_node_cluster_cli(node, "SET", key, f"post-{slot}", timeout=10)).upper() == "OK"
+    return str(_cluster_client_command(backend, node, "SET", key, f"post-{slot}", timeout=10)).upper() == "OK"
 
 
 def _management_reshard_node_owns_slot(node: dict[str, Any], node_id: str, slot: int) -> bool:
@@ -7496,45 +7533,6 @@ def _bitmap_slot_ranges(bitmap: bytes) -> list[str]:
     return ranges
 
 
-def _management_make_primary_safe(
-    *,
-    telemetry: TelemetryRun,
-    capability_id: str,
-    run_id: str,
-    operation_id: str,
-    target: dict[str, Any],
-    nodes: list[dict[str, Any]],
-    command_log: list[dict[str, Any]],
-) -> dict[str, Any]:
-    topology = _management_live_topology(nodes)
-    target_row = topology.get(target["logical_id"], {})
-    target_node_id = str(target_row.get("node_id", MISSING))
-    replacement = next((node for node in nodes if node["logical_id"] != target["logical_id"] and node["shard_id"] == target["shard_id"] and topology.get(node["logical_id"], {}).get("role") == "replica"), None)
-    if replacement is None:
-        raise DockerRuntimeError(f"MANAGEMENT_MATRIX could not find same-shard replica to make primary restart safe for {target['logical_id']}")
-    started = telemetry.now_unix_ms()
-    command = _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_failover_takeover_before_primary_restart", target=replacement, args=["CLUSTER", "FAILOVER", "TAKEOVER"], timeout=60)
-    _management_wait_node_role(replacement, "master", timeout=90.0)
-    _management_wait_clean_cluster(nodes, timeout=120.0)
-    completed = telemetry.now_unix_ms()
-    return {
-        "safe_path": "cluster_failover_takeover_before_owned_container_restart",
-        "safe_command_ref": command["command_id"],
-        "target_primary_node_id": target_node_id,
-        "replacement_logical_id": replacement["logical_id"],
-        "replacement_node_id": _node_command(replacement, "CLUSTER", "MYID", timeout=30).strip(),
-        "promotion_latency_ms": max(completed - started, 0),
-        "cluster_recovery_latency_ms": max(completed - started, 0),
-        "read_unavailability_ms": MISSING,
-        "write_unavailability_ms": MISSING,
-        "missing_fields": [
-            {"field": "read_unavailability_ms", "status": MISSING, "reason": "No read outage was observed during controlled primary handoff."},
-            {"field": "write_unavailability_ms", "status": MISSING, "reason": "No write outage was observed during controlled primary handoff."},
-        ],
-    }
-
-
-
 def _write_management_blocked_artifact(
     artifacts: Path,
     preflight: dict[str, Any],
@@ -7598,6 +7596,7 @@ def write_full_flow_artifacts(
     nodes: list[dict[str, Any]],
     nodehosts: list[dict[str, Any]],
     state: dict[str, Any],
+    backend: NodeBackend,
     setup_timeline: SetupTimeline | None = None,
     operator_opt_in: bool = False,
     cost_acknowledged: bool = False,
@@ -7679,6 +7678,7 @@ def write_full_flow_artifacts(
             nodes=nodes,
             command_log=management_command_log,
             artifacts=artifacts,
+            backend=backend,
         )
     events.extend(management["events"])
     metrics.extend(management["metrics"])
@@ -7695,6 +7695,7 @@ def write_full_flow_artifacts(
             command_log=fault_command_log,
             network_name=str(state.get("runtime", {}).get("network_name", "")),
             artifacts=artifacts,
+            backend=backend,
         )
     events.extend(fault["events"])
     metrics.extend(fault["metrics"])
@@ -8056,7 +8057,7 @@ class _AgentSamplerSpec:
 
 
 def _watch_expected_gone_active(
-    agent: "NodehostResourceAgent", is_active: Callable[[], bool]
+    agent: ResourceSampler, is_active: Callable[[], bool]
 ) -> None:
     """Relay a host-side expected-gone signal to the nodehost agent, once.
 
@@ -8170,57 +8171,39 @@ class NodehostResourceAgent:
 def _resource_runners_for_nodes(
     nodes: list[dict[str, Any]],
     *,
+    backend: NodeBackend,
     expected_gone_processes: list[dict[str, Any]] | None = None,
     expected_gone_active: Callable[[], bool] | None = None,
-) -> list[ResourceSamplerRunner]:
+) -> list[ResourceSampler]:
+    """Plan one sampler per host and ask the backend to deploy each.
+
+    Which logical nodes share a host is inventory - `nodehost_id` names it, and
+    it names it the same way whatever runs the nodes. Reading a container id
+    here to answer the same question was a Docker-shaped default of the kind
+    Slice 2 removed from the endpoint readers: correct under Docker, silently
+    one undifferentiated group under anything else.
+    """
     if not nodes:
         return []
-    required_identity = all(
-        node.get("pid") is not None
-        and (
-            node.get("nodehost_container_id")
-            or node.get("container_id")
-            or node.get("nodehost_container_name")
-            or node.get("container_name")
-        )
-        for node in nodes
-    )
-    if not required_identity:
+    if not all(node.get("pid") is not None and node.get("nodehost_id") for node in nodes):
         return []
     grouped: dict[str, list[dict[str, Any]]] = {}
     for node in nodes:
-        container = str(
-            node.get("nodehost_container_id")
-            or node.get("container_id")
-            or node.get("nodehost_container_name")
-            or node.get("container_name")
-        )
-        grouped.setdefault(container, []).append(node)
-    runners: list[ResourceSamplerRunner] = []
-    for container, hosted in grouped.items():
-        sampler_id = str(
-            hosted[0].get("nodehost_id")
-            or hosted[0].get("nodehost_container_name")
-            or container
-        )
-        processes = [
-            ProcessSpec(str(node["logical_id"]), int(node["pid"]))
-            for node in hosted
-        ]
-        expected_gone = [
-            ExpectedGoneProcess(str(row["logical_id"]), int(row["pid"]))
-            for row in expected_gone_processes or []
-            if any(
-                str(node["logical_id"]) == str(row.get("logical_id"))
-                and int(node["pid"]) == int(row.get("pid"))
-                for node in hosted
-            )
-        ]
-        agent = NodehostResourceAgent(
-            container=container,
+        grouped.setdefault(str(node["nodehost_id"]), []).append(node)
+    runners: list[ResourceSampler] = []
+    for sampler_id, hosted in grouped.items():
+        hosted_ids = {
+            (str(node["logical_id"]), int(node["pid"])) for node in hosted
+        }
+        agent = backend.resource_sampler(
+            hosted,
             sampler_id=sampler_id,
-            processes=processes,
-            expected_gone_processes=expected_gone,
+            processes=[(str(node["logical_id"]), int(node["pid"])) for node in hosted],
+            expected_gone=[
+                (str(row["logical_id"]), int(row["pid"]))
+                for row in expected_gone_processes or []
+                if (str(row.get("logical_id")), int(row.get("pid", -1))) in hosted_ids
+            ],
         )
         if expected_gone_active is not None:
             _watch_expected_gone_active(agent, expected_gone_active)
@@ -8237,6 +8220,7 @@ def _local_full_flow_run_management_sequence(
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
     artifacts: Path,
+    backend: NodeBackend,
 ) -> dict[str, Any]:
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
@@ -8266,6 +8250,7 @@ def _local_full_flow_run_management_sequence(
             operation_id=operation_id,
             nodes=nodes,
             command_log=command_log,
+            backend=backend,
         )
         for command in command_log[command_start:]:
             command["scenario_id"] = scenario_id
@@ -8323,7 +8308,7 @@ def _local_full_flow_run_management_sequence(
         light_probe=LightClusterProbe(inventory, concurrency=64, timeout=5.0),
         sentinel=sentinel,
         load=load,
-        resource_runners=_resource_runners_for_nodes(nodes),
+        resource_runners=_resource_runners_for_nodes(nodes, backend=backend),
         # Same reason as the validation above: management operations have
         # already moved roles, so the window observes structure, not the plan.
         validation_options={"require_plan_roles": False},
@@ -8629,19 +8614,12 @@ def _run_scalable_primary_kill_failover(
         )
         _management_matrix_start_process(
             target,
-            TelemetryRun(
-                capability_id=capability_id,
-                scenario_name=scenario,
-                run_id=run_id,
-                coverage_id=f"{len(nodes)}.failover.recovery",
-                scale=len(nodes),
-                node_count=len(nodes),
-            ),
             capability_id,
             run_id,
             operation_id,
             command_log,
             fresh_cluster_identity=False,
+            backend=backend,
         )
         sentinel.mark_restore_started(target_logical)
         promoted_id = _node_command(promoted, "CLUSTER", "MYID", timeout=30).strip()
@@ -8750,6 +8728,7 @@ def _local_full_flow_run_fault_failover_sequence(
     command_log: list[dict[str, Any]],
     network_name: str,
     artifacts: Path,
+    backend: NodeBackend,
 ) -> dict[str, Any]:
     operation_id = f"local_full_flow-fault-primary-handoff-{scale}"
     telemetry = TelemetryRun(capability_id=capability_id, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.telemetry_collect", scale=scale, node_count=scale)
@@ -9789,6 +9768,7 @@ def write_management_matrix_artifacts(
     nodes: list[dict[str, Any]],
     nodehosts: list[dict[str, Any]],
     state: dict[str, Any],
+    backend: NodeBackend,
 ) -> None:
     profile = _management_matrix_profile(capability_id, scenario, len(nodes))
     if profile is None:
@@ -9843,6 +9823,7 @@ def write_management_matrix_artifacts(
             operation_id=operation_id,
             nodes=nodes,
             command_log=command_log,
+            backend=backend,
         )
         topology_rows.extend(during_topology)
         topology_rows.append(_management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "after_restore", nodes, nodes))
@@ -10148,6 +10129,7 @@ def _management_matrix_run_operation_with_workload(
     operation_id: str,
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
+    backend: NodeBackend,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
@@ -10166,7 +10148,7 @@ def _management_matrix_run_operation_with_workload(
     def cluster_command(*args: Any, timeout: int = 10) -> str:
         # Keep a stable client endpoint across the operation so availability
         # loss is measured instead of hidden by selecting a new healthy node.
-        return run_node_cluster_cli(nodes[0], *args, timeout=timeout)
+        return _cluster_client_command(backend, nodes[0], *args, timeout=timeout)
 
     def workload_command(window_name: str, op_index: int, latencies: list[float], errors: list[str]) -> None:
         key = f"{{vslab-{capability_label.lower()}-{operation_name}-{window_name}-{op_index % 3}}}:k"
@@ -10221,6 +10203,7 @@ def _management_matrix_run_operation_with_workload(
                         operation_id=operation_id,
                         nodes=nodes,
                         command_log=command_log,
+                        backend=backend,
                     )
                 finally:
                     stop_workload.set()
@@ -10241,7 +10224,7 @@ def _management_matrix_run_operation_with_workload(
         all_latencies.extend(latencies)
         all_errors.extend(errors)
     if result is None:
-        result, extras = _management_matrix_execute_operation(telemetry=telemetry, capability_id=capability_id, run_id=run_id, scenario=scenario, operation_name=operation_name, operation_id=operation_id, nodes=nodes, command_log=command_log)
+        result, extras = _management_matrix_execute_operation(telemetry=telemetry, capability_id=capability_id, run_id=run_id, scenario=scenario, operation_name=operation_name, operation_id=operation_id, nodes=nodes, command_log=command_log, backend=backend)
     events.extend(extras.get("restart_events", []))
     all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
     all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message=f"{capability_label} all-run workload window finished.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
@@ -10327,16 +10310,6 @@ def _management_matrix_workload_window(
         else:
             window[metric_name] = _management_matrix_missing(metric_name, f"workload metric {metric_name} was not emitted")
     return window
-
-
-def _management_matrix_strict_workload_window(window: dict[str, Any]) -> dict[str, Any]:
-    metrics = window.get("metrics", {})
-    if not isinstance(metrics, dict):
-        metrics = {}
-    for metric_name in WORKLOAD_WINDOW_REQUIRED_METRICS:
-        if metric_name not in window:
-            window[metric_name] = metrics.get(metric_name, _management_matrix_missing(metric_name, f"workload metric {metric_name} was not emitted"))
-    return _management_matrix_encode_missing(window)
 
 
 def _management_matrix_slot_balance(nodes: list[dict[str, Any]]) -> dict[str, Any]:
@@ -10431,16 +10404,6 @@ WORKLOAD_WINDOW_REQUIRED_METRICS = [
 ]
 
 
-def _management_matrix_strict_operation_row(row: dict[str, Any]) -> dict[str, Any]:
-    missing_fields = list(row.get("missing_fields", []))
-    for field in MANAGEMENT_MATRIX_REQUIRED_OPERATION_FIELDS:
-        if field not in row:
-            row[field] = _management_matrix_missing(field, f"{field} was not emitted by the MANAGEMENT_MATRIX operation path.")
-            missing_fields.append(row[field])
-    row["missing_fields"] = missing_fields
-    return _management_matrix_encode_missing(row)
-
-
 def _management_matrix_execute_operation(
     *,
     telemetry: TelemetryRun,
@@ -10451,6 +10414,7 @@ def _management_matrix_execute_operation(
     operation_id: str,
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
+    backend: NodeBackend,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     node_count = len(nodes)
     capability_label = capability_id.split("_", 1)[0]
@@ -10467,11 +10431,11 @@ def _management_matrix_execute_operation(
     if operation_name in {"create_cluster", "meet_nodes"}:
         base = _management_matrix_verify_setup_row(capability_id, operation_name, operation_id, before)
     elif operation_name == "add_replica":
-        base = _management_matrix_remove_and_restore_row(telemetry, capability_id, run_id, "remove_replica", operation_id, nodes, command_log)
+        base = _management_matrix_remove_and_restore_row(telemetry, capability_id, run_id, "remove_replica", operation_id, nodes, command_log, backend)
         base["safe_path"] = "remove_owned_replica_then_rejoin_with_fresh_identity_as_live_add_replica"
         base["management_mutation"] = "replica_removed_then_added_back"
     elif operation_name in {"remove_replica", "remove_failed_node", "remove_primary_drained_or_safe_replaced"}:
-        base = _management_matrix_remove_and_restore_row(telemetry, capability_id, run_id, operation_name, operation_id, nodes, command_log)
+        base = _management_matrix_remove_and_restore_row(telemetry, capability_id, run_id, operation_name, operation_id, nodes, command_log, backend)
     elif operation_name in {"reshard_slot_range", "reshard_with_keys", "rebalance_after_imbalance"}:
         base, movements, rebalance = _management_reshard_execute_operation(
             telemetry=telemetry,
@@ -10482,6 +10446,7 @@ def _management_matrix_execute_operation(
             node_count=node_count,
             nodes=nodes,
             command_log=command_log,
+            backend=backend,
         )
         extras["slot_movements"] = movements
         if rebalance:
@@ -10495,6 +10460,7 @@ def _management_matrix_execute_operation(
             operation_id=operation_id,
             nodes=nodes,
             command_log=command_log,
+            backend=backend,
         )
         extras["restart_plan"] = plan
         extras["restart_results"] = restart_rows
@@ -10636,6 +10602,7 @@ def _management_matrix_remove_and_restore_row(
     operation_id: str,
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
+    backend: NodeBackend,
 ) -> dict[str, Any]:
     node_count = len(nodes)
     topology = _management_live_topology(nodes)
@@ -10654,13 +10621,13 @@ def _management_matrix_remove_and_restore_row(
         restore_as_replica = True
     removed_id = _node_command(target, "CLUSTER", "MYID", timeout=30).strip()
     old_pid = target.get("pid", MISSING)
-    _management_matrix_stop_process(target, telemetry, capability_id, run_id, operation_id, command_log, command_kind="owned_valkey_process_stop")
+    _management_matrix_stop_process(target, capability_id, run_id, operation_id, command_log, command_kind="owned_valkey_process_stop", backend=backend)
     survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
     expected_primaries = len(primaries)
     expected_replicas = len(replicas) - 1 if restore_as_replica else len(replicas)
     _management_forget_until_absent(telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, survivors=survivors, removed_id=removed_id, expected_nodes=node_count - 1, expected_primaries=expected_primaries, expected_replicas=expected_replicas, command_log=command_log)
     absent = _management_removed_absent(survivors, removed_id)
-    _management_matrix_start_process(target, telemetry, capability_id, run_id, operation_id, command_log, fresh_cluster_identity=True)
+    _management_matrix_start_process(target, capability_id, run_id, operation_id, command_log, fresh_cluster_identity=True, backend=backend)
     _management_matrix_rejoin_as_replica(target, nodes, telemetry, capability_id, run_id, operation_id, command_log)
     _management_wait_clean_cluster(nodes, timeout=180.0)
     return {
@@ -10686,6 +10653,7 @@ def _management_matrix_execute_process_rolling_restart(
     operation_id: str,
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
+    backend: NodeBackend,
 ) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
     node_count = len(nodes)
     capability_label = capability_id.split("_", 1)[0]
@@ -10808,6 +10776,7 @@ def _management_matrix_execute_process_rolling_restart(
                 capability_id=capability_id,
                 run_id=run_id,
                 operation_id=operation_id,
+                backend=backend,
             ),
             parallelism=ROLLING_RESTART_MAX_PARALLELISM,
             timeout=90.0,
@@ -11262,13 +11231,14 @@ def _management_matrix_restart_process_target(
     capability_id: str,
     run_id: str,
     operation_id: str,
+    backend: NodeBackend,
 ) -> dict[str, Any]:
     command_rows: list[dict[str, Any]] = []
     old_pid = target.get("pid", MISSING)
     started_ms = telemetry.now_unix_ms()
     started = time.monotonic()
-    _management_matrix_stop_process(target, telemetry, capability_id, run_id, operation_id, command_rows, command_kind="owned_valkey_process_restart_stop")
-    _management_matrix_start_process(target, telemetry, capability_id, run_id, operation_id, command_rows, fresh_cluster_identity=False)
+    _management_matrix_stop_process(target, capability_id, run_id, operation_id, command_rows, command_kind="owned_valkey_process_restart_stop", backend=backend)
+    _management_matrix_start_process(target, capability_id, run_id, operation_id, command_rows, fresh_cluster_identity=False, backend=backend)
     return {
         "sequence": int(entry["sequence"]),
         "process_pid_before": old_pid,
@@ -11286,44 +11256,6 @@ def _management_matrix_merge_parallel_command_rows(command_log: list[dict[str, A
         operation_id = str(copied["operation_id"])
         copied["command_id"] = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
         command_log.append(copied)
-
-
-def _management_matrix_log_docker_exec(
-    command_log: list[dict[str, Any]],
-    telemetry: TelemetryRun,
-    capability_id: str,
-    run_id: str,
-    operation_id: str,
-    command_kind: str,
-    target: dict[str, Any],
-    args: list[str],
-    *,
-    timeout: int = 30,
-    check: bool = True,
-) -> DockerResult:
-    started = telemetry.now_unix_ms()
-    command_id = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
-    result = run_docker(args, timeout=timeout, check=False)
-    entry = {
-        "schema_version": "v1",
-        "capability_id": capability_id,
-        "run_id": run_id,
-        "command_id": command_id,
-        "operation_id": operation_id,
-        "command_kind": command_kind,
-        "target_logical_id": target.get("logical_id", MISSING),
-        "argv": ["docker", *args],
-        "started_at_unix_ms": started,
-        "ended_at_unix_ms": telemetry.now_unix_ms(),
-        "status": "PASS" if result.returncode == 0 else "FAIL",
-        "stdout_tail": result.stdout[-500:],
-        "stderr_tail": result.stderr[-500:],
-        "returncode": result.returncode,
-    }
-    command_log.append(entry)
-    if check and result.returncode != 0:
-        raise DockerRuntimeError(f"{capability_id.split('_', 1)[0]} docker command failed {command_kind}: {result.stderr.strip()}")
-    return result
 
 
 def _management_matrix_clean_health(health: dict[str, Any], node_count: int) -> bool:
@@ -11489,71 +11421,79 @@ def _management_matrix_log_health_probe_summary(
 
 def _management_matrix_stop_process(
     target: dict[str, Any],
-    telemetry: TelemetryRun,
     capability_id: str,
     run_id: str,
     operation_id: str,
     command_log: list[dict[str, Any]],
     *,
     command_kind: str,
+    backend: NodeBackend,
 ) -> None:
-    container = str(target["nodehost_container_name"])
-    pid = _safe_process_pid(target["pid"])
-    port = str(target["client_port"])
-    _management_matrix_log_docker_exec(
+    _management_record_backend_commands(
         command_log,
-        telemetry,
-        capability_id,
-        run_id,
-        operation_id,
-        f"{command_kind}_shutdown_nosave",
-        target,
-        ["exec", container, "valkey-cli", "-p", port, "SHUTDOWN", "NOSAVE"],
-        timeout=10,
-        check=False,
+        capability_id=capability_id,
+        run_id=run_id,
+        operation_id=operation_id,
+        target=target,
+        records=backend.stop_node(target, command_kind=command_kind),
     )
-    if _wait_container_pid_gone(container, pid, timeout=10.0):
-        return
-    _management_matrix_log_docker_exec(
-        command_log,
-        telemetry,
-        capability_id,
-        run_id,
-        operation_id,
-        f"{command_kind}_kill_term_fallback",
-        target,
-        ["exec", container, "sh", "-c", f"kill -TERM {pid}"],
-        timeout=10,
-        check=False,
-    )
-    if not _wait_container_pid_gone(container, pid, timeout=30.0):
-        raise DockerRuntimeError(f"{capability_id.split('_', 1)[0]} process {target['logical_id']} pid={pid} did not stop")
 
 
 def _management_matrix_start_process(
     target: dict[str, Any],
-    telemetry: TelemetryRun,
     capability_id: str,
     run_id: str,
     operation_id: str,
     command_log: list[dict[str, Any]],
     *,
     fresh_cluster_identity: bool,
+    backend: NodeBackend,
 ) -> None:
-    container = str(target["nodehost_container_name"])
-    if fresh_cluster_identity:
-        _management_matrix_log_docker_exec(command_log, telemetry, capability_id, run_id, operation_id, "owned_valkey_process_remove_nodes_conf", target, ["exec", container, "rm", "-f", f"{target['data_dir']}/nodes.conf"], timeout=10)
-    _management_matrix_log_docker_exec(command_log, telemetry, capability_id, run_id, operation_id, "owned_valkey_process_start", target, ["exec", container, "valkey-server", str(target["config_file"])], timeout=30)
-    deadline = time.monotonic() + 30.0
-    while time.monotonic() < deadline:
-        try:
-            if _node_command(target, "PING", timeout=2.0) == "PONG":
-                target["pid"] = int(run_docker(["exec", container, "cat", str(target["pid_file"])], timeout=5).stdout.strip())
-                return
-        except Exception:
-            pass
-        time.sleep(0.5)
-    raise DockerRuntimeError(f"{capability_id.split('_', 1)[0]} process {target['logical_id']} did not restart")
+    pid, records = backend.start_node(
+        target, fresh_cluster_identity=fresh_cluster_identity
+    )
+    _management_record_backend_commands(
+        command_log,
+        capability_id=capability_id,
+        run_id=run_id,
+        operation_id=operation_id,
+        target=target,
+        records=records,
+    )
+    # The pid a restart produced is inventory, and the restart rows report it
+    # as `process_pid_after`, so the lifecycle records it where every later
+    # reader already looks.
+    target["pid"] = pid
+
+
+def _management_record_backend_commands(
+    command_log: list[dict[str, Any]],
+    *,
+    capability_id: str,
+    run_id: str,
+    operation_id: str,
+    target: dict[str, Any],
+    records: list[dict[str, Any]],
+) -> None:
+    """Give a backend's command records their ids and attribution.
+
+    A backend describes what it ran; which management operation asked, and
+    which run, is the lifecycle's to say. Splitting it this way is what lets
+    the same 212 `docker` rows keep appearing in `management_command_log.jsonl`
+    once the commands themselves live behind the seam.
+    """
+    for record in records:
+        command_log.append(
+            {
+                "schema_version": "v1",
+                "capability_id": capability_id,
+                "run_id": run_id,
+                "command_id": f"{operation_id}-cmd-{len(command_log) + 1:04d}",
+                "operation_id": operation_id,
+                "target_logical_id": target.get("logical_id", MISSING),
+                **record,
+            }
+        )
 
 
 def _management_matrix_rejoin_as_replica(

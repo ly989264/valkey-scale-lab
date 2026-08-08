@@ -44,6 +44,17 @@ def _clean_health(node_count: int) -> dict[str, Any]:
     }
 
 
+class NoRuntimeBackend:
+    """A backend that fails if the stage reaches a runtime at all.
+
+    These tests stub the restart itself, so the only thing left to assert about
+    the seam is that nothing under it is touched behind the stub's back.
+    """
+
+    def __getattr__(self, name: str) -> Any:
+        raise AssertionError(f"rolling restart must not reach the runtime: {name}")
+
+
 def _telemetry(node_count: int) -> TelemetryRun:
     return TelemetryRun(
         capability_id="local_full_flow",
@@ -166,6 +177,7 @@ def _run_restart(
         operation_id=f"rolling-{operation_name}-{node_count}",
         nodes=nodes,
         command_log=[],
+        backend=NoRuntimeBackend(),
     )
     return result, plan, rows, probe_modes, safe_targets
 

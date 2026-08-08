@@ -8,7 +8,8 @@ from valkey_scale_lab.runtime import docker_runtime
 
 def test_local_full_flow_resource_runners_are_nodehost_local_agents() -> None:
     runners = docker_runtime._resource_runners_for_nodes(
-        [
+        backend=docker_runtime.DockerNodeBackend(),
+        nodes=[
             {
                 "logical_id": "node-a",
                 "nodehost_id": "nodehost-a",
@@ -21,7 +22,7 @@ def test_local_full_flow_resource_runners_are_nodehost_local_agents() -> None:
                 "nodehost_container_id": "container-a",
                 "pid": 102,
             },
-        ]
+        ],
     )
 
     # One long-lived sampler per nodehost, running on the nodehost itself, so
@@ -130,6 +131,7 @@ def test_local_full_flow_bounded_stability_uses_two_60_second_scalable_rounds(
         ],
         command_log=command_log,
         artifacts=tmp_path,
+        backend=docker_runtime.DockerNodeBackend(),
     )
 
     stability = [

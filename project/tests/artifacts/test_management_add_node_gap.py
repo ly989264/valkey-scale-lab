@@ -23,7 +23,7 @@ def test_strict_add_replica_executes_a_live_management_mutation(monkeypatch) -> 
     command_log: list[dict] = []
     delegated_operations: list[str] = []
 
-    def fake_remove_and_restore(telemetry, capability_id, run_id, operation_name, operation_id, nodes, commands):
+    def fake_remove_and_restore(telemetry, capability_id, run_id, operation_name, operation_id, nodes, commands, backend):
         delegated_operations.append(operation_name)
         commands.append({"operation_id": operation_id, "command_id": "live-add", "status": "PASS"})
         return {"operation_status": "PASS", "missing_fields": []}
@@ -46,6 +46,7 @@ def test_strict_add_replica_executes_a_live_management_mutation(monkeypatch) -> 
         operation_id="management_matrix-add_replica-2",
         nodes=nodes,
         command_log=command_log,
+        backend=object(),
     )
 
     assert command_log, "add_replica was accepted from pre-existing setup state without executing a management command"

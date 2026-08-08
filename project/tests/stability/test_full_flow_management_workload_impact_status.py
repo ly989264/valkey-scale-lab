@@ -19,13 +19,13 @@ def test_expected_event_window_errors_are_measured_without_failing_recovered_ope
         operation_active = False
         return {"operation_status": "PASS", "real_execution_verified": True}, {}
 
-    def workload(*args: Any, **kwargs: Any) -> str:
-        if operation_active:
-            raise ConnectionError("measured client interruption")
-        return "OK" if args[1] == "SET" else "value"
+    class Backend:
+        def run_cluster_admin(self, node, argv, **_kwargs: Any) -> str:
+            if operation_active:
+                raise ConnectionError("measured client interruption")
+            return "OK" if "SET" in argv else "value"
 
     monkeypatch.setattr(docker_runtime, "_management_matrix_execute_operation", execute_operation)
-    monkeypatch.setattr(docker_runtime, "run_node_cluster_cli", workload)
     telemetry = TelemetryRun(
         capability_id=docker_runtime.LOCAL_FULL_FLOW_CAPABILITY,
         scenario_name=docker_runtime.LOCAL_FULL_FLOW_SCENARIO,
@@ -42,8 +42,9 @@ def test_expected_event_window_errors_are_measured_without_failing_recovered_ope
         scenario=docker_runtime.LOCAL_FULL_FLOW_SCENARIO,
         operation_name="rolling_restart_replica_first",
         operation_id="rolling-restart-impact",
-        nodes=[{"logical_id": "node-0000"}],
+        nodes=[{"logical_id": "node-0000", "client_port": 7000}],
         command_log=[],
+        backend=Backend(),
     )
 
     event = next(window for window in windows if window["window_name"] == "event")
