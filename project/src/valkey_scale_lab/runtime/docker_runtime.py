@@ -1206,6 +1206,12 @@ def _create_process_scenario(
             # The artifact contract names these container_id and container_ip.
             nodehost["container_id"] = started.handle
             nodehost["container_ip"] = started.address
+            # Which scope this nodehost was started into. The fault lane
+            # isolates a host from it and puts it back at the address above,
+            # and both are the backend's to know rather than a stage's to
+            # thread through - the same way the peer address became inventory
+            # in Slice 1 instead of a second call.
+            nodehost["network_name"] = network_name
 
         _run_timed_step(
             timings,
@@ -1441,47 +1447,6 @@ def _process_nodehosts(
     return list(plan["nodehosts"])
 
 
-def _partition_fault_matrix_process_nodehosts(nodes: list[dict[str, Any]], run_id: str) -> list[dict[str, Any]]:
-    safe_run = run_id.lower().replace("_", "-")
-    primaries = [node for node in sorted(nodes, key=lambda item: int(item.get("ordinal", 0))) if node.get("role") == "primary"]
-    if not primaries:
-        raise DockerRuntimeError("PARTITION_FAULT_MATRIX partition runtime requires at least one primary")
-    minority_id = str(primaries[0]["logical_id"])
-    groups = {
-        "nodehost-partition_fault_matrix-minority": [node for node in nodes if str(node.get("logical_id")) == minority_id],
-        "nodehost-partition_fault_matrix-majority-a": [],
-        "nodehost-partition_fault_matrix-majority-b": [],
-    }
-    majority_ids = ["nodehost-partition_fault_matrix-majority-a", "nodehost-partition_fault_matrix-majority-b"]
-    majority_index = 0
-    for node in sorted(nodes, key=lambda item: int(item.get("ordinal", 0))):
-        if str(node.get("logical_id")) == minority_id:
-            continue
-        groups[majority_ids[majority_index % len(majority_ids)]].append(node)
-        majority_index += 1
-    nodehosts: list[dict[str, Any]] = []
-    for ordinal, (nodehost_id, hosted) in enumerate(groups.items()):
-        if not hosted:
-            continue
-        for node in hosted:
-            node["runtime_type"] = "docker_process"
-            node["nodehost_id"] = nodehost_id
-        ports = sorted([node["client_port"] for node in hosted] + [node["cluster_bus_port"] for node in hosted])
-        nodehosts.append(
-            {
-                "nodehost_id": nodehost_id,
-                "az_id": "partition_fault_matrix-minority" if nodehost_id.endswith("minority") else "partition_fault_matrix-majority",
-                "host_id": "local",
-                "ordinal": ordinal,
-                "container_name": f"vslab-{safe_run}-{nodehost_id}",
-                "ports": ports,
-                "logical_node_count": len(hosted),
-                "partition_fault_matrix_partition_group": "minority" if nodehost_id.endswith("minority") else "majority",
-            }
-        )
-    return nodehosts
-
-
 def _write_nodehost_density_plan_artifact(path: Path, config: dict[str, Any], nodes: list[dict[str, Any]], nodehosts: list[dict[str, Any]], run_id: str) -> None:
     try:
         plan = build_nodehost_density_plan(config=config, nodes=[dict(node) for node in nodes], run_id=run_id, assign=True)
@@ -1683,6 +1648,152 @@ class DockerNodeBackend:
                 pass
             time.sleep(0.5)
         raise DockerRuntimeError(f"owned process {node['logical_id']} did not restart")
+
+    def kill_node(self, node: dict[str, Any]) -> list[dict[str, Any]]:
+        container = str(node["nodehost_container_name"])
+        pid = _safe_process_pid(node["pid"])
+        # There is no kill binary in the image, only the shell builtin, which
+        # is why every signal this backend sends goes through sh -c.
+        argv = ["sh", "-c", f"kill -KILL {pid}"]
+        record = self._fault_record(
+            "actuator_kill_primary",
+            ["exec", container, *argv],
+            action=f"docker exec {container} kill -KILL {pid}",
+            timeout=10,
+            check=False,
+        )
+        gone = _wait_container_pid_gone(container, pid, timeout=30.0)
+        # The evidence names the signal, not the transport that carried it.
+        record["argv"] = argv
+        record["result"] = (
+            "OK"
+            if record["returncode"] == 0 and gone
+            else f"returncode={record['returncode']}, process_gone={gone}"
+        )
+        record["status"] = "PASS" if record["result"] == "OK" else "FAIL"
+        return [record]
+
+    def pause_node(self, node: dict[str, Any]) -> list[dict[str, Any]]:
+        container = str(node["nodehost_container_name"])
+        pid = _safe_process_pid(node["pid"])
+        return [
+            self._fault_record(
+                "owned_valkey_process_pause",
+                ["exec", container, "sh", "-c", f"kill -STOP {pid}"],
+                action=f"docker exec {container} kill -STOP {pid}",
+                timeout=30,
+            )
+        ]
+
+    def resume_node(self, node: dict[str, Any]) -> list[dict[str, Any]]:
+        container = str(node["nodehost_container_name"])
+        pid = _safe_process_pid(node["pid"])
+        return [
+            self._fault_record(
+                "owned_valkey_process_resume",
+                ["exec", container, "sh", "-c", f"kill -CONT {pid}"],
+                action=f"docker exec {container} kill -CONT {pid}",
+                timeout=30,
+            )
+        ]
+
+    def pause_nodehost(self, nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        container = str(nodehost["container_name"])
+        return [
+            self._fault_record(
+                "owned_nodehost_pause",
+                ["pause", container],
+                action=f"docker pause {container}",
+                timeout=30,
+            )
+        ]
+
+    def resume_nodehost(self, nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        container = str(nodehost["container_name"])
+        return [
+            self._fault_record(
+                "owned_nodehost_resume",
+                ["unpause", container],
+                action=f"docker unpause {container}",
+                timeout=30,
+            )
+        ]
+
+    def isolate_nodehost(self, nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        container = str(nodehost["container_name"])
+        network = str(nodehost["network_name"])
+        if not network:
+            raise DockerRuntimeError("isolating a nodehost requires an owned runtime network")
+        record = self._fault_record(
+            "owned_nodehost_network_disconnect",
+            ["network", "disconnect", network, container],
+            action=f"docker network disconnect {network} {container}",
+            timeout=60,
+        )
+        # §9.1: an actuator that could not perform its action is a tool error.
+        # Only the backend that acted can tell, so the check lives here - and
+        # it undoes itself, because a host left detached by a failed isolation
+        # would be residue the lifecycle never asked for. It is a check and not
+        # an action, so it produces no record: the scenario's owned actions are
+        # the disconnect and the reconnect, as they were before this seam.
+        inspection = run_docker(
+            ["inspect", "-f", "{{json .NetworkSettings.Networks}}", container],
+            timeout=30,
+        ).stdout
+        if network in inspection:
+            self.rejoin_nodehost(nodehost)
+            raise DockerRuntimeError(
+                f"did not detach the owned container {container} from the owned network {network}"
+            )
+        return [record]
+
+    def rejoin_nodehost(self, nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        container = str(nodehost["container_name"])
+        network = str(nodehost["network_name"])
+        # The peer address this backend reported when the nodehost started.
+        # Restoring it is bookkeeping the backend owns; the cluster addresses
+        # this host by it and would not find it again at another one.
+        address = str(nodehost["container_ip"])
+        return [
+            self._fault_record(
+                "owned_nodehost_network_connect",
+                ["network", "connect", "--ip", address, network, container],
+                action=f"docker network connect --ip {address} {network} {container}",
+                timeout=60,
+            )
+        ]
+
+    def _fault_record(
+        self,
+        command_kind: str,
+        args: list[str],
+        *,
+        action: str,
+        timeout: int,
+        check: bool = True,
+    ) -> dict[str, Any]:
+        """One Docker fault action, described the way §9.1 asks.
+
+        `_exec_record`'s shape plus `action` and `result`. `action` is here
+        rather than at the call site because the fault evidence lists a
+        scenario's owned actions, and how a Docker pause is written down is the
+        Docker backend's business, not that of a stage which must also run on
+        a backend that has no such thing.
+        """
+        started = _unix_ms_runtime()
+        result = run_docker(args, timeout=timeout, check=check)
+        return {
+            "command_kind": command_kind,
+            "action": action,
+            "argv": ["docker", *args],
+            "result": "OK" if result.returncode == 0 else f"returncode={result.returncode}",
+            "started_at_unix_ms": started,
+            "ended_at_unix_ms": _unix_ms_runtime(),
+            "status": "PASS" if result.returncode == 0 else "FAIL",
+            "stdout_tail": result.stdout[-500:],
+            "stderr_tail": result.stderr[-500:],
+            "returncode": result.returncode,
+        }
 
     def resource_sampler(
         self,
@@ -7756,7 +7867,7 @@ def write_full_flow_artifacts(
     fault_command_log: list[dict[str, Any]] = []
 
     with _timeline_span(setup_timeline, "baseline_workload", "baseline_workload", {"node_count": profile.requested_nodes}):
-        baseline = _local_full_flow_run_baseline_workload(capability_id, scenario, run_id, profile.requested_nodes, nodes)
+        baseline = _local_full_flow_run_baseline_workload(capability_id, scenario, run_id, profile.requested_nodes, nodes, backend=backend)
     events.extend(baseline["events"])
     metrics.extend(baseline["metrics"])
     workload_windows.extend(baseline["windows"])
@@ -7784,8 +7895,8 @@ def write_full_flow_artifacts(
             run_id=run_id,
             scale=profile.requested_nodes,
             nodes=nodes,
+            nodehosts=nodehosts,
             command_log=fault_command_log,
-            network_name=str(state.get("runtime", {}).get("network_name", "")),
             artifacts=artifacts,
             backend=backend,
         )
@@ -8105,7 +8216,7 @@ def _load_lane_seed(nodes: list[dict[str, Any]]) -> tuple[str, str, int]:
     return container, "127.0.0.1", int(seed["client_port"])
 
 
-def _local_full_flow_run_baseline_workload(capability_id: str, scenario: str, run_id: str, scale: int, nodes: list[dict[str, Any]]) -> dict[str, Any]:
+def _local_full_flow_run_baseline_workload(capability_id: str, scenario: str, run_id: str, scale: int, nodes: list[dict[str, Any]], *, backend: NodeBackend) -> dict[str, Any]:
     telemetry = TelemetryRun(capability_id=capability_id, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.baseline_workload", scale=scale, node_count=scale)
     operation_id = f"local_full_flow-baseline-workload-{scale}"
     start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:baseline", operation_id=operation_id, message=f"LOCAL_FULL_FLOW exact-{scale} baseline workload started.", metadata={"window_name": "baseline"})
@@ -8118,13 +8229,13 @@ def _local_full_flow_run_baseline_workload(capability_id: str, scenario: str, ru
         op_started = time.monotonic()
         try:
             if index % 2 == 0:
-                response = run_node_cluster_cli(_management_matrix_first_live_node(nodes), "SET", key, value, timeout=10)
+                response = _cluster_client_command(backend, _management_matrix_first_live_node(nodes), "SET", key, value, timeout=10)
                 if str(response).upper() != "OK":
                     errors.append(f"SET unexpected result {response!r}")
                 else:
                     latencies.append((time.monotonic() - op_started) * 1000.0)
             else:
-                _ = run_node_cluster_cli(_management_matrix_first_live_node(nodes), "GET", key, timeout=10)
+                _ = _cluster_client_command(backend, _management_matrix_first_live_node(nodes), "GET", key, timeout=10)
                 latencies.append((time.monotonic() - op_started) * 1000.0)
         except Exception as exc:  # noqa: BLE001
             errors.append(repr(exc))
@@ -8610,25 +8721,12 @@ def _run_scalable_primary_kill_failover(
     )
     fault_started_unix = _unix_ms_runtime()
     command_id = f"{operation_id}-actuator-kill-primary"
-    # There is no kill binary in the image, only the shell builtin, which is
-    # why every other signal site in this module goes through sh -c.
-    kill_argv = ["sh", "-c", f"kill -KILL {_safe_process_pid(target['pid'])}"]
-    kill_result = run_docker(
-        ["exec", str(target["nodehost_container_name"]), *kill_argv],
-        timeout=10,
-        check=False,
-    )
-    process_gone = _wait_container_pid_gone(
-        str(target["nodehost_container_name"]),
-        _safe_process_pid(target["pid"]),
-        timeout=30.0,
-    )
-    result_text = (
-        "OK"
-        if kill_result.returncode == 0 and process_gone
-        else f"returncode={kill_result.returncode}, process_gone={process_gone}"
-    )
-    actuator_record = actuator.complete(result=result_text)
+    # §9.1 makes the actuator the authoritative record of the action and the
+    # backend the only thing that can perform it, so the backend reports what
+    # it did and this lane says what that means.
+    kill_record = backend.kill_node(target)[0]
+    kill_argv = list(kill_record["argv"])
+    actuator_record = actuator.complete(result=str(kill_record["result"]))
     command_log.append(
         {
             "schema_version": "v1",
@@ -8818,8 +8916,8 @@ def _local_full_flow_run_fault_failover_sequence(
     run_id: str,
     scale: int,
     nodes: list[dict[str, Any]],
+    nodehosts: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
-    network_name: str,
     artifacts: Path,
     backend: NodeBackend,
 ) -> dict[str, Any]:
@@ -8902,13 +9000,13 @@ def _local_full_flow_run_fault_failover_sequence(
             op_started = time.monotonic()
             try:
                 if index % 3 == 0:
-                    response = run_node_cluster_cli(_management_matrix_first_live_node(nodes), "SET", key, value, timeout=10)
+                    response = _cluster_client_command(backend, _management_matrix_first_live_node(nodes), "SET", key, value, timeout=10)
                     if str(response).upper() != "OK":
                         errors.append(f"SET unexpected result {response!r}")
                     else:
                         latencies.append((time.monotonic() - op_started) * 1000.0)
                 else:
-                    _ = run_node_cluster_cli(_management_matrix_first_live_node(nodes), "GET", key, timeout=10)
+                    _ = _cluster_client_command(backend, _management_matrix_first_live_node(nodes), "GET", key, timeout=10)
                     latencies.append((time.monotonic() - op_started) * 1000.0)
             except Exception as exc:  # noqa: BLE001
                 errors.append(repr(exc))
@@ -8954,21 +9052,27 @@ def _local_full_flow_run_fault_failover_sequence(
 
     live_topology = _management_live_topology(nodes)
     target_replica = next(node for node in nodes if live_topology.get(node["logical_id"], {}).get("role") == "replica")
-    nodehost_names = sorted({str(node.get("nodehost_container_name")) for node in nodes if node.get("nodehost_container_name")})
-    target_nodehost = nodehost_names[0]
-    target_az = str(next(node["az_id"] for node in nodes if node.get("nodehost_container_name") == target_nodehost))
-    az_nodehosts = sorted({str(node["nodehost_container_name"]) for node in nodes if str(node.get("az_id")) == target_az})
-    survivor = next(node for node in nodes if str(node.get("nodehost_container_name")) not in set(az_nodehosts))
+    # Which host a node runs on, and which AZ that host is in, are inventory -
+    # the same reading the rolling restart makes of the density plan. What is
+    # selected here is a nodehost, not a container: the backend turns it into
+    # whatever it has to pause or detach.
+    nodehost_by_id = {str(nodehost["nodehost_id"]): nodehost for nodehost in nodehosts}
+    hosted_ids = sorted({str(node["nodehost_id"]) for node in nodes if node.get("nodehost_id")})
+    target_nodehost = nodehost_by_id[hosted_ids[0]]
+    target_az = str(next(node["az_id"] for node in nodes if str(node.get("nodehost_id")) == hosted_ids[0]))
+    az_nodehost_ids = sorted({str(node["nodehost_id"]) for node in nodes if str(node.get("az_id")) == target_az})
+    az_nodehosts = [nodehost_by_id[nodehost_id] for nodehost_id in az_nodehost_ids]
+    survivor = next(node for node in nodes if str(node.get("nodehost_id")) not in set(az_nodehost_ids))
     fault_actions: list[tuple[str, Callable[[], dict[str, Any]]]] = [
-        ("replica_stop", lambda: _local_full_flow_process_pause_probe(target_replica, survivor, nodes)),
-        ("node_host_stop", lambda: _local_full_flow_nodehost_pause_probe(target_nodehost, survivor, nodes)),
-        ("az_stop", lambda: _local_full_flow_az_pause_probe(az_nodehosts, survivor, nodes)),
-        ("network_delay", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_delay", delay_ms=25), expect_success=True)),
-        ("network_loss", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_loss", loss_percent=100.0), expect_success=False)),
-        ("network_partition", lambda: _local_full_flow_network_disconnect_probe(network_name, target_nodehost, nodes, "network_partition")),
-        ("network_flap", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_flap", flap_down_ms=250, flap_iterations=1), expect_success=False)),
-        ("minority_majority", lambda: _local_full_flow_network_disconnect_probe(network_name, target_nodehost, nodes, "minority_majority")),
-        ("split_brain_detection", lambda: _local_full_flow_network_disconnect_probe(network_name, target_nodehost, nodes, "split_brain_detection")),
+        ("replica_stop", lambda: _local_full_flow_process_pause_probe(target_replica, survivor, nodes, backend=backend)),
+        ("node_host_stop", lambda: _local_full_flow_nodehost_pause_probe(target_nodehost, survivor, nodes, backend=backend)),
+        ("az_stop", lambda: _local_full_flow_az_pause_probe(az_nodehosts, survivor, nodes, backend=backend)),
+        ("network_delay", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_delay", delay_ms=25), expect_success=True, backend=backend)),
+        ("network_loss", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_loss", loss_percent=100.0), expect_success=False, backend=backend)),
+        ("network_partition", lambda: _local_full_flow_network_disconnect_probe(target_nodehost, nodes, "network_partition", backend=backend)),
+        ("network_flap", lambda: _local_full_flow_proxy_fault_probe(nodes[0], ProxyRule("network_flap", flap_down_ms=250, flap_iterations=1), expect_success=False, backend=backend)),
+        ("minority_majority", lambda: _local_full_flow_network_disconnect_probe(target_nodehost, nodes, "minority_majority", backend=backend)),
+        ("split_brain_detection", lambda: _local_full_flow_network_disconnect_probe(target_nodehost, nodes, "split_brain_detection", backend=backend)),
     ]
     scenario_evidence = {"primary_failover": primary_evidence}
     fault_results: list[dict[str, Any]] = []
@@ -9150,52 +9254,66 @@ def _local_full_flow_validate_fault_probe_observation(scenario_id: str, details:
             raise DockerRuntimeError(f"{scenario_id} fault probe did not verify workload recovery")
 
 
-def _local_full_flow_process_pause_probe(target: dict[str, Any], survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
-    container = str(target["nodehost_container_name"])
-    pid = str(int(target["pid"]))
-    actions = [f"docker exec {container} kill -STOP {pid}", f"docker exec {container} kill -CONT {pid}"]
-    run_docker(["exec", container, "sh", "-c", f"kill -STOP {pid}"], timeout=30)
+def _fault_actions(*record_groups: list[dict[str, Any]]) -> list[str]:
+    """The owned actions of one fault scenario, as the backend described them.
+
+    In the order they ran, which on the path that reaches a result is the order
+    the scenario planned. The strings used to be written here, before the
+    actions were taken and in Docker's own vocabulary; a stage that must run on
+    two backends cannot write either.
+    """
+    return [str(record["action"]) for records in record_groups for record in records]
+
+
+def _local_full_flow_process_pause_probe(target: dict[str, Any], survivor: dict[str, Any], nodes: list[dict[str, Any]], *, backend: NodeBackend) -> dict[str, Any]:
+    paused = backend.pause_node(target)
     try:
         observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
     finally:
-        run_docker(["exec", container, "sh", "-c", f"kill -CONT {pid}"], timeout=30)
+        resumed = backend.resume_node(target)
         _management_wait_clean_cluster(nodes, timeout=180.0)
     if "cluster_state:" not in observed:
         raise DockerRuntimeError("replica_stop probe did not observe cluster state")
-    return {"actions": actions, "target_logical_id": target["logical_id"], "observed_cluster_info": observed[-1000:]}
+    return {"actions": _fault_actions(paused, resumed), "target_logical_id": target["logical_id"], "observed_cluster_info": observed[-1000:]}
 
 
-def _local_full_flow_nodehost_pause_probe(container: str, survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
-    actions = [f"docker pause {container}", f"docker unpause {container}"]
-    run_docker(["pause", container], timeout=30)
+def _local_full_flow_nodehost_pause_probe(nodehost: dict[str, Any], survivor: dict[str, Any], nodes: list[dict[str, Any]], *, backend: NodeBackend) -> dict[str, Any]:
+    paused = backend.pause_nodehost(nodehost)
     try:
         observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
     finally:
-        run_docker(["unpause", container], timeout=30)
+        resumed = backend.resume_nodehost(nodehost)
         _management_wait_clean_cluster(nodes, timeout=180.0)
     if "cluster_state:" not in observed:
         raise DockerRuntimeError("node_host_stop probe did not observe cluster state")
-    return {"actions": actions, "target_container": container, "observed_cluster_info": observed[-1000:]}
+    return {"actions": _fault_actions(paused, resumed), "target_container": str(nodehost["container_name"]), "observed_cluster_info": observed[-1000:]}
 
 
-def _local_full_flow_az_pause_probe(containers: list[str], survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
-    paused: list[str] = []
+def _local_full_flow_az_pause_probe(nodehosts: list[dict[str, Any]], survivor: dict[str, Any], nodes: list[dict[str, Any]], *, backend: NodeBackend) -> dict[str, Any]:
+    paused: list[dict[str, Any]] = []
+    pause_records: list[dict[str, Any]] = []
+    resume_records: list[dict[str, Any]] = []
     try:
-        for container in containers:
-            run_docker(["pause", container], timeout=30)
-            paused.append(container)
+        for nodehost in nodehosts:
+            pause_records.extend(backend.pause_nodehost(nodehost))
+            paused.append(nodehost)
         observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
     finally:
-        for container in reversed(paused):
-            run_docker(["unpause", container], timeout=30)
+        for nodehost in reversed(paused):
+            resume_records.extend(backend.resume_nodehost(nodehost))
         _management_wait_clean_cluster(nodes, timeout=180.0)
     if "cluster_state:" not in observed:
         raise DockerRuntimeError("az_stop probe did not observe cluster state")
-    return {"actions": [*[f"docker pause {item}" for item in containers], *[f"docker unpause {item}" for item in reversed(containers)]], "target_containers": containers, "observed_cluster_info": observed[-1000:]}
+    return {"actions": _fault_actions(pause_records, resume_records), "target_containers": [str(nodehost["container_name"]) for nodehost in nodehosts], "observed_cluster_info": observed[-1000:]}
 
 
-def _local_full_flow_proxy_fault_probe(node: dict[str, Any], rule: ProxyRule, *, expect_success: bool) -> dict[str, Any]:
-    proxy = SandboxNetworkProxy(target_host="127.0.0.1", target_port=int(node["client_port"]), rule=rule)
+def _local_full_flow_proxy_fault_probe(node: dict[str, Any], rule: ProxyRule, *, expect_success: bool, backend: NodeBackend) -> dict[str, Any]:
+    # The one fault family that acts on nothing the runtime owns: the proxy
+    # runs in this process, in front of the node's client endpoint, and
+    # measures a client through it. All it needs from the backend is where
+    # that endpoint is, which §15 makes the adapter's job and Slice 2 already
+    # answered.
+    proxy = SandboxNetworkProxy(target_host=backend.client_host(node), target_port=int(node["client_port"]), rule=rule)
     response = b""
     error = ""
     proxy.start()
@@ -9222,14 +9340,13 @@ def _local_full_flow_proxy_fault_probe(node: dict[str, Any], rule: ProxyRule, *,
     }
 
 
-def _local_full_flow_network_disconnect_probe(network_name: str, container: str, nodes: list[dict[str, Any]], scenario_id: str) -> dict[str, Any]:
-    if not network_name:
-        raise DockerRuntimeError(f"{scenario_id} requires an owned runtime network")
-    target = next(node for node in nodes if str(node.get("nodehost_container_name")) == container)
-    survivor = next(node for node in nodes if str(node.get("nodehost_container_name")) != container)
-    ip = str(target["nodehost_container_ip"])
-    actions = [f"docker network disconnect {network_name} {container}", f"docker network connect --ip {ip} {network_name} {container}"]
-    run_docker(["network", "disconnect", network_name, container], timeout=60)
+def _local_full_flow_network_disconnect_probe(nodehost: dict[str, Any], nodes: list[dict[str, Any]], scenario_id: str, *, backend: NodeBackend) -> dict[str, Any]:
+    nodehost_id = str(nodehost["nodehost_id"])
+    container = str(nodehost["container_name"])
+    target = next(node for node in nodes if str(node.get("nodehost_id")) == nodehost_id)
+    survivor = next(node for node in nodes if str(node.get("nodehost_id")) != nodehost_id)
+    isolate_records = backend.isolate_nodehost(nodehost)
+    rejoin_records: list[dict[str, Any]] = []
     client_observations: list[dict[str, Any]] = []
     reconnect_ms = 0.0
     recovery_health_ms = 0.0
@@ -9274,9 +9391,6 @@ def _local_full_flow_network_disconnect_probe(network_name: str, container: str,
         )
 
     try:
-        inspection = run_docker(["inspect", "-f", "{{json .NetworkSettings.Networks}}", container], timeout=30).stdout
-        if network_name in inspection:
-            raise DockerRuntimeError(f"{scenario_id} did not detach the owned container from the owned network")
         if scenario_id in {"minority_majority", "split_brain_detection"}:
             timeout_ms = max(int(target.get("effective_cluster_node_timeout_ms", 0) or 0), 1000)
             time.sleep(timeout_ms / 1000.0 + 1.0)
@@ -9286,7 +9400,7 @@ def _local_full_flow_network_disconnect_probe(network_name: str, container: str,
         observe_client("isolated", target)
     finally:
         reconnect_started = time.monotonic()
-        run_docker(["network", "connect", "--ip", ip, network_name, container], timeout=60)
+        rejoin_records = backend.rejoin_nodehost(nodehost)
         reconnect_ms = round(max(time.monotonic() - reconnect_started, 0.0) * 1000.0, 6)
         recovery_started = time.monotonic()
         _local_full_flow_wait_clean_cluster_snapshot(nodes, timeout=180.0)
@@ -9317,8 +9431,10 @@ def _local_full_flow_network_disconnect_probe(network_name: str, container: str,
     if scenario_id == "split_brain_detection" and majority_ok and isolated_ok:
         raise DockerRuntimeError("split-brain detection observed writable-looking health on both partition sides")
     return {
-        "actions": actions,
+        "actions": _fault_actions(isolate_records, rejoin_records),
         "target_container": container,
+        # The backend confirms its own isolation took effect and raises if it
+        # did not, so reaching here is the evidence - see `isolate_nodehost`.
         "disconnect_verified": True,
         "majority_cluster_state_ok": majority_ok,
         "isolated_cluster_state_ok": isolated_ok,

@@ -854,6 +854,7 @@ class RecordingNodeBackend:
         self.cluster_admin: list[list[str]] = []
         self.samplers: list[tuple[str, list, list]] = []
         self.pids = pids or {}
+        self.kill_result = "OK"
 
     def verify_image(self, image: str) -> dict[str, object]:
         self.operations.append("verify_image")
@@ -945,6 +946,53 @@ class RecordingNodeBackend:
                 "returncode": 0,
             }
         ]
+
+    def _fault(self, command_kind: str, action: str) -> list[dict[str, object]]:
+        return [
+            {
+                "command_kind": command_kind,
+                "action": action,
+                "argv": ["recorded", command_kind],
+                "result": "OK",
+                "started_at_unix_ms": 5,
+                "ended_at_unix_ms": 6,
+                "status": "PASS",
+                "stdout_tail": "",
+                "stderr_tail": "",
+                "returncode": 0,
+            }
+        ]
+
+    def kill_node(self, node: dict[str, object]) -> list[dict[str, object]]:
+        self.operations.append(f"kill_node:{node['logical_id']}")
+        records = self._fault("actuator_kill_primary", f"recorded kill {node['logical_id']}")
+        records[0]["argv"] = ["sh", "-c", f"kill -KILL {node.get('pid')}"]
+        records[0]["result"] = self.kill_result
+        return records
+
+    def pause_node(self, node: dict[str, object]) -> list[dict[str, object]]:
+        self.operations.append(f"pause_node:{node['logical_id']}")
+        return self._fault("owned_valkey_process_pause", f"recorded pause {node['logical_id']}")
+
+    def resume_node(self, node: dict[str, object]) -> list[dict[str, object]]:
+        self.operations.append(f"resume_node:{node['logical_id']}")
+        return self._fault("owned_valkey_process_resume", f"recorded resume {node['logical_id']}")
+
+    def pause_nodehost(self, nodehost: dict[str, object]) -> list[dict[str, object]]:
+        self.operations.append(f"pause_nodehost:{nodehost['nodehost_id']}")
+        return self._fault("owned_nodehost_pause", f"recorded pause {nodehost['nodehost_id']}")
+
+    def resume_nodehost(self, nodehost: dict[str, object]) -> list[dict[str, object]]:
+        self.operations.append(f"resume_nodehost:{nodehost['nodehost_id']}")
+        return self._fault("owned_nodehost_resume", f"recorded resume {nodehost['nodehost_id']}")
+
+    def isolate_nodehost(self, nodehost: dict[str, object]) -> list[dict[str, object]]:
+        self.operations.append(f"isolate_nodehost:{nodehost['nodehost_id']}")
+        return self._fault("owned_nodehost_network_disconnect", f"recorded isolate {nodehost['nodehost_id']}")
+
+    def rejoin_nodehost(self, nodehost: dict[str, object]) -> list[dict[str, object]]:
+        self.operations.append(f"rejoin_nodehost:{nodehost['nodehost_id']}")
+        return self._fault("owned_nodehost_network_connect", f"recorded rejoin {nodehost['nodehost_id']}")
 
     def resource_sampler(
         self,
@@ -3042,32 +3090,55 @@ def test_kill_primary_actuator_signals_through_the_shell(monkeypatch) -> None:
 
     `docker exec <container> kill ...` therefore exits 127 and the primary is
     never killed, so the fault is recorded as failing to execute. Every other
-    signal in this module already goes through `sh -c`; this one must too.
+    signal this backend sends already goes through `sh -c`; this one must too.
     """
     calls: list[list[str]] = []
 
-    class Result:
-        returncode = 0
-        stdout = ""
-        stderr = ""
-
     def fake_run_docker(args, **_kwargs):
         calls.append(list(args))
-        return Result()
+        return docker_runtime.DockerResult("", "", 0)
 
     monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
-
-    source = inspect.getsource(docker_runtime._run_scalable_primary_kill_failover)
-    assert 'kill_argv = ["sh", "-c", f"kill -KILL' in source
-    # The bare-binary form is what exits 127 and leaves the primary alive.
-    assert '"kill",\n' not in source
-
-    docker_runtime.run_docker(
-        ["exec", "nodehost-a", "sh", "-c", "kill -KILL 101"], timeout=10, check=False
+    monkeypatch.setattr(
+        docker_runtime, "_wait_container_pid_gone", lambda *_a, **_k: True
     )
+
+    records = docker_runtime.DockerNodeBackend().kill_node(
+        {"nodehost_container_name": "nodehost-a", "pid": 101, "logical_id": "shard-0000-primary"}
+    )
+
     assert calls == [["exec", "nodehost-a", "sh", "-c", "kill -KILL 101"]]
     # A bare exec of the binary is what fails with 127.
     assert calls[0][2] != "kill"
+    # The evidence names the signal, not the transport that carried it, and
+    # §9.1 requires a result the actuator can record.
+    assert records[0]["argv"] == ["sh", "-c", "kill -KILL 101"]
+    assert records[0]["result"] == "OK"
+    assert records[0]["status"] == "PASS"
+
+
+def test_kill_node_reports_a_surviving_process_instead_of_raising(monkeypatch) -> None:
+    """§9.1: an actuator that could not act is a tool error, not a verdict.
+
+    So the backend reports what happened and the fault lane decides what it
+    means. Swallowing it into an exception here would take the choice away
+    from the only layer that owns `OK/FAIL/ERROR`.
+    """
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda args, **_kwargs: docker_runtime.DockerResult("", "no such process", 1),
+    )
+    monkeypatch.setattr(
+        docker_runtime, "_wait_container_pid_gone", lambda *_a, **_k: False
+    )
+
+    records = docker_runtime.DockerNodeBackend().kill_node(
+        {"nodehost_container_name": "nodehost-a", "pid": 101, "logical_id": "shard-0000-primary"}
+    )
+
+    assert records[0]["result"] == "returncode=1, process_gone=False"
+    assert records[0]["status"] == "FAIL"
 
 
 def test_cleanup_residual_scan_treats_unreadable_process_as_uncertain() -> None:
@@ -3132,12 +3203,19 @@ def test_local_full_flow_network_disconnect_reconnects_when_side_observation_fai
     nodes = [
         {
             "logical_id": "target",
+            "nodehost_id": "nodehost-a",
             "nodehost_container_name": "nodehost-a",
             "nodehost_container_ip": "172.18.0.2",
             "client_port": 7000,
         },
-        {"logical_id": "survivor", "nodehost_container_name": "nodehost-b", "client_port": 7001},
+        {"logical_id": "survivor", "nodehost_id": "nodehost-b", "nodehost_container_name": "nodehost-b", "client_port": 7001},
     ]
+    nodehost = {
+        "nodehost_id": "nodehost-a",
+        "container_name": "nodehost-a",
+        "container_ip": "172.18.0.2",
+        "network_name": "owned-network",
+    }
 
     def run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
         calls.append(args)
@@ -3160,7 +3238,9 @@ def test_local_full_flow_network_disconnect_reconnects_when_side_observation_fai
     # Neither side answers, so the scenario cannot reach a verdict - but the
     # owned network must be reconnected and the cluster waited on regardless.
     with pytest.raises(DockerRuntimeError, match="recovery probe did not succeed"):
-        docker_runtime._local_full_flow_network_disconnect_probe("owned-network", "nodehost-a", nodes, "network_partition")
+        docker_runtime._local_full_flow_network_disconnect_probe(
+            nodehost, nodes, "network_partition", backend=docker_runtime.DockerNodeBackend()
+        )
 
     assert ["network", "connect", "--ip", "172.18.0.2", "owned-network", "nodehost-a"] in calls
     assert recovered == [(2, 180.0)]
@@ -3177,12 +3257,19 @@ def test_partition_probe_reads_the_isolated_side_only_from_this_side_of_it(monke
     nodes = [
         {
             "logical_id": "isolated",
+            "nodehost_id": "nodehost-a",
             "nodehost_container_name": "nodehost-a",
             "nodehost_container_ip": "172.18.0.2",
             "client_port": 7000,
         },
-        {"logical_id": "majority", "nodehost_container_name": "nodehost-b", "client_port": 7001},
+        {"logical_id": "majority", "nodehost_id": "nodehost-b", "nodehost_container_name": "nodehost-b", "client_port": 7001},
     ]
+    nodehost = {
+        "nodehost_id": "nodehost-a",
+        "container_name": "nodehost-a",
+        "container_ip": "172.18.0.2",
+        "network_name": "owned-network",
+    }
     reconnected: list[bool] = []
 
     def run_docker(args: list[str], **_kwargs: Any) -> docker_runtime.DockerResult:
@@ -3215,7 +3302,7 @@ def test_partition_probe_reads_the_isolated_side_only_from_this_side_of_it(monke
     for scenario_id in ("minority_majority", "split_brain_detection"):
         reconnected.clear()
         details = docker_runtime._local_full_flow_network_disconnect_probe(
-            "owned-network", "nodehost-a", nodes, scenario_id
+            nodehost, nodes, scenario_id, backend=docker_runtime.DockerNodeBackend()
         )
         assert details["majority_cluster_state_ok"] is True
         assert details["isolated_cluster_state_ok"] is False
@@ -3811,3 +3898,290 @@ def test_reshard_drain_gives_up_rather_than_looping_forever(
             target={"logical_id": "t", "nodehost_container_ip": "172.18.0.5", "client_port": 7401},
             slot=2,
         )
+
+
+def _fault_stage_nodes() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Two AZs, one nodehost each - the smallest topology the stage accepts.
+
+    `az_stop` needs a node outside the target AZ and the partition scenarios
+    need a node on another host, so a single-AZ inventory cannot reach either.
+    """
+    nodes = [
+        {
+            "logical_id": "shard-0000-primary",
+            "shard_id": "0",
+            "role": "primary",
+            "az_id": "az-a",
+            "nodehost_id": "nodehost-az-a-00",
+            "nodehost_container_name": "host-a",
+            "nodehost_container_ip": "172.18.0.2",
+            "client_port": 7000,
+            "pid": 101,
+            "effective_cluster_node_timeout_ms": 1,
+        },
+        {
+            "logical_id": "shard-0000-replica-00",
+            "shard_id": "0",
+            "role": "replica",
+            "az_id": "az-b",
+            "nodehost_id": "nodehost-az-b-00",
+            "nodehost_container_name": "host-b",
+            "nodehost_container_ip": "172.18.0.3",
+            "client_port": 7001,
+            "pid": 102,
+            "effective_cluster_node_timeout_ms": 1,
+        },
+    ]
+    nodehosts = [
+        {"nodehost_id": "nodehost-az-a-00", "container_name": "host-a", "container_ip": "172.18.0.2", "network_name": "owned-network"},
+        {"nodehost_id": "nodehost-az-b-00", "container_name": "host-b", "container_ip": "172.18.0.3", "network_name": "owned-network"},
+    ]
+    return nodes, nodehosts
+
+
+def _forbid_docker(monkeypatch: pytest.MonkeyPatch) -> None:
+    def raise_docker(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("the fault stage must not reach Docker outside the backend")
+
+    monkeypatch.setattr(docker_runtime, "run_docker", raise_docker)
+    monkeypatch.setattr(docker_runtime, "run_node_cluster_cli", raise_docker)
+    monkeypatch.setattr(docker_runtime, "run_node_cli", raise_docker)
+
+
+def test_fault_process_pause_probe_suspends_and_resumes_through_the_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`replica_stop` freezes a node in place and lists what it did.
+
+    The action strings used to be written here in Docker's vocabulary, before
+    the actions were taken. They now come from the backend, in the order the
+    calls ran, so a second backend describes its own actuator.
+    """
+    nodes, _ = _fault_stage_nodes()
+    _forbid_docker(monkeypatch)
+    monkeypatch.setattr(docker_runtime, "_node_command", lambda *_a, **_k: "cluster_state:ok\n")
+    monkeypatch.setattr(docker_runtime, "_management_wait_clean_cluster", lambda *_a, **_k: None)
+    backend = RecordingNodeBackend()
+
+    details = docker_runtime._local_full_flow_process_pause_probe(
+        nodes[1], nodes[0], nodes, backend=backend
+    )
+
+    assert backend.operations == [
+        "pause_node:shard-0000-replica-00",
+        "resume_node:shard-0000-replica-00",
+    ]
+    assert details["actions"] == [
+        "recorded pause shard-0000-replica-00",
+        "recorded resume shard-0000-replica-00",
+    ]
+    assert details["target_logical_id"] == "shard-0000-replica-00"
+
+
+def test_fault_process_pause_probe_resumes_when_the_observation_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A suspended node left suspended is residue, so the resume is a finally."""
+    nodes, _ = _fault_stage_nodes()
+    _forbid_docker(monkeypatch)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_command",
+        lambda *_a, **_k: (_ for _ in ()).throw(DockerRuntimeError("probe failed")),
+    )
+    monkeypatch.setattr(docker_runtime, "_management_wait_clean_cluster", lambda *_a, **_k: None)
+    backend = RecordingNodeBackend()
+
+    with pytest.raises(DockerRuntimeError, match="probe failed"):
+        docker_runtime._local_full_flow_process_pause_probe(
+            nodes[1], nodes[0], nodes, backend=backend
+        )
+
+    assert backend.operations[-1] == "resume_node:shard-0000-replica-00"
+
+
+def test_fault_az_pause_probe_resumes_in_reverse_and_only_what_it_paused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The case a scoped pause could not express.
+
+    N hosts suspended in order and resumed in reverse, and if the third pause
+    fails only the two that took effect are resumed - which is why pause and
+    resume are separate operations rather than one scope.
+    """
+    nodes, _ = _fault_stage_nodes()
+    _forbid_docker(monkeypatch)
+    monkeypatch.setattr(docker_runtime, "_node_command", lambda *_a, **_k: "cluster_state:ok\n")
+    monkeypatch.setattr(docker_runtime, "_management_wait_clean_cluster", lambda *_a, **_k: None)
+    hosts = [
+        {"nodehost_id": f"nodehost-az-a-{index:02d}", "container_name": f"host-{index}"}
+        for index in range(3)
+    ]
+    backend = RecordingNodeBackend()
+
+    details = docker_runtime._local_full_flow_az_pause_probe(hosts, nodes[1], nodes, backend=backend)
+
+    assert backend.operations == [
+        "pause_nodehost:nodehost-az-a-00",
+        "pause_nodehost:nodehost-az-a-01",
+        "pause_nodehost:nodehost-az-a-02",
+        "resume_nodehost:nodehost-az-a-02",
+        "resume_nodehost:nodehost-az-a-01",
+        "resume_nodehost:nodehost-az-a-00",
+    ]
+    assert details["target_containers"] == ["host-0", "host-1", "host-2"]
+    assert details["actions"][:3] == [
+        "recorded pause nodehost-az-a-00",
+        "recorded pause nodehost-az-a-01",
+        "recorded pause nodehost-az-a-02",
+    ]
+
+    partial = RecordingNodeBackend()
+    original = partial.pause_nodehost
+
+    def fail_on_third(nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        if nodehost["nodehost_id"].endswith("02"):
+            raise DockerRuntimeError("pause failed")
+        return original(nodehost)
+
+    partial.pause_nodehost = fail_on_third  # type: ignore[method-assign]
+    with pytest.raises(DockerRuntimeError, match="pause failed"):
+        docker_runtime._local_full_flow_az_pause_probe(hosts, nodes[1], nodes, backend=partial)
+
+    assert [op for op in partial.operations if op.startswith("resume_")] == [
+        "resume_nodehost:nodehost-az-a-01",
+        "resume_nodehost:nodehost-az-a-00",
+    ]
+
+
+def test_fault_partition_probe_isolates_through_the_backend_and_still_reads_from_this_side(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The seam must not give the partition probe a way through the partition.
+
+    `85d5096a` made an unreachable isolated node the observation, fail-closed,
+    because `_node_command`'s `docker exec` fallback reached straight through
+    the isolation. Moving the actuator behind the backend must not reopen that.
+    """
+    nodes, nodehosts = _fault_stage_nodes()
+    _forbid_docker(monkeypatch)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_command",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("no docker exec through a partition")),
+    )
+    backend = RecordingNodeBackend()
+    rejoined: list[bool] = []
+    original_rejoin = backend.rejoin_nodehost
+
+    def rejoin(nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        rejoined.append(True)
+        return original_rejoin(nodehost)
+
+    backend.rejoin_nodehost = rejoin  # type: ignore[method-assign]
+
+    def host_command(node: dict[str, Any], *args: Any, timeout: float) -> str:
+        if node["logical_id"] == "shard-0000-primary" and not rejoined:
+            raise TimeoutError("timed out")
+        if args == ("PING",):
+            return "PONG"
+        return "cluster_state:ok\ncluster_known_nodes:2\n"
+
+    monkeypatch.setattr(docker_runtime, "_node_host_command", host_command)
+    monkeypatch.setattr(
+        docker_runtime, "_local_full_flow_wait_clean_cluster_snapshot", lambda *_a, **_k: None
+    )
+
+    details = docker_runtime._local_full_flow_network_disconnect_probe(
+        nodehosts[0], nodes, "minority_majority", backend=backend
+    )
+
+    assert backend.operations == [
+        "isolate_nodehost:nodehost-az-a-00",
+        "rejoin_nodehost:nodehost-az-a-00",
+    ]
+    assert details["actions"] == [
+        "recorded isolate nodehost-az-a-00",
+        "recorded rejoin nodehost-az-a-00",
+    ]
+    # Confirming the isolation took effect is the backend's, per §9.1, so
+    # reaching a result is what makes this true.
+    assert details["disconnect_verified"] is True
+    assert details["isolated_reachable_from_this_side"] is False
+    assert "TimeoutError" in details["isolated_unreachable_reason"]
+    docker_runtime._local_full_flow_validate_fault_probe_observation("minority_majority", details)
+
+
+def test_fault_proxy_probe_touches_no_backend_actuator(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The three proxy scenarios act on nothing the runtime owns.
+
+    They stand a local proxy in front of a node's client endpoint and measure a
+    client through it, so all they need is where that endpoint is. Pinning it
+    keeps the dissolution a decision rather than an omission - and pins that
+    the endpoint comes from the backend and not from a hardcoded loopback.
+    """
+    nodes, _ = _fault_stage_nodes()
+    _forbid_docker(monkeypatch)
+    backend = RecordingNodeBackend()
+    captured: dict[str, Any] = {}
+
+    class FakeProxy:
+        def __init__(self, *, target_host: str, target_port: int, rule: Any) -> None:
+            captured["host"] = target_host
+            captured["port"] = target_port
+
+        @property
+        def address(self) -> tuple[str, int]:
+            return ("127.0.0.1", 1)
+
+        def start(self) -> None:
+            pass
+
+        def snapshot(self) -> dict[str, Any]:
+            return {"accepted_connections": 0}
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(docker_runtime, "SandboxNetworkProxy", FakeProxy)
+    monkeypatch.setattr(
+        docker_runtime.socket,
+        "create_connection",
+        lambda *_a, **_k: (_ for _ in ()).throw(OSError("refused")),
+    )
+
+    details = docker_runtime._local_full_flow_proxy_fault_probe(
+        nodes[0],
+        docker_runtime.ProxyRule("network_loss", loss_percent=100.0),
+        expect_success=False,
+        backend=backend,
+    )
+
+    assert backend.operations == ["client_host"]
+    assert captured == {"host": "10.0.0.1", "port": 7000}
+    assert details["actions"] == ["sandbox_proxy network_loss"]
+
+
+def test_baseline_workload_speaks_to_the_cluster_through_the_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`baseline_workload` rides along with the fault slice.
+
+    Its two calls and the fault windows' two are the same redirect-following
+    client `run_cluster_admin` already owns, so converting only one of them
+    would leave the lifecycle naming `docker exec valkey-cli` for the stage
+    immediately before the one this slice cleans.
+    """
+    nodes, _ = _fault_stage_nodes()
+    _forbid_docker(monkeypatch)
+    monkeypatch.setattr(docker_runtime, "_management_matrix_first_live_node", lambda given: given[0])
+    backend = RecordingNodeBackend()
+
+    result = docker_runtime._local_full_flow_run_baseline_workload(
+        "local_full_flow", "local_full_flow", "run-1", 50, nodes, backend=backend
+    )
+
+    assert backend.operations == ["run_cluster_admin"] * 6
+    assert [argv[:2] for argv in backend.cluster_admin] == [["-c", "-p"]] * 6
+    assert [argv[3] for argv in backend.cluster_admin] == ["SET", "GET", "SET", "GET", "SET", "GET"]
+    assert result["windows"][0]["status"] == "PASS"

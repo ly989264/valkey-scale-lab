@@ -357,16 +357,24 @@ def test_large_partition_observations_keep_cluster_state_in_bounded_excerpts(
     nodes = [
         {
             "logical_id": "isolated",
+            "nodehost_id": "nodehost-a",
             "nodehost_container_name": "nodehost-a",
             "nodehost_container_ip": "172.18.0.2",
             "client_port": 7000,
         },
         {
             "logical_id": "majority",
+            "nodehost_id": "nodehost-b",
             "nodehost_container_name": "nodehost-b",
             "client_port": 7001,
         },
     ]
+    nodehost = {
+        "nodehost_id": "nodehost-a",
+        "container_name": "nodehost-a",
+        "container_ip": "172.18.0.2",
+        "network_name": "owned-network",
+    }
 
     def run_docker(args: list[str], **_kwargs: Any) -> docker_runtime.DockerResult:
         if args[0] == "inspect":
@@ -387,10 +395,10 @@ def test_large_partition_observations_keep_cluster_state_in_bounded_excerpts(
     )
 
     details = docker_runtime._local_full_flow_network_disconnect_probe(
-        "owned-network",
-        "nodehost-a",
+        nodehost,
         nodes,
         "network_partition",
+        backend=docker_runtime.DockerNodeBackend(),
     )
 
     docker_runtime._local_full_flow_validate_fault_probe_observation(

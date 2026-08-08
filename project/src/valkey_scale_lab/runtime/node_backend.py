@@ -7,13 +7,18 @@ which segments it owns. `cluster_form` extended it by two operations; see
 `project/docs/cluster_form_slice_map.md`. `management_matrix` extended it by
 three more - stopping and starting one already-known node, and deploying the
 local resource sampler; see `project/docs/management_matrix_slice_map.md`.
+`fault_matrix` extended it by seven - the actuator - see
+`project/docs/fault_matrix_slice_map.md`.
 
 §15 of `docs/scalable_cluster_observability_design.md` fixes how far this seam
 reaches. A runtime adapter replaces inventory and endpoint discovery, process
 lifecycle, the actuator, sampler deployment and evidence upload. It does not
 replace RESP commands or the verification logic, so cluster formation itself -
 the MEET fanout, the slot ranges, the replica attach, the convergence waits -
-stays in the lifecycle and is not part of this protocol.
+stays in the lifecycle and is not part of this protocol. Nor does it replace
+the *observation* of a fault: the actuator injects it, and §9's Sentinel lane,
+affected-shard control plane and convergence rule watch what happens, all above
+this seam.
 
 The lifecycle keeps everything that is not I/O against a runtime: planning which
 logical nodes live on which nodehost, generating configuration, writing bundles,
@@ -29,7 +34,12 @@ segments measure. A backend that fused each pair would erase that evidence.
 A nodehost is passed as the mapping the density planner produced. A backend
 reads `nodehost_id`, `container_name` (the planned name for the nodehost), and
 `ports` when it starts one, then `bundle_artifact_dir`, `remote_bundle_dir` and
-`logical_node_count`, which the lifecycle fills in once the bundle is written.
+`logical_node_count`, which the lifecycle fills in once the bundle is written,
+and finally `container_id`, `container_ip` and `network_name`, which the
+lifecycle records once the nodehost is running. The fault operations read that
+last group: isolating a host and putting it back needs to know which scope it
+was isolated from and what address to restore, and both are inventory the
+lifecycle already holds rather than arguments a caller should be asked for.
 """
 
 from __future__ import annotations
@@ -189,6 +199,81 @@ class NodeBackend(Protocol):
         Returns when the node answers, for the reason `wait_nodes_ready` does:
         a backend is responsible for its own processes being up before it says
         they are. Returns the pid and the command records, as `stop_node` does.
+        """
+
+    # The seven operations below are the actuator, which §15 names as one of
+    # the five things a runtime adapter replaces. Each returns one record per
+    # command it ran, in `stop_node`'s shape plus two fields the fault lane
+    # needs and the management lane does not:
+    #
+    #   `action` - how the backend describes what it did, in one line. The
+    #       fault evidence lists these as the owned actions of a scenario, so
+    #       the description of a Docker pause belongs to the Docker backend and
+    #       not to a stage that must run on both.
+    #   `result` - `"OK"`, or why not. §9.1 requires the actuator to record a
+    #       result, and requires that failing to act be a tool error rather
+    #       than a cluster verdict, so it is reported rather than raised.
+    #
+    # These records are not command-log rows. The fault lane writes one row per
+    # scenario, not one per command, and folds these into that row.
+
+    def kill_node(self, node: dict[str, Any]) -> list[dict[str, Any]]:
+        """Terminate the owned process on one node without warning it.
+
+        Not `stop_node` with a flag. `stop_node` asks the server to leave -
+        `SHUTDOWN NOSAVE`, then a TERM - and a kill must not, because §9.1's
+        planned kill *is* the experiment: warning the process first would
+        measure a graceful handoff instead of a failure. The two share only the
+        wait for the process to disappear, which is internal here.
+
+        Returns when the process is gone or when the wait runs out; the record
+        says which, in `result`, because §9.1 makes the actuator the
+        authoritative record of the action and an actuator that could not act
+        is a tool error rather than a cluster failure. Raising instead would
+        take that away from the caller, which is the one that owns the verdict.
+        """
+
+    def pause_node(self, node: dict[str, Any]) -> list[dict[str, Any]]:
+        """Suspend the owned process on one node, leaving it in the cluster.
+
+        A suspended node is still a member and still holds its slots; it simply
+        stops answering. That is a different fault from stopping it, and the
+        stage observes it differently, which is why this is not `stop_node`.
+        """
+
+    def resume_node(self, node: dict[str, Any]) -> list[dict[str, Any]]:
+        """Resume a process suspended by `pause_node`.
+
+        Separate from `pause_node` for the reason `start_node` is separate from
+        `stop_node`, and more strongly: the observation between them may raise,
+        and the caller resumes in a `finally`. A scoped pause could not express
+        that, and could not express `az_stop`, which suspends N hosts in order
+        and resumes them in reverse.
+        """
+
+    def pause_nodehost(self, nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        """Suspend a whole host and everything it runs."""
+
+    def resume_nodehost(self, nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        """Resume a host suspended by `pause_nodehost`."""
+
+    def isolate_nodehost(self, nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        """Cut a host off from the run's own network, and confirm it is cut.
+
+        Confirming is part of the operation, not a second call: §9.1 says an
+        actuator that cannot actually perform its action is a tool error, so
+        only the backend that acted can say whether it did. A backend that
+        reported success without checking would let the stage judge a partition
+        that never happened.
+        """
+
+    def rejoin_nodehost(self, nodehost: dict[str, Any]) -> list[dict[str, Any]]:
+        """Put an isolated host back where it was, at the address it announced.
+
+        The address is not an argument. Other nodes reached this host at a
+        peer address the backend itself reported when the host started, so
+        restoring it is the backend's own bookkeeping; asking the lifecycle to
+        pass it back would be asking it to hold a value it cannot interpret.
         """
 
     def resource_sampler(
