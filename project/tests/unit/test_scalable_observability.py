@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 
 from valkey_scale_lab.observability.cluster import (
+    EndpointConnections,
     FullClusterValidator,
     LightClusterProbe,
     NodeEndpoint,
@@ -222,6 +223,97 @@ def _cluster_fixture() -> tuple[list[NodeEndpoint], dict[int, dict[tuple[Any, ..
             ("CLUSTER", "SHARDS"): _shards(ids),
         }
     return nodes, responses
+
+
+def test_light_probe_keeps_one_connection_per_endpoint_across_rounds() -> None:
+    """Rounds reuse connections instead of paying a handshake per node per round.
+
+    A whole-fleet probe opening and closing a socket per node per round is what
+    exhausted the host's ephemeral ports at 200 nodes; the cost is per round, so
+    it is the second round that has to be free.
+    """
+    nodes, responses = _cluster_fixture()
+    opened: list[int] = []
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        opened.append(endpoint.port)
+        return FakeConnection(responses[endpoint.port])
+
+    connections = EndpointConnections()
+    for _round in range(5):
+        rows = LightClusterProbe(
+            nodes, concurrency=32, connection_factory=factory, connections=connections
+        ).collect()
+        assert [row["status"] for row in rows] == ["OK"] * 4
+
+    assert len(opened) == 4, "one connection per endpoint, not one per round"
+    connections.close_all()
+
+
+def test_light_probe_reports_a_dead_node_from_a_fresh_connection() -> None:
+    """A stale kept connection is not evidence; the node's own refusal is.
+
+    Reuse must not turn "the socket we had is gone" into the reported error, or
+    a node that really died would be described by our bookkeeping instead of by
+    itself.
+    """
+    nodes, responses = _cluster_fixture()
+    dead_port = nodes[0].port
+    node_is_dead = False
+    attempts: list[int] = []
+    kept: dict[int, FakeConnection] = {}
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        attempts.append(endpoint.port)
+        if endpoint.port == dead_port and node_is_dead:
+            failing = FakeConnection({})
+
+            def refuse(*_command: Any) -> Any:
+                raise ConnectionRefusedError("[Errno 61] Connection refused")
+
+            failing.execute = refuse  # type: ignore[method-assign]
+            return failing
+        connection = FakeConnection(responses[endpoint.port])
+        kept[endpoint.port] = connection
+        return connection
+
+    connections = EndpointConnections()
+    probe = lambda: LightClusterProbe(  # noqa: E731 - the probe is rebuilt per round
+        nodes, concurrency=32, connection_factory=factory, connections=connections
+    ).collect()
+
+    assert [row["status"] for row in probe()] == ["OK"] * 4
+
+    # The node dies, so the connection we kept for it is now stale.
+    node_is_dead = True
+
+    def closed_by_peer(*_command: Any) -> Any:
+        raise EOFError("Valkey connection closed")
+
+    kept[dead_port].execute = closed_by_peer  # type: ignore[method-assign]
+
+    rows = {row["logical_id"]: row for row in probe()}
+
+    assert rows["p0"]["status"] == "FAIL"
+    assert "ConnectionRefusedError" in rows["p0"]["error"], rows["p0"]["error"]
+    assert "EOFError" not in rows["p0"]["error"]
+    assert attempts.count(dead_port) == 2, "one retry on a fresh connection, not more"
+    assert [rows[name]["status"] for name in ("p1", "r0", "r1")] == ["OK"] * 3
+    connections.close_all()
+
+
+def test_light_probe_does_not_pool_a_caller_supplied_factory_by_default() -> None:
+    nodes, responses = _cluster_fixture()
+    opened: list[int] = []
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        opened.append(endpoint.port)
+        return FakeConnection(responses[endpoint.port])
+
+    for _round in range(3):
+        LightClusterProbe(nodes, concurrency=32, connection_factory=factory).collect()
+
+    assert len(opened) == 12, "a caller owning its connections opts into reuse"
 
 
 def test_full_cluster_validation_is_linear_plus_fixed_observers() -> None:

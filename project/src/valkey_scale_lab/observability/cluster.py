@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -190,6 +191,66 @@ def parse_role(value: Any) -> dict[str, Any]:
     }
 
 
+class EndpointConnections:
+    """One RESP connection per endpoint, kept between probe rounds.
+
+    The probe used to open and close a connection per node per round, and each
+    caller builds a fresh probe, so nothing survived a round. Section 14 budgets
+    O(N) *persistent* connections for the Sentinel and Load lanes and names FD
+    pressure as the 2000-node preflight risk; it budgets no connection churn at
+    all, and section 4.1 asks large-scale checks not to flood. Measured on one
+    complete exact-200 run: 165,095 host TCP connections, 97,000 of them from
+    485 whole-fleet probes, ending in `[Errno 49] Can't assign requested
+    address` once the host's 16,384 ephemeral ports were gone. The Sentinel lane
+    already holds a connection per endpoint; this gives the probe the same
+    discipline, which section 17 leaves to the implementation.
+
+    A connection is checked out for the duration of one observation and returned
+    afterwards, so two threads never share a socket.
+    """
+
+    def __init__(self, *, reuse: bool = True) -> None:
+        self.reuse = reuse
+        self._lock = threading.Lock()
+        self._idle: dict[tuple[str, int], RespConnection] = {}
+
+    def take(
+        self,
+        endpoint: Endpoint,
+        timeout: float,
+        factory: Callable[[Endpoint, float], RespConnection],
+    ) -> tuple[RespConnection, bool]:
+        if self.reuse:
+            with self._lock:
+                connection = self._idle.pop((endpoint.host, endpoint.port), None)
+            if connection is not None:
+                return connection, True
+        return factory(endpoint, timeout), False
+
+    def give_back(self, endpoint: Endpoint, connection: RespConnection) -> None:
+        if not self.reuse:
+            connection.close()
+            return
+        key = (endpoint.host, endpoint.port)
+        with self._lock:
+            if key not in self._idle:
+                self._idle[key] = connection
+                return
+        # Two observations of one endpoint overlapped; keep the first one back.
+        connection.close()
+
+    def close_all(self) -> None:
+        with self._lock:
+            idle, self._idle = list(self._idle.values()), {}
+        for connection in idle:
+            connection.close()
+
+
+# The probe is rebuilt at every call site, so the connections have to outlive it
+# somewhere. Endpoints are unique per run and a run is one process.
+SHARED_CONNECTIONS = EndpointConnections()
+
+
 class LightClusterProbe:
     def __init__(
         self,
@@ -198,6 +259,7 @@ class LightClusterProbe:
         concurrency: int = 64,
         timeout: float = 3.0,
         connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
+        connections: EndpointConnections | None = None,
     ) -> None:
         if not nodes:
             raise ValueError("light cluster probe requires at least one node")
@@ -209,15 +271,43 @@ class LightClusterProbe:
         self._connection_factory = connection_factory or (
             lambda endpoint, timeout: RespConnection(endpoint, timeout=timeout)
         )
+        # A caller that supplies its own factory owns its connections' lifetime,
+        # so it opts into reuse explicitly rather than inheriting the pool.
+        self._connections = connections or (
+            SHARED_CONNECTIONS
+            if connection_factory is None
+            else EndpointConnections(reuse=False)
+        )
+
+    def _light_commands(self, endpoint: Endpoint) -> list[Any]:
+        connection, reused = self._connections.take(
+            endpoint, self.timeout, self._connection_factory
+        )
+        try:
+            values = connection.execute_many(LIGHT_COMMANDS)
+        except Exception:
+            connection.close()
+            if not reused:
+                raise
+            # A kept connection can be closed by the peer between rounds, and a
+            # dead socket is not evidence about the node. What the node is doing
+            # is whatever a new connection finds, so the error reported for it
+            # always comes from a fresh connect - a node that is really gone
+            # still reports its own refusal rather than this stale one.
+            connection = self._connection_factory(endpoint, self.timeout)
+            try:
+                values = connection.execute_many(LIGHT_COMMANDS)
+            except Exception:
+                connection.close()
+                raise
+        self._connections.give_back(endpoint, connection)
+        return values
 
     def observe_node(self, node: NodeEndpoint) -> dict[str, Any]:
         wall_started = time.time()
         monotonic_started = time.monotonic()
         try:
-            with self._connection_factory(
-                Endpoint(node.host, node.port), self.timeout
-            ) as connection:
-                values = connection.execute_many(LIGHT_COMMANDS)
+            values = self._light_commands(Endpoint(node.host, node.port))
         except Exception as exc:  # successfully classifiable endpoint observation
             return {
                 "logical_id": node.logical_id,
