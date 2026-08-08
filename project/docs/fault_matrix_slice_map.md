@@ -845,3 +845,89 @@ Seven things this map surfaced and deliberately leaves alone.
   surface, so the seam does not touch them - but that one stage waits for the
   same condition two ways is worth someone's measurement, and it is not this
   slice's.
+
+## Slice 4 is measured
+
+| Bar item | Result |
+| --- | --- |
+| `./gate suite repository.all` | 91/91 |
+| Targeted hermetic tests | seven, each driving the stage with a recording backend while `run_docker`, `run_node_cluster_cli` and `run_node_cli` all raise |
+| exact-30 in place of the six-node smoke | **PASS 702.22s**, twelve of twelve steps, one `fault_matrix` span, 9 / 12 / 15, zero residue |
+| Real exact-50 against the frozen baseline | two consecutive runs, **PASS 885.47s** and **PASS 865.92s**; **5 of 6** views identical against run-1 and run-2 in both, with `fault_sequence` carrying exactly the expected delta |
+| `runtime_start`, `cluster_form`, `management_matrix` not regressed | 7 of 7, 5 of 5, and 6 of 8 with the known `+14 cluster_migrate_keys` and no other row kind - on both runs, against both baselines |
+| exact-200, reported not diffed | **PASS 1660.84s**, twelve of twelve steps, every structural number equal to the reference |
+| Old path removed | no `run_docker`, `docker exec` string or `nodehost_container_name`-as-argument survives in any stage function, checked by AST; `_wait_container_pid_gone` and `_safe_process_pid` have no lifecycle caller; 39 lines of dead path deleted |
+| `actions` render byte-identical, 12 command rows | yes, at 30, 50 and 200 nodes |
+| `STAGE_VIEWS` calibrated | 6/6 on two pairs, and 15 of 15 seeded regressions caught |
+| Residue | zero after every run, `cleanup_report` PASS |
+
+### The delta is exactly what the map predicted, in both runs
+
+Compared structurally rather than by diff lines, across all nine scenarios and
+against both frozen baseline runs, the fields that differ are:
+
+```
+isolated_reachable_from_this_side   3   (absent -> false)
+isolated_unreachable_reason         3   (absent -> a reason)
+isolated_cluster_info               3   (observed -> not observed)
+isolated_cluster_state_ok           1   (true -> false)
+```
+
+and nothing else. The count of 1 for `isolated_cluster_state_ok` is not a
+shortfall: the baseline recorded it `true` for `network_partition` and already
+`false` for the two split-brain scenarios, whose isolated side read
+`cluster_state:fail`. That is the shape this map wrote down before the run.
+The six non-partition scenarios differ in no field the view compares.
+
+### The seam is invisible in the evidence, which is the point
+
+The nine Docker calls now come from the backend and the stage's evidence is
+unchanged: `fault_command_log` is identical to both baselines at exact-50, and
+`details["actions"]` renders the same strings the lifecycle used to write -
+`docker exec <host> kill -STOP <pid>`, `docker pause <host>`,
+`docker network connect --ip <ip> <net> <host>`. At 200 nodes every structural
+number equals the pre-slice reference run:
+
+| exact-200 | reference `gate-20260808T092308Z-eee88ccb` | this slice |
+| --- | --- | --- |
+| flow, steps | PASS, 12 | PASS, 12 |
+| `fault_matrix` | PASS 215.0s | PASS 256.0s |
+| scenarios / command rows / windows | 9 / 12 / 15 | 9 / 12 / 15 |
+| command row kinds | the same four | the same four |
+| Sentinel canaries | 100 | 100 |
+| actuator result, §7.6 interval, §9.3 rounds | OK, 100ms, 2 | OK, 100ms, 2 |
+| redundancy recovery, cleanup | OK, PASS | OK, PASS |
+| partition isolated side | unreachable, with a reason | unreachable, with a reason |
+
+### The reported numbers
+
+Diffing them is impossible by design; here they are for both candidate runs
+beside the two baselines.
+
+| Run | RTO | Sentinel samples | convergence rounds |
+| --- | --- | --- | --- |
+| baseline run-1 | 47093.8ms | 453 | 95 |
+| baseline run-2 | 47042.6ms | 465 | 96 |
+| candidate run 1 | 45149.5ms | 434 | 91 |
+| candidate run 2 | 49235.4ms | 472 | 99 |
+| exact-200, this slice | 50414.1ms | - | - |
+
+Both candidate runs sit inside or beside the baseline spread, and the RTO is
+what it has always been: a cluster-node-timeout-driven failover of roughly 45
+to 50 seconds, at every scale.
+
+The isolated-side reasons came back the same in both runs and confirm why the
+text is reported rather than compared: `network_partition` records
+`timeout('timed out')` while `minority_majority` and `split_brain_detection`
+record `DockerRuntimeError("unknown RESP prefix b'')`, and at 200 nodes the
+`network_partition` one has been seen both ways.
+
+### One correction to the record
+
+CLAUDE.md said the product refuses this lifecycle below 30 nodes. It does not,
+and the map says so with the measurement: the gate refuses six, but
+`_full_flow_profile` resolves six to `small-real` and nothing raises on node
+count. What actually stops a six-node run reaching this stage is
+`single_mac_6node.yaml`'s single AZ, against an `az_stop` scenario that selects
+a survivor outside the target AZ. The conclusion - exact-30 is the smallest
+real run - is unchanged; the reason is not.
