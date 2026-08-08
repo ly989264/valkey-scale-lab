@@ -564,3 +564,98 @@ Six things this map surfaced and deliberately leaves alone:
   through a different frame; the seam reaches it because the core is shared, but
   nothing in the acceptance bar exercises it end to end. Named here so it is a
   known limitation of the bar rather than a discovery later.
+
+## Slice 3 is measured
+
+| Bar item | Result |
+| --- | --- |
+| `./gate suite repository.all` | 91/91 |
+| Targeted hermetic tests | four, each driving the stage with a recording backend while `run_docker` raises |
+| exact-30 in place of the six-node smoke | **PASS 686.97s**, twelve of twelve steps, one `management_matrix` span, 60 restart rows, zero residue |
+| Real exact-50 against the frozen baseline | two consecutive runs, **PASS 906.01s** and **PASS 842.99s**; run 2 **eight of eight** views identical against both baselines, run 1 seven of eight - see below |
+| `runtime_start` and `cluster_form` not regressed | 7 of 7 and 5 of 5, on both runs, against both baselines |
+| exact-200, reported not diffed | **PASS 1568.38s**, twelve of twelve steps, 200 of 200 nodes |
+| Old path removed | no `run_docker`, `docker exec` or `run_node_cluster_cli` name survives in any of the stage's functions, checked by walking the module's AST rather than grepping the file; 215 lines of dead path deleted |
+| Residue | zero after every run, `cleanup_report` PASS |
+
+### The seam is invisible in the evidence, which is the point
+
+The 212 `docker` rows at exact-50 are now produced by the backend and recorded
+by the lifecycle, and `management_command_log` diffs clean, so the split did not
+cost a row. At 200 nodes the structural evidence is equal to the reference run
+in every number the stage owns:
+
+| exact-200 | reference `gate-20260808T021925Z-0078a747` | this slice |
+| --- | --- | --- |
+| `management_matrix` | PASS 992.2s | PASS 1011.8s |
+| restart batches, max concurrent | 26 and 26, 8 | 26 and 26, 8 |
+| restart rows, all health gates PASS | 400, yes | 400, yes |
+| probe counts: representative / full / retry / node commands | 474 / 200 / 0 / 1348 | 474 / 200 / 0 / 1348 |
+| command rows, of which `docker` | 5978, 812 | 5978, 812 |
+| `docker` row kinds | the same four | the same four |
+| stability lane, cleanup | PASS, PASS | PASS, PASS |
+
+### The one difference, and what it measured
+
+exact-50 run 1 differed from both baselines in exactly one field of one row out
+of 1,592: a `cluster_replicate_restored_node` whose `stdout_tail` read
+`ERR To set a master the node must be empty and without assigned slots.` where
+the baselines read `OK`. The row's `status` was `PASS`.
+
+It is not a regression, and the run's own evidence says so rather than an
+argument: the after-topology records `shard-0000-replica-00` as `role: replica`,
+`link_state: connected`, following its own shard's primary, in a cluster with
+`cluster_state: ok`, 25 primaries, 25 replicas and 16384 slots - and
+`management_sequence`, which carries that verdict and both topology snapshots,
+is identical to both baselines. So the RESP `CLUSTER REPLICATE` succeeded.
+
+What produced the row is `_node_response`'s `docker exec` fallback, which Slice
+2 recorded from a reading of the code and left alone. This is its first
+measurement, and it is worse than the reading suggested: the fallback catches
+any exception from the RESP path and **re-executes the command**. `CLUSTER
+REPLICATE` is not idempotent, so the second attempt found the node already
+replicating and returned an error, and because `docker exec` exited 0 the
+lifecycle recorded a failed Valkey command as a passing row. A collector retry
+became a false report about the cluster - the same shape §16 item 12 forbids.
+
+It did not recur in run 2, at exact-30, or in either exact-200 run, and the
+fallback and the connection pooling under it are both untouched by this slice.
+It stays reported: the helper is on six stages' paths and CLAUDE.md holds it
+open deliberately. Nothing here normalises it away, because a rule that hid a
+command's stdout would hide this class of regression too.
+
+### The reported counters
+
+Diffing them is impossible by design; here they are for all four runs, as
+`samples/errors` per operation:
+
+| Run | `rolling_restart_replica_first` | `rolling_restart_primary_safe` | `remove_primary_drained_or_safe_replaced` |
+| --- | --- | --- | --- |
+| baseline run-1 | 757/1 | 1001/1 | 217/**17** |
+| baseline run-2 | 751/1 | 1040/1 | 208/**6** |
+| candidate run 1 | 699/1 | 973/1 | 246/**40** |
+| candidate run 2 | 685/2 | 1001/1 | 203/**9** |
+
+Candidate run 2 sits inside the baseline spread throughout. Candidate run 1's
+40 errors on the primary-handoff row is **above** it - 16% of its samples
+against the baselines' 8% and 3%. That operation is a deliberate primary
+handoff where client errors are expected, its verdict
+(`errors_observed_during_operation: true`) and its topology diff clean, and it
+is the same run that hit the fallback above and took 906s against run 2's 843s,
+so host load is the plausible common cause. That is a hypothesis, not a
+conclusion, and it is recorded here rather than resolved because a number this
+noisy is exactly what the reported-not-diffed rule exists for.
+
+### A pre-existing latent bug found while checking the threading
+
+The `backend` name is threaded through a long call chain, and one intermediate
+function was missed: `_run_scalable_primary_kill_failover`, the fault lane's
+recovery, which restarts the killed primary through this stage's `start_node`.
+All 91 catalog tests and the four new hermetic tests passed with the bug
+present; the exact-30 run found it at 566.77s. Checking the whole module for
+the same class of error afterwards - every free name in every top-level
+function - turned up one more, and it is not this slice's: `_execute_runtime`'s
+exception handler reads `nodehosts` and `snapshots`, neither of which is bound
+in that scope, so the failure path raises `NameError` and falls through to the
+bare cleanup branch. It is present at the pre-refactor commit too. Reported, not
+fixed: it belongs to `runtime_start`'s error path.
