@@ -531,6 +531,281 @@ def management_workload_counters(root: Path) -> str:
     )
 
 
+# A pid inside a rendered command, rather than as a field. `scrub` replaces a
+# `pid` key; the fault lane's owned actions carry the number inside the string
+# ("docker exec host-a kill -STOP 15899", 15899 against 17208 between the two
+# frozen baseline runs). The signal itself stays compared, because the image
+# ships no kill binary and sending the wrong one is exactly the regression this
+# view exists to catch.
+KILL_PID = re.compile(r"(kill -[A-Z]+ )\d+")
+# Live server state, in three fields that hold a whole `CLUSTER INFO`. Not just
+# the counters move between two runs of the same code - the *key set* does,
+# because `cluster_stats_messages_update_received` and its siblings appear only
+# once such a message has been seen. What these fields carry as evidence is
+# that a real CLUSTER INFO was observed and what `cluster_state` said, which is
+# also all the observation validator reads, so that is what survives.
+CLUSTER_INFO_FIELDS = {
+    "observed_cluster_info",
+    "majority_cluster_info",
+    "isolated_cluster_info",
+}
+# Why a node could not be reached. Measured across six runs, the flavour is a
+# race and not a fact: at 30 and 50 nodes `network_partition` records a socket
+# timeout while the two split-brain scenarios record an EOF, and at 200 nodes
+# `network_partition` records the EOF instead. The contract is that an
+# unreachable isolated side states a reason at all - `85d5096a` made the silent
+# absence a failure - so presence is compared and the flavour is reported.
+UNREACHABLE_REASON_FIELDS = {"isolated_unreachable_reason", "error", "client_error"}
+# The sandbox proxy binds whatever ephemeral port the OS hands it (49612
+# against 51183 between the baselines). `target_port` is the node's planned
+# client port and stays compared.
+EPHEMERAL_PORT_FIELDS = {"listen_port"}
+# Two row kinds whose `stdout_tail` is a re-serialisation of evidence this
+# stage already compares in full elsewhere: an `owned_fault_probe` row carries
+# `json.dumps(details)` and `fault_sequence` compares `details`; the actuator
+# row carries the actuator record and `failover_observation:verdicts` compares
+# it. Both are cut to the last 2000 characters, so the truncation window itself
+# moves when the content grows - the baseline's partition row begins mid-line.
+# Every other row keeps its stdout compared, which is where Slice 3's lesson
+# actually applies: a `CLUSTER REPLICATE` reply of "OK" against an error is how
+# the `docker exec` fallback was caught.
+SERIALISED_STDOUT_KINDS = {"owned_fault_probe", "actuator_kill_primary"}
+FAULT_COMMAND_ID = re.compile(
+    r"local_full_flow-fault-[A-Za-z0-9_.-]+?-(?:cmd-\d{4}|actuator-[a-z-]+)"
+)
+
+
+def cluster_info_observation(text: str) -> dict[str, Any]:
+    """A `CLUSTER INFO` text reduced to what it is evidence of."""
+    if not text:
+        return {"observed": False, "cluster_state": None, "truncated": False}
+    rows = dict(
+        line.split(":", 1)
+        for line in text.replace("\r", "").strip().splitlines()
+        if ":" in line
+    )
+    state = rows.get("cluster_state")
+    # These fields are bounded at 1000 characters and `observed_cluster_info`
+    # keeps the tail, so a longer INFO would drop `cluster_state` off the
+    # front. Measured lengths run 794-999 at 30, 50 and 200 nodes, which is
+    # close enough that the bound must show rather than read as an absence.
+    return {
+        "observed": True,
+        "cluster_state": state,
+        "truncated": state is None or "<truncated>" in text,
+    }
+
+
+def fault_scrub(value: Any) -> Any:
+    """The five replacements this stage's artifacts need, over `management_scrub`.
+
+    Layered rather than merged: everything `management_matrix` measured about
+    `_ms` values, pids and node ids is true here too, and restating it would
+    let the two drift.
+    """
+    if isinstance(value, dict):
+        result: dict[str, Any] = {}
+        for key, item in sorted(value.items()):
+            if key in CLUSTER_INFO_FIELDS and isinstance(item, str):
+                result[key] = cluster_info_observation(item)
+            elif key in UNREACHABLE_REASON_FIELDS and isinstance(item, str):
+                result[key] = "<UNREACHABLE>" if item else ""
+            elif key in EPHEMERAL_PORT_FIELDS:
+                result[key] = "<PORT>"
+            else:
+                result[key] = fault_scrub(item)
+        return result
+    if isinstance(value, list):
+        return [fault_scrub(item) for item in value]
+    if isinstance(value, str):
+        return KILL_PID.sub(r"\1<PID>", value)
+    return value
+
+
+def fault_command_kind_by_id(root: Path) -> dict[str, str]:
+    """As `command_kind_by_id`, over this stage's own log.
+
+    `fault_sequence.json` lists each scenario's command ids as its evidence,
+    and an id is its position in the log, so a row added anywhere shifts every
+    later reference.
+    """
+    return {
+        str(row["command_id"]): str(row.get("command_kind", "UNKNOWN"))
+        for row in load_jsonl(root / "fault_command_log.jsonl")
+        if row.get("command_id")
+    }
+
+
+def rename_fault_command_ids(value: Any, kinds: dict[str, str]) -> Any:
+    if isinstance(value, dict):
+        return {key: rename_fault_command_ids(item, kinds) for key, item in value.items()}
+    if isinstance(value, list):
+        return [rename_fault_command_ids(item, kinds) for item in value]
+    if isinstance(value, str):
+        return FAULT_COMMAND_ID.sub(
+            lambda match: f"<cmd:{kinds.get(match.group(0), 'UNKNOWN')}>", value
+        )
+    return value
+
+
+def fault_view(root: Path, document: Any) -> Any:
+    """Every `fault_matrix` view is normalised the same way."""
+    value = fault_scrub(management_scrub(document))
+    value = rename_node_ids(value, node_id_names(root))
+    value = rename_fault_command_ids(value, fault_command_kind_by_id(root))
+    return rename_addresses(value, nodehost_id_by_address(root))
+
+
+def fault_owned(rows: list[Any]) -> list[Any]:
+    """`workload_windows.json` and `full_flow_topology_snapshots.jsonl` are
+    shared with `baseline_workload` and `management_matrix`. 15 of 82 windows
+    and 2 of 46 snapshot rows are this stage's at exact-50."""
+    return [row for row in rows if "-fault-" in str(row.get("operation_id", ""))]
+
+
+def fault_sequence(root: Path) -> Any:
+    return fault_view(root, load(root / "fault_sequence.json"))
+
+
+def fault_command_log(root: Path) -> Any:
+    rows = [
+        {
+            **row,
+            "stdout_tail": (
+                "<OBSERVATION_JSON>"
+                if row.get("command_kind") in SERIALISED_STDOUT_KINDS
+                else row.get("stdout_tail")
+            ),
+        }
+        for row in load_jsonl(root / "fault_command_log.jsonl")
+    ]
+    return fault_view(root, rows)
+
+
+def fault_topology_snapshots(root: Path) -> Any:
+    return fault_view(
+        root, fault_owned(load_jsonl(root / "full_flow_topology_snapshots.jsonl"))
+    )
+
+
+def fault_workload_windows(root: Path) -> Any:
+    """Verdicts only, for the reason `management_workload_windows` gives."""
+    document = json.loads((root / "workload_windows.json").read_text(encoding="utf-8"))
+    rows = [
+        {key: window.get(key) for key in ("operation_id", "window_name", "status", "coverage_id", "workload_mode")}
+        for window in fault_owned(document["windows"])
+    ]
+    return scrub(sorted(rows, key=lambda row: (str(row["operation_id"]), str(row["window_name"]))))
+
+
+def failover_observation(root: Path) -> Any:
+    """The §9 verdicts of the primary-kill lane, not its samples.
+
+    `scalable_primary_failover_observation.json` carries 453 Sentinel samples
+    at 100ms, 95 affected-shard rounds, 102 connection events and a whole
+    cluster validation - all live measurement, all different on every run.
+    What the stage owes is that the actuator recorded the six things §9.1 names,
+    that the control plane ran at §9.2's period, that convergence used §9.3's
+    two-round rule, and that §9.4's two success conditions were judged apart.
+    """
+    document = json.loads(
+        (root / "scalable_primary_failover_observation.json").read_text(encoding="utf-8")
+    )
+    actuator = document["actuator"]
+    probe = document["sentinel_fault_probe"]
+    convergence = document["affected_shard_convergence"]
+    return rename_node_ids(
+        scrub(
+            {
+                "keys": sorted(document),
+                "status": document.get("status"),
+                "artifact_type": document.get("artifact_type"),
+                "target": document.get("target"),
+                "failover_success": document.get("failover_success"),
+                # §9.1's six fields: the three that describe the action are
+                # compared, and the three timestamps are checked for presence,
+                # since when it happened is a measurement.
+                "actuator": {key: actuator.get(key) for key in ("target", "action", "result")},
+                "actuator_stamps": sorted(
+                    key for key, item in actuator.items() if isinstance(item, dict)
+                ),
+                "sentinel_prepare": {
+                    key: item
+                    for key, item in document["sentinel_prepare"].items()
+                    if key != "connection_events"
+                },
+                "sentinel_fault_probe": {
+                    key: item
+                    for key, item in probe.items()
+                    if key not in {"samples", "connection_events", "rto_ms", "stable_confirmed_at_monotonic"}
+                },
+                "sentinel_restore_probe": {
+                    key: item
+                    for key, item in document["sentinel_restore_probe"].items()
+                    if key != "connection_events"
+                },
+                "convergence": {
+                    key: item
+                    for key, item in convergence.items()
+                    if key not in {"rounds", "full_validation"}
+                },
+                "redundancy_recovery": document["redundancy_recovery"],
+                "recovery_validation_status": document["recovery_validation"]["status"],
+                "recovery_light_validation": {
+                    key: item
+                    for key, item in document["recovery_validation"]["light_validation"].items()
+                    if not isinstance(item, (list, dict))
+                },
+                "load_preflight": document["load_preflight"],
+                "load_result": document["load_result"],
+            }
+        ),
+        node_id_names(root),
+    )
+
+
+def failover_recovery_numbers(root: Path) -> str:
+    """Reported, not diffed. The RTO is the measurement the lane exists to make
+    and it is different every run - 45.5s to 49.0s across six runs at three
+    scales - so a candidate that made recovery dramatically worse must still be
+    visible, just not as a diff result."""
+    document = json.loads(
+        (root / "scalable_primary_failover_observation.json").read_text(encoding="utf-8")
+    )
+    sequence = json.loads((root / "fault_sequence.json").read_text(encoding="utf-8"))
+    details = sequence.get("failover_details", {})
+    probe = document["sentinel_fault_probe"]
+    return (
+        f"rto={probe['rto_ms']}ms samples={len(probe['samples'])}"
+        f" rounds={len(document['affected_shard_convergence']['rounds'])}"
+        f" promotion={details.get('promotion_latency_ms')}ms"
+        f" recovery={details.get('cluster_recovery_latency_ms')}ms"
+    )
+
+
+def fault_unreachable_reasons(root: Path) -> str:
+    """Reported, not diffed - see `UNREACHABLE_REASON_FIELDS`."""
+    sequence = json.loads((root / "fault_sequence.json").read_text(encoding="utf-8"))
+    return " ".join(
+        f"{row['id']}={row['details'].get('isolated_unreachable_reason') or '<answered>'!r}"
+        for row in sequence["fault_results"]
+        if "isolated_unreachable_reason" in row["details"]
+    )
+
+
+def fault_stage_shape(root: Path) -> str:
+    """Reported beside the diff because it is the check exact-200 gets instead
+    of one: the stage's shape is the same 9/12/15 at every scale."""
+    sequence = json.loads((root / "fault_sequence.json").read_text(encoding="utf-8"))
+    windows = json.loads((root / "workload_windows.json").read_text(encoding="utf-8"))
+    return (
+        f"scenarios={len(sequence['fault_results'])}"
+        f" command_rows={len(load_jsonl(root / 'fault_command_log.jsonl'))}"
+        f" windows={len(fault_owned(windows['windows']))}"
+        f" status={sequence['status']}"
+    )
+
+
 # Each slice adds its stage here from its own slice map, once that map has said
 # which artifacts the stage owns. Views are not written ahead of a slice.
 STAGE_VIEWS: dict[str, dict[str, Callable[[Path], Any]]] = {
@@ -581,6 +856,14 @@ STAGE_VIEWS: dict[str, dict[str, Callable[[Path], Any]]] = {
         "workload_windows:management": management_workload_windows,
         "stability_observation:verdicts": management_stability_observation,
     },
+    "fault_matrix": {
+        "lifecycle_timeline:fault_matrix": lambda root: lifecycle_step(root, "fault_matrix"),
+        "fault_sequence": fault_sequence,
+        "fault_command_log": fault_command_log,
+        "failover_observation:verdicts": failover_observation,
+        "topology_snapshots:fault": fault_topology_snapshots,
+        "workload_windows:fault": fault_workload_windows,
+    },
 }
 
 # A stage may have evidence that cannot be diffed but must not go unreported.
@@ -589,6 +872,11 @@ STAGE_REPORTED: dict[str, dict[str, Callable[[Path], str]]] = {
     "management_matrix": {
         "workload_impact_samples/errors": management_workload_counters,
         "rolling_restart_probe_counts": management_probe_counts,
+    },
+    "fault_matrix": {
+        "stage_shape": fault_stage_shape,
+        "failover_recovery": failover_recovery_numbers,
+        "isolated_unreachable_reasons": fault_unreachable_reasons,
     },
 }
 
