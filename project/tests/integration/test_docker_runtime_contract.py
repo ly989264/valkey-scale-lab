@@ -3586,3 +3586,97 @@ def _recording_telemetry() -> TelemetryRun:
         scale=4,
         node_count=4,
     )
+
+
+def test_reshard_drains_every_key_from_a_slot_before_reassigning_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Valkey refuses SETSLOT NODE while a node still holds keys for the slot.
+
+    The reshard used to migrate only the keys it planted itself, and only for
+    the row that plants any, so a workload key landing in a moved slot made the
+    reassignment fail. Measured at exact-50 as `ERR Can't assign hashslot 0 to
+    a different node while I still hold keys for this hash slot.`
+    """
+    source = {
+        "logical_id": "shard-0000-primary",
+        "host": "127.0.0.1",
+        "client_port": 7000,
+        "nodehost_container_name": "nodehost-a",
+    }
+    target = {
+        "logical_id": "shard-0001-primary",
+        "nodehost_container_ip": "172.18.0.5",
+        "client_port": 7401,
+    }
+    batches = [["{wl-a}:k", "{wl-b}:k"], ["{seeded}:k"], []]
+    monkeypatch.setattr(docker_runtime, "_node_response", lambda *_a, **_k: batches.pop(0))
+    monkeypatch.setattr(docker_runtime, "_node_command", lambda *_a, **_k: "OK")
+
+    class Telemetry:
+        def now_unix_ms(self) -> int:
+            return 0
+
+    log: list[dict[str, Any]] = []
+    moved = docker_runtime._management_reshard_drain_slot(
+        log, Telemetry(), "local_full_flow", "r", "op", source=source, target=target, slot=0
+    )
+
+    # It keeps going until the slot reports empty, not until its own key moved.
+    assert moved == 3
+    assert [row["command_kind"] for row in log] == ["cluster_migrate_keys"] * 2
+    assert log[0]["argv"] == [
+        "MIGRATE", "172.18.0.5", "7401", "", "0", "5000", "KEYS", "{wl-a}:k", "{wl-b}:k",
+    ]
+
+
+def test_reshard_drain_of_an_empty_slot_logs_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A slot with no keys must cost no command row, so a run whose slots are
+    empty records exactly what it recorded before the drain existed - which is
+    what keeps the artifact diff against the frozen baseline meaningful."""
+    monkeypatch.setattr(docker_runtime, "_node_response", lambda *_a, **_k: [])
+
+    class Telemetry:
+        def now_unix_ms(self) -> int:
+            return 0
+
+    log: list[dict[str, Any]] = []
+    moved = docker_runtime._management_reshard_drain_slot(
+        log,
+        Telemetry(),
+        "local_full_flow",
+        "r",
+        "op",
+        source={"logical_id": "s", "client_port": 7000},
+        target={"logical_id": "t", "nodehost_container_ip": "172.18.0.5", "client_port": 7401},
+        slot=1,
+    )
+
+    assert moved == 0
+    assert log == []
+
+
+def test_reshard_drain_gives_up_rather_than_looping_forever(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A slot that never empties is a defect, not a reason to spin."""
+    monkeypatch.setattr(docker_runtime, "_node_response", lambda *_a, **_k: ["{x}:k"])
+    monkeypatch.setattr(docker_runtime, "_node_command", lambda *_a, **_k: "OK")
+
+    class Telemetry:
+        def now_unix_ms(self) -> int:
+            return 0
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="still held keys"):
+        docker_runtime._management_reshard_drain_slot(
+            [],
+            Telemetry(),
+            "local_full_flow",
+            "r",
+            "op",
+            source={"logical_id": "s", "client_port": 7000},
+            target={"logical_id": "t", "nodehost_container_ip": "172.18.0.5", "client_port": 7401},
+            slot=2,
+        )

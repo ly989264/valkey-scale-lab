@@ -99,6 +99,8 @@ RUN_DATE = "20260628"
 CLUSTER_MEET_FANOUT = 4
 CLUSTER_ORCHESTRATION_PARALLELISM = 8
 ROLLING_RESTART_MAX_PARALLELISM = CLUSTER_ORCHESTRATION_PARALLELISM
+RESHARD_DRAIN_BATCH_KEYS = 100
+RESHARD_DRAIN_MAX_BATCHES = 200
 CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS = 2.0
 PROCESS_FULL_SNAPSHOT_NODE_LIMIT = 200
 CONTAINER_STOP_TIMEOUT_SECONDS = 45
@@ -7293,22 +7295,26 @@ def _management_reshard_move_slots(
     seeded_keys: list[str] = []
     rows: list[dict[str, Any]] = []
     for slot in slots:
-        keys: list[str] = []
         if seed_keys:
+            # This row's own evidence that a key moved with its slot. The drain
+            # below moves it along with anything else the slot holds.
             key = _management_reshard_key_for_slot(source, slot, operation_id)
             response = _cluster_client_command(backend, source, "SET", key, f"value-{operation_id}-{slot}", timeout=10)
             if str(response).upper() != "OK":
                 raise DockerRuntimeError(f"MANAGEMENT_MATRIX seed key failed slot={slot}: {response}")
-            keys.append(key)
             seeded_keys.append(key)
         _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_importing", target, ["CLUSTER", "SETSLOT", slot, "IMPORTING", source_id])
         _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_migrating", source, ["CLUSTER", "SETSLOT", slot, "MIGRATING", target_id])
-        if keys:
-            # Where the *source node* reaches the target, which is inventory the
-            # backend already supplies - the same value CLUSTER MEET is given.
-            # Deriving it from the runtime type here was the last place this
-            # stage decided a peer endpoint for itself.
-            _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_migrate_keys", source, ["MIGRATE", _cluster_meet_address(target), _cluster_meet_port(target), "", "0", "5000", "KEYS", *keys], timeout=30)
+        _management_reshard_drain_slot(
+            command_log,
+            telemetry,
+            capability_id,
+            run_id,
+            operation_id,
+            source=source,
+            target=target,
+            slot=slot,
+        )
         for node in [item for item in nodes if item["role"] == "primary"]:
             _management_reshard_log_slot_command(command_log, telemetry, capability_id, run_id, operation_id, "cluster_setslot_node", node, ["CLUSTER", "SETSLOT", slot, "NODE", target_id])
         _management_wait_clean_cluster(nodes, timeout=60.0)
@@ -7336,6 +7342,67 @@ def _management_reshard_move_slots(
             }
         )
     return moved, seeded_keys, rows
+
+
+def _management_reshard_drain_slot(
+    command_log: list[dict[str, Any]],
+    telemetry: TelemetryRun,
+    capability_id: str,
+    run_id: str,
+    operation_id: str,
+    *,
+    source: dict[str, Any],
+    target: dict[str, Any],
+    slot: int,
+) -> int:
+    """Move every key in `slot` to `target` before the slot is reassigned.
+
+    Valkey refuses `CLUSTER SETSLOT <slot> NODE` from a node that still holds
+    keys for that slot, so a reshard has to empty it first. This used to
+    migrate only the keys the operation had planted itself, and only for the
+    row that plants any - but the workload running beside every management
+    operation writes into whatever slot its hash tag lands in, and slot 0 alone
+    is moved three times across `reshard_slot_range` and
+    `rebalance_after_imbalance`. When one of those collided the reassignment was
+    refused with
+
+        ERR Can't assign hashslot 0 to a different node while I still hold
+        keys for this hash slot.
+
+    which the RESP path's `docker exec` fallback then recorded as a passing
+    command, so the run continued with the slot half assigned. Measured at
+    exact-50 once the fallback stopped swallowing it.
+
+    `CLUSTER GETKEYSINSLOT` is a read and is not written to the command log, in
+    the same way `CLUSTER MYID` is not; the `MIGRATE` it drives is a mutation
+    and is.
+    """
+    moved = 0
+    for _ in range(RESHARD_DRAIN_MAX_BATCHES):
+        keys = _node_response(
+            source, "CLUSTER", "GETKEYSINSLOT", slot, RESHARD_DRAIN_BATCH_KEYS, timeout=30
+        )
+        batch = [str(key) for key in keys or []]
+        if not batch:
+            return moved
+        _management_reshard_log_slot_command(
+            command_log,
+            telemetry,
+            capability_id,
+            run_id,
+            operation_id,
+            "cluster_migrate_keys",
+            source,
+            # Where the *source node* reaches the target: inventory the backend
+            # supplies, the same value CLUSTER MEET is given.
+            ["MIGRATE", _cluster_meet_address(target), _cluster_meet_port(target), "", "0", "5000", "KEYS", *batch],
+            timeout=30,
+        )
+        moved += len(batch)
+    raise DockerRuntimeError(
+        f"MANAGEMENT_MATRIX slot {slot} still held keys after "
+        f"{RESHARD_DRAIN_MAX_BATCHES} migrate batches of {RESHARD_DRAIN_BATCH_KEYS}"
+    )
 
 
 def _management_reshard_log_slot_command(command_log: list[dict[str, Any]], telemetry: TelemetryRun, capability_id: str, run_id: str, operation_id: str, command_kind: str, target: dict[str, Any], args: list[Any], timeout: int = 30) -> None:
