@@ -173,13 +173,22 @@ def node_id_names(root: Path) -> dict[str, str]:
 
 
 def rename_node_ids(value: Any, names: dict[str, str]) -> Any:
-    """An id with no known node becomes UNKNOWN rather than disappearing."""
+    """An id with no known node becomes UNKNOWN rather than disappearing.
+
+    Keys are renamed as well as values. `management_sequence.json` keys its
+    per-primary `slot_counts` by node id, so a view that only rewrote values
+    would report twenty-five lines of pure identity noise and hide the slot
+    counts underneath it.
+    """
+    rename = lambda text: NODE_ID.sub(  # noqa: E731
+        lambda match: names.get(match.group(0), "<node:UNKNOWN>"), text
+    )
     if isinstance(value, dict):
-        return {key: rename_node_ids(item, names) for key, item in value.items()}
+        return {rename(key): rename_node_ids(item, names) for key, item in value.items()}
     if isinstance(value, list):
         return [rename_node_ids(item, names) for item in value]
     if isinstance(value, str):
-        return NODE_ID.sub(lambda match: names.get(match.group(0), "<node:UNKNOWN>"), value)
+        return rename(value)
     return value
 
 
@@ -266,6 +275,174 @@ def light_probe_retries(root: Path) -> str:
     return "absent"
 
 
+# `management_matrix` measures far more than the earlier stages did, and names
+# almost none of it in a way the shared IGNORED regex catches. Over the frozen
+# exact-50 baseline its artifacts carry 479 `wall_ms`, 400 `*_wall_ms`, 150
+# `wait_ms`, 400 `*_at_ms` and 3,206 `started/ended_at_unix_ms`. Widening
+# IGNORED to `.*_ms` would take `cluster_node_timeout_ms` and its siblings with
+# it, which the note on IGNORED says must stay compared, so the rule is
+# stage-local: a measured `_ms` value is replaced, not dropped, so that the
+# field's disappearance still shows.
+CONFIGURED_MS = {"sample_interval_ms", "timeout_ms"}
+MEASURED_MS = re.compile(r"^.*_ms$")
+# A restart's whole point is that the pid changed, so which pid it is now is
+# noise and whether there is one is evidence - the same choice `scrub` makes.
+PID_FIELDS = {"pid", "process_pid_before", "process_pid_after"}
+# The replica sync gate's evidence is `master_link_status: up`,
+# `master_sync_in_progress: 0` and the caught-up verdict, all of which stay
+# compared. The byte offsets themselves differ by tens of bytes per run.
+REPL_OFFSET_FIELDS = {"primary_repl_offset", "replica_repl_offset"}
+# `_management_matrix_wait_rolling_restart_health` lists the nodes it probed in
+# completion order, which is not evidence. Same fix as the snapshot samples.
+ORDERLESS_FIELDS = {"probed_node_ids"}
+
+
+def management_scrub(value: Any) -> Any:
+    """`scrub`, plus the four replacements this stage's artifacts need."""
+    if isinstance(value, dict):
+        result: dict[str, Any] = {}
+        for key, item in sorted(value.items()):
+            if IGNORED.match(key):
+                continue
+            if MEASURED_MS.match(key) and key not in CONFIGURED_MS and isinstance(item, (int, float)):
+                result[key] = "<MEASURED_MS>"
+            elif key in PID_FIELDS and isinstance(item, int):
+                result[key] = "<PID>"
+            elif key in REPL_OFFSET_FIELDS and isinstance(item, int):
+                result[key] = "<OFFSET>"
+            elif key in ORDERLESS_FIELDS and isinstance(item, list):
+                result[key] = sorted(management_scrub(entry) for entry in item)
+            elif key == "workload_impact" and isinstance(item, dict):
+                result[key] = management_workload_impact(item)
+            else:
+                result[key] = management_scrub(item)
+        return result
+    if isinstance(value, list):
+        return [management_scrub(item) for item in value]
+    if isinstance(value, str):
+        return ARTIFACTS_PATH.sub("<ARTIFACTS>/", GATE_RUN.sub("<GATE_RUN>", value))
+    return value
+
+
+def management_workload_impact(impact: dict[str, Any]) -> dict[str, Any]:
+    """How many workload operations fitted beside a management operation, and
+    how many of them failed, are real measurements of a real handoff - and they
+    are not reproducible. The two frozen baseline runs recorded 164 against 244
+    samples for `add_replica`, and 17 against 6 errors for
+    `remove_primary_drained_or_safe_replaced`. Nothing can equate those without
+    equating a regression too, so both counts are replaced and `main` reports
+    them instead. `errors_observed_during_operation` is the verdict and stays:
+    it is true for the same three operations in both runs.
+    """
+    return {
+        key: ("<MEASURED_COUNT>" if key in {"sample_count", "error_count"} else management_scrub(item))
+        for key, item in sorted(impact.items())
+    }
+
+
+def load_jsonl(path: Path) -> list[Any]:
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+
+def management_view(root: Path, document: Any) -> Any:
+    """Every `management_matrix` view is normalised the same way.
+
+    Node ids and nodehost addresses both appear inside this stage's evidence -
+    a `CLUSTER MEET` and a `MIGRATE` name a peer by address in their argv - and
+    both are named rather than dropped, for the reasons `node_id_names` and
+    `nodehost_id_by_address` give.
+    """
+    value = rename_node_ids(management_scrub(document), node_id_names(root))
+    return rename_addresses(value, nodehost_id_by_address(root))
+
+
+def rename_addresses(value: Any, by_address: dict[str, str]) -> Any:
+    if isinstance(value, dict):
+        return {key: rename_addresses(item, by_address) for key, item in value.items()}
+    if isinstance(value, list):
+        return [rename_addresses(item, by_address) for item in value]
+    if isinstance(value, str):
+        for address, nodehost_id in by_address.items():
+            value = value.replace(address, f"<nodehost:{nodehost_id}>")
+        return value
+    return value
+
+
+def management_owned(rows: list[Any]) -> list[Any]:
+    """`full_flow_topology_snapshots.jsonl` and `workload_windows.json` are
+    shared with `baseline_workload` and `fault_matrix`. Only the rows whose
+    `operation_id` names a management operation belong to this stage: 44 of 46
+    snapshots and 66 of 82 windows at exact-50."""
+    return [row for row in rows if "-management-" in str(row.get("operation_id", ""))]
+
+
+def management_topology_snapshots(root: Path) -> Any:
+    return management_view(
+        root, management_owned(load_jsonl(root / "full_flow_topology_snapshots.jsonl"))
+    )
+
+
+def management_workload_windows(root: Path) -> Any:
+    """Verdicts only. A window also carries `achieved_qps`, `throughput_ratio`
+    and a latency histogram, which are load measurements and differ on every
+    run; what this stage owns is that each operation opened the windows it
+    should have and that each one passed."""
+    document = json.loads((root / "workload_windows.json").read_text(encoding="utf-8"))
+    rows = [
+        {key: window.get(key) for key in ("operation_id", "window_name", "status", "coverage_id", "workload_mode")}
+        for window in management_owned(document["windows"])
+    ]
+    return scrub(sorted(rows, key=lambda row: (str(row["operation_id"]), str(row["window_name"]))))
+
+
+def management_stability_observation(root: Path) -> Any:
+    """The bounded-stability lane's verdicts, not its samples.
+
+    `scalable_stability_observation.json` records every node's `CLUSTER INFO`,
+    down to `cluster_stats_messages_ping_sent` - 40,168 diff lines between two
+    runs of the same code. Reduced to the statuses and the structural scalars
+    it still fails if a lane's verdict flips, a check disappears, or the light
+    validation stops seeing every node in its right role.
+    """
+    document = json.loads(
+        (root / "scalable_stability_observation.json").read_text(encoding="utf-8")
+    )
+    full = document["full_validation"]
+    return scrub(
+        {
+            "keys": sorted(document),
+            "status": document.get("status"),
+            "artifact_type": document.get("artifact_type"),
+            "capability_id": document.get("capability_id"),
+            "check_status": {
+                key: item["status"]
+                for key, item in document.items()
+                if isinstance(item, dict) and "status" in item
+            },
+            "full_validation_keys": sorted(full),
+            "light_validation": {
+                key: item
+                for key, item in full["light_validation"].items()
+                if not isinstance(item, (list, dict))
+            },
+        }
+    )
+
+
+def management_workload_counters(root: Path) -> str:
+    """Reported, not diffed - see `management_workload_impact`."""
+    document = json.loads((root / "management_sequence.json").read_text(encoding="utf-8"))
+    return " ".join(
+        f"{row['operation_name']}={row.get('workload_impact', {}).get('sample_count')}"
+        f"/{row.get('workload_impact', {}).get('error_count')}"
+        for row in document["result"]["operations"]
+    )
+
+
 # Each slice adds its stage here from its own slice map, once that map has said
 # which artifacts the stage owns. Views are not written ahead of a slice.
 STAGE_VIEWS: dict[str, dict[str, Callable[[Path], Any]]] = {
@@ -296,11 +473,32 @@ STAGE_VIEWS: dict[str, dict[str, Callable[[Path], Any]]] = {
         "cluster_snapshots": cluster_snapshots,
         "state:after_cluster": state_after_cluster,
     },
+    "management_matrix": {
+        "lifecycle_timeline:management_matrix": lambda root: lifecycle_step(
+            root, "management_matrix"
+        ),
+        "rolling_restart_plan": lambda root: management_view(
+            root, json.loads((root / "rolling_restart_plan.json").read_text(encoding="utf-8"))
+        ),
+        "rolling_restart_results": lambda root: management_view(
+            root, load_jsonl(root / "rolling_restart_results.jsonl")
+        ),
+        "management_sequence": lambda root: management_view(
+            root, json.loads((root / "management_sequence.json").read_text(encoding="utf-8"))
+        ),
+        "management_command_log": lambda root: management_view(
+            root, load_jsonl(root / "management_command_log.jsonl")
+        ),
+        "topology_snapshots:management": management_topology_snapshots,
+        "workload_windows:management": management_workload_windows,
+        "stability_observation:verdicts": management_stability_observation,
+    },
 }
 
 # A stage may have evidence that cannot be diffed but must not go unreported.
 STAGE_REPORTED: dict[str, dict[str, Callable[[Path], str]]] = {
     "cluster_form": {"runtime_all_node_light_probe": light_probe_retries},
+    "management_matrix": {"workload_impact_samples/errors": management_workload_counters},
 }
 
 
