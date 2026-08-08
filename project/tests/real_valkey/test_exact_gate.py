@@ -373,13 +373,13 @@ def test_large_partition_observations_keep_cluster_state_in_bounded_excerpts(
             return docker_runtime.DockerResult("{}\n", "", 0)
         return docker_runtime.DockerResult("", "", 0)
 
-    def node_command(_node: dict[str, Any], *args: Any, **_kwargs: Any) -> str:
+    def host_command(_node: dict[str, Any], *args: Any, **_kwargs: Any) -> str:
         if args == ("PING",):
             return "PONG"
         return "cluster_state:ok\n" + ("cluster_stat:1\n" * 200)
 
     monkeypatch.setattr(docker_runtime, "run_docker", run_docker)
-    monkeypatch.setattr(docker_runtime, "_node_command", node_command)
+    monkeypatch.setattr(docker_runtime, "_node_host_command", host_command)
     monkeypatch.setattr(
         docker_runtime,
         "_local_full_flow_wait_clean_cluster_snapshot",

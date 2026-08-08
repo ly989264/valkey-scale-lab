@@ -3096,7 +3096,7 @@ def test_local_full_flow_network_disconnect_reconnects_when_side_observation_fai
     monkeypatch.setattr(docker_runtime, "run_docker", run_docker)
     monkeypatch.setattr(
         docker_runtime,
-        "_node_command",
+        "_node_host_command",
         lambda node, *args, timeout: (_ for _ in ()).throw(DockerRuntimeError("side probe failed")),
     )
     monkeypatch.setattr(
@@ -3105,11 +3105,93 @@ def test_local_full_flow_network_disconnect_reconnects_when_side_observation_fai
         lambda actual_nodes, timeout: recovered.append((len(actual_nodes), timeout)),
     )
 
-    with pytest.raises(DockerRuntimeError, match="side probe failed"):
+    # Neither side answers, so the scenario cannot reach a verdict - but the
+    # owned network must be reconnected and the cluster waited on regardless.
+    with pytest.raises(DockerRuntimeError, match="recovery probe did not succeed"):
         docker_runtime._local_full_flow_network_disconnect_probe("owned-network", "nodehost-a", nodes, "network_partition")
 
     assert ["network", "connect", "--ip", "172.18.0.2", "owned-network", "nodehost-a"] in calls
     assert recovered == [(2, 180.0)]
+
+
+def test_partition_probe_reads_the_isolated_side_only_from_this_side_of_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An unreachable isolated node is fail-closed, and is not chased with docker exec.
+
+    Measured on a real partition: the host path to the isolated node timed out
+    for 33s while `_node_command`'s `docker exec valkey-cli` fallback answered
+    `cluster_state:ok` from inside the container. The scenario was judging an
+    isolated node by a path that bypasses the isolation.
+    """
+    nodes = [
+        {
+            "logical_id": "isolated",
+            "nodehost_container_name": "nodehost-a",
+            "nodehost_container_ip": "172.18.0.2",
+            "client_port": 7000,
+        },
+        {"logical_id": "majority", "nodehost_container_name": "nodehost-b", "client_port": 7001},
+    ]
+    reconnected: list[bool] = []
+
+    def run_docker(args: list[str], **_kwargs: Any) -> docker_runtime.DockerResult:
+        if args[0] == "inspect":
+            return docker_runtime.DockerResult("{}\n", "", 0)
+        if args[:2] == ["network", "connect"]:
+            reconnected.append(True)
+        return docker_runtime.DockerResult("", "", 0)
+
+    def host_command(node: dict[str, Any], *args: Any, timeout: float) -> str:
+        if node["logical_id"] == "isolated" and not reconnected:
+            raise TimeoutError("timed out")
+        if args == ("PING",):
+            return "PONG"
+        return "cluster_state:ok\ncluster_known_nodes:2\n"
+
+    def forbidden(*_args: Any, **_kwargs: Any) -> str:
+        raise AssertionError("the partition probe must not reach a node through docker exec")
+
+    monkeypatch.setattr(docker_runtime, "run_docker", run_docker)
+    monkeypatch.setattr(docker_runtime, "_node_host_command", host_command)
+    monkeypatch.setattr(docker_runtime, "_node_command", forbidden)
+    monkeypatch.setattr(docker_runtime, "run_node_cli", forbidden)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_local_full_flow_wait_clean_cluster_snapshot",
+        lambda *_args, **_kwargs: None,
+    )
+
+    for scenario_id in ("minority_majority", "split_brain_detection"):
+        reconnected.clear()
+        details = docker_runtime._local_full_flow_network_disconnect_probe(
+            "owned-network", "nodehost-a", nodes, scenario_id
+        )
+        assert details["majority_cluster_state_ok"] is True
+        assert details["isolated_cluster_state_ok"] is False
+        assert details["isolated_reachable_from_this_side"] is False
+        assert "TimeoutError" in details["isolated_unreachable_reason"]
+        isolated = next(row for row in details["client_observations"] if row["side"] == "isolated")
+        assert isolated["success"] is False
+        # The observation validator is the other consumer of these fields, and
+        # it has to accept unreachable-with-a-reason as an observation too.
+        docker_runtime._local_full_flow_validate_fault_probe_observation(scenario_id, details)
+
+
+def test_fault_probe_validator_rejects_an_isolated_side_with_neither_answer_nor_reason() -> None:
+    details = {
+        "actions": ["docker network disconnect owned-network nodehost-a"],
+        "disconnect_verified": True,
+        "majority_cluster_state_ok": True,
+        "isolated_cluster_state_ok": False,
+        "isolated_reachable_from_this_side": False,
+        "isolated_unreachable_reason": "",
+        "majority_cluster_info": "cluster_state:ok",
+        "isolated_cluster_info": "",
+        "client_observations": [{"side": "majority", "success": True, "latency_ms": 1.0}],
+        "recovery_verified": True,
+    }
+
+    with pytest.raises(DockerRuntimeError, match="neither an isolated-side observation nor a reason"):
+        docker_runtime._local_full_flow_validate_fault_probe_observation("network_partition", details)
 
 
 def _cluster_form_nodes(shards: int) -> list[dict[str, object]]:

@@ -19,6 +19,8 @@ def test_local_full_flow_rejects_partition_without_client_availability_measureme
                 "disconnect_verified": True,
                 "majority_cluster_state_ok": True,
                 "isolated_cluster_state_ok": False,
+                "isolated_reachable_from_this_side": True,
+                "isolated_unreachable_reason": "",
                 "majority_cluster_info": "cluster_state:ok",
                 "isolated_cluster_info": "cluster_state:fail",
             },

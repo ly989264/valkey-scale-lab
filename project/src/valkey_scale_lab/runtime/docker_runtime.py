@@ -9039,14 +9039,29 @@ def _local_full_flow_validate_fault_probe_observation(scenario_id: str, details:
             "disconnect_verified",
             "majority_cluster_state_ok",
             "isolated_cluster_state_ok",
+            "isolated_reachable_from_this_side",
+            "isolated_unreachable_reason",
             "majority_cluster_info",
             "isolated_cluster_info",
         }
         missing = sorted(key for key in required if key not in details)
         if missing or details.get("disconnect_verified") is not True:
             raise DockerRuntimeError(f"{scenario_id} fault probe is missing partition-side observations: {missing}")
-        if "cluster_state:" not in str(details["majority_cluster_info"]) or "cluster_state:" not in str(details["isolated_cluster_info"]):
-            raise DockerRuntimeError(f"{scenario_id} fault probe did not observe cluster health on both partition sides")
+        if "cluster_state:" not in str(details["majority_cluster_info"]):
+            raise DockerRuntimeError(f"{scenario_id} fault probe did not observe the majority partition side")
+        # The isolated side is observed either by answering or by being
+        # unreachable from this side of the partition, and the second is the
+        # common case: only the forbidden `docker exec` fallback could reach
+        # through the partition to make it answer. Demanding an answer is what
+        # kept that fallback alive, so the evidence required here is a stated
+        # reason, never a silent absence.
+        if not details["isolated_reachable_from_this_side"]:
+            if not str(details["isolated_unreachable_reason"]):
+                raise DockerRuntimeError(
+                    f"{scenario_id} fault probe recorded neither an isolated-side observation nor a reason"
+                )
+        elif "cluster_state:" not in str(details["isolated_cluster_info"]):
+            raise DockerRuntimeError(f"{scenario_id} fault probe did not observe the isolated partition side")
         client_observations = details.get("client_observations")
         if not isinstance(client_observations, list) or not client_observations:
             raise DockerRuntimeError(f"{scenario_id} fault probe did not record client availability or workload observations")
@@ -9144,17 +9159,36 @@ def _local_full_flow_network_disconnect_probe(network_name: str, container: str,
     client_observations: list[dict[str, Any]] = []
     reconnect_ms = 0.0
     recovery_health_ms = 0.0
+    majority_info = ""
+    majority_error = ""
+    isolated_info = ""
+    isolated_error = ""
+
+    def partition_read(node: dict[str, Any], *args: Any, timeout: float) -> tuple[str, str]:
+        """Read a node the way a client on this side of the partition can.
+
+        Deliberately not `_node_command`: that falls back to `docker exec
+        valkey-cli` on any failure, and `docker exec` does not care which
+        networks the container is attached to. Measured during a real partition,
+        the host path to the isolated node timed out for 33 seconds while the
+        same read through the fallback answered `cluster_state:ok` - the
+        fallback reaches straight through the partition the scenario just
+        created, so the check was judging an unreachable node by a path that
+        cannot see it is unreachable. Design section 16.2 forbids `docker exec`
+        for Valkey protocol checks, and here it is also the wrong observation.
+
+        Being unable to reach the node IS the observation, so the error is
+        returned rather than raised.
+        """
+        try:
+            return str(_node_host_command(node, *args, timeout=timeout)).strip(), ""
+        except Exception as exc:  # noqa: BLE001 - unreachable is evidence
+            return "", repr(exc)
 
     def observe_client(side: str, node: dict[str, Any]) -> None:
         started = time.monotonic()
-        response = ""
-        error = ""
-        try:
-            response = _node_command(node, "PING", timeout=5)
-            success = response == "PONG"
-        except Exception as exc:  # noqa: BLE001
-            success = False
-            error = repr(exc)
+        response, error = partition_read(node, "PING", timeout=5)
+        success = response == "PONG"
         client_observations.append(
             {
                 "side": side,
@@ -9172,8 +9206,8 @@ def _local_full_flow_network_disconnect_probe(network_name: str, container: str,
         if scenario_id in {"minority_majority", "split_brain_detection"}:
             timeout_ms = max(int(target.get("effective_cluster_node_timeout_ms", 0) or 0), 1000)
             time.sleep(timeout_ms / 1000.0 + 1.0)
-        majority_info = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
-        isolated_info = _node_command(target, "CLUSTER", "INFO", timeout=30)
+        majority_info, majority_error = partition_read(survivor, "CLUSTER", "INFO", timeout=30)
+        isolated_info, isolated_error = partition_read(target, "CLUSTER", "INFO", timeout=30)
         observe_client("majority", survivor)
         observe_client("isolated", target)
     finally:
@@ -9187,10 +9221,23 @@ def _local_full_flow_network_disconnect_probe(network_name: str, container: str,
     recovery_verified = client_observations[-1]["success"] is True
     if not recovery_verified:
         raise DockerRuntimeError(f"{scenario_id} workload recovery probe did not succeed")
-    if "cluster_state:" not in majority_info or "cluster_state:" not in isolated_info:
-        raise DockerRuntimeError(f"{scenario_id} did not observe both partition sides")
+    if "cluster_state:" not in majority_info:
+        raise DockerRuntimeError(
+            f"{scenario_id} did not observe the majority side: {majority_error or majority_info!r}"
+        )
+    # The isolated side has two valid observations and no third: it answers, or
+    # a client on this side of the partition cannot reach it. Requiring an
+    # answer is what forced the `docker exec` fallback, and an unreachable node
+    # is already fail-closed to every client here - it cannot look writable to
+    # anyone it cannot talk to. Section 12.1 reads a timeout, when the stage
+    # expects the node not to be serving, as a successful observation.
+    isolated_reachable = "cluster_state:" in isolated_info
+    if not isolated_reachable and not isolated_error:
+        raise DockerRuntimeError(
+            f"{scenario_id} did not observe the isolated side: {isolated_info!r}"
+        )
     majority_ok = "cluster_state:ok" in majority_info
-    isolated_ok = "cluster_state:ok" in isolated_info
+    isolated_ok = isolated_reachable and "cluster_state:ok" in isolated_info
     if scenario_id == "minority_majority" and (not majority_ok or isolated_ok):
         raise DockerRuntimeError(f"minority/majority observation was not fail-closed: majority_ok={majority_ok}, isolated_ok={isolated_ok}")
     if scenario_id == "split_brain_detection" and majority_ok and isolated_ok:
@@ -9201,6 +9248,8 @@ def _local_full_flow_network_disconnect_probe(network_name: str, container: str,
         "disconnect_verified": True,
         "majority_cluster_state_ok": majority_ok,
         "isolated_cluster_state_ok": isolated_ok,
+        "isolated_reachable_from_this_side": isolated_reachable,
+        "isolated_unreachable_reason": isolated_error[-1000:] if not isolated_reachable else "",
         "majority_cluster_info": _bounded_cluster_info_excerpt(majority_info),
         "isolated_cluster_info": _bounded_cluster_info_excerpt(isolated_info),
         "client_observations": client_observations,
