@@ -73,17 +73,23 @@ def test_strict_rolling_restart_batches_are_bounded_by_shard_and_nodehost() -> N
         assert len({entry["planned_role"] for entry in batch}) == 1
 
 
-def _run_restart(monkeypatch: pytest.MonkeyPatch, node_count: int, operation_name: str) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[bool], list[str]]:
+def _run_restart(
+    monkeypatch: pytest.MonkeyPatch,
+    node_count: int,
+    operation_name: str,
+    topology_scopes: list[list[str]] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[bool], list[str]]:
     nodes = _nodes(node_count)
     probe_modes: list[bool] = []
     safe_targets: list[str] = []
 
+    def live_topology(current: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        if topology_scopes is not None:
+            topology_scopes.append([str(node["logical_id"]) for node in current])
+        return {node["logical_id"]: {"role": node["role"]} for node in current}
+
     monkeypatch.setattr(docker_runtime, "_management_cluster_health", lambda _nodes: _clean_health(node_count))
-    monkeypatch.setattr(
-        docker_runtime,
-        "_management_live_topology",
-        lambda current: {node["logical_id"]: {"role": node["role"]} for node in current},
-    )
+    monkeypatch.setattr(docker_runtime, "_management_live_topology", live_topology)
     monkeypatch.setattr(
         docker_runtime,
         "_management_wait_clean_cluster",
@@ -231,6 +237,29 @@ def test_rolling_probe_work_scales_linearly_and_primary_handoff_runs_once_per_sh
     assert len(set(safe_targets)) == 8
     assert [entry["planned_role"] for entry in plan["restart_order"][:8]] == ["replica"] * 8
     assert len(rows) == 16
+
+
+def test_rolling_restart_batch_topology_is_scoped_to_the_batch_shards(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A batch observes its own shards, not the fleet, twice per batch.
+
+    Everything a batch reads from the live topology is shard-scoped, so probing
+    all 200 nodes each time bought no evidence and cost 400 host connections a
+    batch. The plan and the final verification still see every node.
+    """
+    scopes: list[list[str]] = []
+    _run_restart(monkeypatch, 200, "rolling_restart_replica_first", topology_scopes=scopes)
+
+    assert len(scopes[0]) == 200, "the plan must still read every node's live role"
+    assert len(scopes[-1]) == 200, "the final verification must still read every node"
+
+    per_batch = scopes[1:-1]
+    assert per_batch, "a 200 node restart runs batches"
+    for scope in per_batch:
+        shards = {logical_id.rsplit("-", 1)[0] for logical_id in scope}
+        # A batch holds at most one node per shard, and a shard has two nodes.
+        assert len(shards) <= docker_runtime.ROLLING_RESTART_MAX_PARALLELISM
+        assert len(scope) == 2 * len(shards), "the scope is every member of those shards"
+        assert len(scope) <= 2 * docker_runtime.ROLLING_RESTART_MAX_PARALLELISM
 
 
 def test_rolling_restart_plan_uses_live_roles_instead_of_inventory_roles() -> None:

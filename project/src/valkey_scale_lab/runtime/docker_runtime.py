@@ -10680,7 +10680,8 @@ def _management_matrix_execute_process_rolling_restart(
     nodes_by_id = {str(node["logical_id"]): node for node in nodes}
     for batch_index, batch in enumerate(batches, start=1):
         targets = [nodes_by_id[str(entry["logical_node_id"])] for entry in batch]
-        topology = _management_live_topology(nodes)
+        batch_scope = _management_rolling_restart_batch_scope(batch, nodes)
+        topology = _management_live_topology(batch_scope)
         safe_by_id: dict[str, dict[str, Any]] = {}
         for entry, target in zip(batch, targets):
             logical_id = str(target["logical_id"])
@@ -10767,7 +10768,7 @@ def _management_matrix_execute_process_rolling_restart(
         for entry in batch:
             _management_matrix_merge_parallel_command_rows(command_log, process_by_sequence[int(entry["sequence"])].pop("command_rows"))
 
-        post_restart_topology = _management_live_topology(nodes) if any(entry["planned_role"] == "replica" for entry in batch) else {}
+        post_restart_topology = _management_live_topology(batch_scope) if any(entry["planned_role"] == "replica" for entry in batch) else {}
         for entry, target in zip(batch, targets):
             if entry["planned_role"] != "replica":
                 continue
@@ -11034,6 +11035,24 @@ def _management_matrix_rolling_restart_batches(plan_entries: list[dict[str, Any]
         batches.append(batch)
         pending = deferred
     return batches
+
+
+def _management_rolling_restart_batch_scope(
+    batch: list[dict[str, Any]], nodes: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """The nodes a batch's own checks read: its targets' shards, nothing else.
+
+    Every question this batch asks the live topology is shard-scoped - the
+    target's role before restart, its same-shard replacement for the primary
+    handoff, and the shard's live primary after a replica restart - so observing
+    the whole fleet twice per batch buys no evidence for them. Measured at 200
+    nodes it cost 400 host TCP connections per batch and was the largest single
+    source of the ephemeral port exhaustion that made a light probe fail with
+    `[Errno 49]`, which the strict role check below then read as a role change.
+    Design section 4.1 asks large-scale checks to roll evenly rather than flood.
+    """
+    shards = {str(entry["shard_id"]) for entry in batch}
+    return [node for node in nodes if str(node["shard_id"]) in shards]
 
 
 def _management_matrix_make_primary_restart_safe(
