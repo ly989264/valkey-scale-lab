@@ -1266,6 +1266,85 @@ def test_sentinel_prepares_once_and_fault_probe_requires_ten_rounds() -> None:
     assert result["rto_ms"] == 0
 
 
+def test_fault_window_access_failures_are_transient_but_wrong_values_are_not() -> None:
+    """§12.1: 故障转换期暂时访问失败…不逐样本判 `FAIL`.
+
+    A passing exact-50 run recorded 443 and 455 per-sample `FAIL`s in the two
+    frozen baselines - during a planned kill, with the lane's own verdict correctly
+    `OK`. The sibling observer watching this same window already records
+    `TRANSIENT` for the same class of error, so the vocabulary existed; only this
+    probe disagreed.
+
+    The exemption is for *access* failures. A value mismatch is a successful read
+    of the wrong data, which no part of a planned kill excuses, so it stays `FAIL`
+    - relabelling it too would erase the one finding this probe exists to catch.
+    """
+
+    clock = FakeClock()
+    affected = Canary("a" * 40, 0, "vsl:sentinel:r:{tag-a}:a", "value-a")
+    control = Canary("b" * 40, 1, "vsl:sentinel:r:{tag-b}:b", "value-b")
+    lane = SentinelLane(
+        [
+            SentinelNode(
+                NodeEndpoint("p", "h", 1, "primary", "s0"),
+                "1" * 40,
+                "a" * 40,
+                "primary",
+                affected,
+            )
+        ],
+        connection_factory=lambda *_a, **_k: None,  # type: ignore[arg-type]
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+    )
+
+    script: list[Any] = [
+        SemanticFailure("could not reach a live seed"),  # the killed primary
+        "wrong-value",                                   # read, and wrong
+        SemanticFailure("still not reachable"),
+    ]
+
+    class Router:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def get(self, key: str) -> Any:
+            if key == control.key:
+                return control.value
+            if self.calls < len(script):
+                step = script[self.calls]
+                self.calls += 1
+                if isinstance(step, Exception):
+                    raise step
+                return step
+            self.calls += 1
+            return affected.value
+
+        def close(self) -> None:
+            return None
+
+    result = lane.fault_probe(
+        affected=affected,
+        control=control,
+        recovery_deadline_seconds=5.0,
+        fault_monotonic=clock.monotonic(),
+        router=Router(),  # type: ignore[arg-type]
+    )
+
+    labels = [sample["status"] for sample in result["samples"]]
+    assert labels[0] == "TRANSIENT", "an unreachable canary during the kill"
+    assert labels[1] == "FAIL", "a wrong value is not excused by the window"
+    assert labels[2] == "TRANSIENT"
+    assert labels[3:] == ["OK"] * 10
+    # The lane's verdict was never wrong, and must not move: it is the streak and
+    # the recovery time, both computed from `ok` rather than from this label.
+    assert result["status"] == "OK"
+    assert result["stable_rounds"] == 10
+    # The wrong-value sample reset the streak, exactly as a non-OK sample should.
+    assert result["samples"][1]["affected_value_ok"] is False
+    assert result["samples"][1]["errors"] == {}
+
+
 def test_sentinel_cluster_router_tries_live_seed_after_dead_first_seed() -> None:
     key = "vsl:sentinel:r:{tag-a}:a"
     calls: list[int] = []

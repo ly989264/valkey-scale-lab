@@ -529,7 +529,24 @@ class SentinelLane:
                 rows.append(
                     {
                         "monotonic": round_started,
-                        "status": "OK" if ok else "FAIL",
+                        # §12.1 exempts 故障转换期暂时访问失败 from being judged per
+                        # sample, and the sibling observer watching this same
+                        # window already records `TRANSIENT` for it. The exemption
+                        # is about the window, not about which canary, so an access
+                        # failure on either is transient here.
+                        #
+                        # A *value* mismatch is not an access failure: it is a
+                        # successful read of the wrong data, which no part of a
+                        # planned kill excuses. Relabelling those too would erase
+                        # the one finding this probe exists to catch, so they stay
+                        # FAIL even inside the window.
+                        "status": (
+                            "OK"
+                            if ok
+                            else "TRANSIENT"
+                            if errors
+                            else "FAIL"
+                        ),
                         "affected_value_ok": _value_text(
                             values.get("affected")
                         )
