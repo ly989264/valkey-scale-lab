@@ -23,6 +23,7 @@ from valkey_scale_lab.gates import (
     OwnedFaultScope,
     StepStatus,
 )
+from valkey_scale_lab.evidence import RawSourceErrors
 from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
@@ -335,6 +336,13 @@ def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
         probe_health,
     )
     monkeypatch.setattr(exact_gate, "_observed_versions", lambda _nodes: ["9.1.2"])
+    # Two entry points into the validator from this module: `run_exact_gate` reads
+    # the split, because the kind of a source-evidence problem decides whether the
+    # run reports FAIL or ERROR, and `build_admission_from_sources` re-checks
+    # admissibility through the flat helper.
+    monkeypatch.setattr(
+        exact_gate, "validate_raw_sources_by_kind", lambda *_args: RawSourceErrors()
+    )
     monkeypatch.setattr(exact_gate, "validate_raw_sources", lambda *_args: ())
     monkeypatch.setattr(exact_gate, "_build_candidate_admission", build)
 

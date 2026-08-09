@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -13,13 +14,45 @@ from .contracts import MISSING_STATUSES
 _HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
+@dataclass(frozen=True)
+class RawSourceErrors:
+    """Source-evidence problems, split by which §12.1 kind they are.
+
+    §12.1 puts 必要证据无法写入 on the collector's side of the line: evidence that
+    cannot be read is the tool failing, not the cluster being observed and found
+    wanting. This validator only runs after a passing gate, so by then every
+    required artifact should exist - a file that is missing or unparseable at that
+    point is the evidence layer breaking, and reporting it as a run failure told a
+    reader something untrue about the cluster.
+    """
+
+    semantic: tuple[str, ...] = ()
+    tool: tuple[str, ...] = ()
+
+    @property
+    def all(self) -> tuple[str, ...]:
+        # §12.2's order: a confirmed failure is reported ahead of a tool error.
+        return self.semantic + self.tool
+
+    def __bool__(self) -> bool:
+        return bool(self.semantic or self.tool)
+
+
 def load_raw_documents(
     base: Path, definition: ScenarioDefinition
-) -> tuple[dict[str, dict[str, Any]], dict[str, list[dict[str, Any]]], list[str]]:
+) -> tuple[dict[str, dict[str, Any]], dict[str, list[dict[str, Any]]], list[str], list[str]]:
+    """Load every declared artifact, keeping unreadable apart from malformed.
+
+    A file that cannot be opened or parsed is a tool error. A file that opens and
+    parses but holds the wrong shape is an observation of bad evidence, which is
+    the producer's failure and stays semantic.
+    """
+
     runtime = Path(base).resolve() / "runtime"
     objects: dict[str, dict[str, Any]] = {}
     streams: dict[str, list[dict[str, Any]]] = {}
     errors: list[str] = []
+    tool_errors: list[str] = []
     for artifact in definition.artifacts:
         path = runtime / artifact.raw_name
         try:
@@ -39,8 +72,8 @@ def load_raw_documents(
                 else:
                     streams[artifact.raw_name] = rows
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-            errors.append(f"runtime/{artifact.raw_name} is missing or invalid: {exc}")
-    return objects, streams, errors
+            tool_errors.append(f"runtime/{artifact.raw_name} is missing or invalid: {exc}")
+    return objects, streams, errors, tool_errors
 
 
 def validate_raw_sources(
@@ -48,15 +81,41 @@ def validate_raw_sources(
     scale: int,
     definition: ScenarioDefinition,
 ) -> tuple[str, ...]:
+    """Every source-evidence problem, in §12.2's order.
+
+    Kept for callers that only need to know whether the evidence is admissible.
+    `validate_raw_sources_by_kind` is the implementation and is what a caller
+    needs when the *kind* of failure decides the run's verdict.
+    """
+
+    return validate_raw_sources_by_kind(base, scale, definition).all
+
+
+def validate_raw_sources_by_kind(
+    base: Path,
+    scale: int,
+    definition: ScenarioDefinition,
+) -> RawSourceErrors:
     errors: list[str] = []
     if isinstance(scale, bool) or not isinstance(scale, int):
-        return ("requested scale must be an integer",)
+        return RawSourceErrors(semantic=("requested scale must be an integer",))
     if not definition.scale_policy.min_nodes <= scale <= definition.scale_policy.max_nodes:
-        return (
-            f"requested scale must be between {definition.scale_policy.min_nodes} and {definition.scale_policy.max_nodes}",
+        return RawSourceErrors(
+            semantic=(
+                f"requested scale must be between {definition.scale_policy.min_nodes} and {definition.scale_policy.max_nodes}",
+            )
         )
-    objects, streams, load_errors = load_raw_documents(base, definition)
+    objects, streams, load_errors, tool_errors = load_raw_documents(base, definition)
     errors.extend(load_errors)
+    if tool_errors:
+        # Evidence that could not be read cannot also be judged. Every check below
+        # reads a missing name as `{}` and would append a derived complaint - `must
+        # PASS for the admitted run` about a file nobody could open - and under
+        # §12.2's precedence that derived semantic error would outrank the tool
+        # error that caused it, hiding the real finding behind its own consequence.
+        # Any shape errors already found came from files that did open, so they are
+        # independent findings and are kept.
+        return RawSourceErrors(semantic=tuple(errors), tool=tuple(tool_errors))
     run_state = objects.get("run_state.json", {})
     run_id = run_state.get("run_id")
     nodes = run_state.get("nodes") if isinstance(run_state.get("nodes"), list) else []
@@ -130,7 +189,9 @@ def validate_raw_sources(
         definition,
         errors,
     )
-    return tuple(errors)
+    # Reached only when every declared artifact was readable, so anything here is
+    # a reading of evidence that exists.
+    return RawSourceErrors(semantic=tuple(errors))
 
 
 def _validate_streams(

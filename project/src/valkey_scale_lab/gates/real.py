@@ -17,8 +17,10 @@ from valkey_scale_lab.evidence import (
     ADMISSION_SCHEMA_VERSION,
     EvidenceValidationError,
     build_candidate_admission as _build_candidate_admission,
+    RawSourceErrors,
     canonical_bundle_spec,
     validate_raw_sources,
+    validate_raw_sources_by_kind,
 )
 from valkey_scale_lab.execution import ExecutionProfile
 from valkey_scale_lab.gates import (
@@ -240,9 +242,18 @@ def run_exact_gate(
         canonical_bundle_spec(definition).lifecycle_ids,
     )
     run_ended = _unix_ms()
-    source_errors = validate_admission_sources(base, scale, definition)
-    if source_errors:
-        raise DockerRuntimeError("real gate source evidence is invalid: " + "; ".join(source_errors))
+    source_errors = validate_admission_sources_by_kind(base, scale, definition)
+    # §12.2's precedence: evidence that was read and found wrong is a confirmed
+    # failure and outranks evidence that could not be read at all.
+    if source_errors.semantic:
+        raise DockerRuntimeError(
+            "real gate source evidence is invalid: " + "; ".join(source_errors.all)
+        )
+    if source_errors.tool:
+        raise CollectionError(
+            "real gate could not read its own source evidence: "
+            + "; ".join(source_errors.tool)
+        )
     return build_admission_from_sources(
         base,
         scale,
@@ -470,6 +481,16 @@ def validate_admission_sources(
     definition: ScenarioDefinition,
 ) -> list[str]:
     return list(validate_raw_sources(Path(base), scale, definition))
+
+
+def validate_admission_sources_by_kind(
+    base: Path,
+    scale: int,
+    definition: ScenarioDefinition,
+) -> RawSourceErrors:
+    """As above, but keeping which §12.1 kind each problem is."""
+
+    return validate_raw_sources_by_kind(Path(base), scale, definition)
 
 
 def build_admission_from_sources(

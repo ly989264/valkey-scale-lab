@@ -75,7 +75,9 @@ def build_candidate_admission(
     if errors:
         raise EvidenceValidationError(errors)
 
-    objects, streams, _ = load_raw_documents(root, definition)
+    # Reached only after `validate_raw_sources` admitted the evidence, so both
+    # error channels are known empty here.
+    objects, streams, _, _ = load_raw_documents(root, definition)
     selected_timing = _select_timing(
         timing,
         run_started_unix_ms,

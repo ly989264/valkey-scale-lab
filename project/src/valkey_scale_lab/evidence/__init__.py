@@ -20,7 +20,11 @@ from .pipeline import (
     validate_candidate_admission,
 )
 from .provenance import PROVENANCE_SCHEMA_VERSION
-from .validation import validate_raw_sources
+from .validation import (
+    RawSourceErrors,
+    validate_raw_sources,
+    validate_raw_sources_by_kind,
+)
 
 __all__ = [
     "ADMISSION_SCHEMA_VERSION",
@@ -41,5 +45,7 @@ __all__ = [
     "canonical_bundle_spec",
     "load_candidate_admission",
     "validate_candidate_admission",
+    "RawSourceErrors",
     "validate_raw_sources",
+    "validate_raw_sources_by_kind",
 ]

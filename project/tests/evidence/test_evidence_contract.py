@@ -9,6 +9,7 @@ import pytest
 
 from scripts.schema_validator import validate as validate_schema
 from valkey_scale_lab.evidence import (
+    validate_raw_sources_by_kind,
     EvidenceBundleSpec,
     EvidenceValidationError,
     build_candidate_admission,
@@ -209,3 +210,43 @@ def test_generated_capture_provenance_and_candidate_match_versioned_schemas(
     for schema_path, instance in cases:
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         assert validate_schema(instance, schema) == []
+
+
+def test_unreadable_evidence_is_a_tool_error_and_does_not_masquerade_as_a_failure(
+    tmp_path: Path,
+) -> None:
+    """§12.1's 必要证据无法写入 sits on the collector's side of the line.
+
+    This validator runs only after a passing gate, so by then every declared
+    artifact should exist. One that is missing or unparseable at that point is the
+    evidence layer breaking, not the cluster being observed and found wanting - and
+    reporting it as a run failure told a reader something untrue.
+    """
+
+    base = _capture(tmp_path)
+    assert not validate_raw_sources_by_kind(base, 50, DEFINITION)
+
+    (base / "runtime/full_flow_result.json").write_text("{not json", encoding="utf-8")
+    errors = validate_raw_sources_by_kind(base, 50, DEFINITION)
+
+    assert errors.tool and all("full_flow_result.json" in row for row in errors.tool)
+    # The bug this pairs with: every check below the load reads a missing name as
+    # `{}`, so an unreadable file used to also produce `must PASS for the admitted
+    # run` - a derived semantic error that would then outrank, and hide, the tool
+    # error that caused it.
+    assert errors.semantic == ()
+    assert not any("must PASS" in row for row in errors.all)
+
+    # A file that opens and parses but holds the wrong shape is the producer's
+    # failure, and stays semantic.
+    _write_json(base / "runtime/full_flow_result.json", {"status": "PASS"})
+    reshaped = validate_raw_sources_by_kind(base, 50, DEFINITION)
+    assert reshaped.tool == ()
+    assert any("full_flow_result.json must PASS" in row for row in reshaped.semantic)
+
+    # The flat helper every other caller uses still reports everything, in §12.2's
+    # order, so nothing that only asks "is this admissible" had to change.
+    (base / "runtime/full_flow_result.json").unlink()
+    flat = validate_raw_sources(base, 50, DEFINITION)
+    assert flat == validate_raw_sources_by_kind(base, 50, DEFINITION).all
+    assert any("is missing or invalid" in row for row in flat)
