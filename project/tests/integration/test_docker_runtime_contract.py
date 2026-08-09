@@ -4364,3 +4364,50 @@ def test_a_bounded_wait_that_never_converged_says_which_kind_it_was(
     # The measured local case: ephemeral-port exhaustion at 200 nodes is the tool
     # failing, not the cluster refusing.
     assert (kind == "tool") == (expected is CollectionError)
+
+
+def test_a_process_that_vanishes_mid_probe_is_gone_not_a_probe_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The disappearance is what this probe waits for, so it cannot be an error.
+
+    The readability test and the read are two separate syscalls. A process that
+    exited between them made `awk` fail and the script exit 70, so the success
+    condition took the error path. Measured at exact-200, where stop and kill run
+    far more often than at 50:
+    `exit=70 stderr=awk: cannot open "/proc/72/stat" (No such file or directory)`.
+    """
+
+    scripts: list[str] = []
+
+    class Vanished:
+        """What the container returns once the process is gone mid-read."""
+
+        returncode = 70
+        stdout = ""
+        stderr = 'awk: cannot open "/proc/72/stat" (No such file or directory)'
+
+    class Gone:
+        returncode = 0
+        stdout = "VSLAB_GONE"
+        stderr = ""
+
+    def fake_run_docker(args: list[str], **_kwargs: Any) -> Any:
+        scripts.append(args[-1])
+        return Gone()
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+    assert docker_runtime._wait_container_pid_gone("nodehost-a", "72", timeout=1.0) is True
+
+    script = scripts[0]
+    # The read tolerates the file vanishing, and only then.
+    assert "2>/dev/null" in script
+    assert "[ -e /proc/72/stat ] && exit 70" in script
+    # A read that fails while the file is still there is a genuine malfunction and
+    # must still be one, so the guard is kept rather than widened to "any failure
+    # means gone".
+    assert "exit 70" in script
+
+    monkeypatch.setattr(docker_runtime, "run_docker", lambda *_a, **_k: Vanished())
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="owned process probe failed"):
+        docker_runtime._wait_container_pid_gone("nodehost-a", "72", timeout=1.0)

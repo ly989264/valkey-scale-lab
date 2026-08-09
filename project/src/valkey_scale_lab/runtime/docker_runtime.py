@@ -3154,8 +3154,21 @@ def _wait_container_pid_gone(container: str, pid: str, timeout: float) -> bool:
                 "sh",
                 "-c",
                 (
+                    # The process disappearing is what this probe is waiting for,
+                    # so it must not be an error when it happens mid-probe. The
+                    # readability test and the read are two separate syscalls, and
+                    # a process that exits between them made `awk` fail and the
+                    # script exit 70 - the success condition taking the error path.
+                    # Measured at exact-200, where stop and kill run far more often
+                    # than at 50: `exit=70 awk: cannot open "/proc/72/stat"`.
+                    #
+                    # A read that fails while the file is still there is a genuine
+                    # probe malfunction and still exits 70, so the distinction the
+                    # original guard was reaching for is kept rather than widened
+                    # into "any failure means gone".
                     f"if [ ! -r /proc/{pid_text}/stat ]; then printf VSLAB_GONE; exit 0; fi; "
-                    f"s=$(awk '{{print $3}}' /proc/{pid_text}/stat) || exit 70; "
+                    f"s=$(awk '{{print $3}}' /proc/{pid_text}/stat 2>/dev/null) || "
+                    f"{{ [ -e /proc/{pid_text}/stat ] && exit 70; printf VSLAB_GONE; exit 0; }}; "
                     'case "$s" in Z|X) printf VSLAB_GONE;; *) printf VSLAB_ALIVE;; esac'
                 ),
             ],
