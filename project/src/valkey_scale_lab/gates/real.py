@@ -29,8 +29,14 @@ from valkey_scale_lab.gates import (
     ProductGateAdapter,
     ProductRuntimeEntrypoints,
     OwnedFaultScope,
+    StepStatus,
 )
-from valkey_scale_lab.observability.contracts import CollectionError
+from valkey_scale_lab.observability.contracts import (
+    CheckResult,
+    CheckStatus,
+    CollectionError,
+    final_verdict,
+)
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.docker_runtime import (
     DockerRuntimeError,
@@ -201,6 +207,9 @@ def run_exact_gate(
         ownership_id=ownership_id,
         provenance_id=provenance_id,
     )
+    # Written before the raise, because a failing run's only machine-readable
+    # verdict used to be the Gate's own summary and an exit code.
+    _write_run_verdict(runtime_dir, run_id, scale, result)
     if result.status is not GateStatus.PASS:
         raise _gate_failure(result)
     if snapshot.state is None or snapshot.live_probe_result is None:
@@ -352,6 +361,81 @@ def _gate_failure_message(result: Any) -> str:
             f"{result.cleanup_failure.code}:{result.cleanup_failure.reason}"
         )
     return "; ".join(parts)
+
+
+def _write_run_verdict(
+    runtime: Path, run_id: str, scale: int, result: Any
+) -> dict[str, Any]:
+    """§12.2's aggregation over the lifecycle stages, written whether or not it passed.
+
+    Measured across both exact-200 baselines: a failing run writes 23 of the usual
+    61 artifacts, every surviving one says `PASS`, and the only thing that reports
+    the failure is the Gate's own `summary.json` on the strength of an exit code.
+    So the run had no way to say what happened in its own evidence. This is that,
+    in §12.2's vocabulary, over the stages the scenario definition declares.
+
+    Aggregation is `final_verdict` rather than a second implementation of the
+    precedence rule, so `FAIL` beating `ERROR` is decided in one place.
+
+    A stage that never ran contributes no verdict. §12.2 aggregates observations
+    and a skipped stage is not one, so those are recorded beside the checks rather
+    than counted as `OK` - which would be a claim - or as `ERROR`, which would put
+    fail-fast's own bookkeeping into `tool_errors`.
+    """
+
+    tool_error_stage = (
+        result.primary_failure.step_id
+        if result.primary_failure is not None
+        and str(result.primary_failure.code).endswith("_TOOL_ERROR")
+        else None
+    )
+    checks: list[CheckResult] = []
+    not_run: list[dict[str, str]] = []
+    for step in result.steps:
+        if step.status is StepStatus.PASS:
+            checks.append(CheckResult(name=step.step_id, status=CheckStatus.OK))
+            continue
+        if step.status in {
+            StepStatus.SKIPPED_WITH_REASON,
+            StepStatus.UNSUPPORTED_WITH_REASON,
+        }:
+            not_run.append(
+                {
+                    "stage": step.step_id,
+                    "status": step.status.value,
+                    "reason": step.reason or "",
+                }
+            )
+            continue
+        checks.append(
+            CheckResult(
+                name=step.step_id,
+                status=(
+                    CheckStatus.ERROR
+                    if step.step_id == tool_error_stage
+                    else CheckStatus.FAIL
+                ),
+                reason=step.reason or "",
+            )
+        )
+    verdict = final_verdict(checks)
+    if result.status is GateStatus.BLOCKED:
+        # The Gate declined to start the run. That is not one of §12.2's three
+        # states and must not be dressed as one: a refused run was not observed
+        # and did not fail. `BLOCKED` is the Gate's own word and it is kept.
+        verdict["status"] = GateStatus.BLOCKED.value
+    document = {
+        "schema_version": "v1",
+        "artifact_type": "run_verdict",
+        "run_id": run_id,
+        "scale": scale,
+        "node_count": scale,
+        "gate_status": result.status.value,
+        "stages_not_run": not_run,
+        **verdict,
+    }
+    _write(runtime / "run_verdict.json", document)
+    return document
 
 
 def _gate_failure(result: Any) -> Exception:

@@ -460,6 +460,44 @@ def test_a_step_tool_error_leaves_the_gate_as_a_tool_error(
     assert code in str(excinfo.value)
     assert str(raised) in str(excinfo.value)
 
+    # The failing run's own evidence, which used to not exist: measured across
+    # both exact-200 baselines, every artifact a failing run leaves says PASS or
+    # is absent, and only the Gate's summary reported the failure.
+    verdict = json.loads(
+        (tmp_path / "scale-50/runtime/run_verdict.json").read_text(encoding="utf-8")
+    )
+    assert verdict["status"] == ("ERROR" if expected is CollectionError else "FAIL")
+    assert verdict["gate_status"] == "FAIL"
+    # `execute_scenario` is the `runtime_start` handler, so that is the stage that
+    # failed, and the preflight before it is the one stage that got a verdict.
+    assert [(row["name"], row["status"]) for row in verdict["checks"]] == [
+        ("resource_preflight", "OK"),
+        ("runtime_start", "FAIL" if expected is DockerRuntimeError else "ERROR"),
+    ]
+    failed = [row for row in verdict["checks"] if row["status"] != "OK"]
+    assert str(raised) in failed[0]["reason"]
+    # §12.2 lists tool errors separately, and only when there are any.
+    assert verdict["tool_errors"] == (
+        ["runtime_start"] if expected is CollectionError else []
+    )
+    # The nine stages fail-fast never ran are recorded, not counted as
+    # observations - neither as OK, which would be a claim, nor as ERROR, which
+    # would put fail-fast's own bookkeeping into tool_errors.
+    assert [row["stage"] for row in verdict["stages_not_run"]] == [
+        "cluster_form",
+        "stabilize",
+        "baseline_workload",
+        "management_matrix",
+        "fault_matrix",
+        "recovery",
+        "artifact_validation",
+        "analysis",
+        "report",
+    ]
+    assert all(row["reason"] for row in verdict["stages_not_run"])
+    names = {row["name"] for row in verdict["checks"]}
+    assert names.isdisjoint({row["stage"] for row in verdict["stages_not_run"]})
+
 
 def test_large_partition_observations_keep_cluster_state_in_bounded_excerpts(
     monkeypatch: pytest.MonkeyPatch,
