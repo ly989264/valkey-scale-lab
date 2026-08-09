@@ -647,3 +647,83 @@ Not a plan, a dependency statement — three of these cannot land alone.
 CLAUDE.md is right that `actual=MISSING` and §9.1's actuator cannot be fixed
 alone, and this map narrows why: not because they share a symptom, but because
 step 3 has nowhere to send an `ERROR` until steps 1 and 2 exist.
+
+## The `ERROR` verdict is accepted
+
+Six commits, `5b359f00` through `313cacc9`. Measured against the bar this map set
+for itself:
+
+| Bar item | Result |
+| --- | --- |
+| `./gate suite repository.all` | 91/91 before each of the five code commits |
+| Diff calibration on the frozen baselines first | `runtime_start` 7/7, `cluster_form` 5/5, `management_matrix` 8/8, `fault_matrix` 6/6 |
+| No stage view may move | held: 7/7, 5/5, 6/8, 5/6 in two consecutive runs, both differing views matching their declared shapes |
+| Two consecutive real exact-50 | PASS 870.93s and PASS 840.16s, zero residue, `full_flow_result` PASS with twelve steps in both |
+| A real `FAIL` must stay `FAIL` | held, by accident rather than design - see below |
+| An `ERROR` run produced at all | **held, and unstubbed** - see below |
+
+The two declared deltas, checked by content rather than by view count and
+identical in both runs: `management_command_log` grows +14 rows, all
+`cluster_migrate_keys` (4 → 18), and exactly four rows change kind and argv with
+`313cacc9`'s rename, leaving 14 row kinds untouched; `fault_sequence` keeps all
+nine scenario ids and all nine statuses, and the delta stays confined to the three
+partition scenarios' isolated side with the other six untouched.
+
+### The part that cannot be claimed as designed
+
+This map said an `ERROR` run at real scale was unprovable, and that a real `FAIL`
+staying a `FAIL` would be shown by an exact-6 run. Both statements turned out
+wrong, in opposite directions.
+
+**The `FAIL` direction was proven by an accident.** The second real run failed at
+397.64s on a `ValkeyErrorReply` - a genuine Valkey semantic failure - and came out
+`STEP_EXCEPTION` → `FAIL`, never touching the tool-error branch. That is better
+evidence than anything constructible, and it was luck. It remains the only
+real-scale instance of the direction that matters most.
+
+**The `ERROR` direction became provable because the enumeration had a hole.**
+Looking for the exact-6 case instead found `_require_docker_daemon` raising
+`DockerRuntimeError`, so an unreachable daemon - §12.1's 任务未发起, nothing
+observed at all - was reported as `FAIL`. Fixed in `40290bee`, and because it can
+be staged by pointing `DOCKER_HOST` at a socket that does not exist, it turned the
+unprovable item into a measurement: `Status: ERROR`, `summary.json` overall
+`ERROR`, exit code 0, no code stubbed and no daemon disturbed.
+
+Why the enumeration missed it is the reusable part. It walked `except` handlers
+and `"FAIL"` literals inside the observation code. This site is a plain `raise` in
+the gate's preflight that never labels anything `FAIL` itself - it becomes one
+only downstream, in `_gate_execute`'s catch tuple. **An enumeration keyed on where
+a status string is written cannot see a site that only acquires its status by
+propagation.** Any future sweep of this kind needs to walk what reaches each
+catch, not only what each catch writes.
+
+### Corrections this work made to the map above
+
+- **The exact-6 clean-room case does not exist.** `local_full_flow_v1.json`
+  declares `scale_policy.min_nodes: 30`, so `gate execute` rejects six at plan
+  compilation. CLAUDE.md's note that the product does not refuse six is about
+  `_full_flow_profile` alone. The run is still real evidence for the `FAIL`
+  direction, but it never reaches the fault matrix.
+- **The `MISSING` topology defect is five consequences, and the classification
+  cannot come from which handler caught it.** A non-`OK` light row is returned
+  both when the node never answered and when it answered and disagreed, so the
+  §12.1 split had to be derived from the design's own words - a refused connection
+  or a timeout is a *semantic* observation - rather than from the code's shape.
+- **§12.2's precedence is still not exercised across stages.** The run fails fast,
+  so one run never holds both a `FAIL` and an `ERROR`. That needs
+  `lifecycle_timeline.json` to outlive a failure, which it does not.
+
+### What defect-seeding caught that calibration could not
+
+Both times, in this work's own tests rather than in the product:
+
+- The first rolling-restart gap test passed with the batch-loop check deleted. It
+  covered `_management_matrix_rolling_restart_plan_entries`, not the per-batch
+  re-read it was written for.
+- The second put the gap on a shard peer, which the per-target check correctly
+  ignores, so it still did not reach the site.
+
+With the gap on an actual restart target, deleting the check reproduces the
+exact-200 baseline's message verbatim: `strict rolling restart live role changed
+for shard-0000-replica-00: planned=replica actual=MISSING`. Two tests that agreed
+with their fixes would have shipped as false assurance.

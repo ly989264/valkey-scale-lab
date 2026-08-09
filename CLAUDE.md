@@ -169,64 +169,79 @@ Two consecutive exact-50 after all three: **PASS 847.54s and PASS 909.73s**,
 6/8 as described below, `cluster_form` 5/5, `runtime_start` 7/7, zero residue,
 and the delta identical in both runs.
 
+### `c3bd05fc` has now unmasked a third defect
+
+`313cacc9`, found by the `ERROR` verdict's own acceptance runs rather than by
+looking for it. A real exact-50 failed at 397.64s, one run after passing:
+`cluster_replicate_restored_node ... ValkeyErrorReply('ERR To set a master the
+node must be empty and without assigned slots.')`
+
+`start_node(fresh_cluster_identity=True)` removed only `nodes.conf`. The
+generated config sets `appendonly no` and **no `save` directive at all**, so
+Valkey's built-in default save policy is active: the workload writes keys, a
+background save lands a `dump.rdb` in `dir`, and `SHUTDOWN NOSAVE` does not
+remove one already written. The node came back with a fresh cluster identity and a
+populated dataset, and `CLUSTER REPLICATE` refuses a node holding keys. Whether an
+RDB exists for that node when it is stopped depends on the save thresholds being
+crossed, which is what made it look intermittent rather than broken.
+
+`docs/management_matrix_slice_map.md:598` records this exact message at this exact
+site on this exact node with `status: PASS`, because the `docker exec` fallback
+re-executed the command and `docker exec` exits 0. So the sequence is: masked by
+the fallback, unmasked by `c3bd05fc`, then fixed. If another intermittent real
+failure appears at a site that fallback used to cover, suspect the same shape
+before suspecting the change in front of you.
+
 ### What is still open, and deliberately not done
 
-**The agreed next piece of work is the `ERROR` verdict**, and it is one change
-with a shared cause rather than the two entries below. Measured 2026-08-08,
-before any of it was started:
+The `ERROR` verdict is **done and accepted**; read
+`project/docs/error_verdict_map.md`, which carries the measurement it was argued
+from and a closing section on what landed and what the work corrected about its
+own map. Six commits, `5b359f00` through `313cacc9`. What it settled:
 
-- `final_verdict()` in `observability/contracts.py` already implements §12.1
-  and §12.2 exactly - retry once then `ERROR`, `FAIL` beats `ERROR`, tool
-  errors listed separately. It has **two callers**: the bounded stability lane
-  and the resource observation. Nothing else.
-- The full-flow run's own verdict (`docker_runtime.py:8058`) is a plain
-  `PASS if ... else FAIL` and never consults it. `_local_full_flow_lifecycle_steps`
-  hardcodes every step `PASS`, so in practice the run status is the management
-  summary AND the fault summary.
-- **The Gate cannot express `ERROR` by any route.** `real.local.full-flow`
-  declares `result: exit_code`, and `verification/runner.py:132` maps a
-  non-zero exit to `FAIL`; `ERROR` is reserved for the harness failing to run
-  a test. The JSON route is no better - `_read_json_result` accepts only
-  `PASS`, `FAIL`, `BLOCKED`. So the change reaches into `verification/`, which
-  is on the far side of the repository boundary from the product.
-- So §16 items 13 and 14 are **unmet at the run level**, and both open items
-  below - `actual=MISSING` and the §9.1 actuator - come out as `FAIL` because
-  there is no road to `ERROR` for them to take. Neither can be fixed alone.
-- Also found while measuring, and to be decided rather than fixed in passing:
-  a passing exact-50 run records **462 per-sample `FAIL`s** in
-  `scalable_primary_failover_observation.json`'s `sentinel_fault_probe.samples`,
-  during a planned kill. §12.1 says 故障转换期暂时访问失败…不逐样本判 `FAIL`
-  and 计划内 actuator kill 是预期事件. The lane's own verdict is correctly `OK`
-  - it recovered inside the deadline - so this is a sample label, not a wrong
-  verdict, and whether a per-sample field named `status` counts as judging per
-  sample is a reading question worth settling explicitly.
+- `real.local.full-flow` declares `result: json` and takes `--result-path`; the
+  run writes `{status, summary}` and exits 0 whenever it wrote a verdict, because
+  a non-zero exit makes the Gate report `FAIL` without reading the file. It was
+  the catalog's only `exit_code` test out of 95, and its three `real.local.m2-*`
+  siblings already worked this way.
+- `_read_json_result` accepts `ERROR`; `_overall_status` applies §12.2's
+  precedence for a test or suite selection - any `FAIL` wins, then any `ERROR`.
+  `BLOCKED` and `TIMEOUT` are untouched.
+- `_exception_failure` records which §12.1 kind a step failure was
+  (`STEP_TOOL_ERROR` against `STEP_EXCEPTION`), and `run_exact_gate` re-raises a
+  tool error as `CollectionError`. `GateStatus` stays `PASS/FAIL/BLOCKED`: a
+  collector that broke mid-run is not a fourth lifecycle outcome.
+- `is_collection_failure` in `observability/contracts.py` is where the §12.1
+  split now lives. It answers `True` only for a `CollectionError` or a
+  local-resource errno, and `False` for anything it cannot place, because calling
+  a confirmed cluster failure a tool error is the direction that loses a finding.
+  A refused connection or a timeout is a *semantic* observation per §12.1.
+- §16 items 13 and 14 are met at the run level: `Status: ERROR` measured on a
+  real gate invocation, `summary.json` overall `ERROR`, exit code 0. Before this,
+  `ERROR` appeared **zero times** across all 168 artifact files in the four
+  frozen baselines.
 
-Write its map first, argued from measurement, the way the four slice maps were;
-then stop and report, because this is a semantic change to a validation
-contract and the working rules require reporting before it lands.
+**What the `ERROR` work did not finish**, and is the largest remaining piece of
+§12.2: the run still fails fast at the first raise, so within one run there is
+never both a `FAIL` and an `ERROR` to aggregate. §12.2's precedence is exercised
+at the Gate across tests and inside the stability lane across checks, not across
+stages. Recording a failed stage at all needs `lifecycle_timeline.json` to
+outlive a failure, which it does not - it is written only after a passing gate,
+with literal `PASS` on the artifact and on all twelve step rows. Every artifact a
+failing run leaves says `PASS` or is absent; the only thing that says otherwise
+is the Gate's own `summary.json`.
 
-- **§9.1's actuator record, at two sites, paired with the verdict mapping.**
-  §9.1 requires a fault action to record target, action, action start,
-  signal/request sent, action completed and result. `ActuatorRecorder` is built
-  in exactly one place - the primary kill - so the other nine fault scenarios
-  record only a rendered action list. And where it is built, `complete()`
-  raises `CollectionError` *before* the command row is appended, so the one row
-  that carries the record is written only on success and §9.1's `result` is
-  never persisted on the path where it matters; the row's `status` is a literal
-  `"PASS"` for the same reason. The raised error then propagates out of
-  `write_full_flow_artifacts` and the gate reports **FAIL**, where §9.1 and
-  §12.1 both say a tool error is `ERROR` (checked: `verification/runner.py`
-  maps a non-zero exit to FAIL and reserves ERROR for the harness). Same
-  FAIL-vs-ERROR correction as the `MISSING` item below, at a second site;
-  they belong together. Slice 4 left the seam able to support it - the seven
-  actuator operations return records with start and end stamps and a result.
-- **The `MISSING` semantics, paired with the verdict mapping.**
-  `_management_live_topology` drops any node whose probe is not OK and the strict
-  rolling-restart check reports that absence as `live role changed … actual=MISSING`
-  - a collector failure reported as a Valkey semantic failure, which §16 item 12
-  forbids and §12.1 says should retry once then be ERROR. Fixing the observation
-  without also moving collector failure from FAIL to ERROR would leave the
-  contract half-corrected, so both belong in one change. Not started.
+Three smaller sites from the map are also still open: the bounded waits
+(`_wait_process_light_clean`, `_run_timed_step`) label a `CollectionError` `FAIL`
+in a sticky timing row; `evidence/validation.py:41` turns an unreadable artifact
+into a `FAIL` where §12.1 says 必要证据无法写入 is `ERROR`, and fixing it needs
+`validate_raw_sources` to return the two kinds separately so precedence can
+apply; and the Sentinel fault-window samples label a transient `FAIL` where the
+sibling `AffectedShardObserver` already records `TRANSIENT` for the same class of
+error in the same window. The last is a label defect, not a verdict defect - the
+lane's own verdict is correctly `OK` - and the sample counts are not stable
+(443 and 455 in the two baselines), so it moves no diff view.
+
 - **Whole-fleet cadence.** Pooling removed the socket cost, not the query cost.
   `_management_wait_clean_cluster` still probes every node at 1 Hz and
   `FullClusterValidator` at 0.5 Hz (`CONVERGENCE_POLL_SECONDS = 2.0`), against a
@@ -270,17 +285,23 @@ contract and the working rules require reporting before it lands.
   and `compat/phase_aliases.py`. §15 makes the actuator the one thing an adapter
   replaces, so after Slice 4 there are two. Nothing in the lifecycle calls it
   and no acceptance bar exercises it.
-- **A six-node smoke cannot reach `management_matrix` or `fault_matrix`, but
-  not for the reason previously recorded here.** The *gate* refuses six
-  (`real.local.full-flow` declares `minimum: 30`). The *product does not*:
-  `_full_flow_profile` resolves six to `small-real` and no code path raises on
-  node count. What actually stops a six-node run is `fault_matrix`'s own target
-  selection - `single_mac_6node.yaml` declares `virtual_az_mode: single`, so
-  every node is in `az-local`, and `az_stop` selects a survivor *outside* the
-  target AZ, which raises a bare `StopIteration` (not a `DockerRuntimeError`).
-  Measured: six nodes give two nodehosts, both `az-local`. **exact-30 is the
-  smallest real run that exercises either stage** (`management_matrix` PASS
-  728s / 60 rolling-restart rows; `fault_matrix` PASS ~214s / 9 scenarios).
+- **A six-node smoke cannot reach `management_matrix` or `fault_matrix`, and
+  there are three separate reasons, only one of which was recorded here before.**
+  The *gate* refuses six (`real.local.full-flow` declares `minimum: 30`). The
+  **scenario definition also refuses six**: `local_full_flow_v1.json` declares
+  `scale_policy.min_nodes: 30`, so `gate execute` rejects it at plan compilation -
+  measured 2026-08-09, `requested_nodes must be in the exact supported range
+  30..2000, got 6`. Only *`_full_flow_profile`* is permissive, resolving six to
+  `small-real`; that is what the earlier note meant by "the product does not",
+  and reading it as "reachable through the CLI" is wrong. Third, if the first two
+  were bypassed, `fault_matrix`'s own target selection would stop it -
+  `single_mac_6node.yaml` declares `virtual_az_mode: single`, so every node is in
+  `az-local`, and `az_stop` selects a survivor *outside* the target AZ, raising a
+  bare `StopIteration`. Measured: six nodes give two nodehosts, both `az-local`.
+  **exact-30 is the smallest real run that exercises either stage**
+  (`management_matrix` PASS 728s / 60 rolling-restart rows; `fault_matrix` PASS
+  ~214s / 9 scenarios). Do not plan a clean-room failure case around exact-6:
+  the `error_verdict_map` did, and it does not exist.
 
 Slice 4's four fixed numbers are worth keeping: `fault_matrix` emits **9 fault
 scenarios, 12 command rows and 15 workload windows at every scale** (30, 50 and
@@ -322,17 +343,28 @@ exclusions one run at a time until the diff goes green.
   (`rolling_restart_plan.json`, `rolling_restart_results.jsonl`,
   `management_sequence.json`, `management_command_log.jsonl`).
 
-  **`management_matrix` diffs 6/8 against it now, and 6/8 is the pass mark.**
-  `ded96fac` drains a slot's keys before reassigning it; the frozen baseline
-  encodes the code that did not, so a correct run legitimately emits extra
-  `cluster_migrate_keys` rows. Both runs after that fix measured the delta as
-  **exactly +14 rows, all `cluster_migrate_keys`, no other row kind changed** -
-  in `management_command_log`, and the matching `command_count` and
-  `command_log_refs` growth in `management_sequence`. Check that shape, not
-  equality: any other kind of difference, or a different delta, is a real
-  finding. The other six views must still be identical, and `runtime_start` 7/7
-  and `cluster_form` 5/5 are unaffected. This is an intentional behaviour fix,
-  not slice drift, which is why the baseline stays frozen anyway.
+  **`management_matrix` diffs 6/8 against it now, and 6/8 is the pass mark** -
+  but the delta has **two declared components** since `313cacc9`, and a diff that
+  shows only one of them is as much a finding as one that shows a third:
+
+  1. `ded96fac` drains a slot's keys before reassigning it; the frozen baseline
+     encodes the code that did not, so a correct run legitimately emits extra
+     `cluster_migrate_keys` rows. Measured in four runs across three commits as
+     **exactly +14 rows, `cluster_migrate_keys` 4 → 18** in
+     `management_command_log`, with the matching `command_count` and
+     `command_log_refs` growth in `management_sequence` (1051 → 1058).
+  2. `313cacc9` renamed the command record that discards a node's prior state,
+     because it now removes the dataset as well as `nodes.conf`. Measured in two
+     runs as **exactly four rows**, one each in `add_replica`, `remove_replica`,
+     `remove_failed_node` and `remove_primary_drained_or_safe_replaced`, changing
+     `command_kind` from `owned_valkey_process_remove_nodes_conf` to
+     `owned_valkey_process_discard_prior_state` and gaining the RDB path in
+     `argv`. A rename moves no rows, so the row count stays +14.
+
+  Together: **row count +14, three row kinds changed and 14 unchanged.** Check
+  that shape, not equality. The other six views must still be identical, and
+  `runtime_start` 7/7 and `cluster_form` 5/5 are unaffected. Both are intentional
+  behaviour fixes, not drift, which is why the baseline stays frozen anyway.
 
   **`fault_matrix` diffs 5/6 against it, and 5/6 is the pass mark**, for the
   same kind of reason: the baseline predates `85d5096a`, so its partition
