@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Iterable
@@ -27,6 +28,43 @@ class ConvergenceFailure(SemanticFailure):
     Every other semantic failure is permanent: a role, slot, identity or
     coverage mismatch does not resolve by observing it again.
     """
+
+
+_LOCAL_RESOURCE_ERRNOS = frozenset(
+    {
+        errno.EADDRNOTAVAIL,  # measured at 200 nodes: 16,384 ephemeral ports gone
+        errno.EMFILE,
+        errno.ENFILE,
+        errno.ENOBUFS,
+        errno.ENOMEM,
+    }
+)
+
+
+def is_collection_failure(exc: BaseException) -> bool:
+    """Whether an observation failure was the collector's own, per §12.1.
+
+    §12.1 puts Valkey refusing a connection, timing out, returning a wrong value
+    or a wrong role on the *semantic* side: each of those is a successful
+    observation of a cluster that is not healthy. The collector's own side is
+    local - a code error, a parser fault, evidence that cannot be written, and
+    running out of local sockets or file descriptors, which is the case that
+    actually happened here (`[Errno 49] Can't assign requested address`, once the
+    host's 16,384 ephemeral ports were gone).
+
+    Answers False for anything it cannot place. Calling a confirmed cluster
+    failure a tool error is the dangerous direction: it turns a `FAIL` the design
+    says is final into an `ERROR`, and §12.2 keeps `FAIL` ahead of `ERROR`
+    precisely so that cannot happen by accident.
+    """
+
+    if isinstance(exc, SemanticFailure):
+        return False
+    if isinstance(exc, CollectionError):
+        return True
+    if isinstance(exc, OSError) and exc.errno in _LOCAL_RESOURCE_ERRNOS:
+        return True
+    return False
 
 
 @dataclass(frozen=True)

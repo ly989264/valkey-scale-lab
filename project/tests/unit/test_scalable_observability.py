@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import errno
 import json
 import os
 import subprocess
@@ -29,6 +30,7 @@ from valkey_scale_lab.observability.contracts import (
     ConvergenceFailure,
     SemanticFailure,
     final_verdict,
+    is_collection_failure,
     run_check,
 )
 from valkey_scale_lab.observability.failover import (
@@ -1528,6 +1530,56 @@ def test_exact_200_thirty_three_percent_affected_command_budget_is_role_info_onl
     assert sum(1 for _port, command in calls if command == ("ROLE",)) == 33
     assert sum(1 for _port, command in calls if command == ("CLUSTER", "INFO")) == 33
     assert all(command != ("CLUSTER", "COUNT-FAILURE-REPORTS") for _port, command in calls)
+
+
+def test_which_observation_failures_are_the_collectors_own() -> None:
+    """§12.1's boundary, in the direction that matters.
+
+    Valkey refusing a connection, timing out, or answering wrongly is a
+    successful observation of an unhealthy cluster and stays a FAIL. Only a local
+    failure is the collector's - and the one that actually happened here is
+    ephemeral-port exhaustion at 200 nodes.
+    """
+
+    refused = ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused")
+    exhausted = OSError(errno.EADDRNOTAVAIL, "Can't assign requested address")
+
+    assert is_collection_failure(exhausted) is True
+    assert is_collection_failure(OSError(errno.EMFILE, "Too many open files")) is True
+    assert is_collection_failure(CollectionError("cannot write evidence")) is True
+
+    # Every one of these is the cluster's problem, not the tool's.
+    assert is_collection_failure(refused) is False
+    assert is_collection_failure(TimeoutError("timed out")) is False
+    assert is_collection_failure(EOFError("Valkey connection closed")) is False
+    assert is_collection_failure(SemanticFailure("ROLE disagrees")) is False
+    # Unplaceable failures stay FAIL: calling a real failure a tool error is the
+    # direction that loses a finding.
+    assert is_collection_failure(RuntimeError("something else")) is False
+
+
+def test_a_failed_light_probe_row_states_which_kind_it_was() -> None:
+    nodes, _responses = _cluster_fixture()
+
+    def refuse(_endpoint: Endpoint, _timeout: float) -> Any:
+        raise ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused")
+
+    def exhaust(_endpoint: Endpoint, _timeout: float) -> Any:
+        raise OSError(errno.EADDRNOTAVAIL, "Can't assign requested address")
+
+    refused_row = LightClusterProbe(
+        nodes[:1], connection_factory=refuse
+    ).observe_node(nodes[0])
+    exhausted_row = LightClusterProbe(
+        nodes[:1], connection_factory=exhaust
+    ).observe_node(nodes[0])
+
+    assert refused_row["status"] == "FAIL"
+    assert refused_row["failure_kind"] == "semantic"
+    assert exhausted_row["failure_kind"] == "tool"
+    # The rendered message is kept as well: the kind is what consumers act on,
+    # the message is what a person reads.
+    assert "Can't assign requested address" in exhausted_row["error"]
 
 
 def test_actuator_failure_is_a_collection_error() -> None:

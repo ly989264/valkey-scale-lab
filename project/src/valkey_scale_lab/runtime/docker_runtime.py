@@ -7130,8 +7130,15 @@ def _management_topology_snapshot(
     all_nodes: list[dict[str, Any]],
 ) -> dict[str, Any]:
     health = _management_cluster_health(probe_nodes)
+    # A snapshot is evidence, not a gate, so a gap is recorded per node instead of
+    # replacing the whole reading with one MISSING row - which is what happened
+    # before, and lost every node that did answer.
     try:
-        parsed_nodes = list(_management_live_topology(all_nodes).values())
+        topology, gaps = _management_live_topology(all_nodes)
+        parsed_nodes = list(topology.values()) + [
+            {"logical_id": logical_id, "status": MISSING, **gap}
+            for logical_id, gap in sorted(gaps.items())
+        ]
     except Exception as exc:  # noqa: BLE001
         parsed_nodes = [{"status": MISSING, "reason": repr(exc)}]
     return {
@@ -7641,7 +7648,13 @@ def _management_reshard_primary_owned_slots(node: dict[str, Any], node_id: str) 
 
 
 def _management_reshard_primary_slot_counts(nodes: list[dict[str, Any]]) -> dict[str, int]:
-    topology = _management_live_topology(nodes)
+    # The slot imbalance this feeds is a measured number, and a primary that was
+    # not read would silently drop out of it - reporting a balance computed over
+    # the survivors as though it were the cluster's. A gap has to stop the
+    # measurement, not narrow it.
+    topology = _management_require_live_topology(
+        nodes, "reshard slot balance needs every primary's live slots"
+    )
     counts: dict[str, int] = {}
     for row in topology.values():
         if row.get("role") != "primary":
@@ -7683,17 +7696,38 @@ def _management_rebalance_summary(capability_id: str, run_id: str, rows: list[di
 
 
 
-def _management_live_topology(nodes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _management_live_topology(
+    nodes: list[dict[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, str]]]:
+    """The live role and slots of every node that answered, and why the rest did not.
+
+    A node this probe could not read is not a node the cluster has lost. Dropping
+    it made its absence indistinguishable from a removal, and every caller then
+    reported the gap as whatever it was looking for: a changed role, a restored
+    placement that was not restored, a slot imbalance measured over the survivors.
+    Acceptance item 12 forbids exactly that, so the gaps are returned with their
+    stated reason and their §12.1 kind, the way the partition probe returns its
+    isolated side, and each caller decides what a gap means for it.
+    """
+
     if not nodes:
-        return {}
+        return {}, {}
     rows = LightClusterProbe(
         [NodeEndpoint.from_inventory(node) for node in nodes],
         concurrency=32,
         timeout=5.0,
     ).collect()
     result: dict[str, dict[str, Any]] = {}
+    gaps: dict[str, dict[str, str]] = {}
     for row in rows:
         if row.get("status") != "OK":
+            gaps[str(row["logical_id"])] = {
+                "reason": str(row.get("error") or f"light probe status {row.get('status')}"),
+                # Absent only if an older row shape reaches here; the probe states
+                # it, and defaulting to `semantic` keeps an unexplained failure a
+                # cluster failure rather than quietly excusing it as a tool error.
+                "kind": str(row.get("failure_kind") or "semantic"),
+            }
             continue
         fields = row["myslots"]
         bitmap = fields.bitmap
@@ -7714,7 +7748,44 @@ def _management_live_topology(nodes: list[dict[str, Any]]) -> dict[str, dict[str
             ),
             "slots": _bitmap_slot_ranges(bitmap),
         }
-    return result
+    return result, gaps
+
+
+def _management_topology_gap_error(
+    gaps: Mapping[str, Mapping[str, str]],
+    logical_ids: Iterable[str],
+    what: str,
+) -> Exception | None:
+    """The exception a stage should raise for the gaps it actually cares about.
+
+    §12.2's precedence decides the class: a node that answered and disagreed is a
+    confirmed cluster failure and outranks any number of nodes the collector could
+    not read. Stated once here so ten call sites cannot each invent it.
+    """
+
+    relevant = {
+        logical_id: gaps[logical_id] for logical_id in logical_ids if logical_id in gaps
+    }
+    if not relevant:
+        return None
+    detail = json.dumps(relevant, sort_keys=True)
+    if any(gap.get("kind") != "tool" for gap in relevant.values()):
+        return DockerRuntimeError(f"{what}: {detail}")
+    return CollectionError(f"{what} could not be observed: {detail}")
+
+
+def _management_require_live_topology(
+    nodes: list[dict[str, Any]], what: str
+) -> dict[str, dict[str, Any]]:
+    """Live topology for stages that cannot proceed on a partial reading."""
+
+    topology, gaps = _management_live_topology(nodes)
+    error = _management_topology_gap_error(
+        gaps, [str(node["logical_id"]) for node in nodes], what
+    )
+    if error is not None:
+        raise error
+    return topology
 
 
 def _bitmap_slot_ranges(bitmap: bytes) -> list[str]:
@@ -9092,7 +9163,12 @@ def _local_full_flow_run_fault_failover_sequence(
         command["scenario_id"] = "primary_failover"
         primary_evidence["command_ids"].append(str(command["command_id"]))
 
-    live_topology = _management_live_topology(nodes)
+    # Target selection reads every node's live role, so a gap here would either
+    # pick a different target or - as it did - raise a bare StopIteration with no
+    # message at all.
+    live_topology = _management_require_live_topology(
+        nodes, "fault matrix target selection needs every node's live role"
+    )
     target_replica = next(node for node in nodes if live_topology.get(node["logical_id"], {}).get("role") == "replica")
     # Which host a node runs on, and which AZ that host is in, are inventory -
     # the same reading the rolling restart makes of the density plan. What is
@@ -10858,7 +10934,13 @@ def _management_matrix_remove_and_restore_row(
     backend: NodeBackend,
 ) -> dict[str, Any]:
     node_count = len(nodes)
-    topology = _management_live_topology(nodes)
+    # This row removes a node and puts it back, so which node is which primary or
+    # replica has to be known rather than inferred from who answered: a gap made
+    # `primaries[0]` and the `next(...)` below pick a different node, or raise an
+    # IndexError or a bare StopIteration.
+    topology = _management_require_live_topology(
+        nodes, f"{operation_name} needs every node's live role before removing one"
+    )
     primaries = [node for node in nodes if topology.get(node["logical_id"], {}).get("role") == "primary"]
     replicas = [node for node in nodes if topology.get(node["logical_id"], {}).get("role") == "replica"]
     if operation_name == "remove_primary_drained_or_safe_replaced":
@@ -10911,7 +10993,12 @@ def _management_matrix_execute_process_rolling_restart(
     node_count = len(nodes)
     capability_label = capability_id.split("_", 1)[0]
     before = _management_cluster_health(nodes)
-    initial_topology = _management_live_topology(nodes)
+    # The plan is built from these roles and the final check compares against
+    # them, so a node missing from the baseline would be reported later as a
+    # change it never made.
+    initial_topology = _management_require_live_topology(
+        nodes, f"{operation_name} needs every node's live role before planning"
+    )
     plan_entries = _management_matrix_rolling_restart_plan_entries(operation_name, operation_id, nodes, topology=initial_topology)
     batches = _management_matrix_rolling_restart_batches(plan_entries, nodes)
     max_concurrent = max((len(batch) for batch in batches), default=0)
@@ -10951,10 +11038,20 @@ def _management_matrix_execute_process_rolling_restart(
     for batch_index, batch in enumerate(batches, start=1):
         targets = [nodes_by_id[str(entry["logical_node_id"])] for entry in batch]
         batch_scope = _management_rolling_restart_batch_scope(batch, nodes)
-        topology = _management_live_topology(batch_scope)
+        topology, gaps = _management_live_topology(batch_scope)
         safe_by_id: dict[str, dict[str, Any]] = {}
         for entry, target in zip(batch, targets):
             logical_id = str(target["logical_id"])
+            # A node this probe could not read has not changed role; it has not
+            # been read. Reporting `actual=MISSING` as a role change is the
+            # collector failure this stage used to blame on Valkey.
+            gap_error = _management_topology_gap_error(
+                gaps,
+                [logical_id],
+                f"strict rolling restart live role for {logical_id}",
+            )
+            if gap_error is not None:
+                raise gap_error
             role_before = str(topology.get(logical_id, {}).get("role", MISSING))
             if role_before != entry["planned_role"]:
                 raise DockerRuntimeError(
@@ -11039,10 +11136,29 @@ def _management_matrix_execute_process_rolling_restart(
         for entry in batch:
             _management_matrix_merge_parallel_command_rows(command_log, process_by_sequence[int(entry["sequence"])].pop("command_rows"))
 
-        post_restart_topology = _management_live_topology(batch_scope) if any(entry["planned_role"] == "replica" for entry in batch) else {}
+        # "No live primary in this shard" and "the shard's primary was not read"
+        # are different findings, and only the first is the cluster's.
+        post_restart_topology, post_restart_gaps = (
+            _management_live_topology(batch_scope)
+            if any(entry["planned_role"] == "replica" for entry in batch)
+            else ({}, {})
+        )
         for entry, target in zip(batch, targets):
             if entry["planned_role"] != "replica":
                 continue
+            shard_ids = [
+                str(node["logical_id"])
+                for node in nodes
+                if node["shard_id"] == target["shard_id"]
+            ]
+            gap_error = _management_topology_gap_error(
+                post_restart_gaps,
+                shard_ids,
+                f"strict rolling restart shard {target['shard_id']} after restarting"
+                f" replica {target['logical_id']}",
+            )
+            if gap_error is not None:
+                raise gap_error
             primary = next(
                 (
                     node
@@ -11176,7 +11292,13 @@ def _management_matrix_execute_process_rolling_restart(
     final_probe["batch_id"] = MISSING
     final_probe["command_ref"] = _management_matrix_log_health_probe_summary(command_log, telemetry, capability_id, run_id, operation_id, final_probe)
     probe_summaries.append(final_probe)
-    final_topology = _management_live_topology(nodes)
+    # `role_placement_restored: false` is a claim that the restart left the
+    # cluster in a different shape. A node that was not read cannot support that
+    # claim - its absence changed the signature, so the operation reported FAIL
+    # for a probe gap - and it must not be quietly excused either.
+    final_topology = _management_require_live_topology(
+        nodes, f"{operation_name} needs every node's live role to judge placement"
+    )
     topology_placement_restored = bool(final_topology) and (
         _management_matrix_topology_placement_signature(final_topology)
         == _management_matrix_topology_placement_signature(initial_topology)
@@ -11243,11 +11365,19 @@ def _management_matrix_rolling_restart_plan_entries(
 ) -> list[dict[str, Any]]:
     if operation_name not in {"rolling_restart_replica_first", "rolling_restart_primary_safe"}:
         raise DockerRuntimeError(f"unsupported strict rolling restart operation {operation_name}")
-    live_topology = topology if topology is not None else _management_live_topology(nodes)
+    live_topology = (
+        topology
+        if topology is not None
+        else _management_require_live_topology(
+            nodes, f"{operation_name} needs every node's live role to plan"
+        )
+    )
     live_roles = {
         str(node["logical_id"]): str(live_topology.get(str(node["logical_id"]), {}).get("role", "MISSING"))
         for node in nodes
     }
+    # Reached only when a caller supplied a topology; the probe path above already
+    # raised with each node's own stated reason.
     invalid = {logical_id: role for logical_id, role in live_roles.items() if role not in {"primary", "replica"}}
     if invalid:
         raise DockerRuntimeError(f"strict rolling restart could not determine live roles: {invalid}")
@@ -11761,7 +11891,11 @@ def _management_matrix_rejoin_as_replica(
     seed = _management_matrix_first_live_node([node for node in nodes if node["logical_id"] != target["logical_id"]])
     _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_meet_restored_node", target=seed, args=["CLUSTER", "MEET", _cluster_meet_address(target), _cluster_meet_port(target)], timeout=30)
     _wait_process_known(nodes, expected=len(nodes), timeout=120.0)
-    topology = _management_live_topology(nodes)
+    # The rejoining node needs its shard's primary by name, and a gap made the
+    # `next(...)` below raise a bare StopIteration with nothing said about why.
+    topology = _management_require_live_topology(
+        nodes, f"rejoining {target['logical_id']} needs its shard's live primary"
+    )
     primary = next(node for node in nodes if node["shard_id"] == target["shard_id"] and node["logical_id"] != target["logical_id"] and topology.get(node["logical_id"], {}).get("role") == "primary")
     master_id = _node_command(primary, "CLUSTER", "MYID", timeout=30).strip()
     _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_replicate_restored_node", target=target, args=["CLUSTER", "REPLICATE", master_id], timeout=60)

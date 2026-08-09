@@ -3548,9 +3548,10 @@ def test_remove_and_restore_separates_stop_from_start_across_the_forget_wait(
     monkeypatch.setattr(
         docker_runtime,
         "_management_live_topology",
-        lambda probe_nodes: {
-            node["logical_id"]: {"role": node["role"]} for node in nodes
-        },
+        lambda probe_nodes: (
+            {node["logical_id"]: {"role": node["role"]} for node in nodes},
+            {},
+        ),
     )
     monkeypatch.setattr(docker_runtime, "_node_command", lambda *_a, **_k: "node-id-1")
     monkeypatch.setattr(

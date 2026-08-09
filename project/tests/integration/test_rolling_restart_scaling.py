@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 from valkey_scale_lab.metrics import MISSING, TelemetryRun
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.runtime import docker_runtime
 
 
@@ -94,10 +95,13 @@ def _run_restart(
     probe_modes: list[bool] = []
     safe_targets: list[str] = []
 
-    def live_topology(current: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    def live_topology(
+        current: list[dict[str, Any]]
+    ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, str]]]:
         if topology_scopes is not None:
             topology_scopes.append([str(node["logical_id"]) for node in current])
-        return {node["logical_id"]: {"role": node["role"]} for node in current}
+        # Every node answered, so there are no gaps to report.
+        return {node["logical_id"]: {"role": node["role"]} for node in current}, {}
 
     monkeypatch.setattr(docker_runtime, "_management_cluster_health", lambda _nodes: _clean_health(node_count))
     monkeypatch.setattr(docker_runtime, "_management_live_topology", live_topology)
@@ -433,3 +437,151 @@ def test_topology_placement_signature_detects_master_and_slot_drift() -> None:
 
     assert signature != docker_runtime._management_matrix_topology_placement_signature(wrong_master)
     assert signature != docker_runtime._management_matrix_topology_placement_signature(wrong_slots)
+
+
+@pytest.mark.parametrize(
+    ("failure_kind", "expected"),
+    [("tool", CollectionError), ("semantic", docker_runtime.DockerRuntimeError)],
+)
+def test_an_unread_node_is_not_reported_as_a_changed_role(
+    monkeypatch: pytest.MonkeyPatch, failure_kind: str, expected: type[Exception]
+) -> None:
+    """The named defect: `live role changed ... actual=MISSING`.
+
+    `_management_live_topology` dropped any node whose light probe was not OK, and
+    the strict check reported that absence as a role change - a collector failure
+    blamed on Valkey, which acceptance item 12 forbids. The node's own probe row
+    already says why it failed and which 12.1 kind it was, so both are reported
+    as themselves, and 12.2's precedence decides the class.
+    """
+
+    nodes = _nodes(6)
+    missing = str(nodes[0]["logical_id"])
+
+    def live_topology(current):
+        return (
+            {
+                node["logical_id"]: {"role": node["role"]}
+                for node in current
+                if str(node["logical_id"]) != missing
+            },
+            {missing: {"reason": "probe did not answer", "kind": failure_kind}},
+        )
+
+    monkeypatch.setattr(docker_runtime, "_management_live_topology", live_topology)
+
+    with pytest.raises(expected) as excinfo:
+        docker_runtime._management_matrix_rolling_restart_plan_entries(
+            "rolling_restart_replica_first", "op", nodes
+        )
+
+    message = str(excinfo.value)
+    assert missing in message
+    assert "probe did not answer" in message
+    # The old message claimed a role change and hid the reason. Never again.
+    assert "role changed" not in message
+    assert "actual=MISSING" not in message
+    assert excinfo.type is expected
+    if failure_kind == "tool":
+        assert "could not be observed" in message
+
+
+def test_one_disagreeing_node_outranks_any_number_of_unread_ones() -> None:
+    """12.2: a confirmed failure beats a tool error, so the class is FAIL."""
+
+    gaps = {
+        "node-a": {"reason": "connection refused", "kind": "semantic"},
+        "node-b": {"reason": "[Errno 49] Can't assign requested address", "kind": "tool"},
+        "node-c": {"reason": "[Errno 49] Can't assign requested address", "kind": "tool"},
+    }
+
+    error = docker_runtime._management_topology_gap_error(gaps, sorted(gaps), "check")
+
+    assert type(error) is docker_runtime.DockerRuntimeError
+    assert "could not be observed" not in str(error)
+
+    # Only tool errors, and only then, is it an ERROR.
+    tool_only = {key: gaps[key] for key in ("node-b", "node-c")}
+    tool_error = docker_runtime._management_topology_gap_error(
+        tool_only, sorted(tool_only), "check"
+    )
+    assert type(tool_error) is CollectionError
+
+    # A stage only cares about the nodes it asked about.
+    assert docker_runtime._management_topology_gap_error(gaps, ["node-z"], "check") is None
+
+
+@pytest.mark.parametrize(
+    ("failure_kind", "expected"),
+    [("tool", CollectionError), ("semantic", docker_runtime.DockerRuntimeError)],
+)
+def test_a_batch_whose_node_went_unread_mid_restart_says_so(
+    monkeypatch: pytest.MonkeyPatch, failure_kind: str, expected: type[Exception]
+) -> None:
+    """The same gap, at the per-batch reading rather than at planning.
+
+    Planning reads the whole fleet once; the batch loop re-reads each batch's
+    scope before restarting it, and that second reading is a separate site with
+    its own check. Seeding the defect back proved the planning test alone does
+    not reach it, which is why this test exists at all.
+    """
+
+    nodes = _nodes(6)
+    node_count = len(nodes)
+    scopes: list[list[str]] = []
+    # `rolling_restart_replica_first` restarts replicas first and batches are
+    # shard-disjoint, so this node is a target of the first batch.
+    unread = "shard-0000-replica"
+
+    def live_topology(current):
+        scope = [str(node["logical_id"]) for node in current]
+        scopes.append(scope)
+        # The first reading is planning and must succeed. From the second on, the
+        # node this batch is about to restart goes unread - a peer going unread
+        # is a different question and deliberately does not stop the batch.
+        if len(scopes) == 1 or unread not in scope:
+            return {node["logical_id"]: {"role": node["role"]} for node in current}, {}
+        return (
+            {
+                node["logical_id"]: {"role": node["role"]}
+                for node in current
+                if str(node["logical_id"]) != unread
+            },
+            {unread: {"reason": "probe did not answer", "kind": failure_kind}},
+        )
+
+    monkeypatch.setattr(
+        docker_runtime, "_management_cluster_health", lambda _n: _clean_health(node_count)
+    )
+    monkeypatch.setattr(docker_runtime, "_management_live_topology", live_topology)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_matrix_wait_rolling_restart_health",
+        lambda *_a, **_k: (_clean_health(node_count), {"status": "PASS"}),
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_management_matrix_restart_process_target",
+        lambda **_k: (_ for _ in ()).throw(
+            AssertionError("a batch must not restart anything while a node is unread")
+        ),
+    )
+
+    with pytest.raises(expected) as excinfo:
+        docker_runtime._management_matrix_execute_process_rolling_restart(
+            telemetry=_telemetry(node_count),
+            capability_id="local_full_flow",
+            run_id=f"rolling-{node_count}",
+            operation_name="rolling_restart_replica_first",
+            operation_id=f"rolling-batch-gap-{node_count}",
+            nodes=nodes,
+            command_log=[],
+            backend=NoRuntimeBackend(),
+        )
+
+    message = str(excinfo.value)
+    assert "probe did not answer" in message
+    assert "role changed" not in message
+    assert "actual=MISSING" not in message
+    assert excinfo.type is expected
+    assert len(scopes) > 1, "the batch loop must have re-read the topology"

@@ -12,6 +12,7 @@ from valkey_scale_lab.observability.contracts import (
     CollectionError,
     ConvergenceFailure,
     SemanticFailure,
+    is_collection_failure,
 )
 from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
 
@@ -303,21 +304,39 @@ class LightClusterProbe:
         self._connections.give_back(endpoint, connection)
         return values
 
+    @staticmethod
+    def _failed_row(
+        node: NodeEndpoint,
+        exc: BaseException,
+        wall_started: float,
+        monotonic_started: float,
+    ) -> dict[str, Any]:
+        """One node's failed observation, keeping which §12.1 kind it was.
+
+        The row is the only thing that outlives the exception, so recording just
+        a rendered message throws away the distinction acceptance item 12 exists
+        to protect - and every consumer that then had to guess got it wrong the
+        same way, by treating an unobserved node as an absent one.
+        """
+
+        return {
+            "logical_id": node.logical_id,
+            "host": node.host,
+            "port": node.port,
+            "status": "FAIL",
+            "error": f"{type(exc).__name__}: {exc}",
+            "failure_kind": "tool" if is_collection_failure(exc) else "semantic",
+            "wall_time": wall_started,
+            "monotonic": monotonic_started,
+        }
+
     def observe_node(self, node: NodeEndpoint) -> dict[str, Any]:
         wall_started = time.time()
         monotonic_started = time.monotonic()
         try:
             values = self._light_commands(Endpoint(node.host, node.port))
         except Exception as exc:  # successfully classifiable endpoint observation
-            return {
-                "logical_id": node.logical_id,
-                "host": node.host,
-                "port": node.port,
-                "status": "FAIL",
-                "error": f"{type(exc).__name__}: {exc}",
-                "wall_time": wall_started,
-                "monotonic": monotonic_started,
-            }
+            return self._failed_row(node, exc, wall_started, monotonic_started)
         try:
             ping, info_raw, role_raw, node_id_raw, shard_id_raw, myslots_raw = values
             info = parse_info(info_raw)
@@ -334,15 +353,7 @@ class LightClusterProbe:
             if role["role"] != myslots.role:
                 raise SemanticFailure("ROLE disagrees with CLUSTER MYSLOTS role")
         except Exception as exc:
-            return {
-                "logical_id": node.logical_id,
-                "host": node.host,
-                "port": node.port,
-                "status": "FAIL",
-                "error": f"{type(exc).__name__}: {exc}",
-                "wall_time": wall_started,
-                "monotonic": monotonic_started,
-            }
+            return self._failed_row(node, exc, wall_started, monotonic_started)
         return {
             "logical_id": node.logical_id,
             "host": node.host,
