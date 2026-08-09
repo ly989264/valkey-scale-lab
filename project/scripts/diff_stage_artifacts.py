@@ -27,6 +27,7 @@ cannot pass as a match.
 from __future__ import annotations
 
 import argparse
+import collections
 import difflib
 import json
 import re
@@ -682,10 +683,75 @@ def fault_command_log(root: Path) -> Any:
     return fault_view(root, rows)
 
 
+def _shard_of(logical_id: str) -> str:
+    return str(logical_id).split("-replica")[0].replace("-primary", "")
+
+
 def fault_topology_snapshots(root: Path) -> Any:
-    return fault_view(
-        root, fault_owned(load_jsonl(root / "full_flow_topology_snapshots.jsonl"))
-    )
+    """The stage's two snapshots as structure, not as a role placement.
+
+    Which *named* node holds a shard's primary role after this stage is a live
+    outcome, not a property of the stage. `az_stop` stops an AZ's nodehosts, every
+    primary hosted there is promoted away from its original node, and whether it is
+    still promoted when the snapshot is taken depends on `cluster-node-timeout`,
+    gossip and whether the nodehost returned first. Measured: the `fault_after`
+    snapshot left eight shards role-swapped in both frozen baselines and in two
+    runs on 2026-08-09, and seven in a third - `shard-0012` recovered its original
+    placement - with every invariant below identical and the run PASS either way.
+
+    Six runs agreeing did not make the field deterministic, which is the trap
+    CLAUDE.md names. So the boundary is drawn once by what the field is: the
+    invariants are compared and the placement is reported by
+    `fault_topology_placement` instead. Comparing it literally would fail a diff
+    for a cluster that recovered correctly, and a view that goes red on healthy
+    variance stops being able to show a regression.
+    """
+
+    snapshots = fault_owned(load_jsonl(root / "full_flow_topology_snapshots.jsonl"))
+    rows = []
+    for snapshot in snapshots:
+        nodes = [node for node in snapshot.get("nodes", []) if isinstance(node, dict) and node.get("role")]
+        primaries = [node for node in nodes if node["role"] == "primary"]
+        shards = collections.Counter(_shard_of(node["logical_id"]) for node in primaries)
+        rows.append(
+            {
+                "snapshot_id": snapshot.get("snapshot_id"),
+                "node_count": len(nodes),
+                "primary_count": len(primaries),
+                "replica_count": sum(1 for node in nodes if node["role"] == "replica"),
+                # The invariant a healthy cluster holds however the roles landed.
+                "shards_with_one_primary": sum(1 for count in shards.values() if count == 1),
+                "shards_not_singly_owned": sorted(
+                    shard for shard, count in shards.items() if count != 1
+                ),
+                "link_states": sorted({str(node.get("link_state")) for node in nodes}),
+                "slots": snapshot.get("slots"),
+                "cluster_state": snapshot.get("cluster_state"),
+            }
+        )
+    return fault_view(root, sorted(rows, key=lambda row: str(row["snapshot_id"])))
+
+
+def fault_topology_placement(root: Path) -> str:
+    """Reported, not diffed - see `fault_topology_snapshots`.
+
+    A regression that left the cluster genuinely mis-placed still has to be
+    visible, so the count of role-swapped shards and their names are printed.
+    """
+
+    snapshots = fault_owned(load_jsonl(root / "full_flow_topology_snapshots.jsonl"))
+    parts = []
+    for snapshot in sorted(snapshots, key=lambda row: str(row.get("snapshot_id"))):
+        swapped = sorted(
+            _shard_of(node["logical_id"])
+            for node in snapshot.get("nodes", [])
+            if isinstance(node, dict)
+            and node.get("role") == "replica"
+            and str(node.get("logical_id", "")).endswith("-primary")
+        )
+        label = str(snapshot.get("snapshot_id", "")).rsplit("-", 1)[-1]
+        parts.append(f"{label}: {len(swapped)} role-swapped {swapped}")
+    return " | ".join(parts)
 
 
 def fault_workload_windows(root: Path) -> Any:
@@ -875,6 +941,7 @@ STAGE_REPORTED: dict[str, dict[str, Callable[[Path], str]]] = {
     },
     "fault_matrix": {
         "stage_shape": fault_stage_shape,
+        "topology_placement": fault_topology_placement,
         "failover_recovery": failover_recovery_numbers,
         "isolated_unreachable_reasons": fault_unreachable_reasons,
     },
