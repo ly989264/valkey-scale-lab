@@ -36,11 +36,29 @@ MYSLOTS_FIELDS = (
 FULL_SLOT_BITMAP = bytes([0xFF]) * 2048
 # A freshly formed cluster reports every replica as `loading` until each
 # observer learns that replica's non-zero replication offset through gossip.
-# Measured exact-50 convergence after formation: 28.3s, 32.4s, 46.5s, 50.2s,
-# with a gate run still unconverged at 60s. The bound keeps roughly 3x headroom
-# over that tail so a real cluster is never rejected for gossip lag, while a
-# cluster that genuinely never converges still fails.
-CONVERGENCE_TIMEOUT_SECONDS = 180.0
+# Measured at 200 nodes, that resolves as a serialised queue: exactly one node is
+# unhealthy at a time, it clears, the next appears. Total convergence is
+# therefore (laggards) x (per-laggard dwell) and *both* factors grow with node
+# count, so no fixed total can hold across scales. Five exact-200 formations
+# measured 83.1s, 102.5s, 137.0s, 152.0s and 205.8s - one of five past the old
+# 180s bound, matching the flakiness that prompted this.
+#
+# The wait is therefore bounded on lack of progress rather than on total time.
+# Progress is a node *leaving* the unhealthy set; a set that only grows is not
+# progress. That quantity is bounded by the longest single dwell, which grows far
+# more slowly than the total: 14.3s at 30 nodes against 83.1s at 200, over 26
+# measured dwells whose median is 23.5s and p90 51.1s.
+#
+# 240s is ~2.9x the longest dwell observed and ~4.7x the p90. It is deliberately
+# larger than the 180s it replaces: a single laggard legitimately held one node
+# unhealthy, unchanged, for 83.1s in a run that then converged, so anything
+# tighter rejects a healthy cluster. This is not scale-free and will need
+# re-measuring before 500 nodes.
+CONVERGENCE_NO_PROGRESS_SECONDS = 240.0
+# The backstop, not the discriminator. Only reachable when the queue keeps moving
+# for this long, which at 2000 nodes could be legitimate, so it is generous: its
+# job is to bound the run, not to judge the cluster.
+CONVERGENCE_TIMEOUT_SECONDS = 1800.0
 # Each attempt re-probes every node, so polling too fast adds load to the very
 # cluster being measured.
 CONVERGENCE_POLL_SECONDS = 2.0
@@ -669,7 +687,8 @@ def normalize_cluster_shards(
         if unhealthy:
             raise ConvergenceFailure(
                 "CLUSTER SHARDS contains unhealthy nodes: "
-                + ", ".join(member["node_id"] for member in unhealthy)
+                + ", ".join(member["node_id"] for member in unhealthy),
+                pending=[member["node_id"] for member in unhealthy],
             )
         # A shard is described by the primary actually serving it. A primary the
         # cluster has marked failed stays in the shard until something removes
@@ -822,6 +841,7 @@ class FullClusterValidator:
         timeout: float = 5.0,
         convergence_timeout: float = CONVERGENCE_TIMEOUT_SECONDS,
         convergence_poll_seconds: float = CONVERGENCE_POLL_SECONDS,
+        no_progress_seconds: float = CONVERGENCE_NO_PROGRESS_SECONDS,
         connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
     ) -> None:
         self.light = LightClusterProbe(
@@ -838,6 +858,7 @@ class FullClusterValidator:
         )
         self.convergence_timeout = convergence_timeout
         self.convergence_poll_seconds = convergence_poll_seconds
+        self.no_progress_seconds = no_progress_seconds
 
     def run(self, **validation_options: Any) -> dict[str, Any]:
         """Validate the cluster, allowing a bounded wait for it to converge.
@@ -851,23 +872,56 @@ class FullClusterValidator:
         Every other semantic failure is permanent and raises immediately. A
         role, slot, identity or coverage mismatch will not resolve by looking
         again, so retrying it would only delay the report by the full deadline.
+
+        The wait ends when the cluster stops making progress, not when a fixed
+        total elapses. Progress is something *leaving* the pending set; a set
+        that only grew has not made any. A total-time bound cannot separate a
+        large cluster still working through its queue from one that is stuck,
+        and at 200 nodes the two are minutes apart.
         """
         deadline = time.monotonic() + self.convergence_timeout
         attempts = 0
+        last_progress = time.monotonic()
+        previous: frozenset[str] | None = None
+        previous_reason: str | None = None
         while True:
             attempts += 1
             try:
                 return self._run_once(**validation_options)
             except ConvergenceFailure as failure:
-                if time.monotonic() >= deadline:
-                    if self.convergence_timeout <= 0:
-                        # A caller that owns the waiting asked for a single
-                        # observation, so report what was seen as it was seen.
-                        raise
+                now = time.monotonic()
+                if self.convergence_timeout <= 0:
+                    # A caller that owns the waiting asked for a single
+                    # observation, so report what was seen as it was seen.
+                    raise
+                pending = failure.pending
+                reason = str(failure)
+                if pending:
+                    # Something left the set, even if something else arrived.
+                    if previous is None or (previous - pending):
+                        last_progress = now
+                    previous = pending
+                elif reason != previous_reason:
+                    # A convergence state that does not name what it is waiting
+                    # for - a replica link still connecting, say. A changed
+                    # reason is the only progress signal available there.
+                    last_progress = now
+                previous_reason = reason
+                stalled = now - last_progress
+                if stalled >= self.no_progress_seconds:
+                    raise ConvergenceFailure(
+                        f"cluster stopped converging: nothing left the pending set "
+                        f"for {stalled:.0f}s over {attempts} validation attempts: "
+                        f"{failure}",
+                        pending=pending,
+                    ) from failure
+                if now >= deadline:
                     raise ConvergenceFailure(
                         f"cluster did not converge within "
                         f"{self.convergence_timeout:g}s over {attempts} validation "
-                        f"attempts: {failure}"
+                        f"attempts, still making progress when the ceiling was "
+                        f"reached: {failure}",
+                        pending=pending,
                     ) from failure
             time.sleep(self.convergence_poll_seconds)
 

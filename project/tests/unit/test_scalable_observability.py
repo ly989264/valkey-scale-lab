@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
@@ -14,6 +15,7 @@ from typing import Any
 import pytest
 
 from valkey_scale_lab.observability.cluster import (
+    CONVERGENCE_NO_PROGRESS_SECONDS,
     EndpointConnections,
     FullClusterValidator,
     LightClusterProbe,
@@ -2460,3 +2462,114 @@ def test_resource_observation_requires_planned_kill_prefault_sample() -> None:
 
     assert result["status"] == "ERROR"
     assert result["checks"][0]["name"] == "resource_expected_gone_prefault_sample"
+
+
+class _ScriptedValidator(FullClusterValidator):
+    """A validator whose observations are a script, so the waiting rule is what
+    is under test rather than a cluster."""
+
+    def __init__(self, script, **kwargs):
+        super().__init__(
+            [NodeEndpoint("p0", "127.0.0.1", 7000, "primary", "s0")],
+            connection_factory=lambda *_a, **_k: None,
+            **kwargs,
+        )
+        self._script = list(script)
+        self.observations = 0
+
+    def _run_once(self, **_options):
+        self.observations += 1
+        pending = self._script[min(self.observations - 1, len(self._script) - 1)]
+        if pending is None:
+            return {"status": "OK"}
+        raise ConvergenceFailure(
+            "CLUSTER SHARDS contains unhealthy nodes: " + ", ".join(pending),
+            pending=pending,
+        )
+
+
+def test_a_moving_queue_converges_however_long_the_queue_is(monkeypatch) -> None:
+    """The measured shape at 200 nodes: one node unhealthy at a time, clearing
+    and handing off, with the set never shrinking below one until it empties.
+
+    A rule keyed on the set's *size* would reject this - the size is 1 from the
+    first observation to the last - so progress has to be a departure by identity.
+    """
+
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    clock = iter([n * 2.0 for n in range(2000)])
+    monkeypatch.setattr(time, "monotonic", lambda: next(clock))
+    # 60 handoffs at 2s each is 120s of a queue that never has fewer than one
+    # pending node, then healthy.
+    script = [[f"node-{i // 4:04d}"] for i in range(240)] + [None]
+
+    validator = _ScriptedValidator(script, no_progress_seconds=60.0)
+    assert validator.run()["status"] == "OK"
+    assert validator.observations == 241
+
+
+def test_one_laggard_that_finally_clears_is_not_a_stall(monkeypatch) -> None:
+    """Run D, measured: a healthy cluster held one node unhealthy, unchanged, for
+    83.1s and then converged. Any window at or below that rejects a good cluster,
+    which is why the bound is 240s and not the 180s it replaces."""
+
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    clock = iter([n * 2.13 for n in range(2000)])
+    monkeypatch.setattr(time, "monotonic", lambda: next(clock))
+    rounds = int(83.1 / 2.13) + 1
+    validator = _ScriptedValidator(
+        [["c000b736347c"]] * rounds + [None],
+        no_progress_seconds=CONVERGENCE_NO_PROGRESS_SECONDS,
+    )
+
+    assert validator.run()["status"] == "OK"
+
+
+def test_a_stuck_node_stops_the_wait_without_reaching_the_ceiling(monkeypatch) -> None:
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    clock = iter([n * 2.0 for n in range(4000)])
+    monkeypatch.setattr(time, "monotonic", lambda: next(clock))
+    validator = _ScriptedValidator(
+        [["stuck-node"]], no_progress_seconds=60.0, convergence_timeout=1800.0
+    )
+
+    with pytest.raises(ConvergenceFailure) as excinfo:
+        validator.run()
+
+    message = str(excinfo.value)
+    assert "stopped converging" in message
+    assert "nothing left the pending set" in message
+    assert "stuck-node" in message
+    assert excinfo.value.pending == frozenset({"stuck-node"})
+    # It reports on the no-progress window, nowhere near the 1800s ceiling.
+    assert validator.observations < 40
+
+
+def test_a_growing_pending_set_is_not_progress(monkeypatch) -> None:
+    """A set that only gains members has not made progress, however much it
+    changes. Keying on "the set changed" instead of "something left" would wait
+    for ever on a cluster that is getting worse."""
+
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    clock = iter([n * 2.0 for n in range(4000)])
+    monkeypatch.setattr(time, "monotonic", lambda: next(clock))
+    script = [[f"node-{j:04d}" for j in range(i + 1)] for i in range(200)]
+    validator = _ScriptedValidator(script, no_progress_seconds=60.0)
+
+    with pytest.raises(ConvergenceFailure, match="stopped converging"):
+        validator.run()
+
+
+def test_a_single_observation_caller_still_gets_the_raw_failure(monkeypatch) -> None:
+    """`convergence_timeout=0.0` is the failover lane's contract: observe once and
+    report what was seen, unwrapped."""
+
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    validator = _ScriptedValidator([["p0"]], convergence_timeout=0.0)
+
+    with pytest.raises(ConvergenceFailure) as excinfo:
+        validator.run()
+
+    assert "CLUSTER SHARDS contains unhealthy nodes" in str(excinfo.value)
+    assert "stopped converging" not in str(excinfo.value)
+    assert validator.observations == 1
