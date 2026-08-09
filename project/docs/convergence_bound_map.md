@@ -121,6 +121,22 @@ Not decided here, and deliberately: the window's value. It wants more samples,
 including at 30 and at least one at a scale between, before a number is written
 down. This map argues the shape, not the constant.
 
+**Corrected after the samples this section asked for.** Two claims above did not
+survive them, and both are left standing rather than edited away so the reasoning
+can be followed:
+
+- *"per-laggard clear time should not [move with scale]"* is wrong. Measured
+  maxima: 14.3s at 30 nodes, 83.1s at 200. Dwell grows with scale too, just far
+  more slowly than the total. What survives is the weaker claim that decides the
+  design: a fixed total must cover `laggards x dwell`, where **both** factors
+  grow, while a no-progress window must cover `dwell` alone.
+- The discriminator proposed under "the non-obvious part" - the same id present
+  in every round with no departures - describes a **healthy** cluster too. Run D
+  held one node unhealthy, unchanged, for 83.1s and then converged, with
+  `unhealthy_in_every_round` non-empty. So no window at or below ~83s is safe,
+  and the identity rule is necessary but not sufficient on its own: the window
+  has to exceed the longest legitimate dwell, not merely detect a static set.
+
 ## Blast radius
 
 Small, which is the other reason to do it now.
@@ -170,3 +186,53 @@ symptom disappear, which is what this map exists not to do.
   rejects.
 - `./gate suite repository.all` at 91/91, and a real exact-50 pair, because six
   call sites take the new default.
+
+## Landed and validated
+
+`216b2f70`. The shape is what this map argued; the sizing came from the samples
+it asked for, and both of its corrections above came out of taking them.
+
+Full sample set, five exact-200 formation runs plus the exact-30 control:
+
+| Run | Converged | Laggards | Longest dwell |
+| --- | --- | --- | --- |
+| exact-30 | 26.5s | 3 | 14.3s |
+| exact-200 A | 102.5s | 4 | 51.1s |
+| exact-200 B | 152.0s | 7 | 44.8s |
+| exact-200 C | 205.8s | 8 | 77.3s |
+| exact-200 D | 83.1s | **1** | **83.1s** |
+| exact-200 E | 137.0s | 6 | 36.5s |
+
+26 dwells at 200: median 23.5s, p90 51.1s, max 83.1s. **One total of five past
+the old 180s bound**, which is the flakiness that prompted this.
+
+What shipped: `ConvergenceFailure` carries `pending`, set by the `CLUSTER SHARDS`
+health check, because comparing messages is stringly-typed and cannot tell a set
+that grew from one that changed. `FullClusterValidator.run` ends the wait when
+nothing has *left* `pending` for `CONVERGENCE_NO_PROGRESS_SECONDS` (240s, ~2.9x
+the longest dwell), with `CONVERGENCE_TIMEOUT_SECONDS` demoted to an 1800s
+backstop. `convergence_timeout=0.0` keeps its single-observation meaning, which
+the failover lane depends on and a test pins.
+
+Validated: `./gate suite repository.all` 91/91, and **exact-200 PASS 1568.81s** -
+200 of 200 nodes, twelve of twelve `run_verdict` stages OK, `fault_matrix`
+9/12/15, cleanup clean, zero residue, no `ERROR` in any artifact. That run passed
+the point which killed the two attempts before it.
+
+Seeding the plausible wrong implementation - progress keyed on set *size* rather
+than departures - fails the moving-queue test with `nothing left the pending set
+for 60s over 31 validation attempts`, rejecting a healthy 200-node-shaped queue
+after a minute. That is the map's non-obvious finding, now mechanically enforced.
+
+### What this does not settle
+
+240s rests on 26 dwells at one scale on one host, and dwell is not scale-free.
+It must be re-measured before 500 nodes, and again on any distributed backend,
+where gossip crosses a network rather than a Docker bridge. The harness that
+produced this table is small and formation-only; re-running it is cheap and is
+the right first move whenever the scale or the runtime changes.
+
+A stuck cluster at 200 nodes now reports in ~240s where the old bound reported in
+180s. The gain is that a healthy cluster passes reliably, and that a correctly
+sized *fixed* bound would have been ~600s here and thousands of seconds at 2000 -
+not that detection got faster today.

@@ -105,13 +105,51 @@ including the family that looked most like the answer: the three proxy faults
 run an in-process host TCP proxy, touch no Docker at all, and needed only
 `client_host`. **No full-flow lifecycle stage names a Docker primitive any
 more.** `run_node_cluster_cli` has two callers left, both in other
-capabilities; `_wait_container_pid_gone` and `_safe_process_pid` have no
-lifecycle caller at all.
+capabilities.
+
+Corrected 2026-08-09: this section used to add that `_wait_container_pid_gone`
+and `_safe_process_pid` "have no lifecycle caller at all". That is wrong.
+`_wait_container_pid_gone` has three - `stop_node` twice and `kill_node` once -
+all reached through the seam, and an exact-200 run failed inside it (`4dd0fa1b`).
+The claim was derived by reading rather than from a run, which is the same way
+the six-node entry below went wrong. Prefer a measurement.
 
 **There is no next extraction slice.** What remains is the open list below, and
 `fault/sandbox.py` - a second Docker actuator, 490 lines, reached from
 `cli.py fault apply`/`clear` and `compat/`, which no run in any acceptance bar
 exercises. Decide what M3 needs before opening another slice.
+
+### What is left before M3, and what is M3 itself
+
+Worth separating, because it is easy to list M3's contents and call them
+prerequisites. Five of M3's six criteria - inventory and placement, the native
+runtime, exact-50, exact-200, evidence, cleanup - are M3's *work*, not conditions
+for starting it.
+
+The genuine preconditions are:
+
+1. **Close the refactor.** The seam exists and no lifecycle stage names a Docker
+   primitive, but the backend-neutral lifecycle sequencing still lives in
+   `docker_runtime.py` (`_create_process_scenario`, ~308 lines with zero direct
+   Docker references), backend selection is a chain of `if backend.backend_id ==`
+   inside that same module, `native_multi_ecs` is rejected there, and
+   `gates/real.py` hardcodes `docker_process` and requires a Docker daemon
+   unconditionally. This is the stated goal of the whole refactor - "so M3 can
+   exist" - and it is the last of it.
+2. **Declare the two seam operations §15 names and this seam lacks**: end-of-run
+   cleanup and evidence upload. `reclaim_run` is *pre-run* cleanup, not teardown,
+   and there is no upload operation at all - the module docstring already claims
+   one, which is the gap to close. Derive them from the working Docker case, the
+   way every other operation was derived.
+3. **Decide `fault/sandbox.py`**, because it changes what a second backend has to
+   implement.
+4. **Confirm the ECS hosts exist.** Five of six criteria need real multi-host
+   runs, and the sixth is unverifiable without them.
+
+Also, and easy to miss: **M3 has a registered check on 1 of its 6 criteria, M4 on
+1 of 7.** A milestone whose criteria have no attached checks reports `DEFINED`
+and can never report `PASS`, so each criterion needs a real Test registered in
+`catalog.json` as it becomes executable. No placeholders.
 
 ### exact-200 passes end to end again
 
@@ -142,6 +180,40 @@ Result: **exact-200 PASS 1520.6s, twelve of twelve steps, 200 of 200 nodes,
 zero residue** - the first unaided pass since 2026-07-15. exact-50 passes
 consecutively. The three downstream failures the Slice 1 and 2 maps recorded are
 gone, so do not plan around them.
+
+### exact-200 is green again at `216b2f70`, and now for a measured reason
+
+That pass, and one on 2026-08-08 at 1661s, were real but intermittent: two
+attempts on 2026-08-09 failed at 397.9s and 291.7s, for two different reasons,
+both since fixed. **exact-200 PASS 1568.81s** at `216b2f70` - 200 of 200 nodes,
+`run_verdict` twelve of twelve stages OK, `fault_matrix` 9 scenarios / 12 command
+rows / 15 windows, cleanup clean, zero residue, and no `ERROR` anywhere in the
+run's artifacts.
+
+The two fixes behind it are worth knowing before reading any exact-200 result:
+
+- `4dd0fa1b` `_wait_container_pid_gone` tested `/proc/<pid>/stat` for readability
+  and then read it, two syscalls apart. A process exiting in between made `awk`
+  fail and the probe exit 70 - the success condition taking the error path, since
+  the whole function waits for the process to be *gone*. It needs the timing to
+  line up, which is why exact-50 never showed it and exact-200, with far more
+  stop and kill traffic, did.
+- `216b2f70` the formation convergence bound was a fixed 180s calibrated on
+  exact-50. Measured at 200 nodes over five formation-only runs, convergence is a
+  serialised queue - one node unhealthy at a time, clearing and handing off - so
+  the total is (laggards) x (per-laggard dwell) and **both** factors grow with
+  node count. Totals: 83.1s, 102.5s, 137.0s, 152.0s, 205.8s; **one of five past
+  the old bound**. exact-30 converged in 26.5s. The wait is now bounded on lack
+  of progress - something leaving the pending set - with `240s` sized on the
+  longest single dwell (83.1s at 200, 14.3s at 30, 26 dwells, median 23.5s, p90
+  51.1s) and a 1800s ceiling as a backstop. `project/docs/convergence_bound_map.md`
+  carries the argument.
+
+Two numbers to watch rather than assume. The 240s window is **not scale-free**
+and must be re-measured before 500 nodes, and again on any distributed backend,
+where gossip crosses a network. And the primary-kill RTO was **53.75s** in this
+run against the 45-50s band recorded below; the same day's exact-50 runs were
+45.6s and 47.5s, inside it. One datum, plausibly host load, not yet a finding.
 
 ### Three more fixes after Slice 3, each found by the one before it
 
@@ -305,8 +377,12 @@ lane's own verdict is correctly `OK` - and the sample counts are not stable
 
 Slice 4's four fixed numbers are worth keeping: `fault_matrix` emits **9 fault
 scenarios, 12 command rows and 15 workload windows at every scale** (30, 50 and
-200), and the primary-kill RTO has landed between 45s and 50s in every run at
-every scale. Any change to those four is a finding.
+200) - still exactly so at `216b2f70`, exact-200 included. The fourth has moved:
+the primary-kill RTO landed between 45s and 50s in every run until 2026-08-09,
+when exact-200 measured **53.75s** while the same day's exact-50 runs measured
+45.6s and 47.5s. Treat 45-50s as the exact-50 band and the 200-node figure as one
+observation, not a new band; a second exact-200 above 50s would make it a finding.
+Any change to the first three is still a finding.
 
 Per-slice acceptance bar: existing catalog tests plus targeted hermetic tests
 pass; a real small-scale smoke of the modified stage - six nodes where the stage
