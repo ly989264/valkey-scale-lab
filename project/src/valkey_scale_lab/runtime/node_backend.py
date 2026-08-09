@@ -190,11 +190,14 @@ class NodeBackend(Protocol):
     ) -> tuple[int, list[dict[str, Any]]]:
         """Start the owned Valkey process on one node and report its new pid.
 
-        With `fresh_cluster_identity`, the node's recorded cluster identity is
-        discarded first, so it rejoins as a new node rather than the one that
-        was forgotten. It is a flag rather than its own operation because it is
-        only correct while the process is stopped, and only the backend knows
-        where that state physically lives.
+        With `fresh_cluster_identity`, the node's prior state is discarded first,
+        so it rejoins as a new node rather than the one that was forgotten. That
+        means its dataset as well as its recorded cluster identity: the only
+        reason a caller asks for this is to make the node eligible to be told to
+        replicate, and Valkey refuses that for a node that still holds keys. It
+        is a flag rather than its own operation because it is only correct while
+        the process is stopped, and only the backend knows where that state
+        physically lives.
 
         Returns when the node answers, for the reason `wait_nodes_ready` does:
         a backend is responsible for its own processes being up before it says

@@ -1617,11 +1617,27 @@ class DockerNodeBackend:
         container = str(node["nodehost_container_name"])
         records: list[dict[str, Any]] = []
         if fresh_cluster_identity:
+            # Rejoining "as a new node" has to include the data. `CLUSTER
+            # REPLICATE` refuses a node that still holds keys, and removing
+            # `nodes.conf` alone left the RDB behind: the generated config sets
+            # no `save` directive, so Valkey's built-in default policy is active
+            # and a background save lands a `dump.rdb` during any workload, which
+            # `SHUTDOWN NOSAVE` does not remove once written. Measured on a real
+            # exact-50 run, which failed here with `ERR To set a master the node
+            # must be empty and without assigned slots.` after passing the run
+            # before - the RDB is only sometimes on disk, which is what made it
+            # look intermittent. `appendonly no` is fixed by the config
+            # generator, so the RDB is the only data file there is to remove.
             records.append(
                 self._exec_record(
-                    "owned_valkey_process_remove_nodes_conf",
+                    "owned_valkey_process_discard_prior_state",
                     container,
-                    ["rm", "-f", f"{node['data_dir']}/nodes.conf"],
+                    [
+                        "rm",
+                        "-f",
+                        f"{node['data_dir']}/nodes.conf",
+                        f"{node['data_dir']}/dump.rdb",
+                    ],
                     timeout=10,
                     check=True,
                 )

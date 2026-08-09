@@ -4186,3 +4186,62 @@ def test_baseline_workload_speaks_to_the_cluster_through_the_backend(
     assert [argv[:2] for argv in backend.cluster_admin] == [["-c", "-p"]] * 6
     assert [argv[3] for argv in backend.cluster_admin] == ["SET", "GET", "SET", "GET", "SET", "GET"]
     assert result["windows"][0]["status"] == "PASS"
+
+
+@pytest.mark.parametrize("fresh", [True, False])
+def test_a_fresh_start_discards_the_dataset_not_only_the_cluster_identity(
+    monkeypatch: pytest.MonkeyPatch, fresh: bool
+) -> None:
+    """A node told to rejoin as new must be empty, or CLUSTER REPLICATE refuses it.
+
+    Removing `nodes.conf` alone left the RDB in place. The generated config sets
+    no `save` directive, so Valkey's default policy writes a `dump.rdb` during any
+    workload and `SHUTDOWN NOSAVE` does not remove one already written. A real
+    exact-50 run failed on exactly that, one run after passing:
+    `ERR To set a master the node must be empty and without assigned slots.`
+    """
+
+    calls: list[list[str]] = []
+
+    class Result:
+        returncode = 0
+        stdout = "4242"
+        stderr = ""
+
+    def fake_run_docker(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(list(args))
+        return Result()
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+    monkeypatch.setattr(docker_runtime, "_node_command", lambda *_a, **_k: "PONG")
+
+    pid, records = docker_runtime.DockerNodeBackend().start_node(
+        {
+            "logical_id": "node-a",
+            "nodehost_container_name": "nodehost-a",
+            "data_dir": "/data/node-a",
+            "config_file": "/data/node-a/valkey.conf",
+            "pid_file": "/data/node-a/valkey.pid",
+            "client_port": 7000,
+        },
+        fresh_cluster_identity=fresh,
+    )
+
+    removals = [args for args in calls if "rm" in args]
+    if not fresh:
+        assert removals == [], "a plain restart must keep the node's state"
+        assert not any(
+            "discard_prior_state" in str(row.get("command_kind")) for row in records
+        )
+        return
+
+    assert len(removals) == 1
+    argv = removals[0]
+    assert "/data/node-a/nodes.conf" in argv
+    assert "/data/node-a/dump.rdb" in argv
+    # The record names what the command did; it removes more than nodes.conf now,
+    # and evidence that said otherwise would be a false record.
+    kinds = [str(row.get("command_kind")) for row in records]
+    assert "owned_valkey_process_discard_prior_state" in kinds
+    assert "owned_valkey_process_remove_nodes_conf" not in kinds
+    assert pid == 4242
