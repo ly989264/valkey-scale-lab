@@ -481,6 +481,10 @@ def test_a_step_tool_error_leaves_the_gate_as_a_tool_error(
     assert [(row["name"], row["status"]) for row in verdict["checks"]] == [
         ("resource_preflight", "OK"),
         ("runtime_start", "FAIL" if expected is DockerRuntimeError else "ERROR"),
+        # The terminal stage is in the aggregation: `GateResult.steps` stops before
+        # it and `step_results` appends it, and cleanup is the one stage whose
+        # verdict must never be missing.
+        ("cleanup", "OK"),
     ]
     failed = [row for row in verdict["checks"] if row["status"] != "OK"]
     assert str(raised) in failed[0]["reason"]

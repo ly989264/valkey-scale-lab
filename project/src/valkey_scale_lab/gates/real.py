@@ -402,7 +402,14 @@ def _write_run_verdict(
     )
     checks: list[CheckResult] = []
     not_run: list[dict[str, str]] = []
-    for step in result.steps:
+    # `steps` stops before the terminal stage; `step_results` appends it. Cleanup is
+    # the stage whose verdict matters most - ownership is the one thing this product
+    # is fail-closed about - so leaving it out of the aggregation would omit exactly
+    # the stage that must never be missing. A cleanup failure of any kind lands here
+    # as `FAIL`, which is the same call `_gate_failure` makes and for the same
+    # reason: not being able to prove every resource was removed is not softened to
+    # "the tool could not tell".
+    for step in result.step_results:
         if step.status is StepStatus.PASS:
             checks.append(CheckResult(name=step.step_id, status=CheckStatus.OK))
             continue
