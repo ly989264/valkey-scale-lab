@@ -57,7 +57,10 @@ from valkey_scale_lab.observability.cluster import (
     parse_myslots,
     parse_role,
 )
-from valkey_scale_lab.observability.contracts import CollectionError
+from valkey_scale_lab.observability.contracts import (
+    CollectionError,
+    is_collection_failure,
+)
 from valkey_scale_lab.observability.failover import (
     ActuatorRecorder,
     AffectedShardObserver,
@@ -4376,6 +4379,7 @@ def _wait_process_light_clean(
     deadline = time.monotonic() + timeout
     inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
     last_error = "MISSING"
+    last_failure: BaseException | None = None
     while time.monotonic() < deadline:
         started = time.monotonic()
         try:
@@ -4397,14 +4401,22 @@ def _wait_process_light_clean(
                 return
             last_error = json.dumps(result, sort_keys=True, default=str)[-1000:]
         except Exception as exc:  # noqa: BLE001
+            # An attempt of a bounded wait that did not hold is not a failure of
+            # anything: absorbing those is what the wait is for, and this row is a
+            # timing measurement rather than a verdict. It used to be stamped FAIL,
+            # which made a run that converged on attempt 30 and passed carry a FAIL
+            # row for ever - and stamped a `CollectionError` and a
+            # `SemanticFailure` identically, which is the conflation §16 item 12
+            # forbids. The outcome is carried by what this loop returns or raises.
+            last_kind = "tool" if is_collection_failure(exc) else "semantic"
             _record_timing(
                 timings,
                 "runtime_all_node_light_probe",
                 started,
-                status="FAIL",
-                details={"sample_scope": "all_nodes_light", "sample_count": len(nodes), "predicate": "cluster clean snapshot", "error": repr(exc)},
+                details={"sample_scope": "all_nodes_light", "sample_count": len(nodes), "predicate": "cluster clean snapshot", "last_attempt_error": repr(exc), "last_attempt_kind": last_kind},
             )
             last_error = repr(exc)
+            last_failure = exc
         time.sleep(1)
     diagnostic_started = time.monotonic()
     snapshots = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, timeout)))
@@ -4415,7 +4427,12 @@ def _wait_process_light_clean(
         status="FAIL",
         details={"sample_scope": "all_nodes", "sample_count": len(nodes), "predicate": "cluster clean snapshot", "mode": "diagnostic"},
     )
-    raise DockerRuntimeError(f"cluster clean snapshot did not converge; last_error={last_error}; diagnostic={snapshots[:3]}")
+    message = f"cluster clean snapshot did not converge; last_error={last_error}; diagnostic={snapshots[:3]}"
+    # Never getting a reading and reading a cluster that never converged are
+    # different findings, and only the second is the cluster's.
+    if last_failure is not None and is_collection_failure(last_failure):
+        raise CollectionError(message)
+    raise DockerRuntimeError(message)
 
 
 def _wait_process_predicate(

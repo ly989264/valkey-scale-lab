@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import errno
 import inspect
-
 import json
 import shutil
 import subprocess
@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 
 from valkey_scale_lab.metrics import TelemetryRun
+from valkey_scale_lab.observability.contracts import CollectionError, SemanticFailure
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
@@ -4245,3 +4246,121 @@ def test_a_fresh_start_discards_the_dataset_not_only_the_cluster_identity(
     assert "owned_valkey_process_discard_prior_state" in kinds
     assert "owned_valkey_process_remove_nodes_conf" not in kinds
     assert pid == 4242
+
+
+def _light_clean_nodes(count: int = 2) -> list[dict[str, Any]]:
+    return [
+        {
+            "logical_id": f"node-{index}",
+            "host": "127.0.0.1",
+            "client_port": 7000 + index,
+            "role": "primary" if index == 0 else "replica",
+            "shard_id": "shard-0000",
+        }
+        for index in range(count)
+    ]
+
+
+def test_a_bounded_wait_that_converges_leaves_no_failure_behind(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An attempt that did not hold is not a failure of anything.
+
+    Absorbing those is what a bounded wait is for, and the timing row is a
+    measurement rather than a verdict. The frozen baseline records this row as
+    `count=30 status=FAIL` in a run that converged and passed, and the other
+    baseline as `count=1 status=PASS` - the same wait, the same outcome, two
+    different labels.
+    """
+
+    attempts = {"n": 0}
+
+    class Probe:
+        def __init__(self, *_a: Any, **_k: Any) -> None:
+            pass
+
+        def run(self, **_options: Any) -> dict[str, Any]:
+            attempts["n"] += 1
+            if attempts["n"] < 3:
+                raise SemanticFailure("shard-0000-replica CLUSTER INFO mismatch")
+            return {
+                "status": "OK",
+                "nodes_observed": 2,
+                "primary_count": 1,
+                "replica_count": 1,
+            }
+
+    monkeypatch.setattr(docker_runtime, "LightClusterProbe", Probe)
+    monkeypatch.setattr(docker_runtime.time, "sleep", lambda _s: None)
+    timings: dict[str, dict[str, Any]] = {}
+
+    docker_runtime._wait_process_light_clean(
+        _light_clean_nodes(),
+        expected_nodes=2,
+        expected_primaries=1,
+        expected_replicas=1,
+        timeout=30.0,
+        timings=timings,
+    )
+
+    row = timings["runtime_all_node_light_probe"]
+    assert attempts["n"] == 3
+    assert row["count"] == 3
+    # The wait returned, so the row says so. `_record_timing` is sticky-FAIL, which
+    # is why stamping an interim attempt was permanent.
+    assert row["status"] == "PASS"
+    assert "shard-0000-replica" in row["details"]["last_attempt_error"]
+    assert row["details"]["last_attempt_kind"] == "semantic"
+
+
+@pytest.mark.parametrize(
+    ("raised", "expected", "kind"),
+    [
+        (SemanticFailure("cluster never converged"), docker_runtime.DockerRuntimeError, "semantic"),
+        (CollectionError("all-node light collection failed"), CollectionError, "tool"),
+        (
+            OSError(errno.EADDRNOTAVAIL, "Can't assign requested address"),
+            CollectionError,
+            "tool",
+        ),
+    ],
+)
+def test_a_bounded_wait_that_never_converged_says_which_kind_it_was(
+    monkeypatch: pytest.MonkeyPatch,
+    raised: Exception,
+    expected: type[Exception],
+    kind: str,
+) -> None:
+    """Never getting a reading and reading a cluster that never converged are
+    different findings, and only the second is the cluster's."""
+
+    class Probe:
+        def __init__(self, *_a: Any, **_k: Any) -> None:
+            pass
+
+        def run(self, **_options: Any) -> dict[str, Any]:
+            raise raised
+
+    monkeypatch.setattr(docker_runtime, "LightClusterProbe", Probe)
+    monkeypatch.setattr(docker_runtime.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(
+        docker_runtime, "_process_node_snapshots_parallel", lambda *_a, **_k: []
+    )
+    timings: dict[str, dict[str, Any]] = {}
+
+    with pytest.raises(expected) as excinfo:
+        docker_runtime._wait_process_light_clean(
+            _light_clean_nodes(),
+            expected_nodes=2,
+            expected_primaries=1,
+            expected_replicas=1,
+            timeout=0.01,
+            timings=timings,
+        )
+
+    assert excinfo.type is expected
+    assert "did not converge" in str(excinfo.value)
+    assert timings["runtime_all_node_light_probe"]["details"]["last_attempt_kind"] == kind
+    # The measured local case: ephemeral-port exhaustion at 200 nodes is the tool
+    # failing, not the cluster refusing.
+    assert (kind == "tool") == (expected is CollectionError)
