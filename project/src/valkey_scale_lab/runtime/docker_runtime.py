@@ -8659,6 +8659,23 @@ def _unix_ms_runtime() -> int:
     return time.time_ns() // 1_000_000
 
 
+def _actuator_duration_ms(record: Mapping[str, Any]) -> float | str:
+    """How long §9.1's action took, or a reason it is not known.
+
+    An actuator record that stopped short is missing evidence, and the product
+    represents missing evidence with a reason rather than a fabricated number.
+    """
+
+    start = record.get("action_start")
+    end = record.get("action_completed")
+    if not isinstance(start, Mapping) or not isinstance(end, Mapping):
+        return MISSING
+    try:
+        return round((float(end["monotonic"]) - float(start["monotonic"])) * 1000, 6)
+    except (KeyError, TypeError, ValueError):
+        return MISSING
+
+
 def _run_scalable_primary_kill_failover(
     *,
     capability_id: str,
@@ -8737,35 +8754,49 @@ def _run_scalable_primary_kill_failover(
     # it did and this lane says what that means.
     kill_record = backend.kill_node(target)[0]
     kill_argv = list(kill_record["argv"])
-    actuator_record = actuator.complete(result=str(kill_record["result"]))
-    command_log.append(
-        {
-            "schema_version": "v1",
-            "run_id": run_id,
-            "operation_id": operation_id,
-            "scenario_id": "primary_failover",
-            "command_id": command_id,
-            "command_kind": "actuator_kill_primary",
-            "argv": kill_argv,
-            "status": "PASS",
-            "started_at_unix_ms": fault_started_unix,
-            "ended_at_unix_ms": _unix_ms_runtime(),
-            "duration_ms": round(
-                (
-                    actuator_record["action_completed"]["monotonic"]
-                    - actuator_record["action_start"]["monotonic"]
-                )
-                * 1000,
-                6,
-            ),
-            "retry_index": 0,
-            "attempt_count": 1,
-            "timeout_ms": 30_000,
-            "error_type": "",
-            "stdout_tail": json.dumps(actuator_record, sort_keys=True),
-            "stderr_tail": "",
-        }
-    )
+    # §9.1 requires the action's result to be recorded, and the result that
+    # matters is the one where the action did not work. `complete` stamps the
+    # record and then raises for a non-OK result, so the row is written from the
+    # recorder's own state on both paths; appending it after the call recorded
+    # §9.1's `result` only when there was nothing to report.
+    try:
+        actuator.complete(result=str(kill_record["result"]))
+    finally:
+        actuator_record = dict(actuator.record)
+        actuator_ok = actuator_record.get("result") == "OK"
+        # Computed defensively because this runs while an exception may be in
+        # flight: raising a second error here would replace the one that says
+        # what actually went wrong.
+        actuator_duration_ms = _actuator_duration_ms(actuator_record)
+        command_log.append(
+            {
+                "schema_version": "v1",
+                "run_id": run_id,
+                "operation_id": operation_id,
+                "scenario_id": "primary_failover",
+                "command_id": command_id,
+                "command_kind": "actuator_kill_primary",
+                "argv": kill_argv,
+                # An actuator that could not perform the requested action is the
+                # tool failing, not the cluster: §12.1's first boundary. The row
+                # says so rather than borrowing FAIL, which here would claim the
+                # planned kill was a Valkey semantic failure.
+                "status": "PASS" if actuator_ok else "ERROR",
+                "started_at_unix_ms": fault_started_unix,
+                "ended_at_unix_ms": _unix_ms_runtime(),
+                "duration_ms": actuator_duration_ms,
+                "retry_index": 0,
+                "attempt_count": 1,
+                "timeout_ms": 30_000,
+                "error_type": "" if actuator_ok else "CollectionError",
+                "stdout_tail": json.dumps(actuator_record, sort_keys=True),
+                "stderr_tail": (
+                    ""
+                    if actuator_ok
+                    else f"actuator result {actuator_record.get('result')!r}"
+                ),
+            }
+        )
     survivors = [
         inventory_by_logical[str(node["logical_id"])]
         for node in nodes

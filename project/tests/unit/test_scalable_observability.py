@@ -1536,6 +1536,159 @@ def test_actuator_failure_is_a_collection_error() -> None:
     recorder.sent()
     with pytest.raises(CollectionError, match="could not execute"):
         recorder.complete(result="permission denied")
+    # The record is complete before the raise, so a caller can still report it.
+    assert recorder.record["result"] == "permission denied"
+    assert recorder.record["action_completed"] is not None
+
+
+@pytest.mark.parametrize(
+    ("kill_result", "expected_status"), [("OK", "PASS"), ("permission denied", "ERROR")]
+)
+def test_the_actuator_row_is_written_on_the_path_where_the_kill_failed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    kill_result: str,
+    expected_status: str,
+) -> None:
+    """§9.1 wants the action's result recorded, and it matters most when it is
+    not OK.
+
+    The row that carries the record used to be appended after
+    `ActuatorRecorder.complete`, which raises for a non-OK result - so §9.1's
+    `result` was persisted only when there was nothing to report, and the row's
+    status was a literal `"PASS"` for the same reason.
+    """
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    class FakeCanary:
+        key = "canary"
+        value = "v"
+        slot = 0
+
+    class FakeSentinelNode:
+        def __init__(self, shard_id: str) -> None:
+            self.shard_id = shard_id
+            self.canary = FakeCanary()
+
+    closed: list[str] = []
+    expected_down: list[str] = []
+
+    class FakeSentinel:
+        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
+            pass
+
+        def prepare(self) -> dict[str, Any]:
+            return {"status": "OK"}
+
+        def mark_expected_down(self, logical_id: str) -> None:
+            expected_down.append(logical_id)
+
+        def close(self) -> None:
+            closed.append("closed")
+
+    class FakeBackend:
+        def kill_node(self, node: dict[str, Any]) -> list[dict[str, Any]]:
+            return [
+                {
+                    "argv": ["kill", "-9", str(node.get("pid", 1))],
+                    "result": kill_result,
+                }
+            ]
+
+    monkeypatch.setattr(
+        docker_runtime,
+        "build_sentinel_nodes",
+        lambda *_a, **_k: [FakeSentinelNode("shard-0000"), FakeSentinelNode("shard-0001")],
+    )
+    monkeypatch.setattr(docker_runtime, "SentinelLane", FakeSentinel)
+    monkeypatch.setattr(
+        docker_runtime, "_advertised_endpoint_resolver", lambda _nodes: (lambda e: e)
+    )
+    # The kill is the last thing this test needs to reach; everything after it
+    # observes recovery, which is not what §9.1's record is about.
+    monkeypatch.setattr(
+        docker_runtime,
+        "AffectedShardObserver",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            docker_runtime.DockerRuntimeError("stop after the actuator")
+        ),
+    )
+
+    nodes = [
+        {"logical_id": "shard-0000-primary", "shard_id": "shard-0000", "pid": 11},
+        {"logical_id": "shard-0000-replica-00", "shard_id": "shard-0000", "pid": 12},
+        {"logical_id": "shard-0001-primary", "shard_id": "shard-0001", "pid": 13},
+    ]
+    inventory = [
+        NodeEndpoint(
+            logical_id=node["logical_id"],
+            host="127.0.0.1",
+            port=7000 + index,
+            expected_role="primary",
+            expected_shard=node["shard_id"],
+        )
+        for index, node in enumerate(nodes)
+    ]
+    initial_validation = {
+        "light_validation": {
+            "nodes": [
+                {
+                    "logical_id": node["logical_id"],
+                    "myslots": {
+                        "node-id": f"id-{node['logical_id']}",
+                        "shard-id": node["shard_id"],
+                    },
+                }
+                for node in nodes
+            ]
+        }
+    }
+    command_log: list[dict[str, Any]] = []
+
+    with pytest.raises(Exception):
+        docker_runtime._run_scalable_primary_kill_failover(
+            capability_id="LOCAL_FULL_FLOW",
+            scenario="review",
+            run_id="review-actuator",
+            operation_id="op-failover",
+            nodes=nodes,
+            inventory=inventory,
+            initial_validation=initial_validation,
+            target=nodes[0],
+            command_log=command_log,
+            artifacts=tmp_path,
+            backend=FakeBackend(),
+        )
+
+    rows = [row for row in command_log if row["command_kind"] == "actuator_kill_primary"]
+    assert len(rows) == 1, "the actuator row must exist on both paths"
+    row = rows[0]
+    assert row["status"] == expected_status
+    record = json.loads(row["stdout_tail"])
+    # §9.1's six fields, all present, on both paths.
+    assert set(record) == {
+        "target",
+        "action",
+        "action_start",
+        "signal_or_request_sent",
+        "action_completed",
+        "result",
+    }
+    assert record["target"] == "shard-0000-primary"
+    assert record["action"] == "kill-primary"
+    assert record["result"] == kill_result
+    assert all(
+        record[field] is not None
+        for field in ("action_start", "signal_or_request_sent", "action_completed")
+    )
+    assert isinstance(row["duration_ms"], float)
+    if kill_result == "OK":
+        assert row["error_type"] == ""
+    else:
+        assert row["error_type"] == "CollectionError"
+        assert kill_result in row["stderr_tail"]
+    assert expected_down == ["shard-0000-primary"]
 
 
 def _write(path: Path, content: str) -> None:
