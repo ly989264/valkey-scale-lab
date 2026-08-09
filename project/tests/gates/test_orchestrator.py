@@ -8,6 +8,7 @@ from typing import Any, List, Mapping, Optional, Tuple
 
 import pytest
 
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.gates import (
     AdapterBundle,
     FaultTargetKind,
@@ -40,6 +41,7 @@ class RecordingAdapters:
         self.calls: List[str] = []
         self.fail_step = fail_step
         self.raise_step = raise_step
+        self.step_exception: Optional[Exception] = None
         self.cleanup_raises = cleanup_raises
         self.cleanup_count = 0
         self.management_payload: Optional[
@@ -66,7 +68,7 @@ class RecordingAdapters:
     def _run(self, context, step_id: str) -> StepResult:
         self.calls.append(step_id)
         if self.raise_step == step_id:
-            raise RuntimeError(f"{step_id} exploded")
+            raise self.step_exception or RuntimeError(f"{step_id} exploded")
         if self.fail_step == step_id:
             return StepResult.failed(context, step_id, f"{step_id} rejected")
         return StepResult.passed(context, step_id)
@@ -219,6 +221,29 @@ def test_step_exception_preserves_primary_failure_and_cleanup(tmp_path: Path) ->
     assert result.primary_failure.code == "STEP_EXCEPTION"
     assert result.primary_failure.exception_type == "RuntimeError"
     assert result.cleanup_failure is None
+
+
+def test_a_collection_error_is_recorded_as_a_tool_error_not_a_step_exception(
+    tmp_path: Path,
+) -> None:
+    """§12.1's first boundary: the collector could not complete the observation.
+
+    A `RuntimeError` from a step means the step observed something wrong; a
+    `CollectionError` means it never got to observe. Both still fail the gate -
+    §12.2 keeps FAIL ahead of ERROR - but the run has to be able to say which,
+    and this code is the only place downstream can learn it.
+    """
+
+    adapters = RecordingAdapters(raise_step="management_matrix")
+    adapters.step_exception = CollectionError("resource sampler produced no evidence")
+
+    result = GateOrchestrator().execute(_plan(), _request(tmp_path), adapters.bundle)
+
+    assert result.status is GateStatus.FAIL
+    assert result.primary_failure is not None
+    assert result.primary_failure.code == "STEP_TOOL_ERROR"
+    assert result.primary_failure.exception_type == "CollectionError"
+    assert adapters.cleanup_count == 1
 
 
 def test_cleanup_failure_alone_prevents_pass(tmp_path: Path) -> None:

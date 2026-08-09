@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Dict, List, Optional, Tuple
 
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.scenarios import GatePlan
 from valkey_scale_lab.scenarios.validation import LIFECYCLE_IDS
 
@@ -340,8 +341,14 @@ class GateOrchestrator:
     ) -> FailureInfo:
         prefix = "CLEANUP" if cleanup else "STEP"
         reason = str(exc).strip() or exc.__class__.__name__
+        # §12.1 splits a step's failure two ways: the collector could not
+        # complete, or it completed and observed something wrong. The exception
+        # class is where that distinction is stated, and this is the only place
+        # in the lifecycle that still holds the exception, so the code records
+        # which kind it was rather than leaving callers to match on a name.
+        kind = "TOOL_ERROR" if isinstance(exc, CollectionError) else "EXCEPTION"
         return FailureInfo(
-            code=f"{prefix}_EXCEPTION",
+            code=f"{prefix}_{kind}",
             reason=reason,
             step_id=step_id,
             exception_type=exc.__class__.__name__,

@@ -2361,11 +2361,13 @@
           "--provenance-id",
           "{gate.run_id}",
           "--artifacts-dir",
-          "{gate.artifacts_dir}"
+          "{gate.artifacts_dir}",
+          "--result-path",
+          "{gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
         "timeout_seconds": 14400,
-        "result": "exit_code"
+        "result": "json"
       }
     },
     {

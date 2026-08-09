@@ -190,30 +190,66 @@ def test_suite_parameter_errors_abort_before_any_process_starts(tmp_path: Path) 
     assert not marker.exists()
 
 
-@pytest.mark.parametrize(
-    ("status", "expected"), [("PASS", 0), ("FAIL", 1), ("BLOCKED", 1)]
-)
-def test_command_json_result_contract(
-    tmp_path: Path, status: str, expected: int
-) -> None:
+def _json_result_test(test_id: str, status: str) -> dict[str, object]:
     code = (
         "from pathlib import Path; import json,sys; "
         f"Path(sys.argv[1]).write_text(json.dumps(dict(status={status!r}, summary='done')))"
     )
-    catalog = _catalog(
-        tmp_path,
-        [
-            _test(
-                "sample.json",
-                [sys.executable, "-c", code, "{gate.result_path}"],
-                result="json",
-            )
-        ],
+    return _test(
+        test_id,
+        [sys.executable, "-c", code, "{gate.result_path}"],
+        result="json",
     )
+
+
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [("PASS", 0), ("FAIL", 1), ("BLOCKED", 1), ("ERROR", 1)],
+)
+def test_command_json_result_contract(
+    tmp_path: Path, status: str, expected: int
+) -> None:
+    catalog = _catalog(tmp_path, [_json_result_test("sample.json", status)])
 
     assert main(
         ["test", "sample.json"], project_root=tmp_path, catalog_path=catalog
     ) == expected
+    assert _summaries(tmp_path)[0]["tests"][0]["status"] == status
+
+
+def test_reported_error_is_the_overall_status_but_a_fail_outranks_it(
+    tmp_path: Path,
+) -> None:
+    """§12.2: no FAIL and at least one ERROR is ERROR; a FAIL beats an ERROR.
+
+    A check reporting that it could not complete is not the same result as a
+    check reporting that the thing it observed was wrong, and the Gate is the
+    last place either survives - a run's own artifacts do not outlive a failure.
+    """
+
+    error_only = _catalog(
+        tmp_path, [_json_result_test("sample.error", "ERROR")]
+    )
+    assert main(
+        ["test", "sample.error"], project_root=tmp_path, catalog_path=error_only
+    ) == 1
+    assert _summaries(tmp_path)[0]["status"] == "ERROR"
+
+    mixed_root = tmp_path / "mixed"
+    mixed_root.mkdir()
+    mixed = _catalog(
+        mixed_root,
+        [
+            _json_result_test("sample.error", "ERROR"),
+            _json_result_test("sample.fail", "FAIL"),
+        ],
+    )
+    assert main(
+        ["suite", "sample.suite"], project_root=mixed_root, catalog_path=mixed
+    ) == 1
+    summary = _summaries(mixed_root)[0]
+    assert summary["status"] == "FAIL"
+    assert sorted(row["status"] for row in summary["tests"]) == ["ERROR", "FAIL"]
 
 
 def test_malformed_command_json_is_error(tmp_path: Path) -> None:

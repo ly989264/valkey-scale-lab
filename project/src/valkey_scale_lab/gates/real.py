@@ -30,6 +30,7 @@ from valkey_scale_lab.gates import (
     ProductRuntimeEntrypoints,
     OwnedFaultScope,
 )
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.docker_runtime import (
     DockerRuntimeError,
@@ -201,7 +202,7 @@ def run_exact_gate(
         provenance_id=provenance_id,
     )
     if result.status is not GateStatus.PASS:
-        raise DockerRuntimeError(_gate_failure_message(result))
+        raise _gate_failure(result)
     if snapshot.state is None or snapshot.live_probe_result is None:
         raise DockerRuntimeError("exact-scale Gate completed without owned state or a live probe")
     state = snapshot.state
@@ -338,6 +339,32 @@ def _gate_failure_message(result: Any) -> str:
             f"{result.cleanup_failure.code}:{result.cleanup_failure.reason}"
         )
     return "; ".join(parts)
+
+
+def _gate_failure(result: Any) -> Exception:
+    """Raise the failure in the class that says which §12.1 kind it was.
+
+    `GateStatus` is the Gate's own lifecycle result and stays `PASS/FAIL/BLOCKED`
+    - a collector that broke mid-run is not a fourth lifecycle outcome. What the
+    run has to keep is the kind of failure, and the orchestrator already recorded
+    it in the failure code, so re-raising a tool error as a `CollectionError`
+    carries it out without a second status enum.
+
+    A cleanup failure fails the run whatever kind it was, and that is deliberate
+    rather than an oversight of the split. Ownership is the one thing this product
+    is fail-closed about: not being able to prove that every started resource was
+    removed is at least as bad as knowing one was left, so it is never softened
+    to "the tool could not tell". §12.2's precedence points the same way when a
+    step failed too.
+    """
+
+    message = _gate_failure_message(result)
+    if result.cleanup_failure is not None:
+        return DockerRuntimeError(message)
+    primary = result.primary_failure
+    if primary is not None and primary.code.endswith("_TOOL_ERROR"):
+        return CollectionError(message)
+    return DockerRuntimeError(message)
 
 
 def validate_admission_sources(

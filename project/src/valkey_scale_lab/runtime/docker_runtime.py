@@ -57,6 +57,7 @@ from valkey_scale_lab.observability.cluster import (
     parse_myslots,
     parse_role,
 )
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.observability.failover import (
     ActuatorRecorder,
     AffectedShardObserver,
@@ -8528,6 +8529,16 @@ def _local_full_flow_run_management_sequence(
             **stability_result,
         },
     )
+    # The lane already returns §12.2's three states, and the tool errors it
+    # separated out are the ones §12.1 says must not be reported as the cluster
+    # failing. Collapsing ERROR into this raise is what made the run's only
+    # computed verdict unusable, so the two are raised apart.
+    if stability_result["status"] == "ERROR":
+        raise CollectionError(
+            "120-second scalable stability observation could not complete: "
+            f"tool_errors={stability_result.get('tool_errors', [])}; "
+            + json.dumps(stability_result, sort_keys=True)[-4000:]
+        )
     if stability_result["status"] != "PASS":
         raise DockerRuntimeError(
             "120-second scalable stability observation failed: "

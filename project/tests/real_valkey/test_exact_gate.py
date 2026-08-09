@@ -23,7 +23,9 @@ from valkey_scale_lab.gates import (
     OwnedFaultScope,
     StepStatus,
 )
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.runtime import docker_runtime
+from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.scenarios import compile_gate_plan, load_local_full_flow_definition
 
 
@@ -349,6 +351,85 @@ def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
 
     assert result == {"status": "PASS", "requested_nodes": 50}
     assert calls == ["preflight", "create", "probe", "cleanup", "admission"]
+
+
+@pytest.mark.parametrize(
+    ("raised", "expected"),
+    [
+        (CollectionError("resource sampler produced no evidence"), CollectionError),
+        (DockerRuntimeError("cluster convergence did not hold"), DockerRuntimeError),
+    ],
+)
+def test_a_step_tool_error_leaves_the_gate_as_a_tool_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    raised: Exception,
+    expected: type[Exception],
+) -> None:
+    """The kind of failure has to survive the Gate, which flattens every step
+    exception into `GateStatus.FAIL`.
+
+    §12.2's final result is not the Gate's lifecycle status - a collector that
+    broke mid-run is not a fourth lifecycle outcome - so the class of the
+    re-raised exception is what carries the distinction out to the run's own
+    result.
+    """
+
+    monkeypatch.setattr(exact_gate, "_require_docker_daemon", lambda: None)
+    cleanups: list[str] = []
+
+    def preflight(_config: Any, out: Any, **kwargs: Any) -> dict[str, Any]:
+        report = {
+            "schema_version": "v1",
+            "status": "PASS",
+            "can_run": True,
+            "nodes_requested": 50,
+            "node_count": 50,
+            "checks": [{"name": "hermetic", "status": "PASS"}],
+            "capability_id": kwargs["capability_id"],
+            "scenario_name": kwargs["scenario"],
+        }
+        Path(out).write_text(json.dumps(report), encoding="utf-8")
+        return report
+
+    def execute(**_kwargs: Any) -> dict[str, Any]:
+        raise raised
+
+    def cleanup(**kwargs: Any) -> dict[str, Any]:
+        cleanups.append("cleanup")
+        report = {
+            "schema_version": "v1",
+            "status": "PASS",
+            "resources_remaining": [],
+            "cleanup_errors": [],
+        }
+        Path(kwargs["out_path"]).write_text(json.dumps(report), encoding="utf-8")
+        return report
+
+    monkeypatch.setattr(exact_gate, "run_resource_preflight", preflight)
+    monkeypatch.setattr(exact_gate, "execute_scenario", execute)
+    monkeypatch.setattr(exact_gate, "cleanup_scenario", cleanup)
+
+    with pytest.raises(expected) as excinfo:
+        exact_gate.run_exact_gate(
+            definition=DEFINITION,
+            scale=50,
+            config_path="templates/configs/scale_50.yaml",
+            evidence_dir=tmp_path / "scale-50",
+            run_id="exact-run-50",
+            ownership_id="product-owner-50",
+            provenance_id="capture-50",
+            product_digest="a" * 64,
+        )
+
+    # `CollectionError` is a `RuntimeError` and `DockerRuntimeError` is not one
+    # of its subclasses, so the exact class is what has to be asserted in both
+    # directions: a cluster failure must not arrive as a tool error either.
+    assert excinfo.type is expected
+    assert cleanups == []  # runtime_start never produced state, so there is none
+    code = "STEP_TOOL_ERROR" if expected is CollectionError else "STEP_EXCEPTION"
+    assert code in str(excinfo.value)
+    assert str(raised) in str(excinfo.value)
 
 
 def test_large_partition_observations_keep_cluster_state_in_bounded_excerpts(

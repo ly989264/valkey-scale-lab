@@ -68,8 +68,11 @@ def _read_json_result(path: Path) -> tuple[str, str]:
         raise ValueError(f"cannot read JSON result: {exc}") from exc
     if not isinstance(value, dict) or set(value) - {"status", "summary"}:
         raise ValueError("JSON result must contain only status and optional summary")
-    if value.get("status") not in {"PASS", "FAIL", "BLOCKED"}:
-        raise ValueError("JSON result status must be PASS, FAIL, or BLOCKED")
+    # ERROR is a verdict a check can report about itself: the tool could not
+    # complete the observation. It is the same status this runner already emits
+    # when the harness cannot run a test, because it means the same thing.
+    if value.get("status") not in {"PASS", "FAIL", "BLOCKED", "ERROR"}:
+        raise ValueError("JSON result status must be PASS, FAIL, BLOCKED, or ERROR")
     summary = value.get("summary", "")
     if not isinstance(summary, str):
         raise ValueError("JSON result summary must be text")

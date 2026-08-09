@@ -15,6 +15,7 @@ from valkey_scale_lab.compat import resolve_capability_alias, resolve_phase_alia
 from valkey_scale_lab.execution import PROFILES, ExecutionSelectionError, resolve_profile
 from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.gates.real import product_tree_digest, run_exact_gate
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import FinalReportError, ReportError, render_report
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
@@ -465,6 +466,24 @@ def _run_init(args: argparse.Namespace) -> int:
     return 0
 
 
+def _write_gate_execute_result(path: str, status: str, summary: str) -> None:
+    """Emit the run's own verdict where the Gate reads it.
+
+    `real.local.full-flow` declares `result: json`, so this file - not the exit
+    code - is what the run says about itself. The exit code stays 0 whenever the
+    verdict was written, because a non-zero exit makes the Gate report FAIL
+    without reading the file, which is precisely the collapse this route exists
+    to remove.
+    """
+
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        json.dumps({"status": status, "summary": summary}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _gate_execute(args: argparse.Namespace) -> int:
     try:
         definition = load_scenario_definition(args.definition)
@@ -483,6 +502,12 @@ def _gate_execute(args: argparse.Namespace) -> int:
             operator_opt_in=args.operator_opt_in,
             cost_acknowledged=args.cost_acknowledged,
         )
+    except CollectionError as exc:
+        # §12.1: the collector itself could not complete. §12.2 makes that the
+        # run's result when no check confirmed a failure, and it is reported as
+        # itself rather than as a failure of the cluster.
+        print(f"ERROR: gate execute could not complete: {exc}", file=sys.stderr)
+        status, summary = "ERROR", f"gate execute could not complete: {exc}"
     except (
         DockerRuntimeError,
         OSError,
@@ -491,7 +516,14 @@ def _gate_execute(args: argparse.Namespace) -> int:
         ScenarioDefinitionError,
     ) as exc:
         print(f"ERROR: gate execute: {exc}", file=sys.stderr)
-        return 1
+        status, summary = "FAIL", f"gate execute: {exc}"
+    else:
+        status, summary = "PASS", f"exact-{args.nodes} full flow admitted"
+    if args.result_path is None:
+        # No result file to carry the verdict, so the exit code is all there is
+        # and it can only say "not PASS".
+        return 0 if status == "PASS" else 1
+    _write_gate_execute_result(args.result_path, status, summary)
     return 0
 
 
@@ -619,6 +651,7 @@ def build_parser() -> argparse.ArgumentParser:
     execute.add_argument("--ownership-id", required=True)
     execute.add_argument("--provenance-id", required=True)
     execute.add_argument("--artifacts-dir", required=True)
+    execute.add_argument("--result-path")
     execute.add_argument("--product-digest")
     execute.add_argument("--prior-admission-digest")
     execute.add_argument("--operator-opt-in", action="store_true")

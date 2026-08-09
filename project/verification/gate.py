@@ -77,6 +77,13 @@ def _color(status: str, enabled: bool) -> str:
 
 def _overall_status(plan, results: Sequence[TestResult]) -> str:
     if plan.selection_kind != "milestone":
+        # A confirmed FAIL outranks a tool error, and a tool error with no FAIL
+        # is reported as itself rather than as a failure. Everything else keeps
+        # the previous rule, including BLOCKED and TIMEOUT.
+        if any(result.status == "FAIL" for result in results):
+            return "FAIL"
+        if any(result.status == "ERROR" for result in results):
+            return "ERROR"
         return "PASS" if all(result.status == "PASS" for result in results) else "FAIL"
     if any(result.status == "FAIL" for result in results):
         return "FAIL"
