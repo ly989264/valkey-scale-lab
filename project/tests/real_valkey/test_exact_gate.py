@@ -353,6 +353,35 @@ def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
     assert calls == ["preflight", "create", "probe", "cleanup", "admission"]
 
 
+def test_an_unreachable_docker_daemon_is_a_tool_error_not_a_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """§12.1's 任务未发起: nothing was observed, so nothing can have failed.
+
+    This is also the only tool error in the product that can be staged on a real
+    invocation - point `DOCKER_HOST` at a socket that does not exist - which is
+    what the whole ERROR verdict's real-run evidence rests on.
+    """
+
+    class Unreachable:
+        returncode = 1
+        stdout = ""
+        stderr = "dial unix /nonexistent/docker.sock: connect: no such file or directory"
+
+    monkeypatch.setattr(
+        exact_gate.subprocess, "run", lambda *_a, **_k: Unreachable()
+    )
+    with pytest.raises(CollectionError, match="requires an available Docker daemon"):
+        exact_gate._require_docker_daemon()
+
+    def no_binary(*_a: Any, **_k: Any) -> Any:
+        raise FileNotFoundError(2, "No such file or directory: 'docker'")
+
+    monkeypatch.setattr(exact_gate.subprocess, "run", no_binary)
+    with pytest.raises(CollectionError, match="could not run the Docker client"):
+        exact_gate._require_docker_daemon()
+
+
 @pytest.mark.parametrize(
     ("raised", "expected"),
     [

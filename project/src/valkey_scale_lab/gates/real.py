@@ -249,14 +249,27 @@ def run_exact_gate(
 
 
 def _require_docker_daemon() -> None:
-    docker_info = subprocess.run(
-        ["docker", "info", "--format", "{{.ServerVersion}}"],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    """§12.1's 任务未发起: no daemon means the run never started, not that it failed.
+
+    This was a `DockerRuntimeError`, so an unreachable daemon came out as `FAIL` -
+    a claim that the cluster was observed and found wanting, when nothing was
+    observed at all. It is also the one tool error that can be staged for real,
+    which is why the acceptance evidence for the whole ERROR verdict rests on it.
+    """
+
+    try:
+        docker_info = subprocess.run(
+            ["docker", "info", "--format", "{{.ServerVersion}}"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:  # no docker binary at all
+        raise CollectionError(
+            f"real gate could not run the Docker client: {exc}"
+        ) from exc
     if docker_info.returncode != 0 or not docker_info.stdout.strip():
-        raise DockerRuntimeError(
+        raise CollectionError(
             f"real gate requires an available Docker daemon: {docker_info.stderr.strip()}"
         )
 
