@@ -40,6 +40,11 @@ from valkey_scale_lab.observability.contracts import (
     final_verdict,
 )
 from valkey_scale_lab.resource import run_resource_preflight
+from valkey_scale_lab.runtime.backends import (
+    BackendNotImplementedError,
+    require_implemented,
+    resolve_backend,
+)
 from valkey_scale_lab.runtime.docker_runtime import (
     DockerRuntimeError,
     _node_command,
@@ -142,7 +147,16 @@ def run_exact_gate(
 ) -> dict[str, Any]:
     if not re.fullmatch(r"[0-9a-f]{64}", product_digest):
         raise DockerRuntimeError("exact gate requires a 64-character product digest")
-    _require_docker_daemon()
+    # Which backend is being asked for decides what has to be true before the run
+    # starts. A local Docker daemon is the Docker backends' precondition, not the
+    # Gate's, so it is checked when it applies rather than always - otherwise no
+    # other backend could ever reach this point.
+    try:
+        backend_spec = resolve_backend(backend_id)
+    except BackendNotImplementedError as exc:
+        raise DockerRuntimeError(str(exc)) from exc
+    if backend_spec.requires_local_docker_daemon:
+        _require_docker_daemon()
 
     base = Path(evidence_dir).resolve()
     runtime_dir = base / "runtime"
@@ -173,8 +187,18 @@ def run_exact_gate(
         raise DockerRuntimeError(
             f"profile {profile_id!r} does not match exact requested scale {scale}"
         )
-    if backend_id != "docker_process":
-        raise DockerRuntimeError("exact real admission requires backend docker_process")
+    # The exact gate admits whatever backend is registered and implements this
+    # profile and scenario; it no longer names one. `require_implemented` states
+    # the three distinct refusals - unregistered, unimplemented profile,
+    # unimplemented scenario - and `execute_scenario` applies the same rule.
+    try:
+        require_implemented(
+            backend_id,
+            profile_id=profile.profile_id,
+            scenario_id=definition.definition_id,
+        )
+    except BackendNotImplementedError as exc:
+        raise DockerRuntimeError(str(exc)) from exc
     fault_scope = OwnedFaultScope(
         run_id=run_id,
         ownership_id=ownership_id,

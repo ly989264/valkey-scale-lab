@@ -87,6 +87,12 @@ from valkey_scale_lab.orchestrator.local import write_run_summary as write_orche
 from valkey_scale_lab.planner.plan import build_cluster_plan
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
+from valkey_scale_lab.runtime.backends import (
+    BackendNotImplementedError,
+    BackendSpec,
+    register_backend,
+    require_implemented,
+)
 from valkey_scale_lab.runtime.node_backend import (
     NodeBackend,
     NodehostAddress,
@@ -544,114 +550,55 @@ def run_container_cluster_cli(container: str, *args: Any, timeout: int = 60, che
     return result.stdout.strip()
 
 
-def execute_scenario(
-    *,
-    capability_id: str,
-    scenario_id: str,
-    backend_id: str,
-    profile_id: str,
-    requested_nodes: int,
-    config_path: str | Path,
-    artifacts_dir: str | Path,
-    state_out: str | Path,
-    setup_timeline: SetupTimeline | None = None,
-    global_config_path: str | Path | None = None,
-    cli_overrides: dict[str, Any] | None = None,
-    operator_opt_in: bool = False,
-    cost_acknowledged: bool = False,
-) -> dict[str, Any]:
-    """Execute one canonical scenario using an explicit backend and profile."""
-    try:
-        backend, profile = validate_execution_selection(
-            scenario_id=scenario_id,
-            backend_id=backend_id,
-            profile_id=profile_id,
-            requested_nodes=requested_nodes,
-        )
-    except ValueError as exc:
-        raise DockerRuntimeError(str(exc)) from exc
-    expected_capability = SCENARIO_CAPABILITIES[scenario_id]
-    if capability_id != expected_capability:
-        raise DockerRuntimeError(
-            "scenario capability mismatch: "
-            f"scenario={scenario_id}, expected={expected_capability}, got={capability_id}"
-        )
-    if backend.backend_id == "fake":
-        return _execute_fake_scenario(
-            capability_id=capability_id,
-            scenario_id=scenario_id,
-            profile_id=profile.profile_id,
-            requested_nodes=requested_nodes,
-            artifacts_dir=artifacts_dir,
-            state_out=state_out,
-        )
-    if backend.backend_id == "native_multi_ecs":
-        raise DockerRuntimeError(
-            "native_multi_ecs is a declared execution backend without a local implementation"
-        )
-    if backend.backend_id == "docker_process" and not (
-        profile.profile_id == "small-real" or profile.profile_id.startswith("exact-")
-    ):
-        raise DockerRuntimeError(
-            f"docker_process runtime has no implementation for profile {profile.profile_id!r}"
-        )
-    if backend.backend_id == "docker_container" and profile.profile_id != "small-real":
-        raise DockerRuntimeError(
-            f"docker_container runtime has no implementation for profile {profile.profile_id!r}"
-        )
-    if backend.backend_id == "docker_process" and scenario_id not in {
-        LOCAL_FULL_FLOW_SCENARIO,
-        MANAGEMENT_MATRIX_SCENARIO,
-        FAULT_MATRIX_SCENARIO,
-        "failover",
-        "failover_latency_curve",
-        "failover_timeline",
-        "clean_gate_diagnostics",
-        "cluster_timeout",
-        "server_profile",
-        "nodehost_density",
-    }:
-        raise DockerRuntimeError(
-            f"docker_process does not implement scenario {scenario_id!r}"
-        )
-    if backend.backend_id == "docker_container" and scenario_id not in {
-        "cluster_lifecycle",
-        "workload",
-        "observability",
-        "fault_sandbox",
-        "failover",
-        "analysis_reporting",
-        "orchestration",
-        "stability",
-        "telemetry",
-    }:
-        raise DockerRuntimeError(
-            f"docker_container does not implement scenario {scenario_id!r}"
-        )
-
-    state = _execute_runtime(
-        capability_id=capability_id,
-        scenario=scenario_id,
-        backend_id=backend.backend_id,
-        profile_id=profile.profile_id,
-        requested_nodes=requested_nodes,
-        config_path=config_path,
-        artifacts_dir=artifacts_dir,
-        state_out=state_out,
-        setup_timeline=setup_timeline,
-        global_config_path=global_config_path,
-        cli_overrides=cli_overrides,
-        operator_opt_in=operator_opt_in,
-        cost_acknowledged=cost_acknowledged,
+# The two Docker backends, stated as data. These sets are the dispatch chain that
+# used to live inside `execute_scenario`, moved verbatim: `docker_process` takes
+# `small-real` and every `exact-*` profile, `docker_container` takes `small-real`
+# only. A Docker daemon is this backend's precondition, so it is declared here
+# rather than assumed by the Gate.
+DOCKER_PROCESS_BACKEND = register_backend(
+    BackendSpec(
+        backend_id="docker_process",
+        profiles=frozenset({"small-real"}),
+        profile_prefixes=("exact-",),
+        scenarios=frozenset(
+            {
+                LOCAL_FULL_FLOW_SCENARIO,
+                MANAGEMENT_MATRIX_SCENARIO,
+                FAULT_MATRIX_SCENARIO,
+                "failover",
+                "failover_latency_curve",
+                "failover_timeline",
+                "clean_gate_diagnostics",
+                "cluster_timeout",
+                "server_profile",
+                "nodehost_density",
+            }
+        ),
+        node_backend=lambda: DockerNodeBackend(),
+        requires_local_docker_daemon=True,
     )
-    state["scenario_id"] = scenario_id
-    state["backend_id"] = backend_id
-    state["profile_id"] = profile_id
-    Path(state_out).write_text(
-        json.dumps(state, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+)
+DOCKER_CONTAINER_BACKEND = register_backend(
+    BackendSpec(
+        backend_id="docker_container",
+        profiles=frozenset({"small-real"}),
+        scenarios=frozenset(
+            {
+                "cluster_lifecycle",
+                "workload",
+                "observability",
+                "fault_sandbox",
+                "failover",
+                "analysis_reporting",
+                "orchestration",
+                "stability",
+                "telemetry",
+            }
+        ),
+        node_backend=lambda: DockerNodeBackend(),
+        requires_local_docker_daemon=True,
     )
-    return state
+)
 
 
 def _execute_fake_scenario(
@@ -1127,314 +1074,6 @@ def _is_exact_2000_runtime_exception(
         )
         and is_exact_2000_local_full_flow_profile(config)
     )
-
-
-def _create_process_scenario(
-    *,
-    backend: NodeBackend,
-    capability_id: str,
-    scenario: str,
-    run_id: str,
-    config: dict[str, Any],
-    artifacts: Path,
-    state_out: Path,
-    nodes: list[dict[str, Any]],
-    profile_id: str,
-    setup_timeline: SetupTimeline | None = None,
-    image_preflight: dict[str, Any] | None = None,
-    operator_opt_in: bool = False,
-    cost_acknowledged: bool = False,
-) -> dict[str, Any]:
-    network_name = _network_name(capability_id, scenario)
-    management_profile = _management_matrix_profile(capability_id, scenario, len(nodes))
-    full_flow_profile = _full_flow_profile(capability_id, scenario, len(nodes))
-    for selected in (management_profile, full_flow_profile):
-        if selected is not None and selected.profile_id != profile_id:
-            raise DockerRuntimeError(
-                f"profile {profile_id!r} does not match configured node count {len(nodes)}"
-            )
-    if management_profile:
-        preflight = run_resource_preflight(
-            management_profile.config_template,
-            artifacts / "resource_preflight.json",
-            capability_id=capability_id,
-            scenario=scenario,
-            profile_id=profile_id,
-        )
-        if preflight.get("can_run") is not True:
-            _write_management_blocked_artifact(
-                artifacts, preflight, management_profile, capability_id
-            )
-            raise DockerRuntimeError(
-                f"{capability_id} resource preflight cannot support exactly "
-                f"{management_profile.requested_nodes} nodes; execution is blocked"
-            )
-    if full_flow_profile:
-        with _timeline_span(setup_timeline, "resource_preflight", "resource_preflight", {"node_count": full_flow_profile.requested_nodes}):
-            preflight = run_resource_preflight(
-                full_flow_profile.config_template,
-                artifacts / "resource_preflight.json",
-                capability_id=capability_id,
-                scenario=scenario,
-                profile_id=profile_id,
-                operator_opt_in=operator_opt_in,
-                cost_acknowledged=cost_acknowledged,
-            )
-        if preflight.get("can_run") is not True:
-            _write_full_flow_blocked_artifact(
-                artifacts, preflight, full_flow_profile, capability_id, scenario
-            )
-            raise DockerRuntimeError(
-                "LOCAL_FULL_FLOW resource preflight cannot support exactly "
-                f"{full_flow_profile.requested_nodes} nodes; execution is blocked"
-            )
-    with _timeline_span(setup_timeline, "pre_cleanup_by_label", "docker_cleanup", {"run_id": run_id}):
-        backend.reclaim_run(capability_id=capability_id, run_id=run_id)
-    with _timeline_span(setup_timeline, "docker_network_create", "docker_network", {"network_name": network_name}):
-        backend.create_network(network_name=network_name, capability_id=capability_id, run_id=run_id)
-    with _timeline_span(setup_timeline, "nodehost_plan", "planning", {"node_count": len(nodes)}):
-        nodehosts = _process_nodehosts(config, nodes, capability_id, scenario, run_id)
-        _write_nodehost_density_plan_artifact(artifacts / "nodehost_density_plan.json", config, nodes, nodehosts, run_id)
-    snapshots: list[dict[str, Any]] = []
-    timings: dict[str, dict[str, Any]] = {}
-    try:
-        def start_nodehost(nodehost: dict[str, Any]) -> None:
-            started = backend.start_nodehost(
-                nodehost,
-                network_name=network_name,
-                image=config["runtime"]["valkey_image"],
-                capability_id=capability_id,
-                scenario=scenario,
-                run_id=run_id,
-            )
-            # The artifact contract names these container_id and container_ip.
-            nodehost["container_id"] = started.handle
-            nodehost["container_ip"] = started.address
-            # Which scope this nodehost was started into. The fault lane
-            # isolates a host from it and puts it back at the address above,
-            # and both are the backend's to know rather than a stage's to
-            # thread through - the same way the peer address became inventory
-            # in Slice 1 instead of a second call.
-            nodehost["network_name"] = network_name
-
-        _run_timed_step(
-            timings,
-            "nodehost_start",
-            lambda: _timeline_call(
-                setup_timeline,
-                "nodehost_start",
-                "nodehost_start",
-                lambda: _bounded_parallel(
-                    nodehosts,
-                    start_nodehost,
-                    parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-                    timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
-                    label="nodehost container startup",
-                ),
-                {"nodehost_count": len(nodehosts), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
-            ),
-            {"nodehost_count": len(nodehosts), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
-        )
-        nodehost_by_id = {nodehost["nodehost_id"]: nodehost for nodehost in nodehosts}
-
-        config_prepare_details: dict[str, Any] = {}
-        _run_timed_step(
-            timings,
-            "process_config_prepare",
-            lambda: config_prepare_details.update(
-                _prepare_process_nodehost_bundles(
-                    backend=backend,
-                    nodes=nodes,
-                    nodehosts=nodehosts,
-                    nodehost_by_id=nodehost_by_id,
-                    artifacts=artifacts,
-                    run_id=run_id,
-                    setup_timeline=setup_timeline,
-                )
-            ),
-            config_prepare_details,
-        )
-        _write_generated_valkey_configs_manifest(artifacts / "generated_valkey_configs_manifest.json", capability_id, scenario, run_id, nodes)
-
-        process_start_details: dict[str, Any] = {}
-        _run_timed_step(
-            timings,
-            "process_start",
-            lambda: process_start_details.update(
-                _start_process_nodes_batched(
-                    backend=backend,
-                    nodes=nodes,
-                    nodehosts=nodehosts,
-                    setup_timeline=setup_timeline,
-                )
-            ),
-            process_start_details,
-        )
-        bootstrap_batching = _process_bootstrap_batching_details(
-            nodes=nodes,
-            nodehosts=nodehosts,
-            config_prepare_details=config_prepare_details,
-            process_start_details=process_start_details,
-        )
-        for timing_name in ["process_config_prepare", "process_start"]:
-            timings.setdefault(timing_name, {}).setdefault("details", {})["process_bootstrap_batching"] = bootstrap_batching
-        _run_timed_step(
-            timings,
-            "process_ready_wait",
-            lambda: _timeline_call(
-                setup_timeline,
-                "process_ready_wait",
-                "process_ready_wait",
-                lambda: backend.wait_nodes_ready(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0)),
-                {"node_count": len(nodes)},
-            ),
-            {"node_count": len(nodes)},
-        )
-        _m2_setup_event(
-            setup_timeline,
-            "last_process_ping",
-            {"node_count": len(nodes), "observation": "all owned processes answered PING"},
-        )
-        state = _process_runtime_state(
-            capability_id,
-            scenario,
-            run_id,
-            network_name,
-            config,
-            nodehosts,
-            nodes,
-            snapshots,
-            profile_id=profile_id,
-        )
-        state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
-        if image_preflight is not None:
-            state["runtime"]["valkey_image_preflight"] = image_preflight
-        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", capability_id, scenario, run_id, state)
-        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", capability_id, scenario, run_id, state)
-        with _timeline_span(setup_timeline, "state_write_before_cluster", "state_write", {"path": state_out.as_posix()}):
-            _write_state(state_out, state)
-        resource_seconds = _m2_bootstrap_resource_seconds()
-        if resource_seconds is None:
-            operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline, backend=backend)
-        else:
-            first_resource_sample = threading.Event()
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                resource_future = executor.submit(
-                    write_resource_observation,
-                    artifacts / "resource_observation.json",
-                    capability_id=capability_id,
-                    scenario_name=scenario,
-                    run_id=run_id,
-                    runners=_resource_runners_for_nodes(nodes, backend=backend),
-                    duration_seconds=resource_seconds,
-                    first_complete_sample_event=first_resource_sample,
-                    monotonic=shared_monotonic,
-                )
-                if not first_resource_sample.wait(timeout=60.0):
-                    if resource_future.done():
-                        resource_future.result()
-                    raise DockerRuntimeError(
-                        "bootstrap resource observation did not capture every owned process before cluster formation"
-                    )
-                protocol_start = _m2_bootstrap_protocol_boundary(nodes, "start")
-                operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline, backend=backend)
-                resource_report = resource_future.result()
-                protocol_end = _m2_bootstrap_protocol_boundary(nodes, "end")
-                resource_report["m2_bootstrap_protocol_boundaries"] = {
-                    "start": protocol_start,
-                    "end": protocol_end,
-                }
-                _write_json_artifact(artifacts / "resource_observation.json", resource_report)
-            if resource_report.get("status") != "PASS":
-                raise DockerRuntimeError("bootstrap resource observation is incomplete")
-        snapshots_path = artifacts / f"cluster_snapshots_{scenario}.json"
-        with _timeline_span(setup_timeline, "cluster_snapshot_write", "artifact_write", {"path": snapshots_path.as_posix()}):
-            snapshots_path.write_text(json.dumps(snapshots, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        state = _process_runtime_state(
-            capability_id,
-            scenario,
-            run_id,
-            network_name,
-            config,
-            nodehosts,
-            nodes,
-            snapshots,
-            profile_id=profile_id,
-        )
-        state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
-        if image_preflight is not None:
-            state["runtime"]["valkey_image_preflight"] = image_preflight
-        state["runtime"]["cluster_snapshot_path"] = snapshots_path.as_posix()
-        state["runtime"]["operations"] = operations
-        timing_path = artifacts / f"runtime_timing_breakdown_{scenario}.json"
-        with _timeline_span(setup_timeline, "runtime_timing_write", "artifact_write", {"path": timing_path.as_posix()}):
-            _write_runtime_timing_breakdown(
-                timing_path,
-                capability_id,
-                scenario,
-                profile_id,
-                run_id,
-                nodes,
-                timings,
-                status="PASS",
-            )
-        state["runtime"]["timing_breakdown_path"] = timing_path.as_posix()
-        state["runtime"]["timings"] = _timing_entries(timings)
-        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", capability_id, scenario, run_id, state)
-        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", capability_id, scenario, run_id, state)
-        with _timeline_span(setup_timeline, "state_write_after_cluster", "state_write", {"path": state_out.as_posix()}):
-            _write_state(state_out, state)
-        if full_flow_profile:
-            with _timeline_span(setup_timeline, "stabilize", "stabilize", {"node_count": len(nodes)}):
-                _management_wait_clean_cluster(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0))
-            if image_preflight is None:
-                raise DockerRuntimeError("LOCAL_FULL_FLOW requires a verified custom Valkey image")
-            myslots_path = artifacts / "cluster_myslots_report.json"
-            with _timeline_span(setup_timeline, "cluster_myslots", "artifact_validation", {"node_count": len(nodes)}):
-                _write_cluster_myslots_report(
-                    myslots_path,
-                    capability_id=capability_id,
-                    scenario=scenario,
-                    run_id=run_id,
-                    nodes=nodes,
-                    image_preflight=image_preflight,
-                )
-            state["runtime"]["cluster_myslots_report_path"] = myslots_path.as_posix()
-            _write_state(state_out, state)
-        if management_profile:
-            write_management_matrix_artifacts(
-                artifacts=artifacts,
-                capability_id=capability_id,
-                scenario=scenario,
-                run_id=run_id,
-                config=config,
-                nodes=nodes,
-                nodehosts=nodehosts,
-                state=state,
-                backend=backend,
-            )
-        if full_flow_profile:
-            write_full_flow_artifacts(
-                artifacts=artifacts,
-                capability_id=capability_id,
-                scenario=scenario,
-                run_id=run_id,
-                config=config,
-                nodes=nodes,
-                nodehosts=nodehosts,
-                state=state,
-                backend=backend,
-                setup_timeline=setup_timeline,
-                operator_opt_in=operator_opt_in,
-                cost_acknowledged=cost_acknowledged,
-            )
-        if scenario == "scale_ladder" and not management_profile and not full_flow_profile:
-            with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
-                write_scale_ladder_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
-        return state
-    except Exception:
-        backend.reclaim_run(capability_id=capability_id, run_id=run_id)
-        raise
 
 
 def _process_nodehosts(
@@ -12848,3 +12487,29 @@ def _run_id(capability_id: str, scenario: str) -> str:
         if selected:
             return _safe_process_token(selected, "M2 run_id")
     return f"{capability_id}-{scenario}-{RUN_DATE}"
+
+
+def execute_scenario(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Kept so every existing importer of this name keeps working.
+
+    The lifecycle moved to `runtime/lifecycle.py`; this module is a backend now.
+    The import is deferred because the lifecycle imports this module, and a
+    module-level import here would be a cycle.
+    """
+
+    from valkey_scale_lab.runtime.lifecycle import execute_scenario as _moved
+
+    return _moved(*args, **kwargs)
+
+
+def _create_process_scenario(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Kept for the same reason as `execute_scenario` above.
+
+    `_execute_runtime` still routes the docker_process path here, and it stayed in
+    this module because its own body still names Docker directly. Once those go
+    behind the seam it moves too and this shim goes with it.
+    """
+
+    from valkey_scale_lab.runtime.lifecycle import _create_process_scenario as _moved
+
+    return _moved(*args, **kwargs)
