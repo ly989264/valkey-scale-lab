@@ -171,6 +171,40 @@ and the delta identical in both runs.
 
 ### What is still open, and deliberately not done
 
+**The agreed next piece of work is the `ERROR` verdict**, and it is one change
+with a shared cause rather than the two entries below. Measured 2026-08-08,
+before any of it was started:
+
+- `final_verdict()` in `observability/contracts.py` already implements §12.1
+  and §12.2 exactly - retry once then `ERROR`, `FAIL` beats `ERROR`, tool
+  errors listed separately. It has **two callers**: the bounded stability lane
+  and the resource observation. Nothing else.
+- The full-flow run's own verdict (`docker_runtime.py:8058`) is a plain
+  `PASS if ... else FAIL` and never consults it. `_local_full_flow_lifecycle_steps`
+  hardcodes every step `PASS`, so in practice the run status is the management
+  summary AND the fault summary.
+- **The Gate cannot express `ERROR` by any route.** `real.local.full-flow`
+  declares `result: exit_code`, and `verification/runner.py:132` maps a
+  non-zero exit to `FAIL`; `ERROR` is reserved for the harness failing to run
+  a test. The JSON route is no better - `_read_json_result` accepts only
+  `PASS`, `FAIL`, `BLOCKED`. So the change reaches into `verification/`, which
+  is on the far side of the repository boundary from the product.
+- So §16 items 13 and 14 are **unmet at the run level**, and both open items
+  below - `actual=MISSING` and the §9.1 actuator - come out as `FAIL` because
+  there is no road to `ERROR` for them to take. Neither can be fixed alone.
+- Also found while measuring, and to be decided rather than fixed in passing:
+  a passing exact-50 run records **462 per-sample `FAIL`s** in
+  `scalable_primary_failover_observation.json`'s `sentinel_fault_probe.samples`,
+  during a planned kill. §12.1 says 故障转换期暂时访问失败…不逐样本判 `FAIL`
+  and 计划内 actuator kill 是预期事件. The lane's own verdict is correctly `OK`
+  - it recovered inside the deadline - so this is a sample label, not a wrong
+  verdict, and whether a per-sample field named `status` counts as judging per
+  sample is a reading question worth settling explicitly.
+
+Write its map first, argued from measurement, the way the four slice maps were;
+then stop and report, because this is a semantic change to a validation
+contract and the working rules require reporting before it lands.
+
 - **§9.1's actuator record, at two sites, paired with the verdict mapping.**
   §9.1 requires a fault action to record target, action, action start,
   signal/request sent, action completed and result. `ActuatorRecorder` is built
