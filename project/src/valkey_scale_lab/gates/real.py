@@ -22,7 +22,7 @@ from valkey_scale_lab.evidence import (
     validate_raw_sources,
     validate_raw_sources_by_kind,
 )
-from valkey_scale_lab.execution import ExecutionProfile
+from valkey_scale_lab.execution import SCENARIO_CAPABILITIES, ExecutionProfile
 from valkey_scale_lab.gates import (
     FaultTargetKind,
     GateRequest,
@@ -40,6 +40,10 @@ from valkey_scale_lab.observability.contracts import (
     final_verdict,
 )
 from valkey_scale_lab.resource import run_resource_preflight
+from valkey_scale_lab.runtime.command_recorder import (
+    CommandRecorder,
+    command_recorder_context,
+)
 from valkey_scale_lab.runtime.backends import (
     BackendNotImplementedError,
     require_implemented,
@@ -227,7 +231,28 @@ def run_exact_gate(
         )
     )
     run_started = _unix_ms()
-    result = GateService().execute(plan, request, adapter.adapter_bundle())
+    # A real gate run recorded none of the commands it issued: the recorder is a
+    # context variable and nothing installed one here, so `run_docker` and
+    # `_node_response` both took their unrecorded branch. That is why
+    # `_node_response`'s `docker exec` transport fallback - the one §16.2 forbids
+    # for Valkey protocol checks, and the one 85d5096a caught reaching through a
+    # partition - has never been visible in a real run's evidence: whether it
+    # fires at all was unmeasured rather than known to be zero.
+    #
+    # It writes beside the run rather than into it: `command_audit/` adds
+    # evidence without changing the meaning of any artifact the run already
+    # produces.
+    recorder = CommandRecorder(
+        capability_id=SCENARIO_CAPABILITIES.get(definition.definition_id, definition.definition_id),
+        run_id=run_id,
+        scenario=definition.definition_id,
+        artifacts_dir=runtime_dir / "command_audit",
+    )
+    try:
+        with command_recorder_context(recorder):
+            result = GateService().execute(plan, request, adapter.adapter_bundle())
+    finally:
+        recorder.close()
     snapshot = adapter.execution_snapshot(
         run_id=run_id,
         ownership_id=ownership_id,

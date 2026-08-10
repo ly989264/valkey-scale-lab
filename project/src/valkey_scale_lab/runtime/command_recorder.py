@@ -240,7 +240,7 @@ class CommandRecorder:
         }
         with self._lock:
             self._rows.append(row)
-            self._flush_locked()
+            self._append_locked(row)
         return row
 
     def record_skipped(
@@ -296,6 +296,26 @@ class CommandRecorder:
         path = self.log_dir / f"{command_id}.{stream}.log"
         path.write_text(text, encoding="utf-8")
         return _rel(path), digest
+
+    def _append_locked(self, row: dict[str, Any]) -> None:
+        """One row, one append - the cost of recording a command must not depend
+        on how many were recorded before it.
+
+        This used to rewrite the whole log on every row, which made the recorder
+        quadratic. Measured 2026-08-10: 1.96 ms/row at 250 rows, 10.15 at 1000,
+        47.39 at 4000, growing linearly with the rows already written. A real
+        exact-200 records 12,086, and because the rewrite happens inside
+        `self._lock` every recording thread queues behind it - the run failed in
+        `_process_node_snapshots_parallel`, which has to get 200 nodes x 2
+        commands through a 60s bound and reached about 160 of them.
+
+        `close` still writes the file sorted by sequence from `_rows`, so the
+        artifact this leaves behind is unchanged; only the during-the-run
+        ordering is arrival order, and nothing reads it before `close`.
+        """
+
+        with self.command_log_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, sort_keys=True) + "\n")
 
     def _flush_locked(self) -> None:
         rows = sorted(self._rows, key=lambda row: int(row.get("sequence", 0)))

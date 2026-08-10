@@ -4563,3 +4563,42 @@ def test_a_failure_after_the_fleet_is_up_reports_the_whole_fleet(
     report = json.loads((artifacts / "cleanup_report.json").read_text(encoding="utf-8"))
     assert report["status"] == "PASS"
     assert report["resources_remaining"] == []
+
+
+def test_parallel_work_can_see_the_command_recorder(tmp_path: Path) -> None:
+    """A worker thread starts with an empty context unless one is copied into it.
+
+    The recorder is the only `ContextVar` in the product, and `_bounded_parallel`
+    is how cluster formation, the rolling restart health gate and the snapshot
+    probes issue their commands - so without this, everything they do is
+    unrecorded, and "no fallback was recorded" would mean nothing.
+    """
+    from valkey_scale_lab.runtime.command_recorder import (
+        CommandRecorder,
+        command_recorder_context,
+        current_command_recorder,
+    )
+
+    recorder = CommandRecorder(
+        capability_id="local_full_flow",
+        run_id="unit-bounded-parallel",
+        scenario="local_full_flow",
+        artifacts_dir=tmp_path / "artifacts",
+    )
+
+    with command_recorder_context(recorder):
+        seen = docker_runtime._bounded_parallel(
+            range(8),
+            lambda _item: current_command_recorder() is recorder,
+            timeout=10.0,
+            label="recorder visibility",
+        )
+    assert seen == [True] * 8
+
+    # And nothing is invented where no recorder was installed.
+    assert docker_runtime._bounded_parallel(
+        range(3),
+        lambda _item: current_command_recorder(),
+        timeout=10.0,
+        label="recorder absence",
+    ) == [None, None, None]

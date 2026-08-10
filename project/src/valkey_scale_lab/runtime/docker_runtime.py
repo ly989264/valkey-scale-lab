@@ -15,6 +15,7 @@ import threading
 import time
 import binascii
 from contextlib import nullcontext
+from contextvars import copy_context
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
 from pathlib import Path
@@ -3198,9 +3199,20 @@ def _bounded_parallel(
     if not work:
         return []
     max_workers = max(1, min(int(parallelism), len(work)))
+    # A worker thread starts with an empty context, so ambient state held in a
+    # `ContextVar` is invisible to everything this runs. The command recorder is
+    # the only one, and it is the one that matters: measured 2026-08-10 on a real
+    # exact-50, the recorded log sat at 56 rows through all of cluster formation -
+    # every `CLUSTER MEET` and `ADDSLOTS` goes through here - and only grew once
+    # the management matrix, which drives from the calling thread, began. An
+    # instrument that cannot see these threads cannot answer whether a command
+    # issued from one ever fell back to `docker exec`.
+    #
+    # A fresh copy per item, taken here in the calling thread: one shared
+    # `Context` cannot be entered by two threads at once.
     try:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(worker, item) for item in work]
+            futures = [executor.submit(copy_context().run, worker, item) for item in work]
             return [future.result() for future in as_completed(futures, timeout=max(1.0, timeout))]
     except FutureTimeoutError as exc:
         raise DockerRuntimeError(f"{label} exceeded {timeout:.1f}s with parallelism={max_workers}") from exc
