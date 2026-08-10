@@ -28,8 +28,11 @@ Two things travel with the approval and are not optional parts of it:
   the product. Its cleanup-action row disappears from `cleanup_report` - a small
   artifact change to declare, and it moves no baseline diff, since both frozen
   exact-50 runs already record zero such rows.
-- M1's `local.operations-and-recovery` check list needs its own decision (§5),
-  not a silent shrink to the network proxy.
+- M1 needs **no** edit, decided 2026-08-10 after measuring it: `product.fault`
+  survives the deletion with `product.fault.network_proxy`, so no criterion
+  loses its checks. §5 records what that does cost - the only ownership check
+  on any fault path goes with the module - and that giving the seam's actuator
+  one instead is a candidate, not a decision.
 
 The rest of this memo is the evidence the decision was taken on, unchanged.
 
@@ -158,16 +161,34 @@ artifact change to declare rather than to slip in.
 
 `EcsNodeBackend` then owes nothing beyond the seam.
 
-**The one real cost, and it is the operator's to weigh:** M1's
-`local.operations-and-recovery` criterion says fault behaviour must remain
-"bounded, observable, and confined to project-owned resources", and after
-deletion its attached checks are `product.failover`, `product.observability`,
-`product.stability` and a `product.fault` reduced to the network proxy alone.
-The behaviour that criterion describes *is* covered on real runs — by the fault
-lane, through `real.local.full-flow` — but that test is attached to
-`local.exact.50` and `local.exact.200`, not to this criterion. So deletion
-should be accompanied by a decision about that criterion's check list, not
-performed and left. That is a milestone edit, which is why it is named here.
+**No milestone edit is required.** An earlier draft of this memo said M1's
+`local.operations-and-recovery` check list needed a decision. Measured, it does
+not. That criterion covers six behaviours — "Management, workload, fault,
+failover, recovery, and stability" — and attaches four suites; only
+`product.fault` is touched, and it **survives**, going 3 tests → 1
+(`product.fault.network_proxy`, which tests the in-process TCP proxy the fault
+lane really uses and has nothing to do with this module). `product.unit` goes
+22 → 21. Nothing reports `DEFINED`; no criterion loses its checks. Removing the
+criterion would delete failover, observability and stability coverage that has
+no connection to `fault/sandbox.py`.
+
+**The real cost is narrower, and it is a coverage loss rather than a milestone
+one.** `_require_owned_container` — which inspects a container's labels and
+refuses if they are not this run's — is the **only ownership check on any fault
+path**, and `product.fault.owned_runtime_guard_gap` is its only test. The seam's
+own actuator does not have one: `kill_node` takes `nodehost_container_name`
+straight from inventory and execs. So deleting this module removes the one test
+of the criterion's own phrase, "confined to project-owned resources".
+
+That is not an argument against deleting. The module is six-sevenths inert, and
+the seam's container names come from inventory it produced itself, so the
+practical exposure is low. It is an argument that the question worth asking is
+whether the *actuator* should gain an ownership check — a separate change, with
+its own evidence, that a second backend would then inherit.
+
+**Operator decision, 2026-08-10: change nothing in M1.** The deletion lands
+clean and the ownership-refusal test is simply gone. Giving the actuator its own
+ownership check is recorded here as a candidate, deliberately not done.
 
 **B — keep the surface, make it truthful (the middle option).**
 

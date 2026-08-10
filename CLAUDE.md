@@ -446,10 +446,26 @@ lane's own verdict is correctly `OK` - and the sample counts are not stable
   2026-08-10, Session C executes it.** Two things the memo measured that this
   entry did not know - six of the seven fault types inject nothing, and
   `clear_fault`'s `container_stop` branch is unreachable from `apply_fault` -
-  and one cost it did not name: `product.fault` shrinks to the network proxy
-  alone, so M1's `local.operations-and-recovery` check list needs a decision
-  rather than being left. `runtime/teardown.py::_remove_fault_state_files` goes
-  with it; `apply_fault` is the only producer of `fault_state_*.json` anywhere.
+  and one consequence it did not name:
+  `runtime/teardown.py::_remove_fault_state_files` goes with it, because
+  `apply_fault` is the only producer of `fault_state_*.json` anywhere.
+  **M1 needs no edit** - measured 2026-08-10 and decided then. `product.fault`
+  goes 3 tests to 1 and survives on `product.fault.network_proxy`, so no
+  criterion loses its checks; `local.operations-and-recovery` covers six
+  behaviours across four suites and only one of them is touched. An earlier
+  version of this entry said that check list needed a decision. It does not, and
+  removing the criterion would drop failover, observability and stability
+  coverage that has nothing to do with this module.
+- **No fault path will check ownership once `fault/sandbox.py` is gone.**
+  Measured 2026-08-10 while pricing that deletion: `_require_owned_container`
+  inspects a container's labels and refuses if they are not this run's, and it
+  is the only such check on any fault path - the seam's own actuator has none.
+  `kill_node` reads `nodehost_container_name` off the node and execs. So the one
+  test of M1's phrase "confined to project-owned resources" goes with the module.
+  Operator decision: **accept the loss, change nothing in M1.** Giving the
+  actuator its own ownership check is a *candidate*, deliberately not done - it
+  is new behaviour, it needs its own evidence, and a second backend would
+  inherit it, so it belongs to whoever writes one rather than to a deletion.
 - **End-of-run cleanup terminates by stale pid.** Measured on both frozen
   exact-50 baselines: at cleanup each nodehost has 12-13 live `valkey-server`
   processes and **zero of them is a pid recorded in `state.json`** - the state
