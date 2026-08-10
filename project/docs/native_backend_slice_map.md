@@ -539,5 +539,101 @@ Docker run must be byte-identical, and that is what the Docker suite proves.
 
 ## 10. Result
 
-*Filled in when the item lands - what held, what did not, and what the
-implementation said about §7's provisional decision.*
+The item landed in five commits. What follows is what the implementation said
+back, including where it disagreed with this map.
+
+### 10.1 The seam held
+
+**Nothing in the protocol had to change to admit a second implementation.** All
+twenty-three operations are implemented with their declared signatures and their
+declared return shapes, and the two record shapes - `_exec_record`'s seven fields
+and the actuator's two more - carried over without alteration. That is the
+strongest single result here, because it was not guaranteed: a protocol with one
+implementation is a description of that implementation until a second one
+disagrees with it, and this one did not.
+
+Three predictions in this map were wrong or incomplete, and each is corrected in
+place above rather than left standing:
+
+- **§6.1 understated the constructor problem.** It is not only that the run path
+  builds `DockerNodeBackend()` by name; it is that teardown and a run need
+  *different* construction. `cli gate cleanup` is handed a state file and no
+  configuration, so the zero-argument factory has to keep working, while a run
+  needs the fleet and the pinned build. `BackendSpec` therefore has two
+  factories, not one with a new argument, and each has a caller that cannot use
+  the other.
+- **§4.2 missed that the native actuator cannot sever every path.** Docker's
+  partition reaches the container through the daemon, so it can afford to detach
+  the network completely. This actuator reaches the host *over* the network it is
+  cutting, so a rule set with no exception could not be undone. The control port
+  is spared - and it is read from the session rather than assumed, because the
+  manifest's port is the forwarded one. Measured on a live host:
+  `SSH_CONNECTION=[172.18.0.1 60310 172.18.0.2 22]`, so the manifest says 22200
+  where the host says 22.
+- **§3's port check was too wide as first written.** A nodehost's `ports` list
+  mixes client and cluster-bus ports, and requiring both inside the host's
+  published client range would refuse every correct configuration -
+  `cluster_bus_port_base` sits ten thousand above `port_base` by convention. Only
+  the client ports are the controller's business; the bus is peer traffic on the
+  fleet's own network, about which a published client range says nothing.
+
+### 10.2 §7's decision stands: the fields are misnamed, not wrong
+
+The implementation used all three as backend-owned handles without once wanting
+to mean something else. `container_ip` carries the host's `data_address` into
+`cluster-announce-ip`, which is the peer address on either backend;
+`container_id` carries the run's claim; `container_name` names the run-scoped
+state root, which is the same run-scoped unique name Docker spends on a
+container. **Keep them.** The naming debt is recorded here and is not paid by a
+schema pass inside a runtime item.
+
+### 10.3 What was measured, and what was not
+
+Proven: `repository.all` **91/91**, from 90 - one new Test, three numbers moved.
+51 hermetic checks against a fake transport. The transport spike of §2, on two
+real simulated hosts.
+
+**Not proven, and this is the honest boundary of the item:** no argv in this
+backend has been run against a host *through the product*. A fake transport
+proves what the backend would run; it cannot prove the host answers. The
+development ladder (item 1.5) is where that is found, and §11 proposes bringing
+the smallest part of it forward rather than letting a first native run be
+attempted at exact-30 with every operation unexercised.
+
+### 10.4 The Docker path, measured rather than asserted
+
+§9 claimed every Docker run stays byte-identical. Five of this item's changes are
+on a real run's path - registry-resolved backend construction, the planner's new
+argument, the state builder's two literals, the guarded port preflight, and the
+conditional node field - so the claim was measured on real exact-50 runs against
+the frozen baseline, with the diff calibrated baseline-to-baseline first (all
+five stages, every comparable view identical).
+
+*Results: see §10.5.*
+
+---
+
+## 11. What this item says about its own boundaries
+
+The roadmap preconditions exit report expected item 1.2 to be the one most likely
+to want splitting once its map existed. It did not need splitting to be *done* - it is
+done, in one session, at its declared hard stop. But the derivation found one
+genuine gap in the roadmap's sequencing, and it is worth naming rather than
+letting a later session discover it:
+
+**Between "the backend exists, hermetically proven" and item 1.5's ladder, there
+is no step where a single native operation has ever touched a host through the
+product.** Item 1.5 begins at a two-host exact-30 smoke, which exercises every
+one of the twenty-three operations at once, on a fleet, through the full
+lifecycle. A first native run that fails there gives an unhelpfully wide search
+space: any of twenty-three unexercised argv, the placement, the config path, or
+the fleet.
+
+The cheap fix is a **native bring-up smoke** ahead of the ladder: bring up two
+simulated hosts, and drive the backend directly - claim a host, install the
+bundle, start and stop one process, isolate and rejoin, release the run - without
+a Gate run, a cluster, or a scenario. It is an afternoon, it needs nothing item
+1.3 or 1.4 owns, and it converts the twenty-three argv from "hermetically
+correct" to "observed working". Whether it is the front of item 1.5 or a small
+item 1.2b is the operator's call; the map's recommendation is the front of 1.5,
+because it is the ladder's own first rung and belongs with the runs.

@@ -282,6 +282,82 @@ derivation, every measurement, and what was deliberately left to later items.
 path until item 1.2 exists. **The correct state now is idle**; item 1.2 begins
 on operator approval, never as a next step.
 
+### Session M3-A-2 is done: roadmap item 1.2, the native backend
+
+`native_multi_ecs` is registered because the backend exists. Read
+`project/docs/native_backend_slice_map.md`; it carries the derivation, the
+transport measurement, what the implementation corrected about its own map, and
+the one gap it found in the roadmap's sequencing.
+
+- **The seam held.** All twenty-three operations are implemented with their
+  declared signatures and return shapes, and nothing in the protocol had to
+  change to admit a second implementation. That was not guaranteed: a protocol
+  with one implementation is a description of that implementation until a second
+  disagrees with it.
+- **The transport decision closed, provisionally, on multiplexed SSH**, on
+  numbers rather than taste. The budget is the rolling restart's own, taken from
+  the frozen baseline's 1,592 command rows: its two backend operations run at 71
+  ms and 61 ms median, both the cost of one `docker exec`. Measured the same hour
+  on two simulated hosts - `docker exec` **66.4 ms** median, un-multiplexed ssh
+  **63.8 ms**, multiplexed ssh **10.8 ms**, and at the run's own parallelism of 8,
+  11.9 ms against `docker exec`'s 63.5 ms. So the fallback on-host agent was not
+  built. **Simulated numbers are lower bounds**; M3-B (item 1.6) closes this for
+  real, and the transport stays behind an interface so the switch stays cheap.
+- **Two constraints the spike found that reading could not.** `ControlPath` is
+  capped at **104 bytes** by `sockaddr_un` - the first spike run failed outright,
+  and pytest's own `tmp_path` on this platform is already 127 - so the mux socket
+  cannot live beside a run's artifacts. And sshd's stock `MaxSessions 10` does
+  **not** fail past its limit, it queues: measured to parallelism 32 with zero
+  failures, median 11.8 → 23.0 ms, throughput flat at ~600/s. No session
+  semaphore is needed; it is a latency term.
+- **A native run places exactly one nodehost per host, and refuses otherwise.**
+  A nodehost is a fault domain - the plan rejects a shard whose primary and
+  replica share one, and the actuator suspends or isolates a whole nodehost.
+  Under Docker they coincide by construction; on a fleet only if the placement
+  makes them. Its consequence is item 1.5's: at 25 logical nodes per nodehost a
+  two-host fleet holds exact-50 exactly and **cannot hold exact-200**.
+- **Placement is planning, not the backend's**, settled by an artifact rather
+  than by taste: `nodehost_density_plan.json` is written before `start_nodehost`
+  is called, so a backend that chose the hosts would leave that artifact saying
+  `host_id: "local"` about a run that placed them on named hosts.
+- **The inventory vocabulary decision is closed: keep `container_*`.** All three
+  fields survive translation with their meaning intact - the peer address, the
+  run's claim, the run-scoped name - so they are misnamed rather than
+  semantically wrong, which is the test the roadmap set. Renaming would move
+  `state.json`, `cleanup_report`, the schemas and four of five diff views, and
+  turn every frozen baseline red for readability.
+- **The partition actuator has one difference it declares rather than hides.**
+  Docker reaches the container through the daemon and can sever every network
+  path; this actuator reaches the host over the network it is cutting, so the
+  control port is spared - and read from the session, not assumed, because the
+  manifest's port is the forwarded one (measured: `SSH_CONNECTION` says 22 where
+  the manifest says 22200). The `85d5096a` observable contract is unchanged and
+  item 1.5's equivalence diff is where it is proven.
+- **Three sites above the seam were not backend-neutral and now are.**
+  `_execute_runtime` built `DockerNodeBackend()` by name, so the registry's claim
+  was true of teardown only. `_process_runtime_state` wrote `backend_id` and
+  `runtime.type` as the literal `docker_process` - the same defect `4f54442a`
+  found in `cleanup_scenario`, in the sibling function. And the port preflight
+  binds on the controller's loopback, which is now a declared backend property.
+- **One validation-contract change, reported rather than slipped in.**
+  `config/validation.py` refused any `runtime.provider` but `docker`, while
+  `execution.BACKENDS` has always declared `native_multi_ecs` with provider
+  `ecs`, so no configuration could select this backend. `ecs` is admitted with
+  two required fields of its own; `docker` keeps every rule it had.
+
+**What item 1.2 did not prove, and it is the honest boundary:** no argv in this
+backend has run against a host *through the product*. A fake transport proves
+what the backend would run, not that the host answers. See the slice map §11 -
+the recommendation is a **native bring-up smoke** at the front of item 1.5,
+driving the backend directly against two simulated hosts with no Gate run and no
+cluster, so that a first native exact-30 failure does not have twenty-three
+unexercised operations in its search space.
+
+Carried forward untouched and still owned elsewhere: node-log collection (item
+1.3, mechanism not pre-decided), stale-pid teardown (item 1.4 - and note the
+native backend has **no `docker rm -f` backstop**, which is why its residue scan
+measures rather than asserts), and the absent fault-path ownership check.
+
 ### What is left before M3, and what is M3 itself
 
 Worth separating, because it is easy to list M3's contents and call them
@@ -688,11 +764,11 @@ exclusions one run at a time until the diff goes green.
   refactor.
 - Commit each distinct fix separately, saying what was observed. Keep
   `./gate suite repository.all` green at its current count before committing -
-  **90 as of M3-A-1**, 88 before it, 91 before the fault-sandbox deletion - and
-  run two consecutive real exact-50 runs after any change a real run reaches.
-  Two of the Gate's own contract tests pin the catalog and M1 plan counts
+  **91 as of M3-A-2**, 90 after M3-A-1, 88 before it - and run two consecutive
+  real exact-50 runs after any change a real run reaches. Two of the Gate's own
+  contract tests pin the catalog and M1 plan counts
   (`verification/tests/test_contracts.py`), so registering a test moves three
-  numbers, not one.
+  numbers, not one: the catalog is **95** and the M1 plan **90**.
 - Do not build a custom load generator. The Load Lane is scoped to steady state
   by decision; the Sentinel canaries own fault-window continuity and RTO.
 
