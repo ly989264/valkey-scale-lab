@@ -3114,38 +3114,44 @@ def _node_host_command(node: dict[str, Any], *args: Any, timeout: float = 2.0) -
 
 
 def _node_response(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> Any:
+    """Speak to a node over its client endpoint, and fail if that does not work.
+
+    There used to be a `docker exec valkey-cli` fallback here for transport
+    failures. §16.2 forbids reaching a node's protocol through `docker exec`,
+    85d5096a caught it answering `cluster_state:ok` for a node the scenario had
+    just partitioned away, and c3bd05fc had already stopped it re-running a
+    command the node had answered with an error. What it was still worth was
+    unmeasured, because nothing recorded it.
+
+    Measured 2026-08-10, with the recorder installed: it fired four times in a
+    passing exact-200 and not once in four passing exact-50 runs. All four were
+    the same site - `DockerNodeBackend.start_node`'s readiness poll, on the
+    first attempt after `valkey-server` starts, where the host path reads an
+    empty RESP reply from a server that is accepting TCP but not yet answering.
+    That poll is a 30s loop that already catches any failure, sleeps 0.5s and
+    asks again, so what the fallback bought was one early poll, not a run that
+    would otherwise have failed.
+
+    So being unable to reach a node is now the answer, and both backends fail
+    the same way. `run_node_cli` below is not that fallback: it is the path for
+    a node with no client endpoint at all, which is a different question with
+    its own evidence.
+    """
+
     if "client_port" in node:
+        recorder = current_command_recorder()
+        if recorder is None:
+            return _node_host_command(node, *args, timeout=timeout)
+        argv = ["valkey-cli", "-h", str(node["host"]), "-p", str(node["client_port"]), *[str(arg) for arg in args]]
+        started = int(time.time() * 1000)
+        started_monotonic_ms = time.monotonic() * 1000.0
         try:
-            recorder = current_command_recorder()
-            if recorder is None:
-                return _node_host_command(node, *args, timeout=timeout)
-            argv = ["valkey-cli", "-h", str(node["host"]), "-p", str(node["client_port"]), *[str(arg) for arg in args]]
-            started = int(time.time() * 1000)
-            started_monotonic_ms = time.monotonic() * 1000.0
-            try:
-                value = _node_host_command(node, *args, timeout=timeout)
-            except Exception as exc:
-                ended_monotonic_ms = time.monotonic() * 1000.0
-                recorder.record_result(
-                    operation_id="cluster_setup",
-                    step_id=classify_command_kind(argv),
-                    command_kind=classify_command_kind(argv),
-                    argv=argv,
-                    started_at_unix_ms=started,
-                    ended_at_unix_ms=int(time.time() * 1000),
-                    exit_code=1,
-                    stdout="",
-                    stderr=repr(exc),
-                    timeout_ms=int(timeout * 1000),
-                    status="FAIL",
-                    error_type=type(exc).__name__,
-                    node=node,
-                    started_at_monotonic_ms=started_monotonic_ms,
-                    ended_at_monotonic_ms=ended_monotonic_ms,
-                )
-                raise
+            value = _node_host_command(node, *args, timeout=timeout)
+        except Exception as exc:
+            # Both kinds land here and both propagate: a node that answered with
+            # an error (`ValkeyErrorReply`) and a node that could not be reached.
+            # They are recorded the same way and neither is retried.
             ended_monotonic_ms = time.monotonic() * 1000.0
-            recorded_value = value.strip() if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
             recorder.record_result(
                 operation_id="cluster_setup",
                 step_id=classify_command_kind(argv),
@@ -3153,33 +3159,37 @@ def _node_response(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> An
                 argv=argv,
                 started_at_unix_ms=started,
                 ended_at_unix_ms=int(time.time() * 1000),
-                exit_code=0,
-                stdout=recorded_value,
-                stderr="",
+                exit_code=1,
+                stdout="",
+                stderr=repr(exc),
                 timeout_ms=int(timeout * 1000),
-                status="PASS",
-                error_type="",
+                status="FAIL",
+                error_type=type(exc).__name__,
                 node=node,
                 started_at_monotonic_ms=started_monotonic_ms,
                 ended_at_monotonic_ms=ended_monotonic_ms,
             )
-            return value
-        except ValkeyErrorReply:
-            # The node answered. Re-running the command through `docker exec`
-            # would execute it a second time and then report the second
-            # attempt's error with docker's exit code, which is 0 - so a failed
-            # Valkey command was recorded as a passing one and nothing raised.
-            # Measured once at exact-50: a CLUSTER REPLICATE that had already
-            # taken effect was re-sent and its `ERR ... must be empty` reply
-            # stored as `status: PASS`. §16.2 also forbids reaching a node's
-            # protocol through `docker exec` at all.
             raise
-        except Exception:
-            if node.get("runtime_type") == "docker_process" or node.get("nodehost_container_name"):
-                return run_node_cli(node, *args, timeout=max(1, int(timeout)))
-            if not node.get("container_ip") and not node.get("nodehost_container_ip"):
-                return run_node_cli(node, *args, timeout=max(1, int(timeout)))
-            raise
+        ended_monotonic_ms = time.monotonic() * 1000.0
+        recorded_value = value.strip() if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
+        recorder.record_result(
+            operation_id="cluster_setup",
+            step_id=classify_command_kind(argv),
+            command_kind=classify_command_kind(argv),
+            argv=argv,
+            started_at_unix_ms=started,
+            ended_at_unix_ms=int(time.time() * 1000),
+            exit_code=0,
+            stdout=recorded_value,
+            stderr="",
+            timeout_ms=int(timeout * 1000),
+            status="PASS",
+            error_type="",
+            node=node,
+            started_at_monotonic_ms=started_monotonic_ms,
+            ended_at_monotonic_ms=ended_monotonic_ms,
+        )
+        return value
     return run_node_cli(node, *args, timeout=max(1, int(timeout)))
 
 

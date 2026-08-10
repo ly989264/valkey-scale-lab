@@ -241,7 +241,7 @@ def test_resource_preflight_rejects_profile_without_exact_200_scale_exception(tm
 def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -> None:
     expected = {"count": 10}
 
-    def fake_cli(container: str, *args, timeout: int = 60, check: bool = True) -> str:
+    def fake_host_command(node, *args, timeout: float = 2.0) -> str:
         if args[:2] == ("INFO", "server"):
             return "valkey_version:9.1.0\n"
         if args[:2] == ("INFO", "default"):
@@ -250,7 +250,11 @@ def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -
             return f"cluster_state:ok\ncluster_known_nodes:{expected['count']}\n"
         return "OK"
 
-    monkeypatch.setattr(docker_runtime, "run_container_cli", fake_cli)
+    # `_node_host_command` is what `_node_command` calls. This used to fake
+    # `run_container_cli`, which it reached only through the `docker exec`
+    # fallback, and only because `_nodes` omits `container_ip`; a started node
+    # always has one, so that route was never production's.
+    monkeypatch.setattr(docker_runtime, "_node_host_command", fake_host_command)
     nodes_10 = _nodes(10)
     nodes_30 = _nodes(30)
 
@@ -266,7 +270,7 @@ def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -
 
 
 def test_scale_rung_fails_when_membership_is_fragmented(tmp_path: Path, monkeypatch) -> None:
-    def fake_cli(container: str, *args, timeout: int = 60, check: bool = True) -> str:
+    def fake_host_command(node, *args, timeout: float = 2.0) -> str:
         if args[:2] == ("INFO", "server"):
             return "valkey_version:9.1.0\n"
         if args[:2] == ("INFO", "default"):
@@ -275,7 +279,7 @@ def test_scale_rung_fails_when_membership_is_fragmented(tmp_path: Path, monkeypa
             return "cluster_state:ok\ncluster_known_nodes:6\n"
         return "OK"
 
-    monkeypatch.setattr(docker_runtime, "run_container_cli", fake_cli)
+    monkeypatch.setattr(docker_runtime, "_node_host_command", fake_host_command)
     docker_runtime.write_scale_ladder_artifacts(
         tmp_path,
         "scale_ladder",

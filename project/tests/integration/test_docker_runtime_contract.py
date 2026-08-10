@@ -3781,15 +3781,17 @@ def test_forget_of_an_unknown_node_is_tolerated_now_that_it_is_reachable(
     assert row["status"] == "PASS"
 
 
-def test_being_unable_to_reach_a_node_still_falls_back(
+def test_being_unable_to_reach_a_node_is_the_answer_not_a_docker_exec(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The scope boundary, asserted so it is deliberate rather than assumed.
+    """The boundary, asserted so it stays a decision rather than an accident.
 
-    Only the error-reply case changed. Whether the `docker exec` fallback
-    should exist at all for transport failures is a separate question - §16.2
-    says no, 85d5096a showed it reaching through a partition - and it is not
-    settled here.
+    This test used to assert the opposite. The `docker exec` fallback for
+    transport failures is gone: §16.2 forbids reaching a node's protocol that
+    way, 85d5096a caught it answering for a node the scenario had just
+    partitioned away, and with the recorder installed it was measured firing
+    four times in a passing exact-200 - all four in `start_node`'s own 30s
+    readiness retry, which catches the failure and asks again anyway.
     """
     node = {
         "logical_id": "node-a",
@@ -3803,9 +3805,68 @@ def test_being_unable_to_reach_a_node_still_falls_back(
         "_node_host_command",
         lambda *_a, **_k: (_ for _ in ()).throw(TimeoutError("timed out")),
     )
-    monkeypatch.setattr(docker_runtime, "run_node_cli", lambda *_a, **_k: "PONG")
 
-    assert docker_runtime._node_command(node, "PING") == "PONG"
+    def unreachable_by_docker(*_a: Any, **_k: Any) -> str:
+        raise AssertionError("a transport failure must not be retried through docker exec")
+
+    monkeypatch.setattr(docker_runtime, "run_node_cli", unreachable_by_docker)
+
+    with pytest.raises(TimeoutError, match="timed out"):
+        docker_runtime._node_command(node, "PING")
+
+
+def test_an_error_reply_still_propagates_and_is_still_not_retried(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """c3bd05fc's semantics, unchanged by the fallback's removal.
+
+    A node that answered with an error and a node that could not be reached now
+    take the same path out; this pins that the error reply is still the thing
+    raised, rather than being flattened into a transport failure or re-run.
+    """
+    node = {
+        "logical_id": "node-a",
+        "host": "127.0.0.1",
+        "client_port": 7000,
+        "nodehost_container_name": "nodehost-a",
+        "runtime_type": "docker_process",
+    }
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_host_command",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            docker_runtime.ValkeyErrorReply("ERR Unknown node abc")
+        ),
+    )
+
+    def unreachable_by_docker(*_a: Any, **_k: Any) -> str:
+        raise AssertionError("an error reply must not be re-run through docker exec")
+
+    monkeypatch.setattr(docker_runtime, "run_node_cli", unreachable_by_docker)
+
+    with pytest.raises(docker_runtime.ValkeyErrorReply, match="Unknown node"):
+        docker_runtime._node_command(node, "PING")
+
+
+def test_a_node_with_no_client_endpoint_is_not_the_removed_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The one `run_node_cli` call left in `_node_response`, pinned as distinct.
+
+    It is reached only when the node carries no `client_port` at all - there is
+    no endpoint to fail over *from* - which is a different question from
+    retrying a reachable endpoint's failure, and it keeps its own evidence.
+    """
+    monkeypatch.setattr(docker_runtime, "run_node_cli", lambda *_a, **_k: "PONG")
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_host_command",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            AssertionError("no client endpoint means the host path is not attempted")
+        ),
+    )
+
+    assert docker_runtime._node_command({"logical_id": "node-a"}, "PING") == "PONG"
 
 
 def test_reshard_drains_every_key_from_a_slot_before_reassigning_it(
