@@ -123,6 +123,7 @@ def execute_scenario(
 def _create_process_scenario(
     *,
     backend: NodeBackend,
+    backend_id: str,
     capability_id: str,
     scenario: str,
     run_id: str,
@@ -184,8 +185,17 @@ def _create_process_scenario(
     with _runtime._timeline_span(setup_timeline, "docker_network_create", "docker_network", {"network_name": network_name}):
         backend.create_network(network_name=network_name, capability_id=capability_id, run_id=run_id)
     with _runtime._timeline_span(setup_timeline, "nodehost_plan", "planning", {"node_count": len(nodes)}):
-        nodehosts = _runtime._process_nodehosts(config, nodes, capability_id, scenario, run_id)
-        _runtime._write_nodehost_density_plan_artifact(artifacts / "nodehost_density_plan.json", config, nodes, nodehosts, run_id)
+        nodehosts = _runtime._process_nodehosts(
+            config, nodes, capability_id, scenario, run_id, backend_id=backend_id
+        )
+        _runtime._write_nodehost_density_plan_artifact(
+            artifacts / "nodehost_density_plan.json",
+            config,
+            nodes,
+            nodehosts,
+            run_id,
+            backend_id=backend_id,
+        )
     snapshots: list[dict[str, Any]] = []
     timings: dict[str, dict[str, Any]] = {}
     try:
@@ -296,6 +306,7 @@ def _create_process_scenario(
             nodes,
             snapshots,
             profile_id=profile_id,
+            backend_id=backend_id,
         )
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
         if image_preflight is not None:
@@ -351,6 +362,7 @@ def _create_process_scenario(
             nodes,
             snapshots,
             profile_id=profile_id,
+            backend_id=backend_id,
         )
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
         if image_preflight is not None:

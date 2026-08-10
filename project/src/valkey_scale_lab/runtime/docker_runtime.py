@@ -88,11 +88,13 @@ from valkey_scale_lab.orchestrator.local import write_run_summary as write_orche
 from valkey_scale_lab.planner.plan import build_cluster_plan
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
+from valkey_scale_lab.runtime.host_inventory import HostInventoryError, load_host_inventory
 from valkey_scale_lab.runtime.backends import (
     BackendNotImplementedError,
     BackendSpec,
     register_backend,
     require_implemented,
+    resolve_backend,
 )
 from valkey_scale_lab.runtime.node_backend import (
     LoadLaneHost,
@@ -580,6 +582,7 @@ DOCKER_PROCESS_BACKEND = register_backend(
         ),
         node_backend=lambda: DockerNodeBackend(),
         requires_local_docker_daemon=True,
+        publishes_node_ports_on_controller=True,
     )
 )
 DOCKER_CONTAINER_BACKEND = register_backend(
@@ -601,6 +604,7 @@ DOCKER_CONTAINER_BACKEND = register_backend(
         ),
         node_backend=lambda: DockerNodeBackend(),
         requires_local_docker_daemon=True,
+        publishes_node_ports_on_controller=True,
     )
 )
 
@@ -659,7 +663,11 @@ def _execute_runtime(
 ) -> dict[str, Any]:
     if SCENARIO_CAPABILITIES.get(scenario) != capability_id:
         raise DockerRuntimeError(f"runtime does not implement capability_id/scenario {capability_id}/{scenario}")
-    backend: NodeBackend = DockerNodeBackend()
+    # From the registry, not constructed here. `runtime/backends.py` has said
+    # since `39e31b1a` that registering a backend is an entry there plus a
+    # `NodeBackend`; until now the run path still built the Docker one by name,
+    # so that was true of teardown only.
+    backend_spec = resolve_backend(backend_id)
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"capability_id": capability_id, "scenario": scenario}):
         run_id = _run_id(capability_id, scenario)
         artifacts = Path(artifacts_dir)
@@ -701,12 +709,16 @@ def _execute_runtime(
                 f"profile={requested_nodes}, configured={node_count}"
             )
         nodes = _node_specs(config, capability_id, scenario, run_id)
-        ports = [node["client_port"] for node in nodes]
-        if backend_id == "docker_process":
-            ports.extend(node["cluster_bus_port"] for node in nodes)
+        ports: list[int] = []
+        if backend_spec.publishes_node_ports_on_controller:
+            ports = [node["client_port"] for node in nodes]
+            if backend_id == "docker_process":
+                ports.extend(node["cluster_bus_port"] for node in nodes)
 
     with _timeline_span(setup_timeline, "port_preflight_check", "preflight", {"port_count": len(ports)}):
         _check_ports_free(ports)
+
+    backend: NodeBackend = backend_spec.build_for_run(config.get("runtime", {}))
 
     with _timeline_span(
         setup_timeline,
@@ -716,9 +728,10 @@ def _execute_runtime(
     ):
         image_preflight = backend.verify_image(str(config["runtime"]["valkey_image"]))
 
-    if backend_id == "docker_process":
+    if backend_id in {"docker_process", "native_multi_ecs"}:
         return _create_process_scenario(
             backend=backend,
+            backend_id=backend_id,
             capability_id=capability_id,
             scenario=scenario,
             run_id=run_id,
@@ -1083,23 +1096,57 @@ def _is_exact_2000_runtime_exception(
     )
 
 
+def _fleet_placement_records(config: dict[str, Any]) -> list[dict[str, Any]] | None:
+    """The fleet this run was given, or `None` when it was given none.
+
+    The fleet is configuration, not a backend capability: a run names its hosts
+    the same way it names its pinned build, and the planner needs them because
+    placement is planning - see `native_backend_slice_map.md` §6.2. Reading it
+    here rather than asking the backend is what keeps the seam at twenty-three
+    operations.
+    """
+    path = config.get("runtime", {}).get("host_inventory_path")
+    if not path:
+        return None
+    try:
+        return load_host_inventory(path).placement_records()
+    except HostInventoryError as exc:
+        raise DockerRuntimeError(str(exc)) from exc
+
+
 def _process_nodehosts(
     config: dict[str, Any],
     nodes: list[dict[str, Any]],
     capability_id: str,
     scenario: str,
     run_id: str,
+    *,
+    backend_id: str = "docker_process",
 ) -> list[dict[str, Any]]:
     try:
-        plan = build_nodehost_density_plan(config=config, nodes=nodes, run_id=run_id, assign=True)
+        plan = build_nodehost_density_plan(
+            config=config,
+            nodes=nodes,
+            run_id=run_id,
+            assign=True,
+            fleet_hosts=_fleet_placement_records(config),
+            runtime_type=backend_id,
+        )
     except NodehostDensityError as exc:
         raise DockerRuntimeError(str(exc)) from exc
     return list(plan["nodehosts"])
 
 
-def _write_nodehost_density_plan_artifact(path: Path, config: dict[str, Any], nodes: list[dict[str, Any]], nodehosts: list[dict[str, Any]], run_id: str) -> None:
+def _write_nodehost_density_plan_artifact(path: Path, config: dict[str, Any], nodes: list[dict[str, Any]], nodehosts: list[dict[str, Any]], run_id: str, *, backend_id: str = "docker_process") -> None:
     try:
-        plan = build_nodehost_density_plan(config=config, nodes=[dict(node) for node in nodes], run_id=run_id, assign=True)
+        plan = build_nodehost_density_plan(
+            config=config,
+            nodes=[dict(node) for node in nodes],
+            run_id=run_id,
+            assign=True,
+            fleet_hosts=_fleet_placement_records(config),
+            runtime_type=backend_id,
+        )
     except NodehostDensityError as exc:
         plan = {
             "schema_version": "v1",
@@ -1686,6 +1733,14 @@ def _prepare_process_node_metadata(
             "config_artifact_file": local_config.as_posix(),
         }
     )
+    # Only when the nodehost was placed on a fleet host. A backend whose hosts
+    # are described by a manifest needs the control endpoint on the node as well
+    # as on the nodehost, because several seam operations are given a node and
+    # nothing else. Conditional so that a Docker run's `state.json` gains no key
+    # and every frozen baseline stays byte-identical.
+    if nodehost.get("host_control_endpoint"):
+        node["host_control_endpoint"] = nodehost["host_control_endpoint"]
+        node["host_id"] = nodehost.get("host_id", node.get("host_id"))
 
 
 def _nodes_by_nodehost(nodes: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -2018,6 +2073,7 @@ def _process_runtime_state(
     snapshots: list[dict[str, Any]],
     *,
     profile_id: str | None = None,
+    backend_id: str = "docker_process",
 ) -> dict[str, Any]:
     density = _runtime_density_from_nodehosts(config, nodehosts, nodes)
     effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodehosts))
@@ -2038,12 +2094,17 @@ def _process_runtime_state(
         "capability_id": capability_id,
         "scenario": scenario,
         "scenario_id": scenario,
-        "backend_id": "docker_process",
+        # The backend that ran this fleet, not a literal. `cleanup_scenario`
+        # resolves the backend from exactly this field, and `4f54442a` found the
+        # sibling defect: a native run whose state said `docker_process` would be
+        # released down the Docker path, find nothing owned by it in Docker, and
+        # report PASS with every remote process still running.
+        "backend_id": backend_id,
         "profile_id": profile_id or "MISSING",
         "requested_nodes": len(nodes),
         "observed_nodes": len(nodes),
         "runtime": {
-            "type": "docker_process",
+            "type": backend_id,
             "sandbox_network": True,
             "network_name": network_name,
             "run_id": run_id,

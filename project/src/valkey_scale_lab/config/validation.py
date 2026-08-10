@@ -418,8 +418,28 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
         errors.append(_err("SANDBOX_REQUIRED", "safety.require_sandbox_network must be true"))
     if safety.get("forbid_host_network_mutation") is not True:
         errors.append(_err("HOST_NETWORK_FORBIDDEN", "safety.forbid_host_network_mutation must be true"))
-    if runtime.get("provider") != "docker":
-        errors.append(_err("RUNTIME_PROVIDER", "runtime.provider must be docker"))
+    # `ecs` is the provider `execution.BACKENDS` has always declared for
+    # `native_multi_ecs`; until roadmap item 1.2 this check made every such
+    # config unloadable, so the two halves of the product disagreed about which
+    # backends exist. Widened rather than loosened: `docker` keeps every rule it
+    # had, and `ecs` gains two of its own, because a native run that named
+    # neither its fleet nor its pinned build would fail much later as a
+    # placement error about a fleet nobody asked for.
+    provider = runtime.get("provider")
+    if provider not in {"docker", "ecs"}:
+        errors.append(_err("RUNTIME_PROVIDER", "runtime.provider must be docker or ecs"))
+    elif provider == "ecs":
+        for key, description in (
+            ("host_inventory_path", "the fleet manifest the run is given"),
+            ("native_bundle_dir", "the pinned build the run ships to its hosts"),
+        ):
+            if not str(runtime.get(key, "")).strip():
+                errors.append(
+                    _err(
+                        "NATIVE_RUNTIME_INVENTORY" if key == "host_inventory_path" else "NATIVE_RUNTIME_BUNDLE",
+                        f"runtime.provider ecs requires runtime.{key}: {description}",
+                    )
+                )
     if runtime.get("sandbox_mode") not in {"container_namespace", "sandbox_proxy"}:
         errors.append(_err("SANDBOX_MODE", "runtime.sandbox_mode must be container_namespace or sandbox_proxy"))
     if runtime.get("server_profile") not in {"correctness", "one_b_dev", "one_b_perf"}:

@@ -19,7 +19,7 @@ how; `execute_scenario` still asks the implementation to run.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 
 class BackendNotImplementedError(RuntimeError):
@@ -40,10 +40,26 @@ class BackendSpec:
     scenarios: frozenset[str]
     profiles: frozenset[str] = frozenset()
     profile_prefixes: tuple[str, ...] = ()
+    # Two ways to obtain the same backend, because two callers need it for
+    # different reasons. `node_backend` takes nothing and is what teardown uses:
+    # `cli gate cleanup` is given a state file and no configuration, and a state
+    # written by a run carries whatever the backend needs to release it.
+    # `node_backend_for_run` is given the run's `runtime` configuration, which a
+    # backend whose hosts are described by a manifest cannot do without - it has
+    # to know which fleet and which pinned build. A backend that needs neither
+    # leaves it unset and both callers get the same object.
     node_backend: Callable[[], Any] | None = None
+    node_backend_for_run: Callable[[Mapping[str, Any]], Any] | None = None
     # A local Docker daemon is the Docker backends' precondition, not the Gate's.
     # Declared here so the Gate checks it when it applies rather than always.
     requires_local_docker_daemon: bool = False
+    # Whether a node's client port is bound on the machine the run drives from.
+    # It is under Docker, which publishes every hosted port on loopback, and the
+    # run therefore preflights those ports locally. It is not on a fleet the run
+    # does not own: the ports are on the hosts, the controller's loopback says
+    # nothing about them, and the check that matters there is the placement's -
+    # that a host's declared client port range covers what the run asked for.
+    publishes_node_ports_on_controller: bool = False
 
     def implements_profile(self, profile_id: str) -> bool:
         if profile_id in self.profiles:
@@ -52,6 +68,16 @@ class BackendSpec:
 
     def implements_scenario(self, scenario_id: str) -> bool:
         return scenario_id in self.scenarios
+
+    def build_for_run(self, runtime_config: Mapping[str, Any]) -> Any:
+        """The backend a run should use, configured from `runtime_config`."""
+        if self.node_backend_for_run is not None:
+            return self.node_backend_for_run(runtime_config)
+        if self.node_backend is not None:
+            return self.node_backend()
+        raise BackendNotImplementedError(
+            f"backend {self.backend_id!r} is registered without a node backend, so it cannot run"
+        )
 
 _REGISTRY: dict[str, BackendSpec] = {}
 

@@ -32,6 +32,13 @@ from valkey_scale_lab.runtime.backends import (
 )
 from valkey_scale_lab.runtime.node_backend import NodeBackend, RunTeardown
 
+# Imported for its registration, not for its names. Every path that can resolve a
+# backend passes through this module - the Gate's teardown, `cli gate cleanup`,
+# and `docker_runtime`, which imports it - so this is the one place that makes
+# the registry complete without importing an implementation into `backends.py`.
+# It adds no cycle: nothing `native_backend` imports reaches back here.
+from valkey_scale_lab.runtime import native_backend as _native_backend  # noqa: F401
+
 
 class TeardownError(RuntimeError):
     """Cleanup was asked for something it cannot safely do."""
