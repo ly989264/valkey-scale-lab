@@ -71,13 +71,21 @@ The product's safety and evidence contracts are central: exact requested node sc
 
 The control plane's candidate admission runs `./gate suite repository.all`; final milestone acceptance runs `./gate milestone <milestone>` on the merged default branch. For GitHub actions, prefer the connected GitHub Connector; use `gh` only when its coverage is insufficient.
 
-## Current work: lifecycle refactor
+## Where the work stands
 
-Goal: separate the full-flow lifecycle from the Docker backend so M3 can exist.
-`execute_scenario` rejects `native_multi_ecs` from inside `docker_runtime.py`, so
-a second backend cannot be written without living in the Docker module or
-duplicating it. M2 stays defined as written but is parked; the priority is a
-well-implemented real cluster test at 50/100/200, then M3 and M4 on top.
+**The lifecycle refactor is closed and Phase 0 has exited.** Both are history
+now, and this section is the reference a later session needs rather than a plan.
+Read `project/docs/roadmap_preconditions_exit_report.md` first for the current
+state; read on here for how the seam came to be shaped the way it is.
+
+The refactor's goal was to separate the full-flow lifecycle from the Docker
+backend so M3 can exist. It succeeded: `execute_scenario` used to reject
+`native_multi_ecs` from inside `docker_runtime.py`, so a second backend could not
+be written without living in the Docker module or duplicating it, and that
+rejection is gone - `runtime/backends.py` is a data registry with
+`native_multi_ecs` simply *absent*. M2 stays defined as written but is parked;
+the priority is a well-implemented real cluster test at 50/100/200, then M3 and
+M4 on top.
 
 Slices 1, 2, 3 and 4 - `runtime_start`, `cluster_form`, `management_matrix` and
 `fault_matrix` - are done and accepted, and roadmap item 0.5 added the two §15
