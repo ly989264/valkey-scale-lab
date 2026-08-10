@@ -1,0 +1,18 @@
+{
+  "architecture": "arm64",
+  "artifact_type": "simulated_host_image_digests",
+  "image": "valkey-scale-lab/simulated-host:debian13-sshd",
+  "image_digest": "sha256:8363ddaf81426604e9179d91f5fe3b9476036f3a4ac053c841953bb894602f84",
+  "iptables_version": "iptables v1.8.11 (nf_tables)",
+  "os": "Debian GNU/Linux 13 (trixie)",
+  "parent_digest": "sha256:deb1f977b9dc7564ea8f08082cd1f6bd739d60eb2a0f07dd7e47ca12b7e41af7",
+  "parent_image": "valkey-scale-lab/valkey:9.1.0-myslots",
+  "removed_from_parent": [
+    "/usr/local/bin/valkey-server",
+    "/usr/local/bin/valkey-cli",
+    "/usr/local/bin/memtier_benchmark",
+    "/usr/local/share/valkey-scale-lab"
+  ],
+  "schema_version": "v1",
+  "sshd_version": "OpenSSH_10.0p2 Debian-7+deb13u4, OpenSSL 3.5.6 7 Apr 2026"
+}

@@ -195,6 +195,7 @@
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
+        "product.unit.simulated_host_manifest",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
         "product.unit.workload_key_generator"
@@ -286,6 +287,7 @@
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
+        "product.unit.simulated_host_manifest",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
         "product.unit.workload_key_generator"
@@ -389,6 +391,7 @@
         "product.unit.server_profile_assertions",
         "product.unit.setup_exhaustive_timeline",
         "product.unit.setup_timing_accounting",
+        "product.unit.simulated_host_manifest",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
         "product.unit.workload_key_generator"
@@ -2181,6 +2184,27 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_setup_timing_accounting.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.simulated_host_manifest",
+      "description": "Unit simulated host inventory manifest checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_simulated_host_manifest.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
