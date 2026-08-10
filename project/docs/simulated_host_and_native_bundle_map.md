@@ -329,6 +329,21 @@ No real gate run was taken, and none was needed: neither item is on a run's path
 until item 1.2 exists to call them. The per-slice acceptance bar's real-run
 clause has nothing to attach to here - there is no modified stage.
 
+### 8.1 One older defect this made reachable
+
+`repository.all` went **89/90** on a run taken while a fleet was being torn down:
+`product.scenarios.execution_axis_contract` raised `FileNotFoundError` on
+`artifacts/host-fleets/sim-a/inventory.json`. The scan lists every file under its
+roots and then reads them, and it takes **4m17s** on this checkout, so anything
+listed can be gone before it is read.
+
+The race is older than the harness and does not need it - `artifacts/` is a live
+output directory and any run writing or rotating files there during a suite can
+lose the same way. Nothing had ever deleted a file there mid-suite, so it had
+never fired. A vanished file has no vocabulary to check, so the read skips it;
+verified by listing a path and unlinking it before `audit()` reads it. The test
+passes standalone either way, which is why only the concurrent run surfaced it.
+
 ## 9. One thing item 1.5 should expect
 
 `valkey_image_preflight` is carried whole into the `runtime_start` diff view

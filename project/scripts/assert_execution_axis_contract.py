@@ -81,7 +81,16 @@ def audit() -> list[str]:
     errors: list[str] = []
     for path in _files():
         rel = path.relative_to(ROOT).as_posix()
-        text = path.read_text(encoding="utf-8")
+        try:
+            text = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            # `artifacts/` is a live output directory and this scan takes four
+            # minutes, so anything listed can be gone before it is read. A file
+            # that no longer exists has no vocabulary to check. Observed as a
+            # suite failure when a fleet teardown removed an inventory manifest
+            # mid-scan; the same race is reachable from any run writing under
+            # `artifacts/` while the suite runs.
+            continue
         compatible = rel in COMPATIBILITY_FILES
         if not compatible and "phase" in path.name.lower():
             errors.append(f"{rel}: compatibility-only term appears in filename")
