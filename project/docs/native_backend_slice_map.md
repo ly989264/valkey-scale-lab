@@ -609,7 +609,41 @@ conditional node field - so the claim was measured on real exact-50 runs against
 the frozen baseline, with the diff calibrated baseline-to-baseline first (all
 five stages, every comparable view identical).
 
-*Results: see §10.5.*
+### 10.5 The two exact-50 runs
+
+**PASS 872.72s** and **PASS 872.62s**, both 12 of 12 steps, `cleanup_report`
+PASS with zero residue, and the string `ERROR` in no artifact of either.
+
+Diffed against the frozen `exact-50-6b6f57fd` baseline, both runs identically:
+
+| stage | mark | pass mark |
+|---|---|---|
+| `runtime_start` | **7/7** | 7/7 |
+| `cluster_form` | **5/5** | 5/5 |
+| `cleanup` | **2/2** | 2/2 |
+| `management_matrix` | **6/8** | 6/8 |
+| `fault_matrix` | **5/6** | 5/6 |
+
+Both declared deltas at their declared shapes, in both runs, with no third:
+
+- `management_matrix`: row count **1592 → 1606, exactly +14**;
+  `cluster_migrate_keys` **4 → 18**; **three row kinds changed and fourteen
+  unchanged**, the third being the `owned_valkey_process_remove_nodes_conf` →
+  `owned_valkey_process_discard_prior_state` rename, which moves no rows. The
+  sequence artifact's command ids grow by the same 14.
+- `fault_matrix`: confined to `fault_sequence` and the three partition
+  scenarios' isolated side - `isolated_reachable_from_this_side` and
+  `isolated_unreachable_reason` added (x3), `isolated_cluster_info` no longer
+  observed (x3), `isolated_cluster_state_ok` true→false (x1).
+
+The cross-backend invariants held: **9 fault scenarios, 12 command rows, 15
+workload windows** in both runs. Primary-kill RTO **47.995s** and **46.555s**,
+inside the 45-50s exact-50 band.
+
+So §9's claim is measured rather than asserted: **the Docker path is unchanged
+by this item.** The diff was calibrated baseline-to-baseline first, all five
+stages, every comparable view identical, so a normalisation loose enough to hide
+these runs' differences would have shown up there.
 
 ---
 

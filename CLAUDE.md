@@ -345,6 +345,17 @@ the one gap it found in the roadmap's sequencing.
   `ecs`, so no configuration could select this backend. `ecs` is admitted with
   two required fields of its own; `docker` keeps every rule it had.
 
+- **Proven:** `repository.all` **91/91**; 51 hermetic checks against a fake
+  transport; and two real exact-50 runs, **PASS 872.72s** and **PASS 872.62s**,
+  both 12/12 with zero residue and no `ERROR` in any artifact. Five of this
+  item's changes are on a real run's path, so the claim that Docker runs are
+  unaffected was measured: both runs hit every stage mark identically -
+  `runtime_start` 7/7, `cluster_form` 5/5, `cleanup` 2/2, `management_matrix`
+  6/8, `fault_matrix` 5/6 - with both declared deltas at their declared shapes
+  (row count +14, `cluster_migrate_keys` 4 → 18, three row kinds changed and
+  fourteen unchanged) and no third. Fault lane 9/12/15 in both. RTO 47.995s and
+  46.555s, inside the exact-50 band.
+
 **What item 1.2 did not prove, and it is the honest boundary:** no argv in this
 backend has run against a host *through the product*. A fake transport proves
 what the backend would run, not that the host answers. See the slice map §11 -
