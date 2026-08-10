@@ -8,7 +8,9 @@ which segments it owns. `cluster_form` extended it by two operations; see
 three more - stopping and starting one already-known node, and deploying the
 local resource sampler; see `project/docs/management_matrix_slice_map.md`.
 `fault_matrix` extended it by seven - the actuator - see
-`project/docs/fault_matrix_slice_map.md`.
+`project/docs/fault_matrix_slice_map.md`. Roadmap item 0.5 then added the two
+§15 names that no stage had happened to need, evidence upload and end-of-run
+cleanup; see `project/docs/seam_completion_slice_map.md`.
 
 §15 of `docs/scalable_cluster_observability_design.md` fixes how far this seam
 reaches. A runtime adapter replaces inventory and endpoint discovery, process
@@ -45,7 +47,8 @@ lifecycle already holds rather than arguments a caller should be asked for.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol, Sequence
+from pathlib import Path
+from typing import Any, Mapping, Protocol, Sequence
 
 
 class ResourceSampler(Protocol):
@@ -68,6 +71,63 @@ class ResourceSampler(Protocol):
         """Stop the sampler and return the samples it recorded."""
 
 
+class LoadLaneHost(Protocol):
+    """Where the Load Lane runs, and how what it wrote gets back here.
+
+    §15 keeps the Load Lane itself unchanged across backends and makes 日志与
+    证据上传 the adapter's job. Under Docker those two facts collide: memtier in
+    cluster mode follows MOVED to the addresses the cluster announces, the macOS
+    host cannot route them, so memtier has to run on a nodehost - and then its
+    JSON and HDR files are over there and have to come back. Both halves were
+    `docker` literals inside `observability/load.py` until this seam member
+    existed.
+
+    `seed_host` is how the node this host was chosen for is addressed *from
+    here*. It is an attribute rather than a question, for the reason
+    `NodehostAddress` carries `address`: the backend knows it when it picks the
+    host, and asking again later would ask a caller to hold a value it cannot
+    interpret.
+
+    `command` returns the argv to run locally so that `argv` executes on this
+    host, with `remote_dir` created first. It returns the argv rather than
+    spawning, because the argv is recorded evidence - the load lane reports it,
+    and the run's stability observation keeps it.
+
+    `remote_dir` is the lane's own choice of where its output goes, not the
+    backend's: it is an ordinary POSIX path and would be the same on any host.
+    """
+
+    seed_host: str
+
+    def command(self, argv: Sequence[str], *, remote_dir: str) -> list[str]:
+        """The local argv that runs `argv` on this host, with `remote_dir` made."""
+
+    def collect_evidence(self, remote_dir: str, local_dir: Path) -> None:
+        """Bring everything this host wrote under `remote_dir` back to `local_dir`."""
+
+
+@dataclass(frozen=True)
+class RunTeardown:
+    """What a backend did when the run released it, and what it found left.
+
+    Carries no status. Whether a teardown passed is a verdict, and verdicts stay
+    above this seam; the lifecycle applies one rule to whatever any backend
+    reports here.
+
+    `actions` are the report's ordered rows, in the shape `cleanup_report`
+    already records - `type`, `id`, `action`, `status`, and whatever else that
+    kind of action observed. `resources_remaining` is the residue scan, which is
+    the criterion "no managed process or host resource behind" measured rather
+    than asserted. `timing` is the backend's own; the lifecycle only fills in
+    the second-valued keys a backend did not measure.
+    """
+
+    actions: list[dict[str, Any]]
+    resources_remaining: list[dict[str, Any]]
+    timing: dict[str, Any]
+    errors: list[str]
+
+
 @dataclass(frozen=True)
 class NodehostAddress:
     """Where a started nodehost is, in the backend's own terms.
@@ -87,7 +147,14 @@ class NodeBackend(Protocol):
         """Verify the pinned runtime image and return the preflight evidence."""
 
     def reclaim_run(self, *, capability_id: str, run_id: str) -> None:
-        """Remove anything this run owns from a previous attempt."""
+        """Remove anything this run owns from a previous attempt.
+
+        This is *pre-run* cleanup, and `release_run` below is teardown. The two
+        are not one operation with a flag: this one runs before any state
+        exists, so it can only work from the run's ownership labels and has no
+        pid to signal and nothing to report; teardown's whole product is the
+        record of what it did.
+        """
 
     def create_network(self, *, network_name: str, capability_id: str, run_id: str) -> None:
         """Create the run's own network, labelled as owned by this run."""
@@ -296,4 +363,44 @@ class NodeBackend(Protocol):
         planning and stay in the lifecycle - so they arrive as plain
         `(logical_id, pid)` pairs and the backend resolves only where to put
         the agent.
+
+        The samples this returns are the one piece of §15's evidence upload that
+        was already behind the seam before item 0.5: deploying the sampler and
+        collecting what it wrote turned out to be the same member, which is why
+        the missing category went unnoticed for three slices.
+        """
+
+    def load_lane_host(self, node: dict[str, Any]) -> LoadLaneHost:
+        """Choose where the Load Lane runs for `node`, and how to collect it.
+
+        The other half of §15's evidence upload, and the only evidence a run
+        pulls off a host that `resource_sampler` does not already cover. See
+        `LoadLaneHost` for why it is one object rather than three calls.
+
+        §8 fixes the Load Lane's tool and parameters and §15 keeps the lane
+        itself unchanged across backends, so a backend chooses the host and
+        nothing else. It does not decide how much load, for how long, or what
+        counts as a passing window.
+        """
+
+    def release_run(self, state: Mapping[str, Any]) -> RunTeardown:
+        """Release everything this run owns, and report what was left behind.
+
+        End-of-run cleanup, as against `reclaim_run`'s pre-run cleanup. The
+        backend owns the mechanism - stopping the processes it started,
+        confirming they are gone, removing the host resources it created, and
+        scanning for residue - and the lifecycle owns what the result means and
+        writes the report.
+
+        `state` is the run's own state mapping with `capability_id` resolved,
+        which is to say the backend's
+        own bookkeeping handed back: the handles in it (`container_id`, `pid`,
+        `nodehost_container_name`) are values the backend wrote and only the
+        backend can interpret. That is the argument `rejoin_nodehost` was
+        derived on, applied to teardown.
+
+        Raising is for a refusal - state that does not describe resources this
+        run owns. A resource that would not release is an `action` row with a
+        non-PASS status, because the report is what the cleanup criterion is
+        measured on and an exception erases it.
         """

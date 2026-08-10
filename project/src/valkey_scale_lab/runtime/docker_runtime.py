@@ -95,10 +95,13 @@ from valkey_scale_lab.runtime.backends import (
     require_implemented,
 )
 from valkey_scale_lab.runtime.node_backend import (
+    LoadLaneHost,
     NodeBackend,
     NodehostAddress,
     ResourceSampler,
+    RunTeardown,
 )
+from valkey_scale_lab.runtime.teardown import cleanup_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
 from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
@@ -845,67 +848,35 @@ def _execute_runtime(
         raise
 
 
-def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_path: str | Path) -> dict[str, Any]:
-    state = json.loads(Path(state_path).read_text(encoding="utf-8"))
-    runtime = state.get("runtime")
-    if not isinstance(runtime, dict) or not runtime.get("run_id"):
-        raise DockerRuntimeError("cleanup requires runtime ownership with an explicit run_id in state")
-    capability_id = state.get("capability_id", "cluster_lifecycle")
-    run_id = str(runtime["run_id"])
-    if runtime.get("type") == "docker_process":
-        return _cleanup_process_scenario(state=state, artifacts_dir=Path(artifacts_dir), out_path=Path(out_path))
-    cleanup_errors: list[str] = []
+def _release_container_run(state: Mapping[str, Any]) -> RunTeardown:
+    """Release a `docker_container` run: the nodes are the containers.
+
+    Nothing is stopped before removal here, because there is no process on a
+    host to stop - removing the container is the process ending. That is the
+    whole of the difference from `_release_process_run`.
+    """
+    capability_id = str(state["capability_id"])
+    run_id = str(state["runtime"]["run_id"])
+    errors: list[str] = []
     try:
-        actions, cleanup_timing = _cleanup_resources_by_label(capability_id=capability_id, run_id=run_id)
+        actions, timing = _cleanup_resources_by_label(capability_id=capability_id, run_id=run_id)
     except DockerRuntimeError as exc:
-        cleanup_errors.append(str(exc))
+        errors.append(str(exc))
         actions = [{"type": "resource_discovery", "id": "owned-runtime", "action": "discover", "status": "FAIL", "stderr": str(exc)}]
-        cleanup_timing = {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}
-    actions.extend(_cleanup_fault_state_files(Path(artifacts_dir)))
+        timing = {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}
     residual_started = time.monotonic()
     try:
         resources_remaining = owned_resources(capability_id=capability_id, run_id=run_id)
     except DockerRuntimeError as exc:
-        cleanup_errors.append(str(exc))
+        errors.append(str(exc))
         resources_remaining = [{"type": "UNKNOWN", "id": "owned-resource-discovery-failed", "reason": str(exc)}]
-    cleanup_timing["cleanup_residual_scan_seconds"] = round(max(time.monotonic() - residual_started, 0.0), 6)
-    cleanup_timing.setdefault("cleanup_terminate_processes_seconds", 0.0)
-    cleanup_timing.setdefault("cleanup_verify_process_exit_seconds", 0.0)
-    cleanup_timing.setdefault("cleanup_verify_nodehost_empty_seconds", 0.0)
-    if capability_id == "orchestration":
-        actions.append(
-            {
-                "type": "orchestrator",
-                "id": "all-hosts",
-                "action": "stop_collect",
-                "status": "PASS" if not resources_remaining else "FAIL",
-                "idempotent": True,
-            }
-        )
-        _append_orchestration_orchestrator_cleanup(Path(artifacts_dir), resources_remaining)
-    report = {
-        "schema_version": "v1",
-        "artifact_type": "cleanup_report",
-        "capability_id": capability_id,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if not resources_remaining and not cleanup_errors else "FAIL",
-        "resources_remaining": resources_remaining,
-        "cleanup_errors": cleanup_errors,
-        "cleanup_actions": actions,
-        "cleanup_timing": cleanup_timing,
-        "nodehost_density": state.get("nodehost_density", state.get("runtime", {})),
-        "artifacts_dir": str(artifacts_dir),
-    }
-    out = Path(out_path)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    scenario = state.get("scenario")
-    if scenario:
-        scenario_out = out.parent / f"cleanup_report_{scenario}.json"
-        scenario_out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return report
+    timing["cleanup_residual_scan_seconds"] = round(max(time.monotonic() - residual_started, 0.0), 6)
+    return RunTeardown(
+        actions=actions,
+        resources_remaining=resources_remaining,
+        timing=timing,
+        errors=errors,
+    )
 
 
 def _runtime_state(
@@ -1507,6 +1478,26 @@ class DockerNodeBackend:
             ],
         )
 
+    def load_lane_host(self, node: dict[str, Any]) -> "DockerLoadLaneHost":
+        # The nodehost this node runs in. memtier put there is on the cluster's
+        # own network, where the addresses it follows resolve, and the node
+        # itself answers on loopback because that is where its process listens.
+        return DockerLoadLaneHost(
+            container=str(node.get("nodehost_container_name") or node["container_name"]),
+        )
+
+    def release_run(self, state: Mapping[str, Any]) -> RunTeardown:
+        # Which of this backend's two lifecycles produced the state decides how
+        # it is released: a `docker_process` run has Valkey processes inside
+        # nodehost containers that are stopped before the containers go, and a
+        # `docker_container` run has nodes that *are* the containers. Both
+        # finish at the same label-scoped removal and the same residue scan.
+        runtime = state.get("runtime")
+        runtime_type = runtime.get("type") if isinstance(runtime, dict) else None
+        if runtime_type == "docker_process":
+            return _release_process_run(state)
+        return _release_container_run(state)
+
     def _exec_record(
         self,
         command_kind: str,
@@ -1557,6 +1548,43 @@ class DockerNodeBackend:
             last_ready = ready
             time.sleep(1)
         raise DockerRuntimeError(f"process runtime nodes ready timeout reached {last_ready}/{len(nodes)}")
+
+
+@dataclass(frozen=True)
+class DockerLoadLaneHost:
+    """A nodehost container, as a place to run the Load Lane and collect it.
+
+    `seed_host` is loopback because `start_nodehost` publishes every hosted port
+    as `127.0.0.1:port:port` *and* the node's own process listens there inside
+    the container - the same value for two different reasons, and it is the
+    second one that applies here.
+    """
+
+    container: str
+    seed_host: str = "127.0.0.1"
+
+    def command(self, argv: Sequence[str], *, remote_dir: str) -> list[str]:
+        return [
+            "docker",
+            "exec",
+            self.container,
+            "sh",
+            "-c",
+            f"mkdir -p {shlex.quote(remote_dir)} && exec {shlex.join([str(arg) for arg in argv])}",
+        ]
+
+    def collect_evidence(self, remote_dir: str, local_dir: Path) -> None:
+        result = subprocess.run(
+            ["docker", "cp", f"{self.container}:{remote_dir}/.", local_dir.as_posix()],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            raise CollectionError(
+                "could not copy memtier output out of "
+                f"{self.container}: {result.stderr.strip()}"
+            )
 
 
 def _safe_process_token(value: Any, field: str) -> str:
@@ -2259,37 +2287,6 @@ def _write_workload_workload_benchmark_artifacts(
     )
 
 
-def _append_orchestration_orchestrator_cleanup(artifacts_dir: Path, resources_remaining: list[dict[str, Any]]) -> None:
-    report_path = artifacts_dir / "orchestration_report.json"
-    if not report_path.exists():
-        return
-    report = json.loads(report_path.read_text(encoding="utf-8"))
-    report.setdefault("operations", []).append(
-        {
-            "operation": "stop",
-            "status": "PASS" if not resources_remaining else "FAIL",
-            "host_id": "all",
-            "started_at": "2026-06-28T00:00:00Z",
-            "finished_at": "2026-06-28T00:00:00Z",
-            "details": {
-                "mode": "docker_label_cleanup",
-                "idempotent": True,
-                "resources_remaining": resources_remaining,
-            },
-        }
-    )
-    report["status"] = "PASS" if all(op.get("status") == "PASS" for op in report.get("operations", [])) else "FAIL"
-    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def _cleanup_fault_state_files(artifacts_dir: Path) -> list[dict[str, Any]]:
-    actions: list[dict[str, Any]] = []
-    for path in sorted(artifacts_dir.glob("fault_state_*.json")):
-        path.unlink()
-        actions.append({"type": "fault_state", "id": path.name, "action": "remove", "status": "PASS"})
-    return actions
-
-
 def cleanup_by_label(*, capability_id: str, run_id: str) -> list[dict[str, Any]]:
     actions, _timings = _cleanup_resources_by_label(capability_id=capability_id, run_id=run_id)
     return actions
@@ -2408,8 +2405,14 @@ def _cleanup_resources_by_label(*, capability_id: str, run_id: str) -> tuple[lis
     return actions, timings
 
 
-def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out_path: Path) -> dict[str, Any]:
-    capability_id = str(state.get("capability_id", "scale_ladder"))
+def _release_process_run(state: Mapping[str, Any]) -> RunTeardown:
+    """Release a `docker_process` run: Valkey processes inside nodehosts.
+
+    Stop the owned processes, confirm those pids are gone, confirm no Valkey
+    process is left on each host, then remove the owned host resources and scan
+    for residue. The last two are what `_release_container_run` also does.
+    """
+    capability_id = str(state["capability_id"])
     run_id = str(
         state.get("runtime", {}).get(
             "run_id", _run_id(capability_id, str(state.get("scenario", capability_id)))
@@ -2619,7 +2622,6 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     except DockerRuntimeError as exc:
         cleanup_errors.append(str(exc))
         actions.append({"type": "resource_discovery", "id": "owned-runtime", "action": "discover", "status": "FAIL", "stderr": str(exc)})
-    actions.extend(_cleanup_fault_state_files(artifacts_dir))
     residual_started = time.monotonic()
     try:
         resources_remaining = owned_resources(capability_id=capability_id, run_id=run_id)
@@ -2627,31 +2629,16 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
         cleanup_errors.append(str(exc))
         resources_remaining = [{"type": "UNKNOWN", "id": "owned-resource-discovery-failed", "reason": str(exc)}]
     cleanup_timing["cleanup_residual_scan_seconds"] = round(max(time.monotonic() - residual_started, 0.0), 6)
-    report = {
-        "schema_version": "v1",
-        "artifact_type": "cleanup_report",
-        "capability_id": capability_id,
-        "run_id": run_id,
-        "created_at": "2026-06-28T00:00:00Z",
-        "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if not resources_remaining and not cleanup_errors and all(action.get("status") != "FAIL" for action in actions) else "FAIL",
-        "resources_remaining": resources_remaining,
-        "cleanup_errors": cleanup_errors,
-        "cleanup_actions": actions,
-        "cleanup_timing": cleanup_timing,
-        "nodehost_density": state.get("nodehost_density", state.get("runtime", {})),
-        "artifacts_dir": str(artifacts_dir),
-    }
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    scenario = state.get("scenario")
-    if scenario:
-        (out_path.parent / f"cleanup_report_{scenario}.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return report
+    return RunTeardown(
+        actions=actions,
+        resources_remaining=resources_remaining,
+        timing=cleanup_timing,
+        errors=cleanup_errors,
+    )
 
 
 def _require_cleanup_owned_nodehosts(
-    state: dict[str, Any], *, capability_id: str, run_id: str
+    state: Mapping[str, Any], *, capability_id: str, run_id: str
 ) -> set[str]:
     for node in state.get("nodes", []):
         if not isinstance(node, dict):
@@ -8017,17 +8004,19 @@ def _advertised_endpoint_resolver(
     return resolve
 
 
-def _load_lane_seed(nodes: list[dict[str, Any]]) -> tuple[str, str, int]:
+def _load_lane_seed(
+    nodes: list[dict[str, Any]], *, backend: NodeBackend
+) -> tuple[LoadLaneHost, str, int]:
     """Where to run memtier, and a seed endpoint reachable from in there.
 
-    memtier follows the addresses the cluster advertises, which are nodehost
-    addresses on the Docker network. Running it inside a nodehost container puts
-    it on that network, and a node hosted in the same container answers on
-    loopback there.
+    memtier follows the addresses the cluster advertises, so it has to run
+    somewhere those resolve. Which host that is, and how the seed node is
+    addressed from over there, are the runtime adapter's (§15); the port is the
+    node's own and is plain inventory.
     """
     seed = nodes[0]
-    container = str(seed["container_name"])
-    return container, "127.0.0.1", int(seed["client_port"])
+    host = backend.load_lane_host(seed)
+    return host, host.seed_host, int(seed["client_port"])
 
 
 def _local_full_flow_run_baseline_workload(capability_id: str, scenario: str, run_id: str, scale: int, nodes: list[dict[str, Any]], *, backend: NodeBackend) -> dict[str, Any]:
@@ -8310,7 +8299,7 @@ def _local_full_flow_run_management_sequence(
         ),
         endpoint_resolver=_advertised_endpoint_resolver(nodes),
     )
-    load_container, load_host, load_port = _load_lane_seed(nodes)
+    load_lane_host, load_host, load_port = _load_lane_seed(nodes, backend=backend)
     load = MemtierLoadLane(
         host=load_host,
         port=load_port,
@@ -8319,7 +8308,7 @@ def _local_full_flow_run_management_sequence(
         ),
         run_scope=f"{run_id}:stability",
         artifacts_dir=artifacts / "load_lane",
-        container=load_container,
+        remote_host=load_lane_host,
     )
     stability_result = StabilityWindow(
         light_probe=LightClusterProbe(inventory, concurrency=64, timeout=5.0),

@@ -872,6 +872,100 @@ def fault_stage_shape(root: Path) -> str:
     )
 
 
+
+# --- cleanup: roadmap item 0.5's own stage ------------------------------------
+# `cleanup` is one of the twelve `lifecycle_timeline` steps, so this is a stage
+# entry like the four before it. Item 0.5 moved the report's assembly above the
+# seam and the acting below it; these are the artifacts that proves it on.
+
+
+def cleanup_report(root: Path) -> Any:
+    """The cleanup report, with the per-run identities its rows carry reduced.
+
+    A container id, a network id and a pid are all per-run, and so is the exact
+    set of pids a nodehost was running when it was released - but *how many*
+    there were, and whether the row found any, is the evidence. So they become
+    counts rather than exclusions, the way `scrub` already replaces `pid`.
+
+    Both copies are read: `cleanup_report.json` and its
+    `cleanup_report_<scenario>.json` twin must stay byte-identical, and a diff
+    that read only one would not notice if they stopped being.
+    """
+    rows = []
+    for path in sorted(root.glob("cleanup_report*.json")):
+        report = json.loads(path.read_text(encoding="utf-8"))
+        rows.append({"artifact": path.name, "report": _cleanup_scrub(report)})
+    return rows
+
+
+_CLEANUP_PID_LISTS = (
+    "live_pids",
+    "zombie_pids",
+    "unreadable_pids",
+    "alive_pids",
+)
+
+
+def _cleanup_scrub(value: Any, key: str | None = None) -> Any:
+    if isinstance(value, dict):
+        out = {}
+        for name, item in sorted(value.items()):
+            if IGNORED.match(name):
+                continue
+            if name in _CLEANUP_PID_LISTS and isinstance(item, list):
+                out[f"{name}:count"] = len(item)
+                continue
+            if name in {"stdout", "stderr", "stdout_tail", "stderr_tail"}:
+                # A residual scan prints the pids it found, so its text is the
+                # same per-run identity as the list beside it.
+                out[f"{name}:empty"] = not str(item).strip()
+                continue
+            if name == "id" and isinstance(item, str) and _CLEANUP_DOCKER_ID.fullmatch(item):
+                out[name] = "<RESOURCE_ID>"
+                continue
+            out[name] = _cleanup_scrub(item, name)
+        return out
+    if isinstance(value, list):
+        return [_cleanup_scrub(item, key) for item in value]
+    return scrub(value)
+
+
+_CLEANUP_DOCKER_ID = re.compile(r"[0-9a-f]{12,64}")
+
+
+def load_lane_evidence(root: Path) -> str:
+    """What the Load Lane's evidence upload actually brought back.
+
+    Reported rather than diffed: memtier's latency numbers move between runs, so
+    what this owns is that each file arrived, is non-empty, and that the two
+    JSON results parse. Comparing the numbers would be comparing the cluster's
+    behaviour, which is not what an evidence-upload boundary is responsible for.
+    """
+    lane = root / "load_lane"
+    if not lane.is_dir():
+        return "load_lane/ ABSENT"
+    names: list[str] = []
+    empty: list[str] = []
+    invalid: list[str] = []
+    for path in sorted(lane.iterdir()):
+        if not path.is_file():
+            continue
+        names.append(path.name)
+        if path.stat().st_size == 0:
+            empty.append(path.name)
+        if path.suffix == ".json":
+            try:
+                json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                invalid.append(path.name)
+    return (
+        f"{len(names)} files"
+        f" | empty: {', '.join(empty) or 'none'}"
+        f" | invalid json: {', '.join(invalid) or 'none'}"
+        f" | {' '.join(names)}"
+    )
+
+
 # Each slice adds its stage here from its own slice map, once that map has said
 # which artifacts the stage owns. Views are not written ahead of a slice.
 STAGE_VIEWS: dict[str, dict[str, Callable[[Path], Any]]] = {
@@ -930,6 +1024,10 @@ STAGE_VIEWS: dict[str, dict[str, Callable[[Path], Any]]] = {
         "topology_snapshots:fault": fault_topology_snapshots,
         "workload_windows:fault": fault_workload_windows,
     },
+    "cleanup": {
+        "lifecycle_timeline:cleanup": lambda root: lifecycle_step(root, "cleanup"),
+        "cleanup_report": cleanup_report,
+    },
 }
 
 # A stage may have evidence that cannot be diffed but must not go unreported.
@@ -938,6 +1036,10 @@ STAGE_REPORTED: dict[str, dict[str, Callable[[Path], str]]] = {
     "management_matrix": {
         "workload_impact_samples/errors": management_workload_counters,
         "rolling_restart_probe_counts": management_probe_counts,
+        # The Load Lane runs inside this stage's bounded stability window, so
+        # its uploaded evidence is reported here. Reported, not diffed: see
+        # `load_lane_evidence`.
+        "load_lane_evidence": load_lane_evidence,
     },
     "fault_matrix": {
         "stage_shape": fault_stage_shape,

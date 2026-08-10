@@ -10,7 +10,7 @@ import pytest
 from valkey_scale_lab import cli, cli_compat
 from valkey_scale_lab.execution import ExecutionSelectionError
 from valkey_scale_lab.planner.plan import PlannerError
-from valkey_scale_lab.runtime import docker_runtime
+from valkey_scale_lab.runtime import docker_runtime, teardown
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
@@ -94,7 +94,7 @@ def test_fault_safety_canonical_selection_rejects_profile_node_mismatch() -> Non
             {"capability_id": "local_full_flow", "scenario_id": "local_full_flow", "backend_id": "docker_process", "profile_id": "exact-50", "requested_nodes": 50, "config_path": "config.yaml", "artifacts_dir": "artifacts", "state_out": "state.json", "setup_timeline": _SETUP_TIMELINE, "global_config_path": "global.yaml", "cli_overrides": {"runtime": {"io_threads": 2}}},
         ),
         (
-            cli_compat.docker_runtime,
+            cli_compat.teardown,
             "cleanup_scenario",
             lambda: cli_compat.cleanup_scenario(state_path="state.json", artifacts_dir="artifacts", out_path="cleanup.json"),
             (),
@@ -164,7 +164,7 @@ def test_compatibility_wrappers_preserve_arguments_returns_and_exceptions(
 
 def test_cli_keeps_product_symbols_bound_for_import_compatibility() -> None:
     assert cli.execute_scenario is docker_runtime.execute_scenario
-    assert cli.cleanup_scenario is docker_runtime.cleanup_scenario
+    assert cli.cleanup_scenario is teardown.cleanup_scenario
 
 
 def test_config_and_plan_handlers_use_compatibility_boundary(

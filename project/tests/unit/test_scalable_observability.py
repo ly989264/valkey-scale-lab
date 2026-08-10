@@ -365,89 +365,115 @@ def _shards_with_loading_replica(node_ids: list[str]) -> list[Any]:
 
 
 
-def test_load_lane_runs_inside_a_nodehost_container(tmp_path: Path) -> None:
+class _FakeLoadLaneHost:
+    """A runtime host for the Load Lane, with no runtime behind it.
+
+    §15 keeps the Load Lane unchanged across backends, so its own tests must be
+    able to run without one. The Docker implementation of this protocol is
+    asserted where it lives, in the Docker runtime's contract tests.
+    """
+
+    seed_host = "10.0.0.7"
+
+    def __init__(self) -> None:
+        self.collected: list[tuple[str, str]] = []
+        self.fail_collect: str | None = None
+
+    def command(self, argv: Any, *, remote_dir: str) -> list[str]:
+        return ["on-host", remote_dir, *[str(arg) for arg in argv]]
+
+    def collect_evidence(self, remote_dir: str, local_dir: Path) -> None:
+        if self.fail_collect is not None:
+            raise CollectionError(
+                f"could not copy memtier output out of host: {self.fail_collect}"
+            )
+        self.collected.append((remote_dir, local_dir.as_posix()))
+
+
+def test_load_lane_runs_on_the_runtime_host_it_was_given(tmp_path: Path) -> None:
     lane = MemtierLoadLane(
         host="127.0.0.1",
         port=7401,
         primary_count=25,
         run_scope="run:stability",
         artifacts_dir=tmp_path,
-        container="vslab-run-nodehost-az-a-00",
+        remote_host=_FakeLoadLaneHost(),
     )
     paths = lane.paths("formal")
     command = lane.command(paths, duration_seconds=120)
 
-    # The cluster advertises Docker network addresses, so memtier has to run
-    # where those resolve rather than on the host.
-    assert command[:3] == ["docker", "exec", "vslab-run-nodehost-az-a-00"]
-    script = command[-1]
-    assert "memtier_benchmark" in script
-    assert "--cluster-mode" in script
+    # The cluster advertises the runtime's own addresses, so memtier has to run
+    # where those resolve rather than here - and where that is, is the adapter's.
+    assert command[:2] == ["on-host", "/tmp/vslab-load-lane/formal"]
+    assert "memtier_benchmark" in command
+    assert "--cluster-mode" in command
 
-    # Output goes to a container path and is copied back to the host paths.
+    # Output goes to a path on that host and is collected back to the local paths.
     assert paths.remote_dir == "/tmp/vslab-load-lane/formal"
-    assert f"--json-out-file={paths.remote_dir}/{paths.json.name}" in script
-    assert f"--hdr-file-prefix={paths.remote_dir}/{paths.hdr_prefix.name}" in script
-    assert str(tmp_path) not in script
+    assert f"--json-out-file={paths.remote_dir}/{paths.json.name}" in command
+    assert f"--hdr-file-prefix={paths.remote_dir}/{paths.hdr_prefix.name}" in command
+    assert not any(str(tmp_path) in part for part in command)
 
-    # stdout and stderr still stream straight back over the exec channel.
+    # stdout and stderr still stream straight back over the launcher's channel.
     assert paths.stdout.parent == tmp_path
     assert paths.stderr.parent == tmp_path
 
 
-def test_load_lane_copies_container_output_back_to_the_host(tmp_path: Path) -> None:
+def test_load_lane_runs_here_when_it_was_given_no_runtime_host(tmp_path: Path) -> None:
     lane = MemtierLoadLane(
         host="127.0.0.1",
         port=7401,
         primary_count=25,
         run_scope="run:stability",
         artifacts_dir=tmp_path,
-        container="vslab-run-nodehost-az-a-00",
     )
     paths = lane.paths("formal")
-    calls: list[list[str]] = []
+    command = lane.command(paths, duration_seconds=120)
 
-    def fake_run(command: list[str], **_kwargs: Any) -> Any:
-        calls.append(command)
-        return subprocess.CompletedProcess(command, 0, "", "")
-
-    monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr(subprocess, "run", fake_run)
-    try:
-        lane._collect_outputs(paths)
-    finally:
-        monkeypatch.undo()
-
-    assert calls == [
-        [
-            "docker",
-            "cp",
-            "vslab-run-nodehost-az-a-00:/tmp/vslab-load-lane/formal/.",
-            tmp_path.as_posix(),
-        ]
-    ]
+    assert command[0] == "memtier_benchmark"
+    assert paths.remote_dir is None
+    assert f"--json-out-file={paths.json.as_posix()}" in command
 
 
-def test_load_lane_reports_a_failed_output_copy(tmp_path: Path) -> None:
+def test_load_lane_collects_host_output_back_to_the_local_paths(tmp_path: Path) -> None:
+    host = _FakeLoadLaneHost()
     lane = MemtierLoadLane(
         host="127.0.0.1",
         port=7401,
         primary_count=25,
         run_scope="run:stability",
         artifacts_dir=tmp_path,
-        container="vslab-run-nodehost-az-a-00",
+        remote_host=host,
+    )
+    lane._collect_outputs(lane.paths("formal"))
+
+    assert host.collected == [("/tmp/vslab-load-lane/formal", tmp_path.as_posix())]
+
+
+def test_load_lane_reports_a_failed_output_collection(tmp_path: Path) -> None:
+    host = _FakeLoadLaneHost()
+    host.fail_collect = "no such container"
+    lane = MemtierLoadLane(
+        host="127.0.0.1",
+        port=7401,
+        primary_count=25,
+        run_scope="run:stability",
+        artifacts_dir=tmp_path,
+        remote_host=host,
     )
 
-    def fake_run(command: list[str], **_kwargs: Any) -> Any:
-        return subprocess.CompletedProcess(command, 1, "", "no such container")
+    with pytest.raises(CollectionError, match="could not copy memtier output"):
+        lane._collect_outputs(lane.paths("formal"))
 
-    monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr(subprocess, "run", fake_run)
-    try:
-        with pytest.raises(CollectionError, match="could not copy memtier output"):
-            lane._collect_outputs(lane.paths("formal"))
-    finally:
-        monkeypatch.undo()
+
+def test_load_lane_holds_no_runtime_of_its_own() -> None:
+    """§15 keeps the Load Lane unchanged across backends.
+
+    It named `docker` three times until roadmap item 0.5 - the exec wrapper, the
+    `which` preflight and the output copy. This is the boundary, pinned.
+    """
+    source = Path(load_module.__file__).read_text(encoding="utf-8")
+    assert "docker" not in source
 
 
 def test_permanent_role_mismatch_fails_without_waiting_for_convergence() -> None:

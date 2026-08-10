@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from valkey_scale_lab.runtime import docker_runtime
+from valkey_scale_lab.runtime import docker_runtime, teardown
 
 
 def test_cleanup_rejects_state_missing_runtime_ownership(
@@ -37,8 +37,10 @@ def test_cleanup_rejects_state_missing_runtime_ownership(
     monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", fake_cleanup)
     monkeypatch.setattr(docker_runtime, "owned_resources", lambda **kwargs: [])
 
-    with pytest.raises(docker_runtime.DockerRuntimeError, match="ownership|run_id"):
-        docker_runtime.cleanup_scenario(
+    # The refusal is the lifecycle's, not Docker's: cleanup declines state that
+    # does not say which run it owns before it resolves a backend at all.
+    with pytest.raises(teardown.TeardownError, match="ownership|run_id"):
+        teardown.cleanup_scenario(
             state_path=state_path,
             artifacts_dir=tmp_path,
             out_path=tmp_path / "cleanup.json",

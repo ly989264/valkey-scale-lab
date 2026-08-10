@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import shlex
 import shutil
 import subprocess
 import time
@@ -10,6 +9,7 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from valkey_scale_lab.observability.contracts import CollectionError
+from valkey_scale_lab.runtime.node_backend import LoadLaneHost
 
 TARGET_QPS = 10_000
 QPS_TOLERANCE = 0.30
@@ -27,8 +27,9 @@ class LoadLanePaths:
     stderr: Path
     json: Path
     hdr_prefix: Path
-    # Set when memtier runs inside a container: the directory it writes its JSON
-    # and HDR output to over there, to be copied back to the host paths above.
+    # Set when memtier runs on a runtime host rather than here: the directory it
+    # writes its JSON and HDR output to over there, to be collected back to the
+    # paths above.
     remote_dir: str | None = None
 
 
@@ -79,9 +80,15 @@ class MemtierLoadLane:
     """Fixed V1 Load Lane; no runtime fallback or dynamic concurrency.
 
     In cluster mode memtier follows the addresses the cluster advertises, which
-    are the Docker network addresses of the nodehosts. A macOS host cannot route
-    those, so `container` runs memtier inside a nodehost container, where they
-    resolve exactly as they do for the cluster itself.
+    are the runtime's own network addresses for the nodehosts. This process may
+    not be able to route them - under Docker on macOS it cannot - so
+    `remote_host` runs memtier on the host the seed node lives on, where they
+    resolve exactly as they do for the cluster itself, and collects what memtier
+    wrote there.
+
+    Which host that is, how to reach it and how to collect from it belong to the
+    runtime adapter (§15). This lane knows only that it has one, or that it does
+    not and can run memtier here.
     """
 
     def __init__(
@@ -94,8 +101,8 @@ class MemtierLoadLane:
         artifacts_dir: Path,
         executable: str = "memtier_benchmark",
         popen: Callable[..., subprocess.Popen[str]] = subprocess.Popen,
-        container: str | None = None,
-        container_dir: str = "/tmp/vslab-load-lane",
+        remote_host: LoadLaneHost | None = None,
+        remote_dir_root: str = "/tmp/vslab-load-lane",
     ) -> None:
         self.host = host
         self.port = port
@@ -104,8 +111,8 @@ class MemtierLoadLane:
         self.artifacts_dir = artifacts_dir
         self.executable = executable
         self._popen = popen
-        self.container = container
-        self.container_dir = container_dir
+        self.remote_host = remote_host
+        self.remote_dir_root = remote_dir_root
 
     def paths(self, label: str) -> LoadLanePaths:
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -115,22 +122,15 @@ class MemtierLoadLane:
             json=self.artifacts_dir / f"memtier_{label}.json",
             hdr_prefix=self.artifacts_dir / f"memtier_{label}_latency",
             remote_dir=(
-                None if self.container is None else f"{self.container_dir}/{label}"
+                None if self.remote_host is None else f"{self.remote_dir_root}/{label}"
             ),
         )
 
     def command(self, paths: LoadLanePaths, *, duration_seconds: float) -> list[str]:
         memtier = self._memtier_argv(paths, duration_seconds=duration_seconds)
-        if paths.remote_dir is None:
+        if paths.remote_dir is None or self.remote_host is None:
             return memtier
-        return [
-            "docker",
-            "exec",
-            str(self.container),
-            "sh",
-            "-c",
-            f"mkdir -p {shlex.quote(paths.remote_dir)} && exec {shlex.join(memtier)}",
-        ]
+        return self.remote_host.command(memtier, remote_dir=paths.remote_dir)
 
     def _output_prefix(self, paths: LoadLanePaths) -> tuple[str, str]:
         """Where memtier writes its JSON and HDR output, from its own vantage."""
@@ -171,13 +171,17 @@ class MemtierLoadLane:
         ]
 
     def _start(self, label: str, *, duration_seconds: float) -> MemtierProcess:
-        launcher = "docker" if self.container is not None else self.executable
+        paths = self.paths(label)
+        command = self.command(paths, duration_seconds=duration_seconds)
+        # The launcher is whatever the command actually starts here: memtier
+        # itself when it runs locally, and whatever the runtime adapter reaches
+        # its host with when it does not. Deriving it from the command rather
+        # than recomputing it checks the binary that will really be executed.
+        launcher = command[0]
         if shutil.which(launcher) is None:
             raise CollectionError(f"{launcher} is not installed")
-        paths = self.paths(label)
         stdout_file = paths.stdout.open("w", encoding="utf-8")
         stderr_file = paths.stderr.open("w", encoding="utf-8")
-        command = self.command(paths, duration_seconds=duration_seconds)
         try:
             process = self._popen(
                 command,
@@ -282,25 +286,10 @@ class MemtierLoadLane:
         }
 
     def _collect_outputs(self, paths: LoadLanePaths) -> None:
-        """Bring container-written JSON and HDR output back to the host paths."""
-        if paths.remote_dir is None:
+        """Bring host-written JSON and HDR output back to the local paths."""
+        if paths.remote_dir is None or self.remote_host is None:
             return
-        result = subprocess.run(
-            [
-                "docker",
-                "cp",
-                f"{self.container}:{paths.remote_dir}/.",
-                self.artifacts_dir.as_posix(),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if result.returncode != 0:
-            raise CollectionError(
-                "could not copy memtier output out of "
-                f"{self.container}: {result.stderr.strip()}"
-            )
+        self.remote_host.collect_evidence(paths.remote_dir, self.artifacts_dir)
 
     @staticmethod
     def _validate_outputs(paths: LoadLanePaths) -> None:

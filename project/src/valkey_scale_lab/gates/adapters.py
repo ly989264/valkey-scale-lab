@@ -8,10 +8,8 @@ from typing import Any, Callable, Mapping, Optional, Union
 
 from valkey_scale_lab.scenarios import ArtifactSpec, ReportSurface, ScenarioSpec
 from valkey_scale_lab.scenarios.contracts import freeze_json
-from valkey_scale_lab.runtime.docker_runtime import (
-    cleanup_scenario,
-    execute_scenario,
-)
+from valkey_scale_lab.runtime.docker_runtime import execute_scenario
+from valkey_scale_lab.runtime.teardown import cleanup_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
 from .contracts import (

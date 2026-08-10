@@ -25,7 +25,7 @@ from valkey_scale_lab.gates import (
 )
 from valkey_scale_lab.evidence import RawSourceErrors
 from valkey_scale_lab.observability.contracts import CollectionError
-from valkey_scale_lab.runtime import docker_runtime
+from valkey_scale_lab.runtime import docker_runtime, teardown
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.scenarios import compile_gate_plan, load_local_full_flow_definition
 
@@ -576,7 +576,11 @@ def test_cleanup_ownership_check_accepts_an_already_removed_owned_resource(
 ) -> None:
     state = {
         "capability_id": "local_full_flow",
-        "runtime": {"run_id": "owned-run"},
+        # Named the way a real run's state names them: teardown resolves the
+        # backend on `backend_id`, and that backend releases a process run or a
+        # container run on the `runtime.type` it wrote itself.
+        "backend_id": "docker_process",
+        "runtime": {"type": "docker_process", "run_id": "owned-run"},
         "nodehosts": [
             {"nodehost_id": "az-a-00", "container_name": "removed-nodehost"}
         ],
@@ -620,8 +624,10 @@ def test_cleanup_ownership_check_accepts_an_already_removed_owned_resource(
         lambda **_kwargs: [],
     )
 
-    report = docker_runtime._cleanup_process_scenario(
-        state=state,
+    state_path = tmp_path / "state.json"
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    report = teardown.cleanup_scenario(
+        state_path=state_path,
         artifacts_dir=tmp_path,
         out_path=tmp_path / "cleanup.json",
     )

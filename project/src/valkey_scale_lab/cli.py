@@ -20,7 +20,8 @@ from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import FinalReportError, ReportError, render_report
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import CommandRecorder, command_recorder_context
-from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, execute_scenario
+from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, execute_scenario
+from valkey_scale_lab.runtime.teardown import TeardownError, cleanup_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, build_setup_telemetry_artifact, write_setup_telemetry_artifact
 from valkey_scale_lab.scenarios import ScenarioDefinitionError, load_scenario_definition
 
@@ -290,7 +291,7 @@ def _gate_cleanup(args: argparse.Namespace) -> int:
         report["command_audit_summary_ref"] = str(Path(args.artifacts_dir, "command_audit_summary.json"))
         Path(args.out).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         _refresh_setup_telemetry_cleanup(args, report)
-    except (DockerRuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
+    except (DockerRuntimeError, TeardownError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"ERROR: gate cleanup: {exc}", file=sys.stderr)
         return 1
     return 0 if report["status"] == "PASS" else 1

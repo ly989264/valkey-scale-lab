@@ -53,9 +53,9 @@ from valkey_scale_lab.runtime.docker_runtime import (
     DockerRuntimeError,
     _node_command,
     _management_cluster_health,
-    cleanup_scenario,
     execute_scenario,
 )
+from valkey_scale_lab.runtime.teardown import cleanup_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 from valkey_scale_lab.scenarios import ScenarioDefinition, compile_gate_plan
 

@@ -13,6 +13,7 @@ from valkey_scale_lab.planner import plan as planner
 from valkey_scale_lab.report import final as final_report
 from valkey_scale_lab.report import render as summary_report
 from valkey_scale_lab.runtime import docker_runtime
+from valkey_scale_lab.runtime import teardown
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
 
@@ -147,7 +148,7 @@ def cleanup_scenario(
     artifacts_dir: str | Path,
     out_path: str | Path,
 ) -> dict[str, Any]:
-    return docker_runtime.cleanup_scenario(
+    return teardown.cleanup_scenario(
         state_path=state_path,
         artifacts_dir=artifacts_dir,
         out_path=out_path,

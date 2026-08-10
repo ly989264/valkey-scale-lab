@@ -14,7 +14,7 @@ import pytest
 from valkey_scale_lab.metrics import TelemetryRun
 from valkey_scale_lab.observability.contracts import CollectionError, SemanticFailure
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind
-from valkey_scale_lab.runtime import docker_runtime
+from valkey_scale_lab.runtime import docker_runtime, teardown
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 
@@ -2660,6 +2660,24 @@ def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.M
     assert any(action["type"] == "fault_state" for action in report["cleanup_actions"])
 
 
+def _release_through_teardown(state: dict[str, Any], tmp_path: Path) -> dict[str, Any]:
+    """Release `state` the way the Gate's cleanup step does.
+
+    The state names its backend, because that is what teardown resolves on now -
+    it no longer reads `runtime.type` itself. Driving the whole neutral path
+    keeps these tests asserting the report a real cleanup writes, rather than a
+    backend return value no artifact ever shows.
+    """
+    state = {"backend_id": "docker_process", **state}
+    state_path = tmp_path / "state.json"
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    return teardown.cleanup_scenario(
+        state_path=state_path,
+        artifacts_dir=tmp_path,
+        out_path=tmp_path / "cleanup.json",
+    )
+
+
 def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     labels: list[str] = []
     calls: list[list[str]] = []
@@ -2720,7 +2738,7 @@ def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: P
     )
     monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, capability_id, run_id: [])
 
-    report = docker_runtime._cleanup_process_scenario(state=state, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
+    report = _release_through_teardown(state, tmp_path)
 
     assert report["status"] == "PASS"
     assert labels == [
@@ -2794,7 +2812,7 @@ def test_process_cleanup_tolerates_slow_bulk_termination_when_residuals_clear(tm
     )
     monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, capability_id, run_id: [])
 
-    report = docker_runtime._cleanup_process_scenario(state=state, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
+    report = _release_through_teardown(state, tmp_path)
 
     assert report["status"] == "PASS"
     terminate_actions = [action for action in report["cleanup_actions"] if action.get("action") == "terminate"]
@@ -4663,3 +4681,180 @@ def test_parallel_work_can_see_the_command_recorder(tmp_path: Path) -> None:
         timeout=10.0,
         label="recorder absence",
     ) == [None, None, None]
+
+
+# --- roadmap item 0.5: the two seam operations §15 names ----------------------
+
+
+def test_docker_load_lane_host_keeps_the_command_the_baselines_record() -> None:
+    """The Docker half of the Load Lane's evidence upload, asserted where it lives.
+
+    `observability/load.py` no longer names Docker, so the exec wrapper and the
+    output copy are pinned here instead. The argv is byte-identical to what the
+    frozen exact-50 baselines record in `scalable_stability_observation.json`,
+    which is what makes this a move rather than a change.
+    """
+    backend = docker_runtime.DockerNodeBackend()
+    host = backend.load_lane_host(
+        {
+            "container_name": "vslab-run-nodehost-az-a-00",
+            "nodehost_container_name": "vslab-run-nodehost-az-a-00",
+            "client_port": 7400,
+        }
+    )
+
+    # A node answers on loopback inside the nodehost its process listens in.
+    assert host.seed_host == "127.0.0.1"
+
+    command = host.command(
+        ["memtier_benchmark", "--server", "127.0.0.1", "--cluster-mode"],
+        remote_dir="/tmp/vslab-load-lane/formal",
+    )
+    assert command == [
+        "docker",
+        "exec",
+        "vslab-run-nodehost-az-a-00",
+        "sh",
+        "-c",
+        "mkdir -p /tmp/vslab-load-lane/formal && exec memtier_benchmark "
+        "--server 127.0.0.1 --cluster-mode",
+    ]
+
+
+def test_docker_load_lane_host_collects_output_and_reports_a_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    host = docker_runtime.DockerLoadLaneHost(container="vslab-run-nodehost-az-a-00")
+    calls: list[list[str]] = []
+
+    def fake_run(command: list[str], **_kwargs: Any) -> Any:
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(docker_runtime.subprocess, "run", fake_run)
+    host.collect_evidence("/tmp/vslab-load-lane/formal", tmp_path)
+
+    assert calls == [
+        [
+            "docker",
+            "cp",
+            "vslab-run-nodehost-az-a-00:/tmp/vslab-load-lane/formal/.",
+            tmp_path.as_posix(),
+        ]
+    ]
+
+    monkeypatch.setattr(
+        docker_runtime.subprocess,
+        "run",
+        lambda command, **_kwargs: subprocess.CompletedProcess(
+            command, 1, "", "no such container"
+        ),
+    )
+    with pytest.raises(CollectionError, match="could not copy memtier output"):
+        host.collect_evidence("/tmp/vslab-load-lane/formal", tmp_path)
+
+
+def test_load_lane_seed_asks_the_backend_where_to_run() -> None:
+    """The seed's host is the adapter's answer, not a container name read here."""
+    nodes = [
+        {
+            "container_name": "vslab-run-nodehost-az-a-00",
+            "nodehost_container_name": "vslab-run-nodehost-az-a-00",
+            "client_port": 7400,
+        }
+    ]
+    host, seed_host, port = docker_runtime._load_lane_seed(
+        nodes, backend=docker_runtime.DockerNodeBackend()
+    )
+
+    assert host.container == "vslab-run-nodehost-az-a-00"
+    assert (seed_host, port) == ("127.0.0.1", 7400)
+
+
+def test_cleanup_refuses_a_run_whose_backend_has_no_implementation(
+    tmp_path: Path,
+) -> None:
+    """The defect item 0.5 exists to prevent, pinned.
+
+    Before the seam reached teardown, a state naming any other backend fell into
+    the Docker container path, which found nothing owned by that run in Docker -
+    there being nothing in Docker - and wrote `status: PASS` while every process
+    it started was still running. `native_multi_ecs` is deliberately absent from
+    the backend registry, so it stands in for exactly that state here.
+    """
+    state = {
+        "capability_id": "local_full_flow",
+        "scenario": "local_full_flow",
+        "backend_id": "native_multi_ecs",
+        "runtime": {"type": "native_multi_ecs", "run_id": "owned-run"},
+        "nodes": [{"logical_id": "node-000", "pid": 101}],
+    }
+    state_path = tmp_path / "state.json"
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+    with pytest.raises(teardown.TeardownError, match="native_multi_ecs"):
+        teardown.cleanup_scenario(
+            state_path=state_path,
+            artifacts_dir=tmp_path,
+            out_path=tmp_path / "cleanup.json",
+        )
+
+    # And it wrote nothing: a report claiming a clean teardown is the failure.
+    assert not (tmp_path / "cleanup.json").exists()
+
+
+def test_cleanup_status_rule_is_one_rule_for_every_backend(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Slice map §2.6: the two status rules became the stricter one.
+
+    That is a no-op on the container path by enumeration - every `FAIL` a row
+    there can carry already forces `FAIL` through `cleanup_errors` or through
+    `resources_remaining`. This pins the enumeration by driving the container
+    path with each of the three producers that can emit a row.
+    """
+    state = {
+        "capability_id": "cluster_lifecycle",
+        "scenario": "cluster_lifecycle",
+        "backend_id": "docker_container",
+        "runtime": {"type": "docker", "run_id": "test-run"},
+        "nodes": [],
+    }
+    state_path = tmp_path / "state.json"
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda **_kwargs: [])
+
+    # Only PASS and SKIPPED_WITH_REASON rows: still PASS under either rule.
+    monkeypatch.setattr(
+        docker_runtime,
+        "_cleanup_resources_by_label",
+        lambda **_kwargs: (
+            [
+                {"type": "container", "id": "c", "action": "stop", "status": "SKIPPED_WITH_REASON"},
+                {"type": "container", "id": "c", "action": "remove", "status": "PASS"},
+            ],
+            {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0},
+        ),
+    )
+    report = teardown.cleanup_scenario(
+        state_path=state_path,
+        artifacts_dir=tmp_path,
+        out_path=tmp_path / "cleanup.json",
+    )
+    assert report["status"] == "PASS"
+    assert not any(action["status"] == "FAIL" for action in report["cleanup_actions"])
+
+    # The discovery failure is the one producer that emits FAIL, and it appends
+    # to cleanup_errors in the same breath - so the added term changes nothing.
+    def raise_discovery(**_kwargs: Any):
+        raise DockerRuntimeError("discovery failed")
+
+    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", raise_discovery)
+    report = teardown.cleanup_scenario(
+        state_path=state_path,
+        artifacts_dir=tmp_path,
+        out_path=tmp_path / "cleanup.json",
+    )
+    assert report["status"] == "FAIL"
+    assert report["cleanup_errors"] == ["discovery failed"]
+    assert any(action["status"] == "FAIL" for action in report["cleanup_actions"])
