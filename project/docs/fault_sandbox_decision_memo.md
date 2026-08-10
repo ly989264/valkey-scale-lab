@@ -211,8 +211,98 @@ fault types inert. Recommended against.
 ## 6. What this memo does not decide
 
 Per the roadmap's approval rule, removing a CLI surface is the operator's call.
-Nothing in this memo has been executed: `fault/sandbox.py`, the CLI subcommands
-and all three tests are untouched at this commit.
+Nothing in this memo had been executed when §1-§5 were written: `fault/sandbox.py`,
+the CLI subcommands and all three tests were untouched at that commit.
 
 If option A or B is approved, it is a session C item with its own commit, its
 own evidence, and — for A — the milestone-criterion decision named in §5.
+
+---
+
+## 7. Execution record
+
+**Option A executed in the commit that carries this section**, from HEAD
+`d987975f`. The roadmap's deviation rule asks that an item's premises be
+verified rather than trusted, so both decisive claims were re-measured against
+that HEAD before anything was removed. Both hold.
+
+### 7.1 Six of seven types still inject nothing — measured, not read
+
+§2 derived this by reading every branch. It was re-derived by running
+`apply_fault` once per accepted type against a fabricated single-node state,
+with `run_docker` replaced by a recorder that counts calls and answers the
+ownership probe with this run's labels:
+
+| `fault_type` | runtime commands issued | recorded `status` | recorded `action` |
+|---|---|---|---|
+| `network_delay` | **0** | `PASS` | `sandbox_proxy_lifecycle_recorded` |
+| `network_loss` | **0** | `PASS` | `sandbox_proxy_lifecycle_recorded` |
+| `network_partition` | **0** | `PASS` | `sandbox_proxy_lifecycle_recorded` |
+| `network_flap` | **0** | `PASS` | `sandbox_proxy_lifecycle_recorded` |
+| `process_stop` | **0** | `PASS` | `sandbox_proxy_lifecycle_recorded` |
+| `process_restart` | **0** | `PASS` | `sandbox_proxy_lifecycle_recorded` |
+| `node_stop` | 4 | `PASS` | `process_sigkill` |
+
+`node_stop`'s four are the ownership inspect, the presence preflight, the
+`kill -KILL` and one absence probe. The same run confirms §2's second dead
+branch from the other end: `apply_fault` records `process_sigkill` and only
+that, so `clear_fault`'s `container_stop` restore path is unreachable from it.
+
+### 7.2 No acceptance bar reaches it — measured from both ends
+
+Importing `gates.real` and then `runtime.lifecycle` — the whole real-run
+path — leaves `valkey_scale_lab.fault.sandbox` absent from `sys.modules`. The
+only `fault` module either pulls in is `fault.network_proxy`, which this
+deletion keeps. Across the 383 files of the two frozen exact-50 baseline runs,
+the string `fault_state` appears **zero** times and there is no
+`fault_state_*.json`, which is also the confirmation §5 owed for
+`_remove_fault_state_files`: its cleanup-action row was already absent from
+every baseline `cleanup_report`, so removing the producer moves no diff view.
+
+### 7.3 What was removed
+
+- `src/valkey_scale_lab/fault/sandbox.py`, 490 lines.
+- `cli.py`: the whole `fault` command group. Its only two subcommands were
+  `apply` and `clear`, so nothing was left for a bare `fault` parser to carry.
+  `_fault_apply`, `_fault_clear` and the `FaultError` import went with it.
+- `cli_compat.py`: the `fault_sandbox` import, the `apply_fault` and
+  `clear_fault` wrappers, and their two `__all__` entries.
+- `runtime/teardown.py::_remove_fault_state_files` and its call, per §5. The
+  `cleanup_report` change is declared: `cleanup_actions` can no longer contain a
+  `type: fault_state` row. No run in evidence ever produced one.
+- `catalog.json`: `product.fault.sandbox_fault`,
+  `product.fault.owned_runtime_guard_gap`, `product.unit.fault_sandbox` and
+  their three test files. No placeholder replaced them. `product.fault` goes
+  3 tests to 1, `product.unit` 22 to 21, `product.all` 88 to 85, and
+  **`repository.all` 91 to 88** — the standing suite count changes with this
+  commit.
+- `tests/integration/test_docker_runtime_contract.py::test_cleanup_removes_fault_state_files`,
+  which pinned the helper §5 named as dead.
+- The two rows and one handler test in `tests/cli/test_compatibility_wrappers.py`
+  that covered the deleted wrappers, and `tests/unit/test_cli_contract.py`'s
+  assertion that `fault` appears in `--help`.
+- `AGENTS.md`'s Product Interface list, which named both subcommands as
+  preserved surface; it now records that they were deleted and why.
+
+Three pinned counts in `verification/tests/test_contracts.py` moved with it, and
+one of them is the measurement §5 promised rather than bookkeeping. The catalog
+goes 95 registered tests to 92. **M1's expansion goes 90 planned tests to 87 and
+its `definition_status` stays `READY`** - the three that left are exactly the
+three deleted, no criterion expanded to nothing, and the milestone still plans.
+That is the deletion's own proof that `milestones/` needed no edit.
+
+`milestones/` is untouched, per the operator decision in §5.
+
+### 7.4 Two consumers left pointing at a surface that is gone
+
+§3 named one: `scripts/audit_small_real_scenario_parity.py`. There is a second,
+which §3 missed — `scripts/fault_failover_gate.py` shells out to
+`python3 -m valkey_scale_lab.cli fault apply` and `... fault clear` at three
+sites. Neither script is a registered check: `catalog.json`'s only non-pytest
+runner is `scripts/m2_performance_gate.py`, and `fault_failover_gate.py` is
+reached only from `scripts/failover_rto_timeout_matrix.py`, another standalone.
+Both are recorded here rather than changed, because repairing an unregistered
+script is not part of an approved deletion and would need its own evidence.
+
+The same is true of `fault_report.json`, the flat artifact `_write_fault_report`
+produced. Nothing in `src/` read it; the audit scripts above did.

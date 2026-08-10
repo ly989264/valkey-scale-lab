@@ -216,11 +216,14 @@ The genuine preconditions are:
    so. The protocol a second backend implements is **frozen at twenty-three
    operations** unless a later slice argues otherwise - M3 item 1.2 owes the
    whole of it, and no stale count from an older section applies.
-3. ~~**Decide `fault/sandbox.py`.**~~ **Decided 2026-08-10: delete it and the
-   `cli fault apply`/`clear` surface it serves** (memo option A). The deletion is
-   Session C's work, not done yet. What decided it was not the duplication:
-   `apply_fault` accepts seven fault types and **six of them inject nothing and
-   record `status: PASS`**. So a second backend owes this nothing.
+3. ~~**Decide `fault/sandbox.py`.**~~ **Decided 2026-08-10 and deleted the same
+   day.** What decided it was not the duplication: `apply_fault` accepts seven
+   fault types and **six of them inject nothing and record `status: PASS`** -
+   re-measured before the deletion at 0 runtime commands each, against
+   `node_stop`'s four. So a second backend owes this nothing. The module, the
+   `cli fault apply`/`clear` surface, `_remove_fault_state_files` and three
+   catalog tests are gone; `docs/fault_sandbox_decision_memo.md` §7 is the
+   record. **`repository.all` is 88 tests, not 91**, from this commit on.
 4. **Confirm the ECS hosts exist.** Five of six criteria need real multi-host
    runs, and the sixth is unverifiable without them. Gates M3-*acceptance*, not
    M3 development.
@@ -437,31 +440,12 @@ lane's own verdict is correctly `OK` - and the sample counts are not stable
 - The standalone `management_matrix` capability (`write_management_matrix_artifacts`)
   drives the same operation core through a different frame, has no registered
   real gate test, and no baseline covers its artifacts.
-- **`fault/sandbox.py` is a second Docker actuator** - 490 lines importing
-  `run_docker`, implementing fault apply/clear (kill, container stop, restart,
-  pid-file removal, PING probe), reached from `cli.py fault apply`/`fault clear`
-  and `compat/phase_aliases.py`. §15 makes the actuator the one thing an adapter
-  replaces, so after Slice 4 there are two. Nothing in the lifecycle calls it
-  and no acceptance bar exercises it. **No longer open: approved for deletion
-  2026-08-10, Session C executes it.** Two things the memo measured that this
-  entry did not know - six of the seven fault types inject nothing, and
-  `clear_fault`'s `container_stop` branch is unreachable from `apply_fault` -
-  and one consequence it did not name:
-  `runtime/teardown.py::_remove_fault_state_files` goes with it, because
-  `apply_fault` is the only producer of `fault_state_*.json` anywhere.
-  **M1 needs no edit** - measured 2026-08-10 and decided then. `product.fault`
-  goes 3 tests to 1 and survives on `product.fault.network_proxy`, so no
-  criterion loses its checks; `local.operations-and-recovery` covers six
-  behaviours across four suites and only one of them is touched. An earlier
-  version of this entry said that check list needed a decision. It does not, and
-  removing the criterion would drop failover, observability and stability
-  coverage that has nothing to do with this module.
-- **No fault path will check ownership once `fault/sandbox.py` is gone.**
-  Measured 2026-08-10 while pricing that deletion: `_require_owned_container`
-  inspects a container's labels and refuses if they are not this run's, and it
-  is the only such check on any fault path - the seam's own actuator has none.
+- **No fault path checks ownership.** Measured 2026-08-10 while pricing the
+  `fault/sandbox.py` deletion, and true since it landed: `_require_owned_container`
+  inspected a container's labels and refused if they were not this run's, and it
+  was the only such check on any fault path - the seam's own actuator has none.
   `kill_node` reads `nodehost_container_name` off the node and execs. So the one
-  test of M1's phrase "confined to project-owned resources" goes with the module.
+  test of M1's phrase "confined to project-owned resources" went with the module.
   Operator decision: **accept the loss, change nothing in M1.** Giving the
   actuator its own ownership check is a *candidate*, deliberately not done - it
   is new behaviour, it needs its own evidence, and a second backend would

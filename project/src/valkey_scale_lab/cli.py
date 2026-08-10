@@ -13,7 +13,6 @@ from valkey_scale_lab.artifacts import build_run_metadata, create_run_context, w
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 from valkey_scale_lab.compat import resolve_capability_alias, resolve_phase_alias
 from valkey_scale_lab.execution import PROFILES, ExecutionSelectionError, resolve_profile
-from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.gates.real import product_tree_digest, run_exact_gate
 from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
@@ -336,43 +335,6 @@ def _refresh_setup_telemetry_cleanup(args: argparse.Namespace, cleanup_report: d
     write_setup_telemetry_artifact(telemetry_path, refreshed)
 
 
-def _fault_apply(args: argparse.Namespace) -> int:
-    try:
-        state = _load_json_if_present(args.state)
-        capability_id = str(state.get("capability_id", "fault_matrix")) if isinstance(state, dict) else "fault_matrix"
-        scenario = str(state.get("scenario", "fault_apply")) if isinstance(state, dict) else "fault_apply"
-        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{capability_id}-fault") if isinstance(state, dict) else f"{capability_id}-fault"
-        recorder = CommandRecorder(capability_id=capability_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
-        with command_recorder_context(recorder):
-            cli_compat.apply_fault(
-                state_path=args.state,
-                target_logical_id=args.target_logical_id,
-                fault_json=args.fault_json,
-                out_path=args.out,
-            )
-        recorder.close()
-    except FaultError as exc:
-        print(f"ERROR: fault apply: {exc}", file=sys.stderr)
-        return 1
-    return 0
-
-
-def _fault_clear(args: argparse.Namespace) -> int:
-    try:
-        state = _load_json_if_present(args.state)
-        capability_id = str(state.get("capability_id", "fault_matrix")) if isinstance(state, dict) else "fault_matrix"
-        scenario = str(state.get("scenario", "fault_clear")) if isinstance(state, dict) else "fault_clear"
-        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{capability_id}-fault") if isinstance(state, dict) else f"{capability_id}-fault"
-        recorder = CommandRecorder(capability_id=capability_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
-        with command_recorder_context(recorder):
-            cli_compat.clear_fault(state_path=args.state, fault_id=args.fault_id, out_path=args.out)
-        recorder.close()
-    except FaultError as exc:
-        print(f"ERROR: fault clear: {exc}", file=sys.stderr)
-        return 1
-    return 0
-
-
 def _analyze(args: argparse.Namespace) -> int:
     try:
         capability_id = (
@@ -659,21 +621,6 @@ def build_parser() -> argparse.ArgumentParser:
     execute.add_argument("--cost-acknowledged", action="store_true")
     execute.set_defaults(func=_gate_execute)
     _add_unimplemented(gate, "gate")
-
-    fault = sub.add_parser("fault", help="Apply and clear sandboxed faults.")
-    fault_sub = fault.add_subparsers(dest="fault_command", metavar="<fault-command>")
-    apply = fault_sub.add_parser("apply", help="Apply a sandboxed fault.")
-    apply.add_argument("--state", required=True)
-    apply.add_argument("--target-logical-id", required=True)
-    apply.add_argument("--fault-json", required=True)
-    apply.add_argument("--out", required=True)
-    apply.set_defaults(func=_fault_apply)
-    clear = fault_sub.add_parser("clear", help="Clear a sandboxed fault.")
-    clear.add_argument("--state", required=True)
-    clear.add_argument("--fault-id", required=True)
-    clear.add_argument("--out", required=True)
-    clear.set_defaults(func=_fault_clear)
-    _add_unimplemented(fault, "fault")
 
     analyze = sub.add_parser("analyze", help="Analyze machine-readable artifacts.")
     analyze.add_argument("--kind", choices=["summary", "workload-impact"], default="summary")

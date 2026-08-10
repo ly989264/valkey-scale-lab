@@ -2640,26 +2640,6 @@ def test_cleanup_report_shape_without_owned_resources(tmp_path: Path, monkeypatc
     assert (tmp_path / "cleanup_report_cluster_lifecycle.json").exists()
 
 
-def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    state = {
-        "schema_version": "v1",
-        "cluster_id": "test",
-        "capability_id": "fault_matrix",
-        "runtime": {"run_id": "test-run"},
-        "nodes": [],
-    }
-    state_path = tmp_path / "state.json"
-    state_path.write_text(docker_runtime.json.dumps(state), encoding="utf-8")
-    fault_state = tmp_path / "fault_state_fault-primary-stop.json"
-    fault_state.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, capability_id, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
-    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, capability_id, run_id: [])
-    report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
-    assert report["status"] == "PASS"
-    assert not fault_state.exists()
-    assert any(action["type"] == "fault_state" for action in report["cleanup_actions"])
-
-
 def _release_through_teardown(state: dict[str, Any], tmp_path: Path) -> dict[str, Any]:
     """Release `state` the way the Gate's cleanup step does.
 

@@ -65,9 +65,7 @@
       "suite_id": "product.fault",
       "description": "All product fault tests.",
       "test_ids": [
-        "product.fault.network_proxy",
-        "product.fault.owned_runtime_guard_gap",
-        "product.fault.sandbox_fault"
+        "product.fault.network_proxy"
       ]
     },
     {
@@ -184,7 +182,6 @@
         "product.unit.cluster_timeout",
         "product.unit.command_recorder_runtime",
         "product.unit.failover_timeline_observer",
-        "product.unit.fault_sandbox",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
         "product.unit.m2_fault_client_sampler",
@@ -232,8 +229,6 @@
         "product.failover.full_flow_unprobed_fault_rejection",
         "product.failover.partition_group_semantics_gap",
         "product.fault.network_proxy",
-        "product.fault.owned_runtime_guard_gap",
-        "product.fault.sandbox_fault",
         "product.gates.cross_instance_collision",
         "product.gates.fault_resource_collision",
         "product.gates.nested_artifact_root_collision",
@@ -278,7 +273,6 @@
         "product.unit.cluster_timeout",
         "product.unit.command_recorder_runtime",
         "product.unit.failover_timeline_observer",
-        "product.unit.fault_sandbox",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
         "product.unit.m2_fault_client_sampler",
@@ -338,8 +332,6 @@
         "product.failover.full_flow_unprobed_fault_rejection",
         "product.failover.partition_group_semantics_gap",
         "product.fault.network_proxy",
-        "product.fault.owned_runtime_guard_gap",
-        "product.fault.sandbox_fault",
         "product.gates.cross_instance_collision",
         "product.gates.fault_resource_collision",
         "product.gates.nested_artifact_root_collision",
@@ -384,7 +376,6 @@
         "product.unit.cluster_timeout",
         "product.unit.command_recorder_runtime",
         "product.unit.failover_timeline_observer",
-        "product.unit.fault_sandbox",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
         "product.unit.m2_fault_client_sampler",
@@ -993,48 +984,6 @@
           "-p",
           "no:cacheprovider",
           "tests/fault/test_network_proxy.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "product.fault.owned_runtime_guard_gap",
-      "description": "Fault owned runtime guard gap checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/fault/test_owned_runtime_guard_gap.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "product.fault.sandbox_fault",
-      "description": "Fault sandbox fault checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/fault/test_sandbox_fault.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
@@ -1959,27 +1908,6 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_failover_timeline_observer.py",
-          "--junitxml={gate.result_path}"
-        ],
-        "cwd": "{gate.project_root}",
-        "timeout_seconds": 1200,
-        "result": "junit"
-      }
-    },
-    {
-      "test_id": "product.unit.fault_sandbox",
-      "description": "Unit fault sandbox checks.",
-      "parameters": {},
-      "runner": {
-        "type": "pytest",
-        "argv": [
-          "python3",
-          "-m",
-          "pytest",
-          "-q",
-          "-p",
-          "no:cacheprovider",
-          "tests/unit/test_fault_sandbox.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",

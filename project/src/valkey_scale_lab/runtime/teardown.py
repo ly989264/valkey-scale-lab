@@ -97,10 +97,6 @@ def cleanup_scenario(
     teardown = backend_for_state(state).release_run({**state, "capability_id": capability_id})
 
     actions = list(teardown.actions)
-    # Local artifacts, not host resources: removing them needs no runtime, and
-    # they stay after the backend's own rows for the reason they always have -
-    # `cleanup_actions` is ordered and the artifact is diffed.
-    actions.extend(_remove_fault_state_files(artifacts))
     errors = list(teardown.errors)
     resources_remaining = list(teardown.resources_remaining)
     if capability_id == "orchestration":
@@ -153,14 +149,6 @@ def cleanup_scenario(
     if scenario:
         (out.parent / f"cleanup_report_{scenario}.json").write_text(serialized, encoding="utf-8")
     return report
-
-
-def _remove_fault_state_files(artifacts_dir: Path) -> list[dict[str, Any]]:
-    actions: list[dict[str, Any]] = []
-    for path in sorted(artifacts_dir.glob("fault_state_*.json")):
-        path.unlink()
-        actions.append({"type": "fault_state", "id": path.name, "action": "remove", "status": "PASS"})
-    return actions
 
 
 def _append_orchestration_orchestrator_cleanup(artifacts_dir: Path, resources_remaining: list[dict[str, Any]]) -> None:

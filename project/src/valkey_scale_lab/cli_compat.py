@@ -8,7 +8,6 @@ from valkey_scale_lab.execution import SCENARIO_CAPABILITIES, resolve_profile
 from valkey_scale_lab.analysis import summary as analysis_summary
 from valkey_scale_lab.analysis import workload_impact
 from valkey_scale_lab.config import validation as config_validation
-from valkey_scale_lab.fault import sandbox as fault_sandbox
 from valkey_scale_lab.planner import plan as planner
 from valkey_scale_lab.report import final as final_report
 from valkey_scale_lab.report import render as summary_report
@@ -155,34 +154,6 @@ def cleanup_scenario(
     )
 
 
-def apply_fault(
-    *,
-    state_path: str | Path,
-    target_logical_id: str,
-    fault_json: str | Path,
-    out_path: str | Path,
-) -> dict[str, Any]:
-    return fault_sandbox.apply_fault(
-        state_path=state_path,
-        target_logical_id=target_logical_id,
-        fault_json=fault_json,
-        out_path=out_path,
-    )
-
-
-def clear_fault(
-    *,
-    state_path: str | Path,
-    fault_id: str,
-    out_path: str | Path,
-) -> dict[str, Any]:
-    return fault_sandbox.clear_fault(
-        state_path=state_path,
-        fault_id=fault_id,
-        out_path=out_path,
-    )
-
-
 def create_analysis_summary(
     input_dir: str | Path,
     out_path: str | Path,
@@ -235,12 +206,10 @@ def build_final_goal_loop_report(
 
 
 __all__ = [
-    "apply_fault",
     "build_final_report",
     "build_final_goal_loop_report",
     "build_workload_impact_analysis",
     "cleanup_scenario",
-    "clear_fault",
     "create_analysis_summary",
     "create_plan_file",
     "create_scenario",

@@ -22,7 +22,6 @@ def test_help_succeeds(capsys: pytest.CaptureFixture[str]) -> None:
     out = capsys.readouterr().out
     assert "Valkey scale lab CLI" in out
     assert "gate" in out
-    assert "fault" in out
 
 
 @pytest.mark.parametrize("argv", [["analyze", "--help"], ["report", "--help"], ["resource", "preflight", "--help"]])

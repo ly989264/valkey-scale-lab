@@ -100,20 +100,6 @@ def test_fault_safety_canonical_selection_rejects_profile_node_mismatch() -> Non
             (),
             {"state_path": "state.json", "artifacts_dir": "artifacts", "out_path": "cleanup.json"},
         ),
-        (
-            cli_compat.fault_sandbox,
-            "apply_fault",
-            lambda: cli_compat.apply_fault(state_path="state.json", target_logical_id="node-1", fault_json="fault.json", out_path="apply.json"),
-            (),
-            {"state_path": "state.json", "target_logical_id": "node-1", "fault_json": "fault.json", "out_path": "apply.json"},
-        ),
-        (
-            cli_compat.fault_sandbox,
-            "clear_fault",
-            lambda: cli_compat.clear_fault(state_path="state.json", fault_id="fault-1", out_path="clear.json"),
-            (),
-            {"state_path": "state.json", "fault_id": "fault-1", "out_path": "clear.json"},
-        ),
         (cli_compat.analysis_summary, "create_analysis_summary", lambda: cli_compat.create_analysis_summary("input", "analysis.json"), ("input", "analysis.json"), {}),
         (
             cli_compat.workload_impact,
@@ -222,19 +208,6 @@ def test_gate_scenario_and_cleanup_handlers_use_compatibility_boundary(
     cleanup_path = tmp_path / "cleanup.json"
     assert cli.main(["gate", "cleanup", "--state", str(state_path), "--artifacts-dir", str(artifacts), "--out", str(cleanup_path)]) == 0
     assert calls[1] == ("cleanup", {"state_path": str(state_path), "artifacts_dir": str(artifacts), "out_path": str(cleanup_path)})
-
-
-def test_fault_handlers_use_compatibility_boundary(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    state = tmp_path / "state.json"
-    state.write_text(json.dumps({"capability_id": "P", "scenario": "S", "runtime": {"run_id": "run-1"}}), encoding="utf-8")
-    calls: list[tuple[str, dict[str, Any]]] = []
-    monkeypatch.setattr(cli_compat, "apply_fault", lambda **kw: calls.append(("apply", kw)) or {})
-    monkeypatch.setattr(cli_compat, "clear_fault", lambda **kw: calls.append(("clear", kw)) or {})
-    assert cli.main(["fault", "apply", "--state", str(state), "--target-logical-id", "node-1", "--fault-json", "fault.json", "--out", str(tmp_path / "apply.json")]) == 0
-    assert cli.main(["fault", "clear", "--state", str(state), "--fault-id", "fault-1", "--out", str(tmp_path / "clear.json")]) == 0
-    assert [name for name, _ in calls] == ["apply", "clear"]
 
 
 def test_analyze_and_report_handlers_use_compatibility_boundary(
