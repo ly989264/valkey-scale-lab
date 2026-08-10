@@ -799,11 +799,46 @@ def _execute_runtime(
         return state
     except Exception as exc:
         try:
-            snapshots.append(_process_cluster_summary("failure", nodes))
-            state = _process_runtime_state(capability_id, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+            # This is the container path's failure handler - the process path
+            # returned above - so it must use the container path's own state
+            # builder and cleanup. It used to call the process path's
+            # (`_process_runtime_state` with `nodehosts` and `snapshots`, then
+            # `_cleanup_process_scenario`), and neither name is bound in this
+            # scope: measured 2026-08-10, an induced failure raised
+            # `NameError: name 'snapshots' is not defined` at the first line,
+            # which the branch below swallowed, so every failure here left no
+            # state, no `setup_error` and no cleanup report - only bare label
+            # cleanup. The container path records no cluster snapshots on its
+            # success path either, which is why the failure state has none.
+            #
+            # The state is built from `started`, not `nodes`: both state
+            # builders read `container_id`/`pid` off every node they are given,
+            # so a failure *during* container start - measured the same day as
+            # `KeyError: 'container_id'` on the first unstarted node - cannot be
+            # described by the full planned fleet. `started` is what was created
+            # and so what cleanup has to account for, and it is `nodes` when the
+            # failure came after the fleet was up. `requested_nodes` is restored
+            # to the planned count so a partial record never understates what
+            # was asked for; `observed_nodes` stays at what started, which is
+            # what that field means.
+            state = _runtime_state(
+                capability_id,
+                scenario,
+                run_id,
+                network_name,
+                config,
+                started,
+                backend_id=backend_id,
+                profile_id=profile_id,
+            )
+            state["requested_nodes"] = len(nodes)
             state["runtime"]["setup_error"] = repr(exc)
-            _write_state(state_out, state)
-            _cleanup_process_scenario(state=state, artifacts_dir=artifacts, out_path=artifacts / "cleanup_report.json")
+            _write_state(Path(state_out), state)
+            cleanup_scenario(
+                state_path=Path(state_out),
+                artifacts_dir=artifacts,
+                out_path=artifacts / "cleanup_report.json",
+            )
         except Exception:
             cleanup_by_label(capability_id=capability_id, run_id=run_id)
         raise

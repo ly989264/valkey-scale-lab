@@ -4411,3 +4411,155 @@ def test_a_process_that_vanishes_mid_probe_is_gone_not_a_probe_failure(
     monkeypatch.setattr(docker_runtime, "run_docker", lambda *_a, **_k: Vanished())
     with pytest.raises(docker_runtime.DockerRuntimeError, match="owned process probe failed"):
         docker_runtime._wait_container_pid_gone("nodehost-a", "72", timeout=1.0)
+
+
+class _FakeDockerFleet:
+    """Just enough Docker for `_execute_runtime`'s container path and its cleanup.
+
+    The failure handler's whole point is that it reaches cleanup, so cleanup has
+    to be able to find and remove something; a fake that answered nothing would
+    have produced an empty report either way and proved nothing.
+    """
+
+    def __init__(self) -> None:
+        self.containers: list[str] = []
+        self.networks: list[str] = []
+        self.removed: list[str] = []
+
+    def run_docker(self, args: list[str], timeout: int = 120, check: bool = True, **_kwargs: Any) -> Any:
+        argv = [str(item) for item in args]
+        if argv[:2] == ["network", "create"]:
+            self.networks.append("net-0001")
+            return docker_runtime.DockerResult("net-0001\n", "", 0)
+        if argv[:3] == ["ps", "-a", "-q"]:
+            return docker_runtime.DockerResult("".join(f"{cid}\n" for cid in self.containers), "", 0)
+        if argv[:3] == ["network", "ls", "-q"]:
+            return docker_runtime.DockerResult("".join(f"{nid}\n" for nid in self.networks), "", 0)
+        if argv[0] == "stop":
+            return docker_runtime.DockerResult("", "", 0)
+        if argv[:2] == ["rm", "-f"]:
+            self.containers.remove(argv[2])
+            self.removed.append(argv[2])
+            return docker_runtime.DockerResult("", "", 0)
+        if argv[:2] == ["network", "rm"]:
+            self.networks.remove(argv[2])
+            self.removed.append(argv[2])
+            return docker_runtime.DockerResult("", "", 0)
+        raise AssertionError(f"unexpected docker command in this test: {argv}")
+
+
+def _container_path_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    *,
+    fail_after_started: int | None,
+    fail_at_configure: bool = False,
+) -> tuple[_FakeDockerFleet, list[str], Path, Path]:
+    fleet = _FakeDockerFleet()
+    bare_cleanups: list[str] = []
+    monkeypatch.setattr(docker_runtime, "run_docker", fleet.run_docker)
+    monkeypatch.setattr(docker_runtime, "_check_ports_free", lambda _ports: None)
+    monkeypatch.setattr(
+        docker_runtime.DockerNodeBackend,
+        "verify_image",
+        lambda _self, image: {"image": image, "status": "PASS"},
+    )
+    monkeypatch.setattr(docker_runtime, "_container_pid", lambda _cid: 4242)
+    monkeypatch.setattr(docker_runtime, "_container_ip", lambda _cid, _net: "172.18.0.9")
+    monkeypatch.setattr(
+        docker_runtime,
+        "cleanup_by_label",
+        lambda **kwargs: bare_cleanups.append(str(kwargs.get("run_id"))),
+    )
+
+    def fake_start_container(*_args: Any, **_kwargs: Any) -> str:
+        if fail_after_started is not None and len(fleet.containers) >= fail_after_started:
+            raise RuntimeError("induced runtime failure")
+        cid = f"cid-{len(fleet.containers):04d}"
+        fleet.containers.append(cid)
+        return cid
+
+    monkeypatch.setattr(docker_runtime, "_start_container", fake_start_container)
+    if fail_at_configure:
+        monkeypatch.setattr(
+            docker_runtime,
+            "_configure_cluster",
+            lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("induced runtime failure")),
+        )
+
+    artifacts = tmp_path / "artifacts"
+    state_out = tmp_path / "state.json"
+    with pytest.raises(RuntimeError, match="induced runtime failure"):
+        docker_runtime._execute_runtime(
+            capability_id="cluster_lifecycle",
+            scenario="cluster_lifecycle",
+            backend_id="docker_container",
+            profile_id="small-real",
+            requested_nodes=6,
+            config_path="templates/configs/single_mac_6node.yaml",
+            artifacts_dir=artifacts,
+            state_out=state_out,
+        )
+    return fleet, bare_cleanups, artifacts, state_out
+
+
+def test_a_failure_while_starting_containers_still_reports_what_it_cleaned(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The container path's failure handler used to be the process path's.
+
+    `_process_runtime_state` was called with `nodehosts` and `snapshots`, neither
+    of which this scope binds, so the first line raised
+    `NameError: name 'snapshots' is not defined`, the surrounding branch
+    swallowed it, and every mid-runtime failure degraded to bare label cleanup -
+    no state, no `setup_error`, no cleanup report at all.
+    """
+    fleet, bare_cleanups, artifacts, state_out = _container_path_runtime(
+        monkeypatch, tmp_path, fail_after_started=2
+    )
+
+    # The pre-run reclaim is the only `cleanup_by_label`; the failure path did
+    # not fall through to it.
+    assert len(bare_cleanups) == 1
+
+    state = json.loads(state_out.read_text(encoding="utf-8"))
+    assert state["runtime"]["setup_error"] == "RuntimeError('induced runtime failure')"
+    # What was asked for, and what actually came up. Building this from the full
+    # planned fleet raises `KeyError: 'container_id'` on the first node that
+    # never started, which is why it is built from what did.
+    assert state["requested_nodes"] == 6
+    assert state["observed_nodes"] == 2
+    assert [node["container_id"] for node in state["nodes"]] == ["cid-0000", "cid-0001"]
+
+    report = json.loads((artifacts / "cleanup_report.json").read_text(encoding="utf-8"))
+    assert report["artifact_type"] == "cleanup_report"
+    assert report["status"] == "PASS"
+    assert report["resources_remaining"] == []
+    assert [
+        (action["type"], action["id"], action["action"])
+        for action in report["cleanup_actions"]
+        if action["action"] == "remove"
+    ] == [
+        ("container", "cid-0000", "remove"),
+        ("container", "cid-0001", "remove"),
+        ("network", "net-0001", "remove"),
+    ]
+    assert fleet.containers == [] and fleet.networks == []
+
+
+def test_a_failure_after_the_fleet_is_up_reports_the_whole_fleet(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The other shape the handler has to cover, where `started` is every node."""
+    _fleet, bare_cleanups, artifacts, state_out = _container_path_runtime(
+        monkeypatch, tmp_path, fail_after_started=None, fail_at_configure=True
+    )
+
+    assert len(bare_cleanups) == 1
+    state = json.loads(state_out.read_text(encoding="utf-8"))
+    assert state["requested_nodes"] == 6
+    assert state["observed_nodes"] == 6
+    assert state["runtime"]["setup_error"] == "RuntimeError('induced runtime failure')"
+    report = json.loads((artifacts / "cleanup_report.json").read_text(encoding="utf-8"))
+    assert report["status"] == "PASS"
+    assert report["resources_remaining"] == []
