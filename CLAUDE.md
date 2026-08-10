@@ -124,7 +124,9 @@ open** - the operator approved deleting it and the CLI surface it serves on
 ### Phase 0 progress, 2026-08-10
 
 Phase 0 is the roadmap's (revision 5.1) precondition list, executed as three
-worker sessions. **Session A is done**; its scope was roadmap items 0.2 and 0.3.
+worker sessions. **All three are done and the exit gate passed**; the summary is
+`project/docs/roadmap_preconditions_exit_report.md` and the detail is below.
+**Session A** was roadmap items 0.2 and 0.3.
 
 - `ce0bea2d` **item 0.2** - `_execute_runtime`'s failure handler was the process
   path's, copied onto the container path, and neither `nodehosts` nor `snapshots`
@@ -189,10 +191,30 @@ Both calibrate identical baseline-to-baseline, eight seeded regressions were
 each caught by the view that owns them, and a control that renumbers every pid
 correctly stays quiet.
 
-**Session C is next**: the approved `fault/sandbox.py` deletion, then the exit
-gate - two consecutive exact-50 plus one exact-200 at exit HEAD, and the
-completion report. Then idle; M3-A begins on operator approval, never as Session
-C's next step.
+**Session C is done, and with it Phase 0.** Its scope was the approved
+`fault/sandbox.py` deletion and then the exit gate.
+
+- `5d260c7e` **item 0.6, the deletion half** - the module, the whole `fault` CLI
+  command group, the two `cli_compat` wrappers, `_remove_fault_state_files`,
+  three catalog tests and their files. Both memo claims were re-measured against
+  HEAD before removing anything: six of seven fault types issue **zero** runtime
+  commands against `node_stop`'s four, and importing `gates.real` plus
+  `runtime.lifecycle` never loads the module. **`repository.all` is 88 tests,
+  not 91.** Declared artifact change: `cleanup_actions` can no longer carry a
+  `type: fault_state` row, which moves no diff - no baseline and no exit-gate run
+  ever produced one, and `cleanup_report` stays byte-identical.
+- **The exit gate passed.** exact-50 **PASS 889.45s** and **PASS 835.35s**,
+  exact-200 **PASS 1572.30s**, all three 12/12 checks OK, zero residue, and the
+  string `ERROR` in no artifact of any of them. Both exact-50 runs hit every
+  stage mark - `runtime_start` 7/7, `cluster_form` 5/5, `management_matrix` 6/8,
+  `fault_matrix` 5/6, `cleanup` 2/2 - with both declared deltas at their declared
+  shapes and no third. Fault lane 9/12/15 at both scales. RTO 47.87s, 47.62s and
+  47.60s.
+
+Read `project/docs/roadmap_preconditions_exit_report.md`. It carries every
+item's evidence, what is open, what M3-A inherits, and a proposed session grain
+for M3-A. **The correct state now is idle**; M3-A begins on operator approval,
+never as a next step.
 
 ### What is left before M3, and what is M3 itself
 
