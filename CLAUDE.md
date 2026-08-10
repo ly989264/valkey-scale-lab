@@ -220,9 +220,67 @@ correctly stays quiet.
   47.60s.
 
 Read `project/docs/roadmap_preconditions_exit_report.md`. It carries every
-item's evidence, what is open, what M3-A inherits, and a proposed session grain
-for M3-A. **The correct state now is idle**; M3-A begins on operator approval,
-never as a next step.
+item's evidence, what is open, what M3-A inherits, and the session grain for
+M3-A.
+
+### M3-A has started. Session M3-A-1 is done: roadmap items 1.0 and 1.1
+
+The operator approved M3 start on 2026-08-10. M3-A-1's scope was the simulated-
+host harness and the pinned native build, and both landed. Read
+`project/docs/simulated_host_and_native_bundle_map.md`; it carries the
+derivation, every measurement, and what was deliberately left to later items.
+
+- **The harness is lab tooling and lives beside the pinned image's build**, not
+  in a new directory: `docker/simulated-host/` and three `scripts/` entries. The
+  boundary that matters is the import graph - the harness imports nothing from
+  `valkey_scale_lab`, and the product imports nothing from `scripts/`. One
+  product file exists, `runtime/native_bundle.py`, because verifying build
+  products is `verify_image`'s job and therefore product; item 1.2 gives it its
+  first caller.
+- **The manifest is the only thing that crosses to the product**, and it names
+  no container, image or network, and carries no simulated flag - a backend that
+  could tell would make every result taken on simulated hosts a fact about the
+  harness. `_reject_container_vocabulary` enforces it at the write, and it
+  already caught one leak: the private key path is in the manifest, so the state
+  directory is `artifacts/host-fleets/`, not `artifacts/simulated-hosts/`.
+- **Each host record carries three addresses**, because a host has three roles
+  the seam already distinguishes: `control_endpoint` (where the controller runs
+  commands), `data_address` (what peers dial), `client_endpoint` (where the
+  controller speaks RESP, with a port *range*). Under this harness the last two
+  differ because macOS cannot route Docker's network; on a real fleet the
+  manifest repeats one address and the field set does not change. Everything a
+  real fleet would also have is read **from the host over ssh**, not from
+  `docker inspect`.
+- **A defect the first bring-up found, which reading could not have**: both
+  hosts served one ssh host key fingerprint. Debian's `openssh-server` postinst
+  generates host keys during the image build, so the entrypoint's `ssh-keygen -A`
+  found them present and did nothing, and they sat in a shared layer. The image
+  now deletes them and the build script refuses an image carrying any.
+- **The simulated host removes what it inherits.** Derived from the pinned image
+  for its OS and libraries, it deletes `valkey-server`, `valkey-cli`,
+  `memtier_benchmark` and the build manifest - the run bundle's `start_all.sh`
+  invokes bare `valkey-server`, so a host that already had one would make a
+  bundle install unfalsifiable. libevent and python3 stay, as a provisioned ECS
+  host would have them.
+- **The bundle reuses the pinned Dockerfile's existing `binaries` stage** rather
+  than compiling anything of its own, and cross-checks every digest against the
+  pinned image's build labels before writing. The archive is byte-reproducible
+  (two builds, `fe1839de…067d`). `verify_native_bundle` returns preflight
+  evidence using the *existing* key names, because `_write_cluster_myslots_report`
+  reads `image_preflight["valkey_server_sha256"]` and the `runtime_start` diff
+  view carries the whole mapping.
+- **It declines to claim the one check it cannot make.** The Docker preflight
+  starts the server and asks for `CLUSTER MYSLOTS`; this one hashes bytes on the
+  controller, so the evidence carries `not_verified.cluster_myslots_command`
+  with a reason. That gap was then closed *as a measurement* on the hosts: the
+  bundle installed on both, digests matched, and the patched command answered.
+- Proven: `repository.all` **90/90**; two simulated hosts up in 1.07s with ssh
+  answering at 1.71s and distinct fingerprints; real `iptables` under NET_ADMIN;
+  one byte appended to `valkey-server` fails preflight with both digests named.
+
+**No real gate run was taken and none was needed** - neither item is on a run's
+path until item 1.2 exists. **The correct state now is idle**; item 1.2 begins
+on operator approval, never as a next step.
 
 ### What is left before M3, and what is M3 itself
 
@@ -629,8 +687,12 @@ exclusions one run at a time until the diff goes green.
   appears, report its exact stage and semantics rather than assuming it needs the
   refactor.
 - Commit each distinct fix separately, saying what was observed. Keep
-  `./gate suite repository.all` at 91/91 before committing, and run two
-  consecutive real exact-50 runs after.
+  `./gate suite repository.all` green at its current count before committing -
+  **90 as of M3-A-1**, 88 before it, 91 before the fault-sandbox deletion - and
+  run two consecutive real exact-50 runs after any change a real run reaches.
+  Two of the Gate's own contract tests pin the catalog and M1 plan counts
+  (`verification/tests/test_contracts.py`), so registering a test moves three
+  numbers, not one.
 - Do not build a custom load generator. The Load Lane is scoped to steady state
   by decision; the Sentinel canaries own fault-window continuity and RTO.
 
