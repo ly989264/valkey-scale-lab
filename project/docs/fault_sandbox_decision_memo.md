@@ -1,8 +1,9 @@
 # Decision memo: what to do with `fault/sandbox.py`
 
 Roadmap (revision 5.1) item 0.6. **This memo is the executable half.** The
-deletion it recommends is reserved to the operator by the roadmap's approval
-rule and is not performed here.
+deletion it recommends was reserved to the operator by the roadmap's approval
+rule; it has since been approved and is recorded below, and it is still not
+performed here.
 
 Measured against HEAD `020e0482` plus roadmap item 0.5's changes.
 
@@ -10,6 +11,27 @@ The question item 0.6 asks is narrow and worth keeping in view: *the decision
 changes what a second backend must implement.* If the `cli fault apply`/`clear`
 surface survives, `EcsNodeBackend` owes it an implementation; if not, it owes
 nothing.
+
+---
+
+## Operator decision — 2026-08-10
+
+**Option A approved: delete the module and the `cli fault apply`/`clear`
+surface.** Execution belongs to the next worker session, not to the one that
+wrote this memo; the session that wrote it was scoped to the memo alone and the
+approval arrived inside it.
+
+Two things travel with the approval and are not optional parts of it:
+
+- `runtime/teardown.py::_remove_fault_state_files` becomes dead with the module,
+  because `apply_fault` is the only producer of `fault_state_*.json` anywhere in
+  the product. Its cleanup-action row disappears from `cleanup_report` - a small
+  artifact change to declare, and it moves no baseline diff, since both frozen
+  exact-50 runs already record zero such rows.
+- M1's `local.operations-and-recovery` check list needs its own decision (§5),
+  not a silent shrink to the network proxy.
+
+The rest of this memo is the evidence the decision was taken on, unchanged.
 
 ---
 

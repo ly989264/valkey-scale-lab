@@ -80,11 +80,12 @@ duplicating it. M2 stays defined as written but is parked; the priority is a
 well-implemented real cluster test at 50/100/200, then M3 and M4 on top.
 
 Slices 1, 2, 3 and 4 - `runtime_start`, `cluster_form`, `management_matrix` and
-`fault_matrix` - are done and accepted. `runtime/node_backend.py` holds
-`NodeBackend`, the seam every later slice extends; `DockerNodeBackend` in
-`docker_runtime.py` is its one implementation, now twenty-one methods. Read the
-four slice maps in `project/docs/` before the next slice: they carry the
-accepted seam, the measured result of every bar item, and the limitations below.
+`fault_matrix` - are done and accepted, and roadmap item 0.5 added the two §15
+operations no stage had needed. `runtime/node_backend.py` holds `NodeBackend`,
+the seam every later slice extends; `DockerNodeBackend` in `docker_runtime.py`
+is its one implementation, now **twenty-three methods**. Read the five slice
+maps in `project/docs/` before the next slice: they carry the accepted seam, the
+measured result of every bar item, and the limitations below.
 
 Slice 2 settled the open question the way Slice 1 was judged: exact-200 is
 stage-scoped, on measurement. It also found that §15 of the observability design
@@ -114,10 +115,11 @@ all reached through the seam, and an exact-200 run failed inside it (`4dd0fa1b`)
 The claim was derived by reading rather than from a run, which is the same way
 the six-node entry below went wrong. Prefer a measurement.
 
-**There is no next extraction slice.** What remains is the open list below, and
-`fault/sandbox.py` - a second Docker actuator, 490 lines, reached from
-`cli.py fault apply`/`clear` and `compat/`, which no run in any acceptance bar
-exercises. Decide what M3 needs before opening another slice.
+**There is no next extraction slice.** What remains is the open list below.
+`fault/sandbox.py` was the other candidate; it is now **decided rather than
+open** - the operator approved deleting it and the CLI surface it serves on
+2026-08-10, and that deletion is Session C's to execute. See
+`project/docs/fault_sandbox_decision_memo.md`.
 
 ### Phase 0 progress, 2026-08-10
 
@@ -154,10 +156,43 @@ worker sessions. **Session A is done**; its scope was roadmap items 0.2 and 0.3.
 
 Two operator decisions are still open from Session A's reports: what to do about
 `.github/milestone-loop/` working-tree changes left by a mis-popped stash, and
-whether the RTO correction above needs anything further.
+whether the RTO correction above needs anything further. The working-tree
+changes are still present and still nobody's - do not commit them.
 
-**Session B is next**: roadmap item 0.5 as a full slice, then the 0.6 decision
-memo. Item 0.5 is precondition 2 below.
+**Session B is done**; its scope was roadmap item 0.5 and the 0.6 memo.
+
+- `4f54442a` **item 0.5** - the seam gained `load_lane_host` and `release_run`,
+  the two §15 names it lacked. Read `project/docs/seam_completion_slice_map.md`;
+  it carries the derivation, both boundaries' measurements and the two findings
+  below. What it settled: **evidence upload had one site outside the seam, not
+  several** - the resource sampler already pulls its own samples through the
+  object the backend returns, so §15's sampler deployment and the upload of what
+  it produced are one member. What was left was memtier's JSON and HDR, copied
+  by a `docker cp` inside `observability/load.py`, a module §15 declares
+  *invariant*. That module named `docker` three times and now names it zero.
+  **End-of-run cleanup was not behind the seam at all**: `cleanup_scenario`
+  dispatched on `runtime.type == "docker_process"` and otherwise ran
+  `docker ps --filter label=...`, so a native run's state would have taken the
+  container path, found nothing owned by that run in Docker, and written
+  `status: PASS` with every remote process still running. That is now a stated
+  refusal with a test. The report assembly is neutral and lives in
+  `runtime/teardown.py` - not `lifecycle.py`, which would be an import cycle.
+  `BackendSpec.node_backend`, declared at `39e31b1a` and never called, has its
+  first consumer. Proven: 91/91, two consecutive real exact-50 at PASS 909.03s
+  and 836.50s, all four diff marks met with both declared deltas at their
+  declared shapes, `cleanup_report` byte-identical under the new assembler.
+- `ff4e4f21` **item 0.6, the memo** - see below.
+
+Item 0.5 also added two diff views, because neither of its surfaces was covered:
+a `cleanup` stage and a `load_lane_evidence` report under `management_matrix`.
+Both calibrate identical baseline-to-baseline, eight seeded regressions were
+each caught by the view that owns them, and a control that renumbers every pid
+correctly stays quiet.
+
+**Session C is next**: the approved `fault/sandbox.py` deletion, then the exit
+gate - two consecutive exact-50 plus one exact-200 at exit HEAD, and the
+completion report. Then idle; M3-A begins on operator approval, never as Session
+C's next step.
 
 ### What is left before M3, and what is M3 itself
 
@@ -175,15 +210,20 @@ The genuine preconditions are:
    move by 91/91 plus a real exact-50 at all four diff pass marks; an exact-200
    on the neutral lifecycle followed on 2026-08-10 (PASS 1578.29s, 12/12), which
    that single-exact-50 proof had not included.
-2. **Declare the two seam operations §15 names and this seam lacks**: end-of-run
-   cleanup and evidence upload. `reclaim_run` is *pre-run* cleanup, not teardown,
-   and there is no upload operation at all - the module docstring already claims
-   one, which is the gap to close. Derive them from the working Docker case, the
-   way every other operation was derived.
-3. **Decide `fault/sandbox.py`**, because it changes what a second backend has to
-   implement.
+2. ~~**Declare the two seam operations §15 names and this seam lacks.**~~
+   **Done at `4f54442a`.** `load_lane_host` is evidence upload and `release_run`
+   is end-of-run cleanup; `reclaim_run` keeps its pre-run meaning and now says
+   so. The protocol a second backend implements is **frozen at twenty-three
+   operations** unless a later slice argues otherwise - M3 item 1.2 owes the
+   whole of it, and no stale count from an older section applies.
+3. ~~**Decide `fault/sandbox.py`.**~~ **Decided 2026-08-10: delete it and the
+   `cli fault apply`/`clear` surface it serves** (memo option A). The deletion is
+   Session C's work, not done yet. What decided it was not the duplication:
+   `apply_fault` accepts seven fault types and **six of them inject nothing and
+   record `status: PASS`**. So a second backend owes this nothing.
 4. **Confirm the ECS hosts exist.** Five of six criteria need real multi-host
-   runs, and the sixth is unverifiable without them.
+   runs, and the sixth is unverifiable without them. Gates M3-*acceptance*, not
+   M3 development.
 
 Also, and easy to miss: **M3 has a registered check on 1 of its 6 criteria, M4 on
 1 of 7.** A milestone whose criteria have no attached checks reports `DEFINED`
@@ -402,7 +442,36 @@ lane's own verdict is correctly `OK` - and the sample counts are not stable
   pid-file removal, PING probe), reached from `cli.py fault apply`/`fault clear`
   and `compat/phase_aliases.py`. §15 makes the actuator the one thing an adapter
   replaces, so after Slice 4 there are two. Nothing in the lifecycle calls it
-  and no acceptance bar exercises it.
+  and no acceptance bar exercises it. **No longer open: approved for deletion
+  2026-08-10, Session C executes it.** Two things the memo measured that this
+  entry did not know - six of the seven fault types inject nothing, and
+  `clear_fault`'s `container_stop` branch is unreachable from `apply_fault` -
+  and one cost it did not name: `product.fault` shrinks to the network proxy
+  alone, so M1's `local.operations-and-recovery` check list needs a decision
+  rather than being left. `runtime/teardown.py::_remove_fault_state_files` goes
+  with it; `apply_fault` is the only producer of `fault_state_*.json` anywhere.
+- **End-of-run cleanup terminates by stale pid.** Measured on both frozen
+  exact-50 baselines: at cleanup each nodehost has 12-13 live `valkey-server`
+  processes and **zero of them is a pid recorded in `state.json`** - the state
+  is last written before the management matrix, and the rolling restart plus the
+  fault matrix replace every process. So `terminate` signals fifty pids that no
+  longer exist, `verify_exit` truthfully confirms they are gone, all four
+  `verify_no_valkey_processes` rows come back `SKIPPED_WITH_REASON` with the
+  live list, and `docker rm -f` is what actually stops the fleet. Correct under
+  Docker; **a backend with no container to remove has no such backstop**.
+  Deliberately not fixed in item 0.5 - extraction preserved it faithfully - and
+  deliberately **not** a Session C item either. Operator decision 2026-08-10:
+  **carry it into M3-A item 1.4**, where the native backend must clean the
+  processes actually alive at teardown rather than assume `state.json`'s pid is
+  current.
+- **No node log is ever collected.** Every node is configured with
+  `logfile <data_dir>/valkey.log`, the path is recorded in the bundle manifest
+  and in `state.json`, and nothing reads it; the files die with their
+  containers. §15 names 日志与证据上传 and item 0.5 gave 证据 a boundary, so the
+  日志 half has no implementation on either backend. Operator decision
+  2026-08-10: **carry it into M3-A item 1.3**, and decide there what artifact
+  satisfies the existing *process journals* requirement. **Do not pre-decide the
+  mechanism.**
 - **A six-node smoke cannot reach `management_matrix` or `fault_matrix`, and
   there are three separate reasons, only one of which was recorded here before.**
   The *gate* refuses six (`real.local.full-flow` declares `minimum: 30`). The

@@ -448,6 +448,12 @@ denominator is untouched.
 Each is reported rather than acted on, because each would change what a run
 produces and so cannot ride inside a proof-by-unchanged-diff.
 
+**Both were dispositioned by the operator on 2026-08-10, and neither is a
+follow-up for the next worker session.** §5.1 is carried into M3-A item 1.4 and
+§5.2 into M3-A item 1.3, for the reason each section already gives: both are
+about what a backend with no container to fall back on has to do, so the native
+implementation is where they are answered rather than patched ahead of.
+
 ### 5.1 End-of-run process termination runs against stale pids
 
 Measured on both frozen exact-50 baselines. At cleanup time each of the four
