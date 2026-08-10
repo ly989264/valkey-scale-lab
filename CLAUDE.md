@@ -119,6 +119,46 @@ the six-node entry below went wrong. Prefer a measurement.
 `cli.py fault apply`/`clear` and `compat/`, which no run in any acceptance bar
 exercises. Decide what M3 needs before opening another slice.
 
+### Phase 0 progress, 2026-08-10
+
+Phase 0 is the roadmap's (revision 5.1) precondition list, executed as three
+worker sessions. **Session A is done**; its scope was roadmap items 0.2 and 0.3.
+
+- `ce0bea2d` **item 0.2** - `_execute_runtime`'s failure handler was the process
+  path's, copied onto the container path, and neither `nodehosts` nor `snapshots`
+  is bound there. Measured: `NameError` on the first line, swallowed, so every
+  container-path failure left an empty artifacts directory. It also could not
+  have worked with its names bound, because both state builders read
+  `container_id`/`pid` off every node and a fleet that failed partway through
+  starting has neither; the state is now built from `started`.
+- `3315e6af` **item 0.3, the record half** - `run_exact_gate` now installs a
+  `CommandRecorder`, writing to `runtime/command_audit/` beside the run. Two
+  fixes were needed before it could answer anything, and both are general.
+  **The recorder is a `ContextVar` and a new thread starts with an empty
+  context**, so everything inside `_bounded_parallel` went unrecorded - 2686 rows
+  against 4194 once fixed, missing almost all of cluster formation.
+  **`record_result` rewrote the whole log per row**, measured 1.96 ms/row at 250
+  rows and 47.39 at 4000; a real exact-200 records ~13,800 and *failed* at
+  1586.80s in `_process_node_snapshots_parallel` because of it, against a control
+  PASS at 1578.29s on the parent commit. Recording appends now; `close` still
+  writes the file sorted, byte-identical.
+- `e04d6ce9` **item 0.3, the remove half** - `_node_response`'s `docker exec`
+  transport fallback is gone. Measured before removing: it fired **four times in
+  a passing exact-200 and never in four passing exact-50 runs**, all four at one
+  site - `start_node`'s readiness poll, first attempt after `valkey-server`
+  starts, host path reading an empty RESP reply - and that poll is a 30s loop
+  that already catches, sleeps 0.5s and retries. So it bought one early poll,
+  not a run. The proof it is gone is the same run before and after:
+  `docker exec ... valkey-cli` rows were 624 actuator + 4 `cluster_probe`, and
+  are now 624 actuator + 0.
+
+Two operator decisions are still open from Session A's reports: what to do about
+`.github/milestone-loop/` working-tree changes left by a mis-popped stash, and
+whether the RTO correction above needs anything further.
+
+**Session B is next**: roadmap item 0.5 as a full slice, then the 0.6 decision
+memo. Item 0.5 is precondition 2 below.
+
 ### What is left before M3, and what is M3 itself
 
 Worth separating, because it is easy to list M3's contents and call them
@@ -128,14 +168,13 @@ for starting it.
 
 The genuine preconditions are:
 
-1. **Close the refactor.** The seam exists and no lifecycle stage names a Docker
-   primitive, but the backend-neutral lifecycle sequencing still lives in
-   `docker_runtime.py` (`_create_process_scenario`, ~308 lines with zero direct
-   Docker references), backend selection is a chain of `if backend.backend_id ==`
-   inside that same module, `native_multi_ecs` is rejected there, and
-   `gates/real.py` hardcodes `docker_process` and requires a Docker daemon
-   unconditionally. This is the stated goal of the whole refactor - "so M3 can
-   exist" - and it is the last of it.
+1. ~~**Close the refactor.**~~ **Done at `39e31b1a`.** The sequencing moved to
+   `runtime/lifecycle.py`, backend selection became the data registry in
+   `runtime/backends.py` with `native_multi_ecs` *absent* rather than rejected,
+   and the Gate's Docker-daemon check became a backend property. Proven a pure
+   move by 91/91 plus a real exact-50 at all four diff pass marks; an exact-200
+   on the neutral lifecycle followed on 2026-08-10 (PASS 1578.29s, 12/12), which
+   that single-exact-50 proof had not included.
 2. **Declare the two seam operations §15 names and this seam lacks**: end-of-run
    cleanup and evidence upload. `reclaim_run` is *pre-run* cleanup, not teardown,
    and there is no upload operation at all - the module docstring already claims
@@ -212,8 +251,8 @@ The two fixes behind it are worth knowing before reading any exact-200 result:
 Two numbers to watch rather than assume. The 240s window is **not scale-free**
 and must be re-measured before 500 nodes, and again on any distributed backend,
 where gossip crosses a network. And the primary-kill RTO was **53.75s** in this
-run against the 45-50s band recorded below; the same day's exact-50 runs were
-45.6s and 47.5s, inside it. One datum, plausibly host load, not yet a finding.
+run against the 45-50s exact-50 band; see the corrected reading below - four
+exact-200 runs now span 47.6-53.8s, so this is dispersion, not a shifted band.
 
 ### Three more fixes after Slice 3, each found by the one before it
 
@@ -321,12 +360,17 @@ lane's own verdict is correctly `OK` - and the sample counts are not stable
   observer nodes for full topology (§6.1). At 2000 nodes that is 2,000 and 1,000
   queries per second from one centralized process. See
   `project/docs/observability_connection_scale.md`.
-- **`_node_response`'s `docker exec` fallback, for transport failures only.**
-  `c3bd05fc` stopped it retrying a `-ERR`; being unable to reach a node still
-  falls back, and §16.2 says it should not. A test pins that boundary so it
-  reads as a decision. Whether the fallback ever legitimately saves a run is
-  unmeasured - and it is invisible, because `run_exact_gate` installs no
-  `CommandRecorder`, so nothing records these `docker exec` calls.
+- **`_spec` sets no `host`, so `_node_command` cannot reach a container-backend
+  node.** Only the process path adds `host`; a `docker_container` node carries
+  `container_ip` and no `host`, and `_node_host_command` refuses to default one
+  by design. Measured 2026-08-10 against both the pre- and post-removal module:
+  it raises `KeyError('host')` either way, so this is pre-existing and was never
+  masked in a real run - the `docker exec` fallback declined it too, because
+  `container_ip` was set. It is moot today only because **`scale_ladder` is
+  registered to no backend** (`implements_scenario` is False for both), so no
+  real run reaches `write_scale_ladder_artifacts`. Both belong to whoever
+  registers that scenario; two hermetic tests in `tests/scale/` used to reach it
+  through the fallback and now fake `_node_host_command`.
 - **The rolling restart's health gate reads whole-fleet `CLUSTER NODES`.**
   `_management_matrix_wait_rolling_restart_health` falls back to
   `_process_node_snapshots_parallel(nodes)` inside its retry loop, and each
@@ -335,10 +379,12 @@ lane's own verdict is correctly `OK` - and the sample counts are not stable
   normal collection. Distinct from the cadence item above - that one is about
   light-probe frequency, this one is about `CLUSTER NODES`. Found while mapping
   Slice 3; wants its own measurement.
-- **`_execute_runtime`'s exception handler reads unbound names.** `nodehosts`
-  and `snapshots` are never bound in that scope, so the failure path raises
-  `NameError` and falls through to the bare cleanup branch. Pre-existing at the
-  pre-refactor commit. Belongs to `runtime_start`'s error path.
+- **A failing `docker_process` run still leaves only a bare `reclaim_run`.**
+  `_create_process_scenario`'s handler in `runtime/lifecycle.py` reclaims and
+  re-raises: no state file, no `setup_error`, no cleanup report. Unlike the
+  container path's handler (fixed in `ce0bea2d`) this is not a defect - it was
+  written that way - but M3's cleanup criterion may want the richer record, and
+  the two paths now differ. Decide deliberately rather than by drift.
 - **Did the pre-drain reshard strand keys?** `ded96fac` migrates key batches the
   old code left in place. In the frozen baselines those slots moved with only 4
   migrations and all 950 `SETSLOT NODE` returned OK, which suggests those runs
@@ -379,10 +425,14 @@ Slice 4's four fixed numbers are worth keeping: `fault_matrix` emits **9 fault
 scenarios, 12 command rows and 15 workload windows at every scale** (30, 50 and
 200) - still exactly so at `216b2f70`, exact-200 included. The fourth has moved:
 the primary-kill RTO landed between 45s and 50s in every run until 2026-08-09,
-when exact-200 measured **53.75s** while the same day's exact-50 runs measured
-45.6s and 47.5s. Treat 45-50s as the exact-50 band and the 200-node figure as one
-observation, not a new band; a second exact-200 above 50s would make it a finding.
-Any change to the first three is still a finding.
+when exact-200 measured **53.75s**. That rule said a second exact-200 above 50s
+would make it a finding. It fired, and the finding is **dispersion, not a
+shifted band**: four exact-200 runs measured **53.75s, 53.15s, 49.75s and
+47.62s** (2026-08-09 and 2026-08-10), two of them inside the exact-50 band,
+while five exact-50 runs the same day measured 45.6-49.4s. So 45-50s is the
+exact-50 band, exact-200 is wider and overlaps it, and **one exact-200 above 50s
+is not a regression signal** - a shift in the whole spread would be. Any change
+to the first three is still a finding.
 
 Per-slice acceptance bar: existing catalog tests plus targeted hermetic tests
 pass; a real small-scale smoke of the modified stage - six nodes where the stage
