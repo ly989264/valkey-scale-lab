@@ -1144,8 +1144,8 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
             AssertionError("runtime_start must reach the runtime through the backend")
         ),
     )
-    monkeypatch.setattr(docker_runtime, "_process_nodehosts", lambda *_args: nodehosts)
-    monkeypatch.setattr(docker_runtime, "_write_nodehost_density_plan_artifact", lambda *_args: None)
+    monkeypatch.setattr(docker_runtime, "_process_nodehosts", lambda *_args, **_kwargs: nodehosts)
+    monkeypatch.setattr(docker_runtime, "_write_nodehost_density_plan_artifact", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         docker_runtime,
         "_bounded_parallel",
@@ -1193,6 +1193,7 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
 
     docker_runtime._create_process_scenario(
         backend=backend,
+        backend_id="docker_process",
         capability_id=capability_id,
         scenario=scenario,
         run_id="real-path-test",
@@ -4759,20 +4760,25 @@ def test_cleanup_refuses_a_run_whose_backend_has_no_implementation(
     Before the seam reached teardown, a state naming any other backend fell into
     the Docker container path, which found nothing owned by that run in Docker -
     there being nothing in Docker - and wrote `status: PASS` while every process
-    it started was still running. `native_multi_ecs` is deliberately absent from
-    the backend registry, so it stands in for exactly that state here.
+    it started was still running.
+
+    This used `native_multi_ecs` as its stand-in while that backend was absent
+    from the registry. Roadmap item 1.2 registered it, so the stand-in has to be
+    a backend id that is genuinely unregistered - which is what the refusal is
+    actually about. A registered backend handed a state it cannot release
+    refuses on its own account, which is the sibling case below.
     """
     state = {
         "capability_id": "local_full_flow",
         "scenario": "local_full_flow",
-        "backend_id": "native_multi_ecs",
-        "runtime": {"type": "native_multi_ecs", "run_id": "owned-run"},
+        "backend_id": "no_such_backend",
+        "runtime": {"type": "no_such_backend", "run_id": "owned-run"},
         "nodes": [{"logical_id": "node-000", "pid": 101}],
     }
     state_path = tmp_path / "state.json"
     state_path.write_text(json.dumps(state), encoding="utf-8")
 
-    with pytest.raises(teardown.TeardownError, match="native_multi_ecs"):
+    with pytest.raises(teardown.TeardownError, match="no_such_backend"):
         teardown.cleanup_scenario(
             state_path=state_path,
             artifacts_dir=tmp_path,
