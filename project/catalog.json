@@ -186,6 +186,7 @@
         "product.unit.full_flow_complete_matrix",
         "product.unit.m2_fault_client_sampler",
         "product.unit.m2_performance_capture",
+        "product.unit.native_bundle",
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
@@ -278,6 +279,7 @@
         "product.unit.full_flow_complete_matrix",
         "product.unit.m2_fault_client_sampler",
         "product.unit.m2_performance_capture",
+        "product.unit.native_bundle",
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
@@ -382,6 +384,7 @@
         "product.unit.full_flow_complete_matrix",
         "product.unit.m2_fault_client_sampler",
         "product.unit.m2_performance_capture",
+        "product.unit.native_bundle",
         "product.unit.nodehost_density",
         "product.unit.nodehost_density_assertions",
         "product.unit.process_bootstrap_batching",
@@ -1995,6 +1998,27 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_m2_performance_capture.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.native_bundle",
+      "description": "Unit native bundle preflight checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_native_bundle.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",
