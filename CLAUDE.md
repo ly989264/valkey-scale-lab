@@ -592,6 +592,60 @@ lane); and no fault path checks ownership, which stays the accepted absence belo
 - the run mark on the actuator's rules records *whose* a rule is and does not
 make `isolate_nodehost` refuse a host that is not this run's.
 
+**What M3-A-5 inherits, verified at this HEAD rather than remembered.** Item 1.5
+is the simulated ladder, with the operator's bring-up smoke at its front
+(2026-08-11): two simulated hosts, the backend driven directly - claim, install,
+start, stop, isolate, rejoin, release - no Gate run, no cluster, no scenario.
+Seven facts were checked while handing over.
+
+1. **Five seam operations have now run against a real host through the product,
+   and the smoke does not need to re-prove them.** `scripts/native_cleanup_proof.py`
+   drives `verify_image`, `reclaim_run`, `start_nodehost` (which is claim *and*
+   bundle install), `isolate_nodehost` and `release_run` on live simulated hosts.
+   **What is still unexercised on a host is the rest**, and it is the smoke's
+   list: `send_bundle`, `install_bundle`, `start_node_processes`, `start_node`,
+   `stop_node`, `kill_node`, `wait_nodes_ready`, `collect_node_pids`,
+   `run_cluster_admin`, `client_host`, `pause_*`/`resume_*`,
+   `rejoin_nodehost` *on the success path* (item 1.4 reaches it only from
+   `isolate`'s failure branch), `resource_sampler`, `load_lane_host`, and
+   `host_evidence`'s two verbs.
+2. **The fleet arithmetic, so a run is not planned against a fleet that cannot
+   hold it.** `max_logical_nodes_per_nodehost` defaults to **25** and a native
+   run places exactly one nodehost per host, so: exact-30 and exact-50 need
+   **2 hosts**, and **exact-200 needs 8**. The harness publishes **60 client
+   ports per host** by default, which covers 25, and publishes **no cluster-bus
+   ports** - correctly, because peers reach each other on the fleet network by
+   `data_address` and only the controller uses the published range.
+3. **No native run configuration exists anywhere in the repository.** Nothing
+   under `templates/configs/` names `ecs` or `host_inventory_path`. Item 1.2
+   admitted `runtime.provider: ecs` with two required fields
+   (`host_inventory_path`, `native_bundle_dir`); writing the first configuration
+   that uses them is item 1.5's, and it is the first thing the smoke needs.
+4. **The `cleanup` equivalence delta, measured on both sides rather than
+   predicted.** The frozen Docker exact-50 baseline emits **21 `cleanup_actions`
+   rows in six kinds** - `terminate` ×4, `verify_exit` ×4,
+   `verify_no_valkey_processes` ×4, `container stop` ×4, `container remove` ×4,
+   `network remove` ×1. The native backend emits **five rows per nodehost in four
+   kinds** - `terminate`, `verify_exit`, `remove` (firewall), `remove` (run
+   state), `scan` - so **ten rows at exact-50**. `cleanup_timing` also differs:
+   both carry the six second-valued keys `teardown.py` fills, and native adds
+   `cleanup_remove_firewall_rules_seconds` and
+   `cleanup_remove_run_state_seconds`. This is a *vocabulary* delta of the kind
+   item 1.5 is required to declare in advance, not drift.
+5. **The first native full-flow run will leave residue, and it is known which.**
+   `/tmp/vslab-load-lane/<label>/` - see the M3-A-4 section and slice map §8.4.
+   Item 1.4's residue scan deliberately does not report it, because nothing on
+   the host attributes it to a run. Item 1.5 is where the Load Lane first runs
+   natively and so where the decision lands.
+6. **`host_evidence`'s ssh path is still unproven end to end**, carried
+   unchanged from item 1.3: no journal has been fetched off a host over ssh
+   *through the product*. The smoke is the natural place, alongside the argv
+   `native_backend_slice_map.md` §11 names.
+7. **The abort proof is reusable rather than one-off.**
+   `python3 scripts/native_cleanup_proof.py release|abort|stubborn --fleet-id sim-a`
+   places real residue and checks the hosts over its own ssh. M3-B's real-host
+   reclaim proof is the same harness against a real manifest.
+
 ### What is left before M3, and what is M3 itself
 
 Worth separating, because it is easy to list M3's contents and call them
