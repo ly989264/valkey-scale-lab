@@ -969,14 +969,18 @@ What the ten-plus runs actually say:
 
 `native_200.yaml` inherits `scale_200`'s far lighter workload — 50 qps and
 pipeline 1 against 800 and 8 — so **rung 3 does not separate runtime from
-workload**. Every escalation observed is on a native run *under the heavy
+workload**. **§16 does, and the answer is the runtime: a native exact-50 under
+this same light workload escalated 5 times of 44. Read §16 before using the
+paragraphs below.** Every escalation observed is on a native run *under the heavy
 workload*, and neither runtime escalates under the light one. Two candidate
 causes remain and this ladder cannot choose between them; a native exact-50 run
 with `scale_200`'s workload parameters would, and it is one run.
 
-Left as an open finding rather than pursued: the verdict is unaffected in every
-run, and the honest correction — that scale is not the variable — matters more
-than the cause. §14.6 stands as a *measurement* and falls as an explanation.
+Left open here and settled in §16 by the one run that settles it. The sentence
+this section originally ended on — "the honest correction, that scale is not the
+variable" — was itself wrong, and in the same way it was correcting: it read a
+confound as a conclusion. Scale *is* the variable. §14.6 stands as a measurement
+at exact-30 and exact-50, and stands as an explanation there too.
 
 ### 15.6 One number outside its prior spread
 
@@ -987,3 +991,69 @@ failure, `failover_success` and `redundancy_recovery_success` are both true, and
 CLAUDE.md's rule fires on a shift in the whole spread rather than on one run.
 The three fault-lane invariants that rule protects — 9, 12 and 15 — are exact.
 A second native exact-200 below 45 s would make it a spread.
+
+---
+
+## 16. The one measurement that separates workload from runtime
+
+Taken after item 1.5 closed, on operator instruction (2026-08-11), for the sole
+purpose of deciding between §15.5's two candidate causes. It is **not** a rung,
+a gate, an acceptance criterion or a design task, and nothing about M3-A reopens.
+
+Native exact-50, four simulated hosts, with `scale_200.yaml`'s workload block
+substituted and everything else identical — the only three fields that differ,
+`uniform_qps` 800 → 50, `hotspot_qps` 150 → 10, `pipeline` 8 → 1. The
+configuration was written outside version control on purpose; the result is
+recorded and the file is not.
+
+**PASS 893.60 s**, 12/12 steps, `run_verdict` 12/12 OK, fault lane 9/12/15 with
+nine `REAL_PASS`, cleanup 20 rows in four kinds, RTO 47.57 s, zero residue on all
+four hosts checked from outside the product, no `ERROR` in any artifact. **No
+correctness failure**, so M3-A stays closed.
+
+### 16.1 The result: workload is excluded, the runtime is not
+
+**5 escalations of 44 health gates** — inside the heavy-workload native range of
+6, 4, 3 and 5. Cutting the offered load sixteen-fold and the pipeline eight-fold
+changed nothing.
+
+| runtime | scale | workload | escalations |
+|---|---|---|---|
+| Docker | exact-50 | 800 qps / pipeline 8 | 0 in each of 6 runs, of 44 gates |
+| native | exact-30 | 800 qps / pipeline 8 | 2 and 3, of 26 gates |
+| native | exact-50 | 800 qps / pipeline 8 | 6, 4, 3, 5, of 44 gates |
+| **native** | **exact-50** | **50 qps / pipeline 1** | **5, of 44 gates** |
+| Docker | exact-200 | 50 qps / pipeline 1 | 0 in each of 4 runs, of 80 gates |
+| native | exact-200 | 50 qps / pipeline 1 | 0, of 80 gates |
+
+So §14.6's *explanation* is reinstated at exact-30 and exact-50 — the runtime is
+what distinguishes an escalating run from a non-escalating one at those scales,
+across both workloads — and §15.5's correction stands only in the narrower form
+it was actually entitled to: **the claim "and never on Docker" cannot be extended
+to exact-200, where neither runtime escalates.**
+
+### 16.2 What is now open, stated as a question and not pursued
+
+The remaining variable is scale, and it moves in the direction nobody would
+predict: **four times the nodes, and the escalation disappears.** More nodes
+should mean more chances for a representative round to find something unhealthy,
+not fewer. Something that co-varies with scale inverts it — the fraction of the
+fleet each rolling-restart batch disturbs, the relation between batch duration
+and `cluster-node-timeout`, or the composition of the representative sample
+itself are all candidates, and this run distinguishes none of them.
+
+Recorded as a question. It is not M3-A's, it costs nothing today — the gate's
+verdict, cluster state, known nodes and slot count are compared and identical in
+every run, and both rolling restarts PASS everywhere — and the reason to keep it
+written down is §16.3.
+
+### 16.3 Why it is worth a line in a later item's notes
+
+An escalation is one whole-fleet diagnostic round: `full_probe_count` 0 → 50 and
+`node_command_count` 12 → 112 at exact-50. §16 item 1 of the observability design
+asks the normal path not to run whole-fleet `CLUSTER NODES` periodically and item
+3 forbids O(N²) normal collection, so a runtime that reaches for the whole fleet
+more often is worth knowing about *before* the fleet is real and the round costs
+a network. At exact-50 it is 5 rounds × 100 extra node commands. That it vanishes
+at 200 is reassuring for the scale the design worries about, and is exactly why
+the inversion should not be left unexamined forever.

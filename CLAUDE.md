@@ -863,19 +863,35 @@ re-derived, so prefer the measured number.
   a simulated dwell is a lower bound and it measured near one. Only M3-B's real
   network can narrow the bound.
 
-**What rung 3 corrected about rung 2, which is why it was worth running.**
+**What rung 3 corrected about rung 2, and what one further run then settled.**
 §14.6 reported that the rolling restart's health gate escalates to a whole-fleet
 diagnostic round on every native run and on no Docker run - 0 in each of six
 Docker exact-50, against 6, 4, 3 and 5 of 44 gates natively. At exact-200 the
 native run escalated **zero times in 80 gates**, and so did four Docker
-exact-200. `native_200.yaml` inherits `scale_200`'s far lighter workload (50 qps
-and pipeline 1 against 800 and 8), so **scale is not the variable and rung 3 does
-not separate runtime from workload**. Every escalation observed is native *and*
-heavily loaded; neither runtime escalates lightly loaded. One native exact-50 run
-with `scale_200`'s workload parameters would separate them, and that is the open
-finding rather than a cause. The verdict is unaffected in every run - `status`,
-`cluster_state`, `known_nodes` and `slots_assigned` are all compared and all
-identical.
+exact-200; `native_200.yaml` inherits `scale_200`'s far lighter workload (50 qps
+and pipeline 1 against 800 and 8), so rung 3 alone could not say whether the
+cause was the runtime or the load.
+
+**The operator authorised one targeted run and it settles it: the runtime.**
+Native exact-50 with `scale_200`'s workload block substituted and nothing else
+changed - `uniform_qps` 800 → 50, `hotspot_qps` 150 → 10, `pipeline` 8 → 1 -
+**PASS 893.60s, 12/12, fault lane 9/12/15, RTO 47.57s, zero residue, no `ERROR`,
+and 5 escalations of 44 gates**, squarely inside the heavy-workload range of 6,
+4, 3 and 5. Sixteen times less offered load changed nothing. Read slice map §16.
+**Not a rung, not a gate, not an acceptance criterion; no correctness failure, so
+M3-A stays closed**, and the configuration was written outside version control on
+purpose - the result is recorded and the file is not.
+
+So §14.6 is reinstated as an explanation at exact-30 and exact-50, and §15.5
+survives only in the narrower form it was entitled to: "and never on Docker"
+cannot be extended to exact-200, where neither runtime escalates. **The open
+variable is now scale, and it moves the wrong way** - four times the nodes and
+the escalation disappears, where more nodes should mean more chances for a
+representative round to find something unhealthy. What co-varies with scale to
+invert it is written down as a question in slice map §16.2 and deliberately not
+pursued: the verdict is unaffected in every run - `status`, `cluster_state`,
+`known_nodes` and `slots_assigned` are all compared and all identical - and it is
+a later item's to take up, if any.
 
 **Two fields the frozen baselines agree on by coincidence**, reported rather than
 excluded because their views already differ for declared reasons: the
@@ -897,10 +913,18 @@ native exact-200 below 45 s would make it one.
 on operator approval, and the correct state now is idle.** Do not freeze native
 baselines - they come from the real fleet in M3-B, because a baseline should
 encode the environment acceptance runs in. Three things this session added to the
-open list, none of them its own to close: the workload-versus-runtime question
-above; `_state_nodehost` still drops `remote_bundle_dir`, which nothing needs now
-that the path is derived; and the diff tool compares a health gate's retry record
+open list, none of them its own to close: why the health-gate escalation inverts
+with scale (slice map §16.2 - the workload half of that question is answered);
+`_state_nodehost` still drops `remote_bundle_dir`, which nothing needs now that
+the path is derived; and the diff tool compares a health gate's retry record
 through `stdout_tail` while excluding the same fields structurally.
+
+**Operator decision, 2026-08-11: the equivalence diff keeps raw `argv`.** A
+cross-backend command-log delta confined to `argv` is an expected runtime
+difference and is read as one; it is not normalised away, because a view that
+collapsed `argv` would keep scoring green while the wrong command ran. The
+distinction lives in `scripts/diff_stage_artifacts.py`'s own docstring, so it
+reaches whoever runs the tool, and slice map §14.5 carries the measurement.
 
 Carried forward untouched: the aborted controller's ssh masters (1.4 map §8.2),
 the resource-to-timeline monotonic correlation (1.3 map §10.1), a failing run
