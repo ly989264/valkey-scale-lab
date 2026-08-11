@@ -143,6 +143,7 @@ def validate_raw_sources_by_kind(
         "management_sequence.json",
         "fault_sequence.json",
         "cleanup_report.json",
+        "host_evidence.json",
         "analysis_summary.json",
         "report_index.json",
         "full_flow_result.json",
@@ -171,6 +172,12 @@ def validate_raw_sources_by_kind(
         errors.append(
             f"runtime/analysis_summary.json is missing report surfaces: {missing_surfaces}"
         )
+    _validate_host_evidence(
+        Path(base).resolve(),
+        objects.get("host_evidence.json"),
+        run_state,
+        errors,
+    )
     _validate_missing_taxonomy(objects, streams, errors)
     _validate_streams(streams, str(run_id), errors)
     _validate_workload(objects.get("workload_windows.json"), errors)
@@ -358,6 +365,118 @@ def _claim_operation(
     existing = owners.setdefault(raw, scenario_id)
     if existing != scenario_id:
         errors.append(f"operation {raw} cannot be relabelled from {existing} to {scenario_id}")
+
+
+def _validate_host_evidence(
+    base: Path,
+    value: dict[str, Any] | None,
+    run_state: Mapping[str, Any],
+    errors: list[str],
+) -> None:
+    """M3's "complete and attributable", as something a run can be refused for.
+
+    Evidence produced on a machine other than the controller is only usable if
+    the run says which machine, and what that machine's clock said relative to
+    the controller's. This is where the run is refused for not saying so; the
+    derivation is in `project/docs/cross_host_evidence_slice_map.md` §1.2 and
+    §6.2.
+
+    Note what is deliberately *not* checked: how large an offset is. A threshold
+    would be an assertion about the fleet rather than about the evidence, and it
+    could not hold on both backends anyway - the same estimator is six times less
+    precise over `docker exec` than over multiplexed ssh, and both are correct.
+    What is required is that the offset was measured and that its bound was
+    recorded with it.
+    """
+
+    if not isinstance(value, dict):
+        return
+    rows = value.get("hosts") if isinstance(value.get("hosts"), list) else []
+    rows = [row for row in rows if isinstance(row, dict)]
+    if not rows:
+        errors.append("runtime/host_evidence.json requires at least one attributed host")
+        return
+
+    planned = {
+        str(row.get("nodehost_id"))
+        for row in run_state.get("nodehosts", [])
+        if isinstance(row, dict) and row.get("nodehost_id")
+    }
+    seen: set[str] = set()
+    for row in rows:
+        nodehost_id = row.get("nodehost_id")
+        if not isinstance(nodehost_id, str) or not nodehost_id:
+            errors.append("runtime/host_evidence.json requires a nodehost_id on every host row")
+            continue
+        if nodehost_id in seen:
+            errors.append(
+                f"runtime/host_evidence.json claims nodehost {nodehost_id} more than once"
+            )
+        seen.add(nodehost_id)
+        if not isinstance(row.get("host_id"), str) or not row["host_id"]:
+            errors.append(
+                f"runtime/host_evidence.json does not attribute nodehost {nodehost_id} to a host"
+            )
+        clock = row.get("clock") if isinstance(row.get("clock"), dict) else {}
+        for boundary in ("start", "end"):
+            reading = clock.get(boundary)
+            if not isinstance(reading, dict) or not reading:
+                errors.append(
+                    f"runtime/host_evidence.json has no {boundary}-of-run clock reading for {nodehost_id}"
+                )
+                continue
+            for field in ("offset_ms", "uncertainty_ms"):
+                measured = reading.get(field)
+                if not isinstance(measured, (int, float)) or isinstance(measured, bool):
+                    errors.append(
+                        f"runtime/host_evidence.json {boundary} clock for {nodehost_id} requires a measured {field}"
+                    )
+    if planned and seen != planned:
+        errors.append(
+            "runtime/host_evidence.json does not account for every nodehost: "
+            f"missing {sorted(planned - seen)}, unknown {sorted(seen - planned)}"
+        )
+
+    expected_nodes = {
+        str(node.get("logical_id"))
+        for node in run_state.get("nodes", [])
+        if isinstance(node, dict) and node.get("logical_id")
+    }
+    journalled: dict[str, str] = {}
+    for row in rows:
+        nodehost_id = str(row.get("nodehost_id", "?"))
+        journals = row.get("journals") if isinstance(row.get("journals"), list) else []
+        for journal in journals:
+            if not isinstance(journal, dict):
+                errors.append(f"runtime/host_evidence.json journal rows for {nodehost_id} must be objects")
+                continue
+            logical_id = journal.get("logical_id")
+            if not isinstance(logical_id, str) or not logical_id:
+                errors.append(f"runtime/host_evidence.json journal row for {nodehost_id} names no node")
+                continue
+            existing = journalled.setdefault(logical_id, nodehost_id)
+            if existing != nodehost_id:
+                errors.append(
+                    f"runtime/host_evidence.json attributes node {logical_id} to both {existing} and {nodehost_id}"
+                )
+            validate_digest(journal.get("sha256"), f"host_evidence journal {logical_id}", errors)
+            raw = journal.get("path")
+            if not isinstance(raw, str) or not raw:
+                errors.append(f"runtime/host_evidence.json journal for {logical_id} records no path")
+                continue
+            path = (base / raw).resolve()
+            if not path.is_relative_to(base) or not path.is_file():
+                errors.append(
+                    f"runtime/host_evidence.json journal for {logical_id} is missing or escapes: {raw}"
+                )
+    if expected_nodes:
+        missing = sorted(expected_nodes - journalled.keys())
+        unknown = sorted(journalled.keys() - expected_nodes)
+        if missing or unknown:
+            errors.append(
+                "runtime/host_evidence.json does not carry one journal per observed node: "
+                f"missing {missing}, unknown {unknown}"
+            )
 
 
 def _validate_missing_taxonomy(

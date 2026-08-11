@@ -90,6 +90,7 @@
     {"raw_name": "management_sequence.json", "format": "json", "required_raw": true, "admissions": [{"kind": "management_results"}]},
     {"raw_name": "fault_sequence.json", "format": "json", "required_raw": true, "admissions": [{"kind": "fault_results"}, {"kind": "stability_results", "transform_id": "recovery_health", "source_selector": "recovery_health"}]},
     {"raw_name": "cleanup_report.json", "format": "json", "required_raw": true, "admissions": [{"kind": "cleanup_report"}]},
+    {"raw_name": "host_evidence.json", "format": "json", "required_raw": true, "admissions": [{"kind": "host_evidence"}]},
     {"raw_name": "analysis_summary.json", "format": "json", "required_raw": true, "admissions": [{"kind": "analysis_summary"}]},
     {"raw_name": "report_index.json", "format": "json", "required_raw": true, "admissions": [{"kind": "report_index"}]},
     {"raw_name": "full_flow_result.json", "format": "json", "required_raw": true, "admissions": []},

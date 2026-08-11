@@ -1007,6 +1007,35 @@ class RecordingNodeBackend:
         self.samplers.append((sampler_id, list(processes), list(expected_gone)))
         return object()
 
+    def host_evidence(self, nodehost: dict[str, object]) -> object:
+        self.operations.append(f"host_evidence:{nodehost['nodehost_id']}")
+        return RecordingHostEvidence(self)
+
+
+class RecordingHostEvidence:
+    """Item 1.3's seam member, as a recorder rather than a machine."""
+
+    def __init__(self, backend: "RecordingNodeBackend") -> None:
+        self._backend = backend
+
+    def clock_exchanges(self, count: int) -> list[dict[str, object]]:
+        self._backend.operations.append(f"clock_exchanges:{count}")
+        return [
+            {
+                "controller_before_unix_ms": 1000.0 + index,
+                "host_unix_ms": 1001.0 + index,
+                "host_monotonic_seconds": 50.0 + index,
+                "controller_after_unix_ms": 1002.0 + index,
+            }
+            for index in range(count)
+        ]
+
+    def collect_node_journal(self, node: object, local_path: Path) -> None:
+        logical_id = str(node["logical_id"])  # type: ignore[index]
+        self._backend.operations.append(f"collect_node_journal:{logical_id}")
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path.write_text(f"{logical_id} recorded\n", encoding="utf-8")
+
 
 def test_process_bootstrap_reaches_the_runtime_only_through_the_backend(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -1204,11 +1233,20 @@ def test_process_scenario_writes_scale_artifacts_only_for_scale_ladder(
         profile_id="exact-50",
     )
 
+    # Item 1.3's three sites, in order: the run's clocks are read once as soon as
+    # every host is claimed, and again with the journals at the last boundary
+    # before teardown. This node carries no nodehost_id, so no journal is
+    # attributed to `host-1` and only the reading itself shows up.
     assert backend.operations == [
         "reclaim_run",
         "create_network",
         "start_nodehost",
+        "host_evidence:host-1",
+        "clock_exchanges:3",
         "wait_nodes_ready",
+        "host_evidence:host-1",
+        "clock_exchanges:3",
+        "host_evidence:host-1",
     ]
     assert scale_writes == [("scale_ladder", "scale_ladder")] * expected_scale_writes
     assert resource_clocks == ([shared_monotonic] if scenario == "cluster_timeout" else [])

@@ -10,6 +10,7 @@ Three things a hermetic test can prove here, and one it cannot:
           falls outside that bound;
   it can  the argv each backend builds and the class it raises when a transfer
           fails, which is the acceptance's own "ERROR, not silence";
+  it can  every refusal the admission validator makes;
   it cannot  that a real host's clock is where the reading says it is. That was
           measured on two simulated hosts instead - slice map §2.4 - and the
           detection half is here, because shifting a simulated host's clock would
@@ -18,10 +19,13 @@ Three things a hermetic test can prove here, and one it cannot:
 
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
 
+from valkey_scale_lab.evidence.validation import validate_raw_sources_by_kind
 from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.runtime import docker_runtime, native_backend as native_backend_module
 from valkey_scale_lab.runtime.docker_runtime import DockerHostEvidence
@@ -31,8 +35,16 @@ from valkey_scale_lab.runtime.host_clock import (
     parse_host_clock,
     reduce_clock_exchanges,
 )
+from valkey_scale_lab.runtime.host_evidence import (
+    build_host_evidence_document,
+    collect_node_journals,
+    read_host_clocks,
+)
 from valkey_scale_lab.runtime.host_transport import CommandResult, TransportError
 from valkey_scale_lab.runtime.native_backend import NativeMultiEcsBackend
+from valkey_scale_lab.scenarios import load_local_full_flow_definition
+
+DEFINITION = load_local_full_flow_definition()
 
 CONTROL = {
     "address": "10.0.0.11",
@@ -317,3 +329,195 @@ def test_a_native_load_lane_transfer_failure_is_error_too(tmp_path: Path) -> Non
 
     with pytest.raises(CollectionError, match="load lane evidence"):
         lane.collect_evidence("/tmp/vslab-load-lane/formal", tmp_path / "load_lane")
+
+
+# --- what the lifecycle assembles -------------------------------------------
+
+
+class _StubBackend:
+    """Two nodehosts on two hosts, answering with distinct clocks."""
+
+    def __init__(self) -> None:
+        self.journals: list[tuple[str, str]] = []
+
+    def host_evidence(self, nodehost):  # noqa: ANN001
+        return _StubSource(self, str(nodehost["nodehost_id"]))
+
+
+class _StubSource:
+    def __init__(self, backend: _StubBackend, nodehost_id: str) -> None:
+        self._backend = backend
+        self._nodehost_id = nodehost_id
+
+    def clock_exchanges(self, count: int):
+        base = 1_000.0 if self._nodehost_id.endswith("00") else 2_000.0
+        return [_exchange(base, base + 5.0, base + 10.0) for _ in range(count)]
+
+    def collect_node_journal(self, node, local_path: Path) -> None:  # noqa: ANN001
+        self._backend.journals.append((self._nodehost_id, str(node["logical_id"])))
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path.write_text(f"{node['logical_id']}\n", encoding="utf-8")
+
+
+NODEHOSTS = [
+    {"nodehost_id": "nodehost-az-a-00", "host_id": "sim-host-00", "fleet_id": "sim-a"},
+    {"nodehost_id": "nodehost-az-b-00", "host_id": "sim-host-01", "fleet_id": "sim-a"},
+]
+NODES = [
+    {"logical_id": "shard-0000-primary", "nodehost_id": "nodehost-az-a-00"},
+    {"logical_id": "shard-0000-replica-00", "nodehost_id": "nodehost-az-b-00"},
+]
+
+
+def test_journals_land_under_the_host_they_came_from(tmp_path: Path) -> None:
+    backend = _StubBackend()
+    rows = collect_node_journals(backend, NODEHOSTS, NODES, tmp_path)
+
+    assert (tmp_path / "sim-host-00" / "shard-0000-primary.log").is_file()
+    assert (tmp_path / "sim-host-01" / "shard-0000-replica-00.log").is_file()
+    primary = rows["nodehost-az-a-00"][0]
+    assert primary["path"] == "runtime/node_journals/sim-host-00/shard-0000-primary.log"
+    assert primary["sha256"] == hashlib.sha256(b"shard-0000-primary\n").hexdigest()
+    assert primary["bytes"] == len(b"shard-0000-primary\n")
+
+
+def test_the_document_attributes_every_surface_to_exactly_one_host(tmp_path: Path) -> None:
+    backend = _StubBackend()
+    clocks = read_host_clocks(backend, NODEHOSTS)
+    journals = collect_node_journals(backend, NODEHOSTS, NODES, tmp_path)
+
+    document = build_host_evidence_document(
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        run_id="run-1",
+        nodehosts=NODEHOSTS,
+        start_clocks=clocks,
+        end_clocks=clocks,
+        journals=journals,
+        load_lane_nodehost_id="nodehost-az-a-00",
+        timing={"clock_start_seconds": 0.2},
+    )
+
+    assert document["artifact_type"] == "host_evidence"
+    assert document["fleet_ids"] == ["sim-a"]
+    assert document["host_count"] == 2
+    assert [row["host_id"] for row in document["hosts"]] == ["sim-host-00", "sim-host-01"]
+    # Exactly one host claims the Load Lane's uploaded directory.
+    assert [row["load_lane_dirs"] for row in document["hosts"]] == [["runtime/load_lane"], []]
+    # And each claims its own sampler, which is what `static.sampler_id` records.
+    assert [row["resource_sampler_ids"] for row in document["hosts"]] == [
+        ["nodehost-az-a-00"],
+        ["nodehost-az-b-00"],
+    ]
+    for row in document["hosts"]:
+        for boundary in ("start", "end"):
+            assert row["clock"][boundary]["uncertainty_ms"] == 5.0
+
+
+def test_a_docker_run_says_local_rather_than_inventing_a_fleet(tmp_path: Path) -> None:
+    # Every Docker nodehost carries `host_id: "local"`, which is true and is
+    # exactly why a Docker run is not cross-host evidence.
+    nodehosts = [{"nodehost_id": "nodehost-az-a-00", "host_id": "local"}]
+    backend = _StubBackend()
+    document = build_host_evidence_document(
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        run_id="run-1",
+        nodehosts=nodehosts,
+        start_clocks=read_host_clocks(backend, nodehosts),
+        end_clocks=read_host_clocks(backend, nodehosts),
+        journals={},
+        load_lane_nodehost_id=None,
+        timing={},
+    )
+
+    assert document["fleet_ids"] == ["local"]
+    assert document["host_count"] == 1
+    assert "fleet_id" not in document["hosts"][0]
+
+
+# --- what the validator refuses ---------------------------------------------
+
+
+def _sources(tmp_path: Path, mutate=None) -> Path:  # noqa: ANN001
+    """A minimal admissible bundle, so a test can break exactly one thing."""
+
+    support = __import__(
+        "tests.provenance.test_exact_gate_measured_sources", fromlist=["_bundle"]
+    )
+    base = support._bundle(tmp_path)
+    if mutate is not None:
+        path = base / "runtime" / "host_evidence.json"
+        document = json.loads(path.read_text(encoding="utf-8"))
+        mutate(document)
+        path.write_text(json.dumps(document) + "\n", encoding="utf-8")
+    return base
+
+
+def _complaints(base: Path) -> str:
+    return "; ".join(validate_raw_sources_by_kind(base, 50, DEFINITION).all)
+
+
+def test_the_unmodified_bundle_is_admissible(tmp_path: Path) -> None:
+    assert not validate_raw_sources_by_kind(_sources(tmp_path), 50, DEFINITION)
+
+
+def test_evidence_attributed_to_no_host_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path, lambda doc: doc["hosts"][0].pop("host_id"))
+    assert "does not attribute nodehost" in _complaints(base)
+
+
+def test_an_offset_without_its_bound_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path, lambda doc: doc["hosts"][0]["clock"]["start"].pop("uncertainty_ms"))
+    assert "requires a measured uncertainty_ms" in _complaints(base)
+
+
+def test_a_run_clocked_at_only_one_end_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path, lambda doc: doc["hosts"][1]["clock"].pop("end"))
+    assert "no end-of-run clock reading" in _complaints(base)
+
+
+def test_a_nodehost_with_no_host_evidence_row_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path, lambda doc: doc["hosts"].pop())
+    assert "does not account for every nodehost" in _complaints(base)
+
+
+def test_a_node_with_no_journal_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path, lambda doc: doc["hosts"][0]["journals"].pop())
+    assert "one journal per observed node" in _complaints(base)
+
+
+def test_a_node_journalled_by_two_hosts_is_refused(tmp_path: Path) -> None:
+    def mutate(doc: dict) -> None:
+        doc["hosts"][1]["journals"].append(dict(doc["hosts"][0]["journals"][0]))
+
+    base = _sources(tmp_path, mutate)
+    assert "to both" in _complaints(base)
+
+
+def test_a_journal_whose_file_is_absent_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path)
+    (base / "runtime" / "node_journals" / "host-a" / "node-0.log").unlink()
+    assert "is missing or escapes" in _complaints(base)
+
+
+def test_a_journal_that_escapes_the_run_is_refused(tmp_path: Path) -> None:
+    base = _sources(
+        tmp_path, lambda doc: doc["hosts"][0]["journals"][0].update(path="../../etc/passwd")
+    )
+    assert "is missing or escapes" in _complaints(base)
+
+
+def test_a_journal_without_a_digest_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path, lambda doc: doc["hosts"][0]["journals"][0].update(sha256="short"))
+    assert "SHA-256 digest" in _complaints(base)
+
+
+def test_host_evidence_that_names_another_run_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path, lambda doc: doc.update(run_id="someone-elses-run"))
+    assert "runtime/host_evidence.json must PASS for the admitted run" in _complaints(base)
+
+
+def test_host_evidence_with_no_hosts_at_all_is_refused(tmp_path: Path) -> None:
+    base = _sources(tmp_path, lambda doc: doc.update(hosts=[]))
+    assert "requires at least one attributed host" in _complaints(base)

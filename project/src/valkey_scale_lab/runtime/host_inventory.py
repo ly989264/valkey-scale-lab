@@ -27,6 +27,7 @@ the property that makes the harness worth having.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -88,6 +89,13 @@ class FleetHost:
 class HostInventory:
     fleet_id: str
     hosts: tuple[FleetHost, ...]
+    #: The digest of the manifest as read. A run records it so that "which fleet
+    #: was this?" is answerable from the run's own evidence rather than from
+    #: whichever manifest happens to be on disk later. It is deliberately the
+    #: only thing about the fleet a run can say beyond its identity: what the
+    #: fleet *is* lives in the harness's own sidecar, which the product never
+    #: reads - see `cross_host_evidence_slice_map.md` §8.
+    manifest_sha256: str = ""
 
     def by_az(self) -> dict[str, list[FleetHost]]:
         grouped: dict[str, list[FleetHost]] = {}
@@ -96,7 +104,14 @@ class HostInventory:
         return {az: sorted(items, key=lambda item: item.host_id) for az, items in sorted(grouped.items())}
 
     def placement_records(self) -> list[dict[str, Any]]:
-        return [host.as_placement_record() for host in self.hosts]
+        return [
+            {
+                **host.as_placement_record(),
+                "fleet_id": self.fleet_id,
+                "fleet_manifest_sha256": self.manifest_sha256,
+            }
+            for host in self.hosts
+        ]
 
     def host(self, host_id: str) -> FleetHost:
         for host in self.hosts:
@@ -165,8 +180,9 @@ def load_host_inventory(path: str | Path) -> HostInventory:
     manifest_path = Path(path)
     if not manifest_path.is_file():
         raise HostInventoryError(f"no fleet manifest at {manifest_path}")
+    raw = manifest_path.read_bytes()
     try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(raw.decode("utf-8"))
     except json.JSONDecodeError as error:
         raise HostInventoryError(f"{manifest_path} is not readable JSON: {error}") from error
     _require(isinstance(manifest, dict), f"{manifest_path} must contain an object")
@@ -183,7 +199,11 @@ def load_host_inventory(path: str | Path) -> HostInventory:
         if host.host_id in seen:
             raise HostInventoryError(f"{manifest_path} names host {host.host_id!r} twice")
         seen.add(host.host_id)
-    return HostInventory(fleet_id=str(manifest.get("fleet_id", manifest_path.parent.name)), hosts=tuple(hosts))
+    return HostInventory(
+        fleet_id=str(manifest.get("fleet_id", manifest_path.parent.name)),
+        hosts=tuple(hosts),
+        manifest_sha256=hashlib.sha256(raw).hexdigest(),
+    )
 
 
 def control_endpoint_of(nodehost: Mapping[str, Any]) -> dict[str, Any]:

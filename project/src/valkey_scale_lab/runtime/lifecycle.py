@@ -34,6 +34,14 @@ from valkey_scale_lab.runtime.backends import (
     BackendNotImplementedError,
     require_implemented,
 )
+from valkey_scale_lab.runtime.host_evidence import (
+    HOST_EVIDENCE_ARTIFACT,
+    NODE_JOURNAL_DIRNAME,
+    CollectionTimer,
+    build_host_evidence_document,
+    collect_node_journals,
+    read_host_clocks,
+)
 from valkey_scale_lab.runtime.node_backend import NodeBackend
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 
@@ -237,6 +245,14 @@ def _create_process_scenario(
             {"nodehost_count": len(nodehosts), "parallelism": _runtime.CLUSTER_ORCHESTRATION_PARALLELISM},
         )
         nodehost_by_id = {nodehost["nodehost_id"]: nodehost for nodehost in nodehosts}
+        # The first of the run's two clock readings, at the earliest point where
+        # every host is claimed and reachable. The pair brackets the run, which
+        # is what makes an offset a statement about the run rather than about
+        # the moment it was taken. See `cross_host_evidence_slice_map.md` §2.
+        evidence_timing = CollectionTimer()
+        start_clocks = evidence_timing.measure(
+            "clock_start_seconds", lambda: read_host_clocks(backend, nodehosts)
+        )
 
         config_prepare_details: dict[str, Any] = {}
         _runtime._run_timed_step(
@@ -434,9 +450,76 @@ def _create_process_scenario(
         if scenario == "scale_ladder" and not management_profile and not full_flow_profile:
             with _runtime._timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
                 _runtime.write_scale_ladder_artifacts(artifacts, capability_id, scenario, run_id, config, nodes)
+        _write_host_evidence(
+            artifacts=artifacts,
+            backend=backend,
+            capability_id=capability_id,
+            scenario=scenario,
+            run_id=run_id,
+            nodehosts=nodehosts,
+            nodes=nodes,
+            start_clocks=start_clocks,
+            timing=evidence_timing,
+        )
         return state
     except Exception:
         backend.reclaim_run(capability_id=capability_id, run_id=run_id)
         raise
+
+
+def _write_host_evidence(
+    *,
+    artifacts: Path,
+    backend: NodeBackend,
+    capability_id: str,
+    scenario: str,
+    run_id: str,
+    nodehosts: list[dict[str, Any]],
+    nodes: list[dict[str, Any]],
+    start_clocks: dict[str, dict[str, Any]],
+    timing: CollectionTimer,
+) -> None:
+    """The run's account of the machines its evidence came from.
+
+    Here rather than at each stage boundary, and this is the last one at which a
+    node journal is both complete and still on its host: every stage that
+    touches a node has finished, and the Gate's `cleanup` step - which is what
+    removes the run's state root - has not run yet.
+
+    A journal or a clock that cannot be fetched raises `CollectionError` out of
+    the backend, which the orchestrator records as a step tool error and the run
+    reports as `ERROR`. That is §12.1's 必要证据无法写入, deliberately not
+    softened into a `MISSING` row: a run that could not collect its own evidence
+    has not observed a cluster and found it wanting.
+
+    A run that fails before reaching here still collects nothing, which is the
+    same open gap as every other artifact a failing run does not write. See
+    `cross_host_evidence_slice_map.md` §10.2.
+    """
+
+    end_clocks = timing.measure(
+        "clock_end_seconds", lambda: read_host_clocks(backend, nodehosts)
+    )
+    journals = timing.measure(
+        "journal_collect_seconds",
+        lambda: collect_node_journals(
+            backend, nodehosts, nodes, artifacts / NODE_JOURNAL_DIRNAME
+        ),
+    )
+    document = build_host_evidence_document(
+        capability_id=capability_id,
+        scenario=scenario,
+        run_id=run_id,
+        nodehosts=nodehosts,
+        start_clocks=start_clocks,
+        end_clocks=end_clocks,
+        journals=journals,
+        # `_load_lane_seed` always seeds from the first node, so the host the
+        # Load Lane ran on is the first node's - known at the moment it was
+        # chosen rather than re-derived from an argv afterwards.
+        load_lane_nodehost_id=(str(nodes[0].get("nodehost_id")) if nodes else None),
+        timing=timing.as_dict(),
+    )
+    _runtime._write_json_artifact(artifacts / HOST_EVIDENCE_ARTIFACT, document)
 
 

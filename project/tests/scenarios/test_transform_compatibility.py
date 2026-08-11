@@ -33,11 +33,11 @@ def _document() -> dict:
             "recovery_health",
         ),
         (
-            lambda doc: doc["artifacts"][11].update(format="json"),
+            lambda doc: doc["artifacts"][12].update(format="json"),
             "requires 'jsonl'",
         ),
         (
-            lambda doc: doc["artifacts"][13]["admissions"][0].update(
+            lambda doc: doc["artifacts"][14]["admissions"][0].update(
                 transform_id="normalize_timestamp"
             ),
             "incompatible",
@@ -105,8 +105,8 @@ def test_transform_compatibility_registry_is_exact_and_immutable() -> None:
     "source_index, target_index",
     [
         (2, 1),
-        (13, 12),
         (14, 13),
+        (15, 14),
     ],
 )
 def test_identity_admissions_cannot_move_while_global_kind_order_is_retained(
@@ -143,6 +143,7 @@ def test_admission_registry_covers_every_admitted_kind_including_identity() -> N
         "management_results",
         "fault_results",
         "cleanup_report",
+        "host_evidence",
         "analysis_summary",
         "report_index",
         "events",

@@ -68,6 +68,7 @@ RAW_JSON_NAMES = (
     "management_sequence.json",
     "fault_sequence.json",
     "cleanup_report.json",
+    "host_evidence.json",
     "analysis_summary.json",
     "report_index.json",
     "full_flow_result.json",
@@ -90,6 +91,7 @@ ADMITTED_JSON_KINDS = (
     "fault_results",
     "stability_results",
     "cleanup_report",
+    "host_evidence",
     "analysis_summary",
     "report_index",
 )

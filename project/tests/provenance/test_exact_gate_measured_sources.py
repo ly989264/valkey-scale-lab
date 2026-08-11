@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -98,8 +99,62 @@ def _bundle(root: Path) -> Path:
             }
         )
     surfaces = {name: {} for name in {"topology_summary", "lifecycle_durations", "bottlenecks", "resources", "workload_impact", "failover", "recovery", "error_summary", "missing_evidence"}}
+    # Item 1.3's host evidence, in the shape a real run writes: one row per
+    # nodehost, every observed node journalled exactly once, and both ends of
+    # the run clocked with the offset's own bound beside it.
+    journal_rows: dict[str, list[dict]] = {"nodehost-a": [], "nodehost-b": []}
+    for index in range(50):
+        logical_id = f"node-{index}"
+        nodehost_id = "nodehost-a" if index < 25 else "nodehost-b"
+        host_id = "host-a" if index < 25 else "host-b"
+        journal = runtime / "node_journals" / host_id / f"{logical_id}.log"
+        journal.parent.mkdir(parents=True, exist_ok=True)
+        payload = f"{logical_id} started\n".encode("utf-8")
+        journal.write_bytes(payload)
+        journal_rows[nodehost_id].append(
+            {
+                "logical_id": logical_id,
+                "path": f"runtime/node_journals/{host_id}/{logical_id}.log",
+                "sha256": hashlib.sha256(payload).hexdigest(),
+                "bytes": len(payload),
+            }
+        )
+    host_evidence_rows = [
+        {
+            "nodehost_id": nodehost_id,
+            "host_id": host_id,
+            "clock": {
+                boundary: {
+                    "controller_unix_ms": float(STARTED),
+                    "host_unix_ms": float(STARTED),
+                    "host_monotonic_seconds": 100.0,
+                    "offset_ms": 0.0,
+                    "uncertainty_ms": 4.0,
+                    "round_trip_ms": 8.0,
+                    "exchanges": 3,
+                }
+                for boundary in ("start", "end")
+            },
+            "journals": journal_rows[nodehost_id],
+            "resource_sampler_ids": [nodehost_id],
+            "load_lane_dirs": ["runtime/load_lane"] if nodehost_id == "nodehost-a" else [],
+        }
+        for nodehost_id, host_id in (("nodehost-a", "host-a"), ("nodehost-b", "host-b"))
+    ]
     objects = {
-        "run_state.json": {**common, "nodes": [{"logical_id": f"node-{index}"} for index in range(50)]},
+        "run_state.json": {
+            **common,
+            "nodes": [{"logical_id": f"node-{index}"} for index in range(50)],
+            "nodehosts": [{"nodehost_id": "nodehost-a"}, {"nodehost_id": "nodehost-b"}],
+        },
+        "host_evidence.json": {
+            **common,
+            "artifact_type": "host_evidence",
+            "fleet_ids": ["fleet-a"],
+            "host_count": 2,
+            "hosts": host_evidence_rows,
+            "timing": {"clock_start_seconds": 0.1, "clock_end_seconds": 0.1},
+        },
         "resource_preflight.json": {**common, "run_id": "preflight-run", "can_run": True, "nodes_requested": 50},
         "workload_windows.json": {**common, "windows": [{"status": "PASS"}]},
         "lifecycle_timeline.json": {**common, "steps": lifecycle_steps},

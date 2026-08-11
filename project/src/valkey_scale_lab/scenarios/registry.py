@@ -149,6 +149,15 @@ ADMISSION_COMPATIBILITY: Mapping[str, AdmissionCompatibility] = MappingProxyType
             source_raw_name="cleanup_report.json",
             source_format="json",
         ),
+        # Item 1.3. Admitted whole and untransformed: the document is already the
+        # run's statement about where its evidence came from, and a transform
+        # that reshaped it would put a second opinion between the measurement and
+        # the provenance graph that binds its digest.
+        "host_evidence": AdmissionCompatibility(
+            admitted_kind="host_evidence",
+            source_raw_name="host_evidence.json",
+            source_format="json",
+        ),
         "analysis_summary": AdmissionCompatibility(
             admitted_kind="analysis_summary",
             source_raw_name="analysis_summary.json",

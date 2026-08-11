@@ -114,6 +114,10 @@ def build_candidate_admission(
             "recovery_health": objects["fault_sequence.json"].get("recovery_health"),
         },
         "cleanup_report": {**objects["cleanup_report.json"], **common},
+        # Admitted whole. The offsets and the journal digests are what "recorded
+        # in provenance" means for item 1.3: admitting the document binds its
+        # digest into the provenance graph and therefore into `admission.json`.
+        "host_evidence": {**objects["host_evidence.json"], **common},
         "analysis_summary": {**objects["analysis_summary.json"], **common},
         "report_index": {
             **objects["report_index.json"],

@@ -224,6 +224,15 @@ def _place_nodehosts_on_fleet(
         nodehost["host_control_endpoint"] = dict(host["control_endpoint"])
         nodehost["host_data_address"] = str(host["data_address"])
         nodehost["host_client_address"] = str(host["client_address"])
+        # Which fleet, and which manifest of it. Recorded here because placement
+        # is the only step that sees both the plan and the manifest, and carried
+        # into the run's host evidence so that a native result is attributable to
+        # the fleet it was taken on. What that fleet *was* is not recorded and
+        # cannot be - see `cross_host_evidence_slice_map.md` §8.
+        if host.get("fleet_id"):
+            nodehost["fleet_id"] = str(host["fleet_id"])
+        if host.get("fleet_manifest_sha256"):
+            nodehost["fleet_manifest_sha256"] = str(host["fleet_manifest_sha256"])
 
     if assign:
         host_by_nodehost = {str(item["nodehost_id"]): str(item["host_id"]) for item in nodehosts}
