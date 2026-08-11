@@ -15,10 +15,16 @@ domain coincide by construction. Here the host exists before the run, so
 `pause_nodehost` would take out a domain the plan believed was independent. See
 slice map §3.
 
-**The run's ownership mark on a host is a path.** Everything a run puts on a host
-lives under `/tmp/valkey-scale-lab/<run_id>` (the data dirs the lifecycle already
-computes) or is named after the run. That is what `reclaim_run` and `release_run`
-work from, in place of Docker's labels.
+**The run's ownership mark on a host is a path, except for firewall rules.**
+Everything a run puts on a host lives under `/tmp/valkey-scale-lab/<run_id>` (the
+data dirs the lifecycle already computes) or is named after the run. That is what
+`reclaim_run` and `release_run` work from, in place of Docker's labels. A
+*process* is this run's when its working directory is inside that tree, which is
+the only mark that survives - Valkey rewrites its process title, so the path is
+not in a live node's argv. A *firewall rule* cannot carry the mark in its chain
+name, because iptables caps that at 28 characters and a run id is 42, so the
+jumps carry it in a comment instead. Roadmap item 1.4 measured all three; see
+`project/docs/distributed_cleanup_slice_map.md`.
 
 **The pinned binaries arrive as a bundle, and the run bundle assumes them on
 `PATH`.** `start_all.sh` invokes bare `valkey-server`, so the install happens in
@@ -27,11 +33,12 @@ command rather than written into the host's profile, because a run must not leav
 a host's environment changed behind it.
 
 What this module does *not* do, so that a later reader does not mistake it for an
-omission: it collects no node logs (item 1.3, mechanism deliberately not
-pre-decided), it terminates by the pids in state exactly as the Docker backend
-does rather than by what is actually alive (item 1.4 owns that known finding),
-and no fault path checks ownership, which is an accepted absence recorded in
-CLAUDE.md and not quietly changed here.
+omission: no fault path checks ownership, which is an accepted absence recorded
+in CLAUDE.md and not quietly changed here - the run mark item 1.4 put on the
+actuator's rules records whose a rule is, and does not make `isolate_nodehost`
+refuse a host that is not this run's. And nothing removes the Load Lane's remote
+directory, whose location the seam gives to the lane rather than to a backend;
+see the slice map §8.4.
 """
 
 from __future__ import annotations
@@ -107,6 +114,191 @@ def _safe_pid(value: Any) -> str:
     if isinstance(value, bool) or not token.isdigit() or int(token) <= 0:
         raise NativeRuntimeError(f"unsafe native runtime pid: {value!r}")
     return token
+
+
+def run_state_root(run_id: Any) -> str:
+    """This run's own tree on a host, which is its ownership mark."""
+    return f"{RUN_STATE_ROOT}/{_safe_token(run_id, 'run_id')}"
+
+
+def fault_rule_tag(run_id: Any) -> str:
+    """The mark a firewall rule carries, since a chain name cannot carry one.
+
+    Measured on a host during roadmap item 1.4: `iptables` accepts a chain name
+    of 28 characters and refuses 29, and a run id is 42 - so the chain keeps a
+    readable name derived from the nodehost and is a handle, the way
+    `container_name` is, while the two jump rules that activate it carry this.
+    A comment holds 256 characters, and `iptables -S` prints it, which is what
+    makes a rule attributable to a run that did not create it.
+    """
+    return f"vslab-run={_safe_token(run_id, 'run_id')}"
+
+
+def _owned_process_walk(run_root: str, *, body: str) -> str:
+    """Shell that runs `body` for every process running out of `run_root`.
+
+    The ownership evidence is the process's *working directory*, not its command
+    line. Measured during roadmap item 1.4: Valkey rewrites its process title, so
+    a live node's argv is `valkey-server 0.0.0.0:31000 [cluster]` and the run
+    root is nowhere in it - the scan this replaces matched nothing at all while
+    two nodes of the run were running. The generated config sets `dir
+    <data_dir>`, Valkey chdirs there, and `/proc/<pid>/cwd` still says so after a
+    restart has given the node a new pid.
+
+    The comparison appends a separator to both sides. Without it, a run whose id
+    is a prefix of another's claims that other run's processes - measured, with
+    `run-alpha` reporting `run-alpha-2`'s node as its own residue.
+
+    `exe` is read and reported, never used to filter. Filtering on it would drop
+    exactly the process a reader most needs to hear about: something unexpected,
+    running out of this run's own tree. `$pid`, `$cwd` and `$exe` are in scope
+    for `body`.
+    """
+    return (
+        f"root={shlex.quote(run_root)}; "
+        "for entry in /proc/[0-9]*; do "
+        '  pid=${entry#/proc/}; '
+        '  cwd=$(readlink "$entry/cwd" 2>/dev/null) || continue; '
+        '  case "$cwd/" in "$root"/*) ;; *) continue;; esac; '
+        '  exe=$(readlink "$entry/exe" 2>/dev/null); '
+        f"  {body} "
+        "done; "
+    )
+
+
+def _signal_owned_processes(run_root: str, signal: str, *, resume_first: bool = False) -> str:
+    """Signal every process of the run and report each one that was signalled.
+
+    `resume_first` sends `CONT` before the signal. A process the fault actuator
+    suspended cannot act on `TERM` until it is running again, so a run aborted
+    with a nodehost paused would sit out the whole termination wait and be killed
+    at the end of it. Teardown's business, not the actuator's: the actuator is
+    entitled to leave a domain suspended, and cleanup is what has to cope.
+
+    Enumeration and signal are one script so that the window between deciding a
+    pid is ours and signalling it is as small as it can be made. A pid read on
+    the controller and signalled a round trip later is a pid that may have been
+    reused, which is the flaw in terminating by `state.json` and in terminating
+    by a pidfile alike.
+
+    Returns a fragment, not a whole script: `reclaim_run` continues after it in
+    the same session, and a caller that wants it alone terminates it.
+    """
+    body = (
+        ('kill -CONT "$pid" 2>/dev/null || true; ' if resume_first else "")
+        + f'if kill -{signal} "$pid" 2>/dev/null; then '
+        '  printf "%s\\t%s\\t%s\\n" "$pid" "$cwd" "$exe"; '
+        "fi;"
+    )
+    return _owned_process_walk(run_root, body=body)
+
+
+def _list_owned_processes(run_root: str) -> str:
+    """Report every process of the run, signalling nothing."""
+    body = 'printf "%s\\t%s\\t%s\\n" "$pid" "$cwd" "$exe";'
+    return _owned_process_walk(run_root, body=body) + "exit 0"
+
+
+def _scan_run_residue(run_root: str) -> str:
+    """Both filesystem-level residues of a run in one question to the host.
+
+    The tree, and every process still running out of it. One session rather than
+    two because they are one question - "is anything of this run still here" -
+    and because a scan that answered them a round trip apart could report a tree
+    removed between the two answers.
+    """
+    return (
+        f'[ -e {shlex.quote(run_root)} ] && printf "state\\n"; ' + _list_owned_processes(run_root)
+    )
+
+
+def _await_owned_processes_gone(run_root: str, *, attempts: int) -> str:
+    """Wait on the host for the run's processes to exit, then report the rest.
+
+    The waiting happens on the host rather than as a controller-side poll: the
+    same answer costs one session instead of `attempts` of them, and this runs
+    once per host at teardown when nothing else needs the channel.
+    """
+    listing = _list_owned_processes(run_root)
+    return (
+        f"attempt=0; while [ $attempt -lt {int(attempts)} ]; do "
+        f'  left=$(sh -c {shlex.quote(listing)} | wc -l); '
+        '  [ "$left" -eq 0 ] && break; '
+        "  sleep 0.5; attempt=$((attempt + 1)); "
+        "done; "
+        f"sh -c {shlex.quote(listing)}; "
+        "exit 0"
+    )
+
+
+def _parse_owned_processes(stdout: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for line in stdout.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 2 or not parts[0].strip().isdigit():
+            continue
+        rows.append(
+            {
+                "pid": int(parts[0].strip()),
+                "cwd": parts[1].strip(),
+                "exe": parts[2].strip() if len(parts) > 2 else "",
+            }
+        )
+    return rows
+
+
+def _remove_fault_rules(run_id: Any) -> str:
+    """Remove every firewall rule this run marked, and the chains they target.
+
+    Nothing removed these before roadmap item 1.4: only `rejoin_nodehost` did,
+    so a run that aborted while a host was isolated left a DROP chain and its two
+    jumps installed - measured, and inherited by whatever ran there next.
+
+    Found by the run's own mark rather than by the chain name, because the name
+    cannot carry one. The chains are flushed and deleted after their jumps are
+    gone, since `iptables -X` refuses a chain that is still referenced.
+    """
+    tag = shlex.quote(fault_rule_tag(run_id))
+    return (
+        f"tag={tag}; chains=''; "
+        # `-A` only: the policy lines `iptables -S` also prints carry no jump.
+        'for spec in $(iptables -S 2>/dev/null | awk -v t="$tag" '
+        "'index($0, t) > 0 && $1 == \"-A\" {print $2 \"|\" $NF}'); do "
+        '  parent=${spec%%|*}; chain=${spec##*|}; '
+        '  iptables -D "$parent" -m comment --comment "$tag" -j "$chain" 2>/dev/null || true; '
+        '  printf "jump\\t%s\\t%s\\n" "$parent" "$chain"; '
+        '  case " $chains " in *" $chain "*) ;; *) chains="$chains $chain";; esac; '
+        "done; "
+        "for chain in $chains; do "
+        '  iptables -F "$chain" 2>/dev/null || true; '
+        '  if iptables -X "$chain" 2>/dev/null; then printf "chain\\t%s\\n" "$chain"; '
+        '  else printf "held\\t%s\\n" "$chain"; fi; '
+        "done; "
+        "exit 0"
+    )
+
+
+def _scan_fault_rules(run_id: Any, chains: Sequence[str]) -> str:
+    """What firewall state of this run's is still installed.
+
+    Two questions, because one does not cover the other: any rule still carrying
+    the run's mark, and any chain the run is known to have created that still
+    exists. A chain outlives its mark once its jumps are gone, so a chain whose
+    `-X` was refused would be invisible to the first question alone.
+    """
+    tag = shlex.quote(fault_rule_tag(run_id))
+    # `''` rather than an empty expansion: `for chain in ; do` is a syntax error.
+    named = " ".join(shlex.quote(str(chain)) for chain in chains) or "''"
+    return (
+        f"tag={tag}; "
+        'iptables -S 2>/dev/null | awk -v t="$tag" '
+        "'index($0, t) > 0 {print \"rule\\t\" $0}'; "
+        f"for chain in {named}; do "
+        '  [ -n "$chain" ] || continue; '
+        '  if iptables -S "$chain" >/dev/null 2>&1; then printf "chain\\t%s\\n" "$chain"; fi; '
+        "done; "
+        "exit 0"
+    )
 
 
 class NativeMultiEcsBackend:
@@ -305,28 +497,34 @@ class NativeMultiEcsBackend:
 
         Docker reclaims by label query. There are no labels on a host that is not
         ours, so this reclaims by the run's own path: stop whatever is running
-        out of this run's state root and remove the tree. `capability_id` is not
-        part of the path - `run_id` already contains it, being
-        `<capability>-<scenario>-<date>` - and is accepted because the protocol
-        passes it and a later run-id scheme might need it.
+        out of this run's state root, remove the tree, and remove any firewall
+        rule the run marked. `capability_id` is not part of the path - `run_id`
+        already contains it, being `<capability>-<scenario>-<date>` - and is
+        accepted because the protocol passes it and a later run-id scheme might
+        need it.
+
+        It shares `release_run`'s notion of what is running, which roadmap item
+        1.4 unified: this used to kill by reading each `<root>/*/valkey.pid` and
+        teardown used to kill by `state.json`, two answers in one backend, and
+        measurement showed neither is what is actually alive. One enumeration
+        answers both. What stays different is what the seam already says is
+        different - this one has no state to report from and nothing to report
+        to, so it signals `KILL` outright: these are a previous attempt's
+        processes, and there is nothing left to shut down gracefully for.
+
+        The firewall removal is new here. Nothing removed those rules at all
+        before, so a run that aborted while a host was isolated left a DROP chain
+        installed and the next run on that host inherited it - which is the
+        `reclaim` half of the roadmap's "the residue check covers rule-level
+        state".
         """
-        run_root = f"{RUN_STATE_ROOT}/{_safe_token(run_id, 'run_id')}"
+        run_root = run_state_root(run_id)
         bundle_glob = f"{BUNDLE_DROP_ROOT}/vslab-bundle-{_safe_token(run_id, 'run_id')}-*"
         script = (
-            f"root={shlex.quote(run_root)}; "
-            # Anything holding a file open under the run root is this run's, by
-            # construction: nothing else writes there.
-            'if [ -d "$root" ]; then '
-            '  for pidfile in "$root"/*/valkey.pid; do '
-            '    [ -f "$pidfile" ] || continue; '
-            '    pid=$(cat "$pidfile" 2>/dev/null) || continue; '
-            '    case "$pid" in ""|*[!0-9]*) continue;; esac; '
-            '    kill -KILL "$pid" 2>/dev/null || true; '
-            "  done; "
-            '  rm -rf "$root"; '
-            "fi; "
-            f"rm -rf {bundle_glob}; "
-            "exit 0"
+            _signal_owned_processes(run_root, "KILL")
+            + f"rm -rf {shlex.quote(run_root)}; "
+            + f"rm -rf {bundle_glob}; "
+            + _remove_fault_rules(run_id)
         )
         errors: list[str] = []
         for host in self.inventory().hosts:
@@ -831,8 +1029,13 @@ class NativeMultiEcsBackend:
     def _signal_run_processes(
         self, nodehost: dict[str, Any], signal: str, command_kind: str
     ) -> dict[str, Any]:
-        run_id = _safe_token(nodehost.get("run_id") or self._run_id_from(nodehost), "run_id")
-        run_root = f"{RUN_STATE_ROOT}/{run_id}"
+        run_root = run_state_root(nodehost.get("run_id") or self._run_id_from(nodehost))
+        # Still by pidfile, deliberately. Roadmap item 1.4 replaced this notion
+        # of "what is running" in both cleanup paths and left the actuator's
+        # alone: a pidfile is current for a node that *is* running, which is the
+        # only case pause and resume act on, and changing the fault path is a
+        # fault-lane behaviour change that belongs to the item whose runs
+        # exercise the fault lane. See `distributed_cleanup_slice_map.md` §8.5.
         script = (
             f"root={shlex.quote(run_root)}; signalled=0; "
             'for pidfile in "$root"/*/valkey.pid; do '
@@ -903,6 +1106,14 @@ class NativeMultiEcsBackend:
         # it from the session is the difference between a rule that spares the
         # control channel and one that locks the actuator out of the host it
         # just partitioned.
+        # The chain name is a handle; the comment below is the ownership mark.
+        # Measured during roadmap item 1.4: iptables caps a chain name at 28
+        # characters and a run id is 42, so the run cannot be in the name - and
+        # without it in the rule, nothing finding these rules later can tell
+        # whose they are. It goes on the jumps, which are what activate the
+        # chain, and it is what `reclaim_run` and `release_run` search for.
+        tag = shlex.quote(fault_rule_tag(nodehost.get("run_id") or self._run_id_from(nodehost)))
+        marked = f"-m comment --comment {tag}"
         script = (
             "set -e; "
             'ctl=$(printf "%s" "$SSH_CONNECTION" | awk "{print \\$4}"); '
@@ -911,8 +1122,8 @@ class NativeMultiEcsBackend:
             f'iptables -A {chain} -p tcp --dport "$ctl" -j RETURN; '
             f'iptables -A {chain} -p tcp --sport "$ctl" -j RETURN; '
             f"iptables -A {chain} -j DROP; "
-            f"iptables -C INPUT -j {chain} 2>/dev/null || iptables -I INPUT 1 -j {chain}; "
-            f"iptables -C OUTPUT -j {chain} 2>/dev/null || iptables -I OUTPUT 1 -j {chain}"
+            f"iptables -C INPUT {marked} -j {chain} 2>/dev/null || iptables -I INPUT 1 {marked} -j {chain}; "
+            f"iptables -C OUTPUT {marked} -j {chain} 2>/dev/null || iptables -I OUTPUT 1 {marked} -j {chain}"
         )
         result = self._run(endpoint, ["sh", "-c", script], timeout=60)
         record = self._fault_record(
@@ -926,7 +1137,13 @@ class NativeMultiEcsBackend:
                 f"could not isolate {nodehost.get('host_id')}: {result.stderr.strip()[:300]}"
             )
         installed = self._run(
-            endpoint, ["sh", "-c", f"iptables -C INPUT -j {chain} && iptables -C OUTPUT -j {chain}"], timeout=30
+            endpoint,
+            [
+                "sh",
+                "-c",
+                f"iptables -C INPUT {marked} -j {chain} && iptables -C OUTPUT {marked} -j {chain}",
+            ],
+            timeout=30,
         )
         if installed.returncode != 0:
             self.rejoin_nodehost(nodehost)
@@ -946,9 +1163,14 @@ class NativeMultiEcsBackend:
         """
         endpoint = self._endpoint(nodehost)
         chain = self._fault_chain(nodehost)
+        # Deleted by the same match that installed them - an `iptables -D` names
+        # the whole rule, comment included, and one that omitted it would not
+        # find the rule `isolate_nodehost` inserted.
+        tag = shlex.quote(fault_rule_tag(nodehost.get("run_id") or self._run_id_from(nodehost)))
+        marked = f"-m comment --comment {tag}"
         script = (
-            f"iptables -D INPUT -j {chain} 2>/dev/null || true; "
-            f"iptables -D OUTPUT -j {chain} 2>/dev/null || true; "
+            f"iptables -D INPUT {marked} -j {chain} 2>/dev/null || true; "
+            f"iptables -D OUTPUT {marked} -j {chain} 2>/dev/null || true; "
             f"iptables -F {chain} 2>/dev/null || true; "
             f"iptables -X {chain} 2>/dev/null || true; "
             "exit 0"
@@ -1014,6 +1236,13 @@ class NativeMultiEcsBackend:
 
     # ---- teardown --------------------------------------------------------
 
+    #: How long `verify_exit` waits on a host for the run's processes to go,
+    #: in half-second attempts. Sized on what it is waiting for: a Valkey node
+    #: that has been asked to exit writes its RDB if one is due and closes its
+    #: files, which is the same wait `_wait_container_pids_gone` gives the Docker
+    #: path.
+    RELEASE_EXIT_ATTEMPTS = 60
+
     def release_run(self, state: Mapping[str, Any]) -> RunTeardown:
         """Release everything this run owns on every host, and report the residue.
 
@@ -1021,15 +1250,22 @@ class NativeMultiEcsBackend:
         release a run this process did not start: placement wrote each nodehost's
         control endpoint into the plan, and the plan is in state.
 
-        It terminates the pids state recorded, exactly as the Docker backend
-        does. That is knowingly incomplete - by cleanup time the rolling restart
-        and the fault matrix have replaced every bootstrap pid, and under Docker
-        `docker rm -f` is the backstop that actually stops the fleet. There is no
-        such backstop here. The residue scan below is therefore the honest part
-        of this operation and it is why a leftover process becomes a row rather
-        than silence. Making teardown terminate what is *actually* alive is item
-        1.4's, by the operator's decision, and doing it here would land a change
-        without the evidence that item owes.
+        It terminates **what is alive and provably this run's**, not what state
+        remembers. Roadmap item 1.4 measured why the alternatives do not work:
+        `state.json` is last written before the management matrix, so the rolling
+        restart and the fault matrix have replaced every pid in it by the time
+        cleanup runs (fifty pids, zero overlap, on both frozen baselines); and a
+        pidfile is not current either, because a SIGKILLed node leaves one
+        holding a dead pid while a cleanly stopped node removes its own. Both
+        would have teardown signal numbers that now belong to somebody else.
+
+        What is alive and ours is read from the host: every process whose working
+        directory is inside this run's state root. See `_owned_process_walk` for
+        why that is the mark and `ps` is not.
+
+        There is no `docker rm -f` here to stop the fleet if the signalling
+        misses, so the scan at the end is the operation's honest part: it asks
+        the host again, and what it reports becomes `resources_remaining`.
         """
         runtime = state.get("runtime") if isinstance(state.get("runtime"), dict) else {}
         run_id = str(runtime.get("run_id") or "")
@@ -1051,9 +1287,9 @@ class NativeMultiEcsBackend:
         errors: list[str] = []
         resources_remaining: list[dict[str, Any]] = []
         timing: dict[str, Any] = {"parallelism": 1, "bounded_parallelism": False}
+        elapsed: dict[str, float] = {}
 
-        run_root = f"{RUN_STATE_ROOT}/{_safe_token(run_id, 'run_id')}"
-        terminate_started = time.monotonic()
+        run_root = run_state_root(run_id)
         for nodehost in sorted(nodehosts, key=lambda item: str(item.get("nodehost_id", ""))):
             nodehost_id = str(nodehost.get("nodehost_id", "?"))
             try:
@@ -1062,19 +1298,47 @@ class NativeMultiEcsBackend:
                 errors.append(f"{nodehost_id}: {error}")
                 continue
             hosted = nodes_by_nodehost.get(nodehost_id, [])
-            pids = [
-                str(node["pid"])
+            state_pids = [
+                node
                 for node in hosted
                 if str(node.get("pid", "")).strip().isdigit() and int(node["pid"]) > 0
             ]
-            actions.append(self._release_terminate(endpoint, nodehost_id, nodehost, pids))
-            actions.append(self._release_remove_state(endpoint, nodehost_id, nodehost, run_root))
-            remaining, scan_action = self._release_scan(endpoint, nodehost_id, nodehost, run_root)
+            steps = (
+                (
+                    "cleanup_terminate_processes_seconds",
+                    lambda: self._release_terminate(
+                        endpoint, nodehost_id, nodehost, run_root, len(state_pids)
+                    ),
+                ),
+                (
+                    "cleanup_verify_process_exit_seconds",
+                    lambda: self._release_verify_exit(endpoint, nodehost_id, nodehost, run_root),
+                ),
+                (
+                    "cleanup_remove_firewall_rules_seconds",
+                    lambda: self._release_remove_rules(endpoint, nodehost_id, nodehost, run_id),
+                ),
+                (
+                    "cleanup_remove_run_state_seconds",
+                    lambda: self._release_remove_state(endpoint, nodehost_id, nodehost, run_root),
+                ),
+            )
+            for key, step in steps:
+                started = time.monotonic()
+                actions.append(step())
+                elapsed[key] = elapsed.get(key, 0.0) + max(time.monotonic() - started, 0.0)
+
+            started = time.monotonic()
+            remaining, scan_action = self._release_scan(
+                endpoint, nodehost_id, nodehost, run_root, run_id
+            )
+            elapsed["cleanup_residual_scan_seconds"] = elapsed.get(
+                "cleanup_residual_scan_seconds", 0.0
+            ) + max(time.monotonic() - started, 0.0)
             actions.append(scan_action)
             resources_remaining.extend(remaining)
-        timing["cleanup_terminate_processes_seconds"] = round(
-            max(time.monotonic() - terminate_started, 0.0), 6
-        )
+
+        timing.update({key: round(value, 6) for key, value in elapsed.items()})
         return RunTeardown(
             actions=actions,
             resources_remaining=resources_remaining,
@@ -1087,28 +1351,104 @@ class NativeMultiEcsBackend:
         endpoint: Mapping[str, Any],
         nodehost_id: str,
         nodehost: Mapping[str, Any],
-        pids: list[str],
+        run_root: str,
+        state_pid_count: int,
     ) -> dict[str, Any]:
-        base = {
+        """`TERM` every process of this run on this host, and say which.
+
+        `pid_count` is what was signalled and `state_pid_count` is what
+        `state.json` believed was running. They are both recorded because the gap
+        between them is the evidence for the staleness this operation stopped
+        trusting, and a reader should be able to see it in the artifact rather
+        than in a document.
+        """
+        result = self._run(
+            endpoint,
+            [
+                "sh",
+                "-c",
+                _signal_owned_processes(run_root, "TERM", resume_first=True) + "exit 0",
+            ],
+            timeout=120,
+        )
+        signalled = _parse_owned_processes(result.stdout)
+        return {
             "type": "nodehost_valkey_processes",
             "id": nodehost_id,
             "container_name": str(nodehost.get("container_name", "")),
             "action": "terminate",
-            "pid_count": len(pids),
+            "status": "PASS" if result.returncode == 0 else "FAIL",
+            "reason": "" if result.returncode == 0 else "The process enumeration could not be run on this host.",
+            "pid_count": len(signalled),
+            "state_pid_count": state_pid_count,
+            "processes": signalled,
+            "stderr": result.stderr.strip(),
         }
-        if not pids:
-            return {
-                **base,
-                "status": "SKIPPED_WITH_REASON",
-                "reason": "No valid Valkey process pids were present in state for this nodehost.",
-            }
-        script = "; ".join(f"kill -TERM {_safe_pid(pid)} 2>/dev/null || true" for pid in pids)
-        result = self._run(endpoint, ["sh", "-c", f"{script}; exit 0"], timeout=60)
+
+    def _release_verify_exit(
+        self,
+        endpoint: Mapping[str, Any],
+        nodehost_id: str,
+        nodehost: Mapping[str, Any],
+        run_root: str,
+    ) -> dict[str, Any]:
+        """Wait for them to go, then `KILL` whatever would not.
+
+        `TERM` then `KILL` rather than `KILL` outright: a node asked to exit
+        closes its files and removes its own pidfile. The escalation exists
+        because teardown has to finish, and what it escalates against is reported
+        rather than swallowed.
+        """
+        waited = self._run(
+            endpoint,
+            ["sh", "-c", _await_owned_processes_gone(run_root, attempts=self.RELEASE_EXIT_ATTEMPTS)],
+            timeout=60 + self.RELEASE_EXIT_ATTEMPTS,
+        )
+        survivors = _parse_owned_processes(waited.stdout)
+        killed: list[dict[str, Any]] = []
+        if survivors:
+            forced = self._run(
+                endpoint,
+                ["sh", "-c", _signal_owned_processes(run_root, "KILL") + "exit 0"],
+                timeout=120,
+            )
+            killed = _parse_owned_processes(forced.stdout)
         return {
-            **base,
-            "status": "PASS" if result.returncode == 0 else "SKIPPED_WITH_REASON",
-            "reason": "" if result.returncode == 0 else "Bulk process termination returned non-zero; the residue scan follows.",
-            "stdout": result.stdout.strip(),
+            "type": "nodehost_valkey_processes",
+            "id": nodehost_id,
+            "container_name": str(nodehost.get("container_name", "")),
+            "action": "verify_exit",
+            "status": "PASS" if waited.returncode == 0 and not survivors else "SKIPPED_WITH_REASON",
+            "reason": (
+                ""
+                if waited.returncode == 0 and not survivors
+                else "Processes of this run were still running after termination; they were killed and the residual scan determines the outcome."
+            ),
+            "alive_pid_count": len(survivors),
+            "alive_processes": survivors,
+            "killed_pid_count": len(killed),
+            "stderr": waited.stderr.strip(),
+        }
+
+    def _release_remove_rules(
+        self,
+        endpoint: Mapping[str, Any],
+        nodehost_id: str,
+        nodehost: Mapping[str, Any],
+        run_id: str,
+    ) -> dict[str, Any]:
+        """Remove the firewall state the actuator may have left on this host."""
+        result = self._run(endpoint, ["sh", "-c", _remove_fault_rules(run_id)], timeout=60)
+        removed = [line.split("\t") for line in result.stdout.splitlines() if "\t" in line]
+        return {
+            "type": "nodehost_firewall_rules",
+            "id": nodehost_id,
+            "container_name": str(nodehost.get("container_name", "")),
+            "action": "remove",
+            "status": "PASS" if result.returncode == 0 else "FAIL",
+            "jump_count": sum(1 for row in removed if row[0] == "jump"),
+            "chain_count": sum(1 for row in removed if row[0] == "chain"),
+            "chains_held": [row[1] for row in removed if row[0] == "held"],
             "stderr": result.stderr.strip(),
         }
 
@@ -1139,52 +1479,74 @@ class NativeMultiEcsBackend:
         nodehost_id: str,
         nodehost: Mapping[str, Any],
         run_root: str,
+        run_id: str,
     ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         """What is still there, which is the criterion measured rather than asserted.
 
-        Scans for both kinds of residue a native run can leave: a process still
-        running out of this run's tree, and the tree itself. It reads the process
-        table rather than trusting the termination above, which is the whole
-        point - a backend that reported its own `rm` as proof would be asserting
-        the criterion instead of measuring it.
+        All three kinds of residue the roadmap names for this item: a process
+        still running out of this run's tree, the tree itself, and rule-level
+        state. Each is a fresh question to the host rather than a restatement of
+        what the steps above believe they did - a backend that reported its own
+        `rm` as proof would be asserting the criterion instead of measuring it,
+        and there is no `docker rm -f` here to make the assertion true anyway.
         """
-        script = (
-            f"root={shlex.quote(run_root)}; "
-            'if [ -e "$root" ]; then printf "state\\n"; fi; '
-            # `ps` output rather than /proc scanning: the run's own config path
-            # is on the command line of every process it started.
-            'ps -eo args= 2>/dev/null | grep -F "$root" | grep -v grep | while read -r line; do '
-            '  printf "process\\t%s\\n" "$line"; '
-            "done; "
-            "exit 0"
-        )
-        result = self._run(endpoint, ["sh", "-c", script], timeout=60)
+        host_id = str(nodehost.get("host_id", ""))
         remaining: list[dict[str, Any]] = []
-        for line in result.stdout.splitlines():
-            if line.strip() == "state":
-                remaining.append(
-                    {
-                        "type": "nodehost_run_state",
-                        "id": nodehost_id,
-                        "host_id": str(nodehost.get("host_id", "")),
-                        "path": run_root,
-                    }
-                )
-            elif line.startswith("process\t"):
-                remaining.append(
-                    {
-                        "type": "valkey_process",
-                        "id": nodehost_id,
-                        "host_id": str(nodehost.get("host_id", "")),
-                        "command": line.split("\t", 1)[1][:200],
-                    }
-                )
+        failures: list[str] = []
+
+        tree_scan = self._run(endpoint, ["sh", "-c", _scan_run_residue(run_root)], timeout=60)
+        if tree_scan.returncode != 0:
+            failures.append("process")
+        if any(line.strip() == "state" for line in tree_scan.stdout.splitlines()):
+            remaining.append(
+                {
+                    "type": "nodehost_run_state",
+                    "id": nodehost_id,
+                    "host_id": host_id,
+                    "path": run_root,
+                }
+            )
+        for row in _parse_owned_processes(tree_scan.stdout):
+            remaining.append(
+                {
+                    "type": "valkey_process",
+                    "id": nodehost_id,
+                    "host_id": host_id,
+                    "pid": row["pid"],
+                    "cwd": row["cwd"],
+                    "exe": row["exe"],
+                }
+            )
+
+        rule_scan = self._run(
+            endpoint,
+            ["sh", "-c", _scan_fault_rules(run_id, [self._fault_chain(nodehost)])],
+            timeout=60,
+        )
+        if rule_scan.returncode != 0:
+            failures.append("firewall")
+        for line in rule_scan.stdout.splitlines():
+            kind, _, detail = line.partition("\t")
+            if kind not in {"rule", "chain"} or not detail.strip():
+                continue
+            remaining.append(
+                {
+                    "type": "nodehost_firewall_rule",
+                    "id": nodehost_id,
+                    "host_id": host_id,
+                    "kind": kind,
+                    "detail": detail.strip()[:200],
+                }
+            )
+
         return remaining, {
             "type": "nodehost_residual_scan",
             "id": nodehost_id,
             "container_name": str(nodehost.get("container_name", "")),
             "action": "scan",
-            "status": "PASS" if result.returncode == 0 else "FAIL",
+            "status": "PASS" if not failures else "FAIL",
+            "scanned": ["state", "process", "firewall"],
+            "unscannable": failures,
             "found": len(remaining),
         }
 

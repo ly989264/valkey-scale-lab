@@ -210,6 +210,8 @@ def _node(**overrides):
     base = {
         "logical_id": "node-000",
         "nodehost_id": "nodehost-az-a-00",
+        # `_prepare_process_node_metadata` writes this on every node.
+        "run_id": "run-1",
         "client_port": 7400,
         "pid": 4242,
         "data_dir": "/tmp/valkey-scale-lab/run-1/node-000",
@@ -831,29 +833,122 @@ def test_release_run_terminates_removes_and_then_measures_what_is_left() -> None
     backend = NativeMultiEcsBackend(transport=transport)
     teardown = backend.release_run(_state())
     kinds = [action["action"] for action in teardown.actions]
-    assert kinds == ["terminate", "remove", "scan"]
+    assert kinds == ["terminate", "verify_exit", "remove", "remove", "scan"]
+    assert [action["type"] for action in teardown.actions][2:4] == [
+        "nodehost_firewall_rules",
+        "nodehost_run_state",
+    ]
     assert teardown.resources_remaining == []
     assert teardown.errors == []
-    assert transport.ran("kill -TERM 4242")
     assert transport.ran("rm -rf /tmp/valkey-scale-lab/run-1")
 
 
+def test_release_run_terminates_what_is_alive_not_what_state_remembers() -> None:
+    """Roadmap item 1.4's central change, and the measurement behind it.
+
+    `state.json` is last written before the management matrix, so by cleanup the
+    rolling restart and the fault matrix have replaced every pid in it - fifty
+    pids and zero overlap on both frozen baselines. Teardown therefore signals
+    nothing state names; it asks the host which processes are running out of this
+    run's tree and signals those.
+    """
+    transport = FakeTransport()
+    backend = NativeMultiEcsBackend(transport=transport)
+    teardown = backend.release_run(_state())
+
+    assert not transport.ran("kill -TERM 4242")
+    assert not transport.ran("kill -TERM 4243")
+    signalling = [
+        " ".join(argv) for _a, argv in transport.commands if "kill -TERM" in " ".join(argv)
+    ]
+    assert len(signalling) == 1
+    # By working directory, prefix-safely, out of /proc - never by argv.
+    assert 'readlink "$entry/cwd"' in signalling[0]
+    assert 'case "$cwd/" in "$root"/*' in signalling[0]
+    assert "ps -eo args=" not in signalling[0]
+    # What state believed is still recorded beside what was signalled: the gap
+    # between them is the evidence for the staleness.
+    terminate = teardown.actions[0]
+    assert terminate["state_pid_count"] == 2
+    assert terminate["pid_count"] == 0
+
+
+def test_release_run_continues_a_suspended_process_before_terminating_it() -> None:
+    """A process the fault actuator suspended cannot act on `TERM`.
+
+    A run aborted with a nodehost paused would otherwise sit out the whole
+    termination wait and be killed at the end of it. The actuator is entitled to
+    leave a domain suspended; coping is teardown's job.
+    """
+    transport = FakeTransport()
+    NativeMultiEcsBackend(transport=transport).release_run(_state())
+    terminate = next(
+        " ".join(argv) for _a, argv in transport.commands if "kill -TERM" in " ".join(argv)
+    )
+    assert terminate.index('kill -CONT "$pid"') < terminate.index('kill -TERM "$pid"')
+
+
+def test_release_run_kills_what_would_not_terminate_and_reports_it() -> None:
+    transport = FakeTransport()
+    # The on-host wait returns one survivor, twice: once from the wait, once
+    # from the forced kill that follows it.
+    transport.respond("attempt=0; while", 0, "515\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n")
+    transport.respond('kill -KILL "$pid"', 0, "515\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n")
+    backend = NativeMultiEcsBackend(transport=transport)
+    verify = backend.release_run(_state()).actions[1]
+    assert verify["action"] == "verify_exit"
+    assert verify["status"] == "SKIPPED_WITH_REASON"
+    assert verify["alive_pid_count"] == 1
+    assert verify["killed_pid_count"] == 1
+    assert verify["alive_processes"][0]["pid"] == 515
+
+
 def test_release_run_reports_residue_rather_than_asserting_it_is_gone() -> None:
-    """The criterion measured rather than asserted.
+    """The criterion measured rather than asserted, in all three kinds.
 
     A backend that reported its own `rm` as proof would be asserting "no managed
-    process or host resource behind" instead of measuring it.
+    process or host resource behind" instead of measuring it - and there is no
+    `docker rm -f` here to make the assertion true anyway.
     """
     transport = FakeTransport()
     transport.respond(
-        'if [ -e "$root" ]',
+        "[ -e /tmp/valkey-scale-lab/run-1 ]",
         0,
-        "state\nprocess\tvalkey-server /tmp/valkey-scale-lab/run-1/node-000/valkey.conf\n",
+        "state\n515\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n",
+    )
+    transport.respond(
+        "iptables -S 2>/dev/null | awk",
+        0,
+        'rule\t-A INPUT -m comment --comment "vslab-run=run-1" -j VSLAB-NODEHOST-AZ-A-00\n',
     )
     backend = NativeMultiEcsBackend(transport=transport)
     teardown = backend.release_run(_state())
     kinds = sorted(item["type"] for item in teardown.resources_remaining)
-    assert kinds == ["nodehost_run_state", "valkey_process"]
+    assert kinds == ["nodehost_firewall_rule", "nodehost_run_state", "valkey_process"]
+    process = next(row for row in teardown.resources_remaining if row["type"] == "valkey_process")
+    assert process["pid"] == 515
+    assert process["exe"] == "/opt/bin/valkey-server"
+
+
+def test_release_run_removes_the_firewall_state_an_abort_would_strand() -> None:
+    """Nothing removed these before roadmap item 1.4 - only `rejoin_nodehost`.
+
+    A run that aborted while a host was isolated left a DROP chain and its two
+    jumps installed, and the next run on that host inherited them.
+    """
+    transport = FakeTransport()
+    transport.respond(
+        "for spec in $(iptables -S",
+        0,
+        "jump\tINPUT\tVSLAB-NODEHOST-AZ-A-00\njump\tOUTPUT\tVSLAB-NODEHOST-AZ-A-00\nchain\tVSLAB-NODEHOST-AZ-A-00\n",
+    )
+    backend = NativeMultiEcsBackend(transport=transport)
+    rules = backend.release_run(_state()).actions[2]
+    assert rules["type"] == "nodehost_firewall_rules"
+    assert (rules["jump_count"], rules["chain_count"]) == (2, 1)
+    assert rules["chains_held"] == []
+    # Found by the run's own mark, because a chain name cannot carry one.
+    assert transport.ran("vslab-run=run-1")
 
 
 def test_release_run_reports_an_unreachable_nodehost_instead_of_raising() -> None:
@@ -875,12 +970,55 @@ def test_release_run_refuses_a_state_that_does_not_describe_a_native_fleet() -> 
         backend.release_run(_state(runtime={"type": "native_multi_ecs"}))
 
 
-def test_release_run_skips_with_a_reason_when_state_carries_no_usable_pid() -> None:
-    backend = NativeMultiEcsBackend(transport=FakeTransport())
+def test_release_run_does_not_depend_on_state_carrying_a_usable_pid() -> None:
+    """The pids in state stopped being an input at roadmap item 1.4.
+
+    They survive only as `state_pid_count`, which is a record of what the run
+    believed rather than an instruction to teardown, so a state with no usable
+    pid changes nothing about what is signalled.
+    """
+    transport = FakeTransport()
+    backend = NativeMultiEcsBackend(transport=transport)
     teardown = backend.release_run(_state(nodes=[_node(pid=0)]))
     terminate = teardown.actions[0]
-    assert terminate["status"] == "SKIPPED_WITH_REASON"
-    assert terminate["pid_count"] == 0
+    assert terminate["status"] == "PASS"
+    assert terminate["state_pid_count"] == 0
+    assert transport.ran('kill -TERM "$pid"')
+
+
+def test_reclaim_run_and_release_run_agree_about_what_is_running(tmp_path: Path) -> None:
+    """Roadmap item 1.4 unified them; before it they were two answers.
+
+    `reclaim_run` killed by reading each `<root>/*/valkey.pid` and `release_run`
+    killed by `state.json`, and measurement showed neither is what is actually
+    alive. One enumeration answers both. What stays different is what the seam
+    already says is different: this one has nothing to report to, so it signals
+    `KILL` outright.
+    """
+    reclaim_transport = FakeTransport()
+    _backend(reclaim_transport, tmp_path).reclaim_run(capability_id="local_full_flow", run_id="run-1")
+    reclaimed = " ".join(reclaim_transport.last())
+
+    release_transport = FakeTransport()
+    NativeMultiEcsBackend(transport=release_transport).release_run(_state())
+    released = next(
+        " ".join(argv) for _a, argv in release_transport.commands if "kill -TERM" in " ".join(argv)
+    )
+
+    walk = 'for entry in /proc/[0-9]*; do'
+    assert walk in reclaimed and walk in released
+    assert 'case "$cwd/" in "$root"/*' in reclaimed
+    assert "valkey.pid" not in reclaimed
+    assert 'kill -KILL "$pid"' in reclaimed
+
+
+def test_reclaim_run_removes_the_rules_an_earlier_attempt_stranded(tmp_path: Path) -> None:
+    transport = FakeTransport()
+    _backend(transport, tmp_path).reclaim_run(capability_id="local_full_flow", run_id="run-1")
+    reclaimed = " ".join(transport.last())
+    assert "vslab-run=run-1" in reclaimed
+    assert "iptables -D" in reclaimed and "iptables -X" in reclaimed
+    assert "rm -rf /tmp/valkey-scale-lab/run-1" in reclaimed
 
 
 # --------------------------------------------------------------------------
