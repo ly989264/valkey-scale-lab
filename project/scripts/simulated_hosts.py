@@ -24,6 +24,13 @@ route Docker's network; on a real fleet they usually coincide and the manifest
 says so by carrying the same address twice. Either way a backend reads the same
 three fields.
 
+Each host's `client_endpoint` carries its **own** address and the **same** port
+range as every other host - a real fleet's shape, distinct IPs behind one
+security-group range. It is not a stylistic choice: a run's client ports cannot
+be divided into contiguous per-host blocks. See `_client_address`. The addresses
+are loopback aliases the operator creates once per boot; this harness checks for
+them and refuses with the command rather than calling `sudo` itself.
+
 Everything in a host record that a real fleet would also have is read from the
 host itself over its control endpoint - address, kernel, cpu and memory - rather
 than from `docker inspect`. That is not tidiness: it is the demonstration that
@@ -93,33 +100,73 @@ def _host_id(index: int) -> str:
     return f"sim-host-{index:02d}"
 
 
-def _port_free(port: int) -> bool:
+def _client_address(index: int) -> str:
+    """This host's own client address.
+
+    One address per host, and never `127.0.0.1`. Both halves are load-bearing.
+
+    *One per host*, because a run's client ports are not divisible into
+    per-host blocks. The planner assigns `client_port = port_base + ordinal`
+    once, globally, before nodehosts exist; the density plan then round-robins
+    nodes onto nodehosts, so a nodehost's ports are a stride spanning the whole
+    run window - at exact-50, `nodehost-az-a-00` holds 31000, 31004, ... 31048.
+    A contiguous block per host can never cover that, and this harness used to
+    hand out exactly such blocks. Docker never met the problem because a
+    nodehost container is created *after* the plan and publishes precisely the
+    ports its own nodes were assigned; a fleet that exists before the plan
+    cannot. So every host declares the same full range and is reached at its
+    own address, which is also what a real fleet looks like: distinct IPs, one
+    security-group range. See `project/docs/simulated_ladder_slice_map.md` §1.
+
+    *Never `127.0.0.1`*, because that address is shared with everything else on
+    the machine - including a Docker gate run's published node ports - and the
+    collision is real: an 8-host bring-up failed on exactly that overlap.
+    """
+    return f"127.0.0.{index + 2}"
+
+
+def _port_free(address: str, port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            probe.bind(("127.0.0.1", port))
+            probe.bind((address, port))
         except OSError:
             return False
     return True
 
 
-def _require_ports_free(ports: list[int]) -> None:
-    taken = [port for port in ports if not _port_free(port)]
+def _require_ports_free(address: str, ports: list[int]) -> None:
+    taken = [port for port in ports if not _port_free(address, port)]
     if taken:
-        raise HarnessError(f"ports already in use on 127.0.0.1: {taken[:8]}")
+        raise HarnessError(f"ports already in use on {address}: {taken[:8]}")
 
 
-def client_port_blocks(base: int, hosts: int, per_host: int) -> list[tuple[int, int]]:
-    """One contiguous, non-overlapping port block per host, inclusive at both ends.
+def _require_client_addresses(addresses: list[str]) -> None:
+    """Refuse rather than call `sudo`, and say exactly what to run.
 
-    A block rather than a list because the controller cannot reach a host's
-    processes on this harness except through published ports, and a real fleet
-    states the same thing as a security-group range. The block is what the
-    manifest hands a backend; which ports inside it a run uses is the run's.
+    macOS configures only `127.0.0.1` on `lo0`; binding `127.0.0.2` without an
+    alias fails with `EADDRNOTAVAIL`, measured. Creating one needs root, and a
+    lab harness that escalated privilege by itself would be a worse thing than
+    an extra step. The aliases persist until reboot.
     """
-    if per_host < 1:
-        raise HarnessError("each host needs at least one client port")
-    return [(base + index * per_host, base + (index + 1) * per_host - 1) for index in range(hosts)]
+    missing = [address for address in addresses if not _address_present(address)]
+    if not missing:
+        return
+    numbers = " ".join(address.rsplit(".", 1)[-1] for address in missing)
+    raise HarnessError(
+        f"this fleet needs the loopback aliases {', '.join(missing)}, which are not "
+        "configured. Create them with:\n"
+        f"    for n in {numbers}; do sudo ifconfig lo0 alias 127.0.0.$n up; done"
+    )
+
+
+def _address_present(address: str) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        try:
+            probe.bind((address, 0))
+        except OSError:
+            return False
+    return True
 
 
 def _ssh_argv(host: dict[str, Any], *, extra: list[str] | None = None) -> list[str]:
@@ -290,11 +337,19 @@ def command_up(args: argparse.Namespace) -> int:
         raise HarnessError("--azs must name at least one availability zone")
 
     ssh_ports = [args.ssh_port_base + index for index in range(args.hosts)]
-    client_blocks = client_port_blocks(args.client_port_base, args.hosts, args.client_ports)
+    # One range, declared by every host and published on each host's own
+    # address. See `_client_address`.
+    client_first = args.client_port_base
+    client_last = args.client_port_base + args.client_ports - 1
+    if args.client_ports < 1:
+        raise HarnessError("each host needs at least one client port")
+    client_addresses = [_client_address(index) for index in range(args.hosts)]
+    _require_client_addresses(client_addresses)
     if args.force:
         command_down(args)
-    _require_ports_free(ssh_ports)
-    _require_ports_free([port for first, last in client_blocks for port in range(first, last + 1)])
+    _require_ports_free("127.0.0.1", ssh_ports)
+    for address in client_addresses:
+        _require_ports_free(address, list(range(client_first, client_last + 1)))
 
     fleet_dir.mkdir(parents=True, exist_ok=True)
     key_path, public_key = _keypair(fleet_dir)
@@ -316,7 +371,6 @@ def command_up(args: argparse.Namespace) -> int:
 
     started = time.monotonic()
     for index in range(args.hosts):
-        first, last = client_blocks[index]
         _run(
             [
                 "docker",
@@ -340,7 +394,7 @@ def command_up(args: argparse.Namespace) -> int:
                 "-p",
                 f"127.0.0.1:{ssh_ports[index]}:22",
                 "-p",
-                f"127.0.0.1:{first}-{last}:{first}-{last}",
+                f"{client_addresses[index]}:{client_first}-{client_last}:{client_first}-{client_last}",
                 IMAGE,
             ],
             timeout=300,
@@ -355,7 +409,6 @@ def command_up(args: argparse.Namespace) -> int:
 
     hosts: list[dict[str, Any]] = []
     for index in range(args.hosts):
-        first, last = client_blocks[index]
         host = {
             "host_id": _host_id(index),
             "availability_zone": azs[index % len(azs)],
@@ -369,8 +422,8 @@ def command_up(args: argparse.Namespace) -> int:
                 "host_key_fingerprint": fingerprints[ssh_ports[index]],
             },
             "client_endpoint": {
-                "address": "127.0.0.1",
-                "port_range": {"first": first, "last": last},
+                "address": client_addresses[index],
+                "port_range": {"first": client_first, "last": client_last},
             },
         }
         host.update(_host_facts(host))
@@ -457,7 +510,12 @@ def main(argv: list[str] | None = None) -> int:
         "--client-ports",
         type=int,
         default=60,
-        help="ports per host the controller may reach, published as one range",
+        help=(
+            "size of the client port range EVERY host declares and publishes, on its "
+            "own address. It must cover the whole run: a run's ports are assigned "
+            "globally and strided across nodehosts, so each host needs the full "
+            "window. 60 holds exact-30 and exact-50; exact-200 needs 200."
+        ),
     )
     up.add_argument("--force", action="store_true")
     up.set_defaults(handler=command_up)

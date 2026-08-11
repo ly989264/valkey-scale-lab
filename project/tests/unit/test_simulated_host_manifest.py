@@ -99,17 +99,31 @@ def test_a_key_path_under_a_harness_named_directory_is_refused() -> None:
         simulated_hosts._build_manifest(fleet_id="sim-a", hosts=[host])
 
 
-def test_client_port_blocks_do_not_overlap() -> None:
-    blocks = simulated_hosts.client_port_blocks(31000, 3, 60)
+def test_each_host_gets_its_own_client_address() -> None:
+    """One address per host, and never the shared one.
 
-    assert blocks == [(31000, 31059), (31060, 31119), (31120, 31179)]
-    for (_, previous_last), (next_first, _) in zip(blocks, blocks[1:]):
-        assert next_first > previous_last
+    A run's client ports cannot be divided into per-host blocks - the planner
+    assigns them globally and the density plan then strides nodes across
+    nodehosts - so every host declares the same range and is told apart by its
+    address. `127.0.0.1` is excluded because a Docker gate run publishes its
+    own node ports there.
+    """
+    addresses = [simulated_hosts._client_address(index) for index in range(8)]
+
+    assert addresses == [f"127.0.0.{n}" for n in range(2, 10)]
+    assert "127.0.0.1" not in addresses
+    assert len(set(addresses)) == len(addresses)
 
 
-def test_a_fleet_needs_at_least_one_client_port_per_host() -> None:
-    with pytest.raises(simulated_hosts.HarnessError, match="at least one client port"):
-        simulated_hosts.client_port_blocks(31000, 2, 0)
+def test_a_missing_loopback_alias_is_refused_with_the_command_to_run() -> None:
+    """It refuses rather than escalating: `ifconfig lo0 alias` needs root."""
+    with pytest.raises(simulated_hosts.HarnessError) as raised:
+        simulated_hosts._require_client_addresses(["127.0.0.1", "203.0.113.7"])
+
+    message = str(raised.value)
+    assert "203.0.113.7" in message
+    assert "127.0.0.1" not in message.split("aliases")[1].split(",")[0]
+    assert "sudo ifconfig lo0 alias" in message
 
 
 @pytest.mark.parametrize("fleet_id", ["Sim-A", "sim_a", "-sim", "", "a" * 40])
