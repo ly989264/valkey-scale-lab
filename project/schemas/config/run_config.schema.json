@@ -63,7 +63,8 @@
         "provider": {
           "type": "string",
           "enum": [
-            "docker"
+            "docker",
+            "ecs"
           ]
         },
         "valkey_image": {

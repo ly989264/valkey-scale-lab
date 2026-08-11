@@ -335,3 +335,48 @@ def test_emit_schema_report(tmp_path: Path) -> None:
     assert report["defaults"]["default_max_nodes"] == 100
     assert any(item["name"] == "scale_1000_opt_in" for item in report["constraints"])
     assert any(item["name"] == "two_virtual_azs" for item in report["constraints"])
+
+
+def test_a_native_configuration_validates(tmp_path: Path) -> None:
+    """The schema and the hand-written checks must agree about `ecs`.
+
+    Roadmap item 1.2 admitted `runtime.provider: ecs` in `validation.py` and
+    left `run_config.schema.json` pinned to `["docker"]`. The schema runs
+    first, so every native configuration failed `SCHEMA_VALIDATION` before any
+    of item 1.2's rules were reached - the two halves of the contract
+    disagreed, in the same shape as the defect item 1.2 itself found between
+    `validation.py` and `execution.BACKENDS`.
+    """
+    report = validate_config_file("templates/configs/native_50.yaml", tmp_path / "native.json")
+
+    assert report["valid"] is True
+    assert report["status"] == "PASS"
+    normalized = json.loads(Path(report["normalized_config_path"]).read_text(encoding="utf-8"))
+    assert normalized["runtime"]["provider"] == "ecs"
+    assert normalized["runtime"]["host_inventory_path"]
+    assert normalized["runtime"]["native_bundle_dir"]
+
+
+def test_a_native_configuration_naming_no_fleet_is_refused(tmp_path: Path) -> None:
+    """Widened, not loosened: `ecs` carries two requirements of its own."""
+    config = tmp_path / "no_fleet.yaml"
+    text = Path("templates/configs/native_50.yaml").read_text(encoding="utf-8")
+    for key in ("host_inventory_path", "native_bundle_dir"):
+        text = "\n".join(line for line in text.splitlines() if f"  {key}:" not in line)
+    config.write_text(text + "\n", encoding="utf-8")
+
+    report = validate_config_file(config, tmp_path / "report.json")
+
+    assert report["valid"] is False
+    codes = {error["code"] for error in report["errors"]}
+    assert {"NATIVE_RUNTIME_INVENTORY", "NATIVE_RUNTIME_BUNDLE"} <= codes
+
+
+def test_an_unknown_provider_is_still_refused(tmp_path: Path) -> None:
+    config = tmp_path / "bad_provider.yaml"
+    text = Path("templates/configs/native_50.yaml").read_text(encoding="utf-8")
+    config.write_text(text.replace("provider: ecs", "provider: nomad"), encoding="utf-8")
+
+    report = validate_config_file(config, tmp_path / "report.json")
+
+    assert report["valid"] is False
