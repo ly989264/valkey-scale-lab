@@ -91,9 +91,10 @@ Slices 1, 2, 3 and 4 - `runtime_start`, `cluster_form`, `management_matrix` and
 `fault_matrix` - are done and accepted, and roadmap item 0.5 added the two §15
 operations no stage had needed. `runtime/node_backend.py` holds `NodeBackend`,
 the seam every later slice extends; `DockerNodeBackend` in `docker_runtime.py`
-is its one implementation, now **twenty-three methods**. Read the five slice
-maps in `project/docs/` before the next slice: they carry the accepted seam, the
-measured result of every bar item, and the limitations below.
+is one of its two implementations, now **twenty-four methods** (item 1.3 added
+the last). Read the slice maps in `project/docs/` before the next slice: they
+carry the accepted seam, the measured result of every bar item, and the
+limitations below.
 
 Slice 2 settled the open question the way Slice 1 was judged: exact-200 is
 stage-scoped, on measurement. It also found that §15 of the observability design
@@ -369,10 +370,109 @@ so it is **not a separate item** and the session grain is unchanged: **M3-A-3 is
 item 1.3, M3-A-4 is item 1.4, M3-A-5 opens with this smoke.** Slice map §11
 names the three argv most worth driving first.
 
-Carried forward untouched and still owned elsewhere: node-log collection (item
-1.3, mechanism not pre-decided), stale-pid teardown (item 1.4 - and note the
-native backend has **no `docker rm -f` backstop**, which is why its residue scan
-measures rather than asserts), and the absent fault-path ownership check.
+Carried forward untouched and still owned elsewhere: stale-pid teardown (item
+1.4 - and note the native backend has **no `docker rm -f` backstop**, which is
+why its residue scan measures rather than asserts), and the absent fault-path
+ownership check. Node-log collection was item 1.3's and is done; see below.
+
+### Session M3-A-3 is done: roadmap item 1.3, cross-host evidence
+
+The seam is **twenty-four operations**, not twenty-three, and that number is the
+one a later reader should use. Read
+`project/docs/cross_host_evidence_slice_map.md`; §11 carries every measurement,
+§10 the findings it reported rather than fixed, and §8 the simulated-fleet answer
+M3-A-1 left open.
+
+- **"Complete and attributable" was made refusable before it was implemented.**
+  Attributable = the run names the host a piece of evidence was produced on, in
+  the inventory's `host_id`, and the offset between that host's clock and the
+  controller's. Complete = every observed node has a journal, every nodehost is
+  clocked at both ends, every host-produced surface is claimed by exactly one.
+  `host_evidence.json` carries it, is a declared raw artifact so its digest binds
+  into the provenance graph, and `validate_raw_sources_by_kind` refuses eleven
+  distinct ways of not saying it.
+- **Only one of the four evidence surfaces was already attributable**, found by
+  reading producers rather than artifact names. Command logs are timed by the
+  controller on both backends and carry `target_logical_id`, so they needed
+  nothing - which is the honest answer, not an omission. Resource documents are
+  attributed only by `sampler_id`; the load lane's 18 files carried **no
+  attribution at all**; node journals were never collected.
+- **The seam grew by one, argued rather than taken.** §15 names 日志与证据上传 as
+  an adapter category whose 日志 half had no implementation on either backend,
+  and a host's clock cannot be read from above the seam by construction.
+  `load_lane_host` could not carry it: it means "where the Load Lane runs for
+  this node", and its native form copies a whole remote directory, so a journal
+  fetch through it would drag the dataset back with the log. **The estimator
+  stays above the seam**, so a Docker offset and a native offset are the same
+  kind of number.
+- **An offset is never recorded without its bound, and the validator asks for a
+  bound rather than a threshold.** Measured: one exchange has a tail (+26.9 ms
+  offset, 57 ms round trip, on hosts whose true offset is zero), three keeping
+  the least delayed collapse it to +2.1..+3.2 ms; five buy 0.07 ms. The residual
+  +2.3 ms is the exchange's own asymmetry and sits inside round_trip/2. The same
+  estimator over `docker exec` is **six times less precise** (+19.7 ms against a
+  25.7 ms bound) and both are correct - which is why a threshold that passed on
+  ssh would fail on Docker.
+- **The argv is part of the contract and was chosen on measurement.** `python3`
+  reporting wall and monotonic, not `date` plus `/proc/uptime`: the cheaper arm
+  saves 3.5 ms of bound and gives back 10 ms of quantisation on the very value it
+  exists to supply (`684.44` against `684.4572976`), and `time.monotonic()` is
+  the clock §11.1's sampler stamps with.
+- **Journals are pulled once, not at every stage boundary.** The file is
+  append-only and cumulative across the run's restarts, so repeated pulls would
+  re-transfer the same prefix and leave partial copies to reconcile - the
+  spooling the roadmap forbids in the same sentence that asks for the pull. Per
+  node, not per host: a directory pull brings `dump.rdb` and `nodes.conf` too.
+- **A defect on the acceptance's own line, found at HEAD.**
+  `NativeLoadLaneHost.collect_evidence` let `TransportError` out where its Docker
+  sibling has always raised `CollectionError`, and `is_collection_failure`
+  answers False for anything it cannot place - correctly, since a transport
+  failure on a fault path is not a collector's failure. So a native evidence
+  transfer that failed reported **`FAIL`**, the claim that the cluster was
+  observed and found wanting. Fixed at the two sites that know the file was
+  necessary evidence, not by widening the classifier.
+- **The simulated-fleet question is answered: a run records which fleet it ran
+  on and cannot record what that fleet was.** The manifest is forbidden from
+  carrying such a flag and the harness keeps its nature in a sidecar the product
+  never reads, so `fleet_id` plus the manifest digest makes it answerable in one
+  deterministic hop - by the only thing that knows. Item 1.5 still owes declaring
+  it when it freezes a baseline from a simulated run.
+
+- **Proven:** `repository.all` **92/92**; 780 pytest checks, 34 of them this
+  item's. An induced transfer failure yields **ERROR** twice, staged from outside
+  the product by a `docker` shim on `PATH` - the clock arm 13 s in, the journal
+  arm 696 s in on a run that had already finished both matrices - each with
+  `Status: ERROR`, `summary.json` ERROR, **exit code 0**, `run_verdict` naming
+  `runtime_start` ERROR, and zero residue. Two real exact-50, **PASS 868.18s**
+  and **PASS 864.61s**, 12/12 both, zero residue, no `ERROR` in any artifact,
+  and identical marks: `runtime_start` 7/7, `cluster_form` 5/5, `cleanup` 2/2,
+  `management_matrix` 6/8, `fault_matrix` 5/6, both inherited deltas at their
+  declared shapes and no third, fault lane 9/12/15, RTO 46.086s and 49.101s.
+  50 of 50 journals in both runs, ~155 KB per node, 2.86 s of collection in an
+  868 s run.
+
+**Two claims in this file were stale and are corrected above rather than
+re-done.** `evidence/validation.py:41` was fixed at `eb4924db` on 2026-08-09 -
+`validate_raw_sources_by_kind` already splits the two §12.1 kinds and
+`run_exact_gate` already applies §12.2's precedence to them. And node-log
+collection is no longer an open finding.
+
+**What item 1.3 did not prove:** no journal has been fetched off a host over ssh
+*through the product*. The native `HostEvidence` is hermetic and its Docker
+sibling is real; the ssh path from `start_nodehost` to a collected journal has
+not run end to end. That belongs to item 1.5's bring-up smoke, which is now the
+natural place to drive `host_evidence`'s two verbs alongside the three argv the
+native backend map §11 already names.
+
+**Reported, not fixed** (slice map §10): the resource-to-timeline correlation
+§11.4 requires compares two unrelated monotonic clocks. `_event_overlaps` tests a
+controller-stamped event's monotonic against a host-stamped sample interval, and
+a monotonic clock is a per-boot counter with an arbitrary origin. Measured in one
+baseline run: samples 1847.93-1967.98, events 478.70-~600. They cannot overlap,
+so that run's `network_error_or_drop_overlap_count: 0` does not mean no overlap
+was observed - it means none is expressible. Fixing it changes a diff-view
+surface and needs the offsets this item introduces, so it is its own change with
+its own evidence, and it is **not** item 1.4's or 1.5's.
 
 ### What is left before M3, and what is M3 itself
 
@@ -393,9 +493,10 @@ The genuine preconditions are:
 2. ~~**Declare the two seam operations §15 names and this seam lacks.**~~
    **Done at `4f54442a`.** `load_lane_host` is evidence upload and `release_run`
    is end-of-run cleanup; `reclaim_run` keeps its pre-run meaning and now says
-   so. The protocol a second backend implements is **frozen at twenty-three
-   operations** unless a later slice argues otherwise - M3 item 1.2 owes the
-   whole of it, and no stale count from an older section applies.
+   so. The protocol was frozen at twenty-three operations for item 1.2, which
+   implemented the whole of it; item 1.3 then argued it to **twenty-four**, and
+   twenty-four is the current count. A later slice may argue it further, with its
+   own evidence - no stale count from an older section applies.
 3. ~~**Decide `fault/sandbox.py`.**~~ **Decided 2026-08-10 and deleted the same
    day.** What decided it was not the duplication: `apply_fault` accepts seven
    fault types and **six of them inject nothing and record `status: PASS`** -
@@ -565,12 +666,9 @@ with literal `PASS` on the artifact and on all twelve step rows. Every artifact 
 failing run leaves says `PASS` or is absent; the only thing that says otherwise
 is the Gate's own `summary.json`.
 
-Three smaller sites from the map are also still open: the bounded waits
+Two smaller sites from the map are also still open: the bounded waits
 (`_wait_process_light_clean`, `_run_timed_step`) label a `CollectionError` `FAIL`
-in a sticky timing row; `evidence/validation.py:41` turns an unreadable artifact
-into a `FAIL` where §12.1 says 必要证据无法写入 is `ERROR`, and fixing it needs
-`validate_raw_sources` to return the two kinds separately so precedence can
-apply; and the Sentinel fault-window samples label a transient `FAIL` where the
+in a sticky timing row; and the Sentinel fault-window samples label a transient `FAIL` where the
 sibling `AffectedShardObserver` already records `TRANSIENT` for the same class of
 error in the same window. The last is a label defect, not a verdict defect - the
 lane's own verdict is correctly `OK` - and the sample counts are not stable
@@ -644,14 +742,10 @@ lane's own verdict is correctly `OK` - and the sample counts are not stable
   **carry it into M3-A item 1.4**, where the native backend must clean the
   processes actually alive at teardown rather than assume `state.json`'s pid is
   current.
-- **No node log is ever collected.** Every node is configured with
-  `logfile <data_dir>/valkey.log`, the path is recorded in the bundle manifest
-  and in `state.json`, and nothing reads it; the files die with their
-  containers. §15 names 日志与证据上传 and item 0.5 gave 证据 a boundary, so the
-  日志 half has no implementation on either backend. Operator decision
-  2026-08-10: **carry it into M3-A item 1.3**, and decide there what artifact
-  satisfies the existing *process journals* requirement. **Do not pre-decide the
-  mechanism.**
+- ~~**No node log is ever collected.**~~ **Done in item 1.3.** Every node's
+  `valkey.log` is now pulled once, at the last boundary where it is complete and
+  still on its host, into `runtime/node_journals/<host_id>/<logical_id>.log`.
+  Measured at exact-50: 50 of 50, ~155 KB per node, ~7.8 MB and ~1.1 s per run.
 - **A six-node smoke cannot reach `management_matrix` or `fault_matrix`, and
   there are three separate reasons, only one of which was recorded here before.**
   The *gate* refuses six (`real.local.full-flow` declares `minimum: 30`). The
@@ -780,11 +874,11 @@ exclusions one run at a time until the diff goes green.
   refactor.
 - Commit each distinct fix separately, saying what was observed. Keep
   `./gate suite repository.all` green at its current count before committing -
-  **91 as of M3-A-2**, 90 after M3-A-1, 88 before it - and run two consecutive
+  **92 as of M3-A-3**, 91 after M3-A-2, 90 after M3-A-1, 88 before it - and run two consecutive
   real exact-50 runs after any change a real run reaches. Two of the Gate's own
   contract tests pin the catalog and M1 plan counts
   (`verification/tests/test_contracts.py`), so registering a test moves three
-  numbers, not one: the catalog is **95** and the M1 plan **90**.
+  numbers, not one: the catalog is **96** and the M1 plan **91**.
 - Do not build a custom load generator. The Load Lane is scoped to steady state
   by decision; the Sentinel canaries own fault-window continuity and RTO.
 
