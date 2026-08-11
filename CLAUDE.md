@@ -464,6 +464,39 @@ not run end to end. That belongs to item 1.5's bring-up smoke, which is now the
 natural place to drive `host_evidence`'s two verbs alongside the three argv the
 native backend map §11 already names.
 
+**What M3-A-4 inherits, verified at this HEAD rather than remembered.** Item 1.4
+owns "no managed process or host resource behind", and the roadmap names three
+kinds of ownership mark - processes, state dirs, and *any network rules the
+actuator creates*. Four facts were checked while handing over, and each is an
+observation for that item to derive from rather than a decision taken for it:
+
+1. **`release_run` terminates by the pids in `state.json`, and by cleanup time
+   none of them is alive.** Measured on both frozen exact-50 baselines: 12-13
+   live `valkey-server` per nodehost, **zero overlap** with state's pids, because
+   state is last written before the management matrix and the rolling restart
+   plus the fault matrix replace every process. Under Docker `docker rm -f` is
+   the backstop that actually stops the fleet; **the native backend has none**,
+   which is why its residue scan measures rather than asserts. This is the
+   finding the operator carried here on 2026-08-10.
+2. **Pre-run reclaim and end-of-run release disagree about where the truth is.**
+   `reclaim_run` kills by reading each `*/valkey.pid` **on the host**, which is
+   current; `release_run` kills by `state.json`, which is not. Two cleanup paths
+   in one backend with different notions of what is running.
+3. **No cleanup path touches iptables.** `isolate_nodehost` creates a chain
+   `VSLAB-<NODEHOST-ID>` and inserts `INPUT`/`OUTPUT` jumps; only
+   `rejoin_nodehost` removes it. A run that aborts while a host is isolated
+   leaves kernel-level state behind, and neither `reclaim_run` nor `release_run`
+   scans for it or removes it. This is verbatim the roadmap's "the residue check
+   covers rule-level state".
+4. **Two host resources are outside every ownership mark.**
+   `RESOURCE_AGENT_ROOT` is `/tmp/vslab-resource-agent` - not run-scoped, holding
+   a copy of the whole `valkey_scale_lab` package and a directory per sampler -
+   and `_release_remove_state` removes only the run root and the bundle dir. And
+   **`HostTransport.close()` has no caller anywhere in the product**, so a native
+   run leaves its ssh masters running under `ControlPersist=600`; the transport's
+   own docstring already calls that "a resource the run owns and did not
+   release".
+
 **Reported, not fixed** (slice map §10): the resource-to-timeline correlation
 §11.4 requires compares two unrelated monotonic clocks. `_event_overlaps` tests a
 controller-stamped event's monotonic against a host-stamped sample interval, and
