@@ -2118,6 +2118,37 @@ def _process_bootstrap_batching_details(
     }
 
 
+def _state_nodehost(nodehost: dict[str, Any]) -> dict[str, Any]:
+    """One nodehost as `state.json` records it.
+
+    The eight fields below have always been the whole record, and on a fleet
+    that is not enough to release the run: `cleanup_scenario` is given a state
+    file and nothing else, and `control_endpoint_of` refuses a nodehost with no
+    `host_control_endpoint` - "so it was never placed on a fleet host". Measured
+    on the first native exact-30, whose `cleanup_report` carried four such
+    errors and no actions. It would have done the same on a *passing* run: the
+    fields are dropped by the serialiser, not by the failure path.
+
+    Added conditionally, the way `_prepare_process_node_metadata` adds the same
+    endpoint to a node (item 1.2): a Docker run's nodehost has no placement, so
+    its `state.json` gains no key and every frozen baseline stays
+    byte-identical.
+    """
+    record = {
+        "nodehost_id": nodehost["nodehost_id"],
+        "az_id": nodehost["az_id"],
+        "host_id": nodehost["host_id"],
+        "container_id": nodehost["container_id"],
+        "container_name": nodehost["container_name"],
+        "container_ip": nodehost["container_ip"],
+        "ports": nodehost["ports"],
+        "logical_node_count": nodehost["logical_node_count"],
+    }
+    if nodehost.get("host_control_endpoint"):
+        record["host_control_endpoint"] = nodehost["host_control_endpoint"]
+    return record
+
+
 def _process_runtime_state(
     capability_id: str,
     scenario: str,
@@ -2189,16 +2220,7 @@ def _process_runtime_state(
         "effective_cluster_timeout": effective_timeout,
         "config_sources": config.get("_config_sources", {}),
         "nodehosts": [
-            {
-                "nodehost_id": nodehost["nodehost_id"],
-                "az_id": nodehost["az_id"],
-                "host_id": nodehost["host_id"],
-                "container_id": nodehost["container_id"],
-                "container_name": nodehost["container_name"],
-                "container_ip": nodehost["container_ip"],
-                "ports": nodehost["ports"],
-                "logical_node_count": nodehost["logical_node_count"],
-            }
+            _state_nodehost(nodehost)
             for nodehost in nodehosts
         ],
         "nodes": [
