@@ -791,7 +791,7 @@ lane, **argv is the entire difference**: same kinds, same order, same targets,
 same statuses. On the management lane, 212 of 1592 rows differ in `argv` and the
 other 1380 do not differ at all.
 
-### 14.6 The health gate escalates on native runs and never on Docker runs
+### 14.6 The health gate escalates where Docker did not - read §15.5
 
 The largest measured behavioural difference between the two runtimes, and it is
 not in any compared field — it is inside `stdout_tail` on the rolling restart's
@@ -806,7 +806,11 @@ round over the whole fleet, recorded as `sample_scope: all_nodes_diagnostic` wit
 | native exact-30 | 2 | 2 and 3 of 26 gates |
 | native exact-50 | 4 | 6, 4, 3, 5 of 44 gates |
 
-Ten runs, and the split is clean. The verdict is unaffected — `status`,
+Ten runs, and the split is clean. **Corrected at rung 3, which is why the rung
+exists: §15.5 measures zero escalations on native exact-200 and on four Docker
+exact-200, so "native escalates and Docker does not" is false as stated. Read
+§15.5 before using this table** - every escalation observed is on a native run
+under the heavy workload, and rung 3 runs a light one. The verdict is unaffected — `status`,
 `cluster_state`, `known_nodes`, `slots_assigned` and the gate's `command_ref` are
 all compared and all identical, and both rolling restarts PASS — so this is
 development signal rather than a regression. It is reported here because of what
@@ -847,3 +851,139 @@ defect that is now fixed (§14.2), and the rest are §14.4–§14.7, which corre
 The thesis M3 exists to test — that the same lifecycle, the same evidence and the
 same verdicts survive a change of runtime — holds at exact-50 with the difference
 confined to *what command was run on which host*.
+
+---
+
+## 15. Rung 3, and what fleet width measured
+
+**Native exact-200 on eight simulated hosts: PASS 1544.44 s, first attempt.**
+Eight nodehosts, one per host, 25 logical nodes each, `sim-host-00..07` at
+`127.0.0.2..9` on a shared 7800–7999 range.
+
+- **12/12 steps PASS**, `run_verdict` 12/12 checks OK, **200 of 200 nodes**,
+  no `ERROR` in any artifact.
+- **Fault lane 9 scenarios / 12 command rows / 15 windows**, all nine
+  `REAL_PASS`. The three scale-fixed numbers now hold across two runtimes and
+  three scales.
+- **`cleanup` 40 rows in four kinds** — `terminate` ×8, `verify_exit` ×8,
+  `remove` ×16, `scan` ×8 — which is §6.3's five-rows-per-nodehost at eight
+  nodehosts, and no `network remove`.
+- **Zero residue on all eight hosts**, checked from outside the product over the
+  harness's own ssh: bundles 0, run trees 0, `valkey-server` 0, `VSLAB` rules 0,
+  Load Lane directory empty. `found: 0` in all eight scan rows, now meaning it.
+
+### 15.1 The delta does not grow with fleet width
+
+Diffed against the frozen `exact-200-6b6f57fd` baseline, which covers
+`runtime_start` and `cluster_form` only because both its runs fail downstream.
+Calibrated first: **6/6 and 4/4**, one view unavailable in each.
+
+**`cluster_form` is 4/4 identical** and **`node_configs` is SAME — 200 of 200**.
+`runtime_start` differs in the same two views as at exact-50, in the same fields,
+scaled: the six placement fields ×8 nodehosts, `config_sources`, `backend_id`,
+`runtime_type`, `nodes[].host_id` ×200, and the nine `valkey_image_preflight`
+keys. **No field appears at 200 that did not appear at 50**, which is the
+strongest thing this rung can say about §14.3's table.
+
+`lifecycle_timeline` reports `ERROR` in both stages because the frozen baseline
+never wrote one — the same limitation `BASELINE.md` records, now visible from the
+other side because the candidate passes.
+
+### 15.2 Transport overhead at fleet width, which is what the roadmap left open
+
+M3-A-2 chose multiplexed SSH on a spike: `docker exec` 66.4 ms median, un-multi-
+plexed ssh 63.8 ms, multiplexed ssh 10.8 ms. That was a micro-benchmark. This is
+the same question inside a real 200-node run, from the two runs' own command
+audits — native here against the Docker exact-200 at `47905626`:
+
+| command kind | native n | native median / p90 | native total | Docker n | Docker median / p90 | Docker total |
+|---|---|---|---|---|---|---|
+| `runtime_command` (the backend's own) | 3037 | 2.0 / 12.0 ms | **25.7 s** | 4853 | 3.0 / 105.0 ms | **276.6 s** |
+| `cluster_probe` (RESP) | 2951 | 3.0 / 6.0 ms | 11.4 s | 3629 | 3.0 / 45.0 ms | 37.4 s |
+| `cleanup` | 0 | — | — | 39 | 51.0 ms / 29.9 s | 236.4 s |
+| all rows | 11289 | | | 13821 | | |
+
+The seam's own transport costs **25.7 s across eight hosts against `docker exec`'s
+276.6 s on one**, in fewer commands, and the whole native run is 1544 s against
+the Docker spread of 1486–1661 s. The tails are where the difference lives: the
+medians are within a millisecond and the p90s are 12 ms against 105 ms.
+
+**These are lower bounds and must not be quoted as fleet numbers.** The hosts
+share a kernel and a loopback; a real fleet adds a network to every one of those
+3037 commands. What the measurement does establish is that the transport is not a
+bottleneck *at this width* and that nothing about eight hosts broke the choice —
+M3-B (item 1.6) still owns the real-network number.
+
+### 15.3 Evidence volume at fleet width
+
+| | native exact-50 | Docker exact-50 | native exact-200 |
+|---|---|---|---|
+| node journals | 50, 7.9 MB | 50, 8.0 MB | **200, 86.8 MB** |
+| whole run's artifacts | 37.3 MB | 36.1 MB | **192.6 MB** |
+| hosts clocked in `host_evidence` | 4 | 4 | **8** |
+
+Journal volume is a property of the cluster and not of the runtime — 7.9 MB
+against 8.0 MB for the same 50 nodes on the two backends. It is **not** linear in
+node count: 4× the nodes gives 11× the journal bytes, 158 KB per node at exact-50
+against 434 KB at exact-200, because a node's log is dominated by cluster
+gossip and every node has four times as many peers to talk about. A run's whole
+evidence footprint grew 5.2×.
+
+At the roadmap's later scales this is the number to plan against, not the node
+count: 200 nodes cost 87 MB of journals collected once at the last boundary where
+they are complete, and the per-node figure is still climbing.
+
+### 15.4 The formation dwell datum §7.3 owes M3-B
+
+Native `cluster_form` at 200 nodes: **60.9 s**. The four passing Docker exact-200
+runs measure 59.4, 77.7, 88.1 and 104.9 s, and the five formation-only runs
+`convergence_bound_map.md` argues from measure 83.1, 102.5, 137.0, 152.0 and
+205.8 s. At exact-50, native measures 52.1, 48.0, 19.7 and 35.7 s against
+Docker's 122.6, 57.8, 43.0, 72.1 and 56.6 s.
+
+**The datum is recorded and the bound is not re-argued**, exactly as §7.3
+proposed, and the measurement supports the deferral rather than merely leaving
+it. Native formation sits at the low end of the Docker spread and inside it at
+both scales — it is not a different regime, and at 60.9 s it is a quarter of the
+240 s no-progress window. §7.3's argument was that a simulated dwell is a lower
+bound on the quantity the bound protects against; the measurement lands near that
+lower bound, which is what a shared kernel and a loopback should produce. Nothing
+here argues for narrowing the window, and only M3-B's real network can.
+
+### 15.5 Rung 3 falsifies §14.6's claim, which is what it was for
+
+§14.6 said the health gate escalates to a whole-fleet diagnostic round "on native
+runs and never on Docker runs". At exact-200 the native run escalated **zero
+times in 80 gates**, and so did four Docker exact-200 runs. So the claim as
+stated is wrong.
+
+What the ten-plus runs actually say:
+
+| runtime | scale | workload | escalations |
+|---|---|---|---|
+| Docker | exact-50 | 800 qps, pipeline 8 | 0 in each of 6 runs (44 gates) |
+| native | exact-30 | 800 qps, pipeline 8 | 2 and 3 (26 gates) |
+| native | exact-50 | 800 qps, pipeline 8 | 6, 4, 3, 5 (44 gates) |
+| Docker | exact-200 | 50 qps, pipeline 1 | 0 in each of 4 runs (80 gates) |
+| native | exact-200 | 50 qps, pipeline 1 | **0** (80 gates) |
+
+`native_200.yaml` inherits `scale_200`'s far lighter workload — 50 qps and
+pipeline 1 against 800 and 8 — so **rung 3 does not separate runtime from
+workload**. Every escalation observed is on a native run *under the heavy
+workload*, and neither runtime escalates under the light one. Two candidate
+causes remain and this ladder cannot choose between them; a native exact-50 run
+with `scale_200`'s workload parameters would, and it is one run.
+
+Left as an open finding rather than pursued: the verdict is unaffected in every
+run, and the honest correction — that scale is not the variable — matters more
+than the cause. §14.6 stands as a *measurement* and falls as an explanation.
+
+### 15.6 One number outside its prior spread
+
+Primary-kill RTO at exact-200: **41.28 s**. Every prior exact-200 measurement is
+47.6–53.8 s and the exact-50 band is 45–50 s, so this is the first below either.
+It is recorded rather than treated as a finding: a faster recovery is not a
+failure, `failover_success` and `redundancy_recovery_success` are both true, and
+CLAUDE.md's rule fires on a shift in the whole spread rather than on one run.
+The three fault-lane invariants that rule protects — 9, 12 and 15 — are exact.
+A second native exact-200 below 45 s would make it a spread.

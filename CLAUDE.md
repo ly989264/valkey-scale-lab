@@ -656,9 +656,11 @@ Seven facts were checked while handing over.
    places real residue and checks the hosts over its own ssh. M3-B's real-host
    reclaim proof is the same harness against a real manifest.
 
-### Session M3-A-5 is done in part: roadmap item 1.5's smoke and first rung
+### Session M3-A-5: roadmap item 1.5's smoke and first rung
 
-**Item 1.5 is two sessions, and this is the first.** Read
+**Item 1.5 was two sessions and this was the first; M3-A-6 finished it - read
+that section below before acting on anything here, because rung 2 corrected two
+of this one's claims.** Read
 `project/docs/simulated_ladder_slice_map.md`; §1 is the harness defect that
 blocked every rung, §6 the equivalence deltas declared in advance, §7 the two
 decision points, §11 the smoke, §12 rung 1 and the four defects it found.
@@ -781,6 +783,143 @@ a run's artifacts record the pause *action string* but not the `signalled`
 count, so no run can answer slice map §7.2 from its own evidence; and
 `SamplerSpec` in `node_backend.py` duplicates the Docker backend's private
 `_AgentSamplerSpec`, whose collapse is a change on a real Docker run's path.
+
+### Session M3-A-6 is done, and with it roadmap item 1.5
+
+Rungs 2 and 3. Read `project/docs/simulated_ladder_slice_map.md` §14 (rung 2, the
+delta measured to the field, and the four rows §6 did not declare), §15 (rung 3,
+transport and evidence volume at fleet width, and the dwell datum), and §15.5,
+which falsifies a claim §14.6 made - the rung's own correction of the rung before
+it.
+
+**The item's hard stop is met.** Two consecutive native exact-50, **PASS 832.32s
+and 871.47s**, and a native exact-200, **PASS 1544.44s on the first attempt**,
+all 12/12 steps with `run_verdict` 12/12 OK, equivalence-diffed against the
+frozen Docker baselines with every delta accounted for. Fault lane **9 / 12 / 15**
+at both scales with all nine `REAL_PASS` - the three scale-fixed numbers now hold
+across two runtimes and three scales. Zero residue on four and then eight hosts,
+checked from outside the product over ssh as well as in `cleanup_report`. No
+`ERROR` in any artifact of any run. `repository.all` **92/92** throughout; the
+pytest tree **802**, measured at this HEAD, of which two are this item's - the
+**798** the section above records does not reproduce here and was not
+re-derived, so prefer the measured number.
+
+- **The equivalence result.** Calibrated 7/7, 5/5, 8/8, 6/6, 2/2 first. Both
+  accepted native exact-50 runs score **`runtime_start` 5/7, `cluster_form` 5/5,
+  `management_matrix` 6/8, `fault_matrix` 4/6, `cleanup` 1/2** and are identical
+  to each other in every view and every field. Both inherited Docker deltas are
+  at their declared shapes - +14 rows all `cluster_migrate_keys` 4 → 18 with
+  three kinds changed and fourteen unchanged, and the three partition scenarios'
+  isolated side - and there is no third.
+- **§6.3's central prediction is false, and it is the honest headline.** It said
+  the views "compare `command_kind`, not argv". They compare the whole row, so
+  **`argv` is the entire difference in `fault_command_log`** - 17 rows, and
+  nothing else at all - and 212 of 1592 rows in `management_command_log`, with
+  the other 1380 identical. `fault_sequence.details.actions[]` ×14 and
+  `proxy_snapshot.target_host` ×3 are the same class. **Declare it, do not
+  normalise it**: two backends cannot issue the same argv by construction, and a
+  view that collapsed argv would stop seeing the wrong command being run.
+- **A defect the artifacts could not report, found by asking the hosts.** A
+  PASSing native run left `/tmp/vslab-bundle-<run_id>-<nodehost_id>/` on every
+  host - 84-88 KB - under a `cleanup_report` saying `found: 0`. Two halves:
+  `_release_remove_state` read `remote_bundle_dir` from `state.json` and
+  `_state_nodehost` drops it (rung 1 §12.3's shape in the sibling field), and
+  `_scan_run_residue` never asked about bundles, so `found: 0` was truthful
+  about what it scanned and silent about the rest. The path is derived from the
+  run id now - `reclaim_run`'s own expression - so the two cleanup paths agree
+  and neither depends on being told. Native only; no frozen baseline moves.
+- **One delta was this map's own arithmetic and is gone rather than declared.**
+  `native_50.yaml` said `port_base: 31000` where `scale_50.yaml` says 7400, while
+  its header claimed to be identical to it - which alone differed in
+  `nodehost_density_plan.ports`, `state`'s two port fields and **all 50
+  `node_configs`**. The harness publishes whatever range it is told. Aligned:
+  `node_configs` SAME at exact-50 (50 of 50) **and at exact-200 (200 of 200)**.
+  `native_30` is deliberately left at 31000, because rung 1's runs were taken
+  with it and no 30-node baseline exists.
+- **The delta does not grow with fleet width.** Against the frozen exact-200
+  baseline (which covers two stages, both its runs failing downstream),
+  `cluster_form` is **4/4 identical** and `runtime_start` differs in the same two
+  views and the same fields as at exact-50, scaled 4 → 8 nodehosts and 50 → 200
+  nodes. **No field appears at 200 that did not appear at 50.**
+- **Transport at fleet width, which the roadmap left open.** From the two runs'
+  own command audits, native exact-200 against Docker exact-200: the backend's
+  own `runtime_command` rows cost **25.7 s across eight hosts against `docker
+  exec`'s 276.6 s on one**, in 3037 rows against 4853, medians within a
+  millisecond and p90 12 ms against 105 ms. **Lower bounds** - these hosts share
+  a kernel - but nothing about eight hosts broke M3-A-2's choice, and M3-B still
+  owns the real-network number.
+- **Evidence volume is not linear in node count.** 200 of 200 journals,
+  **86.8 MB**, against 7.9 MB for 50 - 4× the nodes, 11× the bytes, 158 KB per
+  node at exact-50 against 434 KB at exact-200, because a node's log is
+  dominated by gossip about peers. The whole run's artifacts grew 37.3 MB →
+  192.6 MB. Journal volume is a property of the cluster and not the runtime:
+  7.9 MB native against 8.0 MB Docker for the same 50 nodes.
+- **The dwell datum, recorded and not argued from.** Native `cluster_form` at 200
+  is **60.9 s**, against four passing Docker exact-200 at 59.4-104.9 s and the
+  five formation-only runs at 83.1-205.8 s; at exact-50, native 19.7-52.1 s
+  against Docker 43.0-122.6 s. Native sits at the low end of the Docker spread
+  and inside it at both scales - not a different regime, and a quarter of the
+  240 s window. This **supports** §7.3's deferral rather than merely leaving it:
+  a simulated dwell is a lower bound and it measured near one. Only M3-B's real
+  network can narrow the bound.
+
+**What rung 3 corrected about rung 2, which is why it was worth running.**
+§14.6 reported that the rolling restart's health gate escalates to a whole-fleet
+diagnostic round on every native run and on no Docker run - 0 in each of six
+Docker exact-50, against 6, 4, 3 and 5 of 44 gates natively. At exact-200 the
+native run escalated **zero times in 80 gates**, and so did four Docker
+exact-200. `native_200.yaml` inherits `scale_200`'s far lighter workload (50 qps
+and pipeline 1 against 800 and 8), so **scale is not the variable and rung 3 does
+not separate runtime from workload**. Every escalation observed is native *and*
+heavily loaded; neither runtime escalates lightly loaded. One native exact-50 run
+with `scale_200`'s workload parameters would separate them, and that is the open
+finding rather than a cause. The verdict is unaffected in every run - `status`,
+`cluster_state`, `known_nodes` and `slots_assigned` are all compared and all
+identical.
+
+**Two fields the frozen baselines agree on by coincidence**, reported rather than
+excluded because their views already differ for declared reasons: the
+health-gate retry record inside `stdout_tail` (`PROBE_COUNT_FIELDS` excludes
+those names but the exclusion does not descend into a serialised summary, and
+`sample_scope` is not in the set at all), and
+`management_sequence...errors_observed_during_operation`, which both baselines
+record as `T,T` and the four native runs record as `F,F`, `T,F`, `T,F`, `F,F`.
+That is the third and fourth instance of CLAUDE.md's warning that two runs
+agreeing is not proof a field is deterministic.
+
+**One number outside its prior spread**: primary-kill RTO at exact-200 was
+**41.28 s**, where every prior exact-200 measurement is 47.6-53.8 s and the
+exact-50 band is 45-50 s. Recorded, not treated as a finding - a faster recovery
+is not a failure and the rule fires on a shifted spread, not one run. A second
+native exact-200 below 45 s would make it one.
+
+**What M3-A-6 leaves.** Item 1.5 is closed; **M3-A-7 is roadmap item 1.6 or 1.7,
+on operator approval, and the correct state now is idle.** Do not freeze native
+baselines - they come from the real fleet in M3-B, because a baseline should
+encode the environment acceptance runs in. Three things this session added to the
+open list, none of them its own to close: the workload-versus-runtime question
+above; `_state_nodehost` still drops `remote_bundle_dir`, which nothing needs now
+that the path is derived; and the diff tool compares a health gate's retry record
+through `stdout_tail` while excluding the same fields structurally.
+
+Carried forward untouched: the aborted controller's ssh masters (1.4 map §8.2),
+the resource-to-timeline monotonic correlation (1.3 map §10.1), a failing run
+collecting no journals and writing no lifecycle timeline (1.3 map §10.2),
+`_check_ports_free`'s loopback bind (M3-B's), the absent fault-path ownership
+check (accepted 2026-08-10), the missing `signalled` count in a run's own
+evidence, and `SamplerSpec`'s duplication of `_AgentSamplerSpec`.
+
+**Fleet commands, compiled at this HEAD.**
+
+| configuration | nodes | nodehosts | hosts | client ports | fleet command |
+|---|---|---|---|---|---|
+| `native_30` | 30 | 4 | 4 | 31000-31029 | `--hosts 4 --client-port-base 31000 --client-ports 60` |
+| `native_50` | 50 | 4 | 4 | 7400-7449 | `--hosts 4 --client-port-base 7400 --client-ports 60` |
+| `native_200` | 200 | 8 | 8 | 7800-7999 | `--hosts 8 --client-port-base 7800 --client-ports 200` |
+
+Eight hosts need loopback aliases `127.0.0.2`-`127.0.0.9`, which do not survive a
+reboot; the harness checks and refuses with the command. Bringing eight hosts up
+with 200 published ports each took 41.4 s, a per-fleet cost paid once.
 
 ### What is left before M3, and what is M3 itself
 
