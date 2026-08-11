@@ -641,3 +641,209 @@ rung 2's against the exact-50 baseline, and it is why the session splits here.
 - **A run id is shared by two runs of one scenario on one date** (1.4 map §8.1),
   and the ladder runs the same scenario repeatedly on one day. It is why rung 2's
   two runs must not overlap, and it is not this item's to fix.
+
+---
+
+## 14. Rung 2, and what the equivalence diff actually found
+
+Session M3-A-6. Four native exact-50 runs were taken; two of them are the rung's
+result and the first two are what found the two defects below.
+
+| run | config | outcome | why it was taken |
+|---|---|---|---|
+| 1 | port_base 31000 | PASS 868.24 s | first native exact-50; found §14.1 and §14.2 |
+| 2 | port_base 7400 | PASS 860.66 s | §14.1 fixed; confirmed the delta it removed |
+| 3 | + bundle release | **PASS 832.32 s** | §14.2 fixed |
+| 4 | + bundle release | **PASS 871.47 s** | the consecutive pair |
+
+Runs 3 and 4 are identical in **every** view and every field: `runtime_start`
+5/7, `cluster_form` 5/5, `management_matrix` 6/8, `fault_matrix` 4/6, `cleanup`
+1/2, with the same per-field delta set below. Both 12/12 steps, `run_verdict`
+12/12 checks OK, 50 of 50 nodes, fault lane **9 scenarios / 12 command rows / 15
+windows** with all nine `REAL_PASS`, cleanup 20 rows in four kinds, `found: 0` on
+all four nodehosts, no `ERROR` in any artifact. RTO 47.798 s and 47.255 s, inside
+the exact-50 band. Residue was also checked from outside the product, over the
+harness's own ssh: **bundles 0, run trees 0, `valkey-server` 0, `VSLAB` rules 0
+on all four hosts** after each.
+
+The calibration was re-taken at this HEAD before any of it was trusted: the two
+frozen baseline runs against each other give **7/7, 5/5, 8/8, 6/6, 2/2**.
+
+### 14.1 The equivalence diff's first finding was in this map, not in the product
+
+§3 said `cluster.port_base` must lie inside every fleet host's declared range and
+chose 31000, and §6.3 then declared what `runtime_start` would differ in without
+noticing that the port base was one of those things. Measured on run 1:
+`nodehost_density_plan.nodehosts[].ports` ×100, `state.nodes[].client_port` and
+`cluster_bus_port` ×50 each, and **all 50 `node_configs`** — four lines each,
+`port`, `cluster-port`, `cluster-announce-port`, `cluster-announce-bus-port`, and
+nothing else.
+
+The harness publishes whatever range it is told to, so the base was free all
+along. Set to `scale_50.yaml`'s own 7400/17400 and the fleet brought up with
+`--client-port-base 7400`, `node_configs` goes to **SAME** — 50 of 50 — and the
+fault lane's `proxy_snapshot.target_port` and `details.target_port` stop
+differing with it. `runtime_start` 4/7 → 5/7. The configuration's header already
+claimed everything but the two runtime keys was "deliberately identical to
+`scale_50.yaml`"; it is now true. `native_200` takes `scale_200`'s 7800/17800 for
+the same reason; `native_30` is left at 31000, because rung 1's two passing runs
+were taken with it and no 30-node baseline exists to compare against.
+
+### 14.2 A PASS with `found: 0` was leaving 88 KB per host
+
+Found by checking the hosts rather than the artifact — `cleanup_report` said
+`found: 0` on all four nodehosts and every host still held
+`/tmp/vslab-bundle-<run_id>-<nodehost_id>/`: node configs, `install.sh`,
+`start_all.sh`, `collect_pidfiles.sh`, `manifest.json`. Two defects, one on each
+side of M3's cleanup criterion, and neither visible from inside a run.
+
+**The removal read a field the serialiser drops.** `_release_remove_state` took
+the path from `state.json`'s nodehost record and `_state_nodehost` records eight
+fields with `remote_bundle_dir` not among them, so `removals` was `[run_root]`
+alone and the step reported `PASS`. This is rung 1 §12.3's shape in the sibling
+field — the serialiser, not the failure path — and it is why item 1.4's own abort
+proof did not catch it: `native_cleanup_proof.py` builds the state it releases
+and puts `remote_bundle_dir` in it.
+
+**The scan asked about two of the three things a native run leaves.**
+`_scan_run_residue` asked for the tree and the processes running out of it, so
+`found: 0` was truthful about what it scanned and silent about the rest. The
+operation whose docstring says it measures rather than asserts was measuring an
+incomplete question — the same shape item 1.4 §1 found in the process arm of the
+very same scan.
+
+Both fixed at the site that was wrong. The path is now **derived from the run
+id**, which is the expression `reclaim_run` has always used, so the two cleanup
+paths agree about what a run owns and neither depends on being told — item 1.4's
+own principle, applied to the resource it had missed. The scan asks for all three
+residues in one session and the row says `scanned: [state, bundle, process,
+firewall]`. Native only: the Docker backend removes its bundle with the
+container, so no frozen baseline moves. Proven on the hosts, twice.
+
+### 14.3 The delta, measured to the field, in both accepted runs
+
+Every difference in every differing view, with nothing else present:
+
+| view | difference | declared? |
+|---|---|---|
+| `nodehost_density_plan` | `fleet_id`, `fleet_manifest_sha256`, `host_client_address`, `host_control_endpoint`, `host_data_address` added ×4; `host_id` ×4 | §6.3 |
+| `nodehost_density_plan` | `config_sources.scenario_config_path` | no — it names the configuration file |
+| `state:before_cluster` | `backend_id`, `runtime_type` | §6.3 |
+| `state:before_cluster` | `nodes[].host_id` ×50 | no — the placement, in the sibling field §6.3 did name |
+| `state:before_cluster` | `valkey_image_preflight` gains nine keys, loses `command` | §6.3, **but named in the wrong artifact** — see §14.4 |
+| `management_command_log` | +14 rows, all `cluster_migrate_keys` (4 → 18); 3 kinds changed, 14 unchanged | §6.2, exact shape |
+| `management_command_log` | `argv` on 212 of 1592 shared rows | no — §14.5 |
+| `management_command_log` | `stdout_tail` on 5–7 health-gate rows | no — §14.6 |
+| `management_sequence` | `command_count` 270 → 277, `command_log_refs` and `command_ids` shifted by the 14 inserted rows | §6.2 |
+| `management_sequence` | `workload_impact.errors_observed_during_operation` on 1–2 operations | no — §14.7 |
+| `fault_command_log` | `argv`, and **nothing else at all** — 17 rows plus one length change | no — §14.5 |
+| `fault_sequence` | `isolated_reachable_from_this_side` ×3 and `isolated_unreachable_reason` ×3 added, `isolated_cluster_info` ×3, `isolated_cluster_state_ok` ×1, `client_observations` ×3 | §6.2, exact shape |
+| `fault_sequence` | `details.actions[]` ×14, `proxy_snapshot.target_host` ×3 | no — §14.5 |
+| `cleanup_report` | 21 rows in six kinds → 20 in four; no `network remove`; two extra `cleanup_timing` keys | §6.3, exact shape |
+
+`cluster_form` is **5/5 identical**, which is §6.3's prediction holding in the one
+stage where it holds completely.
+
+### 14.4 What §6.3 predicted that did not happen
+
+`nodehost_bundle_manifests` was declared to "describe the native bundle rather
+than the image". It is **byte-identical** on both backends, because that artifact
+is the *run* bundle — the node configs and the three scripts the lifecycle
+writes — and not the software bundle. The native software bundle's description
+does appear, in `state:before_cluster.valkey_image_preflight`, which gains
+`bundle`, `bundle_dir`, `archive_sha256`, `architecture`, `memtier_version`,
+`memtier_benchmark_sha256`, `memtier_source_sha256`, `verified` and
+`not_verified`, and loses the Docker preflight's `command`. Right fact, wrong
+artifact. `not_verified` is item 1.1's declared gap — the controller hashes bytes
+and cannot ask a running server for `CLUSTER MYSLOTS` — arriving in a real run's
+evidence for the first time.
+
+### 14.5 The prediction the rung was built to test is false: argv is compared
+
+§6.3: *"command argv differ (ssh rather than `docker exec`) but the views compare
+`command_kind`, not argv. **This is the prediction the rung tests**, and it is
+the one most likely to be wrong."* It is wrong. The command-log views keep the
+whole row, so `argv` is compared in full, and it is the **only** thing that
+differs in `fault_command_log`:
+
+```
+- ["docker", "exec", "vslab-...-nodehost-az-b-00", "valkey-server", "<conf>"]
++ ["sh", "-c", "PATH=/opt/valkey-scale-lab/bundles/fe1839de28d861ad/bin:$PATH; valkey-server <conf>"]
+- ["docker pause vslab-...-nodehost-az-a-00", "docker unpause vslab-...-nodehost-az-a-00"]
++ ["kill -STOP every owned Valkey process on sim-host-00", "kill -CONT ... on sim-host-00"]
+```
+
+`fault_sequence.details.actions[]` ×14 and `proxy_snapshot.target_host` ×3 are the
+same class: the actuator's action strings, and the address the in-process TCP
+proxy dials, which is a fleet host's client address rather than a container IP.
+
+**This is a delta to declare, not a normalisation to add**, and the reasoning is
+CLAUDE.md's own seeded-regression rule. Two backends cannot issue the same argv
+by construction, so a literal comparison can never be equal; but a view that
+collapsed argv would stop being able to see the wrong command being run, which is
+the single most valuable thing a command log carries. So the boundary is drawn by
+what the field *is*: `argv` is backend-specific evidence and everything around it
+— `command_kind`, `operation_id`, `target_logical_id`, `status`, `returncode`,
+`attempt_count` — is not, and all of it is identical here.
+
+The strength of the result is in the second half of that sentence. On the fault
+lane, **argv is the entire difference**: same kinds, same order, same targets,
+same statuses. On the management lane, 212 of 1592 rows differ in `argv` and the
+other 1380 do not differ at all.
+
+### 14.6 The health gate escalates on native runs and never on Docker runs
+
+The largest measured behavioural difference between the two runtimes, and it is
+not in any compared field — it is inside `stdout_tail` on the rolling restart's
+`rolling_restart_health_probe_summary` rows. The gate probes a representative
+sample per batch; when that round is not clean it falls back to one diagnostic
+round over the whole fleet, recorded as `sample_scope: all_nodes_diagnostic` with
+`full_probe_count` 0 → 50 and `node_command_count` 12 → 112.
+
+| runtime | runs | escalations per run |
+|---|---|---|
+| Docker exact-50 | 6 (two frozen baselines + four since) | **0, 0, 0, 0, 0, 0** of 44 gates |
+| native exact-30 | 2 | 2 and 3 of 26 gates |
+| native exact-50 | 4 | 6, 4, 3, 5 of 44 gates |
+
+Ten runs, and the split is clean. The verdict is unaffected — `status`,
+`cluster_state`, `known_nodes`, `slots_assigned` and the gate's `command_ref` are
+all compared and all identical, and both rolling restarts PASS — so this is
+development signal rather than a regression. It is reported here because of what
+it costs: each escalation is ~100 extra node commands at exact-50, and a
+whole-fleet diagnostic round at exact-200 is four times that. §16 item 1 asks the
+normal path not to run whole-fleet `CLUSTER NODES` periodically, and this is a
+runtime that reaches for it more often. **Rung 3 measures it at 200.**
+
+Not fixed and not normalised: `PROBE_COUNT_FIELDS` already excludes
+`retry_count`, `full_probe_count`, `representative_probe_count` and
+`node_command_count` from comparison as a retry record, but that exclusion does
+not descend into the serialised summary in `stdout_tail`, and `sample_scope` is
+not in the set at all. Left alone deliberately — the view differs for declared
+reasons anyway, so the score does not move, and this is the one place the
+escalation is visible.
+
+### 14.7 A third field the frozen baselines agree on by coincidence
+
+`management_sequence.result.operations[].workload_impact.
+errors_observed_during_operation` is a per-run workload observation. Both frozen
+baselines record `[…, True, True, …, True]` for the two rolling restarts, which
+is why the calibration cannot see it; the four native runs record `F,F`, `T,F`,
+`T,F` and `F,F`. It is the third instance of CLAUDE.md's warning that two runs
+agreeing is not proof a field is deterministic, after the rolling-restart probe
+counts and the light probe. Reported rather than excluded, for the same reason as
+§14.6: the view already differs for a declared reason.
+
+### 14.8 What rung 2 settles
+
+The roadmap's hard stop for this half is met: two consecutive native exact-50 at
+PASS with 12/12 steps on four simulated hosts, equivalence-diffed against the
+frozen Docker exact-50 baseline, every delta accounted for to the field. Four of
+the fourteen delta rows were not declared in advance; one was this map's own
+arithmetic (§14.1) and is now removed rather than declared, one is a product
+defect that is now fixed (§14.2), and the rest are §14.4–§14.7, which correct
+§6.3 rather than the product.
+
+The thesis M3 exists to test — that the same lifecycle, the same evidence and the
+same verdicts survive a change of runtime — holds at exact-50 with the difference
+confined to *what command was run on which host*.
