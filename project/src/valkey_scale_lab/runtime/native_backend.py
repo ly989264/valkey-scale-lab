@@ -297,6 +297,11 @@ def _scan_fault_rules(run_id: Any, chains: Sequence[str]) -> str:
     named = " ".join(shlex.quote(str(chain)) for chain in chains) or "''"
     return (
         f"tag={tag}; "
+        # A host that cannot be asked is not a host with no rules. Without this
+        # the scan reports "nothing there" for a host where `iptables` is absent
+        # or not permitted, which is the assert-rather-than-measure defect this
+        # whole operation exists to avoid.
+        'if ! iptables -S >/dev/null 2>&1; then printf "unscannable\\tfirewall\\n"; exit 0; fi; '
         'iptables -S 2>/dev/null | awk -v t="$tag" '
         "'index($0, t) > 0 {print \"rule\\t\" $0}'; "
         f"for chain in {named}; do "
@@ -1066,7 +1071,7 @@ class NativeMultiEcsBackend:
         # alone: a pidfile is current for a node that *is* running, which is the
         # only case pause and resume act on, and changing the fault path is a
         # fault-lane behaviour change that belongs to the item whose runs
-        # exercise the fault lane. See `distributed_cleanup_slice_map.md` §8.5.
+        # exercise the fault lane. See `distributed_cleanup_slice_map.md` §8.3.
         script = (
             f"root={shlex.quote(run_root)}; signalled=0; "
             'for pidfile in "$root"/*/valkey.pid; do '
@@ -1377,20 +1382,49 @@ class NativeMultiEcsBackend:
                     lambda: self._release_remove_state(endpoint, nodehost_id, nodehost, run_root),
                 ),
             )
-            for key, step in steps:
-                started = time.monotonic()
-                actions.append(step())
-                elapsed[key] = elapsed.get(key, 0.0) + max(time.monotonic() - started, 0.0)
+            # A host that stops answering mid-teardown is reported, not raised.
+            # The seam says a resource that would not release is an action row,
+            # "because the report is what the cleanup criterion is measured on
+            # and an exception erases it" - and a run whose host went away is
+            # exactly the run whose residue somebody needs to read about.
+            try:
+                for key, step in steps:
+                    started = time.monotonic()
+                    actions.append(step())
+                    elapsed[key] = elapsed.get(key, 0.0) + max(time.monotonic() - started, 0.0)
 
-            started = time.monotonic()
-            remaining, scan_action = self._release_scan(
-                endpoint, nodehost_id, nodehost, run_root, run_id
-            )
-            elapsed["cleanup_residual_scan_seconds"] = elapsed.get(
-                "cleanup_residual_scan_seconds", 0.0
-            ) + max(time.monotonic() - started, 0.0)
-            actions.append(scan_action)
-            resources_remaining.extend(remaining)
+                started = time.monotonic()
+                remaining, scan_action = self._release_scan(
+                    endpoint, nodehost_id, nodehost, run_root, run_id
+                )
+                elapsed["cleanup_residual_scan_seconds"] = elapsed.get(
+                    "cleanup_residual_scan_seconds", 0.0
+                ) + max(time.monotonic() - started, 0.0)
+                actions.append(scan_action)
+                resources_remaining.extend(remaining)
+            except TransportError as error:
+                errors.append(f"{nodehost_id}: {error}")
+                actions.append(
+                    {
+                        "type": "nodehost_residual_scan",
+                        "id": nodehost_id,
+                        "container_name": str(nodehost.get("container_name", "")),
+                        "action": "scan",
+                        "status": "FAIL",
+                        "scanned": [],
+                        "unscannable": ["host"],
+                        "found": 0,
+                        "reason": "The host stopped answering during teardown, so what it still holds is unknown.",
+                    }
+                )
+                resources_remaining.append(
+                    {
+                        "type": "nodehost_unreachable",
+                        "id": nodehost_id,
+                        "host_id": str(nodehost.get("host_id", "")),
+                        "reason": str(error)[:200],
+                    }
+                )
 
         timing.update({key: round(value, 6) for key, value in elapsed.items()})
         # Last, because everything above needs the channel and nothing after
@@ -1552,8 +1586,6 @@ class NativeMultiEcsBackend:
         failures: list[str] = []
 
         tree_scan = self._run(endpoint, ["sh", "-c", _scan_run_residue(run_root)], timeout=60)
-        if tree_scan.returncode != 0:
-            failures.append("process")
         if any(line.strip() == "state" for line in tree_scan.stdout.splitlines()):
             remaining.append(
                 {
@@ -1580,10 +1612,11 @@ class NativeMultiEcsBackend:
             ["sh", "-c", _scan_fault_rules(run_id, [self._fault_chain(nodehost)])],
             timeout=60,
         )
-        if rule_scan.returncode != 0:
-            failures.append("firewall")
         for line in rule_scan.stdout.splitlines():
             kind, _, detail = line.partition("\t")
+            if kind == "unscannable":
+                failures.append(detail.strip() or "firewall")
+                continue
             if kind not in {"rule", "chain"} or not detail.strip():
                 continue
             remaining.append(

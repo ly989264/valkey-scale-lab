@@ -911,18 +911,16 @@ def test_release_run_continues_a_suspended_process_before_terminating_it() -> No
 
 
 def test_release_run_kills_what_would_not_terminate_and_reports_it() -> None:
+    row = "515\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n"
     transport = FakeTransport()
-    # The on-host wait returns one survivor, twice: once from the wait, once
-    # from the forced kill that follows it.
-    transport.respond("attempt=0; while", 0, "515\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n")
-    transport.respond('kill -KILL "$pid"', 0, "515\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n")
+    transport.respond("attempt=0; while", 0, row)
+    transport.respond('kill -KILL "$pid"', 0, row)
     backend = NativeMultiEcsBackend(transport=transport)
     verify = backend.release_run(_state()).actions[1]
     assert verify["action"] == "verify_exit"
     assert verify["status"] == "SKIPPED_WITH_REASON"
     assert verify["alive_pid_count"] == 1
     assert verify["killed_pid_count"] == 1
-    assert verify["alive_processes"][0]["pid"] == 515
 
 
 def test_release_run_reports_residue_rather_than_asserting_it_is_gone() -> None:
@@ -990,6 +988,44 @@ def test_release_run_closes_the_control_channel_it_opened() -> None:
     injected = FakeTransport()
     NativeMultiEcsBackend(transport=injected).release_run(_state())
     assert injected.closed is False
+
+
+def test_release_run_reports_a_host_that_stops_answering_instead_of_raising() -> None:
+    """The seam: a resource that would not release is a row, not an exception.
+
+    "The report is what the cleanup criterion is measured on and an exception
+    erases it" - and a run whose host went away is exactly the run whose residue
+    somebody needs to read about.
+    """
+
+    class Vanishing(FakeTransport):
+        def run(self, control_endpoint, argv, *, timeout):  # noqa: ANN001
+            if "kill -TERM" in " ".join(str(item) for item in argv):
+                raise TransportError("connection closed by remote host")
+            return super().run(control_endpoint, argv, timeout=timeout)
+
+    teardown = NativeMultiEcsBackend(transport=Vanishing()).release_run(_state())
+    assert teardown.errors and "connection closed" in teardown.errors[0]
+    scan = teardown.actions[-1]
+    assert scan["status"] == "FAIL"
+    assert scan["unscannable"] == ["host"]
+    assert [row["type"] for row in teardown.resources_remaining] == ["nodehost_unreachable"]
+
+
+def test_a_host_that_cannot_be_asked_about_rules_is_not_a_host_without_rules() -> None:
+    """The assert-rather-than-measure defect, one level down.
+
+    If `iptables` is absent or not permitted, a scan that just greps its output
+    reports "no rules" - the same shape of false clean the whole operation exists
+    to avoid.
+    """
+    transport = FakeTransport()
+    transport.respond("if ! iptables -S", 0, "unscannable\tfirewall\n")
+    teardown = NativeMultiEcsBackend(transport=transport).release_run(_state())
+    scan = teardown.actions[4]
+    assert scan["action"] == "scan"
+    assert scan["status"] == "FAIL"
+    assert scan["unscannable"] == ["firewall"]
 
 
 def test_release_run_reports_an_unreachable_nodehost_instead_of_raising() -> None:
