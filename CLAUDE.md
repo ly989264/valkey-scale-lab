@@ -558,7 +558,10 @@ reported rather than fixed.
   and is the item's one open residue: `LoadLaneHost`'s protocol says in as many
   words that `remote_dir` is the lane's choice, and `_output_prefix` has already
   written it into memtier's argv. Slice map §8.4 carries both candidate fixes and
-  why each is item 1.5's rather than this one's.
+  why each is item 1.5's rather than this one's. **Closed in item 1.5**: the
+  root is run-scoped and the lane removes what it created; the argv change was
+  measured to move no diff view. An aborted run still leaves it, now under a
+  path that says whose it is.
 - **`HostTransport.close()` has its first caller.** `release_run` closes a
   transport this backend opened for itself - never one it was handed, which
   belongs to whoever handed it over. `reclaim_run` deliberately does not: on a
@@ -588,11 +591,18 @@ own change.
 fault actuator still suspends and resumes by pidfile (slice map §8.3 - narrower
 there, because a pidfile *is* current for a node that is running, and changing it
 is a fault-lane change belonging to the item whose ladder exercises the fault
-lane); and no fault path checks ownership, which stays the accepted absence below
+lane) - **item 1.5 measured that argument false and changed it**: with a kill
+placed before the pause, 2 pidfiles against 1 live process, so the actuator
+attempted a signal to a pid it no longer owned; and no fault path checks
+ownership, which stays the accepted absence below
 - the run mark on the actuator's rules records *whose* a rule is and does not
 make `isolate_nodehost` refuse a host that is not this run's.
 
-**What M3-A-5 inherits, verified at this HEAD rather than remembered.** Item 1.5
+**What M3-A-5 inherits, verified at this HEAD rather than remembered.** *(Read
+the M3-A-5 section below before acting on any of the seven. Two are now known
+wrong — item 2's fleet arithmetic is out by a factor of two at exact-30 and
+exact-50, and item 4's cleanup row count with it — and items 3, 5 and 6 are
+closed. Kept because the derivation reads from them.)* Item 1.5
 is the simulated ladder, with the operator's bring-up smoke at its front
 (2026-08-11): two simulated hosts, the backend driven directly - claim, install,
 start, stop, isolate, rejoin, release - no Gate run, no cluster, no scenario.
@@ -645,6 +655,81 @@ Seven facts were checked while handing over.
    `python3 scripts/native_cleanup_proof.py release|abort|stubborn --fleet-id sim-a`
    places real residue and checks the hosts over its own ssh. M3-B's real-host
    reclaim proof is the same harness against a real manifest.
+
+### Session M3-A-5 is done in part: roadmap item 1.5's smoke and first rung
+
+**Item 1.5 is two sessions, and this is the first.** Read
+`project/docs/simulated_ladder_slice_map.md`; §1 is the harness defect that
+blocked every rung, §6 the equivalence deltas declared in advance, §7 the two
+decision points, §11 the smoke, §12 rung 1 and the four defects it found.
+M3-A-6's scope is rung 2 (native exact-50 ×2 and the equivalence diff) and
+rung 3 (native exact-200 on eight hosts).
+
+- **Two inherited numbers were wrong and are corrected.** `nodehosts_per_az` is
+  **2** in the global config and `requested_for_az = max(nodehosts_per_az,
+  ceil(n/25))`, so density is not the binding term at small scale:
+  **exact-30 and exact-50 plan four nodehosts and need four hosts**, not two;
+  exact-200 needs eight. The frozen Docker baseline's 21 cleanup rows say the
+  same thing. The handover's "ten cleanup rows at exact-50" is therefore
+  **twenty**, which is what both native runs emitted.
+- **The harness could not serve any native run**, measured on a live fleet.
+  Client ports are assigned globally *before* nodehosts exist and nodes are then
+  strided across nodehosts, so each nodehost's ports span the whole run window
+  and no contiguous per-host block can cover them. Docker never met this because
+  a nodehost container is created *after* the plan. Fixed in the harness: each
+  host has its **own client address** (`127.0.0.2` upward, never `127.0.0.1`,
+  which a Docker gate run uses) and **all hosts declare one shared range** - a
+  real fleet's shape. The addresses are loopback aliases the operator creates
+  once per boot (`sudo ifconfig lo0 alias 127.0.0.N up`); the harness checks and
+  refuses with the command rather than calling `sudo`. **Eight hosts need
+  `127.0.0.9`, which does not exist yet.**
+- **Four defects that only a real run could find**, three of them from rung 1's
+  three failed attempts. **The backend was never chosen from the
+  configuration** - `provider: ecs` validated, manifest read, placement correct,
+  and then four Docker containers started for four named fleet hosts; the
+  configuration now decides, and a `--backend` contradicting it is refused both
+  ways. **`ResourceSampler` under-declared its contract** - the observation layer
+  also reads `.sampler`, which only the Docker agent had, so the native agent
+  satisfied the protocol as written and died 340 s in. **`state.json` could not
+  say where a nodehost was**, so cleanup could not reach a fleet host - and that
+  was the serialiser, not the failure path, so a *passing* run would have failed
+  its cleanup identically. Plus the resource preflight correctly refusing a
+  leftover network from the killed first attempt.
+- **§7.2 decided on measurement, which reversed item 1.4's reasoning.** The
+  actuator paused by pidfile on the argument that a pidfile is current for a
+  running node. Measured on hosts with a kill placed first: **2 pidfiles, 1 live
+  process**, so it attempted a signal to a pid it no longer owned. It now uses
+  the same `/proc`-by-working-directory walk both cleanup paths use. Native
+  only; no frozen baseline moves. **A run's artifacts cannot answer this** - the
+  fault record keeps the action string, not the `signalled` count.
+- **§7.1 decided and cheaper than 1.4 §8.4 predicted.** The Load Lane's remote
+  root is run-scoped and the lane now removes what it created (leaf with
+  `rm -rf`, run-scoped parent with `rmdir`, so the last label to finish takes
+  it). Measured against the frozen baseline first: memtier's argv is in **no
+  diffed view and no reported line**, so it moves nothing - confirmed by two
+  real Docker exact-50.
+- **Proven.** `repository.all` **92/92** throughout; the pytest tree **798**, up
+  from 788. The bring-up smoke **32/32** on two hosts - every seam operation has
+  now run against a live host through the product, which closes item 1.3's
+  "no journal fetched off a host over ssh through the product". Two Docker
+  exact-50, **PASS 905.93s and 908.01s**, both 7/7, 5/5, 6/8, 5/6, 2/2 with both
+  inherited deltas at their declared shapes and no third, fault lane 9/12/15,
+  RTO 49.07s and 48.10s. Two native exact-30, **PASS 737.29s and 729.05s**,
+  12/12 both, fault lane **9/12/15** identical to Docker, cleanup 20 rows in
+  four kinds exactly as declared in advance, **zero residue on all four hosts**,
+  no `ERROR` in any artifact, RTO 47.26s and 46.45s.
+
+**What M3-A-6 inherits.** No frozen 30-node baseline exists, so nothing in rung
+1 is an equivalence result - that is rung 2's, against
+`artifacts/baselines/exact-50-6b6f57fd/`, whose artifact root is
+`<run>/001-real.local.full-flow/runtime` and which calibrates 7/7, 5/5, 8/8,
+6/6, 2/2 baseline-to-baseline. The deltas to expect are in slice map §6, and
+`cleanup` is the one already confirmed on a real native run.
+`templates/configs/native_{30,50,200}.yaml` name fleet `sim-l5`; bring it up
+with `python3 scripts/simulated_hosts.py up --fleet-id sim-l5 --hosts 4` (or
+`--hosts 8 --client-ports 200` for exact-200, which also needs the `127.0.0.9`
+alias). Publishing 200 ports on each of 8 hosts was measured at 41 s to start
+and slow to tear down - a per-fleet cost, paid once.
 
 ### What is left before M3, and what is M3 itself
 
