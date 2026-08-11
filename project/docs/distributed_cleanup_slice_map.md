@@ -430,15 +430,43 @@ act. This is inherited, not introduced, and it is a property of the run-id schem
 rather than of cleanup. Recorded because §2's whole subject is the ownership
 mark, and this is its real boundary.
 
-### 8.2 The run-path backend's own transport is still not closed
+### 8.2 An aborted controller's control channel cannot be reclaimed
 
-§7 closes the transport the *teardown* backend created. `_execute_runtime` builds
-a separate backend for the run itself, whose masters stay open until the process
-exits and then for `ControlPersist=600` beyond it. Fixing that needs a disposal
-point above the seam that does not exist — the lifecycle has no "the run is
-over, release the backend" moment, and inventing one is a seam change with its
-own argument to make. Measured cost of leaving it: one `sshd` session per host,
-self-expiring in 10 minutes. Reported, not fixed.
+`release_run` closes the transport it opened, and on the normal path the channel
+count goes to zero — measured, §9.4. An *aborted* run's does not, and nothing
+that runs afterwards can fix it.
+
+Measured in the abort proof: `SIGKILL` on the controller leaves its `ssh -M`
+masters running (they are separate daemonised processes, not children that die
+with it) and one `sshd-session` per host under `ControlPersist=600`. After
+`reclaim_run` the three kinds the roadmap names are zero and those sessions are
+still there.
+
+They cannot be reclaimed because **nothing on a host says which run an ssh
+session belongs to**, and nothing on the controller says which `/tmp/vslab-cm-*`
+socket directory belongs to a dead run — the root is `mkdtemp`-named. Claiming
+them would mean closing another run's control channel.
+
+The candidate fix, recorded rather than taken: give `MultiplexedSshTransport` a
+run-scoped control root, which the 104-byte `ControlPath` budget does allow
+(`/tmp/vslab-cm-` + a 42-character run id + `/m000` is 61 bytes). Then
+`reclaim_run` could close a previous attempt's masters by name. It needs the run
+id plumbed into a transport that is constructed before one is known, and the
+residue it removes is bounded and self-expiring, so it is its own change with its
+own argument. Not taken here.
+
+### 8.5 The fault actuator still suspends and resumes by pidfile
+
+`_signal_run_processes` — `pause_nodehost` and `resume_nodehost` — still reads
+`<run_root>/*/valkey.pid`, the notion of "what is running" that both cleanup
+paths stopped trusting. It was left deliberately: a pidfile *is* current for a
+node that is running, which is the only case pause and resume act on, so the
+defect is narrower there — it also signals dead pids belonging to nodes the fault
+matrix killed, which on a busy host is a collateral-signal risk rather than a
+wrong observation.
+
+Changing it is a fault-lane behaviour change, and this item's runs do not
+exercise the fault lane. It belongs to item 1.5, whose ladder does.
 
 ### 8.4 The Load Lane's remote directory is residue this item cannot reach
 
@@ -496,3 +524,82 @@ reach no Docker run.
    prediction itself: two consecutive real exact-50 with item 1.3's marks and the
    `cleanup` view at 2/2. Any other shape falsifies §7 and is a finding, not a
    re-baselining.
+
+### 9.1 The suite
+
+`./gate suite repository.all` **92/92**, unchanged in count: this item's twelve
+new checks join `tests/unit/test_native_backend.py`, which the catalog already
+registers, so no Test was registered and neither Gate contract number moved. The
+full pytest tree is **788 passed**. `scripts/assert_execution_axis_contract.py`
+passes.
+
+Nothing became executable that was not: `release_run` and `reclaim_run` are
+operations item 1.2 registered. Attaching executable checks to M3's criteria is
+item 1.7's, and no placeholder was added for it.
+
+### 9.2 The mechanism, re-measured against the implementation
+
+Run on the two-host simulated fleet by
+`scripts/native_cleanup_proof.py`, which drives the backend from outside and then
+asks the hosts over its *own* ssh — a cleanup proof that asked the thing being
+proved would be worth nothing.
+
+The residue it places is real, not simulated: `start_nodehost` claims each host
+and installs the pinned bundle; two `valkey-server` processes per host run from
+that bundle under the config the lifecycle generates; a non-Valkey process runs
+with its working directory in the run tree, standing for the on-host sampler; and
+`isolate_nodehost` itself installs the firewall rules. Fifteen items in all —
+6 processes, 4 paths, 3 firewall lines, 2 open channels.
+
+Confirmed on that fixture: the scan finds a live node whose `ps` argv does not
+name the run (`valkey-server 0.0.0.0:31000 [cluster]`), finds it again after a
+restart under a new pid, and does not claim a second run's node.
+
+### 9.3 What the report says, and why the two numbers differ
+
+```
+nodehost-az-a-00  terminate    PASS  {"pid_count": 3, "state_pid_count": 2}
+nodehost-az-a-00  verify_exit  PASS  {"alive_pid_count": 0, "killed_pid_count": 0}
+nodehost-az-a-00  remove       PASS  {"jump_count": 2, "chain_count": 1}   # rules
+nodehost-az-a-00  remove       PASS  {}                                    # run state
+nodehost-az-a-00  scan         PASS  {"found": 0}
+nodehost-az-b-01  terminate    PASS  {"pid_count": 3, "state_pid_count": 2}
+…
+resources_remaining: []   errors: []
+```
+
+`state_pid_count: 2` against `pid_count: 3` is §1.3 and §2.4 visible in the
+artifact: state named two pids, neither of which teardown used, and the host had
+three processes of this run — the two nodes and the sampler stand-in. The
+firewall rows differ between the hosts because only one was isolated, which is
+what a rule-level check reporting rather than asserting looks like.
+
+### 9.4 Zero residue on a passing teardown
+
+| | processes | run paths | firewall lines | open channels |
+|---|---|---|---|---|
+| residue placed | 6 | 4 | 3 | 2 |
+| after `release_run` | 0 | 0 | 0 | 0 |
+
+**Managed residue 13 → 0**, `resources_remaining` empty, `errors` empty.
+
+### 9.5 The abort proof
+
+The controller was `SIGKILL`ed while holding the full residue set — after
+`isolate_nodehost` installed rules and before anything removed them — and
+`reclaim_run` then ran in a fresh process.
+
+| | processes | run paths | firewall lines | open channels |
+|---|---|---|---|---|
+| after the abort | 6 | 4 | 3 | 2 |
+| after `reclaim_run` | 0 | 0 | 0 | 2 |
+
+**Managed residue 13 → 0.** The two channels are §8.2, reported and not part of
+the verdict: they are the killed controller's own masters, they carry no
+run-scoped mark on either end, and they expire on `ControlPersist=600`.
+
+Two properties of the fixture are worth stating because they are what make it a
+proof rather than a demonstration. The stranded set is checked *before* reclaim
+and the harness fails if it is empty — an abort that stranded nothing would prove
+nothing. And `SIGKILL` rather than `SIGINT`: an interrupt runs Python's
+finalizers and could be argued to have been given a chance to clean up.
