@@ -973,6 +973,25 @@ def test_release_run_removes_the_firewall_state_an_abort_would_strand() -> None:
     assert transport.ran("vslab-run=run-1")
 
 
+def test_release_run_closes_the_control_channel_it_opened() -> None:
+    """`HostTransport.close()` existed from item 1.2 and nothing ever called it.
+
+    Measured: a process that exits without it leaves one `sshd` session alive on
+    every host. `release_run` is the terminal operation, so it is where a
+    transport this backend opened for itself is given back.
+    """
+    own = NativeMultiEcsBackend()
+    own._transport = FakeTransport()
+    own._owns_transport = True
+    own.release_run(_state())
+    assert own._transport is None
+
+    # One it was handed belongs to whoever handed it over, who may still want it.
+    injected = FakeTransport()
+    NativeMultiEcsBackend(transport=injected).release_run(_state())
+    assert injected.closed is False
+
+
 def test_release_run_reports_an_unreachable_nodehost_instead_of_raising() -> None:
     """A resource that would not release is a row; an exception erases the report."""
     transport = FakeTransport()

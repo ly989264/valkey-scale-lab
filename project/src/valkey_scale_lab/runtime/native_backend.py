@@ -327,6 +327,10 @@ class NativeMultiEcsBackend:
         inventory_path: str | Path | None = None,
     ) -> None:
         self._transport = transport
+        # A transport handed in belongs to whoever handed it in; one this
+        # backend opens for itself is this backend's to close. See
+        # `_release_transport`.
+        self._owns_transport = transport is None
         self._bundle_dir = Path(bundle_dir) if bundle_dir is not None else None
         self._inventory_path = Path(inventory_path) if inventory_path is not None else None
         self._inventory: HostInventory | None = None
@@ -343,7 +347,28 @@ class NativeMultiEcsBackend:
     def transport(self) -> HostTransport:
         if self._transport is None:
             self._transport = MultiplexedSshTransport()
+            self._owns_transport = True
         return self._transport
+
+    def _release_transport(self) -> None:
+        """Close the control channel, if this backend is the one that opened it.
+
+        `HostTransport.close()` existed from item 1.2 and nothing in the product
+        called it. Measured during roadmap item 1.4: a process that uses the
+        transport and exits without it leaves one `sshd` session alive on every
+        host - the transport's own docstring already calls that "a resource the
+        run owns and did not release" - and an orphaned control-socket directory
+        on the controller.
+
+        Only a transport this backend created. One it was handed belongs to
+        whoever handed it over, who may still be using it; `cli gate cleanup` and
+        the Gate's teardown both build this backend with none, which is the case
+        that matters.
+        """
+        if self._owns_transport and self._transport is not None:
+            self._transport.close()
+            self._transport = None
+            self._owns_transport = False
 
     def inventory(self) -> HostInventory:
         if self._inventory is None:
@@ -1368,6 +1393,9 @@ class NativeMultiEcsBackend:
             resources_remaining.extend(remaining)
 
         timing.update({key: round(value, 6) for key, value in elapsed.items()})
+        # Last, because everything above needs the channel and nothing after
+        # this operation does: `release_run` is the terminal one.
+        self._release_transport()
         return RunTeardown(
             actions=actions,
             resources_remaining=resources_remaining,
