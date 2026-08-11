@@ -929,9 +929,12 @@ reaches whoever runs the tool, and slice map §14.5 carries the measurement.
 Carried forward untouched: the aborted controller's ssh masters (1.4 map §8.2),
 the resource-to-timeline monotonic correlation (1.3 map §10.1), a failing run
 collecting no journals and writing no lifecycle timeline (1.3 map §10.2),
-`_check_ports_free`'s loopback bind (M3-B's), the absent fault-path ownership
+the absent fault-path ownership
 check (accepted 2026-08-10), the missing `signalled` count in a run's own
 evidence, and `SamplerSpec`'s duplication of `_AgentSamplerSpec`.
+`_check_ports_free`'s loopback bind is **off this list**: resolved at HEAD, the
+native backend declares `publishes_node_ports_on_controller=False` and the bind
+never runs there - see the M3-B handover's item 5.
 
 **Fleet commands, compiled at this HEAD.**
 
@@ -944,6 +947,135 @@ evidence, and `SamplerSpec`'s duplication of `_AgentSamplerSpec`.
 Eight hosts need loopback aliases `127.0.0.2`-`127.0.0.9`, which do not survive a
 reboot; the harness checks and refuses with the command. Bringing eight hosts up
 with 200 published ports each took 41.4 s, a per-fleet cost paid once.
+
+### What M3-B-1 inherits, verified at this HEAD rather than remembered
+
+M3-A is closed. **M3-B begins only on operator approval and additionally requires
+roadmap item 0.7** - the operator-confirmed real fleet. Every fact below was
+compiled, resolved or run at `94f08f33`; two of the seven M3-A-5 was handed were
+wrong, so apply the same rule to these.
+
+**The scope, from roadmap revision 5.1 rather than from memory.** *Item 1.6* -
+the same ladder on the operator's fleet: re-measure transport per-operation
+overhead (this closes the transport decision point for real, because simulated
+numbers are lower bounds), record real clock offsets, verify auth/kernel/
+conntrack reality, then native exact-50 ×2 and exact-200 through the Gate;
+repeat the ownership/reclaim proof on real hosts - abort a run mid-flight,
+reclaim, zero managed process/state/network-rule residue; **freeze the native
+baselines from *these* runs, not the simulated ones**; record formation-dwell
+statistics and re-argue the 240s window if they move. *Item 1.7* - register
+`real.ecs.*` gate tests in json-result form like their local siblings, attach
+executable checks to all six M3 criteria (the milestone's own no-placeholder
+rule), and `./gate milestone m3` green on the merged default branch.
+
+1. **The fleet the product will actually demand, compiled at HEAD - and it
+   disagrees with roadmap item 0.7.** 0.7 sizes the fleet as "200 processes over
+   a few small-spec instances is 50-70 per host". The product will not do that at
+   its shipped defaults. A native run places **exactly one nodehost per host and
+   refuses otherwise**, `nodehosts_per_az: 2` over two AZs is a floor of four,
+   and `max_logical_nodes_per_nodehost` is 25. Compiled against `native_200.yaml`:
+
+   | `max_logical_nodes_per_nodehost` | nodehosts | **hosts** | processes per host |
+   |---|---|---|---|
+   | **25 (shipped default)** | 8 | **8** | 25 |
+   | 34 | 6 | 6 | 33-34 |
+   | 50 | 4 | **4** | 50 |
+   | 100 | 4 | 4 | 50 - the AZ floor binds, not the density |
+
+   So **exact-200 needs eight hosts as configured today, and four is the floor at
+   any density**; exact-50 needs **four**, not the roadmap's "≥2". Reaching 50 per
+   host means raising the density knob, and that is not free: it moves
+   `nodehost_density_plan`, every node's `nodehost_id`, the fault matrix's targets
+   and the cleanup row count, so the real baselines 1.6 freezes would differ
+   *structurally* from every simulated run they are meant to be comparable with.
+   **This is an operator decision before provisioning, and by the roadmap's own
+   deviation rule it should be reported rather than improvised around.**
+
+2. **What a real manifest must contain**, from `runtime/host_inventory.py`, the
+   only module that knows the field names. Per host: `host_id`,
+   `availability_zone`, `data_address`, `control_endpoint` (`address`, `port`,
+   `user`, `private_key_path`, `known_hosts_path`) and `client_endpoint`
+   (`address` plus `port_range.first`/`.last`). On a real fleet `data_address` and
+   `client_endpoint.address` usually **coincide** and the manifest carries the
+   same address twice - the field set does not change, which is the property that
+   made the harness worth having. The manifest must carry no container, image or
+   network vocabulary and **no flag saying the fleet is real or simulated**;
+   `host_inventory.py` must never grow such a branch, because a backend that could
+   tell would make every simulated result a fact about the harness.
+
+3. **How a run is pointed at a fleet, and what does not exist.**
+   `runtime.host_inventory_path` and `runtime.native_bundle_dir`, both required
+   for `provider: ecs` by `config/validation.py`. All three `native_*.yaml`
+   hardcode `artifacts/host-fleets/sim-l5/inventory.json`, and **there is no CLI
+   override** - `--param config=` is the only lever. M3-B therefore needs its own
+   configurations, and they are what 1.7's `real.ecs.*` entries will name.
+
+4. **The two proof harnesses are fleet-id-shaped, not manifest-path-shaped.**
+   `native_cleanup_proof.py` and `native_bringup_smoke.py` both resolve
+   `artifacts/host-fleets/<fleet-id>/inventory.json`. Dropping the real manifest
+   at that path under its own fleet id needs no code change and is the smaller
+   move; giving them an `--inventory` argument is the other. Not pre-decided.
+
+5. **`_check_ports_free`'s loopback bind is already handled and is no longer
+   M3-B's.** Resolved at HEAD: `native_multi_ecs` carries
+   `publishes_node_ports_on_controller=False` against `docker_process` and
+   `docker_container`'s `True`, and `_execute_runtime` builds an **empty** port
+   list when it is false, so the `127.0.0.1` bind never runs natively. The check
+   that matters on a fleet is the placement's - that a host's declared client
+   range covers what the run asked for - and that already refuses. Note a passing
+   native run cannot prove this either way, since the controller's loopback is
+   free at those ports anyway; the evidence is the registry entry and the guard.
+
+6. **The transport is behind one interface, as the decision point requires.**
+   `HostTransport` is a Protocol at `runtime/host_transport.py:68` and
+   `MultiplexedSshTransport` its only implementation at :114, so switching to an
+   on-host agent replaces one class. The budget to measure against is the rolling
+   restart's own, from the frozen baseline: **71 ms and 61 ms median** for its two
+   backend operations. Simulated numbers, which are lower bounds and must not be
+   quoted as fleet numbers: `docker exec` 66.4 ms against multiplexed ssh 10.8 ms
+   on the M3-A-2 spike, and inside a real 200-node run, 3037 `runtime_command`
+   rows costing **25.7 s across eight hosts** against `docker exec`'s 276.6 s on
+   one, p90 12 ms against 105 ms.
+
+7. **Clock offsets are recorded as a bound, not against a threshold**, which is
+   what should let them survive real skew. `runtime/host_clock.py` keeps the least
+   delayed of several bracketed readings and records `offset_ms`,
+   `uncertainty_ms` (= `round_trip_ms / 2`) and `round_trip_ms`; the validator
+   asks for a bound because a threshold that passed on ssh would fail on Docker -
+   measured, the same estimator over `docker exec` is six times less precise.
+   Simulated hosts share a kernel, so true offset is ≈ 0 and the measurements
+   were +4.7 to +7.9 ms inside a 15-21 ms bound. **Real skew is 1.6's first real
+   test of this**, and it is the one place a bound rather than a threshold is
+   expected to pay for itself.
+
+8. **The dwell constants, read at HEAD**: `CONVERGENCE_NO_PROGRESS_SECONDS =
+   240.0` and `CONVERGENCE_TIMEOUT_SECONDS = 1800.0`, both at
+   `observability/cluster.py:57` and `:61`. The simulated datum 1.6 compares
+   against: native `cluster_form` **60.9 s at 200**, inside the four passing
+   Docker exact-200 runs' 59.4-104.9 s and a quarter of the window.
+
+9. **M3's milestone coverage, measured**: six criteria, and exactly one carries a
+   check - `distributed.inventory-and-placement` → the **suite**
+   `product.orchestrator`, which resolves to one test,
+   `product.orchestrator.local_orchestrator`. The roadmap calls that the stale
+   shim 1.7 supersedes by pointing the criterion at the real inventory contract
+   item 1.2 built. **No `real.ecs.*` id exists in the catalog.** M4 is 1 of 7,
+   with four registered tests on `scale.definition-and-preflight`.
+
+10. **The counts registering a Test moves**: `repository.all` **92**, catalog
+    **96**, M1 plan **91** (the last two pinned by
+    `verification/tests/test_contracts.py:79` and `:344`, read rather than run -
+    **do not run `./gate milestone m1` to check a count**, it executes the real
+    runs), and the pytest tree **802**. 1.7 registers several tests, so it moves
+    all of them.
+
+11. **What is simulated-only and must be re-measured, not carried**: every
+    transport number above; clock offsets, which are ≈ 0 here by construction;
+    transport-failure classification across a VPC, which the roadmap keeps open
+    precisely because shared-kernel hosts cannot produce the ambiguity; and
+    auth/kernel/conntrack reality. Also the health-gate escalation of slice map
+    §16 - it is a native-runtime behaviour at exact-30 and exact-50 that vanishes
+    at exact-200, and nobody knows what inverts it.
 
 ### What is left before M3, and what is M3 itself
 
