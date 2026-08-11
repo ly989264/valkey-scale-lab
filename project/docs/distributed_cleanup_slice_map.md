@@ -344,6 +344,21 @@ jumps target. Anything returned is a `resources_remaining` row of type
 `nodehost_firewall_rule`. It is the same shape as the process and state rows —
 ask the host, report what it says.
 
+Two ways the same defect can reappear one level down, both closed here because
+each would produce a *false clean* rather than a wrong number:
+
+- **A host that cannot be asked is not a host with nothing on it.** If `iptables`
+  is absent or not permitted, a scan that greps its output reports no rules. The
+  scan tests first and emits `unscannable` instead, which makes the scan row
+  `FAIL`.
+- **A host that stops answering must still produce a report.** The seam already
+  says a resource that would not release is an action row, "because the report is
+  what the cleanup criterion is measured on and an exception erases it". A
+  transport failure part-way through one host's teardown is now that host's
+  `nodehost_unreachable` row and an error, not a raise out of `release_run` — and
+  a run whose host went away is exactly the run whose residue somebody needs to
+  read about.
+
 ---
 
 ## 5. One notion of "what is running", two callers
@@ -455,7 +470,7 @@ id plumbed into a transport that is constructed before one is known, and the
 residue it removes is bounded and self-expiring, so it is its own change with its
 own argument. Not taken here.
 
-### 8.5 The fault actuator still suspends and resumes by pidfile
+### 8.3 The fault actuator still suspends and resumes by pidfile
 
 `_signal_run_processes` — `pause_nodehost` and `resume_nodehost` — still reads
 `<run_root>/*/valkey.pid`, the notion of "what is running" that both cleanup
@@ -490,7 +505,7 @@ Two fixes exist and each is refused here for its own reason:
 It belongs to item 1.5, which is where a native full-flow run — and therefore the
 first native Load Lane — first exists.
 
-### 8.3 No fault path checks ownership
+### 8.5 No fault path checks ownership
 
 Unchanged and deliberately untouched. The operator accepted this loss on
 2026-08-10 and decided nothing in M1 changes for it. Adding the run-id comment to
@@ -527,11 +542,16 @@ reach no Docker run.
 
 ### 9.1 The suite
 
-`./gate suite repository.all` **92/92**, unchanged in count: this item's twelve
-new checks join `tests/unit/test_native_backend.py`, which the catalog already
-registers, so no Test was registered and neither Gate contract number moved. The
-full pytest tree is **788 passed**. `scripts/assert_execution_axis_contract.py`
-passes.
+`./gate suite repository.all` **92/92**, unchanged in count. This item adds ten
+checks and rewrites four to the behaviour they now pin — 51 to 61 in
+`tests/unit/test_native_backend.py`, a module the catalog already registers — so
+no Test was registered and neither Gate contract number moved.
+`scripts/assert_execution_axis_contract.py` passes.
+
+The four rewritten ones are worth naming, because each pinned something this item
+deliberately changed: that teardown signals `state.json`'s pids, that it skips
+when state carries none, the old residue-row shape, and the resource agent's old
+root.
 
 Nothing became executable that was not: `release_run` and `reclaim_run` are
 operations item 1.2 registered. Attaching executable checks to M3's criteria is
@@ -603,3 +623,72 @@ proof rather than a demonstration. The stranded set is checked *before* reclaim
 and the harness fails if it is empty — an abort that stranded nothing would prove
 nothing. And `SIGKILL` rather than `SIGINT`: an interrupt runs Python's
 finalizers and could be argued to have been given a chance to clean up.
+
+### 9.6 The escalation, which a passing teardown never exercises — and the
+defect it found
+
+`verify_exit` waits and then `KILL`s, and on every teardown where `TERM` works it
+reports `alive_pid_count: 0` and proves nothing about itself. The harness's
+`stubborn` mode puts one process that traps `TERM` in the run tree and requires
+the escalation to fire.
+
+**It failed the first time it was run, on a defect in this item's own
+implementation.** The escalation fired — `alive=2 killed=2` — and the residue
+scan then reported **one surviving process**, `/usr/bin/sleep`. Killing a process
+is not the same as emptying the tree: the stubborn fixture's shell had forked a
+child, and a child is *reparented* rather than killed with its parent, so it
+kept running with its working directory inside the run root.
+
+That is not an artefact of the fixture. **`valkey-server` has exactly this shape
+whenever a background save is in flight**, and the generated config sets
+`appendonly no` with no `save` directive, so the default save policy is active
+and a fork is possible at any moment — the same configuration fact that produced
+`313cacc9`. A single `KILL` pass at teardown could leave a save child holding the
+tree.
+
+So `verify_exit` kills in bounded rounds, rechecking between them
+(`RELEASE_KILL_ROUNDS = 3`); bounded rather than "until empty", because a tree
+that will not empty is a finding for the residue scan to report, not a loop for
+teardown to sit in. The row now carries `outlasted_terminate_count` beside
+`alive_pid_count`, because a clean teardown and one that escalated and succeeded
+are different events and only the first is a `PASS`.
+
+Measured after the fix: **three consecutive `stubborn` runs at zero residue**,
+against one survivor before it, with the row reading
+`SKIPPED_WITH_REASON alive=0 killed=2` on the affected host and `PASS` on the
+other.
+
+This is the clearest thing the session can say about why the proof was built to
+place real residue rather than assert over a fake: no hermetic test would have
+produced a fork.
+
+### 9.7 The two real exact-50, and the prediction §7 made
+
+§7 predicted **no delta at all**, because every change is inside
+`native_backend.py` and a Docker run only imports that module for its
+registration. Measured rather than asserted:
+
+| | run 1 | run 2 |
+|---|---|---|
+| result | **PASS 866.18s** | **PASS 842.07s** |
+| `lifecycle_timeline` | 12/12 | 12/12 |
+| `runtime_start` | **7/7** | **7/7** |
+| `cluster_form` | **5/5** | **5/5** |
+| `cleanup` | **2/2** — the prediction | **2/2** |
+| `management_matrix` | **6/8** | **6/8** |
+| `fault_matrix` | **5/6** | **5/6** |
+| inherited delta 1 | 1592 → 1606 (**+14**), `cluster_migrate_keys` **4 → 18** | identical |
+| inherited delta 2 | **three** row kinds changed, **fourteen** unchanged | identical |
+| a third delta | none | none |
+| fault lane | **9 / 12 / 15** | **9 / 12 / 15** |
+| primary-kill RTO | **48.31s** | **49.79s** |
+| residue | `resources_remaining: []`, `cleanup_errors: []` | same |
+| `ERROR` | in no artifact | in no artifact |
+
+Both RTOs sit inside the 45–50s exact-50 band. The diff was calibrated
+baseline-to-baseline first, and every view was identical there — 7/7, 5/5, 2/2,
+8/8, 6/6 — so the 6/8 and 5/6 above are the two inherited deltas and nothing
+else.
+
+The `cleanup` view holding at 2/2 is the load-bearing number: it is the view this
+item would have moved had any of it reached the Docker path.

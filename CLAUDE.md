@@ -585,7 +585,7 @@ claiming them would mean closing another run's channel. Bounded by
 own change.
 
 **Deliberately not done, and named so a later session does not adopt them:** the
-fault actuator still suspends and resumes by pidfile (slice map §8.5 - narrower
+fault actuator still suspends and resumes by pidfile (slice map §8.3 - narrower
 there, because a pidfile *is* current for a node that is running, and changing it
 is a fault-lane change belonging to the item whose ladder exercises the fault
 lane); and no fault path checks ownership, which stays the accepted absence below

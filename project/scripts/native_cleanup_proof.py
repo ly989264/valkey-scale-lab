@@ -23,6 +23,9 @@ Three subcommands:
   abort     place the residue in a child process, SIGKILL it, then `reclaim_run`
             from this one, then check the hosts. This is the acceptance's "abort
             a simulated-host run mid-flight".
+  stubborn  place the residue plus one process that traps TERM, then `release_run`,
+            so the wait-and-KILL branch a passing teardown never reaches is
+            exercised.
   stage     place the residue and wait to be killed. `abort` runs this.
 
 This is not item 1.5's bring-up smoke: no cluster is formed, no scenario runs, no
@@ -346,6 +349,46 @@ def cmd_abort(args: argparse.Namespace) -> int:
     return 0 if _residue_total(after) == 0 else 1
 
 
+def cmd_stubborn(args: argparse.Namespace) -> int:
+    """Prove the escalation, which a run where TERM works never exercises.
+
+    `verify_exit` waits and then KILLs, and that branch only fires when something
+    refuses to go - so on every passing teardown it reports `alive_pid_count: 0`
+    and proves nothing about itself. Here one process traps TERM and ignores it.
+    """
+    nodehosts, nodes = _plan(args.fleet_id)
+    backend = _backend(args.fleet_id)
+    place(backend, nodehosts, nodes)
+    endpoint = nodehosts[0]["host_control_endpoint"]
+    stubborn_dir = f"{run_state_root(RUN_ID)}/node-000"
+    backend._run(
+        endpoint,
+        [
+            "sh",
+            "-c",
+            f"cd {stubborn_dir} && nohup sh -c \"trap '' TERM; while :; do sleep 5; done\" "
+            ">/dev/null 2>&1 & sleep 0.3; echo ok",
+        ],
+        timeout=60,
+    )
+    started = time.monotonic()
+    teardown = backend.release_run(_state(nodehosts, nodes))
+    waited = time.monotonic() - started
+
+    verify = [a for a in teardown.actions if a["action"] == "verify_exit"]
+    print(f"\nteardown took {waited:.1f}s (the wait is on-host and bounded)")
+    for action in verify:
+        print(f"  {action['id']:<24} {action['status']:<22} "
+              f"alive={action['alive_pid_count']} killed={action['killed_pid_count']} "
+              f"{[p['exe'] for p in action['alive_processes']]}")
+    after = observe(args.fleet_id, nodehosts)
+    _report("after release_run", after)
+    escalated = any(a["killed_pid_count"] > 0 for a in verify)
+    if not escalated:
+        print("!! nothing had to be killed, so the escalation was not exercised")
+    return 0 if escalated and _residue_total(after) == 0 else 1
+
+
 def cmd_reclaim(args: argparse.Namespace) -> int:
     backend = _backend(args.fleet_id)
     backend.reclaim_run(capability_id="local_full_flow", run_id=RUN_ID)
@@ -360,12 +403,15 @@ def cmd_reclaim(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["release", "abort", "stage", "reclaim"])
+    parser.add_argument(
+        "command", choices=["release", "abort", "stubborn", "stage", "reclaim"]
+    )
     parser.add_argument("--fleet-id", default="sim-a")
     args = parser.parse_args()
     return {
         "release": cmd_release,
         "abort": cmd_abort,
+        "stubborn": cmd_stubborn,
         "stage": cmd_stage,
         "reclaim": cmd_reclaim,
     }[args.command](args)

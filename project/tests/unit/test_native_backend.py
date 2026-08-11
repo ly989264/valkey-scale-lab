@@ -913,14 +913,50 @@ def test_release_run_continues_a_suspended_process_before_terminating_it() -> No
 def test_release_run_kills_what_would_not_terminate_and_reports_it() -> None:
     row = "515\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n"
     transport = FakeTransport()
+    # The on-host wait reports one survivor; the kill pass reports killing it;
+    # the recheck afterwards finds the tree empty.
     transport.respond("attempt=0; while", 0, row)
     transport.respond('kill -KILL "$pid"', 0, row)
     backend = NativeMultiEcsBackend(transport=transport)
     verify = backend.release_run(_state()).actions[1]
     assert verify["action"] == "verify_exit"
     assert verify["status"] == "SKIPPED_WITH_REASON"
-    assert verify["alive_pid_count"] == 1
+    assert verify["alive_pid_count"] == 0
     assert verify["killed_pid_count"] == 1
+
+
+def test_verify_exit_kills_more_than_once_because_a_fork_outlives_its_parent() -> None:
+    """Killing a process is not the same as emptying the tree.
+
+    A process that has forked leaves a child holding the working directory, and
+    the child is reparented rather than killed with it. Measured on a simulated
+    host, and `valkey-server` has this shape whenever a background save is in
+    flight - which the generated config's default save policy allows at any
+    moment. So the kill escalates in bounded rounds, rechecking between them.
+    """
+    parent = "515\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n"
+    child = "902\t/tmp/valkey-scale-lab/run-1/node-000\t/opt/bin/valkey-server\n"
+
+    class Forking(FakeTransport):
+        rounds = 0
+
+        def run(self, control_endpoint, argv, *, timeout):  # noqa: ANN001
+            joined = " ".join(str(item) for item in argv)
+            if "attempt=0; while" in joined:
+                self.default = (0, parent, "")
+            elif 'kill -KILL "$pid"' in joined:
+                type(self).rounds += 1
+                self.default = (0, parent if self.rounds == 1 else child, "")
+            elif 'printf "%s\\t%s\\t%s\\n"' in joined:
+                # The recheck: the forked child is still there after round one.
+                self.default = (0, child if self.rounds == 1 else "", "")
+            else:
+                self.default = (0, "", "")
+            return super().run(control_endpoint, argv, timeout=timeout)
+
+    verify = NativeMultiEcsBackend(transport=Forking()).release_run(_state()).actions[1]
+    assert verify["killed_pid_count"] == 2
+    assert verify["alive_pid_count"] == 0
 
 
 def test_release_run_reports_residue_rather_than_asserting_it_is_gone() -> None:

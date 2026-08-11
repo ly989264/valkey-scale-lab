@@ -1302,6 +1302,11 @@ class NativeMultiEcsBackend:
     #: path.
     RELEASE_EXIT_ATTEMPTS = 60
 
+    #: How many kill-then-recheck rounds `verify_exit` makes. Bounded rather than
+    #: "until empty": a tree that will not empty is a finding for the residue
+    #: scan to report, not a loop for teardown to sit in.
+    RELEASE_KILL_ROUNDS = 3
+
     def release_run(self, state: Mapping[str, Any]) -> RunTeardown:
         """Release everything this run owns on every host, and report the residue.
 
@@ -1496,25 +1501,47 @@ class NativeMultiEcsBackend:
             timeout=60 + self.RELEASE_EXIT_ATTEMPTS,
         )
         survivors = _parse_owned_processes(waited.stdout)
+        # What TERM did not settle, kept because the status below is about
+        # whether teardown had to escalate at all - the survivor list is emptied
+        # by the rounds that follow and would hide it.
+        outlasted_terminate = list(survivors)
         killed: list[dict[str, Any]] = []
-        if survivors:
+        # More than one pass, because killing a process is not the same as
+        # emptying the tree: a process that has forked leaves a child holding the
+        # working directory, and the child is reparented rather than killed with
+        # it. Measured on a simulated host - one KILL pass over a shell and its
+        # child left the child running - and `valkey-server` has exactly this
+        # shape whenever a background save is in flight, which the generated
+        # config's default save policy makes possible at any moment.
+        for _ in range(self.RELEASE_KILL_ROUNDS):
+            if not survivors:
+                break
             forced = self._run(
                 endpoint,
                 ["sh", "-c", _signal_owned_processes(run_root, "KILL") + "exit 0"],
                 timeout=120,
             )
-            killed = _parse_owned_processes(forced.stdout)
+            killed.extend(_parse_owned_processes(forced.stdout))
+            remaining = self._run(
+                endpoint, ["sh", "-c", _list_owned_processes(run_root)], timeout=60
+            )
+            survivors = _parse_owned_processes(remaining.stdout)
         return {
             "type": "nodehost_valkey_processes",
             "id": nodehost_id,
             "container_name": str(nodehost.get("container_name", "")),
             "action": "verify_exit",
-            "status": "PASS" if waited.returncode == 0 and not survivors else "SKIPPED_WITH_REASON",
+            "status": "PASS" if not outlasted_terminate else "SKIPPED_WITH_REASON",
             "reason": (
                 ""
-                if waited.returncode == 0 and not survivors
-                else "Processes of this run were still running after termination; they were killed and the residual scan determines the outcome."
+                if not outlasted_terminate
+                else "Processes of this run outlasted termination; they were killed and the residual scan determines the outcome."
             ),
+            # What TERM left behind, and what is left after the kill rounds.
+            # Both, because a clean teardown and one that had to escalate and
+            # succeeded are different events and only the first is a PASS.
+            "outlasted_terminate_count": len(outlasted_terminate),
+            "outlasted_terminate": outlasted_terminate,
             "alive_pid_count": len(survivors),
             "alive_processes": survivors,
             "killed_pid_count": len(killed),
