@@ -245,8 +245,14 @@ class _FakeTransport:
         self.gets.append((remote_path, str(local_path)))
         if self.fail_get:
             raise TransportError("scp: connection closed")
-        Path(local_path).parent.mkdir(parents=True, exist_ok=True)
-        Path(local_path).write_text("node started\n", encoding="utf-8")
+        target = Path(local_path)
+        # A journal pull names a file; a load-lane pull names a directory the
+        # caller has already made. Both are real transport shapes, so the fake
+        # answers both rather than only the one it was written for.
+        if target.is_dir():
+            target = target / Path(remote_path.rstrip("/.")).name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("node started\n", encoding="utf-8")
 
     def close(self) -> None:
         return None
@@ -329,6 +335,41 @@ def test_a_native_load_lane_transfer_failure_is_error_too(tmp_path: Path) -> Non
 
     with pytest.raises(CollectionError, match="load lane evidence"):
         lane.collect_evidence("/tmp/vslab-load-lane/formal", tmp_path / "load_lane")
+
+    # And it does not try to remove a directory whose contents it failed to
+    # collect: the evidence is still over there.
+    assert not any("rm -rf" in " ".join(argv) for _, argv in transport.commands)
+
+
+def test_a_native_load_lane_removes_the_directory_it_collected(tmp_path: Path) -> None:
+    """The one host resource a native run was leaving behind.
+
+    `LoadLaneHost`'s protocol makes `remote_dir` the lane's own choice, so no
+    cleanup path above it could remove the directory without duplicating the
+    lane's constant - which is why `distributed_cleanup_slice_map.md` §8.4 left
+    it open for roadmap item 1.5. Roadmap item 1.5's bring-up smoke then observed
+    it on a live host: managed residue zero, and one `/tmp/vslab-load-lane/`
+    directory. The lane made it; the lane disposes of it, after its contents are
+    safely here.
+    """
+    transport = _FakeTransport()
+    lane = native_backend_module.NativeLoadLaneHost(
+        backend=_native(transport), control_endpoint=CONTROL, install_path="/opt/bin"
+    )
+
+    lane.collect_evidence("/tmp/vslab-load-lane/run-stability/formal", tmp_path / "load_lane")
+
+    assert transport.gets == [
+        ("/tmp/vslab-load-lane/run-stability/formal/.", str(tmp_path / "load_lane"))
+    ]
+    assert [argv for _, argv in transport.commands] == [
+        [
+            "sh",
+            "-c",
+            "rm -rf /tmp/vslab-load-lane/run-stability/formal; "
+            "rmdir /tmp/vslab-load-lane/run-stability 2>/dev/null || true",
+        ]
+    ]
 
 
 # --- what the lifecycle assembles -------------------------------------------

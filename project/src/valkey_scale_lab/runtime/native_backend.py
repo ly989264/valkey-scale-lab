@@ -1804,6 +1804,32 @@ class NativeLoadLaneHost:
             self._backend.transport.get(
                 self._endpoint, f"{remote_dir}/.", local_dir, timeout=300
             )
+            # The lane made this directory and the lane disposes of it, once its
+            # contents are safely here. It is the one host resource a native run
+            # was leaving behind: `LoadLaneHost`'s protocol says `remote_dir` is
+            # the lane's choice, so no cleanup path above could remove it
+            # without duplicating the lane's own constant. Its Docker sibling
+            # needs nothing here - the directory is inside a container that
+            # `release_run` removes - which is why this is the native half of
+            # one contract rather than an asymmetry. An *aborted* run still
+            # leaves it, now under a run-scoped path that says whose it is.
+            # `rmdir` on the run-scoped parent, not `rm -rf`: the lane runs
+            # under two labels and each removes only its own leaf, so whichever
+            # finishes last is the one that finds the parent empty. Measured on
+            # a host - removing the leaf alone left `/tmp/vslab-load-lane/
+            # <run>/` behind, which is a smaller residue than before and still
+            # a residue. Failure is ignored on purpose: a non-empty parent means
+            # another label is still running, which is not this call's business.
+            parent = remote_dir.rstrip("/").rsplit("/", 1)[0]
+            self._backend._run(
+                self._endpoint,
+                [
+                    "sh",
+                    "-c",
+                    f"rm -rf {shlex.quote(remote_dir)}; rmdir {shlex.quote(parent)} 2>/dev/null || true",
+                ],
+                timeout=60,
+            )
         except TransportError as error:
             # §12.1 puts 必要证据无法写入 on the collector's side of the line, and
             # the Docker sibling has always raised this class here. Letting a

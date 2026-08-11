@@ -33,6 +33,26 @@ class LoadLanePaths:
     remote_dir: str | None = None
 
 
+def _path_scope(run_scope: str) -> str:
+    """`run_scope` as one path component.
+
+    The lane's remote directory used to be `<root>/<label>`, which names no run:
+    two runs share a host and nothing on it said which directory belonged to
+    which, so item 1.4's residue scan could not report it - a scan must not
+    claim what it cannot attribute. It is the one residue a native run leaves
+    (`distributed_cleanup_slice_map.md` §8.4), and it was observed on a host for
+    the first time by roadmap item 1.5's bring-up smoke.
+
+    `run_scope` is `<run_id>:stability` or `<run_id>:failover`, so it already
+    identifies the run *and* the lane within it. The colon is legal in a path
+    and awkward in every tool that reads one, so it becomes a dash.
+    """
+    return "".join(
+        character if character.isalnum() or character in "-_." else "-"
+        for character in str(run_scope)
+    ) or "unscoped"
+
+
 class MemtierProcess:
     def __init__(
         self,
@@ -122,7 +142,9 @@ class MemtierLoadLane:
             json=self.artifacts_dir / f"memtier_{label}.json",
             hdr_prefix=self.artifacts_dir / f"memtier_{label}_latency",
             remote_dir=(
-                None if self.remote_host is None else f"{self.remote_dir_root}/{label}"
+                None
+                if self.remote_host is None
+                else f"{self.remote_dir_root}/{_path_scope(self.run_scope)}/{label}"
             ),
         )
 

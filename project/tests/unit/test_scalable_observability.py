@@ -404,12 +404,16 @@ def test_load_lane_runs_on_the_runtime_host_it_was_given(tmp_path: Path) -> None
 
     # The cluster advertises the runtime's own addresses, so memtier has to run
     # where those resolve rather than here - and where that is, is the adapter's.
-    assert command[:2] == ["on-host", "/tmp/vslab-load-lane/formal"]
+    # Run-scoped: the lane's remote directory is the one residue a native run
+    # leaves, and a directory named only "formal" says nothing about whose it
+    # is. `run_scope` already names the run and the lane; the colon becomes a
+    # dash so the path stays easy for every tool that reads one.
+    assert command[:2] == ["on-host", "/tmp/vslab-load-lane/run-stability/formal"]
     assert "memtier_benchmark" in command
     assert "--cluster-mode" in command
 
     # Output goes to a path on that host and is collected back to the local paths.
-    assert paths.remote_dir == "/tmp/vslab-load-lane/formal"
+    assert paths.remote_dir == "/tmp/vslab-load-lane/run-stability/formal"
     assert f"--json-out-file={paths.remote_dir}/{paths.json.name}" in command
     assert f"--hdr-file-prefix={paths.remote_dir}/{paths.hdr_prefix.name}" in command
     assert not any(str(tmp_path) in part for part in command)
@@ -447,7 +451,7 @@ def test_load_lane_collects_host_output_back_to_the_local_paths(tmp_path: Path) 
     )
     lane._collect_outputs(lane.paths("formal"))
 
-    assert host.collected == [("/tmp/vslab-load-lane/formal", tmp_path.as_posix())]
+    assert host.collected == [("/tmp/vslab-load-lane/run-stability/formal", tmp_path.as_posix())]
 
 
 def test_load_lane_reports_a_failed_output_collection(tmp_path: Path) -> None:
