@@ -296,6 +296,16 @@ explicit approval.
 Item 1.2 is the one most likely to want splitting once its map exists; that is a
 decision for its own session's report, not for this one.
 
+**Amended 2026-08-11, after M3-A-2 reported.** Item 1.2 did not split: it landed
+whole, at the hard stop above. Its map found one gap in this grain instead, and
+the operator accepted the fix, so **M3-A-5's scope now opens with a native
+bring-up smoke** - two simulated hosts, the backend driven directly with no Gate
+run and no cluster - before the two-host exact-30. The reason is that nothing
+between M3-A-2 and M3-A-5 runs a single native operation against a host through
+the product, so the exact-30 would otherwise be the first, with twenty-three
+unexercised operations in the search space of any failure. Sessions M3-A-3 and
+M3-A-4 are unchanged. See `native_backend_slice_map.md` §11.
+
 ---
 
 ## 6. State at exit

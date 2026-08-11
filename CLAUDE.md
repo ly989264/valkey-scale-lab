@@ -358,11 +358,16 @@ the one gap it found in the roadmap's sequencing.
 
 **What item 1.2 did not prove, and it is the honest boundary:** no argv in this
 backend has run against a host *through the product*. A fake transport proves
-what the backend would run, not that the host answers. See the slice map §11 -
-the recommendation is a **native bring-up smoke** at the front of item 1.5,
-driving the backend directly against two simulated hosts with no Gate run and no
-cluster, so that a first native exact-30 failure does not have twenty-three
-unexercised operations in its search space.
+what the backend would run, not that the host answers.
+
+**Operator decision 2026-08-11: a native bring-up smoke goes at the front of
+item 1.5.** Two simulated hosts, the backend driven directly - claim, install,
+start, stop, isolate, rejoin, release - with no Gate run, no cluster and no
+scenario, so that a first native exact-30 failure does not have twenty-three
+unexercised operations in its search space. It is the ladder's own first rung,
+so it is **not a separate item** and the session grain is unchanged: **M3-A-3 is
+item 1.3, M3-A-4 is item 1.4, M3-A-5 opens with this smoke.** Slice map §11
+names the three argv most worth driving first.
 
 Carried forward untouched and still owned elsewhere: node-log collection (item
 1.3, mechanism not pre-decided), stale-pid teardown (item 1.4 - and note the

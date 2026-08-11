@@ -668,6 +668,16 @@ simulated hosts, and drive the backend directly - claim a host, install the
 bundle, start and stop one process, isolate and rejoin, release the run - without
 a Gate run, a cluster, or a scenario. It is an afternoon, it needs nothing item
 1.3 or 1.4 owns, and it converts the twenty-three argv from "hermetically
-correct" to "observed working". Whether it is the front of item 1.5 or a small
-item 1.2b is the operator's call; the map's recommendation is the front of 1.5,
-because it is the ladder's own first rung and belongs with the runs.
+correct" to "observed working".
+
+**Accepted by the operator on 2026-08-11, at the front of item 1.5.** It is the
+ladder's own first rung and belongs with the runs, so it is not a separate item
+and does not change the session grain: M3-A-3 is item 1.3, M3-A-4 is item 1.4,
+and M3-A-5 opens with this smoke before the two-host exact-30.
+
+One caution for whoever writes it, from this item's own experience: the argv most
+likely to be wrong on a host are the ones a fake cannot shape-check - the
+iptables chain (which locks the actuator out of a host if the control-port
+exception is wrong), the `PATH`-prefixed `start_all.sh`, and the digest-addressed
+install. Drive those first, and drive `isolate_nodehost` on a host you are willing
+to lose.
