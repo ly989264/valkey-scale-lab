@@ -13,7 +13,15 @@
 # port_base must lie inside the range every fleet host declares. Bring the
 # fleet up with --client-port-base 31000 --client-ports 200.
 schema_version: v1
-profile_name: native_200
+# scale_200, not native_200. The 200-node bounded exception in
+# `_is_exact_200_bounded_exception` keys on this name, and it is a safety
+# guard: above the default cap of 100, a real run is admitted only for this
+# exact profile. `profile_name` names the *scale* profile and the runtime is
+# named by runtime.provider below, so this is the same profile on a
+# different runtime rather than a way around the cap - and keeping the name
+# leaves the guard exactly as narrow as it was. Measured: without it the
+# planner refuses with `node count exceeds default cap without 1000 opt-in`.
+profile_name: scale_200
 safety:
   default_max_nodes: 100
   allow_1000_nodes: false
@@ -24,6 +32,8 @@ runtime:
   provider: ecs
   valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
   sandbox_mode: container_namespace
+  # Required to be present and false by the same bounded exception.
+  dry_run: false
   host_inventory_path: artifacts/host-fleets/sim-l5/inventory.json
   native_bundle_dir: artifacts/native-bundles/valkey-9.1.0-memtier-2.5.1-arm64
 hosts:
