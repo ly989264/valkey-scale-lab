@@ -44,8 +44,10 @@ import time
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.runtime.backends import BackendSpec, register_backend
 from valkey_scale_lab.runtime.command_recorder import current_command_recorder
+from valkey_scale_lab.runtime.host_clock import HOST_CLOCK_ARGV, parse_host_clock
 from valkey_scale_lab.runtime.host_inventory import (
     HostInventory,
     control_endpoint_of,
@@ -1001,6 +1003,15 @@ class NativeMultiEcsBackend:
             install_path=self._install_bin(node),
         )
 
+    def host_evidence(self, nodehost: dict[str, Any]) -> "NativeHostEvidence":
+        """The host itself, for what only it can answer: its clock and its logs.
+
+        No install path: reading a clock and copying a file need nothing the
+        pinned bundle provides, and a run whose bundle install failed must still
+        be able to say what its hosts' clocks said.
+        """
+        return NativeHostEvidence(backend=self, control_endpoint=self._endpoint(nodehost))
+
     # ---- teardown --------------------------------------------------------
 
     def release_run(self, state: Mapping[str, Any]) -> RunTeardown:
@@ -1308,9 +1319,71 @@ class NativeLoadLaneHost:
 
     def collect_evidence(self, remote_dir: str, local_dir: Path) -> None:
         local_dir.mkdir(parents=True, exist_ok=True)
-        self._backend.transport.get(
-            self._endpoint, f"{remote_dir}/.", local_dir, timeout=300
-        )
+        try:
+            self._backend.transport.get(
+                self._endpoint, f"{remote_dir}/.", local_dir, timeout=300
+            )
+        except TransportError as error:
+            # §12.1 puts 必要证据无法写入 on the collector's side of the line, and
+            # the Docker sibling has always raised this class here. Letting a
+            # `TransportError` out instead reported a failed copy as `FAIL` - the
+            # claim that the cluster was observed and found wanting - because
+            # `is_collection_failure` answers False for anything it cannot place.
+            raise CollectionError(
+                f"could not collect load lane evidence from {remote_dir}: {error}"
+            ) from error
+
+
+class NativeHostEvidence:
+    """A fleet host, as the machine whose clock and node journals are wanted."""
+
+    def __init__(
+        self,
+        *,
+        backend: NativeMultiEcsBackend,
+        control_endpoint: Mapping[str, Any],
+    ) -> None:
+        self._backend = backend
+        self._endpoint = dict(control_endpoint)
+
+    def clock_exchanges(self, count: int) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for _ in range(max(1, int(count))):
+            before = _unix_ms()
+            try:
+                result = self._backend._run(self._endpoint, list(HOST_CLOCK_ARGV), timeout=30)
+            except TransportError as error:
+                raise CollectionError(f"could not read a host clock: {error}") from error
+            after = _unix_ms()
+            if result.returncode != 0:
+                raise CollectionError(
+                    f"could not read a host clock: {result.stderr.strip()[:300]}"
+                )
+            wall, monotonic = parse_host_clock(result.stdout)
+            rows.append(
+                {
+                    "controller_before_unix_ms": before,
+                    "host_unix_ms": wall * 1000.0,
+                    "host_monotonic_seconds": monotonic,
+                    "controller_after_unix_ms": after,
+                }
+            )
+        return rows
+
+    def collect_node_journal(self, node: Mapping[str, Any], local_path: Path) -> None:
+        log_file = str(node.get("log_file") or "")
+        if not log_file:
+            raise CollectionError(
+                f"node {node.get('logical_id', '?')} has no recorded log file to collect"
+            )
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self._backend.transport.get(self._endpoint, log_file, local_path, timeout=300)
+        except TransportError as error:
+            raise CollectionError(
+                f"could not collect the journal of {node.get('logical_id', '?')} "
+                f"from {log_file}: {error}"
+            ) from error
 
 
 #: The runtime configuration keys a native run needs and a Docker run has no use

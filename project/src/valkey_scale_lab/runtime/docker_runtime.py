@@ -96,7 +96,9 @@ from valkey_scale_lab.runtime.backends import (
     require_implemented,
     resolve_backend,
 )
+from valkey_scale_lab.runtime.host_clock import HOST_CLOCK_ARGV, parse_host_clock
 from valkey_scale_lab.runtime.node_backend import (
+    HostEvidence,
     LoadLaneHost,
     NodeBackend,
     NodehostAddress,
@@ -1533,6 +1535,11 @@ class DockerNodeBackend:
             container=str(node.get("nodehost_container_name") or node["container_name"]),
         )
 
+    def host_evidence(self, nodehost: dict[str, Any]) -> "DockerHostEvidence":
+        return DockerHostEvidence(
+            container=str(nodehost.get("container_name") or nodehost["container_id"]),
+        )
+
     def release_run(self, state: Mapping[str, Any]) -> RunTeardown:
         # Which of this backend's two lifecycles produced the state decides how
         # it is released: a `docker_process` run has Valkey processes inside
@@ -1630,6 +1637,55 @@ class DockerLoadLaneHost:
         if result.returncode != 0:
             raise CollectionError(
                 "could not copy memtier output out of "
+                f"{self.container}: {result.stderr.strip()}"
+            )
+
+
+@dataclass(frozen=True)
+class DockerHostEvidence:
+    """A nodehost container, as the machine whose clock and logs are wanted."""
+
+    container: str
+
+    def clock_exchanges(self, count: int) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for _ in range(max(1, int(count))):
+            before = _unix_ms_runtime()
+            result = run_docker(
+                ["exec", self.container, *HOST_CLOCK_ARGV], timeout=30, check=False
+            )
+            after = _unix_ms_runtime()
+            if result.returncode != 0:
+                raise CollectionError(
+                    f"could not read the clock of {self.container}: {result.stderr.strip()[:300]}"
+                )
+            wall, monotonic = parse_host_clock(result.stdout)
+            rows.append(
+                {
+                    "controller_before_unix_ms": before,
+                    "host_unix_ms": wall * 1000.0,
+                    "host_monotonic_seconds": monotonic,
+                    "controller_after_unix_ms": after,
+                }
+            )
+        return rows
+
+    def collect_node_journal(self, node: Mapping[str, Any], local_path: Path) -> None:
+        log_file = str(node.get("log_file") or "")
+        if not log_file:
+            raise CollectionError(
+                f"node {node.get('logical_id', '?')} has no recorded log file to collect"
+            )
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        result = subprocess.run(
+            ["docker", "cp", f"{self.container}:{log_file}", local_path.as_posix()],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            raise CollectionError(
+                f"could not copy the journal of {node.get('logical_id', '?')} out of "
                 f"{self.container}: {result.stderr.strip()}"
             )
 

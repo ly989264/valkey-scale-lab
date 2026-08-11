@@ -184,6 +184,7 @@
         "product.unit.failover_timeline_observer",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
+        "product.unit.host_evidence",
         "product.unit.m2_fault_client_sampler",
         "product.unit.m2_performance_capture",
         "product.unit.native_backend",
@@ -278,6 +279,7 @@
         "product.unit.failover_timeline_observer",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
+        "product.unit.host_evidence",
         "product.unit.m2_fault_client_sampler",
         "product.unit.m2_performance_capture",
         "product.unit.native_backend",
@@ -384,6 +386,7 @@
         "product.unit.failover_timeline_observer",
         "product.unit.fault_timeline_contract",
         "product.unit.full_flow_complete_matrix",
+        "product.unit.host_evidence",
         "product.unit.m2_fault_client_sampler",
         "product.unit.m2_performance_capture",
         "product.unit.native_backend",
@@ -1959,6 +1962,27 @@
           "-p",
           "no:cacheprovider",
           "tests/unit/test_full_flow_complete_matrix.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 1200,
+        "result": "junit"
+      }
+    },
+    {
+      "test_id": "product.unit.host_evidence",
+      "description": "Unit cross-host evidence clock, journal, and attribution checks.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/unit/test_host_evidence.py",
           "--junitxml={gate.result_path}"
         ],
         "cwd": "{gate.project_root}",

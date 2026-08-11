@@ -10,7 +10,10 @@ local resource sampler; see `project/docs/management_matrix_slice_map.md`.
 `fault_matrix` extended it by seven - the actuator - see
 `project/docs/fault_matrix_slice_map.md`. Roadmap item 0.5 then added the two
 §15 names that no stage had happened to need, evidence upload and end-of-run
-cleanup; see `project/docs/seam_completion_slice_map.md`.
+cleanup; see `project/docs/seam_completion_slice_map.md`. Item 1.3 added the one
+that item 0.5 found missing and could not supply - the 日志 half of §15's
+日志与证据上传, plus the host clock reading that makes cross-host evidence
+attributable; see `project/docs/cross_host_evidence_slice_map.md`.
 
 §15 of `docs/scalable_cluster_observability_design.md` fixes how far this seam
 reaches. A runtime adapter replaces inventory and endpoint discovery, process
@@ -104,6 +107,51 @@ class LoadLaneHost(Protocol):
 
     def collect_evidence(self, remote_dir: str, local_dir: Path) -> None:
         """Bring everything this host wrote under `remote_dir` back to `local_dir`."""
+
+
+class HostEvidence(Protocol):
+    """What only the host itself can answer: what its clock says, what it wrote.
+
+    The 日志 half of §15's 日志与证据上传. Item 0.5 gave 证据 a boundary and
+    recorded that the 日志 half had no implementation on either backend; this is
+    it, in the adapter category §15 already assigns.
+
+    One object with two verbs rather than two operations, for the reason
+    `LoadLaneHost` is one - and they are literally the same two verbs applied to
+    a different subject: run something over there, fetch something from over
+    there. Both answers are about one host reached over the one channel the
+    backend has to it, so a caller holding a handle to pass into two operations
+    would be holding a value it cannot interpret.
+    """
+
+    def clock_exchanges(self, count: int) -> list[dict[str, Any]]:
+        """`count` bracketed readings of this host's clock, unreduced.
+
+        Each row carries `controller_before_unix_ms`, `host_unix_ms`,
+        `host_monotonic_seconds` and `controller_after_unix_ms`: the raw
+        exchange, with the controller's clock read either side of the one
+        command that read the host's.
+
+        Deliberately not reduced to an offset here. The estimator - which of the
+        readings to keep, and how to turn a bracket into an offset and its
+        uncertainty - stays above this seam, so that a Docker offset and a
+        native offset are the same kind of number rather than two backends'
+        arithmetic. A host's monotonic clock has an arbitrary per-boot origin
+        and is reported beside its wall clock rather than compared to anything.
+        """
+
+    def collect_node_journal(self, node: Mapping[str, Any], local_path: Path) -> None:
+        """Fetch one node's own log file into `local_path`.
+
+        Where a node's log physically lives is the backend's knowledge, the same
+        way the location of its prior state is; the node record carries
+        `log_file` and the backend knows how to reach it. The local destination
+        is the lifecycle's, because it is the run's own artifact tree.
+
+        Raises `CollectionError` if it cannot fetch it. §12.1 puts 必要证据无法
+        写入 on the collector's side of the line, so a journal that could not be
+        copied is a tool error and never a cluster verdict.
+        """
 
 
 @dataclass(frozen=True)
@@ -381,6 +429,19 @@ class NodeBackend(Protocol):
         itself unchanged across backends, so a backend chooses the host and
         nothing else. It does not decide how much load, for how long, or what
         counts as a passing window.
+        """
+
+    def host_evidence(self, nodehost: dict[str, Any]) -> HostEvidence:
+        """Reach the host this nodehost runs on, for what only it can answer.
+
+        A nodehost rather than a node because a clock belongs to a host, and a
+        nodehost is how this protocol names a host the lifecycle has started
+        something on - the same argument `pause_nodehost` and `isolate_nodehost`
+        were derived on.
+
+        See `HostEvidence`. Added by roadmap item 1.3; the derivation is in
+        `project/docs/cross_host_evidence_slice_map.md` §4, including why the
+        existing `load_lane_host` could not carry it.
         """
 
     def release_run(self, state: Mapping[str, Any]) -> RunTeardown:
