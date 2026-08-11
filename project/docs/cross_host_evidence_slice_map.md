@@ -210,6 +210,24 @@ it is the reason the validator is written against "present and bounded" rather
 than against a threshold: a threshold that passed on ssh would fail on
 `docker exec` while both were correct.
 
+### 2.4a What the host is asked, decided on the same kind of measurement
+
+Both backends must ask the identical question or the two readings are not
+comparable, so the argv is part of the contract. Two candidates, one host,
+30 reads each:
+
+| argv | round trip median | min-of-3 median | bound | monotonic resolution |
+|---|---|---|---|---|
+| `python3` wall + monotonic | 18.33 ms | 17.36 ms | 8.68 ms | full float |
+| `sh -c "date; cut /proc/uptime"` | 11.31 ms | 10.44 ms | **5.22 ms** | **10 ms** |
+
+The cheaper arm looks better until its own output is read: `/proc/uptime` prints
+hundredths - measured `684.44` against python3's `684.4572976` - so it saves
+3.5 ms of bound and gives back **10 ms of quantisation on the very value it
+exists to supply**. `python3` also reports `time.monotonic()`, which is the clock
+§11.1's sampler stamps its samples with, so the pair it returns is on the same
+scale as the evidence the offset is for. Decided: `python3`.
+
 ### 2.5 Monotonic clocks are recorded, not compared
 
 A host's `time.monotonic()` and the controller's have unrelated origins - it is a
@@ -571,8 +589,8 @@ to re-derive a value the run already had.
 
 ## 11. Proof
 
-Per CLAUDE.md's per-slice acceptance bar. Filled in after the work; the plan is
-in §11.0 and the results follow it.
+Per CLAUDE.md's per-slice acceptance bar. §11.0 is what was planned; §11.1
+onwards is what was measured.
 
 ### 11.0 What has to be shown
 
@@ -590,3 +608,156 @@ in §11.0 and the results follow it.
   exit code 0, and the failing stage `ERROR` in `run_verdict.json`.
 - Two consecutive real exact-50, diffed against the frozen baseline with the diff
   calibrated baseline-to-baseline first, at §9's predicted marks.
+
+### 11.1 The suite, and the three numbers a registered Test moves
+
+`./gate suite repository.all` **92/92**, from 91. `product.unit.host_evidence`
+is registered once, and with it the catalog goes **95 → 96** and the M1 plan
+**90 → 91**; both are pinned by `verification/tests/test_contracts.py` and fail
+loudly if only the catalog is edited. 780 pytest checks, of which 34 are this
+item's.
+
+The scenario definition's own guard fired as designed and is worth naming: the
+artifact set, the admitted-kind order and the admission compatibility rules are a
+closed registry with a **pinned definition digest**, so adding one artifact was
+five coordinated edits and a digest that had to be re-stated deliberately.
+`37ae6483…` → `acdcbcfe…`.
+
+### 11.2 An induced transfer failure yields `ERROR`, measured twice
+
+Both arms were induced from *outside* the product - a `docker` shim earlier on
+`PATH` that passes every argument through to the real client except the one it is
+staging - so no product code has a test hook in it.
+
+**Arm 1, the clock read**, failing right after `nodehost_start`:
+
+```
+[1/1] ERROR real.local.full-flow (13.14s)
+primary=STEP_TOOL_ERROR:could not read the clock of …nodehost-az-a-00
+```
+
+**Arm 2, the journal transfer** - the one the acceptance actually names - on a
+run that had already completed formation, the management matrix and the fault
+matrix, failing at the collection boundary 696 s in:
+
+```
+[1/1] ERROR real.local.full-flow (696.43s)
+primary=STEP_TOOL_ERROR:could not copy the journal of shard-0000-primary out of …nodehost-az-a-00
+```
+
+Both, identically, in the run's own evidence rather than only in the Gate's:
+
+| | |
+|---|---|
+| Gate `Status:` | **ERROR** |
+| `summary.json` overall / per test | **ERROR** / **ERROR** |
+| exit code | **0** - the run wrote a verdict, so it must not fail by exit code |
+| `result.json` | `{"status": "ERROR", "summary": …}` |
+| `run_verdict.json` | `runtime_start` **ERROR** with the reason; `gate_status` `FAIL` |
+| residue | **zero** containers, zero networks |
+
+`gate_status: FAIL` beside `status: ERROR` is correct and not a contradiction:
+`GateStatus` is the Gate's own lifecycle result and stays `PASS/FAIL/BLOCKED`,
+and the §12.1 *kind* travels in the failure code. `run_verdict` is where §12.2's
+vocabulary is applied, and it says `ERROR`.
+
+One pre-existing oddity the runs surface rather than introduce: `stages_not_run`
+lists `cluster_form` through `report` as `SKIPPED_WITH_REASON` even though the
+work of several of them ran. That is because the whole run happens inside the
+Gate's `runtime_start` step, so fail-fast marks the later *projected* steps as
+not run. Unchanged by this item and noted so it is not read as a new defect.
+
+### 11.3 Two real exact-50, and what the Docker path did with the change
+
+**PASS 868.18s** (`gate-20260811T032659Z-9e5cd245`) and **PASS 864.61s**
+(`gate-20260811T034141Z-35a95abb`). Both 12 of 12 checks OK, `cleanup_report`
+PASS with zero residue, and the word `ERROR` in no artifact of either.
+
+Calibrated baseline-to-baseline first, all five stages: `runtime_start` 7/7,
+`cluster_form` 5/5, `management_matrix` **8/8**, `fault_matrix` 6/6, `cleanup`
+2/2 - so no normalisation here is loose enough to hide a real difference.
+
+Against the frozen `exact-50-6b6f57fd` baseline, **both runs identically**:
+
+| stage | mark | pass mark |
+|---|---|---|
+| `runtime_start` | **7/7** | 7/7 |
+| `cluster_form` | **5/5** | 5/5 |
+| `cleanup` | **2/2** | 2/2 |
+| `management_matrix` | **6/8** | 6/8 |
+| `fault_matrix` | **5/6** | 5/6 |
+
+Both inherited deltas at their declared *shapes*, in both runs, with no third:
+command-log rows **1592 → 1606, exactly +14**; `cluster_migrate_keys` **4 → 18**;
+`owned_valkey_process_remove_nodes_conf` 4 → 0 with
+`owned_valkey_process_discard_prior_state` 0 → 4, a rename that moves no rows;
+**three row kinds changed and fourteen unchanged**. Fault lane **9 scenarios / 12
+command rows / 15 windows** in both. RTO **46.086 s** and **49.101 s**, inside
+the 45-50 s exact-50 band.
+
+So §9's prediction held: this item adds two files and changes none, and the five
+stages are identical to what they were before it.
+
+### 11.4 What the two runs measured about the mechanism itself
+
+The parts that only a real run can say, identical in shape across both:
+
+| | run 1 | run 2 |
+|---|---|---|
+| nodehost rows, each attributed | 4 | 4 |
+| `fleet_ids` | `["local"]` | `["local"]` |
+| journals collected | **50 / 50** | **50 / 50** |
+| journal bytes | 7,944,149 (159 KB mean) | 7,724,102 (154 KB mean) |
+| clock readings | 8 (4 hosts × 2 ends) | 8 |
+| offset range | +20.9 … +29.7 ms | +21.6 … +25.1 ms |
+| uncertainty range | 30.0 … 40.0 ms | 32.0 … 35.5 ms |
+| **every interval contains zero** | **yes** | **yes** |
+| collection cost | 2.86 s of 868 s (0.33 %) | 2.85 s of 865 s (0.33 %) |
+
+**Every one of the sixteen measured intervals contains zero**, which is the truth
+about a fleet whose "hosts" share the controller's kernel. That is the estimator
+proven on real hosts; the detection half - a clock that is genuinely elsewhere
+falling *outside* its bound - is proven hermetically, because shifting a
+simulated host's clock would shift the kernel the controller shares with it.
+
+Two numbers worth carrying forward rather than leaving in a table.
+
+**The offsets are systematically positive and use about 70 % of their bound**,
+which is §2.4's exchange asymmetry appearing again under load: the spike measured
++19.7 ms against a 25.7 ms bound on an idle container, and a real exact-50
+measures +21 … +30 ms against 30 … 40 ms. Consistent, and it is the reason the
+validator asks for a bound rather than a threshold.
+
+**A node journal is about 155 KB at exact-50**, so the whole collection is ~7.8 MB
+per run and takes ~1.1 s. Recorded, not resolved: evidence volume stays the
+roadmap's open decision point until the end of M3, and the number that decides it
+is exact-200's, not this one's.
+
+### 11.5 The rest of the bar
+
+- Hermetic proof against a fake transport: **34 checks**, covering the estimator
+  (including a one-minute-fast host falling outside its bound), both backends'
+  argv for both verbs, both backends' `CollectionError` on failure, the journal
+  layout and digesting, the document's attribution of all three host-produced
+  surfaces, and **eleven separate validator refusals**.
+- Old path proven removed: there is no old path. The 日志 half of §15 had no
+  implementation to replace, and the two `TransportError` leaks are gone from the
+  sites that knew the file was necessary evidence.
+- Small-scale smoke of the modified stage: the two induced-failure runs at
+  exact-30 are it - the second reached the collection boundary through the whole
+  management and fault matrices before failing where it was made to.
+- exact-200 was **not** run. The bar asks for one where a slice modifies
+  `runtime_start`, `cluster_form` or `stabilize`; this item modifies none of them
+  - it adds two files at a boundary after the matrices and changes no existing
+  artifact, which the five identical stage marks measure. Named here rather than
+  quietly skipped.
+
+### 11.6 What this item did not prove
+
+The same honest boundary item 1.2 recorded, narrowed by one step: **no journal
+has been fetched off a host over ssh through the product**. The native
+`HostEvidence` is proven against a fake transport and its Docker sibling is
+proven on real containers, but the ssh path from `start_nodehost` to a collected
+journal has not run end to end. That is item 1.5's ladder, and the bring-up smoke
+at its front is now the natural place to drive `host_evidence`'s two verbs
+alongside the three argv §11 of the native backend map already names.
