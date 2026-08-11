@@ -352,7 +352,10 @@ run's path, so it is proven the way CLAUDE.md requires: two consecutive real
 exact-50 Docker runs diffed against the frozen baseline, with the prediction
 7/7, 5/5, 6/8, 5/6, 2/2 unchanged stated before the runs.
 
-### 7.2 The fault actuator's pidfile — measured at rung 1, not pre-decided
+### 7.2 The fault actuator's pidfile — measured, and the measurement reversed it
+
+**Decided: changed.** The criterion below was set before measuring, and the
+measurement met it.
 
 `_signal_run_processes` (`pause_nodehost`, `resume_nodehost`) still enumerates
 `<run_root>/*/valkey.pid`, the notion of "what is running" both cleanup paths
@@ -376,6 +379,32 @@ it is.
 **Decided by that measurement, not in advance**, because changing it moves
 `fault_command_log`'s argv and its `signalled` count — a declared delta that has
 to be worth buying.
+
+**The measurement, and what it cost to get.** A run's artifacts cannot answer
+this: the fault record keeps the pause *action string* and not the `signalled`
+count. So it was taken on the hosts, through the smoke, with a `kill_node`
+placed before the pause — the only arrangement where the two notions can
+disagree:
+
+```
+pause_nodehost                {pidfiles: 2, live: 2, signalled: 2}
+kill_node
+pause_nodehost after a kill   {pidfiles: 2, live: 1, signalled: 1}
+```
+
+They disagree by one, because a SIGKILLed node leaves a pidfile holding a dead
+pid. The count self-corrects — `kill -STOP` on a dead pid fails and is not
+counted — so no signal is lost, but the actuator *attempted* one against a pid
+it no longer owned, which is exactly §8.3's collateral-signal risk. Changed to
+`_owned_process_walk`, so the backend has one notion of what is running instead
+of two. Native-only; the Docker actuator is separate and untouched, so no frozen
+baseline moves.
+
+The first attempt at this measurement was **inconclusive and did not say so**:
+the smoke killed the pid the node had before `stop_node`/`start_node`, so the
+kill was a no-op and the counts stayed 2/2/2, which reads exactly like agreement.
+Caught only because the numbers failed to move when they should have. `start_node`
+now keeps the node's pid current in the smoke, as the lifecycle does.
 
 ### 7.3 The 240s formation dwell window — deferred to M3-B, with reasons
 
@@ -502,7 +531,101 @@ run, which leaves the directory — now under a path that says whose it is.
 
 ---
 
-## 12. Findings this derivation produced and does not fix
+## 12. Rung 1, and the four defects it found
+
+Native exact-30 took **four attempts**, and the three failures are the rung's
+real product. Every one of them was invisible to 798 hermetic tests, to a fake
+transport, and to the bring-up smoke — and each would have been far more
+expensive to meet for the first time at exact-200.
+
+| attempt | outcome | what it found |
+|---|---|---|
+| 1 | ran on Docker; killed | `runtime.provider` never selected the backend |
+| 2 | `BLOCKED` at 3.89 s | attempt 1's leftover network — the preflight refusing correctly |
+| 3 | `FAIL` at 340.40 s | `ResourceSampler` under-declared its contract |
+| 4 | **PASS 737.29 s** | — |
+
+and a fourth, found in attempt 3's wreckage rather than by a failure of its own:
+`state.json` could not describe where a nodehost was.
+
+### 12.1 The backend was never chosen from the configuration
+
+Attempt 1 is the worst kind of failure: it *succeeded*. `runtime.provider: ecs`
+was validated, the manifest was read, placement correctly assigned four
+nodehosts to `sim-host-00..03` — and the run then started four **Docker
+containers** for them, because `gate execute --backend` had
+`choices=["docker_process"]` with that as its default and nothing joined the two
+names. Its artifacts named a fleet no process had touched.
+
+This is the fourth instance of one shape in this seam: `cleanup_scenario`
+dispatching on `runtime.type` (`4f54442a`), `_execute_runtime` constructing
+`DockerNodeBackend()` by name and `validation.py` disagreeing with
+`execution.BACKENDS` (1.2 map §6.1, §6.4), and now the selection itself. Item
+1.2's acceptance — "the `native_multi_ecs` rejection gone because the backend
+exists" — was met without the backend ever becoming *reachable*.
+
+### 12.2 A protocol that under-states its contract makes a second
+implementation look finished
+
+`ResourceSampler` declares three methods. The observation layer also reads
+`runner.sampler.sampler_id` and `runner.sampler.processes`, and only the Docker
+agent carried them. The native agent satisfied the protocol **as written** and
+died 340 s in, after `runtime_start` and `cluster_form` had both passed.
+
+Neither a fake transport nor the smoke could catch it, and the reason is worth
+keeping: both drive the agent *directly*, and this attribute is read only by the
+observation layer. So the test added for it asserts against **both** backends
+through the same expression the observation layer uses — a native-only test
+would not have prevented the omission it exists to catch.
+
+### 12.3 `state.json` could not say where a nodehost was
+
+`_process_runtime_state` serialised eight fixed fields, none of them the
+placement, and `cleanup_scenario` gets a state file and nothing else. Attempt
+3's `cleanup_report` carried four `carries no host control endpoint` errors and
+no actions. **It was not the failure path's doing** — the serialiser drops them,
+so a passing run would have failed its cleanup identically, which is M3's
+cleanup criterion failing on the one artifact that measures it. Added
+conditionally, so the Docker record keeps the same eight keys.
+
+### 12.4 What the passing run proved
+
+- `backend_id: native_multi_ecs`, no Docker container but the four simulated
+  hosts, **30 processes at 8/8/7/7** across `sim-host-00..03`.
+- **12/12 steps PASS**, `run_verdict` PASS, no `ERROR` in any artifact.
+- **Fault lane 9 scenarios / 12 command rows / 15 windows** — identical to the
+  Docker baseline. The three scale-fixed numbers surviving a change of runtime
+  is M3's thesis, tested for the first time. RTO 47.26 s.
+- The fault matrix ran its real mechanisms: `iptables` chains on the host for
+  the three partition scenarios, the in-process TCP proxy for delay/loss/flap
+  (Slice 4's finding that those touch no runtime primitive, confirmed on a
+  second backend), and `pause_nodehost` for `node_host_stop` and `az_stop`.
+- **`cleanup` exactly as §6.3 declared in advance**: 20 rows in four kinds —
+  `terminate` ×4, `verify_exit` ×4, `remove` ×8, `scan` ×4 — no network row, and
+  both extra timing keys. Declared before the run, matched after it.
+- **Zero residue on all four hosts**, Load Lane directory included.
+
+### 12.5 The confirming run, after §7.2's actuator change
+
+The actuator change is on a real run's path, so it was proven the same way:
+a second native exact-30, **PASS 729.05 s**, at marks identical to the first —
+12/12 steps, fault lane **9/12/15** with all nine `REAL_PASS`, cleanup PASS at
+20 rows in the same four kinds with no errors, zero residue on all four hosts,
+no `ERROR` in any artifact. RTO 46.45 s against the first run's 47.26 s.
+
+`node_host_stop` and `az_stop` still report the same actions — the change is in
+how the actuator finds the processes, not in what it does to them, and the two
+runs agreeing on every mark is the evidence for that.
+
+Two consecutive native exact-30: **PASS 737.29 s and PASS 729.05 s.**
+
+One thing rung 1 could not prove, and it is the honest boundary: **there is no
+frozen 30-node baseline**, so nothing here is an equivalence result. That is
+rung 2's against the exact-50 baseline, and it is why the session splits here.
+
+---
+
+## 13. Findings this derivation produced and does not fix
 
 - **`nodehosts_per_az: 2` is a global default that no scale configuration
   states.** Every reader of a `scale_*.yaml` who computes nodehosts from
