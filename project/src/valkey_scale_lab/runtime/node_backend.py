@@ -54,15 +54,59 @@ from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence
 
 
+class SamplerIdentity(Protocol):
+    """What the observation layer reads off a sampler to attribute its samples."""
+
+    sampler_id: str
+    processes: "Sequence[Any]"  # each has `logical_id` and `pid`
+
+
+@dataclass(frozen=True)
+class SampledProcess:
+    """One process a sampler watches, in the two fields its readers use."""
+
+    logical_id: str
+    pid: int
+
+
+@dataclass(frozen=True)
+class SamplerSpec:
+    """A concrete `SamplerIdentity`, for a backend that has no other source.
+
+    Here rather than in a backend because the shape is the seam's: it is what
+    `ResourceSampler.sampler` promises. The Docker backend predates it and
+    builds an equivalent private holder of its own; collapsing the two is a
+    change on a real Docker run's path and belongs to an item willing to
+    re-prove that path, not to the one that found the gap.
+    """
+
+    sampler_id: str
+    processes: tuple[SampledProcess, ...] = ()
+
+
 class ResourceSampler(Protocol):
     """A long-lived local sampler, deployed by a backend, driven by the run.
 
     §11.1 forbids creating a session per sample, so a backend starts one agent
-    on each host and collects it once. The observation layer only needs to
-    start it, tell it a planned process exit has begun, and stop it for its
-    samples; declaring that here rather than importing the observation layer's
-    class keeps this module dependent on nothing.
+    on each host and collects it once.
+
+    Three methods **and one attribute**. `sampler` was missing from this
+    protocol until roadmap item 1.5, and the omission cost a run: the stability
+    window and the resource observation both read `runner.sampler.sampler_id`
+    and `runner.sampler.processes` to say which host a sample came from, but
+    only the Docker agent carried it. The native agent satisfied the protocol as
+    written and failed 340 s into the first native exact-30 with
+    `'NativeResourceAgent' object has no attribute 'sampler'`. A protocol that
+    under-states its contract is worse than none: it makes a second
+    implementation look finished.
+
+    Not catchable hermetically or by the bring-up smoke, because both drive the
+    agent directly; only the observation layer reads this attribute.
     """
+
+    #: Who this sampler is and which processes it watches. Read by
+    #: `observability/stability.py` and `observability/resource_observation.py`.
+    sampler: SamplerIdentity
 
     def start(self) -> None:
         """Deploy and launch the sampler."""

@@ -30,6 +30,7 @@ from valkey_scale_lab.runtime.host_transport import (
     MultiplexedSshTransport,
     TransportError,
 )
+from valkey_scale_lab.runtime.docker_runtime import DockerNodeBackend
 from valkey_scale_lab.runtime.native_backend import (
     NATIVE_INSTALL_ROOT,
     NativeMultiEcsBackend,
@@ -713,6 +714,30 @@ def test_pause_nodehost_signals_every_process_this_run_started_there() -> None:
     assert "kill -STOP" in argv[-1]
 
 
+def test_the_actuator_signals_what_is_running_not_what_a_pidfile_remembers() -> None:
+    """Roadmap item 1.4 §8.3, decided by roadmap item 1.5's own measurement.
+
+    The actuator used to enumerate `<run_root>/*/valkey.pid`, on the argument
+    that a pidfile is current for a node that is running. Measured on two hosts
+    after a real `kill_node`: **2 pidfiles, 1 live process**, because a
+    SIGKILLed node leaves its pidfile holding a dead pid. The count
+    self-corrected, but the actuator had attempted a signal to a pid it did not
+    own - the collateral-signal risk on a busy host.
+
+    It now walks `/proc` by working directory, the one notion of "what is
+    running" both cleanup paths already share, and the pidfile is not consulted.
+    """
+    transport = FakeTransport()
+    backend = _backend(transport)
+
+    for act, signal in ((backend.pause_nodehost, "STOP"), (backend.resume_nodehost, "CONT")):
+        act(_nodehost())
+        script = transport.last()[-1]
+        assert "valkey.pid" not in script
+        assert "/proc/" in script and "cwd" in script
+        assert f'kill -{signal} "$pid"' in script
+
+
 def test_isolating_a_host_keeps_only_the_channel_that_can_undo_it() -> None:
     transport = FakeTransport()
     backend = _backend(transport)
@@ -802,6 +827,37 @@ def test_the_resource_agent_lives_under_the_run_root_so_teardown_reaches_it() ->
     assert not transport.ran("/tmp/vslab-resource-agent")
     launched = [argv for _a, argv in transport.commands if "resource_agent" in " ".join(argv)]
     assert launched and f"cd {root}" in " ".join(launched[0])
+
+
+def test_both_backends_expose_the_identity_the_observation_layer_reads() -> None:
+    """The attribute `ResourceSampler` did not declare, and a run died on.
+
+    `observability/stability.py` and `resource_observation.py` both read
+    `runner.sampler.sampler_id` and `runner.sampler.processes` to say which host
+    a sample came from. Only the Docker agent carried it; the native one
+    satisfied the protocol as written and failed 340 s into the first native
+    exact-30 with `'NativeResourceAgent' object has no attribute 'sampler'`.
+
+    Asserted against *both* backends and through the same expression the
+    observation layer uses, because a test that checked only the new backend
+    would not have stopped the protocol under-stating its contract in the first
+    place.
+    """
+    native = _backend(FakeTransport()).resource_sampler(
+        [_node()], sampler_id="nodehost-az-a-00", processes=[("node-000", 4242)], expected_gone=[]
+    )
+    docker = DockerNodeBackend().resource_sampler(
+        [{"nodehost_container_id": "abc123"}],
+        sampler_id="nodehost-az-a-00",
+        processes=[("node-000", 4242)],
+        expected_gone=[],
+    )
+
+    for agent in (native, docker):
+        assert agent.sampler.sampler_id == "nodehost-az-a-00"
+        assert [
+            (process.logical_id, process.pid) for process in agent.sampler.processes
+        ] == [("node-000", 4242)]
 
 
 def test_a_sampler_needs_a_node_to_locate_its_host() -> None:
