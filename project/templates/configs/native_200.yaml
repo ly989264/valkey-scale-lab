@@ -1,0 +1,58 @@
+# The first configurations in this repository that name runtime.provider: ecs.
+#
+# A native run is given its hosts; it provisions none. Two runtime keys carry
+# that - the fleet manifest and the pinned build - and everything else here is
+# deliberately identical to scale_200.yaml, because the ladder's job is to show
+# the same lifecycle on a different runtime. See
+# project/docs/simulated_ladder_slice_map.md section 3.
+#
+# The density keys are absent on purpose. nodehosts_per_az is 2 in the global
+# config, so this run plans 8 nodehosts and therefore needs
+# 8 hosts - one nodehost per host is a refusal, not a preference.
+#
+# port_base must lie inside the range every fleet host declares. Bring the
+# fleet up with --client-port-base 31000 --client-ports 200.
+schema_version: v1
+profile_name: native_200
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: ecs
+  valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
+  sandbox_mode: container_namespace
+  host_inventory_path: artifacts/host-fleets/sim-l5/inventory.json
+  native_bundle_dir: artifacts/native-bundles/valkey-9.1.0-memtier-2.5.1-arm64
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller, worker]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 100
+  replicas_per_shard: 1
+  port_base: 31000
+  cluster_bus_port_base: 41000
+scale_profile:
+  bounded_exception_nodes: 200
+  automatic_default_cap_remains: 100
+workload:
+  enabled: true
+  read_ratio: 0.8
+  write_ratio: 0.2
+  uniform_qps: 50
+  hotspot_qps: 10
+  hotspot_key_fraction: 0.01
+  pipeline: 1
+  timing: all_run
+faults: []
