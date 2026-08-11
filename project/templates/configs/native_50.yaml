@@ -10,8 +10,14 @@
 # config, so this run plans 4 nodehosts and therefore needs
 # 4 hosts - one nodehost per host is a refusal, not a preference.
 #
-# port_base must lie inside the range every fleet host declares. Bring the
-# fleet up with --client-port-base 31000 --client-ports 60.
+# port_base must lie inside the range every fleet host declares, and the
+# harness publishes whatever range it is told to. It is therefore scale_50's
+# own 7400/17400 rather than a number of this file's choosing: measured on the
+# first native exact-50, a different base differs from the frozen baseline in
+# nodehost_density_plan's ports, in state's client_port and cluster_bus_port,
+# and in all 50 node_configs - a delta across three equivalence views bought
+# for nothing. Bring the fleet up with
+# --client-port-base 7400 --client-ports 60.
 schema_version: v1
 profile_name: native_50
 safety:
@@ -41,8 +47,8 @@ network:
 cluster:
   shards: 25
   replicas_per_shard: 1
-  port_base: 31000
-  cluster_bus_port_base: 41000
+  port_base: 7400
+  cluster_bus_port_base: 17400
 workload:
   enabled: true
   read_ratio: 0.8

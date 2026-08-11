@@ -10,8 +10,11 @@
 # config, so this run plans 8 nodehosts and therefore needs
 # 8 hosts - one nodehost per host is a refusal, not a preference.
 #
-# port_base must lie inside the range every fleet host declares. Bring the
-# fleet up with --client-port-base 31000 --client-ports 200.
+# port_base must lie inside the range every fleet host declares, and the
+# harness publishes whatever range it is told to. It is therefore scale_200's
+# own 7800/17800 rather than a number of this file's choosing - see
+# native_50.yaml for what a different base cost the equivalence diff. Bring the
+# fleet up with --client-port-base 7800 --client-ports 200.
 schema_version: v1
 # scale_200, not native_200. The 200-node bounded exception in
 # `_is_exact_200_bounded_exception` keys on this name, and it is a safety
@@ -51,8 +54,8 @@ network:
 cluster:
   shards: 100
   replicas_per_shard: 1
-  port_base: 31000
-  cluster_bus_port_base: 41000
+  port_base: 7800
+  cluster_bus_port_base: 17800
 scale_profile:
   bounded_exception_nodes: 200
   automatic_default_cap_remains: 100
