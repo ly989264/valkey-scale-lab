@@ -1042,6 +1042,48 @@ def test_release_run_reports_residue_rather_than_asserting_it_is_gone() -> None:
     assert process["exe"] == "/opt/bin/valkey-server"
 
 
+def test_release_run_removes_the_run_bundles_it_dropped_on_the_host() -> None:
+    """Measured on the first native exact-50: four hosts each kept an 88 KB
+    bundle under a `cleanup_report` saying `found: 0`.
+
+    `_state_nodehost` records eight fields and `remote_bundle_dir` is not among
+    them, so the removal that read it from state removed nothing. It is derived
+    from the run id now, which is the same expression `reclaim_run` has always
+    used - so the two cleanup paths agree about what a run owns.
+    """
+    transport = FakeTransport()
+    backend = NativeMultiEcsBackend(transport=transport)
+    removal = backend.release_run(_state()).actions[3]
+    assert removal["type"] == "nodehost_run_state"
+    assert removal["paths"] == [
+        "/tmp/valkey-scale-lab/run-1",
+        "/tmp/vslab-bundle-run-1-*",
+    ]
+    ran = next(
+        " ".join(argv) for _a, argv in transport.commands if "rm -rf /tmp/vslab-bundle" in " ".join(argv)
+    )
+    # Unquoted, because the host's shell is what expands it.
+    assert "rm -rf /tmp/vslab-bundle-run-1-*" in ran
+
+
+def test_release_run_reports_a_bundle_it_could_not_remove() -> None:
+    """The scan measured two of the three filesystem residues a native run
+    leaves, so a bundle nothing removed read as `found: 0`."""
+    transport = FakeTransport()
+    transport.respond(
+        "[ -e /tmp/valkey-scale-lab/run-1 ]",
+        0,
+        "bundle\t/tmp/vslab-bundle-run-1-nodehost-az-a-00\n",
+    )
+    backend = NativeMultiEcsBackend(transport=transport)
+    teardown = backend.release_run(_state())
+    left = [row for row in teardown.resources_remaining if row["type"] == "nodehost_run_bundle"]
+    assert [row["path"] for row in left] == ["/tmp/vslab-bundle-run-1-nodehost-az-a-00"]
+    scan = teardown.actions[4]
+    assert scan["scanned"] == ["state", "bundle", "process", "firewall"]
+    assert scan["found"] == 1
+
+
 def test_release_run_removes_the_firewall_state_an_abort_would_strand() -> None:
     """Nothing removed these before roadmap item 1.4 - only `rejoin_nodehost`.
 

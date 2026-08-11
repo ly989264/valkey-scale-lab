@@ -132,6 +132,21 @@ def run_state_root(run_id: Any) -> str:
     return f"{RUN_STATE_ROOT}/{_safe_token(run_id, 'run_id')}"
 
 
+def run_bundle_glob(run_id: Any) -> str:
+    """Every run bundle this run dropped on a host, by the run's own mark.
+
+    Derived rather than read off `state.json`, for the reason roadmap item 1.4
+    settled for processes: cleanup enumerates from the host and never uses what
+    it was told. `_state_nodehost` records eight fields and `remote_bundle_dir`
+    is not among them, so `release_run` was removing `run_root` alone while
+    reporting `PASS` - measured on the first native exact-50, which left an 88 KB
+    bundle on each of four hosts under a `cleanup_report` saying `found: 0`.
+    `reclaim_run` already removed exactly this glob, so the two cleanup paths
+    disagreed about what a run owns.
+    """
+    return f"{BUNDLE_DROP_ROOT}/vslab-bundle-{_safe_token(run_id, 'run_id')}-*"
+
+
 def fault_rule_tag(run_id: Any) -> str:
     """The mark a firewall rule carries, since a chain name cannot carry one.
 
@@ -210,16 +225,26 @@ def _list_owned_processes(run_root: str) -> str:
     return _owned_process_walk(run_root, body=body) + "exit 0"
 
 
-def _scan_run_residue(run_root: str) -> str:
-    """Both filesystem-level residues of a run in one question to the host.
+def _scan_run_residue(run_root: str, bundle_glob: str) -> str:
+    """Every filesystem-level residue of a run in one question to the host.
 
-    The tree, and every process still running out of it. One session rather than
-    two because they are one question - "is anything of this run still here" -
-    and because a scan that answered them a round trip apart could report a tree
-    removed between the two answers.
+    The tree, the run bundles dropped beside it, and every process still running
+    out of the tree. One session rather than three because they are one question
+    - "is anything of this run still here" - and because a scan that answered
+    them a round trip apart could report a tree removed between the two answers.
+
+    The bundle arm was added at roadmap item 1.5 rung 2: the scan reported
+    `found: 0` on four hosts that were each still holding this run's bundle, so
+    it was measuring two of the three things a native run leaves. The glob is
+    unquoted on purpose - the host's shell expands it - and `for` over a glob
+    that matches nothing yields the pattern itself, which is why each candidate
+    is tested with `-e` before it is reported.
     """
     return (
-        f'[ -e {shlex.quote(run_root)} ] && printf "state\\n"; ' + _list_owned_processes(run_root)
+        f'[ -e {shlex.quote(run_root)} ] && printf "state\\n"; '
+        f'for bundle in {bundle_glob}; do '
+        f'  [ -e "$bundle" ] && printf "bundle\\t%s\\n" "$bundle"; '
+        "done; " + _list_owned_processes(run_root)
     )
 
 
@@ -560,7 +585,7 @@ class NativeMultiEcsBackend:
         state".
         """
         run_root = run_state_root(run_id)
-        bundle_glob = f"{BUNDLE_DROP_ROOT}/vslab-bundle-{_safe_token(run_id, 'run_id')}-*"
+        bundle_glob = run_bundle_glob(run_id)
         script = (
             _signal_owned_processes(run_root, "KILL")
             + f"rm -rf {shlex.quote(run_root)}; "
@@ -1400,7 +1425,9 @@ class NativeMultiEcsBackend:
                 ),
                 (
                     "cleanup_remove_run_state_seconds",
-                    lambda: self._release_remove_state(endpoint, nodehost_id, nodehost, run_root),
+                    lambda: self._release_remove_state(
+                        endpoint, nodehost_id, nodehost, run_root, run_id
+                    ),
                 ),
             )
             # A host that stops answering mid-teardown is reported, not raised.
@@ -1592,10 +1619,13 @@ class NativeMultiEcsBackend:
         nodehost_id: str,
         nodehost: Mapping[str, Any],
         run_root: str,
+        run_id: str,
     ) -> dict[str, Any]:
-        bundle_dir = str(nodehost.get("remote_bundle_dir", "")).strip()
-        removals = [run_root] + ([bundle_dir] if bundle_dir else [])
-        script = "; ".join(f"rm -rf {shlex.quote(path)}" for path in removals) + "; exit 0"
+        # The glob is not quoted: the host's shell has to expand it, which is
+        # what makes this the same removal `reclaim_run` performs.
+        bundle_glob = run_bundle_glob(run_id)
+        removals = [run_root, bundle_glob]
+        script = f"rm -rf {shlex.quote(run_root)}; rm -rf {bundle_glob}; exit 0"
         result = self._run(endpoint, ["sh", "-c", script], timeout=60)
         return {
             "type": "nodehost_run_state",
@@ -1628,7 +1658,23 @@ class NativeMultiEcsBackend:
         remaining: list[dict[str, Any]] = []
         failures: list[str] = []
 
-        tree_scan = self._run(endpoint, ["sh", "-c", _scan_run_residue(run_root)], timeout=60)
+        tree_scan = self._run(
+            endpoint,
+            ["sh", "-c", _scan_run_residue(run_root, run_bundle_glob(run_id))],
+            timeout=60,
+        )
+        for line in tree_scan.stdout.splitlines():
+            kind, _, path = line.partition("\t")
+            if kind != "bundle" or not path.strip():
+                continue
+            remaining.append(
+                {
+                    "type": "nodehost_run_bundle",
+                    "id": nodehost_id,
+                    "host_id": host_id,
+                    "path": path.strip(),
+                }
+            )
         if any(line.strip() == "state" for line in tree_scan.stdout.splitlines()):
             remaining.append(
                 {
@@ -1678,7 +1724,7 @@ class NativeMultiEcsBackend:
             "container_name": str(nodehost.get("container_name", "")),
             "action": "scan",
             "status": "PASS" if not failures else "FAIL",
-            "scanned": ["state", "process", "firewall"],
+            "scanned": ["state", "bundle", "process", "firewall"],
             "unscannable": failures,
             "found": len(remaining),
         }
