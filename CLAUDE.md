@@ -464,7 +464,9 @@ not run end to end. That belongs to item 1.5's bring-up smoke, which is now the
 natural place to drive `host_evidence`'s two verbs alongside the three argv the
 native backend map §11 already names.
 
-**What M3-A-4 inherits, verified at this HEAD rather than remembered.** Item 1.4
+**What M3-A-4 inherited, verified at that HEAD rather than remembered.** *(All
+four are now closed or dispositioned; see the M3-A-4 section below for what each
+turned into. Kept because the derivation reads from them.)* Item 1.4
 owns "no managed process or host resource behind", and the roadmap names three
 kinds of ownership mark - processes, state dirs, and *any network rules the
 actuator creates*. Four facts were checked while handing over, and each is an
@@ -506,6 +508,89 @@ so that run's `network_error_or_drop_overlap_count: 0` does not mean no overlap
 was observed - it means none is expressible. Fixing it changes a diff-view
 surface and needs the offsets this item introduces, so it is its own change with
 its own evidence, and it is **not** item 1.4's or 1.5's.
+
+### Session M3-A-4 is done: roadmap item 1.4, distributed cleanup
+
+The seam is still **twenty-four operations** - this item needed no
+twenty-fifth - and `repository.all` is still **92**, because its twelve new
+checks joined a module the catalog already registers. Read
+`project/docs/distributed_cleanup_slice_map.md`; §1 is what a native run
+actually leaves on a host, §2 the ownership mark derived from it, §8 what was
+reported rather than fixed.
+
+- **The defect nobody handed over, and reading could not have found it: the
+  residue scan could not see a running node.** It matched
+  `ps -eo args= | grep -F "$root"`, and Valkey rewrites its process title - a
+  live node's argv is `valkey-server 0.0.0.0:31000 [cluster]` and the config
+  path is gone. Measured with two of the run's nodes live: **one row, for the
+  directory, and none for them.** The operation whose docstring says it measures
+  rather than asserts was asserting, which is the very defect item 0.5 existed
+  to prevent, in the operation item 0.5 created.
+- **The mark for a process is its working directory.** The config sets
+  `dir <data_dir>` and Valkey chdirs there, so `/proc/<pid>/cwd` still names the
+  run root after a restart and after the proctitle rewrite. Compared with a
+  trailing separator on both sides, because without one `run-alpha` claimed
+  `run-alpha-2`'s node - measured. `/proc/<pid>/exe` is recorded and never used
+  to filter: filtering would drop exactly the process a reader most needs to
+  hear about, something unexpected running out of the run's own tree.
+- **The pidfile is not the answer either**, which the handover's item 2 had not
+  established. Measured: a SIGKILLed node leaves a pidfile holding a **dead
+  pid**, so killing by it risks an unrelated process; a cleanly stopped node
+  removes its own. Neither necessary nor sufficient. So `reclaim_run` and
+  `release_run` now share one enumeration and neither uses a pid it was told
+  about - what state believed survives only as `state_pid_count` beside
+  `pid_count`, because the gap between them is the evidence.
+- **A firewall rule cannot carry the run in its chain name.** Measured:
+  `iptables` accepts a 28-character chain name and refuses 29; a run id is 42.
+  The same shape of constraint as M3-A-2's 104-byte `ControlPath`. So the chain
+  keeps its readable nodehost-derived name as a *handle*, and the two jumps
+  carry `vslab-run=<run_id>` in a **comment**, which holds 256 and which
+  `iptables -S` prints. Both cleanup paths find and remove rules by it; the
+  residue scan asks for rules still carrying the mark *and* for chains this run
+  created, because a chain outlives its mark once its jumps are gone.
+- **Teardown sends CONT before TERM.** A process the actuator suspended cannot
+  act on TERM, so an abort with a nodehost paused would sit out the whole
+  termination wait and be killed at the end of it.
+- **The resource agent moved under the run root**, package copy and all: its old
+  root was named by `sampler_id`, which is the `nodehost_id` and names no run.
+  The root was this backend's own constant and no part of the seam, so moving it
+  was the backend's to make. **The Load Lane's remote directory did not move**
+  and is the item's one open residue: `LoadLaneHost`'s protocol says in as many
+  words that `remote_dir` is the lane's choice, and `_output_prefix` has already
+  written it into memtier's argv. Slice map §8.4 carries both candidate fixes and
+  why each is item 1.5's rather than this one's.
+- **`HostTransport.close()` has its first caller.** `release_run` closes a
+  transport this backend opened for itself - never one it was handed, which
+  belongs to whoever handed it over. `reclaim_run` deliberately does not: on a
+  run's own path it runs before `create_network` and the run keeps using that
+  transport.
+
+- **Proven:** `repository.all` **92/92**, 788 pytest checks, vocabulary contract
+  clean. On the two-host simulated fleet, with residue placed by the backend's
+  own operations - `start_nodehost` installing the pinned bundle, real
+  `valkey-server` processes under the lifecycle's config shape, and
+  `isolate_nodehost` installing the rules itself - **fifteen pieces of residue,
+  and managed residue 13 → 0 twice**: once through `release_run`, once through
+  `reclaim_run` after the controller was **SIGKILLed** mid-flight while a host
+  was isolated. Open control channels 2 → 0 on the passing path. Re-run it with
+  `python3 scripts/native_cleanup_proof.py release|abort --fleet-id sim-a`.
+
+**What item 1.4 did not close, and it is the honest boundary:** an *aborted*
+controller's ssh masters. They survive `SIGKILL` (they are daemonised, not
+children), leave one `sshd-session` per host, and cannot be reclaimed by anything
+that runs afterwards - nothing on a host says which run a session belongs to and
+nothing on the controller says which `mkdtemp`-named socket directory does, so
+claiming them would mean closing another run's channel. Bounded by
+`ControlPersist=600`. Slice map §8.2 records the candidate fix and why it is its
+own change.
+
+**Deliberately not done, and named so a later session does not adopt them:** the
+fault actuator still suspends and resumes by pidfile (slice map §8.5 - narrower
+there, because a pidfile *is* current for a node that is running, and changing it
+is a fault-lane change belonging to the item whose ladder exercises the fault
+lane); and no fault path checks ownership, which stays the accepted absence below
+- the run mark on the actuator's rules records *whose* a rule is and does not
+make `isolate_nodehost` refuse a host that is not this run's.
 
 ### What is left before M3, and what is M3 itself
 
@@ -774,7 +859,13 @@ lane's own verdict is correctly `OK` - and the sample counts are not stable
   deliberately **not** a Session C item either. Operator decision 2026-08-10:
   **carry it into M3-A item 1.4**, where the native backend must clean the
   processes actually alive at teardown rather than assume `state.json`'s pid is
-  current.
+  current. **Done for the native backend in item 1.4**, which terminates what
+  `/proc` says is running out of the run's tree and never a pid it was told
+  about. **Still true of the Docker backend, and still correct there**, because
+  `docker rm -f` is the backstop; it was not changed, which is why item 1.4
+  moved no diff view. A later session that makes the two paths agree should know
+  it would be changing `cleanup_report` on the Docker path, with the artifact
+  evidence that implies.
 - ~~**No node log is ever collected.**~~ **Done in item 1.3.** Every node's
   `valkey.log` is now pulled once, at the last boundary where it is complete and
   still on its host, into `runtime/node_journals/<host_id>/<logical_id>.log`.
