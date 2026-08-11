@@ -87,9 +87,15 @@ RUN_STATE_ROOT = "/tmp/valkey-scale-lab"
 #: The run bundle lands here, matching `PROCESS_BUNDLE_ROOT` in the lifecycle.
 BUNDLE_DROP_ROOT = "/tmp"
 
-#: Where the resource agent's copy of the package goes, matching the Docker
-#: backend's `RESOURCE_AGENT_DIR` so the agent is invoked identically.
-RESOURCE_AGENT_ROOT = "/tmp/vslab-resource-agent"
+#: Where the resource agent's copy of the package goes, *under the run root*.
+#: It sat at `/tmp/vslab-resource-agent` until roadmap item 1.4, matching the
+#: Docker backend's `RESOURCE_AGENT_DIR` - which is correct under Docker, where
+#: removing the container removes it, and leaves a package copy and a directory
+#: per sampler on every host of a native run forever. The agent is invoked
+#: identically either way; only the root moved. Under the run root it needs no
+#: removal step of its own, and a sampler still running after an abort is found
+#: by the cwd scan below like any other process of the run.
+RESOURCE_AGENT_SUBDIR = ".resource-agent"
 
 _DEFAULT_TIMEOUT = 60.0
 
@@ -1054,6 +1060,22 @@ class NativeMultiEcsBackend:
         )
 
     @staticmethod
+    def _node_run_root(node: Mapping[str, Any]) -> str:
+        """This run's tree on the host holding `node`.
+
+        A node carries `run_id` because `_prepare_process_node_metadata` writes
+        it, which is a stronger source than `_run_id_from`'s bundle-name parse -
+        that one exists because a *nodehost* record has no `run_id` of its own.
+        """
+        run_id = str(node.get("run_id") or "")
+        if not run_id:
+            raise NativeRuntimeError(
+                f"node {node.get('logical_id', '?')} does not say which run it belongs to, "
+                "so nothing placed beside it on the host could be released with the run"
+            )
+        return run_state_root(run_id)
+
+    @staticmethod
     def _run_id_from(nodehost: Mapping[str, Any]) -> str:
         """The run this nodehost belongs to, read off its bundle name.
 
@@ -1206,6 +1228,13 @@ class NativeMultiEcsBackend:
             backend=self,
             control_endpoint=self._endpoint(nodes[0]),
             sampler_id=sampler_id,
+            # Under the run's own root, so the agent needs no removal step of
+            # its own and a sampler still running after an abort is found by the
+            # same cwd scan as every other process of the run. `sampler_id` is
+            # the `nodehost_id` and names no run, so its old root left a
+            # directory per sampler on every host forever. See
+            # `distributed_cleanup_slice_map.md` §2.4.
+            run_root=self._node_run_root(nodes[0]),
             processes=list(processes),
             expected_gone=list(expected_gone),
         )
@@ -1560,6 +1589,7 @@ class NativeResourceAgent:
         backend: NativeMultiEcsBackend,
         control_endpoint: Mapping[str, Any],
         sampler_id: str,
+        run_root: str,
         processes: list[tuple[str, int]],
         expected_gone: list[tuple[str, int]],
     ) -> None:
@@ -1568,7 +1598,8 @@ class NativeResourceAgent:
         self.sampler_id = sampler_id
         self._processes = processes
         self._expected_gone = expected_gone
-        self._dir = f"{RESOURCE_AGENT_ROOT}/{_safe_token(sampler_id, 'sampler_id')}"
+        self._root = f"{run_root}/{RESOURCE_AGENT_SUBDIR}"
+        self._dir = f"{self._root}/{_safe_token(sampler_id, 'sampler_id')}"
         self._out = f"{self._dir}/resource_samples.json"
         self._pidfile = f"{self._dir}/agent.pid"
         self._active_file = f"{self._dir}/expected_gone_active"
@@ -1591,7 +1622,7 @@ class NativeResourceAgent:
         if made.returncode != 0:
             raise NativeRuntimeError(f"could not create {self._dir}: {made.stderr.strip()[:200]}")
         self._backend.transport.put(
-            self._endpoint, package, f"{RESOURCE_AGENT_ROOT}/valkey_scale_lab", timeout=300
+            self._endpoint, package, f"{self._root}/valkey_scale_lab", timeout=300
         )
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
             json.dump(spec, handle, sort_keys=True)
@@ -1603,8 +1634,8 @@ class NativeResourceAgent:
         finally:
             Path(spec_path).unlink(missing_ok=True)
         launch = (
-            f"cd {shlex.quote(RESOURCE_AGENT_ROOT)} && "
-            f"PYTHONPATH={shlex.quote(RESOURCE_AGENT_ROOT)} "
+            f"cd {shlex.quote(self._root)} && "
+            f"PYTHONPATH={shlex.quote(self._root)} "
             "nohup python3 -m valkey_scale_lab.observability.resource_agent "
             f"--spec {shlex.quote(self._dir)}/spec.json "
             f"--out {shlex.quote(self._out)} "

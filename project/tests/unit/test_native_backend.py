@@ -782,6 +782,28 @@ def test_the_resource_agent_ships_the_package_and_launches_the_same_module() -> 
     assert transport.ran("expected_gone_active")
 
 
+def test_the_resource_agent_lives_under_the_run_root_so_teardown_reaches_it() -> None:
+    """Roadmap item 1.4: a sampler's files were outside every ownership mark.
+
+    `sampler_id` is the `nodehost_id` and names no run, so
+    `/tmp/vslab-resource-agent/<nodehost_id>` said nothing about whose it was and
+    nothing removed it. Under the run root it needs no removal step of its own,
+    and a sampler still running after an abort has its cwd inside the tree the
+    process scan walks.
+    """
+    transport = FakeTransport()
+    backend = _backend(transport)
+    agent = backend.resource_sampler(
+        [_node()], sampler_id="nodehost-az-a-00", processes=[("node-000", 4242)], expected_gone=[]
+    )
+    agent.start()
+    root = "/tmp/valkey-scale-lab/run-1/.resource-agent"
+    assert all(remote.startswith(root) for _a, _l, remote in transport.puts)
+    assert not transport.ran("/tmp/vslab-resource-agent")
+    launched = [argv for _a, argv in transport.commands if "resource_agent" in " ".join(argv)]
+    assert launched and f"cd {root}" in " ".join(launched[0])
+
+
 def test_a_sampler_needs_a_node_to_locate_its_host() -> None:
     backend = _backend(FakeTransport())
     with pytest.raises(NativeRuntimeError, match="at least one node"):
