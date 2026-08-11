@@ -22,6 +22,27 @@ that hides those differences would hide a regression with them. Everything this
 tool ignores is listed in IGNORED below, and anything that varies per run but
 still carries evidence is renamed rather than dropped, so that its absence
 cannot pass as a match.
+
+Comparing two *backends* adds one thing to read carefully, and it is read here
+rather than normalised. `argv` is backend-specific by construction - a native
+run issues `sh -c "PATH=...; valkey-server <conf>"` over ssh where a Docker run
+issues `docker exec <container> valkey-server <conf>` - so the command-log views
+can never be equal across backends and will report DIFFERS on every native
+candidate. **That is an expected runtime difference and not a defect, and it is
+not a reason to drop argv from the views.** A command log exists to say exactly
+what was executed; a view that collapsed argv would keep scoring green while the
+wrong command ran, which is the failure the seeded-regression rule in CLAUDE.md
+exists to prevent. Operator decision, 2026-08-11: keep the raw argv and carry
+the distinction in how the result is read.
+
+So read a cross-backend command-log diff by what is *around* argv. Measured
+across two native exact-50 runs at roadmap item 1.5 rung 2: `argv` is the entire
+difference in `fault_command_log` - 17 rows and nothing else - and 212 of 1592
+rows in `management_command_log`, with `command_kind`, `operation_id`,
+`target_logical_id`, `status`, `returncode` and `attempt_count` identical
+throughout. Those are the fields that carry the claim; a delta in any of them is
+a finding, and a delta confined to argv is the runtime showing through.
+`project/docs/simulated_ladder_slice_map.md` §14.5 has the measurement.
 """
 
 from __future__ import annotations
