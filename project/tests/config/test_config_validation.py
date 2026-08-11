@@ -3,7 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
+from valkey_scale_lab.execution import (
+    ExecutionSelectionError,
+    backend_for_provider,
+    backends_for_provider,
+)
 
 
 def test_single_mac_template_validates(tmp_path: Path) -> None:
@@ -380,3 +387,35 @@ def test_an_unknown_provider_is_still_refused(tmp_path: Path) -> None:
     report = validate_config_file(config, tmp_path / "report.json")
 
     assert report["valid"] is False
+
+
+def test_the_configuration_chooses_the_backend(tmp_path: Path) -> None:
+    """A configuration's provider decides the backend, and nothing else does.
+
+    Roadmap item 1.2 registered `native_multi_ecs` and admitted
+    `runtime.provider: ecs`, but nothing joined the two: `backend_id` came from
+    a CLI default of `docker_process`. Measured on the first native exact-30
+    attempt - the placement read the fleet manifest and wrote `host_id:
+    sim-host-00` onto four nodehosts, and the run then started four Docker
+    containers for them. A run that reports a fleet it never touched is worse
+    than one that refuses.
+    """
+    assert backend_for_provider("ecs") == "native_multi_ecs"
+    assert backend_for_provider("docker") == "docker_process"
+    # `docker` is implemented by two backends, so the provider narrows the
+    # choice rather than making it, and naming one of them still works.
+    assert set(backends_for_provider("docker")) == {"docker_container", "docker_process"}
+    assert backend_for_provider("docker", requested="docker_container") == "docker_container"
+
+
+def test_a_backend_that_contradicts_the_configuration_is_refused() -> None:
+    """Refused in both directions: silently winning either way is the defect."""
+    with pytest.raises(ExecutionSelectionError, match="does not implement"):
+        backend_for_provider("ecs", requested="docker_process")
+    with pytest.raises(ExecutionSelectionError, match="does not implement"):
+        backend_for_provider("docker", requested="native_multi_ecs")
+
+
+def test_an_unimplemented_provider_names_the_ones_that_exist() -> None:
+    with pytest.raises(ExecutionSelectionError, match="no registered backend"):
+        backend_for_provider("nomad")

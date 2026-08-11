@@ -13,6 +13,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.evidence import (
     ADMISSION_SCHEMA_VERSION,
     EvidenceValidationError,
@@ -22,7 +23,12 @@ from valkey_scale_lab.evidence import (
     validate_raw_sources,
     validate_raw_sources_by_kind,
 )
-from valkey_scale_lab.execution import SCENARIO_CAPABILITIES, ExecutionProfile
+from valkey_scale_lab.execution import (
+    SCENARIO_CAPABILITIES,
+    ExecutionProfile,
+    ExecutionSelectionError,
+    backend_for_provider,
+)
 from valkey_scale_lab.gates import (
     FaultTargetKind,
     GateRequest,
@@ -133,6 +139,25 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _configured_provider(config_path: str | Path) -> str:
+    """`runtime.provider` as written, before any defaulting.
+
+    Read here rather than taken from the already-normalised configuration the
+    runtime loads later, because the backend has to be known before the run
+    starts - it decides whether a Docker daemon is even a precondition.
+    """
+    try:
+        config = parse_config_file(config_path)
+    except (OSError, ValueError) as error:
+        raise DockerRuntimeError(f"could not read {config_path}: {error}") from error
+    provider = str((config.get("runtime") or {}).get("provider", "")).strip()
+    if not provider:
+        raise DockerRuntimeError(
+            f"{config_path} names no runtime.provider, so no backend can be chosen for it"
+        )
+    return provider
+
+
 def run_exact_gate(
     *,
     definition: ScenarioDefinition,
@@ -143,7 +168,7 @@ def run_exact_gate(
     ownership_id: str,
     provenance_id: str,
     product_digest: str,
-    backend_id: str = "docker_process",
+    backend_id: str | None = None,
     profile_id: str | None = None,
     prior_admission_digest: str | None = None,
     operator_opt_in: bool = False,
@@ -151,6 +176,23 @@ def run_exact_gate(
 ) -> dict[str, Any]:
     if not re.fullmatch(r"[0-9a-f]{64}", product_digest):
         raise DockerRuntimeError("exact gate requires a 64-character product digest")
+    # The configuration says which provider it is for, and that decides the
+    # backend. Before roadmap item 1.5 nothing joined the two: `backend_id`
+    # arrived from a CLI default of `docker_process` and `runtime.provider` was
+    # only ever validated, so a configuration naming `ecs` ran on Docker - with
+    # placement having already read the fleet manifest, so the run's own
+    # artifacts claimed four nodehosts on named fleet hosts that no process ever
+    # touched. Measured on the first native exact-30 attempt.
+    #
+    # `requested` is passed through rather than ignored, so an explicit backend
+    # that contradicts the configuration is refused instead of silently winning
+    # in either direction.
+    try:
+        backend_id = backend_for_provider(
+            _configured_provider(config_path), requested=backend_id
+        )
+    except ExecutionSelectionError as exc:
+        raise DockerRuntimeError(str(exc)) from exc
     # Which backend is being asked for decides what has to be true before the run
     # starts. A local Docker daemon is the Docker backends' precondition, not the
     # Gate's, so it is checked when it applies rather than always - otherwise no

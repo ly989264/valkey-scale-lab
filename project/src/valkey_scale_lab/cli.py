@@ -12,7 +12,12 @@ from valkey_scale_lab.analysis import AnalysisError, WorkloadImpactError, build_
 from valkey_scale_lab.artifacts import build_run_metadata, create_run_context, write_run_manifest, write_run_metadata
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 from valkey_scale_lab.compat import resolve_capability_alias, resolve_phase_alias
-from valkey_scale_lab.execution import PROFILES, ExecutionSelectionError, resolve_profile
+from valkey_scale_lab.execution import (
+    BACKENDS,
+    PROFILES,
+    ExecutionSelectionError,
+    resolve_profile,
+)
 from valkey_scale_lab.gates.real import product_tree_digest, run_exact_gate
 from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
@@ -608,7 +613,13 @@ def build_parser() -> argparse.ArgumentParser:
     execute.add_argument("--definition", required=True)
     execute.add_argument("--nodes", required=True, type=int)
     execute.add_argument("--config", required=True)
-    execute.add_argument("--backend", choices=["docker_process"], default="docker_process")
+    # No default: the backend comes from the configuration's runtime.provider,
+    # so that a native configuration cannot silently run on Docker. Naming one
+    # here still works and is refused if it contradicts the configuration.
+    execute.add_argument(
+        "--backend", choices=sorted(BACKENDS), default=None,
+        help="override the backend the configuration's runtime.provider implies",
+    )
     execute.add_argument("--profile", choices=["exact-50", "exact-100", "exact-200", "exact-2000"])
     execute.add_argument("--run-id", required=True)
     execute.add_argument("--ownership-id", required=True)

@@ -119,6 +119,73 @@ def resolve_backend(backend_id: str) -> ExecutionBackend:
         raise ExecutionSelectionError(f"unknown backend_id {backend_id!r}") from exc
 
 
+def backends_for_provider(provider: str) -> tuple[str, ...]:
+    """Which registered backends implement `runtime.provider`.
+
+    `provider` is the configuration's word for the same thing `backend_id`
+    names, and until roadmap item 1.5 nothing joined them: a configuration
+    saying `ecs` ran on `docker_process`, because the backend came from a CLI
+    default and the provider was only ever validated. Measured on the first
+    native exact-30 attempt - the placement read the fleet manifest and wrote
+    `host_id: sim-host-00` onto four nodehosts, and the run then started four
+    Docker containers for them. A run that reports a fleet it never touched is
+    worse than one that refuses.
+
+    `docker` maps to two backends, so the provider narrows the choice rather
+    than making it; `ecs` maps to one.
+    """
+    return tuple(
+        sorted(
+            backend_id
+            for backend_id, backend in BACKENDS.items()
+            if backend.provider == provider
+        )
+    )
+
+
+#: Which backend a provider means when a run does not say. `docker` is
+#: implemented by two, and `docker_process` is the one every exact gate has
+#: used since it existed; `ecs` is implemented by one. Data rather than a
+#: fallback in the caller, because "which backend does this configuration
+#: mean" is exactly what this module is for.
+DEFAULT_BACKEND_BY_PROVIDER: Mapping[str, str] = MappingProxyType(
+    {
+        "in_memory": "fake",
+        "docker": "docker_process",
+        "ecs": "native_multi_ecs",
+    }
+)
+
+
+def backend_for_provider(provider: str, *, requested: str | None = None) -> str:
+    """The backend a run with this `runtime.provider` must use.
+
+    `requested` is a backend the caller asked for by name. It is honoured when
+    the provider admits it and **refused** when it does not - silently
+    overriding either one is how a native configuration came to run on Docker.
+    """
+    candidates = backends_for_provider(provider)
+    if not candidates:
+        raise ExecutionSelectionError(
+            f"no registered backend implements runtime.provider {provider!r}; "
+            f"providers: {', '.join(sorted({item.provider for item in BACKENDS.values()}))}"
+        )
+    if requested is not None:
+        if requested not in candidates:
+            raise ExecutionSelectionError(
+                f"backend {requested!r} does not implement runtime.provider {provider!r}; "
+                f"{provider!r} is implemented by {', '.join(candidates)}"
+            )
+        return requested
+    default = DEFAULT_BACKEND_BY_PROVIDER.get(provider)
+    if default is None:
+        raise ExecutionSelectionError(
+            f"runtime.provider {provider!r} is implemented by {', '.join(candidates)} "
+            "and has no default; the run must say which"
+        )
+    return default
+
+
 def resolve_profile(profile_id: str, *, requested_nodes: int) -> ExecutionProfile:
     try:
         profile = PROFILES[profile_id]
