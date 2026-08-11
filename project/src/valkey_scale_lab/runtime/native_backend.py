@@ -70,7 +70,12 @@ from valkey_scale_lab.runtime.native_bundle import (
     NativeBundleError,
     verify_native_bundle,
 )
-from valkey_scale_lab.runtime.node_backend import NodehostAddress, RunTeardown
+from valkey_scale_lab.runtime.node_backend import (
+    NodehostAddress,
+    RunTeardown,
+    SampledProcess,
+    SamplerSpec,
+)
 from valkey_scale_lab.valkey.resp import encode_command, read_response
 
 #: Where a pinned bundle is unpacked. Addressed by the archive digest, not by the
@@ -1066,21 +1071,32 @@ class NativeMultiEcsBackend:
         self, nodehost: dict[str, Any], signal: str, command_kind: str
     ) -> dict[str, Any]:
         run_root = run_state_root(nodehost.get("run_id") or self._run_id_from(nodehost))
-        # Still by pidfile, deliberately. Roadmap item 1.4 replaced this notion
-        # of "what is running" in both cleanup paths and left the actuator's
-        # alone: a pidfile is current for a node that *is* running, which is the
-        # only case pause and resume act on, and changing the fault path is a
-        # fault-lane behaviour change that belongs to the item whose runs
-        # exercise the fault lane. See `distributed_cleanup_slice_map.md` §8.3.
+        # By what `/proc` says is running, the same notion both cleanup paths
+        # use. It used to read `<run_root>/*/valkey.pid`, left alone by roadmap
+        # item 1.4 on the argument that a pidfile is current for a node that is
+        # running - the only case pause and resume act on - and handed to the
+        # item whose runs exercise the fault lane (§8.3).
+        #
+        # They do, and it isn't. Measured on two hosts after a real `kill_node`:
+        # **2 pidfiles, 1 live process**, because a SIGKILLed node leaves its
+        # pidfile holding a dead pid. The actuator's own count self-corrected -
+        # `kill -STOP` on a dead pid fails and is not counted - so nothing was
+        # lost, but it *attempted* a signal to a pid it did not own, which on a
+        # busy host is the collateral-signal risk §8.3 named. The exact-30 fault
+        # matrix reaches here twice, through `node_host_stop` and `az_stop`.
+        #
+        # Enumeration and signal stay one script, for the reason
+        # `_signal_owned_processes` gives: a pid read on the controller and
+        # signalled a round trip later is a pid that may have been reused.
+        body = (
+            f'if kill -{signal} "$pid" 2>/dev/null; then '
+            "  signalled=$((signalled + 1)); "
+            "fi;"
+        )
         script = (
-            f"root={shlex.quote(run_root)}; signalled=0; "
-            'for pidfile in "$root"/*/valkey.pid; do '
-            '  [ -f "$pidfile" ] || continue; '
-            '  pid=$(cat "$pidfile" 2>/dev/null) || continue; '
-            '  case "$pid" in ""|*[!0-9]*) continue;; esac; '
-            f'  kill -{signal} "$pid" 2>/dev/null && signalled=$((signalled + 1)); '
-            "done; "
-            'printf "%s" "$signalled"'
+            "signalled=0; "
+            + _owned_process_walk(run_root, body=body)
+            + 'printf "%s" "$signalled"'
         )
         result = self._run(self._endpoint(nodehost), ["sh", "-c", script], timeout=30)
         return self._fault_record(
@@ -1684,6 +1700,16 @@ class NativeResourceAgent:
         self._backend = backend
         self._endpoint = dict(control_endpoint)
         self.sampler_id = sampler_id
+        # The identity the observation layer reads to attribute a sample to a
+        # host - `runner.sampler.sampler_id` and `runner.sampler.processes` in
+        # `observability/stability.py` and `resource_observation.py`. It was
+        # missing here because `ResourceSampler` declared only three methods,
+        # and the run died 340 s in with `'NativeResourceAgent' object has no
+        # attribute 'sampler'`. The protocol now declares it.
+        self.sampler = SamplerSpec(
+            sampler_id=sampler_id,
+            processes=tuple(SampledProcess(logical_id, pid) for logical_id, pid in processes),
+        )
         self._processes = processes
         self._expected_gone = expected_gone
         self._root = f"{run_root}/{RESOURCE_AGENT_SUBDIR}"

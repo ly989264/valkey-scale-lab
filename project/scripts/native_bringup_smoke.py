@@ -295,15 +295,21 @@ def run_smoke(fleet_id: str, artifacts: Path, report: Report) -> Report:
     # --- one process's lifecycle
     node = nodes[0]
     report.step("stop_node", lambda: backend.stop_node(node, command_kind="smoke_stop"))
-    report.step(
-        "start_node",
-        lambda: backend.start_node(node, fresh_cluster_identity=False),
-    )
+    report.step("start_node", lambda: _restart(backend, node))
     report.step("pause_node", lambda: backend.pause_node(node))
     report.step("resume_node", lambda: backend.resume_node(node))
     report.step("pause_nodehost", lambda: _pause_and_count(backend, first))
     report.step("resume_nodehost", lambda: backend.resume_nodehost(first))
     report.step("kill_node", lambda: backend.kill_node(node))
+    # The decisive measurement for slice map §7.2, and it has to come *after* a
+    # kill. A SIGKILLed node leaves a pidfile holding a dead pid (item 1.4 §1.4),
+    # and `pause_nodehost` still enumerates `<run_root>/*/valkey.pid` - so this
+    # is the only arrangement where the pidfile set and the live set can
+    # disagree. The exact-30 fault matrix reaches `pause_nodehost` twice
+    # (`node_host_stop`, `az_stop`) but records only the action string, not the
+    # count, so a run's artifacts cannot answer this.
+    report.step("pause_nodehost after a kill", lambda: _pause_and_count(backend, first))
+    report.step("resume_nodehost after a kill", lambda: backend.resume_nodehost(first))
 
     # --- the two evidence surfaces with no on-host proof at all
     report.step(
@@ -327,6 +333,19 @@ def _record_pids(backend: NativeMultiEcsBackend, nodehost: dict[str, Any], nodes
         if node["logical_id"] in collected:
             node["pid"] = int(collected[node["logical_id"]])
     return collected
+
+
+def _restart(backend: NativeMultiEcsBackend, node: dict[str, Any]) -> dict[str, Any]:
+    """`start_node`, keeping the node's pid current.
+
+    The lifecycle does this too, and without it the smoke's later `kill_node`
+    signalled the pid the node had *before* it was stopped - already dead, so
+    the kill was a no-op and §7.2's measurement was inconclusive without saying
+    so. Found by the counts not moving when they should have.
+    """
+    pid, rows = backend.start_node(node, fresh_cluster_identity=False)
+    node["pid"] = int(pid)
+    return {"pid": int(pid), "rows": len(rows)}
 
 
 def _pause_and_count(backend: NativeMultiEcsBackend, nodehost: dict[str, Any]) -> dict[str, Any]:
