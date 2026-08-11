@@ -719,17 +719,68 @@ rung 3 (native exact-200 on eight hosts).
   four kinds exactly as declared in advance, **zero residue on all four hosts**,
   no `ERROR` in any artifact, RTO 47.26s and 46.45s.
 
-**What M3-A-6 inherits.** No frozen 30-node baseline exists, so nothing in rung
-1 is an equivalence result - that is rung 2's, against
-`artifacts/baselines/exact-50-6b6f57fd/`, whose artifact root is
-`<run>/001-real.local.full-flow/runtime` and which calibrates 7/7, 5/5, 8/8,
-6/6, 2/2 baseline-to-baseline. The deltas to expect are in slice map §6, and
-`cleanup` is the one already confirmed on a real native run.
-`templates/configs/native_{30,50,200}.yaml` name fleet `sim-l5`; bring it up
-with `python3 scripts/simulated_hosts.py up --fleet-id sim-l5 --hosts 4` (or
-`--hosts 8 --client-ports 200` for exact-200, which also needs the `127.0.0.9`
-alias). Publishing 200 ports on each of 8 hosts was measured at 41 s to start
-and slow to tear down - a per-fleet cost, paid once.
+**What M3-A-6 inherits, verified at this HEAD rather than remembered.** Two of
+the seven facts the *previous* handover carried were wrong, so each of these was
+re-checked by compiling or running it at `69ad92a2`, not by recalling it.
+
+1. **The rung arithmetic, compiled at HEAD.** Each configuration resolves
+   `provider: ecs` to `native_multi_ecs` and plans:
+
+   | configuration | nodes | nodehosts | **hosts** | client ports | fleet command |
+   |---|---|---|---|---|---|
+   | `native_30` | 30 | 4 | **4** | 31000-31029 | `--hosts 4 --client-ports 60` |
+   | `native_50` | 50 | 4 | **4** | 31000-31049 | `--hosts 4 --client-ports 60` |
+   | `native_200` | 200 | 8 | **8** | 31000-31199 | `--hosts 8 --client-ports 200` |
+
+   All three name fleet `sim-l5`:
+   `python3 scripts/simulated_hosts.py up --fleet-id sim-l5 --hosts N --client-ports P`.
+2. **`native_200.yaml` carries `profile_name: scale_200`, deliberately, and it
+   must keep it.** `_is_exact_200_bounded_exception` is the safety guard that
+   admits a real run above the default cap of 100, and it keys on that exact
+   name plus `runtime.dry_run: false`. Measured: with `native_200` as the name
+   the planner refuses - `node count exceeds default cap without 1000 opt-in` -
+   and rung 3 would have discovered it after bringing eight hosts up. The name
+   is the *scale* profile and the runtime is named by `runtime.provider`, so
+   this is the same profile on a different runtime; widening the guard instead
+   would be a change to a safety contract and is the operator's call, not a
+   session's.
+3. **The eighth host needs one more loopback alias**, `127.0.0.9`
+   (`sudo ifconfig lo0 alias 127.0.0.9 up`). Hosts map to `127.0.0.<index+2>`,
+   so eight need `.2`-`.9` and only `.2`-`.8` exist. Aliases do not survive a
+   reboot; the harness checks and refuses with the command rather than failing
+   obscurely. Publishing 200 ports on each of 8 hosts was measured at 41 s to
+   start and slow to tear down - a per-fleet cost, paid once.
+4. **The equivalence diff's baseline and its calibration.**
+   `artifacts/baselines/exact-50-6b6f57fd/`, artifact root
+   `<run>/001-real.local.full-flow/runtime` - the run directory alone gives
+   "6 unavailable" and is the wrong path. Calibrated baseline-to-baseline at
+   this HEAD: **7/7, 5/5, 8/8, 6/6, 2/2**.
+5. **The deltas are declared in slice map §6 and must not grow.** The two
+   inherited Docker ones (`management_matrix` 6/8 at +14 rows with
+   `cluster_migrate_keys` 4 → 18, three kinds changed and fourteen unchanged;
+   `fault_matrix` 5/6 at reachable ×3, reason ×3, one `true→false`) are pinned
+   by two real Docker exact-50 this session. The native ones are §6.3's, and
+   **`cleanup` is already confirmed on a real native run** - 20 rows in four
+   kinds, no network row, two extra timing keys. §6.3 predicts *no* vocabulary
+   delta in `cluster_form`, `management_matrix` or `fault_matrix` beyond the
+   inherited pair; that is the prediction rung 2 tests and the one most likely
+   to be wrong.
+6. **Rung 1 is not an equivalence result.** No frozen 30-node baseline exists.
+   Its value is that the lifecycle runs natively at all, plus the fault lane's
+   9/12/15 holding across a change of runtime.
+7. **Do not freeze native baselines.** The roadmap is explicit that they come
+   from the real fleet in M3-B, because a baseline should encode the environment
+   acceptance runs in.
+
+Still open and **not** M3-A-6's: the aborted controller's ssh masters (1.4 map
+§8.2), the resource-to-timeline monotonic correlation (1.3 map §10.1), a failing
+run collecting no journals and writing no lifecycle timeline (1.3 map §10.2),
+`_check_ports_free`'s loopback bind (M3-B's), and the absent fault-path
+ownership check (accepted 2026-08-10). Two smaller ones this session added:
+a run's artifacts record the pause *action string* but not the `signalled`
+count, so no run can answer slice map §7.2 from its own evidence; and
+`SamplerSpec` in `node_backend.py` duplicates the Docker backend's private
+`_AgentSamplerSpec`, whose collapse is a change on a real Docker run's path.
 
 ### What is left before M3, and what is M3 itself
 
