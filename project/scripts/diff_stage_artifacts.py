@@ -933,8 +933,29 @@ def _cleanup_scrub(value: Any, key: str | None = None) -> Any:
         for name, item in sorted(value.items()):
             if IGNORED.match(name):
                 continue
+            if name == "pid" and isinstance(item, int):
+                # The same rule `scrub` declares and this walk lost by
+                # reimplementing the descent: a pid varies per run like a
+                # timestamp, but whether a row has one at all is evidence.
+                out[name] = "<PID>"
+                continue
             if name in _CLEANUP_PID_LISTS and isinstance(item, list):
                 out[f"{name}:count"] = len(item)
+                continue
+            if name == "processes" and isinstance(item, list):
+                # The native residue rows carry a process *record* per entry -
+                # `pid`, `cwd`, `exe` - where the Docker rows carried a bare pid
+                # list. It is not reduced to a count: `cwd` is item 1.4's
+                # ownership mark and `exe` is recorded precisely so a reader
+                # hears about something unexpected running out of the run's own
+                # tree, and a count would drop both. What is not evidence is the
+                # order, which is the order a scan happened to walk /proc in -
+                # measured as the only difference between two real exact-50 runs
+                # once `pid` was scrubbed.
+                out[name] = sorted(
+                    (_cleanup_scrub(entry, name) for entry in item),
+                    key=lambda entry: json.dumps(entry, sort_keys=True),
+                )
                 continue
             if name in {"stdout", "stderr", "stdout_tail", "stderr_tail"}:
                 # A residual scan prints the pids it found, so its text is the
