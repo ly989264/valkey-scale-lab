@@ -1077,6 +1077,82 @@ rule), and `./gate milestone m3` green on the merged default branch.
     §16 - it is a native-runtime behaviour at exact-30 and exact-50 that vanishes
     at exact-200, and nobody knows what inverts it.
 
+### Host preparation is done, 2026-08-12. Roadmap item 0.7's fleet exists
+
+**Not roadmap item 1.6 and no product code changed.** The operator's fleet is
+provisioned, prepared and verified, so M3-B-1 starts against real hosts rather
+than against a provisioning problem. Read
+`project/docs/ecs_host_preparation_report.md`; it carries the derivation, every
+measurement, the Console runbook and what still cannot be validated.
+
+- **The fleet is eight `c4a-standard-2` GCE hosts, arm64, Ubuntu 26.04 LTS**,
+  four in each of two zones of `asia-southeast1`, plus a `c4-standard-4`
+  controller in the same subnet. **All eight report `READY`, every required
+  check passed, zero advised**, verified with `--bundle` and `--package` so the
+  pinned binaries and the resource agent were exercised on each.
+- **arm64 was chosen to keep M3-B to one changed variable.** Every M3-A
+  measurement and both frozen Docker baselines are arm64, and `architecture` is
+  a field in `bundle_manifest.json`, in `verify_native_bundle`'s preflight
+  evidence and in the `runtime_start` diff view.
+- **The pinned bundle runs unmodified.** On a stock image `valkey-server` and
+  `valkey-cli` link and execute with nothing installed - glibc 2.43 against the
+  bundle's 2.38 requirement - and only memtier needed the four libevent
+  packages. **`CLUSTER MYSLOTS` answers on a host**, which closes
+  `verify_native_bundle`'s `not_verified.cluster_myslots_command`: under Docker
+  the preflight starts a server and asks it, while a bundle verifier can only
+  hash bytes on the controller.
+- **A CentOS 8.2.2004 base was tried first and abandoned**, on measurement: glibc
+  2.28 could not run the bundle at all, and OpenSSH 8.0p1's sftp-server lacks
+  `expand-path@openssh.com`, so `scp -r` from an OpenSSH ≥ 9 controller cannot
+  create a remote directory - which is `send_bundle` and the resource agent's
+  package copy. Both are absent on Ubuntu 26.04.
+- **The manifest user must be root.** `sudo` appears nowhere in `runtime/`, so
+  the backend runs every command as the manifest user directly and those commands
+  write under `/opt`, install iptables chains and read `/proc/<pid>/cwd` for
+  processes they do not own. A sudo account would need the product to prepend
+  `sudo`, changing the argv the equivalence diff compares field by field.
+- **`google-guest-agent` de-provisions the accounts it manages**, keys and sudo
+  together - measured twice, its journal saying `Removing user ...` after the
+  console's short-lived metadata keys expired. The fleet key therefore lives in
+  a root-owned `AuthorizedKeysFile` the agent does not rewrite, proven by
+  emptying `~/.ssh/authorized_keys` completely and logging in again.
+- **Delivery is a startup script, not an image.** GCE machine images do not
+  support Hyperdisk Balanced, which is the only boot disk C4A takes; and the
+  objection to per-host preparation measured zero - two hosts prepared
+  independently came out with all six managed files byte-identical and the same
+  package set. `scripts/ecs_host_startup_metadata.sh` embeds
+  `ecs_host_prepare.sh` verbatim, so there is still one definition.
+
+**Two numbers M3-B-1 should use, and one correction.**
+
+- **Transport is 5.1 ms median fleet-wide** from the in-VPC controller (p90 6.3,
+  per-host 4.4-5.4, 200 commands), against the rolling restart's own 71 ms and
+  61 ms budget. Across an exact-200's 3037 `runtime_command` rows that is
+  **15.5 s**. **Run the gate from the controller, never from a workstation**: the
+  same measurement from a laptop is 110-116 ms, about 5.6 minutes of round trip,
+  and a baseline frozen with that in it could never be reproduced.
+- **Clock offsets are -0.05 to -0.88 ms inside ±7 ms bounds** on all eight - the
+  first time real inter-host skew has been visible. From the laptop the same
+  estimator gave +39 ms inside ±60 ms, which said nothing.
+- **M3-A-2's "simulated numbers are lower bounds" is wrong in its direction.**
+  That spike measured multiplexed ssh at 10.8 ms on the simulated fleet and
+  assumed a real network would be slower; it is *faster*, because the simulated
+  hosts were containers contending for one laptop's CPU. Do not quote simulated
+  numbers as fleet numbers - but do not assume they are optimistic either.
+
+**One evidence-shape delta to declare before freezing real baselines.**
+`LocalResourceSampler.host_sample()` populates **2 of 6 cgroup fields** on a VM -
+`cpu_usage_usec` and `cpu_throttled_usec` yes, the four memory ones null - because
+a container is a delegated child cgroup while a VM's sampler reads the root one.
+Every simulated baseline carries six. That is a vocabulary delta of the kind
+`simulated_ladder_slice_map.md` §6 requires to be declared in advance, not drift.
+
+**What host preparation did not do, and it is the honest boundary:** no Valkey
+cluster has been formed on these hosts. Formation dwell, RTO, the fault lane's
+9/12/15 and the health-gate escalation of slice map §16 are all untouched.
+`scripts/native_bringup_smoke.py` against `fleet_id: gce-m3b` is the natural
+first step and belongs to item 1.6.
+
 ### What is left before M3, and what is M3 itself
 
 Worth separating, because it is easy to list M3's contents and call them
