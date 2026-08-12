@@ -351,6 +351,62 @@ bound) would have failed here, and the bound did not. Expect the bound to shrink
 by two orders of magnitude once the controller is in-VPC, at which point real
 inter-host skew becomes visible for the first time.
 
+### 6.6 The real fleet, measured from an in-VPC controller
+
+Eight `c4a-standard-2` hosts in `asia-southeast1`, four in each of two zones,
+built entirely by the startup script of §1 with no manual step, plus a
+`c4-standard-4` controller in the same subnet.
+
+**All eight report `READY`, every required check passed, zero advised** — run
+from the controller over the fleet key, with `--bundle` and `--package` so the
+pinned binaries and the resource agent were exercised on each host.
+
+**Eight distinct ssh host keys**, most-repeated count 1. That is the roadmap item
+1.0 defect measured absent on a real fleet: each instance generated its own at
+first boot.
+
+**The manifest is accepted by the product's own loader**, which is a stronger
+check than reading the JSON: `load_host_inventory` returns 8 hosts, `az-a` and
+`az-b` with four each, `manifest_sha256` `9ee2c4dc…`. All three native
+configurations' port sets fall inside the declared range, and the forbidden
+vocabulary check finds nothing.
+
+**`create_network` would accept this fleet**: 56 of 56 host pairs have a route.
+
+#### Transport, and a claim this corrects
+
+| controller | median | p90 |
+|---|---|---|
+| in-VPC `c4-standard-4` | **5.1 ms** | 6.3 ms |
+| laptop, over the internet | 110–116 ms | 118 ms |
+| budget (rolling restart's own two operations) | 71 / 61 ms | — |
+
+Fleet-wide over 200 commands, per-host medians 4.4–5.4 ms. Applied to a native
+exact-200's 3037 `runtime_command` rows: **15.5 s** of round trip, against about
+5.6 minutes from a laptop. The in-VPC controller is not an optimisation, it is
+what makes the budget hold.
+
+This also **corrects a claim carried since M3-A-2**. That spike measured
+multiplexed ssh at 10.8 ms on the simulated fleet and recorded the numbers as
+*lower bounds* — the assumption being that a real network would be slower. It is
+faster: 5.1 ms real against 10.8 ms simulated, because the simulated hosts were
+containers contending for one laptop's CPU while these are separate machines on
+a datacentre network. The caution not to quote simulated numbers as fleet numbers
+was right; the direction it assumed was wrong.
+
+#### Clock offsets, with the controller a millisecond away
+
+| | offset | bound | round trip |
+|---|---|---|---|
+| eight hosts | **−0.05 to −0.88 ms** | ±6.5 to ±7.0 ms | 13–14 ms |
+
+Zero inside the bound on all eight, and this is the first time real inter-host
+skew has been visible at all: from the laptop the same estimator gave +39 ms
+inside a ±60 ms bound, which said nothing. Chrony holds these hosts under a
+millisecond of each other. It is also the clearest vindication of `host_clock.py`
+recording a bound rather than testing a threshold — a threshold calibrated on
+either of the other two environments would have been wrong here.
+
 ### 6.5 An evidence-shape delta to declare before freezing baselines
 
 `LocalResourceSampler.host_sample()` populates **2 of 6 cgroup fields** on a real
