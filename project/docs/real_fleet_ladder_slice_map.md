@@ -342,8 +342,11 @@ Both real exact-50 runs score **`runtime_start` 5/7, `cluster_form` 5/5,
 accepted simulated pair scored - and are **identical to each other in every view
 and every field**.
 
-Scores are a summary, so the comparison was made on the delta itself. Reducing
-each view to the set of generalised JSON paths that differ:
+Scores are a summary, so the comparison was made on the delta itself, with
+`scripts/diff_delta_paths.py` - which reduces each of `diff_stage_artifacts.py`'s
+own views to the set of generalised JSON paths that differ, so that two
+candidates' deltas against one baseline can be diffed against *each other*
+rather than each against prose:
 
 | | paths |
 |---|---|
