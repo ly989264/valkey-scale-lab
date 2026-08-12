@@ -161,6 +161,7 @@ def _create_process_scenario(
             scenario=scenario,
             profile_id=profile_id,
             backend_id=backend_id,
+            fleet_hosts=_runtime._fleet_placement_records(config),
         )
         if preflight.get("can_run") is not True:
             _runtime._write_management_blocked_artifact(
@@ -179,6 +180,9 @@ def _create_process_scenario(
                 scenario=scenario,
                 profile_id=profile_id,
                 backend_id=backend_id,
+                # The run's fleet, not the profile template's: the template is
+                # `scale_200.yaml` and names none. See the preflight's own note.
+                fleet_hosts=_runtime._fleet_placement_records(config),
                 operator_opt_in=operator_opt_in,
                 cost_acknowledged=cost_acknowledged,
             )

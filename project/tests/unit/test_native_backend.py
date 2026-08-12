@@ -1584,3 +1584,66 @@ def test_a_run_with_no_fleet_still_compares_against_the_machine_it_runs_on(
     assert check["status"] == "PASS"
     assert check["details"]["compared_against"] == "controller"
     assert check["details"]["host_available_memory_mb"] == 12_117
+
+
+def test_the_preflight_takes_its_fleet_from_the_run_not_the_profile_template(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """On a gate run the two are different documents, and only one names a fleet.
+
+    `_prepare_runtime` preflights the *profile's* canonical template -
+    `scale_200.yaml` for exact-200 - while the fleet is named by the run's own
+    configuration. Measured: the first real exact-200 was refused by a memory
+    check comparing 12800 MB against the controller's 11915 MB, having found no
+    fleet in a document that has none, two frames below a caller holding one.
+    """
+    from valkey_scale_lab import resource
+
+    transport = _MemoryTransport(
+        {f"10.148.0.{n}": 7_900_000 for n in (9, 10, 13, 14)}
+    )
+    monkeypatch.setattr(resource, "MultiplexedSshTransport", lambda *a, **k: transport)
+    monkeypatch.setattr(
+        resource, "_port_check", lambda base, count, name: resource._check(name, True, {})
+    )
+    monkeypatch.setattr(resource, "_host_available_memory_mb", lambda: 11_915)
+
+    # Four hosts, two per AZ: `nodehosts_per_az` is 2, so exact-50 plans four
+    # nodehosts and a fleet with fewer is refused before any of this.
+    fleet = [
+        {
+            "host_id": host_id,
+            "az_id": az,
+            "control_endpoint": {**CONTROL, "address": address},
+            "data_address": address,
+            "client_address": address,
+            "client_port_first": 7000,
+            "client_port_last": 32000,
+            "fleet_id": "gce-m3b",
+        }
+        for host_id, az, address in (
+            ("vslab-host-a-1", "az-a", "10.148.0.9"),
+            ("vslab-host-a-2", "az-a", "10.148.0.10"),
+            ("vslab-host-b-1", "az-b", "10.148.0.13"),
+            ("vslab-host-b-2", "az-b", "10.148.0.14"),
+        )
+    ]
+    # scale_50.yaml names no fleet at all, which is the point: the caller's does.
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_50.yaml",
+        tmp_path / "preflight.json",
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        backend_id="native_multi_ecs",
+        fleet_hosts=fleet,
+    )
+
+    budget = next(c for c in report["checks"] if c["name"] == "memory_budget")
+    assert budget["details"]["compared_against"] == "placed_host"
+    assert {row["host_id"] for row in budget["details"]["per_nodehost"]} == {
+        "vslab-host-a-1",
+        "vslab-host-a-2",
+        "vslab-host-b-1",
+        "vslab-host-b-2",
+    }
+    assert budget["status"] == "PASS"

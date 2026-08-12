@@ -53,6 +53,7 @@ def run_resource_preflight(
     scenario: str | None = None,
     profile_id: str | None = None,
     backend_id: str | None = None,
+    fleet_hosts: list[dict[str, Any]] | None = None,
     operator_opt_in: bool = False,
     cost_acknowledged: bool = False,
     global_config_path: str | Path | None = None,
@@ -108,7 +109,15 @@ def run_resource_preflight(
             # `native_backend_slice_map.md` §6.2 uses to argue that placement is
             # planning. `None` for every backend that names no fleet, and then
             # nothing about this plan changes.
-            fleet_hosts=_fleet_placement_records(config),
+            #
+            # The caller's fleet wins over this document's, because on a gate run
+            # they are not the same document: `_prepare_runtime` preflights the
+            # *profile's* canonical template - `scale_200.yaml` for exact-200 -
+            # and the fleet is named by the run's own configuration. Measured:
+            # without this the first real exact-200 was refused by a memory check
+            # comparing against the controller, having found no fleet to compare
+            # against, in a preflight that had one two frames up the stack.
+            fleet_hosts=fleet_hosts if fleet_hosts is not None else _fleet_placement_records(config),
         )
     except NodehostDensityError as exc:
         density_error = str(exc)
