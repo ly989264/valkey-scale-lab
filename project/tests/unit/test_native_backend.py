@@ -1349,8 +1349,35 @@ def test_a_backend_needing_no_local_daemon_is_not_blocked_by_daemon_checks(
     skipped = [c for c in report["checks"] if c["status"] == "SKIPPED_WITH_REASON"]
     # The reason is the evidence: a dropped row would leave two preflights
     # differing by a missing name with nothing saying why.
-    assert all("native_multi_ecs" in c["details"]["reason"] for c in skipped)
+    # Beside `status`, not inside `details`: that is where the §12 taxonomy
+    # looks, and a reason it cannot see refuses the whole run's evidence.
+    assert all("native_multi_ecs" in c["reason"] for c in skipped)
     assert report["can_run"] is True
+
+
+def test_a_skipped_check_satisfies_the_missing_evidence_taxonomy() -> None:
+    """The reason has to be where 12.1's validator looks, or the run is refused.
+
+    Measured: the first native exact-50 on the real fleet ran all 860 s, scored
+    12/12 steps, and was then refused with `checks[2] status SKIPPED_WITH_REASON
+    requires a non-empty reason` - the reason was in `details`, and
+    `_validate_missing_taxonomy` walks for one beside `status`.
+    """
+    from valkey_scale_lab import resource
+    from valkey_scale_lab.evidence.contracts import MISSING_STATUSES
+    from valkey_scale_lab.evidence.validation import _validate_missing_taxonomy
+
+    row = resource._skipped("docker_available", "because", {"backend_id": "b"})
+    assert row["status"] in MISSING_STATUSES
+
+    errors: list[str] = []
+    _validate_missing_taxonomy({"resource_preflight": {"checks": [row]}}, {}, errors)
+    assert errors == []
+
+    errors = []
+    buried = {**row, "reason": "", "details": {"reason": "because"}}
+    _validate_missing_taxonomy({"resource_preflight": {"checks": [buried]}}, {}, errors)
+    assert errors, "a reason only in details must not satisfy the taxonomy"
 
 
 def test_a_docker_backend_still_gets_both_daemon_checks(

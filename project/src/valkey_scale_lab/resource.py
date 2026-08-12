@@ -407,12 +407,19 @@ def _skipped(name: str, reason: str, details: dict[str, Any] | None = None) -> d
     Omitting the row would leave two preflights differing by a missing name with
     nothing saying why, which is the shape of fabricated evidence this product
     forbids. The reason is the evidence.
+
+    It sits beside `status` rather than inside `details` because that is where
+    the §12 missing-evidence taxonomy looks: `_validate_missing_taxonomy` walks
+    every object of every raw source and requires a non-empty `reason` next to
+    any status in `MISSING_STATUSES`. Measured - the first native exact-50 ran
+    all 860 s and was then refused by exactly that rule.
     """
 
     return {
         "name": name,
         "status": "SKIPPED_WITH_REASON",
-        "details": {"reason": reason, **(details or {})},
+        "reason": reason,
+        "details": dict(details or {}),
     }
 
 
