@@ -1,0 +1,66 @@
+# The M3-B exact-200 configuration: the same run as native_200.yaml, on the
+# operator's real fleet instead of the simulated one.
+#
+# **One key differs from native_200.yaml and nothing else does**:
+# runtime.host_inventory_path names `gce-m3b` rather than `sim-l5`. See
+# real_ecs_50.yaml for why that is the whole of the change.
+#
+# This run plans 8 nodehosts and claims all eight hosts of the manifest, four
+# in each of two real GCE zones, so the fault domains the plan believes in are
+# real ones.
+#
+# port_base is scale_200's own 7800/17800, inside the 7000-32000 range every
+# host in the gce-m3b manifest declares.
+schema_version: v1
+# scale_200, not real_ecs_200. The 200-node bounded exception in
+# `_is_exact_200_bounded_exception` keys on this name, and it is a safety
+# guard: above the default cap of 100, a real run is admitted only for this
+# exact profile. `profile_name` names the *scale* profile and the runtime is
+# named by runtime.provider below, so this is the same profile on a
+# different runtime rather than a way around the cap - and keeping the name
+# leaves the guard exactly as narrow as it was.
+profile_name: scale_200
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: ecs
+  valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
+  sandbox_mode: container_namespace
+  # Required to be present and false by the same bounded exception.
+  dry_run: false
+  host_inventory_path: artifacts/host-fleets/gce-m3b/inventory.json
+  native_bundle_dir: artifacts/native-bundles/valkey-9.1.0-memtier-2.5.1-arm64
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller, worker]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 100
+  replicas_per_shard: 1
+  port_base: 7800
+  cluster_bus_port_base: 17800
+scale_profile:
+  bounded_exception_nodes: 200
+  automatic_default_cap_remains: 100
+workload:
+  enabled: true
+  read_ratio: 0.8
+  write_ratio: 0.2
+  uniform_qps: 50
+  hotspot_qps: 10
+  hotspot_key_fraction: 0.01
+  pipeline: 1
+  timing: all_run
+faults: []

@@ -1,0 +1,59 @@
+# The M3-B exact-50 configuration: the same run as native_50.yaml, on the
+# operator's real fleet instead of the simulated one.
+#
+# **One key differs from native_50.yaml and nothing else does**:
+# runtime.host_inventory_path names `gce-m3b` rather than `sim-l5`. That is the
+# whole of the change, on purpose. Item 1.6 asks whether the same lifecycle
+# survives a real network, and any second difference would be a second
+# explanation for a delta the equivalence diff finds. `profile_name` stays
+# `native_50` for the same reason: it is carried into a run's own metadata, and
+# renaming it would move a field for readability's sake.
+#
+# The manifest is eight hosts; this run plans four nodehosts and therefore
+# claims four of them - one nodehost per host is a refusal, not a preference.
+# The hosts are given, not provisioned, so no fleet command belongs here.
+#
+# port_base is scale_50's own 7400/17400, inside the 7000-32000 range every
+# host in the gce-m3b manifest declares. See native_50.yaml for what a
+# different base cost the equivalence diff.
+schema_version: v1
+profile_name: native_50
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: ecs
+  valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
+  sandbox_mode: container_namespace
+  host_inventory_path: artifacts/host-fleets/gce-m3b/inventory.json
+  native_bundle_dir: artifacts/native-bundles/valkey-9.1.0-memtier-2.5.1-arm64
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller, worker]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 25
+  replicas_per_shard: 1
+  port_base: 7400
+  cluster_bus_port_base: 17400
+workload:
+  enabled: true
+  read_ratio: 0.8
+  write_ratio: 0.2
+  uniform_qps: 800
+  hotspot_qps: 150
+  hotspot_key_fraction: 0.01
+  pipeline: 8
+  timing: all_run
+faults: []
