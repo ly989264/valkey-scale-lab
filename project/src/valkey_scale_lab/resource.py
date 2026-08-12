@@ -25,6 +25,8 @@ from valkey_scale_lab.execution import (
 )
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.runtime.backends import BackendNotImplementedError, resolve_backend
+from valkey_scale_lab.runtime.host_inventory import load_host_inventory
+from valkey_scale_lab.runtime.host_transport import MultiplexedSshTransport, TransportError
 from valkey_scale_lab.server_profile import compute_effective_server_profile
 
 CREATED_AT = "2026-06-28T00:00:00Z"
@@ -100,6 +102,13 @@ def run_resource_preflight(
             nodes=_preflight_density_nodes(config),
             run_id=run_id,
             assign=True,
+            # The same fleet the run itself will be placed on. Without it this
+            # plan says `host_id: "local"` about a run that will place its
+            # nodehosts on named hosts, which is the artifact
+            # `native_backend_slice_map.md` §6.2 uses to argue that placement is
+            # planning. `None` for every backend that names no fleet, and then
+            # nothing about this plan changes.
+            fleet_hosts=_fleet_placement_records(config),
         )
     except NodehostDensityError as exc:
         density_error = str(exc)
@@ -449,15 +458,130 @@ def _docker_details() -> dict[str, Any]:
     }
 
 
+def _fleet_placement_records(config: dict[str, Any]) -> list[dict[str, Any]] | None:
+    """The fleet this run was given, or `None` when it was given none.
+
+    The same expression `docker_runtime._process_nodehosts` uses, read here for
+    the same reason: placement is planning, and the preflight plans.
+    """
+
+    path = config.get("runtime", {}).get("host_inventory_path")
+    if not path:
+        return None
+    try:
+        return load_host_inventory(path).placement_records()
+    except Exception:  # noqa: BLE001
+        # A manifest that cannot be read is `nodehost_density_plan`'s failure to
+        # report, not this helper's to raise: the plan below records the reason
+        # and the check fails with it.
+        return None
+
+
+#: What the preflight asks a fleet host for. `MemAvailable` rather than
+#: `MemFree`, because it is the same quantity `_host_available_memory_mb` reads
+#: locally, so the two arms of the check compare like with like.
+HOST_MEMORY_ARGV: tuple[str, ...] = (
+    "sh",
+    "-c",
+    "awk '/MemAvailable/{print $2}' /proc/meminfo",
+)
+
+
+def _fleet_nodehost_memory(
+    density_plan: dict[str, Any] | None,
+) -> tuple[dict[str, dict[str, Any]], str | None]:
+    """Each placed nodehost's host, and how much memory that host reports.
+
+    Read from the hosts, because nothing else can answer it: a manifest declares
+    where a host is, not what it has free at preflight time. One transport for
+    the whole check, closed before returning - a preflight that left ssh masters
+    running would be leaking the resource item 1.4 exists to account for.
+    """
+
+    nodehosts = [
+        item
+        for item in (density_plan or {}).get("nodehosts", [])
+        if item.get("host_control_endpoint")
+    ]
+    if not nodehosts:
+        return {}, None
+
+    readings: dict[str, dict[str, Any]] = {}
+    transport = MultiplexedSshTransport()
+    try:
+        for nodehost in nodehosts:
+            nodehost_id = str(nodehost["nodehost_id"])
+            entry: dict[str, Any] = {"host_id": str(nodehost.get("host_id", "MISSING"))}
+            try:
+                result = transport.run(
+                    nodehost["host_control_endpoint"], list(HOST_MEMORY_ARGV), timeout=30
+                )
+            except TransportError as error:
+                entry["error"] = str(error)[:200]
+            else:
+                if result.returncode != 0 or not result.stdout.strip().isdigit():
+                    entry["error"] = (result.stderr or result.stdout).strip()[:200] or "no answer"
+                else:
+                    entry["host_available_memory_mb"] = int(result.stdout.strip()) // 1024
+            readings[nodehost_id] = entry
+    finally:
+        transport.close()
+    return readings, None
+
+
 def _memory_check(node_count: int, memory_limit_mb: int, *, density_plan: dict[str, Any] | None = None) -> dict[str, Any]:
     required_mb = node_count * max(memory_limit_mb, 1)
-    host_available = _host_available_memory_mb()
     projected_nodehost = _projected_nodehost_memory(memory_limit_mb, density_plan, node_count)
+    fleet_readings, _ = _fleet_nodehost_memory(density_plan)
+    if fleet_readings:
+        # The run's memory is consumed where its nodes are. Comparing the whole
+        # requirement against the controller asked the wrong machine: measured on
+        # the M3-B controller, exact-200 wanted 12800 MB against 12117 MB there
+        # while each of eight fleet hosts held 1600 MB against 7.7 GiB. Every
+        # nodehost is compared against the host it is placed on, and a host that
+        # will not answer fails the check rather than being assumed to fit.
+        rows = []
+        for nodehost_id in sorted(fleet_readings):
+            reading = fleet_readings[nodehost_id]
+            projected = int(projected_nodehost.get(nodehost_id, 0))
+            available = reading.get("host_available_memory_mb")
+            rows.append(
+                {
+                    "nodehost_id": nodehost_id,
+                    "host_id": reading["host_id"],
+                    "projected_memory_mb": projected,
+                    "host_available_memory_mb": available if available is not None else "MISSING",
+                    "fits": isinstance(available, int) and projected <= available,
+                    **({"error": reading["error"]} if "error" in reading else {}),
+                }
+            )
+        ok = bool(rows) and all(row["fits"] for row in rows)
+        return _check(
+            "memory_budget",
+            ok,
+            {
+                "required_memory_mb": required_mb,
+                "node_count_times_node_memory_limit_mb": required_mb,
+                "node_memory_limit_mb": memory_limit_mb,
+                "projected_nodehost_memory_mb": projected_nodehost,
+                "compared_against": "placed_host",
+                "per_nodehost": rows,
+                "can_run": ok,
+                "reason": (
+                    "every nodehost fits the host it is placed on"
+                    if ok
+                    else "at least one nodehost does not fit the host it is placed on"
+                ),
+                "status_note": "read from each placed host",
+            },
+        )
+    host_available = _host_available_memory_mb()
     ok = isinstance(host_available, int) and required_mb <= host_available
     return _check(
         "memory_budget",
         ok,
         {
+            "compared_against": "controller",
             "required_memory_mb": required_mb,
             "node_count_times_node_memory_limit_mb": required_mb,
             "node_memory_limit_mb": memory_limit_mb,

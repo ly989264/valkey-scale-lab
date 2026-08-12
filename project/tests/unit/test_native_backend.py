@@ -1422,3 +1422,138 @@ def test_a_skipped_check_is_the_only_non_pass_status_that_does_not_block() -> No
     assert resource._check("x", False, {})["status"] == "FAIL"
     assert resource.NON_BLOCKING_CHECK_STATUSES == {"PASS", "SKIPPED_WITH_REASON"}
     assert "FAIL" not in resource.NON_BLOCKING_CHECK_STATUSES
+
+
+# --------------------------------------------------------------------------
+# The memory budget, which used to ask the controller about memory the run
+# spends on eight other machines. Measured on the M3-B controller: exact-200
+# wanted 12800 MB against 12117 MB there, while each placed host held 1600 MB
+# against 7.7 GiB.
+# --------------------------------------------------------------------------
+
+
+class _MemoryTransport:
+    """Answers `/proc/meminfo` per address, in kB, as the real hosts do."""
+
+    def __init__(self, available_kb_by_address: dict[str, int | None]) -> None:
+        self._available = available_kb_by_address
+        self.asked: list[str] = []
+        self.closed = False
+
+    def run(self, control_endpoint, argv, *, timeout):  # noqa: ANN001
+        address = str(control_endpoint["address"])
+        self.asked.append(address)
+        value = self._available.get(address)
+        if value is None:
+            raise TransportError(f"could not reach {address}")
+        return CommandResult(
+            argv=[str(item) for item in argv],
+            returncode=0,
+            stdout=f"{value}\n",
+            stderr="",
+            started_at_unix_ms=0,
+            ended_at_unix_ms=1,
+        )
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def _placed_plan(memory_limit_mb: int = 64) -> dict:
+    """A density plan with placement, in the shape the planner produces."""
+    return {
+        "nodehosts": [
+            {
+                "nodehost_id": "nodehost-az-a-00",
+                "host_id": "vslab-host-a-1",
+                "host_control_endpoint": {**CONTROL, "address": "10.148.0.9"},
+            },
+            {
+                "nodehost_id": "nodehost-az-b-00",
+                "host_id": "vslab-host-b-1",
+                "host_control_endpoint": {**CONTROL, "address": "10.148.0.13"},
+            },
+        ],
+        "nodehost_density": {
+            "logical_nodes_per_nodehost": {"nodehost-az-a-00": 25, "nodehost-az-b-00": 25}
+        },
+    }
+
+
+def test_memory_is_compared_against_the_host_each_nodehost_is_placed_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from valkey_scale_lab import resource
+
+    # 7.7 GiB free on each host, which is what a c4a-standard-2 reports.
+    transport = _MemoryTransport({"10.148.0.9": 7_900_000, "10.148.0.13": 7_900_000})
+    monkeypatch.setattr(resource, "MultiplexedSshTransport", lambda *a, **k: transport)
+    # The controller could not hold this run: 200 x 64 MB is 12800 MB.
+    monkeypatch.setattr(resource, "_host_available_memory_mb", lambda: 12_117)
+
+    check = resource._memory_check(200, 64, density_plan=_placed_plan())
+
+    assert check["status"] == "PASS"
+    assert check["details"]["compared_against"] == "placed_host"
+    assert check["details"]["required_memory_mb"] == 12_800
+    rows = {row["nodehost_id"]: row for row in check["details"]["per_nodehost"]}
+    assert rows["nodehost-az-a-00"]["projected_memory_mb"] == 1_600
+    assert rows["nodehost-az-a-00"]["host_id"] == "vslab-host-a-1"
+    assert all(row["fits"] for row in check["details"]["per_nodehost"])
+    assert transport.closed is True
+
+
+def test_a_nodehost_that_does_not_fit_its_own_host_fails_the_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from valkey_scale_lab import resource
+
+    transport = _MemoryTransport({"10.148.0.9": 7_900_000, "10.148.0.13": 800_000})
+    monkeypatch.setattr(resource, "MultiplexedSshTransport", lambda *a, **k: transport)
+
+    check = resource._memory_check(200, 64, density_plan=_placed_plan())
+
+    assert check["status"] == "FAIL"
+    rows = {row["nodehost_id"]: row for row in check["details"]["per_nodehost"]}
+    assert rows["nodehost-az-a-00"]["fits"] is True
+    assert rows["nodehost-az-b-00"]["fits"] is False
+
+
+def test_a_host_that_will_not_answer_fails_rather_than_being_assumed_to_fit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fail closed, the same way `create_network` refuses a fleet it cannot see."""
+    from valkey_scale_lab import resource
+
+    transport = _MemoryTransport({"10.148.0.9": 7_900_000, "10.148.0.13": None})
+    monkeypatch.setattr(resource, "MultiplexedSshTransport", lambda *a, **k: transport)
+
+    check = resource._memory_check(200, 64, density_plan=_placed_plan())
+
+    assert check["status"] == "FAIL"
+    unreachable = [row for row in check["details"]["per_nodehost"] if not row["fits"]]
+    assert len(unreachable) == 1
+    assert unreachable[0]["host_available_memory_mb"] == "MISSING"
+    assert "could not reach" in unreachable[0]["error"]
+    assert transport.closed is True
+
+
+def test_a_run_with_no_fleet_still_compares_against_the_machine_it_runs_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Every Docker run: the nodes are here, so this machine is the right one."""
+    from valkey_scale_lab import resource
+
+    monkeypatch.setattr(
+        resource,
+        "MultiplexedSshTransport",
+        lambda *a, **k: pytest.fail("a fleet was contacted for a run that named none"),
+    )
+    monkeypatch.setattr(resource, "_host_available_memory_mb", lambda: 12_117)
+
+    plan = {"nodehost_density": {"logical_nodes_per_nodehost": {"nodehost-az-a-00": 50}}}
+    check = resource._memory_check(50, 64, density_plan=plan)
+
+    assert check["status"] == "PASS"
+    assert check["details"]["compared_against"] == "controller"
+    assert check["details"]["host_available_memory_mb"] == 12_117
