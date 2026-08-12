@@ -1266,10 +1266,22 @@ def test_the_control_socket_path_is_held_under_the_platform_limit(tmp_path: Path
     `ControlPath` is a Unix domain socket path and `sockaddr_un` caps it at 104
     bytes, which a run's artifacts directory exceeds on its own.
     """
-    # pytest's own `tmp_path` is already 127 bytes on this platform, which is
-    # the constraint rather than a contrived one: a nested path is not needed to
-    # breach the limit, and a run's artifacts directory breaches it too.
-    transport = MultiplexedSshTransport(control_root=tmp_path)
+    # The root is the shape of a real run's artifacts directory rather than
+    # `tmp_path` itself, because `tmp_path`'s own length is a property of the
+    # platform: 127 bytes on macOS under /var/folders, about 60 on Linux under
+    # /tmp. Naming the nesting that motivates the constant makes the test say
+    # the same thing in both places.
+    run_root = (
+        tmp_path
+        / "artifacts"
+        / "gate-runs"
+        / "gate-20260812T092306Z-de92aa1f"
+        / "001-real.local.full-flow"
+        / "runtime"
+        / "ssh"
+    )
+    assert len(str(run_root).encode("utf-8")) > CONTROL_PATH_MAX_BYTES
+    transport = MultiplexedSshTransport(control_root=run_root)
     with pytest.raises(TransportError, match=f"platform limit is {CONTROL_PATH_MAX_BYTES}"):
         transport._control_path(CONTROL)
 
