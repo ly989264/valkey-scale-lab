@@ -25,24 +25,56 @@ transport shapes the backend depends on. Both problems are absent on Ubuntu
 
 ---
 
-## 1. Scripts or a golden image? Both, in one direction
+## 1. How eight hosts get built: a startup script, not an image
 
-**The script is the definition; the image is its build product.** Run the script
-on a stock instance, run the verifier, then snapshot. Never hand-tune the
-instance you snapshot.
+**`scripts/ecs_host_prepare.sh` is the single definition of what a fleet host
+is.** Everything else is a way of delivering it.
 
-The reasoning is specific to what M3-B is for. Preparing each of eight hosts at
-boot makes `apt` a per-host network dependency, and one mirror hiccup produces a
-fleet whose hosts differ in unrecorded ways — an unmeasured variable in exactly
-the runs whose job is to freeze baselines. An image is identical across all
-eight by construction. But an image nobody can rebuild or review is worse than
-no image, so it must be *derived* from a committed script. That is the same
-relationship this repository already has between `docker/valkey-custom/Dockerfile`
-and the pinned Valkey image.
+The original plan was a golden image. It ran into a GCE constraint: **machine
+images do not support Hyperdisk Balanced**, which is the only boot disk a C4A
+instance takes. Two things follow, and they point the same way.
 
-Proven rather than asserted: after running the script on both instances, all six
-managed files are **byte-identical across the two hosts** and both carry the
-same 622 packages.
+First, the distinction that matters if you still want an image — they are
+separate features and only one is restricted:
+
+| | what it captures | Hyperdisk |
+|---|---|---|
+| `gcloud compute machine-images create` | whole instance: all disks, config, metadata | not supported |
+| `gcloud compute images create --source-disk` | one disk, as a reusable OS image | the normal golden-image path |
+| `gcloud compute snapshots create` then `images create --source-snapshot` | via a snapshot | the fallback |
+
+Second, and the reason this document now recommends the startup script instead:
+the objection to per-host preparation turned out to be measurable, and it
+measured zero. **Two hosts prepared independently came out with all six managed
+files byte-identical and the same 622 packages.** `ecs_host_verify.sh` run on
+each host is the gate that catches divergence rather than assuming it away, and
+`apt` on GCE talks to a regional mirror rather than the 90 kB/s the CentOS
+revision of this work was fighting.
+
+A startup script also keeps the property the image was for: one definition, with
+nothing that can drift from it. `scripts/ecs_host_startup_metadata.sh` embeds
+`ecs_host_prepare.sh` verbatim and adds only the two things a startup script must
+do that a hand-run need not — place the fleet public key and leave a completion
+marker:
+
+```bash
+./scripts/ecs_host_startup_metadata.sh fleet_key.pub > startup.txt
+gcloud compute instances create vslab-host-0{1..8} \
+    --image-family ubuntu-2604-lts-arm64 --image-project ubuntu-os-cloud \
+    --machine-type c4a-standard-4 --zone ZONE \
+    --metadata-from-file startup-script=startup.txt
+```
+
+GCE runs a startup script on every boot; the prepare script is idempotent and,
+once the packages are in, does not even reach `apt-get update`.
+
+**One reboot, at most.** `/tmp` can be taken off tmpfs live — measured, `mask`
+plus `stop` moved it to the root filesystem with 36 G free while the host stayed
+up — but only when nothing holds a file open under `/tmp`, which at first boot
+is not guaranteed. The generated startup script therefore reboots **once**,
+guarded by its own marker, if `/tmp` is still tmpfs when it finishes. Measured
+end to end on a real instance: boot 1 decided to reboot, boot 2 completed with
+`/tmp` on disk, and a third run took no further action.
 
 ## 2. How the requirement list was derived
 
@@ -357,35 +389,36 @@ is not drift. The verifier reports the count so it cannot be discovered late.
 
 ---
 
-## 8. Baking the image
+## 8. Creating the fleet
+
+The startup-script route of §1 needs no image and no manual step per host.
+
+If you would rather have an image anyway — it boots faster and removes `apt`
+from the boot path — build it from a **stock** instance, never from one that has
+been worked on:
 
 ```bash
-# 1. On a stock instance, as root:
+# on a fresh instance, as root
 sh ecs_host_prepare.sh
-reboot                                  # /tmp leaves tmpfs here
-
-# 2. Confirm:
-sh ecs_host_verify.sh --bundle <bundle dir> --package <src dir>
-#    must print READY with 0 required failures
-
-# 3. Strip instance identity, last:
+sh ecs_host_verify.sh --bundle <bundle dir> --package <src dir>   # must print READY
 sh ecs_host_prepare.sh --finalize-image
-
-# 4. Stop the instance, then create the image from its disk.
+# then: stop the instance and `gcloud compute images create --source-disk`
 ```
 
 `--finalize-image` removes the ssh host keys, any fleet key, run state, bundles,
 `machine-id`, cloud-init state, the apt cache and logs. **It removes your own
-access**, so run it immediately before stopping the instance.
+access**, so run it immediately before stopping the instance. It deliberately
+does *not* delete user accounts or arbitrary directories — a script that removes
+users it did not create is not one to run on a host you care about — which is
+exactly why the instance you image should be a stock one. The two instances this
+work was done on accumulated three stray accounts, one of which
+(`vslab-m3b`) the guest agent created by itself from an ssh key's *comment*.
 
-Per instance created from the image, the operator then places the fleet public
-key:
-
-```bash
-install -m 644 -o root -g root fleet_key.pub /etc/ssh/vslab_authorized_keys/root
-```
-
-and the manifest's `control_endpoint` names `user: root` with that key.
+Either way, each host still needs the fleet public key at
+`/etc/ssh/vslab_authorized_keys/root`, and the manifest's `control_endpoint`
+names `user: root`. The startup script places it; with an image, use a startup
+script for that one file, or accept that baking the key in makes the image a
+credential that cannot be rotated without rebuilding it.
 
 For eight hosts, remember the fleet arithmetic: `nodehosts_per_az` is 2 over two
 AZs and `max_logical_nodes_per_nodehost` is 25, so exact-200 plans 8 nodehosts

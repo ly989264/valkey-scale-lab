@@ -436,7 +436,18 @@ EOF
         fi
     else
         systemctl mask tmp.mount >/dev/null 2>&1 || true
-        log "masked tmp.mount; /tmp moves to the root filesystem at next boot"
+        # Stopped live as well as masked, so a host prepared by a startup script
+        # is ready without a reboot - measured on a real instance, /tmp went from
+        # tmpfs to the root filesystem with 36 G free and stayed writable.
+        # systemd does an ordinary umount, so this fails rather than forcing when
+        # something has files open under /tmp, and the mask still takes effect at
+        # the next boot.
+        if systemctl stop tmp.mount >/dev/null 2>&1 \
+           && [ "$(findmnt -no FSTYPE /tmp 2>/dev/null || echo none)" != "tmpfs" ]; then
+            log "masked tmp.mount and moved /tmp to the root filesystem now"
+        else
+            log "masked tmp.mount; /tmp is in use, so it moves at the next boot"
+        fi
     fi
 
 # ---------------------------------------------------------------------------
