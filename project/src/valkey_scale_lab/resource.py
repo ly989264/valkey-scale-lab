@@ -24,10 +24,18 @@ from valkey_scale_lab.execution import (
     resolve_profile,
 )
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
+from valkey_scale_lab.runtime.backends import BackendNotImplementedError, resolve_backend
 from valkey_scale_lab.server_profile import compute_effective_server_profile
 
 CREATED_AT = "2026-06-28T00:00:00Z"
 DEFAULT_PREFLIGHT_CAPABILITY = "scale_ladder"
+
+#: Check statuses that do not block a run. `SKIPPED_WITH_REASON` is the
+#: artifact-level vocabulary this repository already uses for evidence that is
+#: absent for a stated reason, and the schema's own `status` enum carries it.
+#: Only a check this module skips deliberately can hold it - `_check` still
+#: produces `PASS` or `FAIL` and nothing else.
+NON_BLOCKING_CHECK_STATUSES = frozenset({"PASS", "SKIPPED_WITH_REASON"})
 
 
 class ResourcePreflightError(RuntimeError):
@@ -42,6 +50,7 @@ def run_resource_preflight(
     capability_id: str | None = None,
     scenario: str | None = None,
     profile_id: str | None = None,
+    backend_id: str | None = None,
     operator_opt_in: bool = False,
     cost_acknowledged: bool = False,
     global_config_path: str | Path | None = None,
@@ -145,8 +154,18 @@ def run_resource_preflight(
                 },
             )
         )
-    docker_details = _docker_details()
-    checks.append(_check("docker_available", docker_details["available"], docker_details))
+    docker_required = _requires_local_docker_daemon(backend_id)
+    if docker_required:
+        docker_details = _docker_details()
+        checks.append(_check("docker_available", docker_details["available"], docker_details))
+    else:
+        checks.append(
+            _skipped(
+                "docker_available",
+                f"backend {backend_id!r} declares requires_local_docker_daemon=false",
+                {"backend_id": backend_id},
+            )
+        )
     checks.append(_check("cpu_count", (os.cpu_count() or 0) >= 2, {"cpu_count": os.cpu_count() or "MISSING"}))
     effective_profile = compute_effective_server_profile(
         config,
@@ -180,9 +199,24 @@ def run_resource_preflight(
     checks.append(_port_check(int(config["cluster"]["cluster_bus_port_base"]), node_count, "cluster_bus_ports"))
     checks.append(_runtime_limit_check(node_count, density_plan=density_plan))
     checks.extend(_nodehost_density_checks(config, density_plan, density_error))
-    checks.append(_cleanup_state_check(capability_id, scenario_name, node_count))
+    if docker_required:
+        checks.append(_cleanup_state_check(capability_id, scenario_name, node_count))
+    else:
+        # This check asks `docker ps` and `docker network ls` what a previous run
+        # of this capability left behind. A backend with no local daemon has its
+        # own answer to the same question and it is not the controller's:
+        # `reclaim_run` clears the run's residue on the hosts, and the lifecycle
+        # calls it a few lines after this preflight returns.
+        checks.append(
+            _skipped(
+                "previous_cleanup_state",
+                f"backend {backend_id!r} declares requires_local_docker_daemon=false; "
+                "pre-run reclaim happens on the hosts, in reclaim_run",
+                {"backend_id": backend_id, "node_count": node_count},
+            )
+        )
 
-    can_run = all(item["status"] == "PASS" for item in checks)
+    can_run = all(item["status"] in NON_BLOCKING_CHECK_STATUSES for item in checks)
     report = {
         "schema_version": "v1",
         "artifact_type": "resource_preflight",
@@ -356,6 +390,45 @@ def _semantic_errors_for_preflight(
 
 def _check(name: str, ok: bool, details: dict[str, Any]) -> dict[str, Any]:
     return {"name": name, "status": "PASS" if ok else "FAIL", "details": details}
+
+
+def _skipped(name: str, reason: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
+    """A check that does not apply to this run, recorded rather than dropped.
+
+    Omitting the row would leave two preflights differing by a missing name with
+    nothing saying why, which is the shape of fabricated evidence this product
+    forbids. The reason is the evidence.
+    """
+
+    return {
+        "name": name,
+        "status": "SKIPPED_WITH_REASON",
+        "details": {"reason": reason, **(details or {})},
+    }
+
+
+def _requires_local_docker_daemon(backend_id: str | None) -> bool:
+    """Whether this run needs a Docker daemon on the machine it is driven from.
+
+    The backend registry has declared this since `39e31b1a`, which is where the
+    Gate's own daemon check moved when backend selection became data. The
+    preflight kept asking unconditionally, so a native run driven from a
+    controller with no daemon was blocked by two checks about a runtime it does
+    not use - measured on the M3-B controller, where `docker_available` and
+    `previous_cleanup_state` were the only two failures of fifteen.
+
+    A caller that does not name a backend gets the answer it always got. That is
+    deliberate: `cli preflight` and the scale ladder ask about a machine rather
+    than about a run, and quietly dropping a Docker check for them would weaken a
+    safety check on the strength of an omission.
+    """
+
+    if backend_id is None:
+        return True
+    try:
+        return bool(resolve_backend(backend_id).requires_local_docker_daemon)
+    except BackendNotImplementedError:
+        return True
 
 
 def _docker_available() -> bool:

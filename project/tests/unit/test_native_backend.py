@@ -1300,3 +1300,125 @@ def test_the_transport_reuses_one_control_socket_per_host(tmp_path: Path) -> Non
     other = transport._control_path({**CONTROL, "address": "10.0.0.12"})
     assert first == again
     assert other != first
+
+
+# --------------------------------------------------------------------------
+# The resource preflight, and the two checks that are about Docker rather than
+# about the run. Measured on the M3-B controller at `1cdfacd3`: they were the
+# only two failures of fifteen, and both fail because that machine has no
+# daemon - which a native run does not need.
+# --------------------------------------------------------------------------
+
+
+def _preflight_names(report: dict) -> dict[str, str]:
+    return {check["name"]: check["status"] for check in report["checks"]}
+
+
+def test_a_backend_needing_no_local_daemon_is_not_blocked_by_daemon_checks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`docker_available` and `previous_cleanup_state` both shell out to docker."""
+    from valkey_scale_lab import resource
+
+    # Nothing is stubbed here on purpose: the point is that neither Docker
+    # helper is reached. If either were, this would try to run `docker` and the
+    # assertions below would depend on whether the test machine has one.
+    monkeypatch.setattr(
+        resource,
+        "_docker_details",
+        lambda: pytest.fail("the daemon was asked about on a backend that needs none"),
+    )
+    monkeypatch.setattr(
+        resource,
+        "_cleanup_state_check",
+        lambda *args: pytest.fail("docker ps was run on a backend that needs none"),
+    )
+    monkeypatch.setattr(
+        resource, "_port_check", lambda base, count, name: resource._check(name, True, {})
+    )
+
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_50.yaml",
+        tmp_path / "preflight.json",
+        backend_id="native_multi_ecs",
+    )
+
+    names = _preflight_names(report)
+    assert names["docker_available"] == "SKIPPED_WITH_REASON"
+    assert names["previous_cleanup_state"] == "SKIPPED_WITH_REASON"
+    skipped = [c for c in report["checks"] if c["status"] == "SKIPPED_WITH_REASON"]
+    # The reason is the evidence: a dropped row would leave two preflights
+    # differing by a missing name with nothing saying why.
+    assert all("native_multi_ecs" in c["details"]["reason"] for c in skipped)
+    assert report["can_run"] is True
+
+
+def test_a_docker_backend_still_gets_both_daemon_checks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The other direction, which is what stops this from being a way out."""
+    from valkey_scale_lab import resource
+
+    asked: list[str] = []
+    monkeypatch.setattr(
+        resource,
+        "_docker_details",
+        lambda: (asked.append("docker_info"), {"available": True, "server_version": "t"})[1],
+    )
+    monkeypatch.setattr(
+        resource,
+        "_cleanup_state_check",
+        lambda capability_id, scenario, node_count: (
+            asked.append("docker_ps"),
+            resource._check("previous_cleanup_state", True, {"node_count": node_count}),
+        )[1],
+    )
+    monkeypatch.setattr(
+        resource, "_port_check", lambda base, count, name: resource._check(name, True, {})
+    )
+
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_50.yaml",
+        tmp_path / "preflight.json",
+        backend_id="docker_process",
+    )
+
+    assert asked == ["docker_info", "docker_ps"]
+    assert _preflight_names(report)["docker_available"] == "PASS"
+
+
+def test_a_caller_that_names_no_backend_keeps_the_check_it_always_had(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`cli preflight` and the scale ladder ask about a machine, not about a run."""
+    from valkey_scale_lab import resource
+
+    asked: list[str] = []
+    monkeypatch.setattr(
+        resource,
+        "_docker_details",
+        lambda: (asked.append("docker_info"), {"available": True, "server_version": "t"})[1],
+    )
+    monkeypatch.setattr(
+        resource,
+        "_cleanup_state_check",
+        lambda capability_id, scenario, node_count: resource._check(
+            "previous_cleanup_state", True, {"node_count": node_count}
+        ),
+    )
+    monkeypatch.setattr(
+        resource, "_port_check", lambda base, count, name: resource._check(name, True, {})
+    )
+
+    resource.run_resource_preflight("templates/configs/scale_50.yaml", tmp_path / "preflight.json")
+
+    assert asked == ["docker_info"]
+
+
+def test_a_skipped_check_is_the_only_non_pass_status_that_does_not_block() -> None:
+    """`_check` produces PASS or FAIL and nothing else, so nothing else can slip in."""
+    from valkey_scale_lab import resource
+
+    assert resource._check("x", False, {})["status"] == "FAIL"
+    assert resource.NON_BLOCKING_CHECK_STATUSES == {"PASS", "SKIPPED_WITH_REASON"}
+    assert "FAIL" not in resource.NON_BLOCKING_CHECK_STATUSES

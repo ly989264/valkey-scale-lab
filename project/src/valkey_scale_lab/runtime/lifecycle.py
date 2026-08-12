@@ -160,6 +160,7 @@ def _create_process_scenario(
             capability_id=capability_id,
             scenario=scenario,
             profile_id=profile_id,
+            backend_id=backend_id,
         )
         if preflight.get("can_run") is not True:
             _runtime._write_management_blocked_artifact(
@@ -177,6 +178,7 @@ def _create_process_scenario(
                 capability_id=capability_id,
                 scenario=scenario,
                 profile_id=profile_id,
+                backend_id=backend_id,
                 operator_opt_in=operator_opt_in,
                 cost_acknowledged=cost_acknowledged,
             )

@@ -403,6 +403,7 @@ def _run_exact_preflight(
         capability_id=capability_id,
         scenario=scenario_id,
         profile_id=profile_id,
+        backend_id=backend_id,
         operator_opt_in=operator_opt_in,
         cost_acknowledged=cost_acknowledged,
     )
