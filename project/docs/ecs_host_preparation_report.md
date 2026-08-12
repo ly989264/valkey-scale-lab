@@ -389,47 +389,167 @@ is not drift. The verifier reports the count so it cannot be discovered late.
 
 ---
 
-## 8. Creating the fleet
+## 8. Creating the eight hosts, step by step
 
-The startup-script route of §1 needs no image and no manual step per host.
+The two scripts cover the *hosts*. They do not cover the fleet manifest or the
+controller, which belong to item 1.6; step 6 says exactly what those need so the
+handover is not a cliff.
 
-If you would rather have an image anyway — it boots faster and removes `apt`
-from the boot path — build it from a **stock** instance, never from one that has
-been worked on:
+### 0. Before creating anything
+
+**A fleet keypair.** The private half never leaves the controller; the public
+half goes into the startup script.
 
 ```bash
-# on a fresh instance, as root
-sh ecs_host_prepare.sh
-sh ecs_host_verify.sh --bundle <bundle dir> --package <src dir>   # must print READY
-sh ecs_host_prepare.sh --finalize-image
-# then: stop the instance and `gcloud compute images create --source-disk`
+ssh-keygen -t ed25519 -N '' -C vslab-fleet -f ~/.ssh/vslab_fleet
 ```
 
-`--finalize-image` removes the ssh host keys, any fleet key, run state, bundles,
-`machine-id`, cloud-init state, the apt cache and logs. **It removes your own
-access**, so run it immediately before stopping the instance. It deliberately
-does *not* delete user accounts or arbitrary directories — a script that removes
-users it did not create is not one to run on a host you care about — which is
-exactly why the instance you image should be a stock one. The two instances this
-work was done on accumulated three stray accounts, one of which
-(`vslab-m3b`) the guest agent created by itself from an ssh key's *comment*.
+**A controller inside the VPC.** Not your laptop — §6.3 measured a workstation
+controller at 110–116 ms per command against the rolling restart's own 71/61 ms
+budget, and a native exact-200 issues 3037 of them. One ordinary instance in the
+same subnet is enough; it runs the gate and holds the private key.
 
-Either way, each host still needs the fleet public key at
-`/etc/ssh/vslab_authorized_keys/root`, and the manifest's `control_endpoint`
-names `user: root`. The startup script places it; with an image, use a startup
-script for that one file, or accept that baking the key in makes the image a
-credential that cannot be rotated without rebuilding it.
+**Networking.** Put all eight in one region so they share a subnet. The default
+VPC's `default-allow-internal` already permits ssh and the cluster's client and
+bus ranges between them — measured, port 7800 connected host to host in 0.7 ms
+with no rule added. Hosts need **outbound internet at first boot** so `apt` can
+fetch the four libevent packages: either leave the default ephemeral external IP
+in place, or use Cloud NAT if you want private-only instances.
 
-For eight hosts, remember the fleet arithmetic: `nodehosts_per_az` is 2 over two
-AZs and `max_logical_nodes_per_nodehost` is 25, so exact-200 plans 8 nodehosts
-and a native run places **exactly one per host and refuses otherwise**. The AZs
-should be real availability zones or the fault evidence describes a topology that
-never held. Sizing measured from the native exact-200 run: 25 nodes/host at
-~355 MiB summed RSS, ~10,300 descriptors, 0.13–0.48 cores busy in steady state;
-**4 vCPU / 8 GiB** recommended, since only steady state is measured and
-formation, the rolling restart and the fault matrix are not.
+### 1. Generate the startup script
 
----
+```bash
+cd project
+./scripts/ecs_host_startup_metadata.sh ~/.ssh/vslab_fleet.pub > /tmp/startup.txt
+```
+
+### 2. Create the instances, four per zone
+
+The product plans **two AZs with two nodehosts each as a floor**, and
+`max_logical_nodes_per_nodehost` is 25, so exact-200 needs 8 nodehosts and a
+native run places **exactly one per host and refuses otherwise**. Use two real
+zones in one region so the fault domains the plan believes in are real ones.
+
+```bash
+ZONE_A=asia-southeast1-a
+ZONE_B=asia-southeast1-b
+
+for z in "$ZONE_A" "$ZONE_B"; do
+  gcloud compute instances create vslab-host-"${z##*-}"-{1,2,3,4} \
+      --zone "$z" \
+      --machine-type c4a-standard-4 \
+      --image-family ubuntu-2604-lts-arm64 --image-project ubuntu-os-cloud \
+      --boot-disk-size 50GB --boot-disk-type hyperdisk-balanced \
+      --metadata-from-file startup-script=/tmp/startup.txt
+done
+```
+
+`c4a-standard-4` is 4 vCPU / 16 GiB, above the 4 vCPU / 8 GiB §8 recommends. The
+50 GB boot disk matters now that `/tmp` is on it: 25 datasets capped at 64 MB
+each, plus RDBs, journals and the bundle.
+
+### 3. Wait for the startup script
+
+It reboots **once** if `/tmp` is still tmpfs, so allow for two boots.
+
+```bash
+gcloud compute ssh vslab-host-a-1 --zone "$ZONE_A" --command \
+    'sudo cat /var/lib/valkey-scale-lab-prepared; sudo tail -3 /var/log/valkey-scale-lab-startup.log'
+```
+
+A timestamp in the marker file and `startup-script complete` in the log mean the
+host is prepared.
+
+### 4. Verify every host, and treat it as a gate
+
+Do not skip this on the hosts beyond the first. It is the check that makes
+per-host preparation as safe as an image — divergence is caught, not assumed
+away.
+
+```bash
+for ip in $(gcloud compute instances list --filter='name~^vslab-host' \
+            --format='value(networkInterfaces[0].networkIP)'); do
+  scp -i ~/.ssh/vslab_fleet project/scripts/ecs_host_verify.sh root@"$ip":/tmp/
+  ssh -i ~/.ssh/vslab_fleet root@"$ip" 'sh /tmp/ecs_host_verify.sh' \
+      | tail -1 | sed "s|^|$ip |"
+done
+```
+
+Every host must print `READY`. Add `--bundle <dir> --package <src>` to also
+prove the pinned binaries run and the resource agent imports there.
+
+### 5. Collect the host keys
+
+The transport runs `StrictHostKeyChecking=yes`, so the controller needs a
+`known_hosts` holding all eight. Each instance generates its own at first boot,
+which is the point of §5.1.
+
+```bash
+: > ~/.ssh/vslab_fleet_known_hosts
+for ip in <the eight internal IPs>; do
+  ssh-keyscan -T 10 "$ip" >> ~/.ssh/vslab_fleet_known_hosts
+done
+sort -u ~/.ssh/vslab_fleet_known_hosts | awk '{print $3}' | sort | uniq -c | sort -rn | head -1
+```
+
+That last line is worth running: if any count is above 1, two hosts are serving
+the same key and the fleet has the roadmap item 1.0 defect.
+
+### 6. Write the fleet manifest
+
+This is the one artifact the scripts do not produce, because it is the product's
+input rather than a property of a host. `runtime/host_inventory.py` is the only
+module that knows its field names, and it fails closed on anything it cannot
+interpret. Save it as `artifacts/host-fleets/<fleet-id>/inventory.json`:
+
+```json
+{
+  "artifact_type": "host_inventory",
+  "fleet_id": "gce-m3b",
+  "hosts": [
+    {
+      "host_id": "vslab-host-a-1",
+      "availability_zone": "az-a",
+      "data_address": "10.148.0.11",
+      "control_endpoint": {
+        "address": "10.148.0.11",
+        "port": 22,
+        "user": "root",
+        "private_key_path": "/home/you/.ssh/vslab_fleet",
+        "known_hosts_path": "/home/you/.ssh/vslab_fleet_known_hosts"
+      },
+      "client_endpoint": {
+        "address": "10.148.0.11",
+        "port_range": { "first": 7800, "last": 7999 }
+      }
+    }
+  ]
+}
+```
+
+Eight entries, four with `availability_zone: az-a` and four `az-b`, matching
+`network.azs` in the run configuration.
+
+On a real fleet with an in-VPC controller **all three addresses are the same
+internal IP** — the simulated harness only needed them to differ because macOS
+cannot route Docker's network, and the field set not changing is the property
+that made the harness worth having.
+
+`port_range` must cover the run's ports: `native_200.yaml` has `port_base: 7800`
+for 200 nodes, so 7800–7999. Placement refuses a host whose declared range does
+not cover what it was asked to hold, naming both. The cluster bus (17800–17999)
+is peer traffic on the fleet network and is deliberately not in this range.
+
+The manifest must carry **no container, image or network vocabulary and no flag
+saying the fleet is real or simulated** — a backend that could tell would make
+every simulated result a fact about the harness.
+
+### 7. Point a run at it
+
+M3-B item 1.6's work, not host preparation's: a configuration like
+`native_200.yaml` with `runtime.host_inventory_path` set to the manifest above
+and `runtime.native_bundle_dir` to the built bundle. Then
+`scripts/native_bringup_smoke.py` before any gate run.
 
 ## 9. What still cannot be validated here
 
