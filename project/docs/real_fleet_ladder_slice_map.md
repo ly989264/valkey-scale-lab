@@ -637,6 +637,28 @@ Nothing below was fixed here, and each says who it belongs to.
   and the invocation they must reproduce is
   `ulimit -n 65536; ./gate test real.local.full-flow --param nodes=N --param
   config=templates/configs/real_ecs_N.yaml` from the controller.
+- **The catalog runner has no shell, and exact-200 needs one.** Every
+  `real.local.*` entry is `{"type": "command", "result": "json"}` with argv
+  starting `/usr/bin/env PYTHONPATH=… python3 -m valkey_scale_lab.cli …`, so
+  `ulimit -n 65536` cannot be written into a `real.ecs.*` entry the way it is
+  written into the invocation above - and without it `runtime_fd_limit` refuses
+  exact-200 (asks 1856, Debian's default soft limit is 1024). Raising it durably
+  on the controller is the cheapest answer and is consistent with §1: that check
+  is *right* to ask about the controller, and the environment was wrong. But it
+  makes a milestone result depend on controller configuration, so wherever it
+  lands it belongs in the milestone's own record rather than being silently true.
+- **The five uncovered criteria are claims about real runs**, which is what makes
+  this more than catalog editing: `distributed.exact.50` and `.200` say "a real
+  multi-ECS full-flow run … independently observes exactly N healthy nodes", and
+  `distributed.safety-and-cleanup` says "leave no managed process or host
+  resource behind". Hermetic siblings exist and are close in name -
+  `product.unit.host_evidence`, `product.evidence.evidence_contract`, the two
+  `cleanup_*` integration tests - but none of them evidences a *run*, and the
+  milestone's no-placeholder rule is what stops them being pointed at anyway.
+  Item 1.6 produced the evidence for four of the five; what may not exist is
+  anything that *asserts* it as a registered check over a completed run's
+  artifacts. That is the open question 1.7 should answer first, because it is
+  what decides whether the item is catalog work or script work.
 - **Registering a Test moves three numbers**, unchanged from the M3-B handover:
   `repository.all` 92, catalog 96, M1 plan 91, the last two pinned by
   `verification/tests/test_contracts.py:79` and `:344`. Read them; do not run
