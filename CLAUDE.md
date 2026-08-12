@@ -1151,7 +1151,139 @@ Every simulated baseline carries six. That is a vocabulary delta of the kind
 cluster has been formed on these hosts. Formation dwell, RTO, the fault lane's
 9/12/15 and the health-gate escalation of slice map §16 are all untouched.
 `scripts/native_bringup_smoke.py` against `fleet_id: gce-m3b` is the natural
-first step and belongs to item 1.6.
+first step and belongs to item 1.6. *(All of that is now done - see below.)*
+
+### Session M3-B-1 is done, and with it roadmap item 1.6
+
+Read `project/docs/real_fleet_ladder_slice_map.md`. §2 is the five defects the
+runs found, §3 auth/kernel/conntrack reality at fleet width, §4 transport, §7 the
+equivalence result, §9 the ownership proof, §9a the health-gate correction, §10
+what is open and what 1.7 inherits.
+
+**The item's hard stop is met.** Two consecutive native exact-50, **PASS 861.46s
+and 869.18s**, and two native exact-200, **PASS 1462.73s and 1454.44s**, all four
+12/12 steps with `run_verdict` 12/12 OK, on eight real `c4a-standard-2` GCE hosts
+driven from an in-VPC controller. 50/50 and 200/200 nodes, fault lane **9
+scenarios / 12 command rows / 15 windows** with nine `REAL_PASS` at both scales,
+cleanup 20 and 40 rows in four kinds with `found: 0` everywhere, no `ERROR` in
+any artifact, and zero residue on all eight hosts checked from outside the
+product over ssh. `repository.all` **92/92** on the Mac throughout.
+
+- **The equivalence result, and it is stronger than a score.** Scores summarise,
+  so the comparison was made on the delta itself: every diffed view reduced to
+  the set of generalised JSON paths that differ. The real fleet's delta against
+  the frozen Docker exact-50 baseline is **the simulated fleet's delta, path for
+  path** - 111 paths either way, empty set difference in both directions - and
+  **22 paths either way at exact-200, with no path appearing at 200 that did not
+  appear at 50**. Both real exact-50 runs score `runtime_start` 5/7,
+  `cluster_form` 5/5, `management_matrix` 6/8, `fault_matrix` 4/6, `cleanup` 1/2,
+  the same marks the accepted simulated pair scored, and are identical to each
+  other in every view and every field. Calibration was re-taken first: the two
+  frozen Docker runs give 7/7, 5/5, 8/8, 6/6, 2/2.
+- **Five defects, every one found by running rather than by reading**, and four
+  of them only reachable from a controller that is not a development laptop: a
+  test that measured pytest's `tmp_path` instead of the 104-byte socket limit
+  (`735ee11b`); the preflight demanding a Docker daemon of a run that uses none
+  (`956cfa33`); the memory budget asking the controller about memory spent on
+  eight other machines (`aaa024ca`); a `SKIPPED_WITH_REASON` reason placed where
+  §12.1's validator cannot see it, which refused an otherwise perfect 860 s run
+  (`0147a946`); and the preflight having no fleet to read because
+  **`_prepare_runtime` preflights the profile's canonical template, not the
+  configuration the run uses** (`c58a762a`).
+- **Two operator decisions, both reported before the change**: `can_run` widened
+  to accept `SKIPPED_WITH_REASON`, and the memory budget comparing each nodehost
+  against the host it is placed on, read from that host, fail-closed.
+- **Transport is closed for real, on real-network numbers.** Through the
+  product's own `MultiplexedSshTransport`: **5.3 ms** median at parallelism 1,
+  **8.6 ms** at the run's own 8 (p90 12.5), 26.9 ms at 32, per-host 7.4-8.9 ms,
+  against the rolling restart's own 71/61 ms budget. **`simulated_ladder_slice_map.md`
+  §15.2 is corrected**: its `runtime_command` rows are the RESP path on the
+  native backend, not the seam's transport - a native run's command audit records
+  **no ssh at all**, where a Docker run records every `docker` call under the same
+  kind.
+- **Real clock skew is visible for the first time and inside its bound.** The
+  eight hosts agree with each other to within 0.7 ms; the common term is the
+  *controller's* drift and moved between -4.8 ms and +5.7 ms across the day,
+  against bounds of ±6.5-7.5 ms. A threshold calibrated on either other
+  environment would have been wrong here.
+- **conntrack is not consumed by this product**: module loaded, max 1048576,
+  count **0 before, during and after** a partition installed by the backend's own
+  `isolate_nodehost`; its rules carry `-m comment` and no state match. Rules
+  0 → 6 → 0.
+- **Transport-failure classification, which the roadmap kept open, is answered
+  and reported rather than changed.** `put`/`get` raise `TransportError` for
+  every failure; **`run` returns every ssh failure as `CommandResult` rc 255**,
+  including a host that cannot be reached at all. Harmless at every site that can
+  be named, and changing it moves what `is_collection_failure` sees for a whole
+  class of failures - a verdict contract, so it is its own change.
+- **Ownership proved twice.** `native_cleanup_proof.py release|abort|stubborn
+  --fleet-id gce-m3b`: **43 → 0** managed residue on eight real hosts in all
+  three modes. And the roadmap's literal ask: a real 50-node gate run was formed,
+  allowed into the management matrix, and its controller `SIGKILL`ed, leaving 50
+  live `valkey-server` plus four run trees and four bundles - then `cli gate
+  cleanup` from its `state.json` took every host to zero, checked from outside.
+- **Formation dwell recorded, the 240 s window not re-argued.** exact-200 forms
+  in **52.0 s and 72.1 s**, the first the lowest 200-node formation ever measured
+  here; exact-50 in 47.4 and 53.4 s. Total formation bounds every single dwell,
+  so the worst real dwell is at most 87 % of the 83.1 s the window was sized on.
+- **§15.6's watch item did not fire**: both real exact-200 RTOs are 52.55 s and
+  51.57 s, inside the 47.6-53.8 s spread, so the simulated 41.28 s stays a single
+  outlier. exact-50 RTO 49.54 s and 48.54 s, inside the 45-50 s band.
+- **§14.6/§16.1 refined, and a counting error corrected.** §14.6 counts
+  `sample_scope: all_nodes_diagnostic`; the real fleet escalates under the
+  *representative* label, so that counter reads zero for every real run and this
+  was nearly written up backwards. Counted on `full_probe_count`, the real fleet
+  escalates 3-6 of 44 gates at exact-50 and never at exact-200 - so §14.6's
+  finding and §16.2's inversion with scale both hold - but **never once reaches
+  the diagnostic round**, which the simulated fleet did 3-5 times per run. §16.1's
+  "the runtime is the variable" is right about the retry and wrong about the
+  severity; the harness is the surviving candidate and is not proven.
+
+**The native baselines are frozen, and they live on the controller.**
+`artifacts/baselines/real-exact-50-c58a762a/` (97 MB) and
+`real-exact-200-c58a762a/` (457 MB), both at `c58a762a`, each with a
+`BASELINE.md` recording the commit, the fleet and its manifest digest, the hosts,
+and the invocation - which **requires `ulimit -n 65536`**, because
+`runtime_fd_limit` asks for 1856 at exact-200 and Debian's default is 1024. They
+are not on the workstation on purpose: it cannot reach the fleet, so every diff
+against them runs where they are.
+
+**Read their calibration limits before using them.** `management_matrix` does not
+self-calibrate and cannot - §14.6's retry record inside `stdout_tail` and §14.7's
+`errors_observed_during_operation` are genuine per-run observations - so a
+candidate is judged on the other views and on the field-level delta, not on that
+view's score. One normalisation gap *was* real and is fixed (`b1c1a507`):
+`_cleanup_scrub` had lost `scrub`'s `pid` rule and never saw the native residue
+rows' process records, so `cleanup` self-calibrated 1/2; the list is now sorted
+with pids scrubbed and is deliberately not reduced to a count, because `cwd` is
+item 1.4's ownership mark and `exe` exists so a reader hears about something
+unexpected. Proven by seeding three regressions, not by calibrating.
+
+**The declared evidence-shape delta held:** `LocalResourceSampler.host_sample()`
+populates 2 of 6 cgroup fields on a VM, and the four absent ones carry a
+`MISSING` object with its own reason rather than a null. It moves no diffed view.
+
+**Two configurations were added and one key differs from their siblings**:
+`real_ecs_50.yaml` and `real_ecs_200.yaml` are `native_50`/`native_200` with
+`runtime.host_inventory_path` naming `gce-m3b`. `real_ecs_200.yaml` keeps
+`profile_name: scale_200`, because `_is_exact_200_bounded_exception` keys on it.
+
+**M3-B-2 is roadmap item 1.7, on operator approval, and the correct state now is
+idle.** Do not re-freeze the baselines. What 1.7 inherits is slice map §10.1: no
+`real.ecs.*` id exists in `catalog.json`, the two configurations above are what
+those entries will name, registering a Test moves `repository.all` 92, catalog 96
+and the M1 plan 91, and M3 still has a registered check on 1 of its 6 criteria -
+this item produced the evidence for four of them and attached a check to none,
+because that is 1.7's work.
+
+Added to the open list, none of them this item's to close: `run` not classifying
+a transport failure; a native run's command audit recording no ssh, which is an
+evidence-parity gap between two backends meant to be comparable; whether the
+preflight should validate the document the run uses rather than the profile's
+template (a safety guard reads that document, so it is the operator's call); and
+that the 92/92 suite does not reach `_process_runtime_state`'s call site with its
+real signature - a wrong keyword there passed the whole hermetic suite and was
+caught by three real runs in ten seconds each.
 
 ### What is left before M3, and what is M3 itself
 
@@ -1184,9 +1316,10 @@ The genuine preconditions are:
    `cli fault apply`/`clear` surface, `_remove_fault_state_files` and three
    catalog tests are gone; `docs/fault_sandbox_decision_memo.md` §7 is the
    record. **`repository.all` is 88 tests, not 91**, from this commit on.
-4. **Confirm the ECS hosts exist.** Five of six criteria need real multi-host
-   runs, and the sixth is unverifiable without them. Gates M3-*acceptance*, not
-   M3 development.
+4. ~~**Confirm the ECS hosts exist.**~~ **Done 2026-08-12**: eight
+   `c4a-standard-2` GCE hosts plus an in-VPC controller, and item 1.6 has run the
+   whole ladder on them. Five of six criteria have their evidence; none has a
+   registered check yet, which is item 1.7's.
 
 Also, and easy to miss: **M3 has a registered check on 1 of its 6 criteria, M4 on
 1 of 7.** A milestone whose criteria have no attached checks reports `DEFINED`
