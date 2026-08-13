@@ -1588,7 +1588,19 @@ decides the aggregate with the precedence it already implements - semantic
 refusal `FAIL`, unreadable evidence `ERROR` - while the stage checks keep their
 own results, because those stages did pass. `lifecycle_timeline.json` is
 deliberately left alone for the same reason. Two hermetic tests, both measured
-to fail without the change.
+to fail without the change with exactly the wrong symptom, `PASS` where
+`FAIL`/`ERROR` is expected.
+
+The change is on every real run's path, so it was proven there too:
+`repository.all` 92/92 and **`./gate milestone m3` PASS 8/8 again** at
+`940efa13` - exact-50 836.01s, exact-200 1414.44s, exact-50 862.69s. All three
+runs' `run_verdict.json` are **identical to the three taken before the change**:
+`status` PASS, `gate_status` PASS, checks 12/12 OK, **no `admission` check**,
+`tool_errors` empty. Fault lane 9/12/15 with nine `REAL_PASS` in all three, no
+`ERROR` in any artifact, and zero processes and zero `vslab` firewall rules on
+all eight hosts asked from outside. A passing run passes no extra checks, so the
+new code path is a no-op there - argued from `checks.extend(())` and then
+measured on three real runs rather than left as reading.
 
 Two smaller sites from the map are also still open: the bounded waits
 (`_wait_process_light_clean`, `_run_timed_step`) label a `CollectionError` `FAIL`
