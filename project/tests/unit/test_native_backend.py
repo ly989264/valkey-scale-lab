@@ -269,6 +269,29 @@ def test_a_host_missing_an_address_is_refused(tmp_path: Path) -> None:
         load_host_inventory(path)
 
 
+def test_a_manifest_naming_one_host_twice_is_refused(tmp_path: Path) -> None:
+    """M3's inventory criterion says "rejects duplicate hosts" in as many words.
+
+    The refusal is real (`host_inventory.py`), and until roadmap item 1.7 the
+    only test of it was `tests/orchestrator/test_local_orchestrator.py`, over the
+    `docker_endpoint`-shaped inventory that only `docker_runtime.py` imports. A
+    native run reads this module, so the criterion was evidenced by a test of a
+    module that run never executes.
+
+    A duplicate would otherwise place two nodehosts on one machine while every
+    artifact said they were on two, which is the one thing a nodehost is defined
+    not to be: `native_backend_slice_map.md` makes it a fault domain, and the
+    plan rejects a shard whose primary and replica share one.
+    """
+
+    manifest = json.loads(_manifest(tmp_path).read_text())
+    manifest["hosts"][1]["host_id"] = manifest["hosts"][0]["host_id"]
+    path = tmp_path / "duplicated.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(HostInventoryError, match="names host 'host-00' twice"):
+        load_host_inventory(path)
+
+
 def test_a_missing_manifest_names_the_path(tmp_path: Path) -> None:
     with pytest.raises(HostInventoryError, match="no fleet manifest"):
         load_host_inventory(tmp_path / "absent.json")
