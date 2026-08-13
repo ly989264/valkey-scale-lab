@@ -273,7 +273,16 @@ no rule, plus one empty directory at a fixed path.
    validated for existence at plan time and would refuse to plan anywhere but the
    controller. The consequence is that a typo in a fleet id is found by the
    script rather than by the Gate.
-3. **Everything item 1.6 left open is still open** and none of it is this item's:
+3. **`./gate milestone m3` is green on `fast-iter`, not on a merged default
+   branch.** The roadmap words 1.7 as the latter. Operator decision 2026-08-13:
+   no merge to `origin/codex/valkey-scale-lab-loop`, and M4 is developed on
+   `fast-iter`. The branch is a clean fast-forward whenever that changes.
+4. **Two things found while closing this item, neither of them 1.7's.** A run
+   refused after its stages passed wrote `PASS` in every artifact it owns -
+   fixed the same day, see CLAUDE.md's §12.2 paragraph. And **exact-2000 cannot
+   be planned at HEAD**: 80 nodehosts against `max_nodehosts: 64`, with 500 and
+   1000 needing 20 and 40 hosts. That is M4's to decide before provisioning.
+5. **Everything item 1.6 left open is still open** and none of it is this item's:
    `run` not classifying a transport failure, a native run's command audit
    recording no ssh, whether the preflight should validate the document the run
    uses, the aborted controller's ssh masters, the resource-to-timeline monotonic

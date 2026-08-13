@@ -1354,13 +1354,67 @@ acceptance and §5.1 the one thing that survived on a host.
   run, which is why the residue scan does not report it and why `found: 0` is
   truthful rather than convenient. See map §5.1.
 
-**Nothing was merged and nothing was pushed.** `fast-iter` is 100+ commits ahead
-of `origin/codex/valkey-scale-lab-loop` and the merge is the operator's. What
-merging would require is in the session's closing report, not here.
+**Operator decision, 2026-08-13: there is no merge to
+`origin/codex/valkey-scale-lab-loop`, and M4 is developed on `fast-iter`.** The
+branch is 144 commits ahead, zero behind, and a clean fast-forward whenever that
+changes, but it is deliberately not taken - do not re-raise it as a next step.
+Nothing is pushed. Note the consequence for M3's acceptance: the roadmap words
+1.7 as `./gate milestone m3` green *on the merged default branch*, and it is
+green on `fast-iter` instead. That is the operator's call and is recorded here
+rather than argued.
 
-**M4 is not started and needs approval.** M4 has a registered check on 1 of its
-7 criteria; the same question §1 answers for M3 has to be answered again there,
-and its answer will be different, because no M4 run exists to be the check.
+**Nothing is stranded on the controller, and this was measured** on 2026-08-13,
+not assumed: identical HEAD, zero commits unique to it, and its only tracked
+difference is the not-mine `.github/milestone-loop/README.md`, byte-identical to
+the Mac's. That is structural - the working loop only ever flows Mac to
+controller, and the controller authors nothing. What lives there and cannot
+travel is the gitignored `project/artifacts/`: the two frozen native baselines
+(457 MB + 97 MB) and the fleet manifest. Losing the VM would cost ~50 minutes of
+re-running, not code.
+
+### After item 1.7, in the same session: a refused run now says so
+
+Not a roadmap item and not part of 1.7. Read the corrected §12.2 paragraph in
+"What is still open" below - it carries the measurement, the fix and its proof.
+In one line: a run whose twelve stages passed and whose evidence was then refused
+wrote `PASS` in every artifact it owns, which matters because freezing a baseline
+copies a run directory. Admission is now a **check** in `run_verdict.json`.
+Proven by two hermetic tests that fail without it and by a second
+`./gate milestone m3` PASS 8/8 whose three runs' verdicts are identical to the
+three before the change.
+
+**M4 is not started and needs approval, and it is blocked on arithmetic before
+it is blocked on anything else.** Compiled at HEAD against `real_ecs_200.yaml`'s
+shipped knobs (`nodehosts_per_az: 2`, `max_logical_nodes_per_nodehost: 25`,
+`max_nodehosts: 64`), one nodehost per host:
+
+| nodes | nodehosts = ECS hosts | per host |
+|---|---|---|
+| 500 | **20** | 25 |
+| 1000 | **40** | 25 |
+| 2000 | **refused** - 80 nodehosts exceeds `max_nodehosts: 64` | - |
+
+So **exact-2000 cannot be planned at all today**, and it fails at plan time
+rather than at run time. Raising the density knob is the obvious escape and is
+not free: it moves `nodehost_density_plan`, every node's `nodehost_id`, the fault
+matrix's targets and the cleanup row count, so M4's baselines would differ
+*structurally* from every M3 baseline they would be compared with. **This is an
+operator decision before provisioning 20 to 80 hosts**, and by the roadmap's own
+deviation rule it should be reported rather than improvised around - the same
+shape as item 0.7's finding, which is why it is written down before M4 starts
+rather than discovered inside it.
+
+M4 also has a registered check on 1 of its 7 criteria; the question §1 of
+`m3_acceptance_registration_map.md` answers for M3 has to be answered again
+there, and its answer will be different, because no M4 run exists to be the
+check.
+
+**The recommended next piece, if a small one is wanted first:** node journals on
+a mid-lifecycle failure (`cross_host_evidence_slice_map.md` §10.2). It is the
+half of the failing-run item that was deliberately deferred on 2026-08-13, the
+failures it helps most are cluster-formation ones, and that is precisely the
+class M4 will produce. It needs an induced real failure to prove, so it is its
+own item with its own evidence.
 
 Carried forward untouched from item 1.6 and earlier, none of it this item's:
 `run` not classifying a transport failure, a native run's command audit recording
@@ -1370,7 +1424,9 @@ controller's ssh masters, the resource-to-timeline monotonic correlation, a
 failing run collecting no journals, the absent fault-path ownership check, the
 missing `signalled` count, `SamplerSpec`'s duplication, `_state_nodehost`
 dropping `remote_bundle_dir`, and why the health-gate escalation inverts with
-scale.
+scale. Note "a failing run collecting no journals" is now the *only* remaining
+half of that item, and it is better characterised than it was - see the §12.2
+paragraph below.
 
 ### What is left before M3, and what is M3 itself
 
