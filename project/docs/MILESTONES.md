@@ -7,7 +7,7 @@ library:
 | --- | --- | --- |
 | M1 local lifecycle | `milestones/m1/milestone.json` | `READY` |
 | M2 local formation and failover performance | `milestones/m2/milestone.json` | `READY` |
-| M3 native multi-ECS | `milestones/m3/milestone.json` | `DEFINED` |
+| M3 native multi-ECS | `milestones/m3/milestone.json` | `READY` |
 | M4 multi-ECS scale-out | `milestones/m4/milestone.json` | `DEFINED` |
 
 Each definition contains one goal and observable Criteria. A Criterion omits
@@ -33,5 +33,6 @@ run. A Milestone invocation reports `PASS`, `FAIL`, or `BLOCKED` in its Gate
 summary. M1 can pass only when all product tests and both exact real 50-node
 and 200-node runs pass. M2 is READY because every Criterion has an executable
 Check; its real performance Tests remain operator-authorized and are excluded
-from `repository.all`. M3 and M4 cannot pass until every Criterion has an
-attached executable Check.
+from `repository.all`. M3 is READY because all six Criteria carry executable
+Checks, including the `real.ecs.*` Tests that run against the operator's
+fleet. M4 cannot pass until every Criterion has an attached executable Check.
