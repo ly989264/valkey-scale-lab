@@ -1564,9 +1564,31 @@ never both a `FAIL` and an `ERROR` to aggregate. §12.2's precedence is exercise
 at the Gate across tests and inside the stability lane across checks, not across
 stages. Recording a failed stage at all needs `lifecycle_timeline.json` to
 outlive a failure, which it does not - it is written only after a passing gate,
-with literal `PASS` on the artifact and on all twelve step rows. Every artifact a
-failing run leaves says `PASS` or is absent; the only thing that says otherwise
-is the Gate's own `summary.json`.
+with literal `PASS` on the artifact and on all twelve step rows.
+
+**"Every artifact a failing run leaves says `PASS` or is absent" was measured
+again on 2026-08-13, against six real failed runs from item 1.6, and it is now
+wrong in one direction and was right for a reason it did not state.** A run that
+dies *in* the lifecycle is not silent: `run_verdict.json` is written before the
+raise and carries `FAIL`/`BLOCKED` plus a `stages_not_run` row per skipped stage
+with the real message, e.g. `fail-fast after runtime_start:
+_process_runtime_state() got an unexpected keyword argument 'fleet_hosts'`. What
+that run still lacks is node journals (zero, on a run whose nodes had logs on
+their hosts - `cross_host_evidence_slice_map.md` §10.2) and the timeline above.
+
+The sentence was exactly right for a different case, which nobody had named: a
+run whose twelve stages **passed** and whose evidence was then **refused**.
+Measured on `gate-20260812T101014Z-c2bccc21` - Gate `FAIL`, and inside the run
+`run_verdict.json` PASS 12/12 OK, `lifecycle_timeline.json` PASS 12 steps,
+`cleanup_report.json` PASS. That mattered more than the missing journals because
+**freezing a baseline copies a run directory**, so such a run is
+indistinguishable from a passing one from the inside and could be frozen. Fixed:
+admission is now recorded as a **check** in `run_verdict.json`, so `final_verdict`
+decides the aggregate with the precedence it already implements - semantic
+refusal `FAIL`, unreadable evidence `ERROR` - while the stage checks keep their
+own results, because those stages did pass. `lifecycle_timeline.json` is
+deliberately left alone for the same reason. Two hermetic tests, both measured
+to fail without the change.
 
 Two smaller sites from the map are also still open: the bounded waits
 (`_wait_process_light_clean`, `_run_timed_step`) label a `CollectionError` `FAIL`
