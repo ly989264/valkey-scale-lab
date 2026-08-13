@@ -1274,7 +1274,8 @@ idle.** Do not re-freeze the baselines. What 1.7 inherits is slice map §10.1: n
 those entries will name, registering a Test moves `repository.all` 92, catalog 96
 and the M1 plan 91, and M3 still has a registered check on 1 of its 6 criteria -
 this item produced the evidence for four of them and attached a check to none,
-because that is 1.7's work.
+because that is 1.7's work. *(Item 1.7 is now done; the counts it actually moved
+are catalog 96 to 99, with `repository.all` and the M1 plan unchanged.)*
 
 Added to the open list, none of them this item's to close: `run` not classifying
 a transport failure; a native run's command audit recording no ssh, which is an
@@ -1284,6 +1285,92 @@ template (a safety guard reads that document, so it is the operator's call); and
 that the 92/92 suite does not reach `_process_runtime_state`'s call site with its
 real signature - a wrong keyword there passed the whole hermetic suite and was
 caught by three real runs in ten seconds each.
+
+### Session M3-B-2 is done, and with it roadmap item 1.7 and M3-B
+
+`./gate milestone m3` is **PASS, 8/8, `definition_status: READY`, on the first
+attempt** - invocation `gate-20260813T015536Z-551fcacf` at `2a30563b`, 53 minutes
+from the in-VPC controller. Read `project/docs/m3_acceptance_registration_map.md`;
+§1 is the item (what a native run already asserts about itself, which is what
+decided the shape), §2 the attachment map and its cost, §3 the fd limit, §5 the
+acceptance and §5.1 the one thing that survived on a host.
+
+- **Most of this item was deciding, not building.** `run_exact_gate` ends in
+  `validate_raw_sources_by_kind` and `build_admission_from_sources`, both
+  fail-closed, and between them a run already refuses itself unless its plan is
+  exact, `run_state` carries exactly N unique nodes, the independent probe reports
+  `cluster_state: ok` with `known_nodes == N` and 16384 slots, `cleanup_report`
+  has no `resources_remaining` and no `cleanup_errors`, and `host_evidence`
+  accounts for every nodehost with a `host_id`, two clock readings each with a
+  measured bound, and one digested journal per observed node. So **`exact.50`,
+  `exact.200` and `evidence` needed no new assertion** - the run is the check,
+  as M1's `local.exact.50` already uses `real.local.full-flow`.
+- **Two things a passing run does not say**, and they are why this was not only
+  catalog editing. **Nothing anywhere names `native_multi_ecs`** - grep over
+  `evidence/`, `analysis/` and `gates/` returns nothing - so "a real multi-ECS
+  run" would have been asserted by a configuration's *file name*. `--backend
+  native_multi_ecs` in the entry's argv fixes it with existing mechanism:
+  `backend_for_provider` refuses it for a `docker` provider, measured both ways.
+  And **the abort path is not on a passing run's path**, so
+  `safety-and-cleanup` gets the real-fleet proof item 1.4 built and item 1.6 ran.
+- **`ulimit -n 65536` now lives in `scripts/ecs_gate.py`**, which raises
+  `RLIMIT_NOFILE` toward 65536 (never above the hard limit), prints what it got,
+  and `execv`s the CLI. The operator chose this over configuring the controller
+  so the milestone states its own requirement. The preflight is not weakened:
+  exact-200's `runtime_fd_limit` records `required_min: 1856` against
+  `soft: 65536`, in the run's own evidence.
+- **`product.orchestrator` is stale in a measurable way** - it tests
+  `orchestrator.local.validate_inventory`, imported by `docker_runtime.py` and
+  nothing else, while a native run reads `runtime/host_inventory.py`. The
+  criterion now carries `product.unit.native_backend` as well, plus a new test
+  for the duplicate-host refusal, which the real module has and nothing covered.
+  **Reported, not decided:** the statement's "explicit local endpoints" clause is
+  the shim's vocabulary, so the shim is *kept beside* the real contract rather
+  than dropped; narrowing the statement is the operator's call.
+- **Three `real.ecs.*` entries**, all `{"type": "command", "result": "json"}`:
+  `real.ecs.full-flow` (`nodes`, `config`), `real.ecs.bringup` (`fleet_id`) and
+  `real.ecs.cleanup-ownership` (`fleet_id`, `mode`), plus a `real.ecs.full-suite`.
+  The last two are the harnesses item 1.4/1.5 built; each gained a
+  `--result-path` and nothing else. `fleet_id` is a `string` and not a `path`
+  because the manifest lives under gitignored `project/artifacts/`, and a `path`
+  parameter is checked for existence at plan time.
+- **Counts: catalog 96 → 99, `repository.all` still 92, M1 plan still 91.**
+  Two further contract assertions moved with it - M3's `definition_status`
+  DEFINED → READY, and M3's expansion, which is now eight checks in order.
+  `repository.all` is 92/92 on the Mac and 91/92 on the controller, the missing
+  one being `product.integration.docker_runtime_contract` for the absent daemon.
+- **Proven:** three real full-flow runs inside the milestone - exact-50 876.75 s,
+  exact-200 1430.26 s, exact-50 886.73 s - all `native_multi_ecs`, 50→50, 200→200
+  and 50→50 on 4, 8 and 4 distinct hosts, `run_verdict` 12/12 OK each, cleanup 20
+  / 40 / 20 rows with `resources_remaining` empty and every residual scan
+  `found: 0`, 50 / 200 / 50 journals, and the string `ERROR` in no artifact of
+  any of them. Fault lane **9 / 12 / 15 with nine `REAL_PASS`** in all three.
+  RTO 46.02 s and 49.00 s at exact-50, 53.38 s at exact-200 - all inside their
+  bands, so `simulated_ladder_slice_map.md` §15.6's watch item does not fire.
+- **All eight hosts were also asked directly over ssh**, outside the product:
+  zero `valkey-server` and zero `vslab` firewall rules on all eight. One host
+  holds `/tmp/vslab-load-lane`, **empty** - the fixed root above the run-scoped
+  parent item 1.5 made the lane remove. Nothing on the host attributes it to a
+  run, which is why the residue scan does not report it and why `found: 0` is
+  truthful rather than convenient. See map §5.1.
+
+**Nothing was merged and nothing was pushed.** `fast-iter` is 100+ commits ahead
+of `origin/codex/valkey-scale-lab-loop` and the merge is the operator's. What
+merging would require is in the session's closing report, not here.
+
+**M4 is not started and needs approval.** M4 has a registered check on 1 of its
+7 criteria; the same question §1 answers for M3 has to be answered again there,
+and its answer will be different, because no M4 run exists to be the check.
+
+Carried forward untouched from item 1.6 and earlier, none of it this item's:
+`run` not classifying a transport failure, a native run's command audit recording
+no ssh, whether the preflight should validate the document the run uses, the
+92/92 suite not reaching `_process_runtime_state`'s call site, the aborted
+controller's ssh masters, the resource-to-timeline monotonic correlation, a
+failing run collecting no journals, the absent fault-path ownership check, the
+missing `signalled` count, `SamplerSpec`'s duplication, `_state_nodehost`
+dropping `remote_bundle_dir`, and why the health-gate escalation inverts with
+scale.
 
 ### What is left before M3, and what is M3 itself
 
@@ -1318,13 +1405,16 @@ The genuine preconditions are:
    record. **`repository.all` is 88 tests, not 91**, from this commit on.
 4. ~~**Confirm the ECS hosts exist.**~~ **Done 2026-08-12**: eight
    `c4a-standard-2` GCE hosts plus an in-VPC controller, and item 1.6 has run the
-   whole ladder on them. Five of six criteria have their evidence; none has a
-   registered check yet, which is item 1.7's.
+   whole ladder on them. ~~Five of six criteria have their evidence; none has a
+   registered check yet, which is item 1.7's.~~ **All six carry executable checks
+   as of item 1.7, and `./gate milestone m3` is PASS.**
 
-Also, and easy to miss: **M3 has a registered check on 1 of its 6 criteria, M4 on
-1 of 7.** A milestone whose criteria have no attached checks reports `DEFINED`
-and can never report `PASS`, so each criterion needs a real Test registered in
-`catalog.json` as it becomes executable. No placeholders.
+Also, and easy to miss: **M3 had a registered check on 1 of its 6 criteria and
+now has one on all six; M4 still has 1 of 7.** A milestone whose criteria have no
+attached checks reports `DEFINED` and can never report `PASS`, so each criterion
+needs a real Test registered in `catalog.json` as it becomes executable. No
+placeholders - and see the M3-B-2 section for what "no placeholders" cost to
+honour, which was a measurement rather than a rule.
 
 ### exact-200 passes end to end again
 
