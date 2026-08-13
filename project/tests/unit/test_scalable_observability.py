@@ -53,15 +53,17 @@ from valkey_scale_lab.observability.resources import (
 from valkey_scale_lab.observability import resource_observation as observation_module
 from valkey_scale_lab.observability.resource_observation import run_resource_observation
 from valkey_scale_lab.observability.sentinel import (
+    MAX_SEEDS_PER_LOOKUP,
     Canary,
     ClusterRouter,
     SentinelLane,
     SentinelNode,
+    _round_cadence,
     key_slot,
     slot_tags,
 )
 from valkey_scale_lab.observability.stability import StabilityWindow
-from valkey_scale_lab.valkey.resp import Endpoint, read_response
+from valkey_scale_lab.valkey.resp import Endpoint, RespCommandError, read_response
 
 
 def _bitmap(start: int, end: int) -> bytes:
@@ -2603,3 +2605,131 @@ def test_a_single_observation_caller_still_gets_the_raw_failure(monkeypatch) -> 
     assert "CLUSTER SHARDS contains unhealthy nodes" in str(excinfo.value)
     assert "stopped converging" not in str(excinfo.value)
     assert validator.observations == 1
+
+
+class _CountingConn:
+    """Counts what one Sentinel lookup costs, so a budget can be asserted."""
+
+    def __init__(self, endpoint, ledger, dead, owner) -> None:
+        self.endpoint = endpoint
+        self.ledger = ledger
+        self.owner = owner
+        ledger["connects"] += 1
+        if endpoint in dead():
+            raise ConnectionRefusedError(f"refused {endpoint}")
+
+    def execute(self, *args):
+        self.ledger["commands"] += 1
+        if self.endpoint == self.owner():
+            return b"canary"
+        target = self.owner()
+        raise RespCommandError(f"MOVED 0 {target.host}:{target.port}")
+
+    def close(self) -> None:
+        return None
+
+
+def _router_lookup_cost(primary_count: int, *, promoted: bool):
+    """One steady-state lookup against a cluster whose slot owner is dead."""
+
+    seeds = [Endpoint(f"10.0.0.{i + 1}", 7000 + i) for i in range(primary_count)]
+    state = {"dead": {seeds[0]}, "owner": seeds[0]}
+    ledger = {"connects": 0, "commands": 0}
+    router = ClusterRouter(
+        seeds,
+        connection_factory=lambda endpoint, timeout: _CountingConn(
+            endpoint, ledger, lambda: state["dead"], lambda: state["owner"]
+        ),
+    )
+    key = "{vslab-sentinel-0}:canary"
+    router._slot_routes[key_slot(key)] = seeds[0]
+    for _ in range(3):  # warm the persistent connections the design allows
+        try:
+            router.get(key)
+        except Exception:
+            pass
+    if promoted:
+        state["owner"] = Endpoint("10.9.9.9", 7999)
+    ledger["connects"] = 0
+    ledger["commands"] = 0
+    value = None
+    try:
+        value = router.get(key)
+    except Exception:
+        pass
+    return ledger, value
+
+
+def test_sentinel_lookup_cost_does_not_grow_with_cluster_size() -> None:
+    """§14 budgets the fault probe at O(1) and §7.6 at ~20 GET/s 'independent of
+    cluster node count'. Before this bound one outage lookup cost one connect and
+    one GET per primary - measured 100/99 at 100 primaries and 1000/999 at 1000 -
+    which is what broke §16 item 8's 100ms period at exact-200 and would have made
+    the probe a load generator against the failover it measures at exact-2000."""
+
+    costs = {n: _router_lookup_cost(n, promoted=False)[0] for n in (15, 100, 1000)}
+
+    assert costs[15] == costs[100] == costs[1000]
+    assert costs[1000]["commands"] <= MAX_SEEDS_PER_LOOKUP
+    # Only the dead owner is dialled, and only once, however many seeds name it.
+    assert costs[1000]["connects"] <= 2
+
+
+def test_sentinel_lookup_still_finds_the_promoted_owner() -> None:
+    """The bound must not buy its cost back by observing recovery late: the
+    promoted node is not a seed, so it is only reachable through a seed's MOVED."""
+
+    for primary_count in (15, 100, 1000):
+        ledger, value = _router_lookup_cost(primary_count, promoted=True)
+        assert value == b"canary", primary_count
+        assert ledger["commands"] <= MAX_SEEDS_PER_LOOKUP + 1
+
+
+def test_sentinel_lookup_rotates_so_no_seed_is_starved() -> None:
+    """A fixed window would keep asking the same few primaries; over successive
+    rounds every primary must get a turn, or a stale trio could hide a promotion."""
+
+    seeds = [Endpoint(f"10.0.0.{i + 1}", 7000 + i) for i in range(12)]
+    asked: list[Endpoint] = []
+
+    class _Recorder:
+        def __init__(self, endpoint, *_a) -> None:
+            self.endpoint = endpoint
+
+        def execute(self, *args):
+            asked.append(self.endpoint)
+            raise RespCommandError(f"MOVED 0 {seeds[0].host}:{seeds[0].port}")
+
+        def close(self) -> None:
+            return None
+
+    router = ClusterRouter(seeds, connection_factory=lambda e, t: _Recorder(e))
+    for _ in range(12):
+        try:
+            router.get("{vslab-sentinel-0}:canary")
+        except Exception:
+            pass
+
+    assert len(set(asked)) > MAX_SEEDS_PER_LOOKUP
+
+
+def test_probe_cadence_is_measured_rather_than_declared() -> None:
+    """§16 item 8 asks the fault probe to reach a 100ms period. At exact-200 it
+    achieved 194ms and said 100ms, so an RTO read off it claimed a precision it
+    did not have."""
+
+    lost_cadence = _round_cadence([{"monotonic": i * 0.194} for i in range(20)], 0.1)
+
+    assert lost_cadence["requested_interval_ms"] == 100.0
+    assert lost_cadence["median_interval_ms"] == pytest.approx(194.0, abs=0.5)
+    assert lost_cadence["overrun_round_count"] == 19
+
+    # A healthy probe sleeps off its period and inherits scheduling jitter, so
+    # every interval is a little over 100ms. Measured on a real exact-50: 438 of
+    # 438 intervals between 100.1ms and 114.9ms. Counting those as overruns
+    # would make the field fire on every run and mean nothing.
+    healthy = _round_cadence([{"monotonic": i * 0.1074} for i in range(20)], 0.1)
+
+    assert healthy["median_interval_ms"] == pytest.approx(107.4, abs=0.5)
+    assert healthy["overrun_round_count"] == 0
+

@@ -216,6 +216,17 @@ class _DirectCanaryClient:
         ) from last_error
 
 
+#: Distinct seeds one Sentinel lookup may consult when its cached route fails.
+#: Bounds the lookup at O(1) per §14 rather than O(primaries); see `get`.
+MAX_SEEDS_PER_LOOKUP = 3
+
+#: How far past its requested period a probe round may run before it counts as
+#: an overrun. Sized on measurement rather than taste: healthy 100ms rounds land
+#: at 100.1-114.9ms because the loop sleeps the remainder and inherits
+#: scheduling jitter, while a probe that has lost its cadence ran at 194ms.
+OVERRUN_TOLERANCE = 1.25
+
+
 class ClusterRouter:
     """Persistent small client that follows MOVED/ASK for Sentinel GETs."""
 
@@ -242,6 +253,7 @@ class ClusterRouter:
         self._resolve = endpoint_resolver or (lambda endpoint: endpoint)
         self._connections: dict[Endpoint, RespConnection] = {}
         self._slot_routes: dict[int, Endpoint] = {}
+        self._seed_cursor = 0
 
     def close(self) -> None:
         for connection in self._connections.values():
@@ -271,14 +283,41 @@ class ClusterRouter:
         return parts[0], int(parts[1]), Endpoint(host, int(port))
 
     def get(self, key: str) -> Any:
+        # §7.6 and §14 budget this probe at O(1) and about 20 GET/s regardless
+        # of cluster size. The candidate list is every primary, so during an
+        # outage - when the cached route is dead and every live seed answers
+        # MOVED naming that same dead endpoint - one lookup cost one connect and
+        # one GET per primary. Measured at HEAD against a fake transport: 100
+        # primaries cost 100 connects and 99 GETs per lookup, 1000 primaries
+        # cost 1000 and 999, while the same lookup after promotion costs 2 and 2
+        # at every size. On real runs that is a 194ms round at exact-200 against
+        # a 100ms period, so §16 item 8's period breaks exactly as the cluster
+        # grows and the probe becomes a load generator against the failover it
+        # is measuring.
+        #
+        # Two bounds restore the budget without changing what is observed. An
+        # endpoint that has already failed in this lookup is not dialled again,
+        # which collapses the repeated dead connect to one; and only
+        # MAX_SEEDS_PER_LOOKUP distinct seeds are consulted, from a rotating
+        # offset so no seed is starved across rounds. A seed that knows the new
+        # owner still ends the lookup on its first answer, which is why
+        # recovery is still observed on the round it becomes routable.
         slot = key_slot(key)
         first = self._slot_routes.get(slot)
-        candidates = ([first] if first is not None else []) + [
-            seed for seed in self.seeds if seed != first
+        others = [seed for seed in self.seeds if seed != first]
+        if others:
+            offset = self._seed_cursor % len(others)
+            self._seed_cursor += 1
+            others = others[offset:] + others[:offset]
+        candidates = ([first] if first is not None else []) + others[
+            :MAX_SEEDS_PER_LOOKUP
         ]
+        failed: set[Endpoint] = set()
         last_error: Exception | None = None
         for candidate in candidates:
             endpoint = candidate
+            if endpoint in failed:
+                continue
             for _ in range(3):
                 try:
                     return self._connection(endpoint).execute("GET", key)
@@ -289,15 +328,21 @@ class ClusterRouter:
                     kind, redirected_slot, endpoint = redirect
                     if kind == "MOVED":
                         self._slot_routes[redirected_slot] = endpoint
+                        # Every remaining seed would name this same owner, so
+                        # dialling it once per seed buys nothing.
+                        if endpoint in failed:
+                            break
                     else:
                         try:
                             self._connection(endpoint).execute("ASKING")
                         except Exception as ask_exc:  # noqa: BLE001
                             last_error = ask_exc
+                            failed.add(endpoint)
                             self._forget_connection(endpoint)
                             break
                 except Exception as exc:  # noqa: BLE001
                     last_error = exc
+                    failed.add(endpoint)
                     self._forget_connection(endpoint)
                     break
         if last_error is not None:
@@ -567,6 +612,13 @@ class SentinelLane:
                             max(streak_start - fault_monotonic, 0.0) * 1000, 3
                         ),
                         "stable_confirmed_at_monotonic": round_started,
+                        # §16 item 8 asks this probe to reach a 100ms period and
+                        # §14 budgets it at O(1). Both used to be asserted by the
+                        # constant above while the achieved period grew with the
+                        # cluster, so the achieved period is now measured and
+                        # travels with the RTO it bounds - the same way §11.5
+                        # records the resource sampler's own overrun.
+                        "round_cadence": _round_cadence(rows, interval_seconds),
                         "samples": rows,
                         "connection_events": self.connection_events(),
                     }
@@ -584,6 +636,46 @@ class SentinelLane:
             f"{_recovery_diagnosis(rows, stable_rounds)}"
         )
 
+
+
+def _round_cadence(
+    rows: list[dict[str, Any]], interval_seconds: float
+) -> dict[str, Any]:
+    """Achieved probe period, so an RTO carries the precision that produced it.
+
+    An RTO is read off these rounds, so it is only as precise as the interval
+    between them. Reporting the requested period alone would state a precision
+    the probe may not have achieved.
+    """
+    intervals = sorted(
+        (rows[index + 1]["monotonic"] - rows[index]["monotonic"]) * 1000.0
+        for index in range(len(rows) - 1)
+    )
+    if not intervals:
+        return {
+            "status": "MISSING",
+            "reason": "a single round cannot establish a period",
+            "requested_interval_ms": round(interval_seconds * 1000, 3),
+        }
+    budget_ms = interval_seconds * 1000.0
+    return {
+        "status": "OK",
+        "requested_interval_ms": round(budget_ms, 3),
+        "observed_round_count": len(rows),
+        "median_interval_ms": round(intervals[len(intervals) // 2], 3),
+        "p90_interval_ms": round(intervals[min(int(len(intervals) * 0.9), len(intervals) - 1)], 3),
+        "max_interval_ms": round(intervals[-1], 3),
+        # A round only overruns when it could not sleep off its period, not
+        # merely when scheduling jitter pushed it past. Measured on a healthy
+        # real exact-50: every one of 438 intervals exceeded the 100ms period
+        # (100.1-114.9ms, median 107.4), so a bare `> period` test counts every
+        # round and signals nothing. The exact-200 probe this exists to catch
+        # sat at 194ms, 94% over, so the tolerance separates the two cleanly.
+        "overrun_tolerance": OVERRUN_TOLERANCE,
+        "overrun_round_count": sum(
+            1 for value in intervals if value > budget_ms * OVERRUN_TOLERANCE
+        ),
+    }
 
 
 def _recovery_diagnosis(rows: list[dict[str, Any]], stable_rounds: int) -> str:
