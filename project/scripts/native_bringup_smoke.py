@@ -471,6 +471,21 @@ def _release(
     }
 
 
+def _write_result(path: Path, status: str, summary: str) -> None:
+    """The Gate's command+json result, in the form `real.local.*` already uses.
+
+    Exit 0 whenever a verdict was written: a non-zero exit makes the Gate report
+    FAIL without reading the file, which would throw away the one thing this
+    smoke exists to say - *which* operation did not answer.
+    """
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"status": status, "summary": summary}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--fleet-id", default="sim-smoke")
@@ -479,6 +494,11 @@ def main() -> int:
         type=Path,
         default=ROOT / "artifacts" / "native-bringup-smoke",
         help="where the bundles and collected evidence land",
+    )
+    parser.add_argument(
+        "--result-path",
+        type=Path,
+        help="write the Gate's {status, summary} result here and exit 0",
     )
     args = parser.parse_args()
 
@@ -506,8 +526,21 @@ def main() -> int:
     if failure is not None:
         print("\n--- the failing operation, in full ---", file=sys.stderr)
         traceback.print_exception(type(failure), failure, failure.__traceback__)
-        return 1
-    return 0
+    if args.result_path is not None:
+        hosts = len(
+            load_host_inventory(
+                ROOT / "artifacts" / "host-fleets" / args.fleet_id / "inventory.json"
+            ).hosts
+        )
+        _write_result(
+            args.result_path,
+            "PASS" if failure is None and not failed else "FAIL",
+            f"{len(report.rows) - len(failed)}/{len(report.rows)} native seam operations "
+            f"answered on {hosts} hosts of fleet {args.fleet_id}"
+            + ("" if failure is None else f"; first failure: {failure}"),
+        )
+        return 0
+    return 1 if failure is not None else 0
 
 
 if __name__ == "__main__":

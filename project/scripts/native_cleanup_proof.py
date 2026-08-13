@@ -44,6 +44,7 @@ import signal
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -401,20 +402,68 @@ def cmd_reclaim(args: argparse.Namespace) -> int:
     return 0
 
 
+def _write_result(path: Path, status: str, summary: str) -> None:
+    """The Gate's command+json result, in the form `real.local.*` already uses.
+
+    Written whenever a verdict was reached, and the process then exits 0: a
+    non-zero exit makes the Gate report FAIL without ever reading the file, so a
+    proof that ran and found residue could not report anything more useful than
+    "the command failed". `error_verdict_map.md` settled this for the full flow
+    and it holds here for the same reason.
+    """
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"status": status, "summary": summary}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command", choices=["release", "abort", "stubborn", "stage", "reclaim"]
     )
     parser.add_argument("--fleet-id", default="sim-a")
+    parser.add_argument(
+        "--result-path",
+        type=Path,
+        help="write the Gate's {status, summary} result here and exit 0",
+    )
     args = parser.parse_args()
-    return {
+    command = {
         "release": cmd_release,
         "abort": cmd_abort,
         "stubborn": cmd_stubborn,
         "stage": cmd_stage,
         "reclaim": cmd_reclaim,
-    }[args.command](args)
+    }[args.command]
+    if args.result_path is None:
+        return command(args)
+
+    try:
+        code = command(args)
+    except Exception as exc:  # noqa: BLE001 - the result must stay machine-readable
+        _write_result(
+            args.result_path,
+            "ERROR",
+            f"native cleanup proof {args.command} on fleet {args.fleet_id} "
+            f"raised {type(exc).__name__}: {exc}",
+        )
+        traceback.print_exc()
+        return 0
+    hosts = len(load_host_inventory(_fleet_dir(args.fleet_id) / "inventory.json").hosts)
+    _write_result(
+        args.result_path,
+        "PASS" if code == 0 else "FAIL",
+        f"native cleanup proof {args.command} on fleet {args.fleet_id}: "
+        + (
+            f"zero managed residue on {hosts} hosts, checked from outside the product"
+            if code == 0
+            else "managed residue remained after cleanup, or the proof staged none"
+        ),
+    )
+    return 0
 
 
 if __name__ == "__main__":
