@@ -244,12 +244,17 @@ def test_probe_and_cleanup_failures_are_both_preserved(tmp_path: Path) -> None:
     assert calls.count("cleanup") == 1
 
 
-def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def _stub_a_run_whose_stages_all_pass(
+    monkeypatch: pytest.MonkeyPatch, product_digest: str
+) -> list[str]:
+    """Every fake a full exact-50 gate needs, with all twelve stages passing.
+
+    Shared so that the refusal tests differ from the passing one in exactly the
+    thing under test - what the source-evidence validator answers - rather than
+    in a second copy of the harness.
+    """
+
     calls: list[str] = []
-    product_digest = "a" * 64
     monkeypatch.setattr(exact_gate, "_require_docker_daemon", lambda: None)
 
     def preflight(_config: Any, out: Any, **kwargs: Any) -> dict[str, Any]:
@@ -345,8 +350,11 @@ def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
     )
     monkeypatch.setattr(exact_gate, "validate_raw_sources", lambda *_args: ())
     monkeypatch.setattr(exact_gate, "_build_candidate_admission", build)
+    return calls
 
-    result = exact_gate.run_exact_gate(
+
+def _run_exact_50(tmp_path: Path, product_digest: str) -> dict:
+    return exact_gate.run_exact_gate(
         definition=DEFINITION,
         scale=50,
         config_path="templates/configs/scale_50.yaml",
@@ -356,6 +364,16 @@ def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
         provenance_id="capture-50",
         product_digest=product_digest,
     )
+
+
+def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    product_digest = "a" * 64
+    calls = _stub_a_run_whose_stages_all_pass(monkeypatch, product_digest)
+
+    result = _run_exact_50(tmp_path, product_digest)
 
     assert result == {"status": "PASS", "requested_nodes": 50}
     assert calls == ["preflight", "create", "probe", "cleanup", "admission"]
@@ -654,3 +672,68 @@ def test_cleanup_ownership_check_accepts_an_already_removed_owned_resource(
             capability_id=state["capability_id"],
             run_id=state["runtime"]["run_id"],
         )
+
+
+@pytest.mark.parametrize(
+    ("errors", "expected_error", "expected_status", "expected_check"),
+    [
+        (
+            RawSourceErrors(semantic=("runtime/resource_preflight.json is wrong",)),
+            DockerRuntimeError,
+            "FAIL",
+            "FAIL",
+        ),
+        (
+            RawSourceErrors(tool=("runtime/events.jsonl could not be read",)),
+            CollectionError,
+            "ERROR",
+            "ERROR",
+        ),
+    ],
+    ids=["semantic", "tool"],
+)
+def test_a_run_refused_after_its_stages_passed_says_so_in_its_own_verdict(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    errors: RawSourceErrors,
+    expected_error: type[Exception],
+    expected_status: str,
+    expected_check: str,
+) -> None:
+    """The stages pass, the evidence is refused, and the run has to record that.
+
+    Reproduces `gate-20260812T101014Z-c2bccc21`, a real refusal from roadmap item
+    1.6: the Gate reported FAIL for invalid source evidence while the run's own
+    `run_verdict.json` said PASS with 12/12 OK, and `lifecycle_timeline.json` and
+    `cleanup_report.json` said PASS too. Freezing a baseline copies a run
+    directory, so a run in that state could be frozen and every later candidate
+    diffed against a run the Gate refused.
+    """
+
+    product_digest = "a" * 64
+    calls = _stub_a_run_whose_stages_all_pass(monkeypatch, product_digest)
+    monkeypatch.setattr(
+        exact_gate, "validate_raw_sources_by_kind", lambda *_args: errors
+    )
+
+    with pytest.raises(expected_error) as excinfo:
+        _run_exact_50(tmp_path, product_digest)
+
+    # Refused before an admission was ever built, which is the point: the stages
+    # are what passed, not the run.
+    assert calls == ["preflight", "create", "probe", "cleanup"]
+
+    verdict = json.loads(
+        (tmp_path / "scale-50/runtime/run_verdict.json").read_text(encoding="utf-8")
+    )
+    assert verdict["status"] == expected_status
+    # The stage aggregation keeps its own answer - those stages did pass, and
+    # overwriting them would trade one wrong claim for another.
+    assert verdict["gate_status"] == "PASS"
+    admission = [row for row in verdict["checks"] if row["name"] == "admission"]
+    assert [row["status"] for row in admission] == [expected_check]
+    assert str(excinfo.value) in admission[0]["reason"]
+    assert {row["status"] for row in verdict["checks"] if row["name"] != "admission"} == {"OK"}
+    # §12.1's kinds stay distinguishable: a refusal the tool could not read is an
+    # ERROR and names itself in `tool_errors`; one it read and rejected is a FAIL.
+    assert verdict["tool_errors"] == (["admission"] if expected_check == "ERROR" else [])

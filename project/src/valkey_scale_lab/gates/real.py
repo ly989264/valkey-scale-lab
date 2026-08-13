@@ -305,6 +305,50 @@ def run_exact_gate(
     _write_run_verdict(runtime_dir, run_id, scale, result)
     if result.status is not GateStatus.PASS:
         raise _gate_failure(result)
+    # Everything below can still refuse a run whose twelve stages passed, and
+    # until roadmap item 1.8 none of it reached the run's own evidence: the
+    # verdict above was already written as PASS and nothing went back to say the
+    # run had been refused. See `_record_admission_refusal`.
+    try:
+        return _admit_exact_gate(
+            snapshot=snapshot,
+            base=base,
+            runtime_dir=runtime_dir,
+            scale=scale,
+            definition=definition,
+            product_digest=product_digest,
+            run_id=run_id,
+            run_started=run_started,
+            prior_admission_digest=prior_admission_digest,
+        )
+    except Exception as error:
+        # `Exception` and not `BaseException`: a `KeyboardInterrupt` means the
+        # run was stopped, not refused, and recording it as a refusal would put
+        # a claim in the evidence that nobody made. An interrupted run keeps the
+        # pre-existing behaviour of leaving the stage verdict as it stood.
+        _record_admission_refusal(runtime_dir, run_id, scale, result, error)
+        raise
+
+
+def _admit_exact_gate(
+    *,
+    snapshot: Any,
+    base: Path,
+    runtime_dir: Path,
+    scale: int,
+    definition: ScenarioDefinition,
+    product_digest: str,
+    run_id: str,
+    run_started: int,
+    prior_admission_digest: str | None,
+) -> dict[str, Any]:
+    """Turn a run whose stages passed into an admission, or refuse it.
+
+    Split out of `run_exact_gate` so that every refusal after the stage verdict
+    has one place to be caught and recorded, rather than each `raise` needing to
+    remember to say so.
+    """
+
     if snapshot.state is None or snapshot.live_probe_result is None:
         raise DockerRuntimeError("exact-scale Gate completed without owned state or a live probe")
     state = snapshot.state
@@ -466,8 +510,58 @@ def _gate_failure_message(result: Any) -> str:
     return "; ".join(parts)
 
 
+def _record_admission_refusal(
+    runtime: Path, run_id: str, scale: int, result: Any, error: BaseException
+) -> None:
+    """Say, in the run's own verdict, that its evidence was refused after the stages passed.
+
+    `_write_run_verdict` runs before admission is decided, so a run whose twelve
+    stages passed and whose evidence was then refused wrote `status: PASS` with
+    `checks` 12/12 OK - and so did `lifecycle_timeline.json`, and so did
+    `cleanup_report.json`. Measured on `gate-20260812T101014Z-c2bccc21`, a real
+    refusal from roadmap item 1.6: the Gate reported FAIL and **every artifact
+    inside the run said PASS**. That is the same defect `_write_run_verdict`'s
+    docstring was written to close, one step further down the run.
+
+    It matters beyond reading, because freezing a baseline copies a run
+    directory. A run in that state is indistinguishable from a passing one from
+    the inside, so it can be frozen and every later candidate diffed against a
+    run the Gate refused.
+
+    Admission is recorded as a **check** rather than as a new status field, so
+    `final_verdict` decides the aggregate with the precedence it already
+    implements - a semantic refusal is `FAIL`, a refusal that could not read its
+    own evidence is `ERROR`, and `FAIL` beats `ERROR` in one place. The stage
+    checks keep their own results: those stages did pass, and overwriting them
+    would trade one wrong claim for another.
+    """
+
+    _write_run_verdict(
+        runtime,
+        run_id,
+        scale,
+        result,
+        extra_checks=(
+            CheckResult(
+                name="admission",
+                status=(
+                    CheckStatus.ERROR
+                    if isinstance(error, CollectionError)
+                    else CheckStatus.FAIL
+                ),
+                reason=str(error),
+            ),
+        ),
+    )
+
+
 def _write_run_verdict(
-    runtime: Path, run_id: str, scale: int, result: Any
+    runtime: Path,
+    run_id: str,
+    scale: int,
+    result: Any,
+    *,
+    extra_checks: Sequence[CheckResult] = (),
 ) -> dict[str, Any]:
     """§12.2's aggregation over the lifecycle stages, written whether or not it passed.
 
@@ -528,6 +622,7 @@ def _write_run_verdict(
                 reason=step.reason or "",
             )
         )
+    checks.extend(extra_checks)
     verdict = final_verdict(checks)
     if result.status is GateStatus.BLOCKED:
         # The Gate declined to start the run. That is not one of §12.2's three
