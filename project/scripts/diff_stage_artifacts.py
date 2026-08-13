@@ -824,7 +824,18 @@ def failover_observation(root: Path) -> Any:
                 "sentinel_fault_probe": {
                     key: item
                     for key, item in probe.items()
-                    if key not in {"samples", "connection_events", "rto_ms", "stable_confirmed_at_monotonic"}
+                    # `round_cadence` sits on the same boundary as `rto_ms`: it is
+                    # what the probe achieved, not what the stage owes. Its round
+                    # counts differ every run, so diffing it would make this view
+                    # non-deterministic; it is reported instead.
+                    if key
+                    not in {
+                        "samples",
+                        "connection_events",
+                        "rto_ms",
+                        "stable_confirmed_at_monotonic",
+                        "round_cadence",
+                    }
                 },
                 "sentinel_restore_probe": {
                     key: item
@@ -862,11 +873,21 @@ def failover_recovery_numbers(root: Path) -> str:
     sequence = json.loads((root / "fault_sequence.json").read_text(encoding="utf-8"))
     details = sequence.get("failover_details", {})
     probe = document["sentinel_fault_probe"]
+    cadence = probe.get("round_cadence") or {}
     return (
         f"rto={probe['rto_ms']}ms samples={len(probe['samples'])}"
         f" rounds={len(document['affected_shard_convergence']['rounds'])}"
         f" promotion={details.get('promotion_latency_ms')}ms"
         f" recovery={details.get('cluster_recovery_latency_ms')}ms"
+        # The stage terms an aggregate RTO hides. Detection is expected flat in
+        # node count and the control-plane term is not, so a candidate that made
+        # failover worse at scale shows up here even though neither is diffed.
+        f" gone_to_pfail={details.get('process_gone_to_pfail_ms')}ms"
+        f" pfail_to_promotion={details.get('pfail_to_promotion_ms')}ms"
+        # §16 item 8 asks this probe for a 100ms period; a probe that lost its
+        # cadence would otherwise report a precise-looking RTO it cannot support.
+        f" cadence_median={cadence.get('median_interval_ms')}ms"
+        f" cadence_overruns={cadence.get('overrun_round_count')}"
     )
 
 
