@@ -412,6 +412,15 @@
       "test_ids": [
         "real.local.full-flow"
       ]
+    },
+    {
+      "suite_id": "real.ecs.full-suite",
+      "description": "Operator-invoked real multi-ECS fleet checks.",
+      "test_ids": [
+        "real.ecs.bringup",
+        "real.ecs.cleanup-ownership",
+        "real.ecs.full-flow"
+      ]
     }
   ],
   "tests": [
@@ -2345,6 +2354,109 @@
         "cwd": "{gate.project_root}",
         "timeout_seconds": 1200,
         "result": "junit"
+      }
+    },
+    {
+      "test_id": "real.ecs.bringup",
+      "description": "Drive every native seam operation against the live ECS fleet, on at least two hosts, without Docker.",
+      "parameters": {
+        "fleet_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "runner": {
+        "type": "command",
+        "argv": [
+          "/usr/bin/env",
+          "PYTHONPATH={gate.project_root}/src",
+          "python3",
+          "scripts/native_bringup_smoke.py",
+          "--fleet-id",
+          "{param.fleet_id}",
+          "--artifacts",
+          "{gate.artifacts_dir}/bringup",
+          "--result-path",
+          "{gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 3600,
+        "result": "json"
+      }
+    },
+    {
+      "test_id": "real.ecs.cleanup-ownership",
+      "description": "Place real residue on the ECS fleet, clean it through the named path, and check the hosts from outside the product.",
+      "parameters": {
+        "fleet_id": {
+          "type": "string",
+          "required": true
+        },
+        "mode": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "runner": {
+        "type": "command",
+        "argv": [
+          "/usr/bin/env",
+          "PYTHONPATH={gate.project_root}/src",
+          "python3",
+          "scripts/native_cleanup_proof.py",
+          "{param.mode}",
+          "--fleet-id",
+          "{param.fleet_id}",
+          "--result-path",
+          "{gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 3600,
+        "result": "json"
+      }
+    },
+    {
+      "test_id": "real.ecs.full-flow",
+      "description": "Execute the exact multi-ECS native full flow on the operator's fleet for 30 through 200 nodes.",
+      "parameters": {
+        "nodes": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 200,
+          "required": true
+        },
+        "config": {
+          "type": "path",
+          "required": true
+        }
+      },
+      "runner": {
+        "type": "command",
+        "argv": [
+          "/usr/bin/env",
+          "PYTHONPATH={gate.project_root}/src",
+          "python3",
+          "scripts/ecs_gate.py",
+          "--definition",
+          "{gate.project_root}/src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
+          "--nodes",
+          "{param.nodes}",
+          "--config",
+          "{param.config}",
+          "--run-id",
+          "{gate.run_id}",
+          "--ownership-id",
+          "{gate.run_id}",
+          "--provenance-id",
+          "{gate.run_id}",
+          "--artifacts-dir",
+          "{gate.artifacts_dir}",
+          "--result-path",
+          "{gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 14400,
+        "result": "json"
       }
     },
     {

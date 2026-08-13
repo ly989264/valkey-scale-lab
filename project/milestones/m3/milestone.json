@@ -6,28 +6,80 @@
       "id": "distributed.inventory-and-placement",
       "statement": "Host inventory accepts explicit local and SSH endpoints, rejects duplicate hosts, assigns nodes deterministically, and preserves host identity in orchestration artifacts.",
       "check": [
+        {"id": "product.unit.native_backend"},
         {"id": "product.orchestrator"}
       ]
     },
     {
       "id": "distributed.native-runtime",
-      "statement": "The native_multi_ecs backend starts and owns directly managed Valkey processes on at least two ECS hosts without using the local Docker runtime as a substitute."
+      "statement": "The native_multi_ecs backend starts and owns directly managed Valkey processes on at least two ECS hosts without using the local Docker runtime as a substitute.",
+      "check": [
+        {
+          "id": "real.ecs.bringup",
+          "parameters": {
+            "fleet_id": "gce-m3b"
+          }
+        }
+      ]
     },
     {
       "id": "distributed.exact.50",
-      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 50 healthy Valkey nodes without downscaling."
+      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 50 healthy Valkey nodes without downscaling.",
+      "check": [
+        {
+          "id": "real.ecs.full-flow",
+          "parameters": {
+            "nodes": 50,
+            "config": "templates/configs/real_ecs_50.yaml"
+          }
+        }
+      ]
     },
     {
       "id": "distributed.exact.200",
-      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 200 healthy Valkey nodes without downscaling."
+      "statement": "A real multi-ECS full-flow run requests and independently observes exactly 200 healthy Valkey nodes without downscaling.",
+      "check": [
+        {
+          "id": "real.ecs.full-flow",
+          "parameters": {
+            "nodes": 200,
+            "config": "templates/configs/real_ecs_200.yaml"
+          }
+        }
+      ]
     },
     {
       "id": "distributed.evidence",
-      "statement": "Cross-host clocks, process journals, command logs, evidence transfer, provenance, and product bindings are complete and attributable."
+      "statement": "Cross-host clocks, process journals, command logs, evidence transfer, provenance, and product bindings are complete and attributable.",
+      "check": [
+        {
+          "id": "real.ecs.full-flow",
+          "parameters": {
+            "nodes": 50,
+            "config": "templates/configs/real_ecs_50.yaml"
+          }
+        }
+      ]
     },
     {
       "id": "distributed.safety-and-cleanup",
-      "statement": "Distributed fault handling, recovery, teardown, cost accounting, and cleanup preserve ownership and leave no managed process or host resource behind."
+      "statement": "Distributed fault handling, recovery, teardown, cost accounting, and cleanup preserve ownership and leave no managed process or host resource behind.",
+      "check": [
+        {
+          "id": "real.ecs.cleanup-ownership",
+          "parameters": {
+            "fleet_id": "gce-m3b",
+            "mode": "release"
+          }
+        },
+        {
+          "id": "real.ecs.cleanup-ownership",
+          "parameters": {
+            "fleet_id": "gce-m3b",
+            "mode": "abort"
+          }
+        }
+      ]
     }
   ]
 }

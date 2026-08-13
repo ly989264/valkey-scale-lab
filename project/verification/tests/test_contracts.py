@@ -76,8 +76,11 @@ def test_catalog_v2_loads_and_schema_document_is_current() -> None:
     )
 
     assert schema["properties"]["schema_version"]["const"] == "verification-catalog-v2"
-    assert len(catalog.tests) == 96
+    assert len(catalog.tests) == 99
     assert "real.local.full-flow" in catalog.tests
+    assert "real.ecs.full-flow" in catalog.tests
+    assert "real.ecs.bringup" in catalog.tests
+    assert "real.ecs.cleanup-ownership" in catalog.tests
     assert "real.local.m2-cluster-formation" in catalog.tests
     assert "real.local.m2-automatic-failover" in catalog.tests
     assert "real.local.m2-stability-resource" in catalog.tests
@@ -272,7 +275,8 @@ def test_milestone_schema_and_current_definitions_are_valid() -> None:
     }
     assert milestones["m1"].definition_status == "READY"
     assert milestones["m2"].definition_status == "READY"
-    assert milestones["m3"].definition_status == "DEFINED"
+    # Every M3 criterion carries an executable check from roadmap item 1.7.
+    assert milestones["m3"].definition_status == "READY"
     assert milestones["m4"].definition_status == "DEFINED"
 
 
@@ -379,8 +383,21 @@ def test_m2_m3_and_m4_attach_only_executable_checks() -> None:
     )
 
     assert select_milestone(catalog, m2)
+    # M3's six criteria, in order, each expanded to the checks roadmap item 1.7
+    # attached. `real.ecs.full-flow` appears three times because the Gate shares
+    # nothing between checks: exact-50, exact-200, and a second exact-50 for the
+    # evidence criterion - which is also the ladder's own "two consecutive real
+    # exact-50" bar. `product.orchestrator` is kept beside the native contract
+    # only for the statement's "local endpoints" clause; see the item's report.
     assert [selected.test.test_id for selected in select_milestone(catalog, m3)] == [
-        "product.orchestrator.local_orchestrator"
+        "product.unit.native_backend",
+        "product.orchestrator.local_orchestrator",
+        "real.ecs.bringup",
+        "real.ecs.full-flow",
+        "real.ecs.full-flow",
+        "real.ecs.full-flow",
+        "real.ecs.cleanup-ownership",
+        "real.ecs.cleanup-ownership",
     ]
     assert [selected.test.test_id for selected in select_milestone(catalog, m4)] == [
         "product.config.config_validation",
