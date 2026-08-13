@@ -1428,6 +1428,106 @@ scale. Note "a failing run collecting no journals" is now the *only* remaining
 half of that item, and it is better characterised than it was - see the §12.2
 paragraph below.
 
+### Failover/RTO observability was made M4-ready, 2026-08-13
+
+**Not a roadmap item**, taken before M4 on the operator's instruction. Three
+commits, `5c8d3cb0` through `85a841de`, each verified in its own worktree so the
+series bisects. Read `project/docs/failover_timeline_slice_map.md`: §1 is why the
+observation points a reader expects are not the ones a real run uses, §5 the
+conformance defect, §5.2 the correction that matters, §7 the metric definitions,
+§9 the deltas declared in advance, §10 the proof.
+
+**The reason this existed at all.** M3 reported one number per run - RTO ~52.5s -
+and that number cannot rank cluster sizes. Reconstructed over **74 retained
+runs**, detection is flat in node count (median 44.07s / 44.16s / 43.02s at
+30 / 50 / 200) while the control-plane term grows with it (2.53s / 3.80s /
+8.05s), and detection *jitter* alone (30.4-46.0s) is wider than the whole
+control-plane term. On the real fleet the same split from the frozen baselines:
+**aggregate RTO moves about 6% between exact-50 and exact-200 while
+PFAIL→promotion moves up to 7.6x** (2.50-6.50s against 8.00-19.03s).
+
+- **The eight observation points a reader will find by grepping are the wrong
+  ones.** `observer/failover_timeline.py`'s `REQUIRED_TIMESTAMPS` is M2 machinery
+  driven by two `scripts/` entries and **never runs on a real full-flow run** -
+  `analysis/summary.py` imports three constants from it and derives no timestamp,
+  and none of those names appears in a real run's `analysis_summary.json`. The
+  real path is `_run_scalable_primary_kill_failover`, backend-neutral, identical
+  on both backends.
+- **Nothing new is collected.** Every affected-shard round already carried its
+  full `CLUSTER INFO`; the timeline was always reconstructible and simply never
+  derived. Which is why the frozen baselines could be re-read retroactively - and
+  should be, before any M4 comparison, rather than re-run.
+- **Two emitted pairs were each one number twice.** `promotion_latency_ms` was the
+  round §9.3's two-round rule completed, measured to overstate first observed
+  promotion by **0.501-0.519s, median 0.508s, never zero, in all 74 runs**, and
+  was byte-identical to `cluster_recovery_latency_ms`. `write_unavailability_ms`
+  was the read canary's number under a write name.
+- **The Sentinel probe violated three design statements**, so fixing it needed no
+  approval. §7.6 budgets it at ~20 GET/s "与集群节点数无关", §14 at O(1), §16 item
+  8 at a 100ms period; `ClusterRouter.get` walked every primary, costing one
+  connect and one GET each - measured 1000/999 per lookup at 1000 primaries. Now
+  **2 connects and 3 commands at every size**.
+- **The cadence loss is environment-dependent, and the first reading of it was
+  wrong.** 194ms at exact-200 is Docker on a laptop. On the fleet the median was
+  always ~100ms; the **tail** was the defect - p99 **1098ms**, 9-11 rounds per run
+  over 125ms, which is the 1.0s connect timeout reached because the dead node was
+  dialled ~100 times per lookup. Candidate exact-200: p99 100.18ms, max 100.21ms,
+  **zero** rounds over 125ms. That tail *was* the RTO's quantisation error.
+- **Two points are declared unmeasurable rather than omitted.** `first_fail` is
+  circular - `cluster_nodes_fail` is read from the surviving replica, which sets
+  it as it promotes itself, and the two land in the same 500ms round in **72 of
+  74 runs**. `first_cluster_ok` never transitions from this vantage. Neither is a
+  cadence problem; both need a primary-side observer, which §7.6 and §9.2 do not
+  give this lane.
+- **Two decisions were settled by the design, not by taste.** The 500ms
+  affected-shard period stays: §9.2 mandates it and §16 acceptance item 9 pins it,
+  so `pfail_to_promotion_ms` is bounded at ±1000ms and says so in `precision_ms`.
+  No write probe: §7.3 forbids Sentinel writes inside the formal window outright.
+- **`failure_to_client_recovered_ms` equals the legacy `rto_ms` in 74 of 74
+  runs**, so M3's frozen results stay comparable with M4's.
+
+- **Proven:** `repository.all` **92/92** (91/92 on the controller, the absent
+  Docker daemon); pytest **824** measured at this HEAD, of which 9 are this
+  work's - they joined a module the catalog already registers, so **catalog stays
+  99 and the M1 plan 91**. Two Docker exact-50, **PASS 868.82s and 944.98s**, and
+  native **exact-50 PASS 839.72s** and **exact-200 PASS 1510.33s** on the eight
+  GCE hosts. All four: `run_verdict` 12/12 OK, `tool_errors` empty, fault lane
+  **9/12/15** with nine `REAL_PASS`, no `ERROR` in any artifact, cleanup with
+  `resources_remaining` empty, 200/200 journals at exact-200, and zero residue on
+  all eight hosts asked over ssh from outside the product. The declared delta held
+  exactly at both scales on both backends - `fault_matrix` **4/6**, one new
+  differing view, nothing else moved - and the two Docker runs are **identical to
+  each other in every view**, including both that differ from the baseline.
+  Behaviour did not move: Docker RTO **47090.555ms against the baseline's
+  47093.83ms**; native control plane 4.00s and 9.01s, inside baseline ranges.
+  **The baselines were not re-frozen.**
+
+**Three defects this work's own runs found in this work's own code**, none
+visible to reading: a rounding comparison that made a round precede itself and
+reported 511ms of topology recovery that never happened; an overrun counter that
+fired on 438 of 438 intervals because a healthy probe sleeps off its period; and
+a doc line tripping the execution-axis contract, which forbids the bare word
+"phase" outside the compatibility boundary. **A mutation check then found the
+test for the first one did not detect it** - reverting the fix left the suite
+green, because the synthetic fixture used offsets where rounding never shifts the
+comparison. All three mutations are detected now. Run the mutation check, not
+only the suite.
+
+**What this leaves for M4, and it is planning rather than code.** exact-200's
+control-plane spread is **8.0-19.0s against exact-50's 2.5-6.5s**, so **one run
+per rung cannot separate 500 from 1000** - budget several per rung or the
+comparison will not survive its own variance. This is independent of, and
+additional to, the `max_nodehosts: 64` arithmetic below.
+
+Added to the open list, none of it this work's to close: topology propagation is
+**not measured at all** (it needs the second vantage point that was out of
+scope); `first_fail` is declared unmeasurable rather than fixed; sharpening
+`pfail_to_promotion_ms` below ±1000ms needs a **design amendment to §9.2**, which
+is the operator's call and not a session's; and the rolling-restart handoff path
+at `docker_runtime.py:11377` still assigns one value to both
+`promotion_latency_ms` and `cluster_recovery_latency_ms` - reported rather than
+fixed, because it is a different scenario and the rule is not to broaden a fix.
+
 ### What is left before M3, and what is M3 itself
 
 Worth separating, because it is easy to list M3's contents and call them
@@ -1876,7 +1976,15 @@ exclusions one run at a time until the diff goes green.
   real exact-50 runs after any change a real run reaches. Two of the Gate's own
   contract tests pin the catalog and M1 plan counts
   (`verification/tests/test_contracts.py`), so registering a test moves three
-  numbers, not one: the catalog is **96** and the M1 plan **91**.
+  numbers, not one: the catalog is **99** (96 before M3-B-2's three `real.ecs.*`
+  entries) and the M1 plan **91**. Adding checks to a module the catalog already
+  registers moves none of them, which is how M3-A-4's twelve and this failover
+  work's nine landed.
+- Run the mutation check, not only the suite. A new test that passes proves
+  nothing until the fix it guards is reverted and the test is watched to fail:
+  the 2026-08-13 failover work wrote a regression test for a rounding defect
+  whose fixture could not express the defect, and only the reverted-fix run
+  exposed that.
 - Do not build a custom load generator. The Load Lane is scoped to steady state
   by decision; the Sentinel canaries own fault-window continuity and RTO.
 
@@ -1907,3 +2015,15 @@ exclusions one run at a time until the diff goes green.
   in this repo.
 - The milestone-loop controller is disabled on purpose
   (`.github/workflows/milestone-loop.yml.disabled`). Leave it off.
+- **`scripts/ecs_gate.py` `execv`s into the CLI**, so once a run starts nothing on
+  the controller matches `ecs_gate.py` any more - watch for
+  `valkey_scale_lab.cli gate execute` instead. A watcher that greps the wrapper
+  name reports "finished" immediately. Measured 2026-08-13, and it is also why a
+  remotely launched run needs `setsid nohup ... < /dev/null &`: a run started
+  without it was killed when its ssh session went away, mid-flight, leaving 25
+  `valkey-server` per host. `cli gate cleanup --state <run>/state.json` took all
+  eight hosts back to zero processes and zero `vslab` rules.
+- The execution-axis contract (`scripts/assert_execution_axis_contract.py`)
+  forbids the bare word **"phase"** anywhere under `docs/`, `src/`, `scripts/`,
+  `tests/` and the other scanned roots, outside a named compatibility list. It is
+  easy to trip in prose; it costs a full-suite run to discover.
