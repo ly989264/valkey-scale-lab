@@ -8617,6 +8617,235 @@ def _actuator_duration_ms(record: Mapping[str, Any]) -> float | str:
         return MISSING
 
 
+#: Points a reader expects on a failover timeline that this lane's vantage
+#: cannot establish. §9.2 confines the control-plane observer to the affected
+#: shard's survivors, and that vantage - not the cadence - is what makes these
+#: two unmeasurable. They are declared with a reason rather than omitted, and
+#: never filled with a neighbouring value that happens to look plausible.
+_FAILOVER_UNMEASURABLE_POINTS = {
+    "first_fail_at_ms": (
+        "cluster_nodes_fail is read from the surviving replica, and that replica "
+        "sets it as it promotes itself, so the value records the consequence of "
+        "promotion rather than an independent observation of FAIL consensus; "
+        "measured at HEAD, it moves in the same 500ms round as the role change "
+        "in 72 of 74 retained runs. Separating them needs a primary-side vantage "
+        "point, which §7.6 and §9.2 do not give this lane."
+    ),
+    "first_cluster_ok_at_ms": (
+        "cluster_state was observed ok on the surviving replica for the whole "
+        "outage in every retained run, because the shard's slots stay covered by "
+        "a node that is pfail but not yet fail, so this point never transitions "
+        "from this vantage and a recorded value would be the round the observer "
+        "started rather than a recovery."
+    ),
+}
+
+
+def _failover_point(
+    rounds: list[dict[str, Any]],
+    fault_monotonic: float,
+    predicate: Callable[[dict[str, Any], dict[str, Any]], bool],
+    *,
+    at_or_after: float | None = None,
+) -> float | None:
+    """First round offset whose observed survivor satisfies `predicate`."""
+
+    for entry in rounds:
+        # Rounded once, then used for both the comparison and the result. An
+        # unrounded offset compared against an already-rounded threshold skips
+        # the very round that set the threshold, which reported a 511ms
+        # promotion-to-slots gap where the same round carried both.
+        offset = round((entry["monotonic"] - fault_monotonic) * 1000.0, 3)
+        if at_or_after is not None and offset < at_or_after:
+            continue
+        for row in entry.get("rows", []):
+            if row.get("status") != "OK":
+                continue
+            if predicate(row, row.get("cluster_info") or {}):
+                return offset
+    return None
+
+
+def _failover_interval(
+    name: str,
+    start: float | None,
+    end: float | None,
+    *,
+    precision_ms: float,
+    source: str,
+    reason: str,
+) -> dict[str, Any]:
+    """One interval, or a stated absence - never a fabricated number."""
+
+    if start is None or end is None or end < start:
+        return {"field": name, "status": MISSING, "reason": reason, "source": source}
+    return {
+        "field": name,
+        "value_ms": round(end - start, 3),
+        # Both endpoints are read off sampled rounds, so the interval inherits
+        # both sampling delays. A reader comparing scales needs this beside the
+        # value, not buried in the cadence block.
+        "precision_ms": round(precision_ms, 3),
+        "source": source,
+    }
+
+
+def _derive_failover_timeline(
+    *,
+    actuator_record: dict[str, Any],
+    convergence_result: dict[str, Any],
+    sentinel_result: dict[str, Any],
+    observer_interval_ms: float,
+) -> dict[str, Any]:
+    """Stage timeline for one primary kill, derived from what was observed.
+
+    Every value here comes from rounds this lane already recorded; nothing new
+    is collected. The point is that an aggregate RTO cannot be compared across
+    cluster sizes: measured over 74 retained runs, the detection term is flat in
+    node count (median 44.1s at 30 nodes, 43.0s at 200) while the control-plane
+    term grows with it (2.53s to 8.05s), so a single number hides exactly the
+    scaling this exists to expose.
+    """
+
+    fault_monotonic = float(actuator_record["signal_or_request_sent"]["monotonic"])
+    completed = actuator_record.get("action_completed") or {}
+    rounds = convergence_result.get("rounds") or []
+    samples = sentinel_result.get("samples") or []
+    cadence = sentinel_result.get("round_cadence") or {}
+    # The client points are only as precise as the period the probe achieved,
+    # which is why the probe now measures it rather than declaring 100ms.
+    client_precision = float(
+        cadence.get("median_interval_ms")
+        or cadence.get("requested_interval_ms")
+        or 0.0
+    )
+
+    process_gone = (
+        round((float(completed["monotonic"]) - fault_monotonic) * 1000.0, 3)
+        if completed.get("monotonic") is not None
+        else None
+    )
+    first_pfail = _failover_point(
+        rounds,
+        fault_monotonic,
+        lambda row, info: _as_float(info.get("cluster_nodes_pfail")) > 0,
+    )
+    first_promotion = _failover_point(
+        rounds,
+        fault_monotonic,
+        lambda row, info: (row.get("role") or {}).get("role") == "primary",
+    )
+    first_slots_covered = _failover_point(
+        rounds,
+        fault_monotonic,
+        lambda row, info: _as_float(info.get("cluster_slots_ok")) == 16384.0,
+        at_or_after=first_promotion,
+    )
+    first_unavailable = next(
+        (
+            round((sample["monotonic"] - fault_monotonic) * 1000.0, 3)
+            for sample in samples
+            if sample.get("status") != "OK"
+        ),
+        None,
+    )
+    client_recovered = (
+        float(sentinel_result["rto_ms"])
+        if sentinel_result.get("rto_ms") is not None
+        else None
+    )
+
+    observer_source = "affected_shard_convergence.rounds"
+    client_source = "sentinel_fault_probe.samples"
+    observer_pair = observer_interval_ms * 2
+    return {
+        "schema_version": "v1",
+        "artifact_type": "failover_stage_timeline",
+        "fault_reference_monotonic_seconds": fault_monotonic,
+        "observer_interval_ms": round(observer_interval_ms, 3),
+        "client_round_cadence": cadence,
+        "observation_points_ms": {
+            "target_process_gone_at_ms": process_gone
+            if process_gone is not None
+            else MISSING,
+            "first_pfail_at_ms": first_pfail if first_pfail is not None else MISSING,
+            "first_promotion_at_ms": first_promotion
+            if first_promotion is not None
+            else MISSING,
+            "first_slots_covered_at_ms": first_slots_covered
+            if first_slots_covered is not None
+            else MISSING,
+            "first_client_unavailable_at_ms": first_unavailable
+            if first_unavailable is not None
+            else MISSING,
+            "client_recovered_at_ms": client_recovered
+            if client_recovered is not None
+            else MISSING,
+        },
+        "unmeasurable_points": [
+            {"field": field, "status": MISSING, "reason": reason}
+            for field, reason in sorted(_FAILOVER_UNMEASURABLE_POINTS.items())
+        ],
+        "intervals": [
+            # Detection policy. Expect this to be flat in node count and
+            # dominated by cluster-node-timeout; it is reported so that it can
+            # be held apart from the control-plane term, never folded into it.
+            _failover_interval(
+                "process_gone_to_pfail_ms",
+                process_gone,
+                first_pfail,
+                precision_ms=observer_interval_ms,
+                source=observer_source,
+                reason="no observed round reported a pfail node",
+            ),
+            # The control-plane scaling metric this timeline exists for.
+            _failover_interval(
+                "pfail_to_promotion_ms",
+                first_pfail,
+                first_promotion,
+                precision_ms=observer_pair,
+                source=observer_source,
+                reason="pfail or promotion was not observed on the affected shard",
+            ),
+            _failover_interval(
+                "promotion_to_slots_covered_ms",
+                first_promotion,
+                first_slots_covered,
+                precision_ms=observer_pair,
+                source=observer_source,
+                reason="full slot coverage was not observed after promotion",
+            ),
+            # The genuine user-visible outage: from the client first failing to
+            # the client staying healthy, rather than from the kill.
+            _failover_interval(
+                "client_unavailable_to_recovered_ms",
+                first_unavailable,
+                client_recovered,
+                precision_ms=client_precision * 2,
+                source=client_source,
+                reason="the canaries recorded no unavailability to recover from",
+            ),
+            # Kept identical in meaning to the rto_ms this lane has always
+            # reported, so M3 results stay comparable with M4 ones.
+            _failover_interval(
+                "failure_to_client_recovered_ms",
+                0.0,
+                client_recovered,
+                precision_ms=client_precision,
+                source=client_source,
+                reason="the canaries did not confirm a stable recovery",
+            ),
+        ],
+    }
+
+
+def _as_float(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _run_scalable_primary_kill_failover(
     *,
     capability_id: str,
@@ -8839,6 +9068,24 @@ def _run_scalable_primary_kill_failover(
     finally:
         sentinel.close()
         observer.close()
+    failover_timeline = _derive_failover_timeline(
+        actuator_record=actuator_record,
+        convergence_result=convergence_result,
+        sentinel_result=sentinel_result,
+        observer_interval_ms=float(convergence_result.get("round_interval_ms", 500)),
+    )
+    timeline_points = failover_timeline["observation_points_ms"]
+    timeline_intervals = {
+        row["field"]: row for row in failover_timeline["intervals"]
+    }
+    # §9.2 gives this observer a 500ms period, so promotion is known to within
+    # one round and no better. Reporting the round the *convergence rule*
+    # completed instead - which is what this lane used to do - adds the two
+    # stable rounds and the full validation to a number named for the promotion.
+    promotion_latency_ms = timeline_points["first_promotion_at_ms"]
+    convergence_confirmed_ms = round(
+        (convergence_result["rounds"][-1]["monotonic"] - fault_monotonic) * 1000, 3
+    )
     report = {
         "schema_version": "v1",
         "artifact_type": "scalable_primary_failover_observation",
@@ -8854,6 +9101,7 @@ def _run_scalable_primary_kill_failover(
         "sentinel_restore_probe": sentinel_restore_probe or {"status": "MISSING"},
         "sentinel_connection_events": sentinel.connection_events(),
         "affected_shard_convergence": convergence_result,
+        "failover_timeline": failover_timeline,
         "failover_success": True,
         "redundancy_recovery": redundancy,
         "recovery_validation": recovery_validation,
@@ -8868,24 +9116,40 @@ def _run_scalable_primary_kill_failover(
         "safe_path": "actuator_kill_plus_sentinel_and_affected_shard_observation",
         "target_primary_logical_id": target_logical,
         "replacement_logical_id": promoted_logical,
-        "promotion_latency_ms": round(
-            (
-                convergence_result["rounds"][-1]["monotonic"]
-                - fault_monotonic
-            )
-            * 1000,
-            3,
-        ),
-        "cluster_recovery_latency_ms": round(
-            (
-                convergence_result["rounds"][-1]["monotonic"]
-                - fault_monotonic
-            )
-            * 1000,
-            3,
-        ),
+        "promotion_latency_ms": promotion_latency_ms,
+        "cluster_recovery_latency_ms": convergence_confirmed_ms,
         "read_unavailability_ms": sentinel_result["rto_ms"],
-        "write_unavailability_ms": sentinel_result["rto_ms"],
+        # §7.3 forbids the Sentinel from writing or updating a canary inside the
+        # formal window, so this lane cannot observe a write outage and must not
+        # report the read number under a write name. Declared, not fabricated.
+        "write_unavailability_ms": MISSING,
+        # The control-plane term, held apart from detection so it can be
+        # compared across 200/500/1000/2000. Detection is reported beside it and
+        # is expected to stay flat in node count.
+        "pfail_to_promotion_ms": timeline_intervals["pfail_to_promotion_ms"].get(
+            "value_ms", MISSING
+        ),
+        "process_gone_to_pfail_ms": timeline_intervals[
+            "process_gone_to_pfail_ms"
+        ].get("value_ms", MISSING),
+        "client_unavailable_to_recovered_ms": timeline_intervals[
+            "client_unavailable_to_recovered_ms"
+        ].get("value_ms", MISSING),
+        # The derived detail - sampling bounds, per-point offsets, the stated
+        # absences - stays with the evidence in the observation artifact. Only
+        # the scalars belong in the sequence summary, which is diffed field by
+        # field and would otherwise carry per-run counts into a stage view.
+        "failover_timeline_ref": "scalable_primary_failover_observation.json#failover_timeline",
+        "missing_fields": [
+            {
+                "field": "write_unavailability_ms",
+                "status": MISSING,
+                "reason": (
+                    "§7.3 forbids Sentinel writes inside the formal window, so no "
+                    "write outage is observed; the read canary cannot stand in for it"
+                ),
+            }
+        ],
         "failover_success": True,
         "redundancy_recovery_success": True,
         "observation_ref": "scalable_primary_failover_observation.json",
@@ -9584,6 +9848,13 @@ def _local_full_flow_analysis_summary(
                 "management_duration_ms": management["summary"].get("result", {}).get("duration_ms", MISSING),
                 "failover_promotion_latency_ms": fault["summary"].get("failover_details", {}).get("promotion_latency_ms", MISSING),
                 "failover_recovery_latency_ms": fault["summary"].get("failover_details", {}).get("cluster_recovery_latency_ms", MISSING),
+                # §11.4 forbids a collected field without an analysis consumer.
+                # These three are the stage terms an aggregate RTO hides, and
+                # they are what M4 compares across 200/500/1000/2000: detection
+                # is expected flat in node count, the control-plane term is not.
+                "failover_process_gone_to_pfail_ms": fault["summary"].get("failover_details", {}).get("process_gone_to_pfail_ms", MISSING),
+                "failover_pfail_to_promotion_ms": fault["summary"].get("failover_details", {}).get("pfail_to_promotion_ms", MISSING),
+                "failover_client_unavailable_to_recovered_ms": fault["summary"].get("failover_details", {}).get("client_unavailable_to_recovered_ms", MISSING),
             },
             "bottlenecks": {
                 "slowest_commands_topn": sorted(

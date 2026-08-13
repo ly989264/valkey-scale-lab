@@ -2733,3 +2733,179 @@ def test_probe_cadence_is_measured_rather_than_declared() -> None:
     assert healthy["median_interval_ms"] == pytest.approx(107.4, abs=0.5)
     assert healthy["overrun_round_count"] == 0
 
+
+def _failover_round(offset_s, fault_at, *, role, pfail, fail, slots_ok, status="OK"):
+    return {
+        "monotonic": fault_at + offset_s,
+        "rows": [
+            {
+                "logical_id": "shard-0001-replica-00",
+                "status": status,
+                "role": {"role": role},
+                "cluster_state": "ok",
+                "cluster_info": {
+                    "cluster_nodes_pfail": pfail,
+                    "cluster_nodes_fail": fail,
+                    "cluster_slots_ok": slots_ok,
+                    "cluster_state": "ok",
+                },
+            }
+        ],
+        "candidate": None,
+    }
+
+
+def _failover_inputs(*, pfail_at=45.5, promote_at=47.5, fault_at=1000.0):
+    rounds = []
+    offset = 0.1
+    while offset < promote_at + 1.0:
+        promoted = offset >= promote_at
+        rounds.append(
+            _failover_round(
+                offset,
+                fault_at,
+                role="primary" if promoted else "replica",
+                pfail=0 if promoted or offset < pfail_at else 1,
+                fail=1 if promoted else 0,
+                slots_ok=16384 if promoted else 15730,
+            )
+        )
+        offset += 0.5
+    samples = []
+    offset = 0.1
+    while offset < promote_at + 1.2:
+        samples.append(
+            {
+                "monotonic": fault_at + offset,
+                "status": "OK" if offset >= promote_at else "TRANSIENT",
+            }
+        )
+        offset += 0.1
+    actuator = {
+        "signal_or_request_sent": {"monotonic": fault_at},
+        "action_completed": {"monotonic": fault_at + 0.14},
+    }
+    convergence = {"rounds": rounds, "round_interval_ms": 500}
+    sentinel = {
+        "rto_ms": promote_at * 1000.0,
+        "samples": samples,
+        "round_cadence": {"median_interval_ms": 100.0, "requested_interval_ms": 100.0},
+    }
+    return actuator, convergence, sentinel
+
+
+def _derived(**kwargs):
+    from valkey_scale_lab.runtime.docker_runtime import _derive_failover_timeline
+
+    actuator, convergence, sentinel = _failover_inputs(**kwargs)
+    timeline = _derive_failover_timeline(
+        actuator_record=actuator,
+        convergence_result=convergence,
+        sentinel_result=sentinel,
+        observer_interval_ms=500.0,
+    )
+    return timeline, {row["field"]: row for row in timeline["intervals"]}
+
+
+def test_failover_timeline_separates_detection_from_control_plane() -> None:
+    """The whole point of the timeline: an aggregate RTO folds a detection term
+    that is flat in node count together with a control-plane term that is not.
+    Measured over 74 retained runs, detection stayed at 44.1s/44.0s/42.8s median
+    for 30/50/200 nodes while pfail->promotion grew 2.53s -> 3.80s -> 8.05s."""
+
+    _timeline, intervals = _derived(pfail_at=45.5, promote_at=47.5)
+
+    detection = intervals["process_gone_to_pfail_ms"]
+    control_plane = intervals["pfail_to_promotion_ms"]
+    assert detection["value_ms"] == pytest.approx(45_460.0, abs=520.0)
+    assert control_plane["value_ms"] == pytest.approx(2_000.0, abs=520.0)
+    # Both endpoints are sampled, so the interval carries both sampling delays.
+    assert control_plane["precision_ms"] == 1000.0
+    assert detection["precision_ms"] == 500.0
+
+
+def test_failover_timeline_keeps_the_legacy_rto_meaning() -> None:
+    """M3 froze its baselines on rto_ms, so the end-to-end number must keep its
+    meaning exactly or M3 and M4 stop being comparable."""
+
+    _timeline, intervals = _derived(promote_at=47.5)
+
+    assert intervals["failure_to_client_recovered_ms"]["value_ms"] == 47_500.0
+
+
+def test_failover_timeline_states_absence_instead_of_inventing_a_number() -> None:
+    """A run where no round ever reported a pfail node must say so. Filling the
+    gap with a neighbouring timestamp would make the control-plane metric look
+    measured on exactly the runs where it was not."""
+
+    from valkey_scale_lab.runtime.docker_runtime import _derive_failover_timeline
+
+    actuator, convergence, sentinel = _failover_inputs()
+    for entry in convergence["rounds"]:
+        entry["rows"][0]["cluster_info"]["cluster_nodes_pfail"] = 0
+    timeline = _derive_failover_timeline(
+        actuator_record=actuator,
+        convergence_result=convergence,
+        sentinel_result=sentinel,
+        observer_interval_ms=500.0,
+    )
+    intervals = {row["field"]: row for row in timeline["intervals"]}
+
+    assert intervals["pfail_to_promotion_ms"]["status"] == "MISSING"
+    assert intervals["pfail_to_promotion_ms"]["reason"]
+    assert "value_ms" not in intervals["pfail_to_promotion_ms"]
+    assert timeline["observation_points_ms"]["first_pfail_at_ms"] == "MISSING"
+
+
+def test_failover_timeline_declares_what_its_vantage_cannot_measure() -> None:
+    """first_fail and first_cluster_ok are not coarse, they are unobservable from
+    the affected shard's survivor. Declaring them keeps a later reader from
+    deriving them from a neighbouring field that happens to move."""
+
+    timeline, _intervals = _derived()
+    declared = {row["field"]: row for row in timeline["unmeasurable_points"]}
+
+    assert set(declared) == {"first_fail_at_ms", "first_cluster_ok_at_ms"}
+    for row in declared.values():
+        assert row["status"] == "MISSING"
+        assert len(row["reason"]) > 40
+
+
+def test_failover_timeline_does_not_skip_the_round_that_set_its_own_threshold() -> None:
+    """Regression: `_failover_point` used to compare an unrounded offset against
+    an already-rounded threshold, so a round whose offset rounds *up* was judged
+    to precede itself. Promotion and full slot coverage land in the same round -
+    exactly 0.000 in all 74 retained runs - and the defect reported 511ms of
+    topology recovery that never happened.
+
+    The monotonic below is chosen so (monotonic - fault) * 1000 rounds up.
+    """
+
+    from valkey_scale_lab.runtime.docker_runtime import _derive_failover_timeline
+
+    fault_at = 1000.0
+    raw_offset_s = 47.14336499  # * 1000 -> 47143.36499, rounds to 47143.365
+    assert round(raw_offset_s * 1000.0, 3) > raw_offset_s * 1000.0
+
+    rounds = [
+        _failover_round(0.1, fault_at, role="replica", pfail=1, fail=0, slots_ok=15730),
+        _failover_round(
+            raw_offset_s, fault_at, role="primary", pfail=0, fail=1, slots_ok=16384
+        ),
+    ]
+    timeline = _derive_failover_timeline(
+        actuator_record={
+            "signal_or_request_sent": {"monotonic": fault_at},
+            "action_completed": {"monotonic": fault_at + 0.14},
+        },
+        convergence_result={"rounds": rounds, "round_interval_ms": 500},
+        sentinel_result={
+            "rto_ms": 47000.0,
+            "samples": [{"monotonic": fault_at + 0.1, "status": "TRANSIENT"}],
+            "round_cadence": {"median_interval_ms": 100.0},
+        },
+        observer_interval_ms=500.0,
+    )
+    intervals = {row["field"]: row for row in timeline["intervals"]}
+
+    assert intervals["promotion_to_slots_covered_ms"]["value_ms"] == 0.0
