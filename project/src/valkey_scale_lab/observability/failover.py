@@ -144,8 +144,18 @@ class AffectedShardObserver:
             "candidate": relationship,
         }
 
-    @staticmethod
-    def _relationship(rows: Sequence[dict[str, Any]]) -> dict[str, Any] | None:
+    def _relationship(self, rows: Sequence[dict[str, Any]]) -> dict[str, Any] | None:
+        # A replica names its primary by the address that primary announced to
+        # the cluster, which is not the address this observer dialled it on.
+        # The two coincide on a fleet and differ under Docker, so the promoted
+        # node's announced address is looked up here rather than read off the
+        # row, whose `host` is the dial address.
+        announced = {
+            survivor.node.logical_id: (
+                survivor.node.announced_host or survivor.node.host
+            )
+            for survivor in self.survivors
+        }
         if any(
             row.get("status") != "OK" or row.get("cluster_state") != "ok"
             for row in rows
@@ -157,10 +167,11 @@ class AffectedShardObserver:
         if len(primaries) != 1:
             return None
         primary = primaries[0]
+        primary_announced = announced.get(primary["logical_id"], primary["host"])
         for row in rows:
             role = row["role"]
             if role["role"] == "replica" and (
-                role.get("primary_host") != primary["host"]
+                role.get("primary_host") != primary_announced
                 or int(role.get("primary_port", -1)) != int(primary["port"])
             ):
                 return None

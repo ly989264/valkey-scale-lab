@@ -1535,6 +1535,165 @@ def test_affected_shard_converges_after_two_500ms_rounds() -> None:
     assert result["round_interval_ms"] == 500
 
 
+def _four_replica_survivors() -> list[NodeEndpoint]:
+    """The affected shard of a 4-replica cluster once its primary is killed.
+
+    Four survivors, dialled on published loopback ports, announcing a nodehost
+    address to each other - the shape a Docker run actually has, and the shape
+    no fixture had before four replicas made the two addresses distinguishable.
+    """
+    return [
+        NodeEndpoint(
+            "shard-0000-replica-00",
+            "127.0.0.1",
+            7401,
+            "replica",
+            "s0",
+            announced_host="172.18.0.5",
+        ),
+        *[
+            NodeEndpoint(
+                f"shard-0000-replica-0{index}",
+                "127.0.0.1",
+                7401 + index,
+                "replica",
+                "s0",
+                announced_host="172.18.0.5",
+            )
+            for index in (1, 2, 3)
+        ],
+    ]
+
+
+def test_affected_shard_converges_when_replicas_name_the_announced_primary() -> None:
+    """The promoted node is named by the address it announced, not the dialled one.
+
+    A replica's ROLE reports its primary's cluster-announced address. Under
+    Docker that is the nodehost's network address while the observer dials a
+    published port on 127.0.0.1, so comparing the two literally can never hold.
+    At one replica the affected shard has a single survivor, which promotes, so
+    the replica branch is unreachable and the mismatch is invisible.
+    """
+    clock = FakeClock()
+    nodes = _four_replica_survivors()
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        role = (
+            [b"master", 0, []]
+            if endpoint.port == 7401
+            else [b"slave", b"172.18.0.5", 7401, b"connected", 0]
+        )
+        return FakeConnection(
+            {
+                ("ROLE",): role,
+                ("CLUSTER", "INFO"): b"cluster_state:ok\r\n",
+            }
+        )
+
+    observer = AffectedShardObserver(
+        nodes,
+        connection_factory=factory,
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+    )
+
+    result = observer.wait_for_convergence(
+        deadline_seconds=2,
+        full_validation=lambda: {"status": "OK"},
+    )
+
+    assert result["status"] == "OK"
+    relationships = result["converged_relationship"]["relationships"]
+    assert result["converged_relationship"]["primary"] == "shard-0000-replica-00"
+    assert relationships == {
+        "shard-0000-replica-00": "primary",
+        "shard-0000-replica-01": "replica-of:shard-0000-replica-00",
+        "shard-0000-replica-02": "replica-of:shard-0000-replica-00",
+        "shard-0000-replica-03": "replica-of:shard-0000-replica-00",
+    }
+
+
+def _refuses_stray_replica(stray_host: bytes, stray_port: int) -> None:
+    """One survivor names a primary that is not the promoted node.
+
+    Guards the announced-address fix against degenerating into "any replica
+    counts". The host and the port are exercised by separate callers because a
+    case that strays in both cannot tell which half of the comparison is doing
+    the work - the first version of this test strayed only in the port, and
+    dropping the host comparison altogether left it green.
+    """
+    clock = FakeClock()
+    nodes = _four_replica_survivors()
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        if endpoint.port == 7401:
+            role: Any = [b"master", 0, []]
+        elif endpoint.port == 7404:
+            role = [b"slave", stray_host, stray_port, b"connected", 0]
+        else:
+            role = [b"slave", b"172.18.0.5", 7401, b"connected", 0]
+        return FakeConnection(
+            {
+                ("ROLE",): role,
+                ("CLUSTER", "INFO"): b"cluster_state:ok\r\n",
+            }
+        )
+
+    observer = AffectedShardObserver(
+        nodes,
+        connection_factory=factory,
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+    )
+
+    with pytest.raises(SemanticFailure, match="two identical healthy 500ms rounds"):
+        observer.wait_for_convergence(
+            deadline_seconds=2,
+            full_validation=lambda: {"status": "OK"},
+        )
+
+
+def test_affected_shard_refuses_a_replica_following_another_address() -> None:
+    # A sibling attached to a primary on a different nodehost.
+    _refuses_stray_replica(b"172.18.0.9", 7401)
+
+
+def test_affected_shard_refuses_a_replica_following_another_port() -> None:
+    # A sibling still replicating from the node that was killed.
+    _refuses_stray_replica(b"172.18.0.5", 7400)
+
+
+def test_node_endpoint_announced_host_is_the_peer_address() -> None:
+    """`container_ip` is the peer address on both backends, so this needs no branch.
+
+    It falls back to the dial host for an inventory that carries no separate
+    announced address, which is what keeps every fixture built by hand honest.
+    """
+    announced = NodeEndpoint.from_inventory(
+        {
+            "logical_id": "shard-0000-primary",
+            "host": "127.0.0.1",
+            "client_port": 7400,
+            "role": "primary",
+            "shard_id": "shard-0000",
+            "container_ip": "172.18.0.5",
+        }
+    )
+    assert announced.host == "127.0.0.1"
+    assert announced.announced_host == "172.18.0.5"
+
+    without = NodeEndpoint.from_inventory(
+        {
+            "logical_id": "shard-0000-primary",
+            "host": "10.0.0.4",
+            "client_port": 7400,
+            "role": "primary",
+            "shard_id": "shard-0000",
+        }
+    )
+    assert without.announced_host == "10.0.0.4"
+
+
 def test_affected_shard_sampling_starts_other_observers_while_one_blocks() -> None:
     release = threading.Event()
     slow_started = threading.Event()

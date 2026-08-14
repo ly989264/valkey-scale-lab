@@ -89,6 +89,14 @@ class NodeEndpoint:
     expected_shard: str
     az_id: str = ""
     placement_id: str = ""
+    # Where this node is reached from the controller (`host`) and the address
+    # it announces to its peers (`announced_host`) are two different things,
+    # and a Docker run is the case where they differ: the controller dials a
+    # published port on 127.0.0.1 while the cluster announces the nodehost's
+    # network address. Anything comparing what one node says about another -
+    # a replica naming its primary, say - must compare announced to announced,
+    # because that is the only vocabulary the nodes themselves speak.
+    announced_host: str = ""
 
     @classmethod
     def from_inventory(cls, node: Mapping[str, Any]) -> "NodeEndpoint":
@@ -96,6 +104,11 @@ class NodeEndpoint:
             logical_id=str(node["logical_id"]),
             host=str(node.get("host", "127.0.0.1")),
             port=int(node["client_port"]),
+            # `container_ip` is the peer address on both backends - the Docker
+            # nodehost's network address, and `started.address` on a native
+            # host - so this needs no backend branch. It falls back to `host`
+            # for an inventory that carries no separate announced address.
+            announced_host=str(node.get("container_ip") or node.get("host", "127.0.0.1")),
             expected_role=str(node["role"]),
             expected_shard=str(node["shard_id"]),
             az_id=str(node.get("az_id", "")),
