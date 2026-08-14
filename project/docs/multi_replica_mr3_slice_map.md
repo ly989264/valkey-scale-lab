@@ -219,7 +219,10 @@ and that a *third* distinct replica can win.
 
 Every r=1 figure below was **re-derived from the frozen baselines' own retained
 rounds** through `_derive_failover_timeline`, not quoted from prose, so the two
-columns are the same measurement. The baselines predate `failover_timeline`, and
+columns are the same measurement. The instrument is
+`scripts/reconstruct_failover_timeline.py`, checked against MR-2 §6's published
+table, which it reproduces value for value including which replica each run
+promoted. The baselines predate `failover_timeline`, and
 the fact that they can be re-read at all is the property the 2026-08-13 work was
 built on.
 
@@ -293,7 +296,11 @@ dwell here is rung B's 67.40 s, inside the frozen exact-200 baselines' 52.0-72.1
 A score cannot compare two runs whose shape differs, so every artifact of every
 run was reduced to its set of generalised key paths - list indices collapsed,
 logical ids, nodehost ids, node ids and integers generalised - and the sets
-compared. 38 artifacts, ~3,920 paths each.
+compared. 38 artifacts, ~3,920 paths each. The instrument is
+`scripts/diff_artifact_vocabulary.py`, in the repository rather than in a
+session's scratchpad so these numbers can be reproduced; it is checked against
+MR-2's own published result, reporting its control and candidate 1 identical at
+zero paths over a strictly wider artifact set than MR-2 compared.
 
 **Control against candidate 2: one path differs**, a `CLUSTER INFO` counter.
 Control against candidate 1: 17, all of the same family. And the result that
