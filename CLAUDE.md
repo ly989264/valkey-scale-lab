@@ -1544,8 +1544,11 @@ was frozen** - that stays M4's.
   (map §9.4): the controller is **90/92**, not 91/92. The extra failure is
   `product.scenarios.execution_axis_contract`, whose single finding is inside
   candidate 1's **base64-compressed HDR histogram** in
-  `load_lane/memtier_formal.json` - the auditor's `\bP[0-9]{2}…` matched `P45`
-  in a compressed byte stream, because `SCAN_ROOTS` includes `artifacts`.
+  `load_lane/memtier_formal.json` - the auditor's identifier pattern matched an
+  upper-case P and two digits inside a compressed byte stream, because
+  `SCAN_ROOTS` includes `artifacts`. (Described rather than quoted: `docs` is
+  scanned too, so the map's first draft quoted the literal and failed the check
+  it was reporting - see map §9.4.)
   Nothing this session touched the checker or its test, the same suite was
   91/92 on the same controller hours earlier, the file is gitignored run output,
   and it fired on one of four runs because it depends on that run's latency

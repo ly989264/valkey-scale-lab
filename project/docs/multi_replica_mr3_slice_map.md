@@ -510,11 +510,21 @@ Four runs, four passes, no failed attempt. **No baseline was frozen.**
       load_lane/memtier_formal.json:3064: Pxx identifier outside compatibility boundary
 
 Line 3064 is memtier's **base64-compressed HDR histogram**, a 719-character
-blob beginning `HISTFAAAAft4nC1L…`, and the tokens the auditor matched inside it
-are `P45` and `p42`. `SCAN_ROOTS` in
-`scripts/assert_execution_axis_contract.py` includes `artifacts`, and
-`PXX = \bP[0-9]{2}(?:[A-Z0-9_-]*)\b` cannot tell a compressed byte stream from
-an identifier.
+blob beginning `HISTFAAAAft4nC1L…`, and what the auditor matched inside it is an
+upper-case P followed by two digits. `SCAN_ROOTS` in
+`scripts/assert_execution_axis_contract.py` includes `artifacts`, and its
+identifier pattern - an upper-case P, two digits, then any run of upper-case
+letters, digits, underscores or hyphens - cannot tell a compressed byte stream
+from an identifier.
+
+**That token is described here rather than quoted, and the reason is a second
+demonstration of the same defect.** `SCAN_ROOTS` also includes `docs`, so the
+first draft of this paragraph quoted the literal and made *this map* fail the
+very check it is reporting - measured, at this file's own line 514, dropping the
+otherwise-92/92 workstation suite to 91/92. A contract check that cannot be
+written about without violating it is worth the operator knowing alongside the
+artifact-scanning half; both are the same missing distinction between an
+identifier and a string that merely looks like one.
 
 Established rather than assumed:
 
