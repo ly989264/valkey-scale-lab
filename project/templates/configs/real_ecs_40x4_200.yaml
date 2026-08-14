@@ -1,0 +1,86 @@
+# The first native multi-replica configuration at fleet width: forty shards of
+# four replicas, 200 nodes, on the operator's real gce-m3b fleet.
+#
+# Stage MR-3 rung B of docs/multi_replica_support_map.md §8. Its one-replica
+# reference is real_ecs_200.yaml's 100x1 at the same 200 nodes on the same eight
+# hosts; there is no multi-replica 200-node prior anywhere, so every number this
+# run produces is founding data.
+#
+# Identical to real_ecs_200.yaml except for the two lines that carry the shape:
+# cluster.shards 100 -> 40 and cluster.replicas_per_shard 1 -> 4. Nothing else
+# moves - and in particular there is **no knob**. At the shipped
+# nodehosts_per_az: 2 and max_logical_nodes_per_nodehost: 25, density is what
+# binds at 200 nodes: 8 nodehosts holding exactly 25 logical nodes each, zero of
+# forty shards with two members on one nodehost, every shard split 3/2 across
+# the two AZs. That is the same eight nodehosts rung A reaches with its knob, so
+# the two rungs are diffable in nodehost_density_plan, in each node's
+# nodehost_id, in the fault matrix's targets and in the cleanup row count.
+#
+# **profile_name must stay `scale_200`.** It is not a description here, it is
+# the key a safety guard reads. `_is_exact_200_bounded_exception` (implemented
+# three times over - planner/plan.py:296, resource.py:344 and
+# runtime/docker_runtime.py:1065) admits a real run above the default cap of 100
+# only for this exact profile name with runtime.dry_run present and false, and
+# it carries **no shard-shape term**, so a 40x4 shape rides the existing
+# exception unchanged. Renaming this field to say `real_ecs_40x4_200` would turn
+# the run into a plan-time refusal - discovered after the fleet had been brought
+# up - and widening the guard to accept a new name would be a semantic change to
+# a validation contract, which is the operator's call and not a rung's.
+# profile_name names the *scale* profile; the runtime is named by
+# runtime.provider and the shape by cluster.shards/replicas_per_shard below.
+#
+# The workload block is real_ecs_200's own, which is scale_200's: far lighter
+# than the 50-node configurations (50 qps uniform, pipeline 1, against 800 and
+# 8). It is copied rather than raised so that this run stays comparable with the
+# frozen native exact-200 baseline in offered load. Holding it constant while
+# the primary count falls 100 -> 40 raises per-primary load 2.5x, the same
+# declared consequence rung A carries (support map §5.6).
+#
+# port_base is real_ecs_200's own 7800/17800, inside the 7000-32000 range every
+# host in the gce-m3b manifest declares.
+schema_version: v1
+profile_name: scale_200
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: ecs
+  valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
+  sandbox_mode: container_namespace
+  # Required to be present and false by the same bounded exception.
+  dry_run: false
+  host_inventory_path: artifacts/host-fleets/gce-m3b/inventory.json
+  native_bundle_dir: artifacts/native-bundles/valkey-9.1.0-memtier-2.5.1-arm64
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller, worker]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 40
+  replicas_per_shard: 4
+  port_base: 7800
+  cluster_bus_port_base: 17800
+scale_profile:
+  bounded_exception_nodes: 200
+  automatic_default_cap_remains: 100
+workload:
+  enabled: true
+  read_ratio: 0.8
+  write_ratio: 0.2
+  uniform_qps: 50
+  hotspot_qps: 10
+  hotspot_key_fraction: 0.01
+  pipeline: 1
+  timing: all_run
+faults: []

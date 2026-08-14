@@ -1,0 +1,88 @@
+# The first native multi-replica configuration: ten shards of four replicas,
+# 50 nodes, on the operator's real gce-m3b fleet.
+#
+# Stage MR-3 rung A of docs/multi_replica_support_map.md §8. Its control is
+# real_ecs_50.yaml's 25x1 at the same 50 nodes on the same fleet, and its
+# Docker twin is local_10x4_50.yaml, which MR-2 ran on the workstation.
+#
+# Identical to real_ecs_50.yaml except for the three lines that carry the shape
+# and the profile name: cluster.shards 25 -> 10, cluster.replicas_per_shard
+# 1 -> 4, and runtime.nodehosts_per_az (absent there, so the global default 2)
+# -> 4. Everything else - safety, provider, image, the host inventory path, the
+# native bundle, the AZs, port_base and the whole workload block - is copied, so
+# that the replica count is the only variable between this run and its control.
+# Aggregate offered load is therefore held constant, which by design doc §8.2
+# raises per-primary load 2.5x; that is a declared consequence (support map
+# §5.6), not an oversight.
+#
+# profile_name is the fourth line that differs, and it differs deliberately.
+# real_ecs_50.yaml keeps `native_50` so that no field moves for readability's
+# sake, but a 25x1 profile name on a 10x4 run would be actively wrong rather
+# than merely unmoved: profile_name is carried into a run's own metadata
+# (docker_runtime.py:12610 writes it as `config_path`) and into the resource
+# preflight's two records. Nothing keys on it at 50 nodes - profile resolution
+# is total-count-only (`profile_for_exact_nodes`) and the only names any guard
+# reads are `scale_200` and `scale_2000_local_full_flow_optin` - so this is a
+# value delta in three known fields, declared here rather than discovered in a
+# diff. MR-2's local_10x4_50.yaml made the same choice against scale_50.yaml.
+#
+# nodehosts_per_az: 4 is a decision and is stated here rather than left implied.
+# This shape plans clean at the shipped 2 as well, with 6 nodehosts holding
+# 9,9,8,8,8,8 (MR-2 map §8 item 1, compiled against a manifest of this fleet's
+# shape). 4 is taken because it yields 8 nodehosts holding 7,7,6,6,6,6,6,6 -
+# which is exactly the layout MR-2's Docker 10x4-50 ran, and exactly the eight
+# hosts this fleet has. So rung A reproduces MR-2's layout on a real network,
+# and rung B's 40x4-200 lands on the same eight nodehosts at shipped knobs,
+# leaving every multi-replica rung diffable against every other in the four
+# views the knob moves: nodehost_density_plan, each node's nodehost_id, the
+# fault matrix's targets and the cleanup row count. Taking 6 would have thrown
+# that away for no gain, since the fleet has eight hosts either way.
+#
+# One nodehost per host is a refusal rather than a preference, so this run
+# claims all eight hosts of the manifest. The hosts are given, not provisioned,
+# so no fleet command belongs here.
+#
+# port_base is real_ecs_50's own 7400/17400, inside the 7000-32000 range every
+# host in the gce-m3b manifest declares.
+schema_version: v1
+profile_name: real_ecs_10x4_50
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: ecs
+  valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
+  sandbox_mode: container_namespace
+  nodehosts_per_az: 4
+  host_inventory_path: artifacts/host-fleets/gce-m3b/inventory.json
+  native_bundle_dir: artifacts/native-bundles/valkey-9.1.0-memtier-2.5.1-arm64
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller, worker]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 10
+  replicas_per_shard: 4
+  port_base: 7400
+  cluster_bus_port_base: 17400
+workload:
+  enabled: true
+  read_ratio: 0.8
+  write_ratio: 0.2
+  uniform_qps: 800
+  hotspot_qps: 150
+  hotspot_key_fraction: 0.01
+  pipeline: 8
+  timing: all_run
+faults: []
