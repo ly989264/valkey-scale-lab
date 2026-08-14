@@ -274,3 +274,75 @@ def test_multi_replica_shards_never_share_a_nodehost() -> None:
             for node in nodes:
                 counts[str(node["nodehost_id"])] = counts.get(str(node["nodehost_id"]), 0) + 1
             assert max(counts.values()) - min(counts.values()) <= 1
+
+
+def test_the_per_az_fault_domain_minimum_covers_every_shard_shape() -> None:
+    """One expression where there used to be a single-AZ special case.
+
+    `ceil((replicas + 1) / AZs)` is `replicas + 1` at one AZ, which is exactly
+    what the single-AZ branch computed, and 1 at one replica over two AZs, which
+    is what multi-AZ was hardcoded to. It is 3 at four replicas over two AZs, and
+    that is the value nothing stated before.
+    """
+
+    from valkey_scale_lab.nodehost_density import _min_fault_domains_per_az
+
+    assert _min_fault_domains_per_az(0, 1) == 1
+    assert _min_fault_domains_per_az(0, 2) == 1
+    for replicas in (1, 2, 3, 4):
+        assert _min_fault_domains_per_az(replicas, 1) == replicas + 1
+    assert _min_fault_domains_per_az(1, 2) == 1
+    assert _min_fault_domains_per_az(2, 2) == 2
+    assert _min_fault_domains_per_az(3, 2) == 2
+    assert _min_fault_domains_per_az(4, 2) == 3
+    assert _min_fault_domains_per_az(4, 3) == 2
+
+    # And it reaches the plan: ten shards of four replicas over two AZs get
+    # three nodehosts per AZ at the shipped `nodehosts_per_az: 2`, because two
+    # cannot hold a shard's three same-AZ members. At one replica the same knob
+    # is untouched, which is what keeps every existing plan where it was.
+    azs = ["az-a", "az-b"]
+    nodes = _shape_nodes(10, 4, azs)
+    plan = build_nodehost_density_plan(
+        config=_density_config(4, 2, azs), nodes=nodes, run_id="density-min", assign=True
+    )
+    assert plan["actual_nodehost_count"] == 6
+    assert plan["nodehost_count_by_az"] == {"az-a": 3, "az-b": 3}
+
+    nodes = _shape_nodes(25, 1, azs)
+    plan = build_nodehost_density_plan(
+        config=_density_config(1, 2, azs), nodes=nodes, run_id="density-min-r1", assign=True
+    )
+    assert plan["actual_nodehost_count"] == 4
+
+
+def test_a_shard_shape_that_cannot_be_separated_is_refused_by_name() -> None:
+    """The refusal names the shard, the nodehost, the shape and the knob.
+
+    It used to say only "primary and replica for at least one shard share a
+    nodehost fault domain", which names none of them - and at more than one
+    replica per shard the knob is the whole content of the answer.
+
+    Reached with an AZ layout the placement policy would not produce, all five
+    members of one shard in one AZ, because with the minimum above hoisted into
+    the per-AZ nodehost count the policy's own layouts are always separable.
+    That makes this a fail-closed backstop rather than a step a supported shape
+    walks through, and it is asserted as one.
+    """
+
+    azs = ["az-a", "az-b"]
+    nodes = _shape_nodes(4, 4, azs)
+    for node in nodes:
+        if node["shard_id"] == "shard-0000":
+            node["az_id"] = "az-a"
+
+    with pytest.raises(NodehostDensityError) as excinfo:
+        build_nodehost_density_plan(
+            config=_density_config(4, 2, azs), nodes=nodes, run_id="density-refusal", assign=True
+        )
+
+    message = str(excinfo.value)
+    assert "shard-0000" in message
+    assert "runtime.nodehosts_per_az is 2" in message
+    assert "needs at least 3 nodehost(s) in each AZ" in message
+    assert "a shard of 5 members over 2 AZ(s)" in message

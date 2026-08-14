@@ -72,7 +72,15 @@ def build_nodehost_density_plan(
     az_order = _active_az_order(config, nodes)
     by_az = {az: _nodes_for_az(nodes, az) for az in az_order}
     replicas_per_shard = int(config.get("cluster", {}).get("replicas_per_shard", 0) or 0)
-    min_fault_domains = replicas_per_shard + 1 if len(az_order) == 1 and replicas_per_shard > 0 else 1
+    # How many fault domains one AZ must offer for a shard's members to be able
+    # to sit on distinct ones: the largest number of that shard's members the AZ
+    # holds, which under the placement policy is `ceil((replicas + 1) / AZs)`.
+    # This used to be computed only for the single-AZ case, where it reads
+    # `replicas + 1` - the same expression at one AZ - and multi-AZ was left at 1
+    # because at one replica per shard a shard never has two members in one AZ.
+    # At four replicas over two AZs it is 3, and stating it here is what lets the
+    # refusal below name a number that is both necessary and sufficient.
+    min_fault_domains = _min_fault_domains_per_az(replicas_per_shard, len(az_order))
     min_per_az = max(nodehosts_per_az, min_fault_domains)
     safe_run = run_id.lower().replace("_", "-")
     nodehosts: list[dict[str, Any]] = []
@@ -127,8 +135,15 @@ def build_nodehost_density_plan(
     }
     if over_limit:
         raise NodehostDensityError(f"logical nodes per nodehost exceed max {max_per_nodehost}: {over_limit}")
-    if not _primary_replica_nodehost_safe(nodes):
-        raise NodehostDensityError("primary and replica for at least one shard share a nodehost fault domain")
+    unsafe = _colliding_shard(nodes)
+    if unsafe is not None:
+        shard_id, shared = unsafe
+        raise NodehostDensityError(
+            f"shard {shard_id} has more than one member on nodehost {shared}: "
+            f"a shard of {replicas_per_shard + 1} members over {len(az_order)} AZ(s) "
+            f"needs at least {min_fault_domains} nodehost(s) in each AZ, and "
+            f"runtime.nodehosts_per_az is {nodehosts_per_az}"
+        )
 
     for nodehost in nodehosts:
         nodehost["ports"] = sorted(set(int(port) for port in nodehost["ports"]))
@@ -341,16 +356,31 @@ def _shard_members_distinct(
     return True
 
 
-def _primary_replica_nodehost_safe(nodes: list[dict[str, Any]]) -> bool:
-    by_shard: dict[str, set[str]] = {}
+def _min_fault_domains_per_az(replicas_per_shard: int, az_count: int) -> int:
+    """The nodehosts one AZ must offer for one shard's members to be distinct."""
+
+    if replicas_per_shard <= 0:
+        return 1
+    return ceil((replicas_per_shard + 1) / max(az_count, 1))
+
+
+def _colliding_shard(nodes: list[dict[str, Any]]) -> tuple[str, str] | None:
+    """The first shard with two members on one nodehost, and that nodehost.
+
+    Names them, because the previous refusal named neither the shard, the
+    nodehost, the shard shape nor the knob that governs it - and at more than one
+    replica per shard the knob is the whole content of the answer.
+    """
+
+    by_shard: dict[str, dict[str, int]] = {}
     for node in nodes:
-        shard_id = str(node.get("shard_id"))
         nodehost_id = node.get("nodehost_id")
         if not nodehost_id:
             continue
-        by_shard.setdefault(shard_id, set()).add(str(nodehost_id))
-    for shard_id, nodehosts in by_shard.items():
-        shard_nodes = [node for node in nodes if str(node.get("shard_id")) == shard_id]
-        if len(shard_nodes) > 1 and len(nodehosts) < len(shard_nodes):
-            return False
-    return True
+        counts = by_shard.setdefault(str(node.get("shard_id")), {})
+        counts[str(nodehost_id)] = counts.get(str(nodehost_id), 0) + 1
+    for shard_id in sorted(by_shard):
+        for nodehost_id, count in sorted(by_shard[shard_id].items()):
+            if count > 1:
+                return shard_id, nodehost_id
+    return None
