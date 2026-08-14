@@ -1577,9 +1577,10 @@ port 22 stopped answering after the runs and the commits were done, which is the
 recorded behaviour of a stopped instance (its external IP is ephemeral; ask the
 operator for the new address and check the host key rather than trusting one).
 Nothing is lost: it authors nothing, its `project/` tree was clean and synced at
-`b1dde527`, and the two later commits are workstation-only docs and scripts. But
-**it is two commits behind, so rsync before running anything there**, and MR-3's
-four run directories (~350 MB) exist only on that disk.
+`b1dde527`, and everything committed after that point is workstation-only docs
+and scripts. But **it is behind by every commit after `b1dde527`, so rsync
+before running anything there**, and MR-3's four run directories (~350 MB) exist
+only on that disk.
 
 ### Stage MR-2 is done, 2026-08-14
 
