@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from valkey_scale_lab import resource
 from valkey_scale_lab.config.validation import load_effective_config, validate_config_file
 from valkey_scale_lab.runtime import docker_runtime
@@ -78,8 +80,8 @@ def test_process_config_omits_io_threads_for_one_and_writes_two_with_maxmemory()
     }
     nodehost = {"container_ip": "172.18.0.2"}
 
-    text_one = docker_runtime._process_config_text({**base_node, "effective_io_threads": 1}, nodehost)
-    text_two = docker_runtime._process_config_text({**base_node, "effective_io_threads": 2}, nodehost)
+    text_one = docker_runtime._process_config_text({**base_node, "effective_io_threads": 1}, nodehost, replicas_per_shard=1)
+    text_two = docker_runtime._process_config_text({**base_node, "effective_io_threads": 2}, nodehost, replicas_per_shard=1)
 
     assert "io-threads" not in text_one
     assert "maxmemory 64mb" in text_one
@@ -87,3 +89,71 @@ def test_process_config_omits_io_threads_for_one_and_writes_two_with_maxmemory()
     assert "vslab cluster-node-timeout-source source=global" in text_one
     assert "io-threads 2" in text_two
     assert "maxmemory 64mb" in text_two
+
+
+def test_the_topology_pin_appears_only_above_one_replica_per_shard() -> None:
+    """§2.4's fix, and the byte-identity that keeps it off every existing run.
+
+    Valkey's defaults are `cluster-migration-barrier 1` with replica migration
+    allowed, so a shard holding spare replicas above the barrier may have one
+    taken by another shard. At one replica a shard has no spare, which is why
+    this has never mattered; at two or more the formation validator would see a
+    replica under a different primary and raise a permanent `SemanticFailure`
+    that nothing could attribute.
+
+    The generated config is a diffed view of the `runtime_start` stage, so the
+    one-replica text is compared line for line against the text produced when
+    the shape is one replica - and to a frozen baseline's own file, below.
+    """
+
+    node = {
+        "run_id": "pin-run",
+        "logical_id": "shard-0000-primary",
+        "client_port": 7400,
+        "cluster_bus_port": 17400,
+        "effective_io_threads": 1,
+        "effective_node_memory_limit_mb": 64,
+        "effective_cluster_node_timeout_ms": 30000,
+        "requested_cluster_node_timeout_ms": 30000,
+        "cluster_node_timeout_source": "global",
+    }
+    nodehost = {"container_ip": "172.18.0.2"}
+
+    pin = "cluster-allow-replica-migration no"
+    for replicas in (0, 1):
+        text = docker_runtime._process_config_text(node, nodehost, replicas_per_shard=replicas)
+        assert pin not in text
+    baseline = docker_runtime._process_config_text(node, nodehost, replicas_per_shard=1)
+    for replicas in (2, 3, 4):
+        text = docker_runtime._process_config_text(node, nodehost, replicas_per_shard=replicas)
+        assert text.count(pin) == 1
+        # The pin is the only difference, and it sits directly after
+        # `appendonly no` where the shape-independent lines resume.
+        assert [line for line in text.splitlines() if line != pin] == baseline.splitlines()
+
+
+def test_one_replica_node_config_matches_the_frozen_baseline_byte_for_byte() -> None:
+    """The `runtime_start` diff view compares this file, so it is compared here."""
+
+    frozen = Path(
+        "artifacts/baselines/exact-50-6b6f57fd/run-1/001-real.local.full-flow/runtime/node_configs"
+    )
+    if not frozen.is_dir():
+        pytest.skip("the frozen exact-50 baseline is not present in this checkout")
+    expected = (frozen / "shard-0000-primary.conf").read_text(encoding="utf-8")
+    node = {
+        "run_id": "local_full_flow-local_full_flow-20260628",
+        "logical_id": "shard-0000-primary",
+        "client_port": 7400,
+        "cluster_bus_port": 17400,
+        "effective_io_threads": 1,
+        "effective_node_memory_limit_mb": 64,
+        "effective_cluster_node_timeout_ms": 30000,
+        "requested_cluster_node_timeout_ms": 30000,
+        "cluster_node_timeout_source": "global",
+        "cluster_node_timeout_profile": "MISSING",
+    }
+    produced = docker_runtime._process_config_text(
+        node, {"container_ip": "172.18.0.2"}, replicas_per_shard=1
+    )
+    assert produced == expected

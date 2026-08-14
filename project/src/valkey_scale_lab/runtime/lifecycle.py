@@ -272,6 +272,7 @@ def _create_process_scenario(
                     nodehost_by_id=nodehost_by_id,
                     artifacts=artifacts,
                     run_id=run_id,
+                    replicas_per_shard=int(config.get("cluster", {}).get("replicas_per_shard", 0) or 0),
                     setup_timeline=setup_timeline,
                 )
             ),

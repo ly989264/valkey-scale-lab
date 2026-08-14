@@ -38,7 +38,7 @@ def test_process_bundle_generation_preserves_per_node_evidence(tmp_path: Path) -
     ]
     for node in nodes:
         docker_runtime._prepare_process_node_metadata(
-            node, nodehost, tmp_path, node["run_id"], client_host="127.0.0.1"
+            node, nodehost, tmp_path, node["run_id"], client_host="127.0.0.1", replicas_per_shard=1
         )
 
     record = docker_runtime._write_nodehost_bundle(
@@ -78,7 +78,7 @@ def test_process_bundle_rejects_unsafe_path_tokens(tmp_path: Path) -> None:
 
     with pytest.raises(DockerRuntimeError, match="unsafe process runtime logical_id"):
         docker_runtime._prepare_process_node_metadata(
-            node, nodehost, tmp_path, "safe-run", client_host="127.0.0.1"
+            node, nodehost, tmp_path, "safe-run", client_host="127.0.0.1", replicas_per_shard=1
         )
 
 

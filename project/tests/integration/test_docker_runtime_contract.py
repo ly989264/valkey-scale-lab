@@ -750,6 +750,7 @@ def _assert_process_bootstrap_uses_nodehost_bundle(
         nodehost_by_id=nodehost_by_id,
         artifacts=tmp_path,
         run_id=run_id,
+        replicas_per_shard=1,
     )
     start_details = docker_runtime._start_process_nodes_batched(backend=backend, nodes=nodes, nodehosts=nodehosts)
     summary = docker_runtime._process_bootstrap_batching_details(
@@ -832,6 +833,7 @@ def test_process_bootstrap_records_setup_timeline_child_spans(tmp_path: Path, mo
         nodehost_by_id=nodehost_by_id,
         artifacts=tmp_path,
         run_id=run_id,
+        replicas_per_shard=1,
         setup_timeline=timeline,
     )
     docker_runtime._start_process_nodes_batched(
@@ -1078,6 +1080,7 @@ def test_process_bootstrap_reaches_the_runtime_only_through_the_backend(
         nodehost_by_id=nodehost_by_id,
         artifacts=tmp_path,
         run_id=run_id,
+        replicas_per_shard=1,
     )
     docker_runtime._start_process_nodes_batched(backend=backend, nodes=nodes, nodehosts=nodehosts)
 

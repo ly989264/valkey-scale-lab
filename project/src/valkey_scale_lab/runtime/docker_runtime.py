@@ -1717,7 +1717,23 @@ def _process_bundle_name(run_id: str, nodehost_id: str) -> str:
     return f"vslab-bundle-{safe_run}-{safe_nodehost}"
 
 
-def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
+def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any], *, replicas_per_shard: int) -> str:
+    """The generated valkey.conf for one node.
+
+    `replicas_per_shard` decides one line and nothing else. Valkey's defaults are
+    `cluster-migration-barrier 1` with replica migration allowed, so a shard
+    holding spare replicas above the barrier may have one taken by another shard.
+    At one replica a shard has no spare and migration can never trigger, which is
+    why this has never mattered; at two or more it can, and the formation
+    validator enforces planned shard membership one for one - a replica observed
+    under a different primary is a permanent `SemanticFailure` - so an
+    auto-migration would be a hard failure nothing could attribute.
+
+    Emitted only above one replica, so every one-replica run's `node_configs`
+    stay byte-identical to the frozen baselines, and that view is one the stage
+    diff compares.
+    """
+
     data_dir = _process_data_dir(str(node["run_id"]), str(node["logical_id"]))
     log_file = f"{data_dir}/valkey.log"
     profile = {
@@ -1743,6 +1759,10 @@ def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
             f"cluster-announce-port {node['client_port']}",
             f"cluster-announce-bus-port {node['cluster_bus_port']}",
             "appendonly no",
+            # The planned topology is fixed and the validator enforces it, so
+            # migration is never wanted - stated directly rather than by tuning
+            # `cluster-migration-barrier` to a number that means the same thing.
+            *(["cluster-allow-replica-migration no"] if replicas_per_shard >= 2 else []),
             *valkey_config_lines(profile),
             f"dir {data_dir}",
             "daemonize yes",
@@ -1760,6 +1780,7 @@ def _prepare_process_node_metadata(
     run_id: str,
     *,
     client_host: str,
+    replicas_per_shard: int,
 ) -> None:
     logical_id = _safe_process_token(node["logical_id"], "logical_id")
     node["run_id"] = _safe_process_token(run_id, "run_id")
@@ -1771,7 +1792,7 @@ def _prepare_process_node_metadata(
     local_config_dir = artifacts / "node_configs" / scenario if str(node.get("capability_id")) == SERVER_PROFILE_CAPABILITY else artifacts / "node_configs"
     local_config_dir.mkdir(parents=True, exist_ok=True)
     local_config = local_config_dir / f"{logical_id}.conf"
-    local_config.write_text(_process_config_text(node, nodehost), encoding="utf-8")
+    local_config.write_text(_process_config_text(node, nodehost, replicas_per_shard=replicas_per_shard), encoding="utf-8")
     node.update(
         {
             # Where this run reaches the node. The peer address the cluster
@@ -1902,6 +1923,7 @@ def _prepare_process_nodehost_bundles(
     nodehost_by_id: dict[str, dict[str, Any]],
     artifacts: Path,
     run_id: str,
+    replicas_per_shard: int,
     setup_timeline: SetupTimeline | None = None,
 ) -> dict[str, Any]:
     hosted = _nodes_by_nodehost(nodes)
@@ -1921,6 +1943,7 @@ def _prepare_process_nodehost_bundles(
                 artifacts,
                 run_id,
                 client_host=backend.client_host(node),
+                replicas_per_shard=replicas_per_shard,
             )
     local_generate_seconds = round(max(time.monotonic() - local_generate_started, 0.0), 6)
 

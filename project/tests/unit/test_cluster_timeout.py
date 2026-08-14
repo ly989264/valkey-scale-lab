@@ -55,7 +55,7 @@ def test_generated_process_config_contains_timeout_and_source() -> None:
     node["run_id"] = "cluster_timeout-test"
     nodehost = {"container_ip": "172.18.0.2"}
 
-    text = docker_runtime._process_config_text(node, nodehost)
+    text = docker_runtime._process_config_text(node, nodehost, replicas_per_shard=1)
 
     assert "cluster-node-timeout 30000" in text
     assert "vslab cluster-node-timeout-source source=global" in text
