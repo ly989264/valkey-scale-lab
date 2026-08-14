@@ -100,8 +100,8 @@ def build_nodehost_density_plan(
             )
             logical_nodes_per_nodehost[nodehost_id] = 0
         az_nodehosts = nodehosts[-requested_for_az:]
-        for offset, node in enumerate(sorted(hosted, key=lambda item: int(item.get("ordinal", 0)))):
-            target = az_nodehosts[offset % requested_for_az]
+        ordered = sorted(hosted, key=lambda item: int(item.get("ordinal", 0)))
+        for node, target in zip(ordered, _assign_within_az(ordered, az_nodehosts)):
             target["logical_node_count"] += 1
             target["ports"].extend([int(node["client_port"]), int(node["cluster_bus_port"])])
             # Kept apart from `ports` above, which mixes both. Only the client
@@ -274,6 +274,71 @@ def _active_az_order(config: dict[str, Any], nodes: list[dict[str, Any]]) -> lis
 
 def _nodes_for_az(nodes: list[dict[str, Any]], az: str) -> list[dict[str, Any]]:
     return [node for node in nodes if str(node.get("az_id")) == az]
+
+
+def _assign_within_az(
+    ordered: list[dict[str, Any]], az_nodehosts: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Choose a nodehost for each of one AZ's logical nodes.
+
+    The assignment is round-robin over the AZ's nodehosts by position in the
+    ordinal-sorted list, which is what this has always done and what every
+    frozen baseline records. It is safe as long as no shard has more than one
+    member in this AZ, because then two members of a shard are never at two
+    positions of the same list.
+
+    At two or more replicas per shard a shard does have several members in one
+    AZ, and their positions are not adjacent: the runtime and the validator both
+    order every primary before every replica, so a shard's primary sits in the
+    leading block and its same-AZ replicas far down the tail, and whether the
+    two collide is a question about where the stride happens to land rather
+    than about how many nodehosts there are. Measured at ten shards with four replicas: the
+    positional assignment puts a shard's primary and one of its replicas on one
+    nodehost at *every* value of `nodehosts_per_az` from 1 to 16, so more
+    fault domains do not help and the refusal below could not be escaped.
+
+    So where the positional assignment would do that, the AZ's nodes are walked
+    a shard at a time instead, each shard's members taking consecutive nodehosts
+    from a running cursor. That makes a shard's members distinct whenever the AZ
+    has at least as many nodehosts as the shard has members in it - the minimum
+    `min_fault_domains` now states - and keeps the per-nodehost counts within
+    one of each other, because the cursor never rewinds.
+
+    Chosen only where the positional assignment fails, rather than always, so
+    that a plan which can be made the way it always was still is: that is what
+    makes this change nothing at all on the one-replica shape every existing
+    run and both frozen baselines were taken at.
+    """
+
+    positional = [
+        az_nodehosts[offset % len(az_nodehosts)] for offset in range(len(ordered))
+    ]
+    if _shard_members_distinct(ordered, positional):
+        return positional
+
+    by_shard: dict[str, list[int]] = {}
+    for index, node in enumerate(ordered):
+        by_shard.setdefault(str(node.get("shard_id")), []).append(index)
+    grouped: list[dict[str, Any] | None] = [None] * len(ordered)
+    cursor = 0
+    for indexes in by_shard.values():
+        for offset, index in enumerate(indexes):
+            grouped[index] = az_nodehosts[(cursor + offset) % len(az_nodehosts)]
+        cursor += len(indexes)
+    return [target for target in grouped if target is not None]
+
+
+def _shard_members_distinct(
+    ordered: list[dict[str, Any]], targets: list[dict[str, Any]]
+) -> bool:
+    seen: dict[str, set[str]] = {}
+    for node, target in zip(ordered, targets):
+        shard_id = str(node.get("shard_id"))
+        nodehost_id = str(target["nodehost_id"])
+        if nodehost_id in seen.setdefault(shard_id, set()):
+            return False
+        seen[shard_id].add(nodehost_id)
+    return True
 
 
 def _primary_replica_nodehost_safe(nodes: list[dict[str, Any]]) -> bool:
