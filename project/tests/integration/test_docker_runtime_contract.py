@@ -3377,19 +3377,36 @@ def test_fault_probe_validator_rejects_an_isolated_side_with_neither_answer_nor_
         docker_runtime._local_full_flow_validate_fault_probe_observation("network_partition", details)
 
 
-def _cluster_form_nodes(shards: int) -> list[dict[str, object]]:
-    """Nodes as runtime_start leaves them: a client host and a peer address."""
+def _cluster_form_nodes(shards: int, replicas_per_shard: int = 1) -> list[dict[str, object]]:
+    """Nodes as runtime_start leaves them: a client host and a peer address.
+
+    `replicas_per_shard` used to be hardcoded to one, which is the only shape any
+    run has taken. It is a parameter now so formation can be exercised at four,
+    where a primary serves several first syncs at once and the replica passes
+    are several times longer.
+    """
+
+    from valkey_scale_lab import placement
+
+    azs = ["az-a", "az-b"]
+    roles: list[tuple[str, str]] = [("primary", "primary")]
+    roles.extend(("replica", f"replica-{index:02d}") for index in range(replicas_per_shard))
     nodes: list[dict[str, object]] = []
-    for role, suffix in (("primary", "primary"), ("replica", "replica-00")):
+    for position, (role, suffix) in enumerate(roles):
         for idx in range(shards):
+            az_id = (
+                placement.primary_az(azs, idx)
+                if role == "primary"
+                else placement.replica_az(azs, idx, position - 1)
+            )
             nodes.append(
                 {
                     "logical_id": f"shard-{idx:04d}-{suffix}",
                     "role": role,
                     "shard_id": f"shard-{idx:04d}",
-                    "az_id": "az-a" if idx % 2 == 0 else "az-b",
+                    "az_id": az_id,
                     "host": "10.0.0.1",
-                    "client_port": 7400 + idx + (1000 if role == "replica" else 0),
+                    "client_port": 7400 + idx + 1000 * position,
                     "container_name": f"nodehost-{idx % 2}",
                     "nodehost_container_name": f"nodehost-{idx % 2}",
                     "nodehost_container_ip": f"172.18.0.{2 + idx % 2}",
@@ -4978,3 +4995,72 @@ def test_partition_recovery_wait_counts_roles_rather_than_halving(
         _shard_shape_nodes(10, 4), timeout=180.0
     )
     assert (seen["expected_primaries"], seen["expected_replicas"]) == (10, 40)
+
+
+def test_cluster_form_small_branch_at_four_replicas(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Six shards of four replicas: thirty nodes, so still the small branch.
+
+    Formation had never been exercised above one replica per shard. What this
+    pins is that the stage's own shape is replica-generic - the same five
+    segments, the same refusal to touch the backend - and that every one of the
+    shard's four replicas is attached, rather than the first.
+    """
+
+    _silence_cluster_form_probes(monkeypatch)
+    timeline = SetupTimeline(clock=iter(float(tick) for tick in range(1, 400)).__next__)
+    backend = RecordingNodeBackend()
+    nodes = _cluster_form_nodes(6, replicas_per_shard=4)
+    assert len(nodes) == 30
+
+    operations, _snapshots = docker_runtime._configure_process_cluster(
+        nodes, setup_timeline=timeline, backend=backend
+    )
+
+    assert [segment["name"] for segment in timeline.segments if segment["kind"] == "span"] == [
+        "primary_cluster_create",
+        "cluster_slots_assign",
+        "replica_meet",
+        "replica_replicate",
+        "cluster_final_full_snapshot",
+    ]
+    assert backend.operations == []
+    # Every replica is attached, not the first of each shard.
+    replicate = [
+        operation for operation in operations if operation["operation"] == "parallel_add_replicas"
+    ]
+    assert len(replicate) == 1
+    assert replicate[0]["details"]["replica_count"] == 24
+    slots = [
+        operation for operation in operations if operation["operation"] == "parallel_add_slots"
+    ]
+    assert slots[0]["details"]["primary_count"] == 6
+
+
+def test_cluster_form_large_branch_at_four_replicas(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ten shards of four replicas - the first rung's shape - forms the same way.
+
+    `--cluster create` is handed the primaries only, so its address list is the
+    shard count and not the node count, and the replicas are attached afterwards
+    exactly as at one replica.
+    """
+
+    monkeypatch.delenv("VSLAB_CLUSTER_CREATE_STRATEGY", raising=False)
+    _silence_cluster_form_probes(monkeypatch)
+    timeline = SetupTimeline(clock=iter(float(tick) for tick in range(1, 400)).__next__)
+    backend = RecordingNodeBackend()
+    nodes = _cluster_form_nodes(10, replicas_per_shard=4)
+    assert len(nodes) == 50
+
+    docker_runtime._configure_process_cluster(nodes, setup_timeline=timeline, backend=backend)
+
+    assert [segment["name"] for segment in timeline.segments if segment["kind"] == "span"] == [
+        "primary_cluster_create",
+        "replica_meet",
+        "replica_replicate",
+        "cluster_convergence_wait",
+        "cluster_final_snapshot",
+        "cluster_final_full_snapshot",
+    ]
+    assert backend.operations == ["run_cluster_admin"]
+    argv = backend.cluster_admin[0]
+    assert argv[2:-1] == [f"172.18.0.{2 + idx % 2}:{7400 + idx}" for idx in range(10)]

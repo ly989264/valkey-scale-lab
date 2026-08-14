@@ -38,6 +38,7 @@ from valkey_scale_lab.observability.contracts import (
 from valkey_scale_lab.observability.failover import (
     ActuatorRecorder,
     AffectedShardObserver,
+    redundancy_recovery,
     sample_affected_observers,
 )
 from valkey_scale_lab.observability import load as load_module
@@ -2909,3 +2910,193 @@ def test_failover_timeline_does_not_skip_the_round_that_set_its_own_threshold() 
     intervals = {row["field"]: row for row in timeline["intervals"]}
 
     assert intervals["promotion_to_slots_covered_ms"]["value_ms"] == 0.0
+
+
+def _four_survivor_nodes() -> list[NodeEndpoint]:
+    """One promoted primary and three siblings still replicating to it.
+
+    The shape a four-replica shard is left in after its primary is killed, and
+    the shape no test has ever built: every observer fixture in this file has
+    one or two survivors, because one replica per shard is all any run has had.
+    """
+
+    return [
+        NodeEndpoint("r0", "h", 1, "replica", "s0"),
+        NodeEndpoint("r1", "h", 2, "replica", "s0"),
+        NodeEndpoint("r2", "h", 3, "replica", "s0"),
+        NodeEndpoint("r3", "h", 4, "replica", "s0"),
+    ]
+
+
+def test_affected_shard_converges_with_four_survivors() -> None:
+    """Plural-capable by construction, asserted rather than assumed.
+
+    The observer takes every surviving shard member and detects promotion as
+    "exactly one survivor reports primary, and every other names it". Nothing in
+    it counts replicas, so the only thing worth proving is that the relationship
+    check holds when three replicas have to agree instead of one.
+    """
+
+    clock = FakeClock()
+    nodes = _four_survivor_nodes()
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        role = (
+            [b"master", 0, []]
+            if endpoint.port == 2
+            else [b"slave", b"h", 2, b"connected", 0]
+        )
+        return FakeConnection({("ROLE",): role, ("CLUSTER", "INFO"): b"cluster_state:ok\r\n"})
+
+    observer = AffectedShardObserver(
+        nodes, connection_factory=factory, sleep=clock.sleep, monotonic=clock.monotonic
+    )
+    result = observer.wait_for_convergence(
+        deadline_seconds=2, full_validation=lambda: {"status": "OK"}
+    )
+
+    assert result["status"] == "OK"
+    assert result["converged_relationship"]["primary"] == "r1"
+    assert result["converged_relationship"]["relationships"] == {
+        "r0": "replica-of:r1",
+        "r1": "primary",
+        "r2": "replica-of:r1",
+        "r3": "replica-of:r1",
+    }
+    assert len(result["rounds"]) == 2
+
+
+def test_one_transient_survivor_resets_the_convergence_streak() -> None:
+    """A round is a whole-shard observation: one unreachable sibling voids it.
+
+    With four survivors there are four chances per round for that, where with
+    one there was one. The round still records the sibling as TRANSIENT rather
+    than failing, and the two-identical-rounds rule simply starts again.
+    """
+
+    clock = FakeClock()
+    nodes = _four_survivor_nodes()
+    rounds = {"count": 0}
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        role = (
+            [b"master", 0, []]
+            if endpoint.port == 2
+            else [b"slave", b"h", 2, b"connected", 0]
+        )
+        responses: dict[tuple[Any, ...], Any] = {
+            ("ROLE",): role,
+            ("CLUSTER", "INFO"): b"cluster_state:ok\r\n",
+        }
+        if endpoint.port == 4 and rounds["count"] < 2:
+            responses[("ROLE",)] = ConnectionRefusedError("r3 is still coming back")
+        return FakeConnection(responses)
+
+    observer = AffectedShardObserver(
+        nodes, connection_factory=factory, sleep=clock.sleep, monotonic=clock.monotonic
+    )
+    original = observer.sample_round
+
+    def counted() -> dict[str, Any]:
+        result = original()
+        rounds["count"] += 1
+        return result
+
+    observer.sample_round = counted  # type: ignore[method-assign]
+    result = observer.wait_for_convergence(
+        deadline_seconds=5, full_validation=lambda: {"status": "OK"}
+    )
+
+    assert result["status"] == "OK"
+    # Two voided rounds, then the two identical healthy ones the rule wants.
+    assert len(result["rounds"]) == 4
+    assert result["rounds"][0]["candidate"] is None
+    assert [row["status"] for row in result["rounds"][0]["rows"]].count("TRANSIENT") == 1
+    assert result["rounds"][-1]["candidate"]["primary"] == "r1"
+
+
+def test_two_primaries_among_four_survivors_is_not_a_converged_round() -> None:
+    """Two candidates can report primary at once while an election settles."""
+
+    clock = FakeClock()
+    nodes = _four_survivor_nodes()
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        role = (
+            [b"master", 0, []]
+            if endpoint.port in (2, 3)
+            else [b"slave", b"h", 2, b"connected", 0]
+        )
+        return FakeConnection({("ROLE",): role, ("CLUSTER", "INFO"): b"cluster_state:ok\r\n"})
+
+    observer = AffectedShardObserver(
+        nodes, connection_factory=factory, sleep=clock.sleep, monotonic=clock.monotonic
+    )
+    with pytest.raises(SemanticFailure, match="two identical healthy 500ms rounds"):
+        observer.wait_for_convergence(
+            deadline_seconds=2, full_validation=lambda: {"status": "OK"}
+        )
+
+
+def _light_report(shard_replicas: dict[str, int], *, connected: dict[str, int] | None = None) -> dict[str, Any]:
+    connected = connected or {}
+    rows: list[dict[str, Any]] = []
+    for shard_id, replicas in shard_replicas.items():
+        rows.append(
+            {
+                "logical_id": f"{shard_id}-primary",
+                "myslots": {"shard-id": shard_id, "role": "primary"},
+                "role": {"replication_state": "connected"},
+            }
+        )
+        healthy = connected.get(shard_id, replicas)
+        for index in range(replicas):
+            rows.append(
+                {
+                    "logical_id": f"{shard_id}-replica-{index:02d}",
+                    "myslots": {"shard-id": shard_id, "role": "replica"},
+                    "role": {
+                        "replication_state": "connected" if index < healthy else "sync"
+                    },
+                }
+            )
+    return {"nodes": rows}
+
+
+def test_redundancy_recovery_is_exact_at_one_and_at_four_replicas() -> None:
+    """The first tests this function has had; it was already r-generic.
+
+    `redundancy_recovery` counts the shard's own replicas against an expectation
+    the caller derives from that shard's membership, so nothing in it assumes
+    one. What had never been checked is that it refuses the two ways a
+    four-replica shard can be short: a missing replica, and a replica present but
+    not yet connected.
+    """
+
+    for replicas in (1, 4):
+        report = _light_report({"s0": replicas, "s1": replicas})
+        result = redundancy_recovery(report, expected_replicas_per_shard=replicas)
+        assert result == {
+            "status": "OK",
+            "shard_count": 2,
+            "expected_replicas_per_shard": replicas,
+            "replicas_connected": True,
+        }
+
+    short = _light_report({"s0": 3, "s1": 4})
+    with pytest.raises(SemanticFailure, match="redundancy recovery is incomplete"):
+        redundancy_recovery(short, expected_replicas_per_shard=4)
+
+    resyncing = _light_report({"s0": 4, "s1": 4}, connected={"s0": 2})
+    with pytest.raises(SemanticFailure) as excinfo:
+        redundancy_recovery(resyncing, expected_replicas_per_shard=4)
+    assert "'replicas': 4" in str(excinfo.value)
+    assert "'connected': 2" in str(excinfo.value)
+
+
+def test_redundancy_recovery_refuses_a_shard_shape_that_is_not_uniform() -> None:
+    """One expectation is compared against every shard, so a mixed fleet fails."""
+
+    mixed = _light_report({"s0": 4, "s1": 1})
+    with pytest.raises(SemanticFailure, match="s1"):
+        redundancy_recovery(mixed, expected_replicas_per_shard=4)
