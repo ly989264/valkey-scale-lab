@@ -1446,7 +1446,108 @@ prior). The run ladder is §8: MR-1 fixes + r=1 no-op proof, MR-2 Docker
 fleet (10×4-50 ×2, then 40×4-200 at shipped knobs). Every rung fits gce-m3b as
 provisioned; only M4 itself provisions.
 
-### Stage MR-2 is done, 2026-08-14. MR-3 needs approval and the correct state now is idle
+### Stage MR-3 is done, 2026-08-14, and with it the multi-replica prerequisite program. M4 needs operator approval and the correct state now is idle
+
+Three commits: `26613317` (the two configurations), `f9b10814` (a defect in the
+acceptance instrument that the control found) and the map. Read
+`project/docs/multi_replica_mr3_slice_map.md`: §3 is that defect, §5.2 the
+support-map hazard being met for the first time, §6.2 the founding claim of
+MR-2's that does *not* transfer, §7.1 a prior claim the frozen baselines
+correct, §8.2 the fleet-width result and §10 what M4 inherits.
+
+**Four runs, four passes, no failed attempt**, all from the in-VPC controller:
+25×1-50 control **PASS 889.15 s**, two 10×4-50 **PASS 701.21 s** and
+**718.49 s**, and 40×4-200 **PASS 1146.58 s**. Every one: `run_verdict` 12/12
+OK, `tool_errors` empty, fault lane **9/12/15** with nine `REAL_PASS`,
+`resources_remaining` and `cleanup_errors` empty, every residual scan `found: 0`,
+journals **50/50** and **200/200**, `host_evidence` PASS with a `host_id` and two
+clock readings per nodehost, and the string `ERROR` in **no** artifact. All eight
+hosts asked over ssh from outside the product afterwards: **zero** valkey
+processes, `vslab` rules, `VSLAB` chains, run trees and bundles. **No baseline
+was frozen** - that stays M4's.
+
+- **The control earned its place twice.** It proved nothing drifted in the many
+  commits since `c58a762a` - `runtime_start` 7/7, `cluster_form` 5/5,
+  `management_matrix` 6/8, `fault_matrix` 4/6, `cleanup` 2/2, with the two
+  `fault_matrix` views being the 2026-08-13 failover work's declared pair and no
+  third - and it found the defect below, which would otherwise have been read as
+  a rung-A finding.
+- **`diff_stage_artifacts.py` did not scrub the Gate's own test directory**, so
+  the control scored `runtime_start` **3/7** and `cleanup` **1/2** against a
+  baseline that calibrates 7/7 and 2/2. The entire difference in both was one
+  string: the baselines were frozen through `real.local.full-flow` and every
+  acceptance run since item 1.7 is taken through `real.ecs.full-flow`. Measured
+  by rewriting the name in a copy before changing anything. Fixed, with four
+  seeded regressions each caught by the view that owns it - including an
+  `artifacts_dir` pointing outside the run's own test directory, which is the one
+  the change could have broken.
+- **Every declared quantity hit.** 10×4-50: **958** management rows against the
+  law's 956 (the same two-row miss MR-2 measured on Docker), **10 batches / max
+  concurrent 8**, canary **10**, the §2.4 pin in **50 of 50** node configs.
+  40×4-200: **3456** rows against ~3480, **26 batches / max 8**, canary **40**,
+  pin in **200 of 200**. **One inherited prediction was the handover's and was
+  corrected before running**: `cleanup_actions` is `5×nodehosts` on a native run,
+  not `5×nodehosts+1` - the `+1` is Docker's network row - so **40** at eight
+  nodehosts, which both rungs measured and both frozen native baselines already
+  said.
+- **Support map §3.1 was exercised for the first time and did not fire.** At
+  four replicas the down-window full validation ran over **49 nodes** with three
+  siblings re-attaching to the newly promoted primary, and returned OK in both
+  candidates; at one replica it is vacuous. Not a disproof of an intermittent
+  hazard, but the first evidence of any kind - MR-2 never reached the check.
+- **§3.2 fires on the real fleet too**: `replacement_logical_id` predicted
+  `replica-00` while the observed winners were `replica-01`, `replica-02` and
+  `replica-00`. Three of four multi-replica runs across two runtimes now name the
+  wrong promoted node with nothing failing. Untouched by instruction.
+- **MR-2's founding claim does not transfer, and the reason is variance.** MR-2
+  read PFAIL → promotion as "four candidates elect faster than one" (1.5-5.1 s
+  at r=4 against 18.2 s at r=1). Against r=1 numbers re-derived from the frozen
+  baselines' own retained rounds, the direction **reverses with scale**: at
+  exact-50 r=1 is 2.50/3.00/6.50 s and r=4 is **6.02/10.55 s**; at exact-200 r=1
+  is 8.00/19.03 s and r=4 is **5.02 s**. MR-2's comparator was a workstation
+  number with no counterpart here. **The replica count's effect on election time
+  is not established** - the r=1 spread at each scale is wider than any gap to
+  the r=4 points. Two runs of one configuration gave 6.02 s and 10.55 s inside
+  RTOs 0.3 % apart, which is the failover work's own warning to M4 arriving
+  early: rank on the split, and budget several runs per rung.
+- **Nothing undeclared, measured as a vocabulary comparison** over 38 artifacts,
+  ~3,920 paths. Control against candidate 2: **one** differing path. And the
+  result that settles what that family is - **the two identical-configuration
+  candidates differ in sixteen**, more than the control differs from a candidate.
+  Every differing path is a `cluster_stats_messages_*` counter or
+  `sentinel_fault_probe.samples[].errors.control`, both MR-2 §5.3's, now
+  confirmed on a second runtime. **The replica count moved values, not shapes.**
+- **The delta does not grow with fleet width.** Against the frozen 100×1-200
+  baseline, rung B's differing paths fall in exactly three groups and the replica
+  count is none of them: the failover work's `failover_timeline` and refs, MR-1's
+  declared `primary_replica_distinct_az` → `shard_az_balanced` rename, and
+  nothing else. **Four replicas add no path at 200 that the one-replica 200-node
+  baseline lacks.**
+- **`fault_matrix` does not self-calibrate at r≥2, and on this fleet
+  `management_matrix` does not either.** Candidate against candidate: 7/7, 5/5,
+  **6/8**, **3/6**, 2/2. The whole `fault_command_log` delta is a single token,
+  the promoted node in the `CLUSTER REPLICATE` that restores the killed primary.
+  The `management_matrix` delta is exactly the two fields `BASELINE.md` already
+  names at r=1. Both are properties M4 inherits, not regressions.
+- **A prior claim is corrected by the frozen baselines themselves** (map §7.1).
+  `real_fleet_ladder_slice_map.md` §9a says the real fleet escalates its
+  rolling-restart health gate but "never once reaches the diagnostic round".
+  That counter reads `stdout_tail.sample_scope`, which names the *last* attempt's
+  scope; read in `probe_summary.attempts[]`, the frozen baselines reach
+  `all_nodes_diagnostic` **2 and 4 times**. The escalation's inversion with scale
+  holds (50 yes, 200 never) and **the replica count is not a variable in it**.
+  Not MR-3's to close.
+- **Proven:** `repository.all` **92/92** on the Mac and **91/92** on the
+  controller (the absent Docker daemon); **catalog stays 99, the M1 plan 91 and
+  the pytest tree 849** - nothing was registered, because `real.ecs.full-flow`
+  takes `nodes` and `config` and admits 30..200.
+
+**Do not read a passing native run as evidence about MR-2's announced-address
+fix.** `data_address` and `client_endpoint.address` coincide on gce-m3b, so the
+old broken comparison would have held there; the evidence for that fix stays
+MR-2's Docker runs and its four mutation-checked tests.
+
+### Stage MR-2 is done, 2026-08-14
 
 Two commits, `c8021123` (the configuration) and `2972b736` (the defect the runs
 found). Read `project/docs/multi_replica_mr2_slice_map.md`: §3 is the defect and
@@ -1564,7 +1665,10 @@ manifest repeats one address). Had MR-2 been run on the fleet instead of on
 Docker, the defect would have passed through MR-3 untouched and waited for M4.
 A passing native run is therefore **not** evidence about this fix.
 
-**What MR-3 inherits, compiled at `3b399469`.** MR-3 is support map §8's third
+**What MR-3 inherited, compiled at `3b399469`.** *(MR-3 is done - see its
+section above. Its arithmetic held exactly; only the `cleanup_actions` row count
+was wrong, being the Docker law rather than the native one. Kept because the
+derivation reads from it.)* MR-3 is support map §8's third
 rung - two native **10×4-50** on gce-m3b, then one native **40×4-200** - and it
 needs operator approval. Read `project/docs/multi_replica_mr2_slice_map.md` §8;
 the ten items there are the handover. The arithmetic, compiled through
