@@ -1537,10 +1537,23 @@ was frozen** - that stays M4's.
   `all_nodes_diagnostic` **2 and 4 times**. The escalation's inversion with scale
   holds (50 yes, 200 never) and **the replica count is not a variable in it**.
   Not MR-3's to close.
-- **Proven:** `repository.all` **92/92** on the Mac and **91/92** on the
-  controller (the absent Docker daemon); **catalog stays 99, the M1 plan 91 and
-  the pytest tree 849** - nothing was registered, because `real.ecs.full-flow`
-  takes `nodes` and `config` and admits 30..200.
+- **Proven:** `repository.all` **92/92** on the Mac; **catalog stays 99, the M1
+  plan 91 and the pytest tree 849** - nothing was registered, because
+  `real.ecs.full-flow` takes `nodes` and `config` and admits 30..200.
+- **One acceptance criterion was not met and is reported rather than cleared**
+  (map §9.4): the controller is **90/92**, not 91/92. The extra failure is
+  `product.scenarios.execution_axis_contract`, whose single finding is inside
+  candidate 1's **base64-compressed HDR histogram** in
+  `load_lane/memtier_formal.json` - the auditor's `\bP[0-9]{2}…` matched `P45`
+  in a compressed byte stream, because `SCAN_ROOTS` includes `artifacts`.
+  Nothing this session touched the checker or its test, the same suite was
+  91/92 on the same controller hours earlier, the file is gitignored run output,
+  and it fired on one of four runs because it depends on that run's latency
+  bytes. **So a real run can fail a repository contract check by chance, and
+  `repository.all` is not deterministic on a machine that has taken one.**
+  Narrowing what a contract check scans is a semantic change to a validation
+  contract and needs its own evidence, so it is the operator's call. The run
+  artifacts were deliberately not deleted to make the suite green.
 
 **Do not read a passing native run as evidence about MR-2's announced-address
 fix.** `data_address` and `client_endpoint.address` coincide on gce-m3b, so the

@@ -471,10 +471,11 @@ holding.
 
 ### §9.2 Hermetic and counts
 
-- `./gate suite repository.all` **92/92** on the Mac and **91/92** on the
-  controller, the one being `product.integration.docker_runtime_contract`
-  against the absent Docker daemon, which is the recorded and correct state
-  there.
+- `./gate suite repository.all` **92/92** on the Mac.
+- On the controller it is **90/92, not the expected 91/92**, and the second
+  failure is reported rather than cleared - see §9.4. The first is
+  `product.integration.docker_runtime_contract` against the absent Docker
+  daemon, which is the recorded and correct state there.
 - **Catalog stays 99, the M1 plan 91, and the pytest tree 849.** Nothing was
   registered: `real.ecs.full-flow` takes `nodes` and `config` and admits 30..200,
   so both rungs are parameter changes.
@@ -492,6 +493,44 @@ holding.
 | `gate-20260814T131546Z-80d568cb` | 40×4-200 rung B | **PASS 1146.58 s** |
 
 Four runs, four passes, no failed attempt. **No baseline was frozen.**
+
+### §9.4 The acceptance criterion that was not met, and why it is reported rather than fixed
+
+`repository.all` on the controller is **90/92**. The second failure is
+`product.scenarios.execution_axis_contract`, and its single finding is:
+
+    artifacts/gate-runs/<candidate-1>/001-real.ecs.full-flow/runtime/
+      load_lane/memtier_formal.json:3064: Pxx identifier outside compatibility boundary
+
+Line 3064 is memtier's **base64-compressed HDR histogram**, a 719-character
+blob beginning `HISTFAAAAft4nC1L…`, and the tokens the auditor matched inside it
+are `P45` and `p42`. `SCAN_ROOTS` in
+`scripts/assert_execution_axis_contract.py` includes `artifacts`, and
+`PXX = \bP[0-9]{2}(?:[A-Z0-9_-]*)\b` cannot tell a compressed byte stream from
+an identifier.
+
+Established rather than assumed:
+
+- **Nothing in this session touched the checker or its test** - `git log
+  3b399469..HEAD` over both files is empty - and the same suite was **91/92** on
+  the same controller earlier the same day, before these runs existed.
+- The audit finds **exactly one** item, and it is in a file that
+  `git check-ignore` confirms is inside the gitignored `project/artifacts/`.
+- It fired on **one of four runs**, because whether the compressed bytes happen
+  to contain `P` followed by two digits is a property of that run's latency
+  distribution.
+
+So a real run can fail a repository contract check by chance, and
+`repository.all` is not deterministic on any machine that has taken one. **Not
+fixed here.** Narrowing what a contract check scans is a semantic change to a
+validation contract, `artifacts` is plausibly in that list on purpose because
+frozen baselines live there, and choosing between "do not scan `gate-runs`" and
+"do not match inside an encoded payload" needs its own evidence. Reported for
+the operator, per the working rules.
+
+**The run artifacts were deliberately not deleted to make the suite green.**
+They are this rung's evidence, and removing evidence to clear a check is the
+failure mode every rule in CLAUDE.md exists to prevent.
 
 ## §10 What M4 inherits, measured here rather than remembered
 
