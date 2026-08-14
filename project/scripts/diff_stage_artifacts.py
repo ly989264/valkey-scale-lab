@@ -72,6 +72,18 @@ IGNORED = re.compile(
 GATE_RUN = re.compile(r"gate-\d{8}T\d{6}Z-[0-9a-f]+")
 ARTIFACTS_PATH = re.compile(r"^/.*/artifacts/")
 NODE_ID = re.compile(r"\b[0-9a-f]{40}\b")
+# The Gate names each selected test's own directory `NNN-<test-id>`, so an
+# artifact path carries which catalog entry ran. That is a property of the
+# invocation and not of the run, and it moved when item 1.7 registered
+# `real.ecs.*`: the frozen native baselines were taken through
+# `real.local.full-flow` and every acceptance run since is taken through
+# `real.ecs.full-flow`. Measured on MR-3's native 25x1-50 control against
+# `real-exact-50-c58a762a`: that one string is the *entire* difference in
+# `runtime_start` (3/7) and `cleanup` (1/2), and normalising it restores 7/7 and
+# 2/2 with nothing else moving. Anchored on the `<GATE_RUN>/` token the
+# substitution above has already produced, so it can only ever match the Gate's
+# own run-scoped directory and never a path the product chose.
+GATE_TEST_DIR = re.compile(r"(?<=<GATE_RUN>/)\d{3}-[A-Za-z0-9._-]+")
 
 CLUSTER_FORM_TIMING_ROWS = {
     "primary_cluster_create",
@@ -82,6 +94,19 @@ CLUSTER_FORM_TIMING_ROWS = {
     "runtime_final_full_probe",
     "runtime_diagnostic_full_probe",
 }
+
+
+def scrub_run_scoped_path(value: str) -> str:
+    """Replace the parts of a path that name this invocation rather than the run.
+
+    One definition, called from both `scrub` and `management_scrub`, because two
+    copies of a normalisation drift silently - which is the argument
+    `diff_delta_paths.py` already makes about the views themselves.
+    """
+    return GATE_TEST_DIR.sub(
+        "<GATE_TEST>",
+        ARTIFACTS_PATH.sub("<ARTIFACTS>/", GATE_RUN.sub("<GATE_RUN>", value)),
+    )
 
 
 def scrub(value: Any) -> Any:
@@ -96,7 +121,7 @@ def scrub(value: Any) -> Any:
     if isinstance(value, list):
         return [scrub(item) for item in value]
     if isinstance(value, str):
-        return ARTIFACTS_PATH.sub("<ARTIFACTS>/", GATE_RUN.sub("<GATE_RUN>", value))
+        return scrub_run_scoped_path(value)
     return value
 
 
@@ -389,7 +414,7 @@ def management_scrub(value: Any) -> Any:
     if isinstance(value, list):
         return [management_scrub(item) for item in value]
     if isinstance(value, str):
-        return ARTIFACTS_PATH.sub("<ARTIFACTS>/", GATE_RUN.sub("<GATE_RUN>", value))
+        return scrub_run_scoped_path(value)
     return value
 
 
