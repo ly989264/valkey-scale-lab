@@ -4882,3 +4882,69 @@ def test_cleanup_status_rule_is_one_rule_for_every_backend(
     assert report["status"] == "FAIL"
     assert report["cleanup_errors"] == ["discovery failed"]
     assert any(action["status"] == "FAIL" for action in report["cleanup_actions"])
+
+
+def _shard_shape_nodes(shards: int, replicas_per_shard: int) -> list[dict[str, Any]]:
+    """A plan's node list at an arbitrary shard shape, in roles and shards only.
+
+    Every fixture in this file until now was one replica per shard, which is the
+    only shape any run has ever taken, and it is the shape in which "half the
+    nodes are primaries" happens to be true.
+    """
+    nodes: list[dict[str, Any]] = []
+    for shard in range(shards):
+        shard_id = f"shard-{shard:04d}"
+        nodes.append({"logical_id": f"{shard_id}-primary", "shard_id": shard_id, "role": "primary"})
+        for replica in range(replicas_per_shard):
+            nodes.append(
+                {
+                    "logical_id": f"{shard_id}-replica-{replica:02d}",
+                    "shard_id": shard_id,
+                    "role": "replica",
+                }
+            )
+    return nodes
+
+
+def _clean_cluster_health(node_count: int, primary_count: int) -> dict[str, Any]:
+    return {
+        "cluster_state": "ok",
+        "known_nodes": node_count,
+        "primary_count": primary_count,
+        "replica_count": node_count - primary_count,
+        "handshake_count": 0,
+        "fail_count": 0,
+        "pfail_count": 0,
+        "slots_assigned": 16384,
+        "slots_ok": 16384,
+        "slots_fail": 0,
+    }
+
+
+def test_rolling_restart_health_gate_counts_roles_rather_than_halving() -> None:
+    # 25x1 - the shape every frozen baseline was taken at, and the reason
+    # `node_count // 2` survived: halving and counting agree here.
+    one_replica = _shard_shape_nodes(25, 1)
+    assert docker_runtime._management_matrix_clean_health(
+        _clean_cluster_health(50, 25), one_replica
+    ) is True
+
+    # 10x4 - the same 50 nodes with 10 primaries. A gate that halves expects
+    # 25/25, which this cluster can never report, so every batch burns its whole
+    # 180s and raises "rolling restart health gate did not converge".
+    four_replicas = _shard_shape_nodes(10, 4)
+    assert docker_runtime._management_matrix_clean_health(
+        _clean_cluster_health(50, 10), four_replicas
+    ) is True
+    assert docker_runtime._management_matrix_clean_health(
+        _clean_cluster_health(50, 25), four_replicas
+    ) is False
+
+    # The census is count-preserving under the role swaps this stage performs,
+    # so a promoted replica leaves the gate's expectation untouched.
+    promoted = [dict(node) for node in four_replicas]
+    promoted[0]["role"] = "replica"
+    promoted[1]["role"] = "primary"
+    assert docker_runtime._management_matrix_clean_health(
+        _clean_cluster_health(50, 10), promoted
+    ) is True

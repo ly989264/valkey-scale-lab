@@ -11346,7 +11346,7 @@ def _management_matrix_execute_process_rolling_restart(
         probe["batch_id"] = batch_index
         probe["command_ref"] = _management_matrix_log_health_probe_summary(command_log, telemetry, capability_id, run_id, operation_id, probe)
         probe_summaries.append(probe)
-        health_status = "PASS" if _management_matrix_clean_health(health, node_count) else "FAIL"
+        health_status = "PASS" if _management_matrix_clean_health(health, nodes) else "FAIL"
 
         for entry, target in zip(batch, targets):
             sequence = int(entry["sequence"])
@@ -11782,8 +11782,20 @@ def _management_matrix_merge_parallel_command_rows(command_log: list[dict[str, A
         command_log.append(copied)
 
 
-def _management_matrix_clean_health(health: dict[str, Any], node_count: int) -> bool:
-    expected_primaries = node_count // 2
+def _management_matrix_clean_health(health: dict[str, Any], nodes: list[dict[str, Any]]) -> bool:
+    """The census the rolling restart's health gate waits for.
+
+    Derived from the planned roles rather than halved out of the node count.
+    `node_count // 2` is the primary count only when every shard has exactly one
+    replica; a 10-shard, 4-replica cluster reports 10 primaries and 40 replicas
+    against an expectation of 25/25, so every batch gate burns its whole 180s
+    and raises. Counting roles is also what survives the role swaps this stage
+    performs - a promotion exchanges a primary for a replica and leaves both
+    totals unchanged - which is why `_management_wait_clean_cluster` has always
+    counted them this way.
+    """
+    node_count = len(nodes)
+    expected_primaries = sum(1 for node in nodes if node["role"] == "primary")
     expected_replicas = node_count - expected_primaries
     return bool(
         health["cluster_state"] == "ok"
@@ -11823,7 +11835,6 @@ def _management_matrix_wait_rolling_restart_health(
     full_probe: bool,
     required_nodes: list[dict[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    node_count = len(nodes)
     deadline = time.monotonic() + timeout
     started = time.monotonic()
     representatives = _representative_nodes(nodes)
@@ -11857,7 +11868,7 @@ def _management_matrix_wait_rolling_restart_health(
                 "health": {key: value for key, value in last.items() if key != "snapshots"},
             }
         )
-        if _management_matrix_clean_health(last, node_count):
+        if _management_matrix_clean_health(last, nodes):
             last_scope = current_scope
             break
 
@@ -11875,11 +11886,11 @@ def _management_matrix_wait_rolling_restart_health(
                     "health": {key: value for key, value in last.items() if key != "snapshots"},
                 }
             )
-            if _management_matrix_clean_health(last, node_count):
+            if _management_matrix_clean_health(last, nodes):
                 break
         retry_count += 1
         time.sleep(1.0)
-    if not _management_matrix_clean_health(last, node_count):
+    if not _management_matrix_clean_health(last, nodes):
         raise DockerRuntimeError(f"rolling restart health gate did not converge; scope={last_scope} health={last}")
     probe = {
         "status": "PASS",
