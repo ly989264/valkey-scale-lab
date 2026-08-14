@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, ContextManager, Iterable, Mapping, Sequence, TypeVar
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab import placement
 from valkey_scale_lab.cluster_timeout import (
     cluster_timeout_node_fields,
     compute_effective_cluster_timeout,
@@ -3023,14 +3024,14 @@ def _node_specs(config: dict[str, Any], capability_id: str, scenario: str, run_i
     effective_timeout_fields = cluster_timeout_node_fields(effective_timeout)
     for shard in range(shards):
         shard_id = f"shard-{shard:04d}"
-        specs.append(_spec(cluster, capability_id, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)], host_ids[ordinal % len(host_ids)], run_id))
+        specs.append(_spec(cluster, capability_id, scenario, ordinal, shard_id, "primary", placement.primary_az(azs, shard), host_ids[ordinal % len(host_ids)], run_id))
         specs[-1].update(effective_node_fields)
         specs[-1].update(effective_timeout_fields)
         ordinal += 1
     for shard in range(shards):
         for replica in range(replicas):
             shard_id = f"shard-{shard:04d}"
-            az = azs[(shard + replica + 1) % len(azs)]
+            az = placement.replica_az(azs, shard, replica)
             specs.append(_spec(cluster, capability_id, scenario, ordinal, shard_id, f"replica-{replica:02d}", az, host_ids[ordinal % len(host_ids)], run_id))
             specs[-1].update(effective_node_fields)
             specs[-1].update(effective_timeout_fields)

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab import placement
 from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout, cluster_timeout_node_fields
 from valkey_scale_lab.config.validation import (
     REQUIRED_1000_ENV_VALUE,
@@ -113,11 +114,9 @@ def build_cluster_plan(
             raise PlannerError("single-AZ replica plans require cluster.non_ha_allowed: true")
 
     planned_nodes: list[dict[str, Any]] = []
-    az_cursor = 0
     for shard_index in range(shard_count):
         shard_id = f"shard-{shard_index:04d}"
-        primary_az = azs[az_cursor % len(azs)]
-        az_cursor += 1
+        primary_az = placement.primary_az(azs, shard_index)
         planned_nodes.append(
             _node(
                 config=config,
@@ -131,7 +130,7 @@ def build_cluster_plan(
             )
         )
         for replica_index in range(replicas_per_shard):
-            replica_az = _replica_az(azs, primary_az, shard_index, replica_index)
+            replica_az = placement.replica_az(azs, shard_index, replica_index)
             planned_nodes.append(
                 _node(
                     config=config,
@@ -158,8 +157,12 @@ def build_cluster_plan(
     density = density_plan["nodehost_density"]
     capacity = _check_host_capacity(config, planned_nodes)
     constraints = {
-        "primary_replica_distinct_az": _primary_replica_distinct_az(planned_nodes)
-        or _explicit_non_ha_single_az(config),
+        # Renamed from `primary_replica_distinct_az` when the four AZ formulas
+        # in this repository were unified: a name saying "distinct AZ" must not
+        # report true over a 3/2 split, which is what a five-member shard over
+        # two AZs is. At one replica the two properties are the same statement.
+        # See `placement.shard_az_balanced` and multi_replica_support_map §7.1.
+        "shard_az_balanced": placement.shard_az_balanced(planned_nodes, azs),
         "two_virtual_azs": network.get("virtual_az_mode") != "multi" or len(azs) == 2,
         "primary_replica_opposite_az_pair": _primary_replica_opposite_az_pair(planned_nodes, azs)
         or _explicit_non_ha_single_az(config),
@@ -214,7 +217,7 @@ def build_cluster_plan(
         raise PlannerError("1000-node plans must be dry-run only")
     if not all(
         [
-            constraints["primary_replica_distinct_az"],
+            constraints["shard_az_balanced"],
             constraints["two_virtual_azs"],
             constraints["primary_replica_opposite_az_pair"],
             constraints["port_collision_checked"],
@@ -399,18 +402,6 @@ def _node(
             "cluster_node_timeout_ms": config["cluster"].get("cluster_node_timeout_ms"),
         },
     }
-
-
-def _replica_az(azs: list[str], primary_az: str, shard_index: int, replica_index: int) -> str:
-    if len(azs) == 1:
-        return azs[0]
-    candidates = [az for az in azs if az != primary_az]
-    return candidates[(shard_index + replica_index) % len(candidates)]
-
-
-def _primary_replica_distinct_az(nodes: list[dict[str, Any]]) -> bool:
-    primaries = {node["shard_id"]: node["az_id"] for node in nodes if node["role"] == "primary"}
-    return all(node["az_id"] != primaries[node["shard_id"]] for node in nodes if node["role"] == "replica")
 
 
 def _primary_replica_opposite_az_pair(nodes: list[dict[str, Any]], azs: list[str]) -> bool:

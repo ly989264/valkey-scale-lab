@@ -42,8 +42,8 @@ def main() -> int:
         errors.append("dry-run plan required but constraints.dry_run is not true")
     if constraints.get("default_node_cap") != 100:
         errors.append("constraints.default_node_cap must be 100")
-    if constraints.get("primary_replica_distinct_az") is not True:
-        errors.append("constraints.primary_replica_distinct_az must be true")
+    if constraints.get("shard_az_balanced") is not True:
+        errors.append("constraints.shard_az_balanced must be true")
 
     for field in ["logical_id", "container_name", "data_dir", "log_dir"]:
         values = [n.get(field) for n in nodes if n.get(field)]
@@ -63,6 +63,7 @@ def main() -> int:
         if duplicates:
             errors.append(f"host {host}: duplicate ports {duplicates[:10]}")
 
+    az_ids = sorted({n.get("az_id") for n in nodes if n.get("az_id")})
     by_shard: dict[str, list[dict]] = defaultdict(list)
     for n in nodes:
         by_shard[n.get("shard_id", "")].append(n)
@@ -72,10 +73,16 @@ def main() -> int:
         if len(primaries) != 1:
             errors.append(f"shard {shard}: expected exactly 1 primary, got {len(primaries)}")
             continue
-        primary_az = primaries[0].get("az_id")
-        for r in replicas:
-            if r.get("az_id") == primary_az:
-                errors.append(f"shard {shard}: replica {r.get('logical_id')} shares AZ with primary {primary_az}")
+        # P1, per-shard AZ balance: a shard's members are spread evenly over the
+        # AZs, so its per-AZ counts differ by at most one. At one replica over
+        # two AZs this is the old "replica is not in the primary's AZ" check; at
+        # four replicas it is 3/2, and a check demanding distinct AZs would call
+        # the placement the runtime actually starts a violation.
+        member_counts = Counter(n.get("az_id") for n in shard_nodes)
+        for az in az_ids:
+            member_counts.setdefault(az, 0)
+        if member_counts and max(member_counts.values()) - min(member_counts.values()) > 1:
+            errors.append(f"shard {shard}: AZ placement is not balanced across the shard: {dict(member_counts)}")
         if len(replicas) == 1:
             azs = {n.get("az_id") for n in shard_nodes}
             if len(azs) != 2:

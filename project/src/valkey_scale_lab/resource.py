@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab import placement
 from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout
 from valkey_scale_lab.config.validation import (
     is_exact_2000_local_full_flow_profile,
@@ -722,7 +723,7 @@ def _preflight_density_nodes(config: dict[str, Any]) -> list[dict[str, Any]]:
                 "logical_id": f"{shard_id}-primary",
                 "shard_id": shard_id,
                 "role": "primary",
-                "az_id": azs[shard % len(azs)],
+                "az_id": placement.primary_az(azs, shard),
                 "host_id": host_ids[ordinal % len(host_ids)],
                 "ordinal": ordinal,
                 "client_port": int(cluster["port_base"]) + ordinal,
@@ -738,7 +739,7 @@ def _preflight_density_nodes(config: dict[str, Any]) -> list[dict[str, Any]]:
                     "logical_id": f"{shard_id}-replica-{replica:02d}",
                     "shard_id": shard_id,
                     "role": "replica",
-                    "az_id": _preflight_replica_az(azs, azs[shard % len(azs)], shard, replica),
+                    "az_id": placement.replica_az(azs, shard, replica),
                     "host_id": host_ids[ordinal % len(host_ids)],
                     "ordinal": ordinal,
                     "client_port": int(cluster["port_base"]) + ordinal,
@@ -747,13 +748,6 @@ def _preflight_density_nodes(config: dict[str, Any]) -> list[dict[str, Any]]:
             )
             ordinal += 1
     return nodes
-
-
-def _preflight_replica_az(azs: list[str], primary_az: str, shard: int, replica: int) -> str:
-    if len(azs) == 1:
-        return azs[0]
-    candidates = [az for az in azs if az != primary_az]
-    return candidates[(shard + replica) % len(candidates)]
 
 
 def _disk_check(path: Path) -> dict[str, Any]:

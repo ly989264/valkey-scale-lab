@@ -156,11 +156,11 @@
     "constraints": {
       "type": "object",
       "required": [
-        "primary_replica_distinct_az",
+        "shard_az_balanced",
         "default_node_cap"
       ],
       "properties": {
-        "primary_replica_distinct_az": {
+        "shard_az_balanced": {
           "type": "boolean"
         },
         "default_node_cap": {

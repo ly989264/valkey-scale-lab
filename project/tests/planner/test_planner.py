@@ -14,7 +14,7 @@ def test_multi_az_plan_places_replicas_apart(tmp_path: Path) -> None:
     plan = create_plan_file("templates/configs/local_az_3x2.yaml", tmp_path / "cluster_plan.json")
     assert plan["node_count"] == 6
     assert plan["azs"] == ["az-a", "az-b"]
-    assert plan["constraints"]["primary_replica_distinct_az"] is True
+    assert plan["constraints"]["shard_az_balanced"] is True
     assert plan["constraints"]["two_virtual_azs"] is True
     assert plan["constraints"]["primary_replica_opposite_az_pair"] is True
     by_shard: dict[str, list[dict]] = defaultdict(list)
@@ -54,12 +54,23 @@ def test_az_balancing_is_deterministic(tmp_path: Path) -> None:
     assert plan["nodes"] == plan2["nodes"]
 
 
-def test_multi_replica_plan_keeps_replicas_away_from_primary_az(tmp_path: Path) -> None:
+def test_multi_replica_plan_balances_each_shard_across_the_azs(tmp_path: Path) -> None:
+    """P1 and P2 at three members per shard.
+
+    This test used to assert that every replica sits outside its primary's AZ,
+    which is the placement the planner alone produced and the runtime never did.
+    Under the unified policy a three-member shard over two AZs is 2/1, so the
+    old assertion describes a topology no run would start. What survives, and is
+    the property the operator asked for, is that the split is even within the
+    shard and that at least one replica is still in the other AZ.
+    """
+
     config = tmp_path / "multi_replica.yaml"
     text = Path("templates/configs/local_az_3x2.yaml").read_text(encoding="utf-8")
     config.write_text(text.replace("replicas_per_shard: 1", "replicas_per_shard: 2"), encoding="utf-8")
     plan = create_plan_file(config, tmp_path / "cluster_plan.json")
     assert plan["node_count"] == 9
+    assert plan["constraints"]["shard_az_balanced"] is True
     by_shard: dict[str, list[dict]] = defaultdict(list)
     for node in plan["nodes"]:
         by_shard[node["shard_id"]].append(node)
@@ -67,7 +78,12 @@ def test_multi_replica_plan_keeps_replicas_away_from_primary_az(tmp_path: Path) 
         primary = [node for node in nodes if node["role"] == "primary"][0]
         replicas = [node for node in nodes if node["role"] == "replica"]
         assert len(replicas) == 2
-        assert all(replica["az_id"] != primary["az_id"] for replica in replicas)
+        counts = Counter(node["az_id"] for node in nodes)
+        assert sorted(counts.values()) == [1, 2]
+        assert any(replica["az_id"] != primary["az_id"] for replica in replicas)
+    # P2: the fleet's own per-AZ totals stay even at an odd shard count.
+    totals = Counter(node["az_id"] for node in plan["nodes"])
+    assert max(totals.values()) - min(totals.values()) <= 1
 
 
 def test_1000_node_plan_is_opt_in_dry_run(tmp_path: Path) -> None:
@@ -241,7 +257,7 @@ def test_single_az_replicas_allowed_with_non_ha_marker(tmp_path: Path) -> None:
     plan = create_plan_file(config, tmp_path / "single_non_ha.json")
     assert plan["node_count"] == 6
     assert plan["constraints"]["non_ha_single_az"] is True
-    assert plan["constraints"]["primary_replica_distinct_az"] is True
+    assert plan["constraints"]["shard_az_balanced"] is True
 
 
 def test_numeric_host_capacity_is_enforced(tmp_path: Path) -> None:
@@ -303,3 +319,176 @@ workload:
   enabled: false
 faults: []
 """.strip() + "\n"
+
+
+def _shard_shape_config(shards: int, replicas_per_shard: int, azs: list[str]) -> dict:
+    from copy import deepcopy
+
+    from valkey_scale_lab.config.validation import load_effective_config
+
+    config = deepcopy(load_effective_config("templates/configs/scale_50.yaml"))
+    config["cluster"]["shards"] = shards
+    config["cluster"]["replicas_per_shard"] = replicas_per_shard
+    config["network"]["azs"] = list(azs)
+    config["network"]["virtual_az_mode"] = "single" if len(azs) == 1 else "multi"
+    return config
+
+
+def _az_by_logical_id(nodes: list[dict]) -> dict[str, str]:
+    return {str(node["logical_id"]): str(node["az_id"]) for node in nodes}
+
+
+def test_every_module_places_a_shard_in_the_same_azs() -> None:
+    """The four node models this repository builds must agree about placement.
+
+    They did not. The planner, the semantic validator and the resource preflight
+    put every replica in an AZ other than its primary's; the runtime - which is
+    what actually starts the fleet - walked the AZ list from the shard's own
+    index and did not exclude the primary's AZ. All four agree at one replica per
+    shard, which is every run ever taken, so nothing disagreed out loud; at two
+    or more the started topology contradicted the plan the constraints were
+    asserted against.
+    """
+
+    from valkey_scale_lab.config.validation import _semantic_density_nodes
+    from valkey_scale_lab.resource import _preflight_density_nodes
+    from valkey_scale_lab.runtime.docker_runtime import _node_specs
+
+    for azs in (["az-a"], ["az-a", "az-b"], ["az-a", "az-b", "az-c"]):
+        for shards in (3, 4, 5, 6, 7):
+            for replicas in (0, 1, 2, 3, 4):
+                config = _shard_shape_config(shards, replicas, azs)
+                models = {
+                    "semantic": _az_by_logical_id(_semantic_density_nodes(config)),
+                    "preflight": _az_by_logical_id(_preflight_density_nodes(config)),
+                    "runtime": _az_by_logical_id(
+                        _node_specs(config, "local_full_flow", "local_full_flow", "agreement")
+                    ),
+                    "planner": _az_by_logical_id(
+                        _planner_placement(shards, replicas, azs)
+                    ),
+                }
+                reference = models["semantic"]
+                for name, model in models.items():
+                    assert model == reference, (
+                        f"{name} disagrees at {shards}x{replicas} over {len(azs)} AZs"
+                    )
+
+
+def _planner_placement(shards: int, replicas: int, azs: list[str]) -> list[dict]:
+    """The AZ the planner's own loop assigns, without its refusals."""
+
+    from valkey_scale_lab import placement
+
+    nodes = []
+    for shard in range(shards):
+        shard_id = f"shard-{shard:04d}"
+        nodes.append({"logical_id": f"{shard_id}-primary", "az_id": placement.primary_az(azs, shard)})
+        for replica in range(replicas):
+            nodes.append(
+                {
+                    "logical_id": f"{shard_id}-replica-{replica:02d}",
+                    "az_id": placement.replica_az(azs, shard, replica),
+                }
+            )
+    return nodes
+
+
+def test_the_unified_policy_keeps_both_balance_properties() -> None:
+    """P1 per-shard and P2 global, over the shapes the ladder and M4 will use.
+
+    The all-opposite policy this replaced satisfies P1 only at one replica: five
+    members over two AZs land 1/4, not 3/2. It also skews the fleet's own totals
+    by `replicas - 1` at an odd shard count, which is why odd shard counts at
+    three or more replicas used to be refused outright with a message naming
+    neither balance nor replicas.
+    """
+
+    from collections import Counter
+
+    from valkey_scale_lab import placement
+
+    for azs in (["az-a", "az-b"], ["az-a", "az-b", "az-c"]):
+        for shards in (3, 5, 6, 7, 10, 40, 256):
+            for replicas in (1, 2, 3, 4):
+                nodes = _planner_placement(shards, replicas, azs)
+                for shard in range(shards):
+                    shard_id = f"shard-{shard:04d}"
+                    members = [placement.primary_az(azs, shard)] + [
+                        placement.replica_az(azs, shard, replica) for replica in range(replicas)
+                    ]
+                    counts = [members.count(az) for az in azs]
+                    # P1: the shard's members are spread evenly over the AZs.
+                    assert max(counts) - min(counts) <= 1, (shard_id, shards, replicas, len(azs), counts)
+                    # At more than one AZ, at least one replica is outside the
+                    # primary's AZ - the property the old constraint name meant.
+                    if len(azs) > 1 and replicas:
+                        assert any(az != members[0] for az in members[1:])
+                # P2: the fleet's own per-AZ totals stay within one of each other.
+                totals = Counter(node["az_id"] for node in nodes)
+                for az in azs:
+                    totals.setdefault(az, 0)
+                assert max(totals.values()) - min(totals.values()) <= 1, (shards, replicas, dict(totals))
+                # Exact at an even split, which is the operator's 6x5 example.
+                if shards % len(azs) == 0:
+                    assert len(set(totals.values())) == 1
+
+
+def _old_replica_az(azs: list[str], primary_az: str, shard: int, replica: int) -> str:
+    """The planner's `_replica_az` as it stood before the unification."""
+
+    if len(azs) == 1:
+        return azs[0]
+    candidates = [az for az in azs if az != primary_az]
+    return candidates[(shard + replica) % len(candidates)]
+
+
+def test_one_replica_placement_is_byte_identical_to_the_old_formula() -> None:
+    """The regression the whole program is judged on, at every reachable AZ count.
+
+    `_validate_network` admits exactly one AZ in single mode and exactly two in
+    multi, so one and two are the AZ counts a configuration can have. At both,
+    the unified function returns the same string as the old one for every shard
+    of every one-replica shape, which is what keeps the existing runs' placement
+    unmoved.
+    """
+
+    from valkey_scale_lab import placement
+
+    for azs in (["az-a"], ["az-a", "az-b"]):
+        for shard in range(500):
+            primary = placement.primary_az(azs, shard)
+            assert primary == azs[shard % len(azs)]
+            assert placement.replica_az(azs, shard, 0) == _old_replica_az(azs, primary, shard, 0)
+
+
+def test_three_azs_are_the_one_place_the_two_formulas_differ_at_one_replica() -> None:
+    """Reported rather than reconciled, because it is measured and unreachable.
+
+    multi_replica_support_map.md §7.1 says the unified formula was "spot-checked
+    to agree with the planner's formula at r=1 for both 2 and 3 AZs". At three
+    AZs that is false: from shard 3 onward the two pick different AZs, because
+    the old formula indexes the two *candidates* left after excluding the
+    primary's while this one indexes all three. Both satisfy P1 there - a
+    two-member shard occupies two of three AZs either way - so nothing is wrong
+    with the placement, only with the claim.
+
+    It moves nothing, because no configuration can declare three AZs:
+    `virtual_az_mode: multi` requires exactly two and `single` exactly one.
+    Pinned here so that a later session which widens the AZ count meets the
+    divergence as a decision rather than as a surprise.
+    """
+
+    from valkey_scale_lab import placement
+
+    azs = ["az-a", "az-b", "az-c"]
+    differing = [
+        shard
+        for shard in range(12)
+        if placement.replica_az(azs, shard, 0)
+        != _old_replica_az(azs, placement.primary_az(azs, shard), shard, 0)
+    ]
+    assert differing == [3, 4, 5, 9, 10, 11]
+    for shard in range(12):
+        members = [placement.primary_az(azs, shard), placement.replica_az(azs, shard, 0)]
+        assert len(set(members)) == 2
