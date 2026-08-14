@@ -3211,7 +3211,10 @@ def test_nodehost_runtime_uses_init_for_process_reaping(monkeypatch: pytest.Monk
 
 def test_local_full_flow_fault_recovery_uses_one_strict_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
-    nodes = [{"logical_id": f"node-{index}"} for index in range(6)]
+    # The fixture carries roles because the census is counted from them now
+    # rather than halved out of the node count; three shards of one replica is
+    # the same 3/3 this always asserted.
+    nodes = _shard_shape_nodes(3, 1)
 
     def wait_snapshot(actual_nodes, **kwargs):
         captured["nodes"] = actual_nodes
@@ -4948,3 +4951,27 @@ def test_rolling_restart_health_gate_counts_roles_rather_than_halving() -> None:
     assert docker_runtime._management_matrix_clean_health(
         _clean_cluster_health(50, 10), promoted
     ) is True
+
+
+def test_partition_recovery_wait_counts_roles_rather_than_halving(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, Any] = {}
+
+    def capture(nodes: list[dict[str, Any]], **kwargs: Any) -> None:
+        seen.update(kwargs)
+
+    monkeypatch.setattr(docker_runtime, "_wait_process_snapshot_clean", capture)
+
+    docker_runtime._local_full_flow_wait_clean_cluster_snapshot(
+        _shard_shape_nodes(25, 1), timeout=180.0
+    )
+    assert (seen["expected_primaries"], seen["expected_replicas"]) == (25, 25)
+
+    # All three partition scenarios call this in their recovery `finally`. At
+    # 10x4 the halving form asked for 25 primaries out of 10 and each scenario
+    # would spend its whole 180s failing to see them.
+    docker_runtime._local_full_flow_wait_clean_cluster_snapshot(
+        _shard_shape_nodes(10, 4), timeout=180.0
+    )
+    assert (seen["expected_primaries"], seen["expected_replicas"]) == (10, 40)

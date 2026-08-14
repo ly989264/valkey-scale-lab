@@ -9711,7 +9711,12 @@ def _bounded_cluster_info_excerpt(value: str, limit: int = 1000) -> str:
 
 
 def _local_full_flow_wait_clean_cluster_snapshot(nodes: list[dict[str, Any]], timeout: float) -> None:
-    expected_primaries = len(nodes) // 2
+    # Counted from the planned roles, not halved out of the node count: at more
+    # than one replica per shard `len(nodes) // 2` names a census the cluster
+    # will never report, and all three partition scenarios would spend the whole
+    # 180s below waiting for it. A failover swaps the two roles and preserves
+    # both totals, which is why counting stays right after one.
+    expected_primaries = sum(1 for node in nodes if node["role"] == "primary")
     _wait_process_snapshot_clean(
         nodes,
         expected_nodes=len(nodes),
