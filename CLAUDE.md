@@ -1531,6 +1531,22 @@ map §8's second rung - one Docker **25×1-50 control** and two Docker **10×4-5
 candidates at the same commit, the three-way diff being the design. It needs
 operator approval.
 
+**MR-2 runs on Docker on the workstation, not on the GCE fleet, and the reason
+is not only the one-variable-per-rung rule.** Its control *is* a Docker run, and
+the in-VPC controller has no Docker daemon - that is exactly why
+`repository.all` is 92/92 here and 91/92 there, the missing test being
+`product.integration.docker_runtime_contract`. The baseline the control is
+diffed against, `artifacts/baselines/exact-50-6b6f57fd/`, is a Docker run and
+lives here; the native baselines are a different environment and live on the
+controller. Running candidates on the fleet would split one three-way diff
+across two machines and two baseline classes, which is what the design exists to
+avoid. MR-2 changes the replica count and MR-3 changes the runtime; doing both
+at once would leave any failure with two candidate causes, the same argument
+that made M3-A-1 pick arm64. The failure MR-2 is watching for (map §3.1) is on
+the backend-neutral failover path, so Docker surfaces it - and surfaces it in
+~880s with no ssh, no eight-host residue check and no fd-limit wrapper, which
+matters because it is the rung most likely to need re-running.
+
 1. **The fleet arithmetic changed and the map's table is superseded.** Compiled
    through `validate_semantics`, `build_cluster_plan` *and* `_node_specs` plus
    `_process_nodehosts`, so the plan and the run agree:
