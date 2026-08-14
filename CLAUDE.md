@@ -1383,8 +1383,245 @@ Proven by two hermetic tests that fail without it and by a second
 `./gate milestone m3` PASS 8/8 whose three runs' verdicts are identical to the
 three before the change.
 
-**M4 is not started and needs approval, and it is blocked on arithmetic before
-it is blocked on anything else.** Compiled at HEAD against `real_ecs_200.yaml`'s
+**Operator update, 2026-08-14: M4's goal is one target, not a ladder — 256
+primaries with 4 replicas each, 1280 valkey-servers total.** The 500/1000/2000
+paragraph below is superseded and kept because it documents the knobs. Compiled
+at HEAD the same day, from a dry-run scale-projection config derived from
+`real_ecs_200.yaml` with `cluster.shards: 256`, `cluster.replicas_per_shard: 4`
+(no new config vocabulary needed):
+
+- **The plan compiles at shipped knobs.** 1280 nodes, 640 per AZ, **52
+  nodehosts (26 per AZ), 24-25 logical nodes each**, inside `max_nodehosts: 64`
+  — so the exact-2000 plan-time refusal below does not apply to 1280 and M4 is
+  no longer blocked on the density arithmetic. One nodehost per host means
+  **52 ECS hosts** against today's 8, which is the provisioning decision.
+- **What actually blocks a real 1280 run is the safety contract, three ways**,
+  all in `config/validation.py`: `REAL_EXECUTION_ABOVE_200_FORBIDDEN` (above
+  200 must be dry-run), `WORKLOAD_ABOVE_200_FORBIDDEN`, and the ≥1000 block
+  (`MISSING_1000_*`), which is dry-run-only by construction. The only
+  real-execution exceptions are exact-200 (`scale_200`'s bounded exception) and
+  exact-2000 — and the 2000 one requires `provider: docker`, so it could not
+  serve the fleet even at its own node count. Admitting a real native
+  exact-1280 is a semantic change to a validation contract; a bounded-exception
+  profile in the shape `scale_200` already has is the natural form, and by the
+  working rules it is reported before it is made.
+- **Placement, measured on the compiled plan:** no shard places two members on
+  one nodehost (0 of 256), and `_replica_az` puts **all four replicas in the AZ
+  opposite their primary** — every shard splits 1/4, so losing one AZ leaves
+  half the shards with a promoted replica and the other half with a primary and
+  zero surviving replicas. At `replicas_per_shard: 1` the same rule is just the
+  cross-AZ pair; whether 1/4 is acceptable at four replicas is an operator
+  question the old ladder never posed.
+- **`milestones/m4/milestone.json` still names 500/1000/2000** in its goal and
+  three `scale.exact.*` criteria; rewriting it to the 1280 goal is the first
+  piece of M4 definition work, not done conversationally.
+- Every fault-lane constant (9/12/15), RTO band and formation-dwell number was
+  measured at `replicas_per_shard: 1`; none of them transfers to 5-member
+  shards by assumption.
+
+**The multi-replica prerequisite is explored and designed; read
+`project/docs/multi_replica_support_map.md` before implementing any of it.**
+Written 2026-08-14 from four independent code sweeps plus real planner
+compiles, no code changed. In one paragraph: two hard `node_count // 2` breaks
+(`_management_matrix_clean_health` at `docker_runtime.py:11785` and
+`_local_full_flow_wait_clean_cluster_snapshot` at `:9713`) fail every r≥2 run;
+the runtime's `_node_specs` AZ formula contradicts the planner's at r≥2 (map
+§2.3/§7.1 — **decided 2026-08-14 by the operator's own requirement: a shard's
+members evenly distributed across all AZs (3/2 at five members over two) AND
+the fleet's per-AZ totals even**, which the runtime's alternating formula
+produces exactly (computed against the operator's own 6-shard example,
+15/15); the plan constraint is renamed to assert per-shard AZ balance, and
+§7.1 carries both properties as MR-1's acceptance criteria); the absent
+`cluster-migration-barrier`/`cluster-allow-replica-migration` directives let
+Valkey auto-migrate replicas into a permanent `SemanticFailure` at r≥2 (§2.4);
+the two M2 lanes hardcode the promotion winner and are proposed deferred
+(§2.5/§7.4); odd shard counts are refused at r≥3 (§2.6). The fault lane's
+9/12/15 is invariant under replica count **by design**; the rolling-restart
+batcher, `redundancy_recovery`, the affected-shard observer, schemas, evidence
+and the actuator are already r-generic. Declared deltas for r≥2 runs are map
+§5 (management rows ≈980 at 10×4 by a closed-form law checked against both
+frozen baselines; canary count = shard count; r=4 RTO is a new band with no
+prior). The run ladder is §8: MR-1 fixes + r=1 no-op proof, MR-2 Docker
+10×4-50 with a same-commit 25×1 control, MR-3 native on the existing 8-host
+fleet (10×4-50 ×2, then 40×4-200 at shipped knobs). Every rung fits gce-m3b as
+provisioned; only M4 itself provisions.
+
+### Stage MR-1 is done, 2026-08-14. MR-2 needs approval and the correct state now is idle
+
+Nine commits, `c72dd986` through `7d239597`, each with its own observation and
+each leaving `repository.all` green. Read
+`project/docs/multi_replica_mr1_slice_map.md`: §1 is the map's own arithmetic
+being wrong and how running it said so, §3 each change, §4 the hermetic proof,
+§5 the two real Docker exact-50 runs and §5.1 the mark that is not what the
+brief expected, §6 what MR-2 inherits.
+
+- **The map's central arithmetic was wrong, and it would have blocked MR-2's
+  first rung at plan time.** §1 says 10×4 needs `nodehosts_per_az: 4` and gets
+  0/10 colliding shards, with a caveat that its compiles went through the
+  planner's AZ assignment and that "the knob conclusion holds under both
+  formulas". Measured over `nodehosts_per_az` 1 to 16: under the decided §7.1
+  policy the **run path collides at every value**, at 10×4 and at 40×4, so more
+  fault domains never help. The cause is not the AZ formula alone - within an AZ
+  the nodehost assignment strided by position in the ordinal-sorted list, and
+  `_node_specs`, the semantic validator and the resource preflight all place
+  every primary before every replica, so a shard's primary sits in the leading
+  block and its same-AZ replicas in the tail. The planner interleaves instead,
+  which is why its compiles were clean and a run's would not have been.
+  `4f02c36e` walks an AZ a shard at a time where striding would collide, and
+  after it the safe threshold is exactly `ceil((replicas+1)/AZs)` for both
+  orderings - so §7.5's minimum is **sufficient as well as necessary**, which it
+  was not. §7.1's "implemented by unifying on that formula, not by writing a new
+  placement algorithm" is therefore false, and this was reported rather than
+  improvised around.
+- **`placement.py` is the one AZ decision now.** Four modules answered it
+  independently, not the three the map named - `resource.py`'s
+  `_preflight_replica_az` was a fourth copy. P1 (per-shard balance) and P2
+  (global balance) hold **by construction**: a shard takes `replicas+1`
+  consecutive AZ indices from its own, and consecutive residues cannot differ in
+  frequency by more than one. That dissolves map §2.6 structurally rather than
+  needing a better message.
+- **`primary_replica_distinct_az` is renamed `shard_az_balanced`**, asserting
+  P1. The precondition §7.1 set was checked first: `cluster_plan.json` appears
+  in **no** view of `scripts/diff_stage_artifacts.py`. `cluster_plan.schema.json`,
+  `scripts/assert_plan_constraints.py` and the planner tests moved with it.
+- **§7.1's spot-check is wrong at three AZs.** The unified and old formulas
+  diverge from shard 3 onward. It moves nothing - `_validate_network` admits
+  exactly one AZ or exactly two - and it is pinned by its own test rather than
+  left in prose. MR-1 was told to prove that identity with a test instead of
+  carrying it, and the test is what found it.
+- **The topology pin and the replica bound landed as designed.**
+  `cluster-allow-replica-migration no` at `replicas_per_shard >= 2` only;
+  `REPLICAS_PER_SHARD_ABOVE_MAX` unconditional and `REPLICAS_PER_SHARD_BELOW_MIN`
+  only for real execution, naming the two replica-free shapes that still ship.
+- **Map §4's "already r-generic" parts are now exercised** at four replicas -
+  `redundancy_recovery` (which had zero tests), the affected-shard observer at
+  four survivors, and formation at 6×4 and 10×4. Nothing there needed fixing;
+  "already correct" was simply a claim nobody could check.
+
+- **Proven:** `./gate suite repository.all` **92/92** at final HEAD
+  (`gate-20260814T090309Z-f0d2240a`); catalog still **99**, M1 plan still **91**,
+  pytest tree **824 → 845**. Every regression test mutation-checked - twelve
+  mutations, each reverted and watched to fail. Two r=1 no-op proofs taken
+  against the frozen baselines themselves rather than a second copy of the code:
+  `_node_specs` plus `_process_nodehosts` reproduce both frozen runs'
+  node-to-nodehost map exactly (**50 of 50**, **200 of 200**), and
+  `_process_config_text` reproduces the frozen exact-50's
+  `node_configs/shard-0000-primary.conf` **byte for byte**. Two consecutive real
+  Docker exact-50, **PASS 894.81s** and **PASS 841.09s**: `run_verdict` 12/12 OK,
+  `tool_errors` empty, cleanup 21 rows with `resources_remaining` empty, no
+  `ERROR` in any artifact, zero residue asked of Docker from outside, fault lane
+  **9/12/15**, RTO **48.96s** and **47.20s**. Marks `runtime_start` 7/7,
+  `cluster_form` 5/5, `management_matrix` 6/8 with both inherited deltas at their
+  declared shapes (+14 rows, `cluster_migrate_keys` 4 → 18, three kinds changed
+  and fourteen unchanged) and no third, `cleanup` 2/2 - and **the two runs are
+  identical to each other in every view of every stage**. `nodehost_density_plan`
+  byte-identical to the baseline in both, and the topology pin in zero of the 100
+  node configs.
+
+**`fault_matrix` scores 4/6, not the 5/6 the task named, and that is not a
+regression.** 5/6 predates the 2026-08-13 failover/RTO work in this branch, whose
+own record above declares `fault_matrix` **4/6**, one new differing view.
+Verified at field level rather than assumed: the second differing view differs by
+**exactly one added key, `failover_timeline`**, that work's own declared
+addition. Anyone citing 5/6 for a Docker exact-50 is quoting a pre-2026-08-13
+number.
+
+**What MR-2 inherits, compiled at this HEAD rather than remembered.** MR-2 is
+map §8's second rung - one Docker **25×1-50 control** and two Docker **10×4-50**
+candidates at the same commit, the three-way diff being the design. It needs
+operator approval.
+
+1. **The fleet arithmetic changed and the map's table is superseded.** Compiled
+   through `validate_semantics`, `build_cluster_plan` *and* `_node_specs` plus
+   `_process_nodehosts`, so the plan and the run agree:
+
+   | shape | knob | nodehosts (plan = run) | per-AZ nodes | shards colliding |
+   |---|---|---|---|---|
+   | 25×1-50 control | shipped | 4 | 25/25 | 0 of 25 |
+   | 10×4-50 | shipped (`nodehosts_per_az: 2`) | **6** | 25/25 | 0 of 10 |
+   | 10×4-50 | `nodehosts_per_az: 4` | 8 | 25/25 | 0 of 10 |
+
+   Both 10×4 forms validate clean and plan clean. The map's §1 row assumed 4/AZ
+   was **required**; it is not. Which one MR-2 uses must be stated in its
+   configuration rather than inferred, because it moves `nodehost_density_plan`,
+   every `nodehost_id`, the fault matrix's targets and the cleanup row count.
+2. **No multi-replica configuration exists anywhere.** Nothing under
+   `templates/configs/` has `replicas_per_shard` other than 1, and MR-1
+   deliberately wrote none - the first one is MR-2's. `real.local.full-flow`
+   takes `nodes` and `config` and admits 30..200, so a 50-node multi-replica
+   config needs no new catalog entry and no exception profile.
+3. **The declared deltas, with the batch geometry now compiled rather than
+   predicted.** The method reproduces the frozen baseline exactly (14 batches,
+   max concurrent 4), so these are trustworthy:
+
+   | quantity | 25×1-50 | 10×4-50 (6 nodehosts) | 10×4-50 (8 nodehosts) |
+   |---|---|---|---|
+   | rolling-restart batches, each operation | 14 | **13** | **10** |
+   | max concurrent restarts | 4 | **6** | **8** |
+   | `management_command_log` rows by map §5.1's law | 1602 (actual 1592) | **≈968** | **≈956** |
+   | `cleanup_actions` rows (5×nodehosts+1) | 21 (measured) | **31** | **41** |
+   | Sentinel `canary_count` = shard count | 25 (measured) | **10** | **10** |
+
+   `add_replica`'s verify row `safe_path` becomes
+   `"40_replicas_observed_replicating_for_10_primaries"` (map §5.2). r=4 RTO is
+   a **new band with no prior**, and formation dwell under 4-way sync fan-in is
+   measured against nothing.
+4. **Map §3.1 is still the predicted intermittent failure and MR-1 did not touch
+   it**, deliberately: the down-window full validation runs with
+   `require_replica_connected=True` and `convergence_timeout=0.0`, exempting only
+   the killed node. It is vacuous at one replica and meets three resyncing
+   siblings at four. It is verdict-adjacent, so it belongs to the rung that can
+   observe it - watch it first.
+5. **Map §3.2's promotion-winner artifact is untouched and its §6 test was
+   deliberately not written**, because it asserts a fix outside MR-1's scope: at
+   four replicas `replacement_logical_id` names the predicted winner rather than
+   the observed one about three times in four, with nothing failing.
+6. **The planner and the runtime still order nodes differently** - the planner
+   interleaves each primary with its replicas, the other three models block every
+   primary first - so they assign different ordinals, and therefore different
+   `client_port`s, to the same logical node. Pre-existing, predating all of this,
+   and unobservable at one replica. Worth knowing because it is what made the
+   map's compiles disagree with a run's, and because **the validator is the one
+   that matches the runtime**, so where the two disagree about fault-domain
+   safety the validator is right. Making them agree would move
+   `cluster_plan.json`'s ports at one replica and is nobody's yet.
+7. **Neither frozen baseline nor any `templates/configs/` file was touched**, and
+   multi-replica runs are a **new baseline class** - not diffable against the
+   one-replica baselines in `nodehost_density_plan`, `state`, the fault matrix's
+   targets or `cleanup_report`. That is why MR-2's control run exists.
+
+**The prerequisite the operator named on 2026-08-14: no one-primary-multi-
+replica cluster has ever been run, local or native.** Every shipped config is
+`replicas_per_shard: 1`. Measured the same day: a 10-shard ×4-replica exact-50
+config is **refused at plan time** at shipped knobs -
+`NODEHOST_DENSITY_PLAN: primary and replica for at least one shard share a
+nodehost fault domain` - because 2 nodehosts per AZ cannot hold a shard's four
+same-AZ replicas. The predicate (`_primary_replica_nodehost_safe`) is stricter
+than its message: *every* member of a shard must be on a distinct nodehost.
+With `runtime.nodehosts_per_az: 4` the same config validates and plans - 8
+nodehosts, 6-7 nodes each, 0 of 10 shards colliding - so the smallest native
+multi-replica exact-50 needs **8 hosts, exactly the gce-m3b fleet as
+provisioned**, and its Docker form runs locally with 8 nodehost containers. 50
+nodes is under the 100 cap, so no exception profile is needed on either
+provider, and the existing `real.local.full-flow`/`real.ecs.full-flow` entries
+take the config as a parameter. A **40×4 = 200** shape also plans at shipped
+knobs in the Gate's own capability context (measured through
+`build_cluster_plan` with `local_full_flow`/`local_full_flow`, since the bare
+`cli plan` refuses every 200-node config including the unmodified `scale_200` -
+the bounded exception only applies in that context): 8 nodehosts, exactly 25
+nodes each, 0 of 40 shards colliding, and `_is_exact_200_bounded_exception`
+carries no shard-shape term - so the existing eight-host fleet holds a
+multi-replica exact-200 with no knob change. Two cautions: the changed knob moves
+`nodehost_density_plan`, every `nodehost_id`, the fault matrix's targets and
+the cleanup row count, so multi-replica runs are a **new baseline class**, not
+diffable against the frozen 1-replica baselines in those views; and while
+nothing is known to hardcode one replica (`redundancy_recovery` and the
+failover observer compute `expected_replicas_per_shard` from the shard's own
+membership), nothing has ever exercised more than one, and this project's
+record is that only runs find the defects.
+
+*(Superseded 2026-08-14, kept for the knobs and the deviation-rule shape.)*
+Compiled at HEAD against `real_ecs_200.yaml`'s
 shipped knobs (`nodehosts_per_az: 2`, `max_logical_nodes_per_nodehost: 25`,
 `max_nodehosts: 64`), one nodehost per host:
 
