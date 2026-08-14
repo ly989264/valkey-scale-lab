@@ -1560,6 +1560,24 @@ fix.** `data_address` and `client_endpoint.address` coincide on gce-m3b, so the
 old broken comparison would have held there; the evidence for that fix stays
 MR-2's Docker runs and its four mutation-checked tests.
 
+**Two measuring instruments moved into `scripts/` at `92e05fcc`**, because the
+map cites results that could not otherwise be reproduced and MR-2 had already
+hand-rolled one of them once: `diff_artifact_vocabulary.py` (what stays
+comparable when the *shape* changes, since the view scores stop carrying
+information) and `reconstruct_failover_timeline.py` (a pre-`failover_timeline`
+run's stage terms, from rounds the lane always retained). Both are checked
+against **MR-2's published numbers** rather than the scratchpad they came from,
+using its three Docker runs, which are still on the workstation.
+
+**The controller went unreachable at the end of the session** - `34.142.156.225`
+port 22 stopped answering after the runs and the commits were done, which is the
+recorded behaviour of a stopped instance (its external IP is ephemeral; ask the
+operator for the new address and check the host key rather than trusting one).
+Nothing is lost: it authors nothing, its `project/` tree was clean and synced at
+`b1dde527`, and the two later commits are workstation-only docs and scripts. But
+**it is two commits behind, so rsync before running anything there**, and MR-3's
+four run directories (~350 MB) exist only on that disk.
+
 ### Stage MR-2 is done, 2026-08-14
 
 Two commits, `c8021123` (the configuration) and `2972b736` (the defect the runs
