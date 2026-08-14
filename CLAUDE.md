@@ -1446,6 +1446,106 @@ prior). The run ladder is §8: MR-1 fixes + r=1 no-op proof, MR-2 Docker
 fleet (10×4-50 ×2, then 40×4-200 at shipped knobs). Every rung fits gce-m3b as
 provisioned; only M4 itself provisions.
 
+### Stage MR-2 is done, 2026-08-14. MR-3 needs approval and the correct state now is idle
+
+Two commits, `c8021123` (the configuration) and `2972b736` (the defect the runs
+found). Read `project/docs/multi_replica_mr2_slice_map.md`: §3 is the defect and
+why reading could not have found it, §5 the declared deltas measured, §6 the
+founding data, §7 the determinism result and the one place it does not hold, §8
+what MR-3 inherits.
+
+**`templates/configs/local_10x4_50.yaml` is the first multi-replica
+configuration in the repository**, at `nodehosts_per_az: 4` giving **8
+nodehosts** - stated in the file rather than implied. The shape also plans clean
+at the shipped 2 with 6 nodehosts; 4 was taken because it is the nodehost count
+MR-3's native 10×4-50 and 40×4-200 both land on against gce-m3b as provisioned,
+so every multi-replica rung stays diffable against every other in the four views
+the knob moves. Compiled through the run path: 8 nodehosts holding 7,7,6,6,6,6,
+6,6, **zero of ten shards colliding**, every shard **3/2** across the AZs and
+the fleet **25/25** - the §7.1 policy observed at four replicas for the first
+time.
+
+- **The first 10×4 run failed, and the cause is deterministic rather than the
+  intermittent one that was predicted.** `AffectedShardObserver._relationship`
+  asked whether a surviving replica names the promoted node as its primary by
+  comparing the replica's `ROLE` reply against **the observer's own dial
+  address**. A replica reports the address its primary *announced*; under Docker
+  that is the nodehost's network address while the observer dials a published
+  port on `127.0.0.1`, so the comparison could never hold. Measured from the
+  passing control's own artifacts: every `primary_host` anywhere in that run is
+  `172.18.0.x`, and `shard-0000-replica-00` records
+  `{"primary_host": "172.18.0.5", "primary_port": 7400}` against a primary whose
+  `container_ip` is 172.18.0.5, `client_port` 7400 and `host` 127.0.0.1 - **the
+  announced port coincides, the host does not**. At r=1 the affected shard has
+  one survivor, which promotes, so the branch is unreachable: 95 rounds in the
+  control, never entered. `NodeEndpoint` now carries `announced_host` from
+  `container_ip`, which is the peer address on **both** backends, so no backend
+  branch was needed; the lookup is off the survivor set rather than the row, so
+  **no artifact key was added and no r=1 diff view moves**.
+- **Support map §3.1 is still unobserved and remains live.** It predicted the
+  down-window full validation refusing three resyncing siblings; what happened
+  is one level earlier and `full_validation` was **never called**. The two are
+  told apart by which message appears, and the map records both. Both candidates
+  then passed that validation with three resyncing siblings - not a disproof of
+  an intermittent hazard, and the native rung with real latency is the likelier
+  place for it.
+- **Support map §5.2 is wrong.** The `safe_path` it predicts
+  (`"40_replicas_observed_replicating_for_10_primaries"`) appears in no run: its
+  f-string is reached only for `create_cluster` and `meet_nodes`, and
+  `add_replica` hardcodes a method name instead. That dict entry is dead code.
+  Reported, not fixed.
+- **Every other declared delta hit**: `management_command_log` **958** rows
+  against the row law's 956, rolling restart **10 batches / max concurrent 8**
+  (compiled in advance through the real batcher), `cleanup_actions` **41** rows,
+  Sentinel `canary_count` **10**, the §2.4 topology pin in **50 of 50** node
+  configs against 0 at r=1, fault lane **9/12/15** unchanged.
+- **Nothing undeclared, measured as a vocabulary comparison** rather than a
+  score, because 22 of 25 views differ when the shape differs. Every artifact
+  reduced to its generalised key-path set: **control against candidate 1 is
+  identical, zero paths either way**, across 18 artifacts. Two fields vary and
+  neither is a shape change - `cluster_stats_messages_update_*`, which Valkey
+  emits only after UPDATE gossip and which flaps **per run, not with replica
+  count** (absent, present, present, absent across the four runs, and it moves
+  no diff view); and two `TRANSIENT` `CLUSTERDOWN` samples on the Sentinel
+  *control* canary, which is fleet-wide while any shard's slots have no owner.
+- **A multi-replica run is not deterministic in `fault_matrix`, and cannot be.**
+  The two candidates elected different replicas, so `fault_matrix` scores
+  **3/6** candidate-to-candidate where the other four stages are 7/7, 5/5, 8/8,
+  2/2 identical. All three differing views trace to that one cause: the tool's
+  `fault_command_log` diff is **a single token**, the promoted node's name in the
+  `CLUSTER REPLICATE` that restores the killed primary. At r=1 the lane was
+  deterministic *by construction* - one survivor, one possible winner. **So a
+  multi-replica baseline cannot be calibrated candidate-to-candidate in
+  `fault_matrix`**, the same shape as M3-B's `management_matrix` finding, and
+  MR-3 must plan its acceptance around that before running.
+- **Support map §3.2 is now observed rather than predicted**: both runs write
+  `replacement_logical_id: shard-0001-replica-00` while the observed winner was
+  `replica-01` in one of them, with nothing failing. Left untouched by
+  instruction.
+- **Founding data, no prior and compared against nothing.** r=4 primary-kill RTO
+  **45.793 s** and **44.341 s** (r=1 control 48.303 s); formation dwell under
+  4-way sync fan-in **21.74 s** and **19.01 s** against the control's 73.20 s,
+  so **dwell is dominated by shard count, not node count**, and the 240 s
+  no-progress window was never approached. Note the aggregate hides its parts:
+  PFAIL → promotion is **1.5-5.1 s at four replicas against 18.2 s at one**
+  while RTO moves under 10% - the 2026-08-13 lesson recurring under replica
+  count, and a reason for M4 to rank on the split rather than on RTO.
+- **Proven:** `repository.all` **92/92** (`gate-20260814T103600Z-9f2bc703`),
+  catalog still **99**, M1 plan still **91**, pytest tree **845 → 849**. Four
+  mutations each reverted and watched to fail - and the first version of the
+  refusal test strayed only in the port and stayed green when the host
+  comparison was deleted, so it is now two tests straying in one field each.
+  Four real Docker exact-50, all PASS 12/12 with zero residue and no `ERROR`:
+  controls **873.69 s** and 846.17 s, candidates **768.80 s** and **718.56 s**.
+  The two controls sit either side of the fix and are **identical in every view
+  of every stage** (7/7, 5/5, 8/8, 6/6, 2/2), which is the r=1 no-op proof. The
+  control scores 7/7, 5/5, 6/8, 4/6, 2/2 against the frozen baseline with both
+  inherited deltas at their declared shapes and no third, fault lane 9/12/15,
+  RTO 48.303 s.
+
+**No native run was taken and no baseline was frozen** - both are MR-3's.
+Neither frozen baseline nor any existing `templates/configs/` file was touched.
+
 ### Stage MR-1 is done, 2026-08-14. MR-2 needs approval and the correct state now is idle
 
 Nine commits, `c72dd986` through `7d239597`, each with its own observation and
