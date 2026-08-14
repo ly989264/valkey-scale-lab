@@ -419,3 +419,66 @@ def test_a_backend_that_contradicts_the_configuration_is_refused() -> None:
 def test_an_unimplemented_provider_names_the_ones_that_exist() -> None:
     with pytest.raises(ExecutionSelectionError, match="no registered backend"):
         backend_for_provider("nomad")
+
+
+def _codes(report: dict) -> list[str]:
+    return [error["code"] for error in report.get("errors", [])]
+
+
+def test_replica_count_is_bounded_at_one_to_four(tmp_path: Path) -> None:
+    """The operator's standing assumption, enforced where every other cap is.
+
+    Four is unconditional: nothing above it has been designed for, and every
+    constant this product pins was measured at one replica. Below one is refused
+    only for real execution, because today's replica-free configs are dry-run
+    scale projections and single-AZ `non_ha_allowed` plans, and both keep
+    working.
+    """
+
+    base = Path("templates/configs/scale_50.yaml").read_text(encoding="utf-8")
+
+    for replicas, expected in [(1, []), (2, []), (4, []), (5, ["REPLICAS_PER_SHARD_ABOVE_MAX"])]:
+        config = tmp_path / f"replicas_{replicas}.yaml"
+        config.write_text(
+            base.replace("shards: 25", "shards: 10").replace(
+                "replicas_per_shard: 1", f"replicas_per_shard: {replicas}"
+            ),
+            encoding="utf-8",
+        )
+        report = validate_config_file(config, tmp_path / f"report_{replicas}.json")
+        assert _codes(report) == expected, (replicas, _codes(report))
+
+    # Real execution with no replica at all is refused, and the message says
+    # which two shapes are still admitted.
+    config = tmp_path / "replicas_0_real.yaml"
+    config.write_text(
+        base.replace("shards: 25", "shards: 10").replace("replicas_per_shard: 1", "replicas_per_shard: 0"),
+        encoding="utf-8",
+    )
+    report = validate_config_file(config, tmp_path / "report_0_real.json")
+    assert "REPLICAS_PER_SHARD_BELOW_MIN" in _codes(report)
+
+
+def test_the_two_replica_free_shapes_that_already_ship_are_untouched(tmp_path: Path) -> None:
+    """A dry-run projection and a single-AZ non-HA plan both keep validating."""
+
+    projection = tmp_path / "projection.yaml"
+    projection.write_text(
+        Path("templates/configs/scale_1000_dryrun_optin.yaml")
+        .read_text(encoding="utf-8")
+        .replace("shards: 500", "shards: 1000")
+        .replace("replicas_per_shard: 1", "replicas_per_shard: 0"),
+        encoding="utf-8",
+    )
+    report = validate_config_file(projection, tmp_path / "projection.json")
+    assert "REPLICAS_PER_SHARD_BELOW_MIN" not in _codes(report)
+
+    single = tmp_path / "single_non_ha.yaml"
+    text = Path("templates/configs/single_mac_6node.yaml").read_text(encoding="utf-8")
+    single.write_text(
+        text.replace("  node_memory_limit_mb: 128", "  node_memory_limit_mb: 128\n  non_ha_allowed: true")
+        .replace("replicas_per_shard: 1", "replicas_per_shard: 0"),
+        encoding="utf-8",
+    )
+    report = validate_config_file(single, tmp_path / "single.json")
+    assert "REPLICAS_PER_SHARD_BELOW_MIN" not in _codes(report)

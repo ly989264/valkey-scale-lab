@@ -390,6 +390,7 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     )
     exact_2000_local_full_flow = is_exact_2000_local_full_flow_profile(config)
 
+    errors.extend(_validate_replica_count(cluster, network, dry_run))
     if default_cap != 100:
         errors.append(_err("DEFAULT_NODE_CAP", "safety.default_max_nodes must be exactly 100 for development capabilities"))
     if total_nodes > 200:
@@ -469,6 +470,55 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     errors.extend(_validate_failover_timeline_observer(observability))
     errors.extend(_validate_faults(faults))
     return errors
+
+
+MAX_REPLICAS_PER_SHARD = 4
+
+
+def _validate_replica_count(
+    cluster: dict[str, Any], network: dict[str, Any], dry_run: bool
+) -> list[dict[str, Any]]:
+    """Where the operator's "at least 1 and at most 4 replicas" is enforced.
+
+    The schema keeps `minimum: 0`, and the semantic layer owns the policy as it
+    does for every other cap. The upper bound is unconditional: nothing above
+    four has been designed for, and every constant this product pins - the fault
+    lane's 9/12/15, the RTO bands, the formation-dwell window - was measured at
+    one. The lower bound applies only to real execution, because today's
+    replica-less configs are the dry-run scale projections and the single-AZ
+    `non_ha_allowed` plans, and refusing those would refuse work that already
+    ships.
+    """
+
+    errors: list[dict[str, Any]] = []
+    try:
+        replicas = int(cluster.get("replicas_per_shard", 0) or 0)
+    except (TypeError, ValueError):
+        return [_err("REPLICAS_PER_SHARD_INVALID", "cluster.replicas_per_shard must be an integer")]
+    if replicas > MAX_REPLICAS_PER_SHARD:
+        errors.append(
+            _err(
+                "REPLICAS_PER_SHARD_ABOVE_MAX",
+                f"cluster.replicas_per_shard must be at most {MAX_REPLICAS_PER_SHARD}, got {replicas}",
+            )
+        )
+    if replicas < 1 and not dry_run and not _replica_free_single_az_allowed(cluster, network):
+        errors.append(
+            _err(
+                "REPLICAS_PER_SHARD_BELOW_MIN",
+                "cluster.replicas_per_shard must be at least 1 for real execution; "
+                "a replica-free cluster is admitted only for a dry-run projection or a "
+                "single-AZ plan carrying cluster.non_ha_allowed: true",
+            )
+        )
+    return errors
+
+
+def _replica_free_single_az_allowed(cluster: dict[str, Any], network: dict[str, Any]) -> bool:
+    return (
+        network.get("virtual_az_mode") == "single"
+        and cluster.get("non_ha_allowed") is True
+    )
 
 
 def _validate_failover_timeline_observer(observability: dict[str, Any]) -> list[dict[str, Any]]:
