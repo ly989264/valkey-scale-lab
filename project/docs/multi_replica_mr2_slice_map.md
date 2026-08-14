@@ -121,6 +121,42 @@ replicas leave three siblings behind and run it for the first time in this
 product's history. It returns `None` on every round, so no candidate ever forms,
 `full_validation` is never called, and the 180s deadline raises.
 
+**The codebase already said all of this, at three separate sites**, which is
+what makes it a defect of one function rather than a gap in the design. Checked
+after the fix rather than before, and each strengthens it:
+
+- `docker_runtime.py:1758` generates the config for **both** backends and writes
+  `cluster-announce-ip {nodehost['container_ip']}` with
+  `cluster-announce-port {node['client_port']}`. So the announced address *is*
+  exactly the pair `announced_host` now reads. `native_backend.py:663` says the
+  same from the other side - the host's `data_address` "is what
+  `cluster-announce-ip` carries".
+- `docker_runtime.py:1797` sets the node's dial address with the comment
+  **"Where this run reaches the node. The peer address the cluster announces is
+  nodehost_container_ip below, and they differ."** The distinction was stated at
+  the site that builds the very dict the observer then read.
+- `_advertised_endpoint_resolver` (`:8149`) already solves this problem for the
+  Sentinel lane, keyed on `nodehost_container_ip or container_ip` plus
+  `client_port`, and its docstring gives §15's reason: "Endpoint discovery is
+  the runtime adapter's responsibility". The fix follows an existing sanctioned
+  pattern rather than inventing one.
+
+That resolver prefers `nodehost_container_ip`; `from_inventory` reads
+`container_ip`, and `:2269` sets the latter from the former, so they are equal
+on both live backends. They could differ only on `docker_container`, which is
+registered to no scenario - noted in §8, not changed.
+
+**On which environments this could have fired**, which decides how nearly it
+escaped. The two addresses differ under Docker (dial `127.0.0.1`, announce the
+nodehost network address) and on the *simulated* fleet, where macOS cannot route
+Docker's network. On the **real** fleet they coincide - `native_backend.py:819`
+says the manifest repeats one address there. So **a native run on gce-m3b would
+not have hit this**, and had MR-2 been run on the fleet instead of on Docker the
+defect would have passed through MR-3 untouched and waited for M4, or for any
+environment that separates the two addresses. The rung's Docker-only scope was
+argued from one-variable-per-rung and from cost; this is a third reason nobody
+had.
+
 ### §3.3 The fix, and why no artifact moved
 
 `2972b736`. `NodeEndpoint` gains `announced_host`, read from `container_ip`,
@@ -346,25 +382,88 @@ one of them. So the artifact named the wrong promoted node in one of two runs,
 with nothing failing, exactly as §3.2 says. It is **left untouched by
 instruction**; this rung's contribution is the first real evidence for it.
 
-## §8 What MR-3 inherits
+## §8 What MR-3 inherits, compiled at this HEAD rather than remembered
 
-1. **The configuration and the knob.** `local_10x4_50.yaml` at
-   `nodehosts_per_az: 4`. MR-3's native 10×4-50 should use the same knob so the
-   two are diffable; 40×4-200 reaches 8 nodehosts at shipped knobs anyway.
-2. **`fault_matrix` does not self-calibrate at r≥2** (§7). Plan the native rung's
-   acceptance around that before running it, not after.
-3. **§3.1's predicted failure has still never been observed.** It was masked by
-   §3.2's defect on the only run that could have shown it, and both candidates
-   then passed the down-window full validation with three resyncing siblings
-   (`full_validation status: OK`, 91 and 89 rounds). It remains a live hazard -
-   it is intermittent by nature and two passes are not a disproof - and the
-   native rung, with real network latency between siblings and their new
-   primary, is the more likely place for it to fire.
-4. **The founding numbers in §6**, with the warning that they are two runs on
-   one workstation.
-5. **`cluster_stats_messages_update_*` flaps per run** (§5.3). Anyone freezing a
-   multi-replica baseline should know before a diff surprises them.
-6. **Support map §5.2 is wrong** and §5's other predictions all held.
+MR-3 is support map §8's third rung: two native **10×4-50** on gce-m3b, then one
+native **40×4-200**. It needs operator approval. Two of the seven facts the
+*MR-2* handover carried were wrong, so each of these was compiled or run at
+`3b399469` rather than recalled.
+
+1. **The fleet arithmetic, compiled through validation, `build_cluster_plan`
+   *and* `_node_specs` + `_process_nodehosts`**, so the plan and the run agree.
+   The `ecs` provider's run path reads the fleet manifest, so these were taken
+   against a manifest of gce-m3b's shape (8 hosts, 2 AZs, client range
+   7000-32000) - **the numbers cannot be reproduced on the workstation without
+   one**, which is itself worth knowing.
+
+   | shape | knob | nodehosts = **hosts** | per nodehost | colliding | shard AZ split |
+   |---|---|---|---|---|---|
+   | **native 10×4-50** | `nodehosts_per_az: 4` | **8** | 7,7,6,6,6,6,6,6 | 0/10 | 3/2 |
+   | native 10×4-50 | shipped (2) | 6 | 9,9,8,8,8,8 | 0/10 | 3/2 |
+   | **native 40×4-200** | shipped | **8** | 25 × 8 | 0/40 | 3/2 |
+   | *ref* `real_ecs_50` 25×1 | shipped | 4 | 13,13,12,12 | 0/25 | 1/1 |
+   | *ref* `real_ecs_200` 100×1 | shipped | 8 | 25 × 8 | 0/100 | 1/1 |
+
+   **Rung A at `nodehosts_per_az: 4` reproduces MR-2's Docker layout exactly** -
+   8 nodehosts holding 7,7,6,6,6,6,6,6, 0 of 10 colliding, every shard 3/2 and
+   the fleet 25/25. That is the whole point of §2's knob decision and it is now
+   measured on both providers rather than argued. **Use the same knob.**
+   40×4-200 needs no knob and fills all eight hosts at exactly 25 nodes each.
+
+2. **No native multi-replica configuration exists; MR-3 writes the first two.**
+   The obvious shapes are `real_ecs_50.yaml` and `real_ecs_200.yaml` with
+   `cluster.shards`/`replicas_per_shard` changed, plus `nodehosts_per_az: 4` on
+   the 50 only. **The 200 must keep `profile_name: scale_200`** -
+   `_is_exact_200_bounded_exception` keys on that exact name and carries no
+   shard-shape term, so 40×4 rides the existing exception; renaming it turns the
+   run into a refusal at plan time. Compiled: both 200-node configs report
+   `NODE_CAP_EXCEEDED` from the bare validator and **plan clean in the Gate's
+   capability context**, exactly as the shipped `real_ecs_200` does - that is
+   the normal state, not a problem MR-3 introduced.
+
+3. **No new catalog entry is needed.** `real.ecs.full-flow` takes `nodes` and
+   `config` and admits 30..200, so both rungs are parameter changes. Registering
+   nothing means **catalog stays 99, `repository.all` 92 and the M1 plan 91**.
+
+4. **`fault_matrix` does not self-calibrate at r≥2** (§7). Plan the native rung's
+   acceptance around that *before* running it. Judge that stage on the
+   field-level delta and on which node the artifacts agree about, not on the
+   view score - the same treatment M3-B gave `management_matrix`.
+
+5. **§3.1's predicted failure has still never been observed**, and MR-3 is where
+   it is most likely to appear: it was masked by §3.2's defect on the only run
+   that could have shown it, and both candidates then passed the down-window
+   full validation with three resyncing siblings (`full_validation status: OK`,
+   91 and 89 rounds). It is intermittent by nature and two passes are not a
+   disproof; real network latency between three siblings and their new primary
+   is the condition the hazard describes.
+
+6. **§3.2's fix would not have fired on the real fleet** (§3.2's last paragraph).
+   `data_address` and `client_endpoint.address` coincide on gce-m3b, so the
+   observer's old comparison would have held there. Do not read a passing native
+   run as evidence about that fix; the evidence is MR-2's Docker runs and the
+   hermetic tests.
+
+7. **The founding numbers in §6** are two runs on one workstation, and every
+   MR-3 number is a fresh measurement rather than a comparison: r=4 RTO,
+   formation dwell under 4-way fan-in on a real network, and the PFAIL →
+   promotion split, which is the term that moved most.
+
+8. **`cluster_stats_messages_update_*` flaps per run** (§5.3), and
+   **support map §5.2 is wrong** (§5.2). Both matter to whoever next reads a
+   multi-replica diff.
+
+9. **Run from the controller, never the workstation.** The manifest, the frozen
+   native baselines and the fleet's only route all live there. `real.ecs.*`
+   entries set their own fd limit through `scripts/ecs_gate.py`; anything
+   invoked by hand still needs `ulimit -n 65536` at exact-200. A run launched
+   over ssh needs `setsid nohup … < /dev/null &`, and `ecs_gate.py` `execv`s
+   into the CLI, so watch for `valkey_scale_lab.cli gate execute` rather than
+   the wrapper's name.
+
+10. **Do not freeze baselines.** The M3 rule - a baseline should encode the
+    environment acceptance runs in - and support map §8's own note leave that to
+    M4's first runs, not to MR-3.
 
 ## §9 Proof
 

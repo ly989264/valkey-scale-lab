@@ -1546,6 +1546,46 @@ time.
 **No native run was taken and no baseline was frozen** - both are MR-3's.
 Neither frozen baseline nor any existing `templates/configs/` file was touched.
 
+**The codebase already stated the distinction the observer ignored**, at three
+sites, checked after the fix: `docker_runtime.py:1758` writes
+`cluster-announce-ip {nodehost['container_ip']}` and
+`cluster-announce-port {node['client_port']}` for **both** backends, so the
+announced address is exactly the pair `announced_host` reads; `:1797` sets the
+node's dial address with the comment "the peer address the cluster announces is
+nodehost_container_ip below, **and they differ**"; and
+`_advertised_endpoint_resolver` (`:8149`) already does this mapping for the
+Sentinel lane. The fix follows an existing sanctioned pattern rather than
+inventing one.
+
+**And it would not have fired on the real fleet**, which decides how nearly it
+escaped: the dial and announced addresses differ under Docker and on the
+*simulated* fleet, but coincide on gce-m3b (`native_backend.py:819` - the
+manifest repeats one address). Had MR-2 been run on the fleet instead of on
+Docker, the defect would have passed through MR-3 untouched and waited for M4.
+A passing native run is therefore **not** evidence about this fix.
+
+**What MR-3 inherits, compiled at `3b399469`.** MR-3 is support map §8's third
+rung - two native **10×4-50** on gce-m3b, then one native **40×4-200** - and it
+needs operator approval. Read `project/docs/multi_replica_mr2_slice_map.md` §8;
+the ten items there are the handover. The arithmetic, compiled through
+validation, `build_cluster_plan` *and* the run path against a manifest of
+gce-m3b's shape (the `ecs` run path reads the fleet manifest, so **these numbers
+cannot be reproduced without one**):
+
+| shape | knob | nodehosts = hosts | per nodehost | colliding | shard AZ split |
+|---|---|---|---|---|---|
+| **native 10×4-50** | `nodehosts_per_az: 4` | **8** | 7,7,6,6,6,6,6,6 | 0/10 | 3/2 |
+| native 10×4-50 | shipped (2) | 6 | 9,9,8,8,8,8 | 0/10 | 3/2 |
+| **native 40×4-200** | shipped | **8** | 25 × 8 | 0/40 | 3/2 |
+
+**Rung A at 4/AZ reproduces MR-2's Docker layout exactly**, which is what the
+knob was chosen for and is now measured on both providers. MR-3 writes the first
+two native multi-replica configurations; **the 200 must keep
+`profile_name: scale_200`**, because `_is_exact_200_bounded_exception` keys on
+that name and carries no shard-shape term. No catalog entry is needed -
+`real.ecs.full-flow` takes `nodes` and `config` and admits 30..200 - so catalog
+stays **99**, `repository.all` **92** and the M1 plan **91**.
+
 ### Stage MR-1 is done, 2026-08-14. MR-2 needs approval and the correct state now is idle
 
 Nine commits, `c72dd986` through `7d239597`, each with its own observation and
