@@ -1632,15 +1632,16 @@ run's stage terms, from rounds the lane always retained). Both are checked
 against **MR-2's published numbers** rather than the scratchpad they came from,
 using its three Docker runs, which are still on the workstation.
 
-**The controller went unreachable at the end of the session** - `34.142.156.225`
-port 22 stopped answering after the runs and the commits were done, which is the
-recorded behaviour of a stopped instance (its external IP is ephemeral; ask the
-operator for the new address and check the host key rather than trusting one).
-Nothing is lost: it authors nothing, its `project/` tree was clean and synced at
-`b1dde527`, and everything committed after that point is workstation-only docs
-and scripts. But **it is behind by every commit after `b1dde527`, so rsync
-before running anything there**, and MR-3's four run directories (~350 MB) exist
-only on that disk.
+**The controller went unreachable at the end of the MR-3 session** -
+`34.142.156.225` port 22 stopped answering after the runs and commits were done.
+It came back on 2026-08-15 at **`34.21.167.27`**, presenting the recorded host
+key, and is synced and current again. That is the second time the address has
+moved under a stopped/started instance, so the standing rule holds: **the
+external IP is disposable, the ed25519 fingerprint
+`SHA256:iaMaBP…` is the identity, and the address comes from the operator rather
+than from a list.** Nothing was ever at risk - the controller authors nothing and
+the loop only flows workstation to controller - but MR-3's four run directories
+and the density calibration's three exist only on that disk.
 
 ### Stage MR-2 is done, 2026-08-14
 
