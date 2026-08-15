@@ -3502,3 +3502,44 @@ def test_the_partition_probes_clean_wait_uses_the_same_rule(monkeypatch) -> None
 
     assert len(rounds) <= 12, "a 120s wait must not cost 120 whole-fleet rounds"
     assert len(rounds) >= 8
+
+
+def test_a_topology_snapshot_observes_the_fleet_once(monkeypatch) -> None:
+    """The health summary and the live topology are two derivations of one
+    layer-1 round, and used to be two rounds taken milliseconds apart.
+
+    Measured on a real exact-200 run: 68 snapshots issued 136 whole-fleet
+    200-node rounds, 32% of every whole-fleet round the run made.
+    """
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    nodes = _gate_nodes()
+    collected: list[int] = []
+    real_rows = docker_runtime._light_probe_rows
+
+    def rows(probe_nodes):
+        collected.append(len(probe_nodes))
+        return [
+            {
+                "logical_id": node["logical_id"],
+                "status": "FAIL",
+                "error": "probe not wired in this test",
+                "failure_kind": "semantic",
+            }
+            for node in probe_nodes
+        ]
+
+    monkeypatch.setattr(docker_runtime, "_light_probe_rows", rows)
+    assert real_rows is not rows
+
+    class _Telemetry:
+        def now_unix_ms(self) -> int:
+            return 0
+
+    snapshot = docker_runtime._management_topology_snapshot(
+        _Telemetry(), "cap", "run", "op", "label", nodes, nodes
+    )
+
+    assert collected == [len(nodes)], "one round, two derivations"
+    assert len(snapshot["nodes"]) == len(nodes)
