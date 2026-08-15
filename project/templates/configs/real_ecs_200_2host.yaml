@@ -1,0 +1,92 @@
+# exact-200 packed onto TWO hosts, to measure whether per-host node density
+# confounds this product's measurements.
+#
+# This exists because of a provisioning fact, not a product one. M4's target is
+# 256 shards x 4 replicas = 1280 nodes; at the shipped density knob that is 52
+# nodehosts and therefore 52 ECS hosts, and on 2026-08-15 Google Cloud refused
+# the quota increase for CPUs, disks and instance counts on a new project. The
+# fleet is eight `c4a-standard-2` and cannot grow. Compiled at HEAD, 1280 nodes
+# *do* plan on those eight hosts - 0 of 256 shards colliding, every shard 3/2,
+# fleet 640/640 - at 160 nodes per host. The open question is not whether it
+# plans; it is whether a run that dense still measures the cluster rather than
+# the CPU it is contending for.
+#
+# Every number this project has ever taken on real hosts was at 25 nodes per
+# host, which on 2 vCPU is **12.5 valkey-servers per vCPU**. M4's dense plan
+# would be **80 per vCPU**. That is the M3-A-2 trap in a new place: the
+# simulated fleet's transport numbers were assumed to be lower bounds and turned
+# out to be the opposite, because those hosts were containers contending for one
+# laptop's CPU. An unmeasured 6.4x density change is exactly that assumption
+# again.
+#
+# So this configuration is `real_ecs_200.yaml` with two lines changed:
+# runtime.nodehosts_per_az 2 -> 1 and max_logical_nodes_per_nodehost 25 -> 100.
+# Same 200 nodes, same 100x1 shape, same ports, same workload - **only the host
+# count moves**, 8 -> 2, which is the one variable the experiment is about.
+# It uses two of the eight hosts and leaves six idle.
+#
+# 100 nodes per host on 2 vCPU is **50 valkey-servers per vCPU**, four times the
+# measured density. It is not the eight-host plan's 80 per vCPU, and it cannot
+# be: reaching that would need 160 nodes on one host, and one host cannot serve
+# two AZs. 200 nodes on 2 hosts is the densest shape the 200-node cap admits, so
+# 4x is the largest lever available and the result is a trend, not a proof at
+# M4's own density.
+#
+# Memory is the binding resource and it was checked before running: 100 nodes x
+# 64 MiB is 6400 MiB against 7636 MiB available on a fleet host, so the node
+# memory limit is deliberately left at its default. Halving it to 32 MiB would
+# have bought headroom and cost the experiment its single variable.
+#
+# `profile_name` must stay `scale_200` - `_is_exact_200_bounded_exception` reads
+# that exact string and carries no density term, so this rides the existing
+# exception exactly as `real_ecs_200.yaml` does.
+#
+# This is a calibration, not a rung of any ladder, and it freezes nothing.
+schema_version: v1
+profile_name: scale_200
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: ecs
+  valkey_image: valkey-scale-lab/valkey:9.1.0-myslots
+  sandbox_mode: container_namespace
+  dry_run: false
+  # The two lines that carry the experiment.
+  nodehosts_per_az: 1
+  max_logical_nodes_per_nodehost: 100
+  host_inventory_path: artifacts/host-fleets/gce-m3b/inventory.json
+  native_bundle_dir: artifacts/native-bundles/valkey-9.1.0-memtier-2.5.1-arm64
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller, worker]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 100
+  replicas_per_shard: 1
+  port_base: 7800
+  cluster_bus_port_base: 17800
+scale_profile:
+  bounded_exception_nodes: 200
+  automatic_default_cap_remains: 100
+workload:
+  enabled: true
+  read_ratio: 0.8
+  write_ratio: 0.2
+  uniform_qps: 50
+  hotspot_qps: 10
+  hotspot_key_fraction: 0.01
+  pipeline: 1
+  timing: all_run
+faults: []

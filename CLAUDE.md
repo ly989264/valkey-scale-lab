@@ -1446,6 +1446,66 @@ prior). The run ladder is §8: MR-1 fixes + r=1 no-op proof, MR-2 Docker
 fleet (10×4-50 ×2, then 40×4-200 at shipped knobs). Every rung fits gce-m3b as
 provisioned; only M4 itself provisions.
 
+### M4's fleet problem is solved by measurement, not by quota, 2026-08-15
+
+**Not a roadmap item.** Google Cloud refused the quota increase M4's plan assumed
+- CPUs, disks *and* GCE instance counts, on a new project - so `gce-m3b`'s eight
+`c4a-standard-2` can neither grow nor be resized. Read
+`project/docs/m4_density_calibration.md`; §1 is the arithmetic, §3 the result,
+§5 what M4 should plan for.
+
+- **The 52-host figure was never a requirement.** It is what falls out of leaving
+  `max_logical_nodes_per_nodehost` at 25. Compiled at HEAD through validation,
+  the planner *and* the run path against a manifest of this fleet's shape, 1280
+  nodes plan cleanly at **8, 16, 26 and 52 hosts** - 0 of 256 shards colliding,
+  every shard 3/2, fleet 640/640 at all of them. Host counts must be **even**
+  (13 refuses), and at 8 hosts `node_memory_limit_mb` must drop 64 → 32, because
+  160 × 64 MiB exceeds 7900.
+- **So the real question was whether 160 nodes per host still measures the
+  cluster or the CPU.** Every prior real-host number is 25 nodes/host = 12.5
+  valkey-servers per vCPU; the eight-host M4 plan is **80 per vCPU**. That is the
+  M3-A-2 trap again - simulated numbers assumed to be lower bounds turned out to
+  be the opposite because those hosts contended for one laptop's CPU.
+- **Measured, at the largest lever the 200-node cap allows.**
+  `templates/configs/real_ecs_200_2host.yaml` is `real_ecs_200.yaml` with two
+  lines changed, packing the same 200 nodes onto **2 hosts = 100/host = 50 per
+  vCPU, 4×** the measured density. Three runs at one commit on one afternoon:
+  dense **PASS 2055.87 s** and **PASS 2086.26 s**, 8-host control **PASS
+  1302.90 s**.
+- **Nothing that carries a verdict moved.** All three: `run_verdict` 12/12 OK,
+  fault lane **9/12/15** with nine `REAL_PASS`, zero residue on all eight hosts
+  asked over ssh from outside, 200/200 journals, no `ERROR` in any artifact.
+  Detection is flat in density as well as in node count (42.55 / 43.55 / 43.04 s),
+  and the Sentinel probe's cadence is indistinguishable with **zero overruns in
+  all three** - the measurement most likely to degrade under contention, and it
+  did not. The lever did pull: load average on the 2-vCPU dense host was sampled
+  at **5.73, 4.21, 0.78, 0.43, 4.13**, bursting to ~3× the core count.
+- **What moved, and it is bounded.** Formation dwell 85.88 s and 46.95 s against
+  the control's 10.93 s - but the control is the *fastest* 200-node formation
+  ever recorded here and the frozen pair is 52.0/72.1 s, so both dense values sit
+  **inside** the historical range; the 240 s window was never approached.
+  PFAIL → promotion 4.00/3.00 s against 1.00 s, both still far below the frozen
+  pair's 8.00/19.03 s, so density moves it less than ordinary run-to-run
+  variance does. The management matrix is 1.7× slower and that is **batch
+  geometry, not contention**: restart parallelism is capped by nodehost count, so
+  2 nodehosts give 100 batches at max concurrent 2 where 8 give 26 at max 8.
+- **The answer: M4 on the existing eight hosts is defensible and needs no
+  quota.** Narrowly: this is 50 nodes/vCPU against M4's 80, an extrapolation
+  across a further 1.6× and the most the 200-node cap permits; M4 raises node
+  count *and* density together; and it is two runs a side.
+- **What M4 should plan for**, compiled rather than guessed: **322 batches at max
+  concurrent 8** for 1280 nodes on 8 nodehosts, which at the control's measured
+  17.4 s/batch is **≈93 minutes of management matrix**, so **an M4 run is about
+  two hours** - inside the 14400 s timeout, but it makes "several runs per rung"
+  a real scheduling cost. Journals should be ~500 MB per run. 32 MiB/node is a
+  declared second variable.
+- **Untouched by any of this**, and still the actual blockers:
+  `REAL_EXECUTION_ABOVE_200_FORBIDDEN` refuses every real run above 200 nodes and
+  is a validation-contract decision, not a quota one - compiling §1's table
+  needed a sanctioned scale-projection profile because of it; and the whole-fleet
+  probe cadence on the open list becomes 1280 queries/second from a 4-vCPU
+  controller at M4's size. A 200-node run reaches neither.
+
 ### Stage MR-3 is done, 2026-08-14, and with it the multi-replica prerequisite program. M4 needs operator approval and the correct state now is idle
 
 Three commits: `26613317` (the two configurations), `f9b10814` (a defect in the
