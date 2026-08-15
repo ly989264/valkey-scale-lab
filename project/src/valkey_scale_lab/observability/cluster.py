@@ -891,6 +891,18 @@ class FullClusterValidator:
         that only grew has not made any. A total-time bound cannot separate a
         large cluster still working through its queue from one that is stuck,
         and at 200 nodes the two are minutes apart.
+
+        A *retry* re-reads the cheap layer first, which the first observation
+        does not. Measured on a real exact-200 formation, this wait made 77
+        attempts over 156.7s and every one of them spent a whole-fleet
+        200-node light round to reach a check that failed on three observers:
+        the light validation passed 77 times out of 77 and layer 2 raised 77
+        times out of 77, because what a freshly formed cluster is pending on is
+        a replica an observer has not yet learned is online. §6.1 is what that
+        state is visible in and it costs three `CLUSTER SHARDS`; §4.4 budgets
+        the whole-fleet round at one per 60s and this wait was issuing one
+        every 2.0s. The first attempt keeps the original order so that a
+        permanent failure in either layer is still reported at once.
         """
         deadline = time.monotonic() + self.convergence_timeout
         attempts = 0
@@ -900,7 +912,9 @@ class FullClusterValidator:
         while True:
             attempts += 1
             try:
-                return self._run_once(**validation_options)
+                return self._run_once(
+                    cheap_layer_first=attempts > 1, **validation_options
+                )
             except ConvergenceFailure as failure:
                 now = time.monotonic()
                 if self.convergence_timeout <= 0:
@@ -938,19 +952,37 @@ class FullClusterValidator:
                     ) from failure
             time.sleep(self.convergence_poll_seconds)
 
-    def _run_once(self, **validation_options: Any) -> dict[str, Any]:
+    def _run_once(
+        self, *, cheap_layer_first: bool = False, **validation_options: Any
+    ) -> dict[str, Any]:
         allowed_unhealthy = set(
             validation_options.pop("allowed_unhealthy_node_ids", ())
         )
         expected_unavailable = set(
             validation_options.get("expected_unavailable", ())
         )
-        light = self.light.run(**validation_options)
-        topology = self.topology.run(
-            expected_node_count=len(self.light.nodes),
-            allowed_unhealthy_node_ids=allowed_unhealthy,
-            excluded_observer_logical_ids=expected_unavailable,
-        )
+
+        def observe_light() -> dict[str, Any]:
+            return self.light.run(**validation_options)
+
+        def observe_topology() -> dict[str, Any]:
+            return self.topology.run(
+                expected_node_count=len(self.light.nodes),
+                allowed_unhealthy_node_ids=allowed_unhealthy,
+                excluded_observer_logical_ids=expected_unavailable,
+            )
+
+        # Both layers are still required and the accept condition is unchanged;
+        # only which one is read first moves, and only while waiting. Reading
+        # the three observers first means a whole-fleet round is spent when it
+        # can still be the answer, rather than to reach a check that is already
+        # known to be pending.
+        if cheap_layer_first:
+            topology = observe_topology()
+            light = observe_light()
+        else:
+            light = observe_light()
+            topology = observe_topology()
         light_shards: dict[str, dict[str, Any]] = {}
         for row in light["nodes"]:
             fields = row["myslots"]

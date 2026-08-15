@@ -902,6 +902,57 @@ def _loading_then_healthy_factory(
     return factory, observed
 
 
+def test_convergence_retries_reread_the_observers_not_the_whole_fleet() -> None:
+    """A wait costs three `CLUSTER SHARDS` per attempt, not one round per node.
+
+    Measured on a real exact-200 formation: 77 attempts over 156.7s, and every
+    attempt spent a whole-fleet 200-node light round - 1200 RESP commands and
+    400 KB of `CLUSTER MYSLOTS` bitmap - to reach a check that failed on three
+    observers. The light validation passed 77 of 77 times; layer 2 raised 77 of
+    77. §4.4 budgets the whole-fleet round at one per 60s and this issued one
+    every 2.0s.
+
+    The first attempt still reads both layers in the original order, so a
+    permanent failure the light layer alone can see is still reported at once
+    rather than waited out.
+    """
+
+    nodes, responses = _cluster_fixture()
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    factory, _observed = _loading_then_healthy_factory(
+        nodes, responses, node_ids, loading_observations=20
+    )
+    myslots = [0]
+    inner = factory
+
+    def counting_factory(endpoint: Endpoint, timeout: float) -> FakeConnection:
+        connection = inner(endpoint, timeout)
+        original = connection.execute
+
+        def execute(*command: Any) -> Any:
+            if command == ("CLUSTER", "MYSLOTS"):
+                myslots[0] += 1
+            return original(*command)
+
+        connection.execute = execute  # type: ignore[method-assign]
+        return connection
+
+    result = FullClusterValidator(
+        nodes,
+        concurrency=32,
+        observer_count=3,
+        convergence_timeout=30.0,
+        convergence_poll_seconds=0.001,
+        connection_factory=counting_factory,
+    ).run()
+
+    assert result["status"] == "OK"
+    # Twenty-one attempts, four nodes: the old order costs 84 whole-fleet
+    # `CLUSTER MYSLOTS`. Only the first attempt and the one that succeeds may
+    # pay for a round, so the bound is two rounds however long the wait runs.
+    assert myslots[0] == 2 * len(nodes)
+
+
 def test_full_cluster_validation_waits_for_transient_loading_to_converge() -> None:
     nodes, responses = _cluster_fixture()
     node_ids = [f"{index + 1:040x}" for index in range(4)]
@@ -3259,3 +3310,4 @@ def test_redundancy_recovery_refuses_a_shard_shape_that_is_not_uniform() -> None
     mixed = _light_report({"s0": 4, "s1": 1})
     with pytest.raises(SemanticFailure, match="s1"):
         redundancy_recovery(mixed, expected_replicas_per_shard=4)
+
