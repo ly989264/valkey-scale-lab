@@ -3642,10 +3642,13 @@ class _WholeFleetRounds:
 
     * the first observation always takes one, so nothing is decided on less
       evidence than before and a permanent failure is still seen at once;
-    * after that, only when the observer set - §6.1's three to five nodes, the
-      layer the design gives frequent observation to - reports the node-local
-      part of the predicate holding. A whole-fleet clean state implies an
-      observer-clean one, so this cannot delay a wait that is about to end;
+    * after that, only when the representative set this runtime already probes
+      elsewhere reports the node-local part of the predicate holding. That set
+      is `_representative_nodes`, and it is **two** nodes at exact-200 rather
+      than §6.1's three to five - §6.1 sizes the `CLUSTER SHARDS` observers and
+      this is a layer-1 read, so the number is the runtime's own and is stated
+      here rather than borrowed. A whole-fleet clean state implies a
+      representative-clean one, so this cannot delay a wait about to end;
     * and never twice inside a backoff doubling from the wait's own poll
       period up to `WHOLE_FLEET_RECHECK_SECONDS`, so an observer set that keeps
       saying clean while the fleet is not cannot restore the one-per-second
