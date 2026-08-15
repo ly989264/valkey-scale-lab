@@ -1504,7 +1504,139 @@ provisioned; only M4 itself provisions.
   is a validation-contract decision, not a quota one - compiling §1's table
   needed a sanctioned scale-projection profile because of it; and the whole-fleet
   probe cadence on the open list becomes 1280 queries/second from a 4-vCPU
-  controller at M4's size. A 200-node run reaches neither.
+  controller at M4's size. A 200-node run reaches neither. *(The cadence half is
+  now done - see M4-1 below. The validation-contract half is designed and
+  reported in `docs/real_execution_above_200_exception_memo.md`, and is the
+  operator's.)*
+
+### Session M4-1 is done, 2026-08-16: the whole-fleet observation cadence
+
+**A precondition for M4, not a rung of it, and no baseline was frozen or
+touched.** Four commits, `d6312c00` through `e4b0b0af`. Read
+`project/docs/whole_fleet_observation_cadence_slice_map.md`: §1 is why this had
+to be measured from outside the product, §2 what a real exact-200 actually
+spends, §4 the tension and how it was resolved, §9 the defect the acceptance
+runs found and §10 the wall-clock cost at 4x density.
+
+- **The volume had never been measured and could not be**, which is why nobody
+  had done this. `LightClusterProbe` speaks RESP over a pooled connection and
+  never reaches `CommandRecorder`, so **not one whole-fleet light round appears
+  in a run's command audit**, and the one timing counter that exists
+  (`runtime_all_node_light_probe`) reads **1** in a passing exact-200 because
+  only the setup path threads `timings` and that wait converges first try. The
+  measurement therefore used `observability_connection_scale.md`'s own method: a
+  `sitecustomize.py` on `PYTHONPATH`, outside the repository.
+- **One real exact-200 makes 430 whole-fleet 200-node light rounds - 515,976
+  RESP commands and 176.1 MB of `CLUSTER MYSLOTS` bitmap** - in 18.0 s of wall
+  clock. §4.4 budgets one such round per **60 s**; cluster formation was issuing
+  one every **2.03 s**, thirty times the design's rate.
+- **The site named as worst was not the worst.** `_management_wait_clean_cluster`
+  is a 1 Hz whole-fleet loop by construction and costs **one round per call** in
+  a healthy run - 58 calls, 71 rounds. The two real items were cluster
+  formation's 77 rounds and, larger than either, **`_management_topology_snapshot`
+  taking two whole-fleet rounds where one would do**, which is 32% of the run's
+  total. All eleven of its call sites pass the same node list twice.
+- **The tension the operator named, resolved on measurement.** Both clock-driven
+  sites are progress gates, so their period is latency and not sampling
+  resolution. The rule adopted: *a gate's whole-fleet round count must be
+  bounded by what it is waiting for, not by how long it waits* - and, the half
+  that makes it safe, **no gate returns on a subset observation**. The cheap
+  read decides *when* to look at the whole fleet; the whole-fleet round decides
+  whether the gate passes, so the accept condition is byte-identical.
+- **Formation retries now read the cheap layer first.** Measured: over 77
+  attempts the whole-fleet light validation passed **77 of 77** and the
+  three-observer layer raised **77 of 77**, because what a forming cluster is
+  pending on is a replica an observer has not yet learned is online. The first
+  attempt keeps the original order so a permanent light-layer failure is still
+  reported at once. **77 → 2 rounds.**
+- **Result: 430 → 238 rounds, 515,976 → 285,576 commands, 176.1 → 97.5 MB**, on
+  the same fleet with the same configuration one commit apart (PASS 1380.02 s
+  → PASS 1361.69 s). **After this item no loop in the product issues whole-fleet
+  rounds at a rate set by a clock**; the ~226 that remain are one per operation
+  boundary, which is the O(N) per round §14 budgets.
+- **`WHOLE_FLEET_RECHECK_SECONDS = 15.0`, deliberately not §4.4's 60**, because a
+  sampling cadence can be slowed at the cost of resolution and a progress gate
+  cannot - it costs the run wall clock. That is the whole trade and §10.1
+  measures it.
+
+- **Proven:** `repository.all` **92/92** on the Mac; catalog stays **99**, the M1
+  plan **91**, and the pytest tree is **849 → 854**. Five regression tests, every
+  one mutation-checked. Two consecutive real exact-200 on the eight-host fleet at
+  `e4b0b0af`, **PASS 1397.60 s** and **PASS 1549.75 s**, both `run_verdict` 12/12
+  OK with `tool_errors` empty, fault lane **9 / 12 / 15** with nine `REAL_PASS`,
+  cleanup 40 rows with `resources_remaining` empty, 200/200 journals, no `ERROR`
+  in any artifact, RTO 50.56 s and 49.07 s. Calibrated first at this HEAD - the
+  frozen pair gives 7/7, 5/5, **7/8**, 6/6, 2/2, reproducing its own
+  `BASELINE.md` - and then candidate 1 scores `runtime_start` 7/7, `cluster_form`
+  5/5, `management_matrix` **8/8**, `fault_matrix` 4/6, `cleanup` 2/2. The two
+  `fault_matrix` views are the **2026-08-13 failover work's declared addition**,
+  which the `c58a762a` baselines predate; `fault_command_log` is identical.
+  **This item's changes move no scored view.** Zero residue on all eight hosts
+  asked over ssh from outside, apart from the known empty `/tmp/vslab-load-lane`
+  that `m3_acceptance_registration_map.md` §5.1 already records.
+- **Controller `repository.all` is 90/92, and read which two.**
+  `product.integration.docker_runtime_contract` for the absent daemon, and
+  `product.scenarios.execution_axis_contract`, whose single finding is a `Pxx`
+  match inside a base64 HDR histogram in **MR-3's run output from 2026-08-14** -
+  gitignored artifacts that predate this session. Nothing was deleted to make it
+  green.
+
+**The defect the acceptance runs found, and it is not this item's.** Candidate 2
+ran 152 s longer than candidate 1 because one rolling-restart health gate
+**retried 85 times over 116.8 s**. `_management_matrix_wait_rolling_restart_health`
+escalates to a **whole-fleet `_process_node_snapshots_parallel`** - `CLUSTER
+INFO` + `CLUSTER NODES` per node - on *every* non-clean attempt, and its
+eight-node scoped probe had already reported the cause on attempt 1
+(`replica_count: 99`). Measured in that run's own command audit: **19,150
+`CLUSTER NODES` commands and 484.3 MB**, against 1,442 and 36.6 MB in candidate
+1. One reply is 25.2 KB at 200 nodes.
+
+Three things follow. It is **not caused by this item** - that gate calls nothing
+these commits touch, and the escalation count is zero in six of seven exact-200
+runs spanning both code states. It **corrects a claim in this file**:
+`real_fleet_ladder_slice_map.md` §9a and `simulated_ladder_slice_map.md` §16.2
+both record the escalation as never happening at exact-200, and it happened. And
+**at 1280 nodes it is the run-ending one**: a reply scales with node count, so
+the same 85 escalations would move about **17 GB** through one 4-vCPU controller
+in a single gate. That is the O(N²) topology evidence §14 forbids on the normal
+path, and it is **the recommended next item** - the fix is §5.2's rule applied to
+the same helper, but it cannot be proved on a run because the escalation fired
+once in seven and is not reproducible on demand.
+
+**The wall-clock cost, reported rather than buried.** At eight hosts every stage
+of every new-code run is inside the range the same fleet already produced. At
+**4x density** (`real_ecs_200_2host.yaml`, two runs at `e4b0b0af`, **PASS
+2291.79 s** and **PASS 2215.06 s**, both 12/12, 9/12/15, cleanup 10 rows, zero
+residue, no `ERROR`, 234 and 235 whole-fleet rounds) the run is **+129 s and
++236 s, +6% to +11%** against the density calibration's 2055.87 s and 2086.26 s.
+The cost lands exactly in the two stages holding a changed gate, and its cause is
+named: the **role-count case**, where the predicate fails on a property of the
+probed set that no subset can evaluate, so the prefilter cannot help and only the
+backoff bounds the rate. `cluster_form` is **not** this - formation is attempts x
+poll period and the measured per-attempt period is 2.03, 1.97 and 1.99 s across
+the three instrumented runs, so the change cannot move it. Two ways to remove the
+cost are written down in §10.2 and neither was taken: lowering the knob, or
+reading global role counts from the observers' `CLUSTER SHARDS` so the prefilter
+becomes complete. The second is the better change and wants its own evidence.
+
+**Reported and not made: the >200 real-execution exception.** See
+`project/docs/real_execution_above_200_exception_memo.md`. Compiled at HEAD, a
+real native 1280-node configuration collects **eight** validation errors, and
+three of them are the `total_nodes >= 1000` block rather than the above-200 rules
+- M4 is past exact-200 *and* past the 1000-node block, which is easy to miss.
+Neither existing escape can serve it: `is_scale_projection_profile` is dry-run
+only and `is_exact_2000_local_full_flow_profile` requires provider `docker`. The
+memo proposes a fourth named exception in the shape the third already has, lists
+the four further sites that must move with it - including `real.ecs.full-flow`'s
+`nodes` maximum of 200, which is the executable boundary - and argues that
+admitting the exception and taking the first 1280-node run are not the same
+decision. **Nothing in it is implemented.**
+
+**Added to the open list, none of it this item's to close:** the rolling-restart
+health gate's whole-fleet escalation above; that neither backend records its
+observation volume in its own evidence, which is the same evidence-parity gap as
+"a native run's command audit records no ssh"; and the role-count blind spot in
+the prefilter.
 
 ### Stage MR-3 is done, 2026-08-14, and with it the multi-replica prerequisite program. M4 needs operator approval and the correct state now is idle
 
