@@ -3594,6 +3594,111 @@ def _process_normal_snapshot_nodes(nodes: list[dict[str, Any]]) -> tuple[list[di
     return _representative_nodes(nodes), "representative_by_az"
 
 
+#: The longest a bounded wait goes without re-reading the whole fleet, once it
+#: has read it at least once. Deliberately not §4.4's 60s: that number is a
+#: sampling cadence for a steady cluster, where waiting longer costs nothing but
+#: resolution, and this is a progress gate, where it costs the run wall clock.
+#: 15s keeps the worst case a bounded latency rather than a rate.
+WHOLE_FLEET_RECHECK_SECONDS = 15.0
+
+
+def _node_local_clean(health: dict[str, Any], expected_nodes: int) -> bool:
+    """Whether every probed node reports the part of clean it can report alone.
+
+    Role *counts* are a property of the probed set and cannot be evaluated on a
+    subset, so they are deliberately absent here. What is left - cluster state,
+    known-node count and the three slot totals - is gossiped fleet-wide, so a
+    whole-fleet clean state implies this holds on any subset. That direction is
+    the only one used: this decides when a whole-fleet round is worth taking and
+    never whether a wait may end.
+    """
+
+    snapshots = health.get("snapshots") or []
+    if not snapshots:
+        return False
+    return all(
+        snapshot.get("probe_status") == "PASS"
+        and snapshot.get("cluster_state") == "ok"
+        and snapshot.get("known_nodes") == expected_nodes
+        and snapshot.get("slots_assigned") == 16384
+        and snapshot.get("slots_ok") == 16384
+        and snapshot.get("slots_fail") == 0
+        for snapshot in snapshots
+    )
+
+
+class _WholeFleetRounds:
+    """When a bounded wait may spend a whole-fleet observation round.
+
+    Both waits that use this used to take one round per second, so what they
+    cost was set by how long they waited rather than by what they waited for.
+    Measured on a real exact-200 run: three 16.7s waits inside the partition
+    probe cost 51 whole-fleet 200-node rounds, and one 16.9s management wait
+    cost 17 more - 1200 RESP commands and 400 KB of `CLUSTER MYSLOTS` bitmap
+    each, from one controller. §14 budgets the layer-1 round as O(N) and names
+    no repetition; at 1280 nodes one per second is 7680 commands a second.
+
+    A round is spent when it can be the answer:
+
+    * the first observation always takes one, so nothing is decided on less
+      evidence than before and a permanent failure is still seen at once;
+    * after that, only when the observer set - §6.1's three to five nodes, the
+      layer the design gives frequent observation to - reports the node-local
+      part of the predicate holding. A whole-fleet clean state implies an
+      observer-clean one, so this cannot delay a wait that is about to end;
+    * and never twice inside a backoff doubling from the wait's own poll
+      period up to `WHOLE_FLEET_RECHECK_SECONDS`, so an observer set that keeps
+      saying clean while the fleet is not cannot restore the one-per-second
+      rate.
+
+    Nothing here decides a wait. Each wait still ends only on a whole-fleet
+    round satisfying its whole predicate, which is unchanged.
+    """
+
+    def __init__(
+        self,
+        nodes: list[dict[str, Any]],
+        *,
+        poll_seconds: float,
+        recheck_seconds: float = WHOLE_FLEET_RECHECK_SECONDS,
+    ) -> None:
+        self._observers = _representative_nodes(nodes)
+        self._expected_nodes = len(nodes)
+        self._recheck_seconds = recheck_seconds
+        self._backoff = poll_seconds
+        self._last_round: float | None = None
+        self.whole_fleet_rounds = 0
+        self.observer_rounds = 0
+
+    def due(self) -> bool:
+        if self._last_round is None:
+            return True
+        since = time.monotonic() - self._last_round
+        if since >= self._recheck_seconds:
+            return True
+        if since < self._backoff:
+            return False
+        return self._observers_look_clean()
+
+    def observed(self, *, clean: bool) -> None:
+        self._last_round = time.monotonic()
+        self.whole_fleet_rounds += 1
+        if not clean:
+            self._backoff = min(self._backoff * 2.0, self._recheck_seconds)
+
+    def _observers_look_clean(self) -> bool:
+        if not self._observers:
+            return True
+        self.observer_rounds += 1
+        try:
+            health = _management_cluster_health(self._observers)
+        except Exception:  # noqa: BLE001
+            # The prefilter is an optimisation and never a verdict, so when it
+            # cannot read, the whole-fleet round is taken rather than skipped.
+            return True
+        return _node_local_clean(health, self._expected_nodes)
+
+
 def _configure_process_cluster(
     nodes: list[dict[str, Any]],
     timings: dict[str, dict[str, Any]] | None = None,
@@ -4239,9 +4344,13 @@ def _wait_process_light_clean(
     inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
     last_error = "MISSING"
     last_failure: BaseException | None = None
+    rounds = _WholeFleetRounds(nodes, poll_seconds=1.0)
     while time.monotonic() < deadline:
         started = time.monotonic()
         try:
+            if not rounds.due():
+                time.sleep(1)
+                continue
             result = LightClusterProbe(inventory, concurrency=64, timeout=5.0).run(
                 **(validation_options or {})
             )
@@ -4251,15 +4360,18 @@ def _wait_process_light_clean(
                 started,
                 details={"sample_scope": "all_nodes_light", "sample_count": len(nodes), "predicate": "cluster clean snapshot"},
             )
-            if (
+            clean = (
                 result.get("nodes_observed") == expected_nodes
                 and result.get("primary_count") == expected_primaries
                 and result.get("replica_count") == expected_replicas
                 and result.get("status") == "OK"
-            ):
+            )
+            rounds.observed(clean=clean)
+            if clean:
                 return
             last_error = json.dumps(result, sort_keys=True, default=str)[-1000:]
         except Exception as exc:  # noqa: BLE001
+            rounds.observed(clean=False)
             # An attempt of a bounded wait that did not hold is not a failure of
             # anything: absorbing those is what the wait is for, and this row is a
             # timing measurement rather than a verdict. It used to be stamped FAIL,
@@ -6797,11 +6909,15 @@ def _management_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) 
     replicas = [node for node in nodes if node["role"] == "replica"]
     deadline = time.monotonic() + timeout
     last_health: dict[str, Any] | None = None
+    rounds = _WholeFleetRounds(nodes, poll_seconds=1.0)
     while time.monotonic() < deadline:
         try:
+            if not rounds.due():
+                time.sleep(1)
+                continue
             health = _management_cluster_health(nodes)
             last_health = health
-            if (
+            clean = (
                 health["cluster_state"] == "ok"
                 and health["known_nodes"] == len(nodes)
                 and health["primary_count"] == len(primaries)
@@ -6809,10 +6925,13 @@ def _management_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) 
                 and health["slots_assigned"] == 16384
                 and health["slots_ok"] == 16384
                 and health["slots_fail"] == 0
-            ):
+            )
+            rounds.observed(clean=clean)
+            if clean:
                 return
         except Exception as exc:  # noqa: BLE001
             last_health = {"status": "ERROR", "error": repr(exc)}
+            rounds.observed(clean=False)
         time.sleep(1)
     diagnostics = [
         _process_node_snapshot(node) for node in _representative_nodes(nodes)

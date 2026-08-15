@@ -3311,3 +3311,194 @@ def test_redundancy_recovery_refuses_a_shard_shape_that_is_not_uniform() -> None
     with pytest.raises(SemanticFailure, match="s1"):
         redundancy_recovery(mixed, expected_replicas_per_shard=4)
 
+
+class _Clock:
+    """A monotonic clock that only advances when something sleeps."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
+
+def _gate_nodes(count: int = 12) -> list[dict[str, Any]]:
+    return [
+        {
+            "logical_id": f"shard-{index // 2:04d}-"
+            + ("primary" if index % 2 == 0 else "replica"),
+            "role": "primary" if index % 2 == 0 else "replica",
+            "shard_id": f"shard-{index // 2:04d}",
+            "az_id": "az-a" if index % 2 == 0 else "az-b",
+            "host": "127.0.0.1",
+            "client_port": 7000 + index,
+        }
+        for index in range(count)
+    ]
+
+
+def _clean_snapshots(nodes: list[dict[str, Any]], expected_nodes: int) -> list[dict[str, Any]]:
+    return [
+        {
+            "logical_id": node["logical_id"],
+            "probe_status": "PASS",
+            "cluster_state": "ok",
+            "known_nodes": expected_nodes,
+            "role": node["role"],
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+        }
+        for node in nodes
+    ]
+
+
+def test_a_bounded_wait_does_not_spend_a_whole_fleet_round_every_second(monkeypatch) -> None:
+    """The adversarial case: everything a subset can see is clean and the fleet
+    is not, so the cheap prefilter cannot help and only the backoff can.
+
+    Role counts are a property of the probed set, so no subset can evaluate
+    them; this is the one shape where the observers say clean round after round
+    while the whole-fleet round keeps disagreeing. Left at one round per second
+    a 120s wait costs 120 whole-fleet rounds - at 1280 nodes that is 7680 RESP
+    commands a second from one controller, against §4.4's one round per 60s.
+    """
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    nodes = _gate_nodes()
+    clock = _Clock()
+    monkeypatch.setattr(time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(time, "sleep", clock.sleep)
+    probed: list[int] = []
+
+    def health(probe_nodes, *, rows=None):
+        probed.append(len(probe_nodes))
+        return {
+            "cluster_state": "ok",
+            "known_nodes": len(nodes),
+            # Never the expected counts, so the wait can never end.
+            "primary_count": 0,
+            "replica_count": 0,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": _clean_snapshots(probe_nodes, len(nodes)),
+        }
+
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", health)
+    monkeypatch.setattr(
+        docker_runtime, "_process_node_snapshot", lambda node: {"logical_id": node["logical_id"]}
+    )
+
+    with pytest.raises(docker_runtime.DockerRuntimeError):
+        docker_runtime._management_wait_clean_cluster(nodes, timeout=120.0)
+
+    whole_fleet = [size for size in probed if size == len(nodes)]
+    assert len(whole_fleet) <= 12, "a 120s wait must not cost 120 whole-fleet rounds"
+    # And it does keep re-reading the fleet, because the prefilter is an
+    # optimisation and not a verdict: 15s is the longest gap it may leave.
+    assert len(whole_fleet) >= 8
+
+
+def test_a_bounded_wait_still_ends_only_on_a_whole_fleet_round(monkeypatch) -> None:
+    """The prefilter decides when to look, never what was seen.
+
+    Its observers report clean from the first observation while the fleet is
+    not, so a wait that trusted them would return immediately on three nodes.
+    """
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    nodes = _gate_nodes()
+    clock = _Clock()
+    monkeypatch.setattr(time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(time, "sleep", clock.sleep)
+    fleet_clean_at = 5.0
+    probed: list[tuple[float, int]] = []
+
+    def health(probe_nodes, *, rows=None):
+        probed.append((clock.now, len(probe_nodes)))
+        whole_fleet = len(probe_nodes) == len(nodes)
+        settled = clock.now >= fleet_clean_at
+        return {
+            "cluster_state": "ok",
+            "known_nodes": len(nodes),
+            "primary_count": len([n for n in probe_nodes if n["role"] == "primary"])
+            if not whole_fleet or settled
+            else 0,
+            "replica_count": len([n for n in probe_nodes if n["role"] == "replica"])
+            if not whole_fleet or settled
+            else 0,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": _clean_snapshots(probe_nodes, len(nodes)),
+        }
+
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", health)
+    monkeypatch.setattr(
+        docker_runtime, "_process_node_snapshot", lambda node: {"logical_id": node["logical_id"]}
+    )
+
+    docker_runtime._management_wait_clean_cluster(nodes, timeout=120.0)
+
+    assert probed[-1][1] == len(nodes), "the wait ended on a whole-fleet round"
+    assert probed[-1][0] >= fleet_clean_at, "and not before the fleet was clean"
+    # It also did not sit out the whole recheck interval once the fleet settled.
+    assert probed[-1][0] < fleet_clean_at + docker_runtime.WHOLE_FLEET_RECHECK_SECONDS
+
+
+def test_the_partition_probes_clean_wait_uses_the_same_rule(monkeypatch) -> None:
+    """The other clock-driven whole-fleet gate, measured on the same run: three
+    16.7s waits inside the network-partition probe cost 51 whole-fleet rounds
+    between them."""
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    nodes = _gate_nodes()
+    clock = _Clock()
+    monkeypatch.setattr(time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(time, "sleep", clock.sleep)
+    rounds: list[float] = []
+
+    class _NeverCleanProbe:
+        def __init__(self, inventory, **_kwargs) -> None:
+            self._count = len(inventory)
+
+        def run(self, **_options):
+            rounds.append(clock.now)
+            return {"status": "OK", "nodes_observed": self._count - 1}
+
+    def health(probe_nodes, *, rows=None):
+        return {
+            "cluster_state": "ok",
+            "known_nodes": len(nodes),
+            "primary_count": 0,
+            "replica_count": 0,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": _clean_snapshots(probe_nodes, len(nodes)),
+        }
+
+    monkeypatch.setattr(docker_runtime, "LightClusterProbe", _NeverCleanProbe)
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", health)
+    monkeypatch.setattr(
+        docker_runtime, "_process_node_snapshots_parallel", lambda nodes, **_k: []
+    )
+
+    with pytest.raises(docker_runtime.DockerRuntimeError):
+        docker_runtime._wait_process_light_clean(
+            nodes,
+            expected_nodes=len(nodes),
+            expected_primaries=len(nodes) // 2,
+            expected_replicas=len(nodes) // 2,
+            timeout=120.0,
+        )
+
+    assert len(rounds) <= 12, "a 120s wait must not cost 120 whole-fleet rounds"
+    assert len(rounds) >= 8
