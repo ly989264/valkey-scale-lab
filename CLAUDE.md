@@ -1680,14 +1680,36 @@ the four further sites that must move with it - including `real.ecs.full-flow`'s
 admitting the exception and taking the first 1280-node run are not the same
 decision. **Nothing in it is implemented.**
 
+**The role census was built on approval, measured inert, and reverted**
+(`ccd69c39`, reverted at `78214e53`). Read slice map §12; it is the session's
+sharpest lesson and it corrects §10.2. Role counts really are a property of the
+probed set, so a two-node sample genuinely cannot evaluate them - but the claim
+that this is what cost the wall clock was reasoning about which predicate fields
+a subset can *see*, not a measurement of which ones actually *block*. Measured
+on a real dense exact-200 with the prefilter's two halves recorded separately:
+**53 consultations, 41 blocked by the node-local half before the census was
+reached, 12 reached it, and it agreed all 12 times.** Zero disagreements, zero
+unreadable. The wall clock agreed: the two dense runs with it, PASS 2180.02 s and
+PASS 2164.18 s, sit inside the spread of the two without it.
+
+**What actually costs the time** is visible in the same run: three management
+waits landed on **14.176, 14.183 and 14.187 s** - three operations agreeing to
+eleven milliseconds, which is the backoff schedule exactly (rounds at 0, 2, 6 and
+14 s) and not a cluster. The prefilter *allowed* every one, because both
+observers were clean while one of the other 198 nodes was not. **The prefilter
+reads two nodes and the predicate is over two hundred**, and no census closes
+that - only probing more nodes would, which is the cost the rate limit exists to
+avoid. So the lever is **the backoff's growth curve and
+`WHOLE_FLEET_RECHECK_SECONDS`**, and it is the doubling rather than the 15 s cap
+that dominates a wait clearing in under ten seconds.
+
 **Added to the open list.** The rolling-restart health gate's escalation is
 **closed** at `f26769b3`, above. What remains: that neither backend records its
 observation volume in its own evidence, which is the same evidence-parity gap as
-"a native run's command audit records no ssh"; and **the role-count blind spot
-in the prefilter**, which is now the largest known cost of M4-1 - it is the whole
-of the +6% to +11% at density, and slice map §10.2 names the two ways to remove
-it. Reading global role counts from the observers' `CLUSTER SHARDS` is the better
-one, and it is a new observation on a gate's path, so it wants its own evidence.
+"a native run's command audit records no ssh"; and **M4-1's +6% to +11% at
+density**, whose cause is now named rather than guessed - tune the backoff
+against the measured 0 → 2 → 6 → 14 s schedule, and do not reach for the
+prefilter again without a workload that shows it disagreeing.
 
 ### Stage MR-3 is done, 2026-08-14, and with it the multi-replica prerequisite program. M4 needs operator approval and the correct state now is idle
 

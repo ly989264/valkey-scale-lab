@@ -515,6 +515,58 @@ role-count blind spot entirely and with it essentially all of the added latency.
 The second is the better change and it is a new observation on a gate's path, so
 it wants its own evidence.
 
+**§10.2 was wrong about the cause, and §12 is the measurement that says so.**
+The second option was built, run and reverted. Read §12 before acting on this
+paragraph, which is kept because the reasoning in it is what the measurement
+corrected.
+
+## §12 The role census was built, measured inert, and reverted
+
+The operator approved closing the role-count blind spot, so it was closed:
+`cluster_shards_role_counts` beside `cluster_shards_node_ids`, an
+`observed_role_counts` that takes the first observer that answers and abstains
+when none can, and a prefilter that consults it after the node-local half. Five
+regression tests, each mutation-checked. Then it was measured on a real dense
+exact-200 with the prefilter's two halves recorded separately, and the result
+sent it back out again.
+
+| | |
+|---|---|
+| prefilter consultations in one dense run | **53** |
+| blocked by the node-local half, census never reached | **41** |
+| reached the census | **12** |
+| census *disagreed* with the expectation | **0** |
+| census unreadable | **0** |
+
+**It never changed a decision.** The wall clock says the same: the two dense
+runs taken with it, **PASS 2180.02 s** and **PASS 2164.18 s**, sit inside the
+spread of the two taken without it, 2291.79 s and 2215.06 s - and it provably
+did not fire in either, so the difference is variance and not the census.
+
+**What actually costs the time**, and this run shows its shape. Three management
+waits landed on **14.176, 14.183 and 14.187 s** - three different operations
+agreeing to eleven milliseconds, which is not a cluster and is the backoff
+schedule exactly: rounds at 0, 2, 6 and 14 s. The prefilter *allowed* every one
+of them, because both observers were clean and the census agreed while one of
+the other 198 nodes was not.
+
+> **The prefilter reads two nodes and the predicate is over two hundred.** A
+> node-local fault on any non-observer node is invisible to it whatever the
+> census says, and no small sample closes that - only probing more nodes would,
+> which is the cost the rate limit exists to avoid.
+
+So §10.2's attribution - "all of it the role-count case" - was reasoning about
+which predicate fields a subset can evaluate, not a measurement of which ones
+block, and it was wrong. The lever is **the backoff's growth curve and
+`WHOLE_FLEET_RECHECK_SECONDS`**, not the prefilter's completeness. The measured
+schedule to tune against is 0 → 2 → 6 → 14 s, and it is the doubling rather than
+the 15 s cap that dominates a wait clearing in under ten seconds.
+
+Reverted rather than kept inert, because a change whose justification is
+disproved should not stay in the tree carrying a docstring that claims a benefit
+it does not deliver. Restoring it is one `git revert` if a workload ever shows
+the census disagreeing - the gap it closes is real, it just does not bite here.
+
 ### §10.3 One number to watch
 
 Dense run 1's primary-kill RTO is **55.27 s**, above the 43.8-53.8 s spread every
