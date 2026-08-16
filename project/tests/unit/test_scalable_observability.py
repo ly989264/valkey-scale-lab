@@ -21,7 +21,9 @@ from valkey_scale_lab.observability.cluster import (
     LightClusterProbe,
     NodeEndpoint,
     cluster_shards_node_ids,
+    cluster_shards_role_counts,
     normalize_cluster_shards,
+    observed_role_counts,
     observation_complexity,
     parse_myslots,
 )
@@ -3356,15 +3358,22 @@ def _clean_snapshots(nodes: list[dict[str, Any]], expected_nodes: int) -> list[d
     ]
 
 
-def test_a_bounded_wait_does_not_spend_a_whole_fleet_round_every_second(monkeypatch) -> None:
-    """The adversarial case: everything a subset can see is clean and the fleet
-    is not, so the cheap prefilter cannot help and only the backoff can.
+def _expected_counts(nodes: list[dict[str, Any]]) -> tuple[int, int]:
+    primaries = sum(1 for node in nodes if node["role"] == "primary")
+    return primaries, len(nodes) - primaries
 
-    Role counts are a property of the probed set, so no subset can evaluate
-    them; this is the one shape where the observers say clean round after round
-    while the whole-fleet round keeps disagreeing. Left at one round per second
-    a 120s wait costs 120 whole-fleet rounds - at 1280 nodes that is 7680 RESP
-    commands a second from one controller, against §4.4's one round per 60s.
+
+def test_a_bounded_wait_does_not_spend_a_whole_fleet_round_every_second(monkeypatch) -> None:
+    """The surviving adversarial case: every cheap reading says clean and the
+    fleet is not, so only the backoff can bound the rate.
+
+    An observer's `CLUSTER SHARDS` is one gossip round behind the nodes it
+    describes, so it can report the census the wait is waiting for while some
+    node still disagrees about itself. That is the shape left after the role
+    census was added to the prefilter, and it is what the backoff is for: left
+    at one round per second a 120s wait costs 120 whole-fleet rounds, which at
+    1280 nodes is 7680 RESP commands a second from one controller against
+    §4.4's one round per 60s.
     """
 
     from valkey_scale_lab.runtime import docker_runtime
@@ -3390,6 +3399,10 @@ def test_a_bounded_wait_does_not_spend_a_whole_fleet_round_every_second(monkeypa
         }
 
     monkeypatch.setattr(docker_runtime, "_management_cluster_health", health)
+    # The observers are the stale half: they report the census the wait wants.
+    monkeypatch.setattr(
+        docker_runtime, "observed_role_counts", lambda _endpoints: _expected_counts(nodes)
+    )
     monkeypatch.setattr(
         docker_runtime, "_process_node_snapshot", lambda node: {"logical_id": node["logical_id"]}
     )
@@ -3402,6 +3415,108 @@ def test_a_bounded_wait_does_not_spend_a_whole_fleet_round_every_second(monkeypa
     # And it does keep re-reading the fleet, because the prefilter is an
     # optimisation and not a verdict: 15s is the longest gap it may leave.
     assert len(whole_fleet) >= 8
+
+
+def test_a_wait_blocked_on_role_counts_ends_when_the_census_is_right(monkeypatch) -> None:
+    """The blind spot this closes, and it is the one that cost wall clock.
+
+    Role counts are a property of the probed set, so a layer-1 sample cannot
+    evaluate them: a count over two nodes is a count of two nodes. Without a
+    census the prefilter said clean every round of a wait that was blocked on
+    `primary_count` alone - which is what `add_replica` and every remove
+    operation wait for - so the whole-fleet round only came round on the
+    backoff, and the wait ended up to WHOLE_FLEET_RECHECK_SECONDS late.
+    Measured at four times the density that cost +129 s and +236 s on a ~2070 s
+    run. `CLUSTER SHARDS` is the whole cluster in one reply, which is what §6.1
+    gives the observer layer.
+    """
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    nodes = _gate_nodes()
+    clock = _Clock()
+    monkeypatch.setattr(time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(time, "sleep", clock.sleep)
+    settles_at = 4.0
+    wanted = _expected_counts(nodes)
+
+    def health(probe_nodes, *, rows=None):
+        settled = clock.now >= settles_at
+        whole_fleet = len(probe_nodes) == len(nodes)
+        return {
+            "cluster_state": "ok",
+            "known_nodes": len(nodes),
+            # Node-local facts are clean throughout, so the census is the only
+            # thing either reading can be waiting for.
+            "primary_count": wanted[0] if settled or not whole_fleet else 0,
+            "replica_count": wanted[1] if settled or not whole_fleet else 0,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": _clean_snapshots(probe_nodes, len(nodes)),
+        }
+
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", health)
+    monkeypatch.setattr(
+        docker_runtime,
+        "observed_role_counts",
+        lambda _endpoints: wanted if clock.now >= settles_at else (0, 0),
+    )
+    monkeypatch.setattr(
+        docker_runtime, "_process_node_snapshot", lambda node: {"logical_id": node["logical_id"]}
+    )
+
+    docker_runtime._management_wait_clean_cluster(nodes, timeout=120.0)
+
+    # Without the census the next whole-fleet round would not have been due
+    # until the backoff allowed it, which by then is the 15s ceiling.
+    assert clock.now < settles_at + docker_runtime.WHOLE_FLEET_RECHECK_SECONDS
+    assert clock.now == settles_at
+
+
+def test_an_observer_that_cannot_be_asked_is_not_an_answer_of_no(monkeypatch) -> None:
+    """A census nobody could supply must not block the whole-fleet round.
+
+    The prefilter is an optimisation and never a verdict, so the direction that
+    matters is this one: unable to read has to mean "take the round", because
+    the alternative is a wait that stalls on its own instrument.
+    """
+
+    from valkey_scale_lab.runtime import docker_runtime
+
+    nodes = _gate_nodes()
+    clock = _Clock()
+    monkeypatch.setattr(time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(time, "sleep", clock.sleep)
+    settles_at = 3.0
+    wanted = _expected_counts(nodes)
+
+    def health(probe_nodes, *, rows=None):
+        settled = clock.now >= settles_at
+        whole_fleet = len(probe_nodes) == len(nodes)
+        return {
+            "cluster_state": "ok",
+            "known_nodes": len(nodes),
+            "primary_count": wanted[0] if settled or not whole_fleet else 0,
+            "replica_count": wanted[1] if settled or not whole_fleet else 0,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+            "snapshots": _clean_snapshots(probe_nodes, len(nodes)),
+        }
+
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", health)
+    monkeypatch.setattr(docker_runtime, "observed_role_counts", lambda _endpoints: None)
+    monkeypatch.setattr(
+        docker_runtime, "_process_node_snapshot", lambda node: {"logical_id": node["logical_id"]}
+    )
+
+    docker_runtime._management_wait_clean_cluster(nodes, timeout=120.0)
+
+    # Read as "no", the census would have blocked every prefilter round and the
+    # wait could only have ended on the recheck ceiling. It ends on the backoff
+    # instead, which is where a prefilter that abstains leaves it.
+    assert settles_at <= clock.now < docker_runtime.WHOLE_FLEET_RECHECK_SECONDS
 
 
 def test_a_bounded_wait_still_ends_only_on_a_whole_fleet_round(monkeypatch) -> None:
@@ -3543,3 +3658,62 @@ def test_a_topology_snapshot_observes_the_fleet_once(monkeypatch) -> None:
 
     assert collected == [len(nodes)], "one round, two derivations"
     assert len(snapshot["nodes"]) == len(nodes)
+
+
+def test_cluster_shards_role_counts_reads_roles_and_asserts_no_health() -> None:
+    """The census must not wait for health, which is what its sibling exists for.
+
+    `cluster_shards_node_ids` already draws this line for membership: whether
+    one node is still known cannot depend on whether an unrelated node has
+    finished converging. A role census is the same kind of question, and a
+    trigger that refused to count a cluster with one `loading` replica would not
+    fire on the cluster whose counts are already right.
+    """
+
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+    assert cluster_shards_role_counts(_shards(node_ids)) == (2, 2)
+    # Same reply with a replica still syncing: `normalize_cluster_shards`
+    # refuses it, the census counts it.
+    loading = _shards_with_loading_replica(node_ids)
+    assert cluster_shards_role_counts(loading) == (2, 2)
+    with pytest.raises(ConvergenceFailure):
+        normalize_cluster_shards(loading)
+
+
+def test_cluster_shards_role_counts_refuses_a_reply_it_cannot_read() -> None:
+    with pytest.raises(SemanticFailure):
+        cluster_shards_role_counts("not an array")
+    with pytest.raises(SemanticFailure):
+        cluster_shards_role_counts([[b"slots", [0, 1], b"nodes", [[b"id", b"a", b"role", b"?"]]]])
+
+
+def test_observed_role_counts_takes_the_first_answer_and_abstains_otherwise() -> None:
+    """`None` means "could not ask", which a caller must not read as "no"."""
+
+    nodes, responses = _cluster_fixture()
+    node_ids = [f"{index + 1:040x}" for index in range(4)]
+
+    def factory(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        return FakeConnection(responses[endpoint.port])
+
+    assert observed_role_counts(nodes, connection_factory=factory) == (2, 2)
+
+    # An observer whose reply cannot be parsed is skipped for the next one.
+    broken = dict(responses)
+    broken[nodes[0].port] = {**responses[nodes[0].port], ("CLUSTER", "SHARDS"): "nonsense"}
+
+    def partly_broken(endpoint: Endpoint, _timeout: float) -> FakeConnection:
+        return FakeConnection(broken[endpoint.port])
+
+    assert observed_role_counts(nodes, connection_factory=partly_broken) == (2, 2)
+
+    # Nobody answers at all, so there is no census rather than a census of zero.
+    class _Refuses:
+        def execute(self, *_command: Any) -> Any:
+            raise OSError("connection refused")
+
+        def close(self) -> None:
+            return None
+
+    assert observed_role_counts(nodes, connection_factory=lambda *_a: _Refuses()) is None
+    del node_ids

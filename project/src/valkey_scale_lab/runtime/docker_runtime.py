@@ -56,6 +56,7 @@ from valkey_scale_lab.observability.cluster import (
     NodeEndpoint,
     cluster_shards_node_ids,
     normalize_cluster_shards,
+    observed_role_counts,
     parse_myslots,
     parse_role,
 )
@@ -3643,16 +3644,32 @@ class _WholeFleetRounds:
     * the first observation always takes one, so nothing is decided on less
       evidence than before and a permanent failure is still seen at once;
     * after that, only when the representative set this runtime already probes
-      elsewhere reports the node-local part of the predicate holding. That set
-      is `_representative_nodes`, and it is **two** nodes at exact-200 rather
-      than §6.1's three to five - §6.1 sizes the `CLUSTER SHARDS` observers and
-      this is a layer-1 read, so the number is the runtime's own and is stated
-      here rather than borrowed. A whole-fleet clean state implies a
-      representative-clean one, so this cannot delay a wait about to end;
+      elsewhere reports the node-local part of the predicate holding, *and* an
+      observer's `CLUSTER SHARDS` reports the role census the wait is waiting
+      for. The layer-1 set is `_representative_nodes`, and it is **two** nodes
+      at exact-200 rather than §6.1's three to five - §6.1 sizes the
+      `CLUSTER SHARDS` observers and that half is the layer-2 read below. A
+      whole-fleet clean state implies a representative-clean one, so the
+      layer-1 half cannot delay a wait about to end;
     * and never twice inside a backoff doubling from the wait's own poll
       period up to `WHOLE_FLEET_RECHECK_SECONDS`, so an observer set that keeps
       saying clean while the fleet is not cannot restore the one-per-second
       rate.
+
+    **Role counts are why the second half exists.** They are a property of the
+    probed set, so no layer-1 sample can evaluate them: a count over two nodes
+    is a count of two nodes. Left out, a wait blocked on `primary_count` alone
+    - which is what `add_replica` and every remove operation wait for - saw the
+    prefilter say clean every time and fell back on the backoff, ending up to
+    `WHOLE_FLEET_RECHECK_SECONDS` late. Measured at four times the density that
+    cost **+129 s and +236 s on a ~2070 s run**. `CLUSTER SHARDS` is the whole
+    cluster in one reply, which is exactly what §6.1 gives the observer layer.
+
+    An observer can lag the fleet by a gossip round, so this half *can* say no
+    while the fleet is already clean - and that is bounded rather than
+    unbounded, because `due()` returns True on the recheck interval before it
+    consults anything. So the worst case is what it was without it, and the
+    ordinary case is a wait that ends when the cluster does.
 
     Nothing here decides a wait. Each wait still ends only on a whole-fleet
     round satisfying its whole predicate, which is unchanged.
@@ -3663,10 +3680,17 @@ class _WholeFleetRounds:
         nodes: list[dict[str, Any]],
         *,
         poll_seconds: float,
+        expected_primaries: int,
+        expected_replicas: int,
         recheck_seconds: float = WHOLE_FLEET_RECHECK_SECONDS,
     ) -> None:
         self._observers = _representative_nodes(nodes)
         self._expected_nodes = len(nodes)
+        # Taken from the caller rather than recounted from `nodes`, because the
+        # wait is what owns this expectation and the two must not be able to
+        # drift apart: a prefilter waiting for a census its wait is not waiting
+        # for would block it.
+        self._expected_counts = (expected_primaries, expected_replicas)
         self._recheck_seconds = recheck_seconds
         self._backoff = poll_seconds
         self._last_round: float | None = None
@@ -3699,7 +3723,18 @@ class _WholeFleetRounds:
             # The prefilter is an optimisation and never a verdict, so when it
             # cannot read, the whole-fleet round is taken rather than skipped.
             return True
-        return _node_local_clean(health, self._expected_nodes)
+        if not _node_local_clean(health, self._expected_nodes):
+            return False
+        try:
+            counts = observed_role_counts(
+                [NodeEndpoint.from_inventory(node) for node in self._observers]
+            )
+        except Exception:  # noqa: BLE001
+            return True
+        if counts is None:
+            # Nobody could be asked, which is not an answer of "no".
+            return True
+        return counts == self._expected_counts
 
 
 def _configure_process_cluster(
@@ -4347,7 +4382,12 @@ def _wait_process_light_clean(
     inventory = [NodeEndpoint.from_inventory(node) for node in nodes]
     last_error = "MISSING"
     last_failure: BaseException | None = None
-    rounds = _WholeFleetRounds(nodes, poll_seconds=1.0)
+    rounds = _WholeFleetRounds(
+        nodes,
+        poll_seconds=1.0,
+        expected_primaries=expected_primaries,
+        expected_replicas=expected_replicas,
+    )
     while time.monotonic() < deadline:
         started = time.monotonic()
         try:
@@ -6912,7 +6952,12 @@ def _management_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) 
     replicas = [node for node in nodes if node["role"] == "replica"]
     deadline = time.monotonic() + timeout
     last_health: dict[str, Any] | None = None
-    rounds = _WholeFleetRounds(nodes, poll_seconds=1.0)
+    rounds = _WholeFleetRounds(
+        nodes,
+        poll_seconds=1.0,
+        expected_primaries=len(primaries),
+        expected_replicas=len(replicas),
+    )
     while time.monotonic() < deadline:
         try:
             if not rounds.due():
