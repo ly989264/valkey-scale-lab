@@ -328,12 +328,115 @@ next item rather than this one:
    4-vCPU controller in a single health gate. That is the O(N²) topology
    evidence §14 says the normal path must not produce.
 
-The minimal fix has the same shape as §5.2 and could reuse the same
-`_WholeFleetRounds`: the scoped probe already detected the condition, so the
-whole-fleet diagnostic is a diagnostic and belongs on a rate floor rather than
-on every attempt. It was **not** made here, because it would invalidate the
-acceptance runs above and because it cannot be proved on a run - the escalation
-fired in one run of seven and is not reproducible on demand.
+The minimal fix has the same shape as §5.2: the scoped probe already detected
+the condition, so the whole-fleet diagnostic is a diagnostic and belongs on a
+rate floor rather than on every attempt. It was not made *before* the acceptance
+runs above, because it would have invalidated them. **The operator approved it
+afterwards and it landed at `f26769b3`; §11 is the change and its proof.**
+
+## §11 The escalation, fixed on approval
+
+The diagnostic now runs at most once per `WHOLE_FLEET_RECHECK_SECONDS` - the
+same constant §5.2 uses, so there is one number for this rule in the module -
+and the first one is still taken at once, because a gate that fails quickly
+should still say what the whole fleet looked like.
+
+**Why the rate limit cannot decide anything.** `scoped_nodes` is a subset of
+`nodes`, and `_management_matrix_health_from_process_snapshots` reduces every
+field with `min` or `max` over what was probed. So a scoped reading that is not
+clean cannot become clean by probing more nodes *at the same instant*: probing
+more can only lower a `min` and raise a `max`. All the escalation ever added was
+a second reading a moment later, and the next attempt takes that one second
+later anyway. The gate's own break, on the scoped probe, is untouched.
+
+**One gap the change opened, and closed.** With the in-loop diagnostic no longer
+running every second, a cluster settling inside the final
+`WHOLE_FLEET_RECHECK_SECONDS` would time out where before a diagnostic a second
+later would have ended the gate. So the reading taken on the way out is now
+**decisive as well as diagnostic**: it is added to `full_probe_count` and to
+`attempts`, and the gate raises only if it too is unclean. That leaves the rate
+limit unable to fail a gate that would have passed, and it makes a failure's
+message carry the fleet rather than whatever the scoped probe last saw.
+
+### §11.1 What it is worth, measured, projected and declared
+
+**Projected, not measured** - and labelled that way because the escalation fired
+once in seven runs and is not reproducible on demand. Candidate 2's own retained
+numbers are `retry_count: 85` over `health_gate_wall_ms: 116780.98`. Through the
+new rule that gate takes `1 + floor(116.78 / 15) = 8` whole-fleet readings:
+
+| | as it ran | through the new rule |
+|---|---|---|
+| whole-fleet readings in that gate | 85 | **8** |
+| node probes | 17,000 | 1,600 |
+| `CLUSTER INFO` + `CLUSTER NODES` | 34,000 | 3,200 |
+| bytes at 200 nodes | ~428 MB | ~40 MB |
+| bytes at M4's 1280 nodes | ~17 GB | ~1.6 GB |
+
+**Measured hermetically**: a 120 s gate that never clears takes 9 whole-fleet
+readings against 120, and a gate whose scoped probe clears at t=5 s still ends
+at t=5 s having taken exactly one. Three regression tests, each
+mutation-checked. The shared fixture's first version tied `known_nodes` to the
+sample size, which made the scoped probe unable to be clean at all and the gate
+able to end only on the diagnostic - the very thing under test - and it is
+recorded in the helper's docstring rather than quietly corrected.
+
+**Declared artifact delta: none, in any run whose gates converge on their first
+scoped probe.** `retry_count: 0` means the branch is never entered, and that is
+six of the seven exact-200 runs measured here and both dense runs. The fields
+that would move in an escalating run are `health_probe.full_probe_count`,
+`node_command_count`, `attempts` and the `stdout_tail` JSON of the health-gate
+command row - all of which the `management_command_log` and
+`rolling_restart_results` views compare.
+
+### §11.2 Proof on the fleet, and the no-op is exact
+
+Two consecutive real exact-200 at `f26769b3`, `gate-20260816T022357Z-d3613c51`
+**PASS 1424.78 s** and `gate-20260816T024742Z-40b02195` **PASS 1546.11 s**. Both
+`run_verdict` 12/12 OK with `tool_errors` empty, fault lane 9 / 12 / 15 with
+nine `REAL_PASS`, cleanup 40 rows with `resources_remaining` empty, 200 / 200
+journals, no `ERROR` in any artifact, RTO 51.06 s and 48.67 s. Zero residue on
+all eight hosts asked over ssh from outside. Both runs escalated **zero** times,
+so both are the no-op case: `retry_count: 0`, `full_probe_count: 400` and
+`representative_probe_count: 948` across their 80 gates, identical to every
+non-escalating run of both code states, and `CLUSTER NODES` 1,464 and 1,430
+against candidate 1's 1,442.
+
+Against the frozen `real-exact-200-c58a762a` run-1, **both runs score
+identically**: `runtime_start` 7/7, `cluster_form` 5/5, `management_matrix`
+**7/8**, `fault_matrix` 4/6, `cleanup` 2/2 - and 7/8 is what the frozen pair
+scores against *itself*, through the same `management_sequence` field.
+
+**The isolating proof is the diff against M4-1's own candidate 1**, the same
+configuration on the same fleet one commit apart, with only this change between
+them:
+
+```
+runtime_start        7/7   cluster_form  5/5   management_matrix 7/8
+fault_matrix         6/6   cleanup       2/2
+```
+
+`fault_matrix` **fully identical** and `management_command_log` **SAME**. Reduced
+to fields, the entire difference between the two runs is **one boolean**:
+
+```
+-  "errors_observed_during_operation": true,
++  "errors_observed_during_operation": false,
+```
+
+which is §14.7's per-run observation that `BASELINE.md` already names. The two
+rolling restarts' own convergence totals across candidate 1, run 1 and run 2 are
+**285.9 / 285.7 / 285.5 s** and **354.4 / 354.2 / 353.7 s** - within 0.4 s and
+0.7 s - which is the same statement in the stage that holds the gate.
+
+**Where run 2's extra minute went, since it is not this change.** Its
+`management_matrix` is 1047.4 s against run 1's 945.0 s, with `retry_count: 0`
+throughout. Its convergence total is 797.4 s against 747.9 s, and the +49.5 s
+sits in `remove_replica`, `remove_failed_node`, `remove_primary_*` and
+`add_replica` - the four operations that call `_management_wait_clean_cluster`.
+That is **M4-1's own declared role-count cost** of §10.2, one call at a time and
+each bounded by `WHOLE_FLEET_RECHECK_SECONDS`, and it is the reason that knob is
+named there as the thing to move next.
 
 ## §10 The same at 4x density, which is where the cost shows
 

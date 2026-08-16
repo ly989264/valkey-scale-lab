@@ -1591,17 +1591,65 @@ eight-node scoped probe had already reported the cause on attempt 1
 `CLUSTER NODES` commands and 484.3 MB**, against 1,442 and 36.6 MB in candidate
 1. One reply is 25.2 KB at 200 nodes.
 
-Three things follow. It is **not caused by this item** - that gate calls nothing
-these commits touch, and the escalation count is zero in six of seven exact-200
-runs spanning both code states. It **corrects a claim in this file**:
+Three things follow. It was **not caused by M4-1's three commits** - that gate
+calls nothing they touch, and the escalation count is zero in six of seven
+exact-200 runs spanning both code states. It **corrects a claim in this file**:
 `real_fleet_ladder_slice_map.md` §9a and `simulated_ladder_slice_map.md` §16.2
 both record the escalation as never happening at exact-200, and it happened. And
 **at 1280 nodes it is the run-ending one**: a reply scales with node count, so
 the same 85 escalations would move about **17 GB** through one 4-vCPU controller
 in a single gate. That is the O(N²) topology evidence §14 forbids on the normal
-path, and it is **the recommended next item** - the fix is §5.2's rule applied to
-the same helper, but it cannot be proved on a run because the escalation fired
-once in seven and is not reproducible on demand.
+path.
+
+**The operator approved fixing it, and it landed at `f26769b3`.** Read slice map
+§11. The diagnostic now runs at most once per `WHOLE_FLEET_RECHECK_SECONDS`, the
+same constant §5.2 uses, with the first one still taken at once so a gate that
+fails quickly still says what the whole fleet looked like. **It cannot decide
+the gate anyway**, which is what makes it safe: the scoped probe is a *subset* of
+the diagnostic's nodes and every health field is a `min` or a `max` over what was
+probed, so a scoped reading that is not clean cannot become clean by probing more
+nodes at the same instant. All the escalation added was a second reading a moment
+later, and the next attempt takes that.
+
+**One gap the change opened and closed**, found while writing it rather than by
+running: without the in-loop diagnostic every second, a cluster settling inside
+the final `WHOLE_FLEET_RECHECK_SECONDS` would time out where before a diagnostic
+a second later would have ended the gate. The reading taken on the way out is
+therefore **decisive as well as diagnostic**, so the rate limit cannot fail a
+gate that would have passed.
+
+- **Projected, and labelled so** - the escalation fired once in seven runs and is
+  not reproducible on demand. Through the new rule, candidate 2's own retained
+  `retry_count: 85` over `health_gate_wall_ms: 116780.98` becomes **8** readings:
+  17,000 → 1,600 node probes, 34,000 → 3,200 commands, ~428 MB → ~40 MB, and at
+  1280 nodes ~17 GB → ~1.6 GB.
+- **Measured hermetically**: a 120 s gate that never clears takes 9 whole-fleet
+  readings against 120, and a gate whose scoped probe clears at t=5 s still ends
+  at t=5 s having taken exactly one. Three regression tests, each
+  mutation-checked - and the shared fixture's first version tied `known_nodes`
+  to the sample size, which made the scoped probe unable to be clean at all and
+  the gate able to end only on the diagnostic, the very thing under test. That
+  is CLAUDE.md's mutation rule catching a bad fixture for the third time.
+- **Proven on the fleet**: `repository.all` 92/92, and two consecutive real
+  exact-200 at `f26769b3`, **PASS 1424.78 s** and **PASS 1546.11 s**, both 12/12
+  with `tool_errors` empty, fault lane 9/12/15 with nine `REAL_PASS`, cleanup 40
+  rows, 200/200 journals, no `ERROR`, RTO 51.06 s and 48.67 s, zero residue on
+  all eight hosts asked from outside. Both escalated **zero** times, so both are
+  the no-op case. Against the frozen baseline both score 7/7, 5/5, **7/8**, 4/6,
+  2/2 - and 7/8 is what the frozen pair scores against itself.
+- **The isolating proof** is the diff against M4-1's own candidate 1, same
+  configuration and fleet, one commit apart: 7/7, 5/5, 7/8, **6/6**, 2/2, with
+  `management_command_log` SAME and `fault_matrix` fully identical. Reduced to
+  fields, **the entire difference between the two runs is one boolean**,
+  `errors_observed_during_operation`, which `BASELINE.md` already names as a
+  per-run observation. The two rolling restarts' convergence totals across
+  candidate 1 and both new runs are 285.9 / 285.7 / 285.5 s and 354.4 / 354.2 /
+  353.7 s.
+- **Run 2's extra minute is not this change.** Its `management_matrix` is
+  1047.4 s against run 1's 945.0 s with `retry_count: 0` throughout, and its
+  +49.5 s of convergence sits in the four operations that call
+  `_management_wait_clean_cluster` - M4-1's own declared role-count cost, which
+  is why `WHOLE_FLEET_RECHECK_SECONDS` is named as the next thing to move.
 
 **The wall-clock cost, reported rather than buried.** At eight hosts every stage
 of every new-code run is inside the range the same fleet already produced. At
@@ -1632,11 +1680,14 @@ the four further sites that must move with it - including `real.ecs.full-flow`'s
 admitting the exception and taking the first 1280-node run are not the same
 decision. **Nothing in it is implemented.**
 
-**Added to the open list, none of it this item's to close:** the rolling-restart
-health gate's whole-fleet escalation above; that neither backend records its
+**Added to the open list.** The rolling-restart health gate's escalation is
+**closed** at `f26769b3`, above. What remains: that neither backend records its
 observation volume in its own evidence, which is the same evidence-parity gap as
-"a native run's command audit records no ssh"; and the role-count blind spot in
-the prefilter.
+"a native run's command audit records no ssh"; and **the role-count blind spot
+in the prefilter**, which is now the largest known cost of M4-1 - it is the whole
+of the +6% to +11% at density, and slice map §10.2 names the two ways to remove
+it. Reading global role counts from the observers' `CLUSTER SHARDS` is the better
+one, and it is a new observation on a gate's path, so it wants its own evidence.
 
 ### Stage MR-3 is done, 2026-08-14, and with it the multi-replica prerequisite program. M4 needs operator approval and the correct state now is idle
 
