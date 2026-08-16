@@ -14,6 +14,7 @@ from valkey_scale_lab import __version__
 from valkey_scale_lab import placement
 from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout
 from valkey_scale_lab.config.validation import (
+    is_exact_1280_native_ecs_profile,
     is_exact_2000_local_full_flow_profile,
     load_effective_config,
     validate_semantics,
@@ -21,6 +22,7 @@ from valkey_scale_lab.config.validation import (
 from valkey_scale_lab.execution import (
     ExecutionSelectionError,
     exact_200_selection_allowed,
+    exact_1280_selection_allowed,
     exact_2000_selection_allowed,
     resolve_profile,
 )
@@ -89,10 +91,20 @@ def run_resource_preflight(
         operator_opt_in=operator_opt_in,
         cost_acknowledged=cost_acknowledged,
     )
+    exact_1280_exception = _is_exact_1280_native_ecs_exception(
+        config,
+        node_count,
+        dry_run,
+        capability_id=capability_id,
+        scenario=scenario_name,
+        profile_id=profile_id,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
+    )
     semantic_errors = _semantic_errors_for_preflight(
         config,
         allow_exact_200=exact_200_exception,
-        allow_exact_2000=exact_2000_exception,
+        allow_exact_2000=exact_2000_exception or exact_1280_exception,
     )
     run_id = f"{capability_id}-resource-preflight-{node_count}-20260628"
     checks: list[dict[str, Any]] = []
@@ -127,13 +139,17 @@ def run_resource_preflight(
     checks.append(
         _check(
             "node_count_limit",
-            node_count <= 100 or dry_run or exact_200_exception or exact_2000_exception,
+            node_count <= 100
+            or dry_run
+            or exact_200_exception
+            or exact_2000_exception
+            or exact_1280_exception,
             {
                 "node_count": node_count,
                 "default_cap": 100,
                 "selected_capability_id": (
                     capability_id
-                    if exact_200_exception or exact_2000_exception
+                    if exact_200_exception or exact_2000_exception or exact_1280_exception
                     else "MISSING"
                 ),
             },
@@ -151,6 +167,24 @@ def run_resource_preflight(
                     "profile_name": config.get("profile_name", "MISSING"),
                     "dry_run": dry_run or config.get("runtime", {}).get("dry_run") is True,
                     "scale_profile": config.get("scale_profile", {}),
+                },
+            )
+        )
+    if node_count == 1280:
+        checks.append(
+            _check(
+                "exact_1280_native_ecs_opt_in",
+                exact_1280_exception,
+                {
+                    "node_count": node_count,
+                    "capability_id": capability_id,
+                    "scenario_name": scenario_name,
+                    "profile_id": profile_id or "MISSING",
+                    "profile_name": config.get("profile_name", "MISSING"),
+                    "operator_opt_in": operator_opt_in,
+                    "cost_acknowledged": cost_acknowledged,
+                    "runtime_provider": config.get("runtime", {}).get("provider", "MISSING"),
+                    "runtime_dry_run": config.get("runtime", {}).get("dry_run"),
                 },
             )
         )
@@ -347,6 +381,41 @@ def _is_exact_200_bounded_exception(
         and safety.get("allow_1000_nodes") is False
         and dry_run_arg is False
         and runtime.get("dry_run") is False
+    )
+
+
+def _is_exact_1280_native_ecs_exception(
+    config: dict[str, Any],
+    node_count: int,
+    dry_run_arg: bool,
+    *,
+    capability_id: str,
+    scenario: str,
+    profile_id: str | None,
+    operator_opt_in: bool,
+    cost_acknowledged: bool,
+) -> bool:
+    """M4's exception at preflight, and the preflight is the point of it.
+
+    Admitting the run is not the same as the run being possible: at 1280 nodes
+    on eight hosts this is what compares 160 nodes per host against 7900 MiB of
+    RAM, which is why `m4_density_calibration.md` §5 has the node memory limit
+    dropping 64 -> 32 there. The exception waives the *cap*, never the check.
+    """
+
+    runtime = config.get("runtime", {})
+    return (
+        node_count == 1280
+        and profile_id == "exact-1280"
+        and exact_1280_selection_allowed(
+            capability_id=capability_id,
+            scenario_id=scenario,
+        )
+        and is_exact_1280_native_ecs_profile(config)
+        and dry_run_arg is False
+        and runtime.get("dry_run") is False
+        and operator_opt_in is True
+        and cost_acknowledged is True
     )
 
 

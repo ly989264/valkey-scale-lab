@@ -10,6 +10,7 @@ from valkey_scale_lab import placement
 from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout, cluster_timeout_node_fields
 from valkey_scale_lab.config.validation import (
     REQUIRED_1000_ENV_VALUE,
+    is_exact_1280_native_ecs_profile,
     is_exact_2000_local_full_flow_profile,
     is_scale_projection_profile,
     load_effective_config,
@@ -18,6 +19,7 @@ from valkey_scale_lab.config.validation import (
 )
 from valkey_scale_lab.execution import (
     exact_200_selection_allowed,
+    exact_1280_selection_allowed,
     exact_2000_selection_allowed,
 )
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
@@ -108,6 +110,19 @@ def build_cluster_plan(
         operator_opt_in=operator_opt_in,
         cost_acknowledged=cost_acknowledged,
     )
+    exact_1280_native_ecs = _is_exact_1280_native_ecs_exception(
+        config,
+        node_count=node_count,
+        dry_run=dry_run,
+        capability_id=capability_id,
+        scenario=scenario,
+        operator_opt_in=operator_opt_in,
+        cost_acknowledged=cost_acknowledged,
+    )
+    # The two named real-execution exceptions waive the same plan constraints,
+    # so they are read as one rule with two names. Each still requires its own
+    # whole predicate, and neither can be reached through the other.
+    named_real_exception = exact_2000_local_full_flow or exact_1280_native_ecs
 
     if network.get("virtual_az_mode") == "single" and replicas_per_shard > 0:
         if not config.get("cluster", {}).get("non_ha_allowed"):
@@ -170,9 +185,10 @@ def build_cluster_plan(
         "dry_run": dry_run,
         "opt_in_1000": opt_in_1000,
         "scale_projection_200_plus": scale_projection_200_plus,
-        "above_200_dry_run_only": node_count > 200 and not exact_2000_local_full_flow,
+        "above_200_dry_run_only": node_count > 200 and not named_real_exception,
         "exact_200_bounded_exception": exact_200_bounded_exception,
         "exact_2000_local_full_flow_opt_in": exact_2000_local_full_flow,
+        "exact_1280_native_ecs_opt_in": exact_1280_native_ecs,
         "no_execution": dry_run,
         "port_collision_checked": _ports_unique_per_host(planned_nodes),
         "az_balanced": _az_balanced(planned_nodes),
@@ -191,12 +207,12 @@ def build_cluster_plan(
     if exact_200_bounded_exception:
         constraints["selected_capability_id"] = capability_id
         constraints["selected_scenario_id"] = scenario
-    if exact_2000_local_full_flow:
+    if named_real_exception:
         constraints["selected_capability_id"] = capability_id
         constraints["selected_scenario_id"] = scenario
         constraints["operator_opt_in"] = operator_opt_in
         constraints["cost_acknowledged"] = cost_acknowledged
-    if node_count > 200 and not dry_run and not exact_2000_local_full_flow:
+    if node_count > 200 and not dry_run and not named_real_exception:
         raise PlannerError("plans above 200 nodes must be dry-run only")
     if (
         node_count > 200
@@ -209,11 +225,11 @@ def build_cluster_plan(
         node_count > int(safety["default_max_nodes"])
         and not opt_in_1000
         and not exact_200_bounded_exception
-        and not exact_2000_local_full_flow
+        and not named_real_exception
         and not scale_projection_200_plus
     ):
         raise PlannerError("node count exceeds default cap without 1000 opt-in")
-    if node_count >= 1000 and not dry_run and not exact_2000_local_full_flow:
+    if node_count >= 1000 and not dry_run and not named_real_exception:
         raise PlannerError("1000-node plans must be dry-run only")
     if not all(
         [
@@ -299,6 +315,40 @@ def _is_exact_200_bounded_exception(
         and runtime.get("dry_run") is False
         and dry_run is False
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
+    )
+
+
+def _is_exact_1280_native_ecs_exception(
+    config: dict[str, Any],
+    *,
+    node_count: int,
+    dry_run: bool,
+    capability_id: str | None,
+    scenario: str | None,
+    operator_opt_in: bool,
+    cost_acknowledged: bool,
+) -> bool:
+    """M4's exception at plan time, and the same shape as exact-2000's.
+
+    `operator_opt_in` and `cost_acknowledged` are arguments threaded from
+    `runtime/lifecycle.py`, not fields a configuration can assert about itself.
+    That is what makes a named exception an operator act rather than a file:
+    the file says which run is admissible and the invocation says that someone
+    asked for it and accepted what it costs.
+    """
+
+    return (
+        capability_id is not None
+        and scenario is not None
+        and node_count == 1280
+        and dry_run is False
+        and operator_opt_in is True
+        and cost_acknowledged is True
+        and exact_1280_selection_allowed(
+            capability_id=capability_id,
+            scenario_id=scenario,
+        )
+        and is_exact_1280_native_ecs_profile(config)
     )
 
 

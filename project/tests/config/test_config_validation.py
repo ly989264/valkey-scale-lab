@@ -482,3 +482,158 @@ def test_the_two_replica_free_shapes_that_already_ship_are_untouched(tmp_path: P
     )
     report = validate_config_file(single, tmp_path / "single.json")
     assert "REPLICAS_PER_SHARD_BELOW_MIN" not in _codes(report)
+
+
+
+#: Every clause of `is_exact_1280_native_ecs_profile`, as an edit to the
+#: canonical template that must put the configuration back outside the
+#: exception. `cluster.shards` is here too: the node count is a clause.
+EXACT_1280_CLAUSES: list[tuple[str, str, object]] = [
+    ("", "profile_name", "scale_1280_native_ecs_renamed"),
+    ("runtime", "provider", "docker"),
+    ("runtime", "sandbox_mode", "host_namespace"),
+    ("runtime", "dry_run", True),
+    ("workload", "enabled", False),
+    ("scale_profile", "exact_1280_native_ecs_opt_in", False),
+    ("scale_profile", "target_nodes", 1279),
+    ("scale_profile", "execution_mode", "operator_opt_out"),
+    ("safety", "default_max_nodes", 200),
+    ("safety", "allow_1000_nodes", True),
+    ("safety", "require_sandbox_network", False),
+    ("safety", "forbid_host_network_mutation", False),
+    ("cluster", "shards", 255),
+]
+
+
+def _exact_1280_config() -> dict:
+    """The normalized canonical template.
+
+    The clause tests mutate this dict and call `validate_semantics` directly
+    rather than writing a file and parsing it back. The first version of them
+    round-tripped through JSON, which `simple_yaml` refuses - so every
+    configuration was duly rejected, with `CONFIG_PARSE_ERROR`, and the tests
+    passed while proving nothing about the guard.
+    """
+
+    from valkey_scale_lab.config.validation import load_effective_config
+
+    return load_effective_config("templates/configs/scale_1280_native_ecs_optin.yaml")
+
+
+def test_exact_1280_native_ecs_template_validates_as_a_named_exception(
+    tmp_path: Path,
+) -> None:
+    """M4's target shape is admitted, and only through its own name.
+
+    1280 crosses 1000, so this configuration collects **eight** validation
+    errors without the exception - three of them from the `total_nodes >= 1000`
+    block rather than the above-200 rules, which is the part easily missed when
+    reasoning from the ladder. See
+    `docs/real_execution_above_200_exception_memo.md` §1.
+    """
+
+    report = validate_config_file(
+        "templates/configs/scale_1280_native_ecs_optin.yaml",
+        tmp_path / "report.json",
+    )
+
+    assert report["valid"] is True, report["errors"]
+    assert report["total_nodes"] == 1280
+    normalized = json.loads(
+        Path(report["normalized_config_path"]).read_text(encoding="utf-8")
+    )
+    assert normalized["runtime"]["provider"] == "ecs"
+    assert normalized["runtime"]["dry_run"] is False
+    assert normalized["workload"]["enabled"] is True
+    assert normalized["safety"]["default_max_nodes"] == 100
+    # The 1000-node opt-in is a dry-run mechanism and this must not be
+    # reachable through it.
+    assert normalized["safety"]["allow_1000_nodes"] is False
+    assert normalized["scale_profile"]["exact_1280_native_ecs_opt_in"] is True
+
+
+@pytest.mark.parametrize("section,key,value", EXACT_1280_CLAUSES)
+def test_breaking_any_clause_of_the_1280_exception_refuses_the_run(
+    section: str, key: str, value: object
+) -> None:
+    """A bounded exception is only as good as its narrowness, so each clause is
+    broken on its own and the configuration must be refused.
+
+    Every one of these edits leaves a configuration that is still about 1280
+    real nodes on a fleet, and every one must be refused - otherwise the
+    exception is a raised cap wearing a name.
+    """
+
+    from copy import deepcopy
+
+    from valkey_scale_lab.config.validation import validate_semantics
+
+    config = deepcopy(_exact_1280_config())
+    assert validate_semantics(config) == [], "the unbroken template must validate"
+    if section:
+        config[section][key] = value
+    else:
+        config[key] = value
+
+    codes = {error.get("code") for error in validate_semantics(config)}
+
+    assert codes, f"{section}.{key}={value!r} was admitted"
+    # Whatever else it says, it must still refuse a real run above 200 nodes -
+    # unless the edit made the run a dry run, which is the one clause whose own
+    # removal takes it off that path.
+    if not (section == "runtime" and key == "dry_run"):
+        assert "REAL_EXECUTION_ABOVE_200_FORBIDDEN" in codes, codes
+
+
+def test_the_1280_exception_does_not_admit_a_neighbouring_node_count() -> None:
+    """It names a node count, not a range. Moving `scale_profile.target_nodes`
+    with the shard count is not enough - the predicate reads both."""
+
+    from copy import deepcopy
+
+    from valkey_scale_lab.config.validation import validate_semantics
+
+    config = deepcopy(_exact_1280_config())
+    config["cluster"]["shards"] = 257
+    config["scale_profile"]["target_nodes"] = 1285
+
+    codes = {error.get("code") for error in validate_semantics(config)}
+
+    assert "REAL_EXECUTION_ABOVE_200_FORBIDDEN" in codes, codes
+
+
+def test_the_two_named_real_exceptions_cannot_serve_each_others_environment() -> None:
+    """exact-2000 is `docker`, exact-1280 is `ecs`, and neither widens the other.
+
+    Checked in both directions, because a disjunction is exactly where two
+    guards can quietly become one.
+    """
+
+    from copy import deepcopy
+
+    from valkey_scale_lab.config.validation import (
+        is_exact_1280_native_ecs_profile,
+        is_exact_2000_local_full_flow_profile,
+        load_effective_config,
+        validate_semantics,
+    )
+
+    one_two_eighty = _exact_1280_config()
+    two_thousand = load_effective_config(
+        "templates/configs/scale_2000_local_full_flow_optin.yaml"
+    )
+    assert is_exact_1280_native_ecs_profile(one_two_eighty) is True
+    assert is_exact_2000_local_full_flow_profile(one_two_eighty) is False
+    assert is_exact_2000_local_full_flow_profile(two_thousand) is True
+    assert is_exact_1280_native_ecs_profile(two_thousand) is False
+
+    # 1280 nodes wearing exact-2000's name and provider is refused, and so is
+    # 2000 nodes wearing this one's.
+    borrowed = deepcopy(one_two_eighty)
+    borrowed["profile_name"] = "scale_2000_local_full_flow_optin"
+    borrowed["runtime"]["provider"] = "docker"
+    assert validate_semantics(borrowed) != []
+
+    borrowed = deepcopy(two_thousand)
+    borrowed["profile_name"] = "scale_1280_native_ecs_optin"
+    assert validate_semantics(borrowed) != []

@@ -59,6 +59,12 @@ PROFILES: Mapping[str, ExecutionProfile] = MappingProxyType(
         "exact-200": ExecutionProfile(
             "exact-200", 200, "local-real", "templates/configs/scale_200.yaml"
         ),
+        "exact-1280": ExecutionProfile(
+            "exact-1280",
+            1280,
+            "local-real",
+            "templates/configs/scale_1280_native_ecs_optin.yaml",
+        ),
         "exact-2000": ExecutionProfile(
             "exact-2000",
             2000,
@@ -110,6 +116,9 @@ EXACT_200_SCENARIOS = frozenset(
     }
 )
 EXACT_2000_SCENARIOS = frozenset({"local_full_flow"})
+# M4's bounded exception, and as narrow as exact-2000's: one scenario, which is
+# the only one that drives a real fleet end to end.
+EXACT_1280_SCENARIOS = frozenset({"local_full_flow"})
 
 
 def resolve_backend(backend_id: str) -> ExecutionBackend:
@@ -211,6 +220,14 @@ def exact_200_selection_allowed(*, capability_id: str, scenario_id: str) -> bool
     )
 
 
+def exact_1280_selection_allowed(*, capability_id: str, scenario_id: str) -> bool:
+    return (
+        scenario_id == capability_id
+        and scenario_id in EXACT_1280_SCENARIOS
+        and SCENARIO_CAPABILITIES.get(scenario_id) == capability_id
+    )
+
+
 def exact_2000_selection_allowed(*, capability_id: str, scenario_id: str) -> bool:
     return (
         scenario_id == capability_id
@@ -240,6 +257,7 @@ def validate_execution_selection(
 __all__ = [
     "BACKENDS",
     "EXACT_200_SCENARIOS",
+    "EXACT_1280_SCENARIOS",
     "EXACT_2000_SCENARIOS",
     "PROFILES",
     "SCENARIO_CAPABILITIES",
@@ -247,6 +265,7 @@ __all__ = [
     "ExecutionProfile",
     "ExecutionSelectionError",
     "exact_200_selection_allowed",
+    "exact_1280_selection_allowed",
     "exact_2000_selection_allowed",
     "profile_for_exact_nodes",
     "resolve_backend",

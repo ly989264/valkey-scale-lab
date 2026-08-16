@@ -389,25 +389,30 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
         and scale_profile.get("dry_run_only") is True
     )
     exact_2000_local_full_flow = is_exact_2000_local_full_flow_profile(config)
+    # M4's bounded exception. It is admitted at exactly the codes exact-2000 is
+    # admitted at and no others, so the two read as one rule with two names
+    # rather than as a widening. See the memo for what each of these waives.
+    exact_1280_native_ecs = is_exact_1280_native_ecs_profile(config)
+    named_real_exception = exact_2000_local_full_flow or exact_1280_native_ecs
 
     errors.extend(_validate_replica_count(cluster, network, dry_run))
     if default_cap != 100:
         errors.append(_err("DEFAULT_NODE_CAP", "safety.default_max_nodes must be exactly 100 for development capabilities"))
     if total_nodes > 200:
-        if not dry_run and not exact_2000_local_full_flow:
+        if not dry_run and not named_real_exception:
             errors.append(_err("REAL_EXECUTION_ABOVE_200_FORBIDDEN", "configs above 200 nodes must use runtime.dry_run: true"))
-        if not exact_2000_local_full_flow and not scale_projection and not legacy_1000_dry_run:
+        if not named_real_exception and not scale_projection and not legacy_1000_dry_run:
             errors.append(
                 _err(
                     "MISSING_200_PLUS_DRY_RUN_PROFILE",
                     "configs above 200 nodes require an explicit scale-projection profile or the legacy 1000-node dry-run opt-in",
                 )
             )
-        if workload.get("enabled") is True and not exact_2000_local_full_flow:
+        if workload.get("enabled") is True and not named_real_exception:
             errors.append(_err("WORKLOAD_ABOVE_200_FORBIDDEN", "configs above 200 nodes must not enable workload execution"))
-    if total_nodes > default_cap and not allow_1000 and not scale_projection and not exact_2000_local_full_flow:
+    if total_nodes > default_cap and not allow_1000 and not scale_projection and not named_real_exception:
         errors.append(_err("NODE_CAP_EXCEEDED", f"config creates {total_nodes} nodes above default cap {default_cap}"))
-    if total_nodes >= 1000 and not exact_2000_local_full_flow:
+    if total_nodes >= 1000 and not named_real_exception:
         if not allow_1000:
             errors.append(_err("MISSING_1000_ALLOW", "1000-node configs require safety.allow_1000_nodes: true"))
         if safety.get("require_1000_env") != "VSLAB_ALLOW_1000_DRYRUN":
@@ -577,6 +582,48 @@ def is_exact_2000_local_full_flow_profile(config: dict[str, Any]) -> bool:
         and workload.get("enabled") is True
         and scale_profile.get("exact_2000_local_full_flow_opt_in") is True
         and int(scale_profile.get("target_nodes", 0) or 0) == 2000
+        and scale_profile.get("execution_mode") == "operator_opt_in"
+        and int(safety.get("default_max_nodes", 0) or 0) == 100
+        and safety.get("allow_1000_nodes") is False
+        and safety.get("require_sandbox_network") is True
+        and safety.get("forbid_host_network_mutation") is True
+    )
+
+
+def is_exact_1280_native_ecs_profile(config: dict[str, Any]) -> bool:
+    """M4's bounded exception: 1280 real nodes on the operator's ECS fleet.
+
+    The fourth named exception in this repository and deliberately the same
+    shape as the third. Every clause is copied from
+    `is_exact_2000_local_full_flow_profile` except the node count, the profile
+    name, and `provider`, which is `ecs` where that one is `docker` - so neither
+    exception can serve the other's environment and neither widens the other.
+
+    `allow_1000_nodes` stays **false**. 1280 crosses 1000, so the whole
+    `total_nodes >= 1000` block fires for it, and every clause of that block is
+    dry-run-only by construction; admitting this through the 1000-node opt-in
+    would make a real run reachable from a dry-run mechanism. It is admitted by
+    name instead.
+
+    Reported before it was made, in
+    `docs/real_execution_above_200_exception_memo.md`, because by this project's
+    own rule a semantic change to a validation contract is the operator's.
+    """
+
+    total_nodes = _total_nodes(config)
+    safety = _obj(config, "safety")
+    runtime = _obj(config, "runtime")
+    scale_profile = _obj(config, "scale_profile")
+    workload = _obj(config, "workload")
+    return (
+        total_nodes == 1280
+        and config.get("profile_name") == "scale_1280_native_ecs_optin"
+        and runtime.get("provider") == "ecs"
+        and runtime.get("sandbox_mode") == "container_namespace"
+        and runtime.get("dry_run") is False
+        and workload.get("enabled") is True
+        and scale_profile.get("exact_1280_native_ecs_opt_in") is True
+        and int(scale_profile.get("target_nodes", 0) or 0) == 1280
         and scale_profile.get("execution_mode") == "operator_opt_in"
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False

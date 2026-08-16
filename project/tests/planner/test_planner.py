@@ -492,3 +492,87 @@ def test_three_azs_are_the_one_place_the_two_formulas_differ_at_one_replica() ->
     for shard in range(12):
         members = [placement.primary_az(azs, shard), placement.replica_az(azs, shard, 0)]
         assert len(set(members)) == 2
+
+
+def test_exact_1280_needs_the_operator_not_only_the_file() -> None:
+    """What makes a named exception an operator act rather than a configuration.
+
+    `operator_opt_in` and `cost_acknowledged` are arguments threaded from
+    `runtime/lifecycle.py`; no file can assert them about itself. The same is
+    true of the capability/scenario pair, so a configuration that is admissible
+    still cannot be planned from a scenario the exception does not name.
+    """
+
+    from valkey_scale_lab.config.validation import load_effective_config
+    from valkey_scale_lab.planner.plan import PlannerError, build_cluster_plan
+
+    config = load_effective_config("templates/configs/scale_1280_native_ecs_optin.yaml")
+
+    plan = build_cluster_plan(
+        config,
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        operator_opt_in=True,
+        cost_acknowledged=True,
+    )
+    assert len(plan["nodes"]) == 1280
+    assert plan["constraints"]["exact_1280_native_ecs_opt_in"] is True
+    assert plan["constraints"]["exact_2000_local_full_flow_opt_in"] is False
+    assert plan["constraints"]["operator_opt_in"] is True
+    assert plan["constraints"]["cost_acknowledged"] is True
+
+    for missing in ("operator_opt_in", "cost_acknowledged"):
+        kwargs = {"operator_opt_in": True, "cost_acknowledged": True, missing: False}
+        with pytest.raises(PlannerError, match="dry-run only"):
+            build_cluster_plan(
+                config,
+                capability_id="local_full_flow",
+                scenario="local_full_flow",
+                **kwargs,
+            )
+
+    # A scenario the exception does not name cannot reach it either.
+    with pytest.raises(PlannerError, match="dry-run only"):
+        build_cluster_plan(
+            config,
+            capability_id="fault_matrix",
+            scenario="fault_matrix",
+            operator_opt_in=True,
+            cost_acknowledged=True,
+        )
+
+
+def test_exact_1280_plans_eight_nodehosts_with_no_shard_colliding() -> None:
+    """The shape `m4_density_calibration.md` §1 compiled, now pinned.
+
+    One nodehost per host is what a native run places and refuses otherwise, so
+    eight nodehosts is eight hosts - the fleet as provisioned, with no quota
+    increase.
+    """
+
+    import collections
+
+    from valkey_scale_lab.config.validation import load_effective_config
+    from valkey_scale_lab.planner.plan import build_cluster_plan
+
+    config = load_effective_config("templates/configs/scale_1280_native_ecs_optin.yaml")
+    nodes = build_cluster_plan(
+        config,
+        capability_id="local_full_flow",
+        scenario="local_full_flow",
+        operator_opt_in=True,
+        cost_acknowledged=True,
+    )["nodes"]
+
+    per_nodehost = collections.Counter(node["nodehost_id"] for node in nodes)
+    assert len(per_nodehost) == 8
+    assert set(per_nodehost.values()) == {160}
+    assert collections.Counter(node["az_id"] for node in nodes) == {
+        "az-a": 640,
+        "az-b": 640,
+    }
+    shards: dict[str, set[str]] = collections.defaultdict(set)
+    for node in nodes:
+        shards[node["shard_id"]].add(node["nodehost_id"])
+    assert len(shards) == 256
+    assert all(len(hosts) == 5 for hosts in shards.values()), "a shard shares a nodehost"
