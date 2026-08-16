@@ -1,9 +1,15 @@
 # Admitting a real native 1280-node run: what it would take, reported not made
 
-Written 2026-08-16 as part of M4-1. **No code changed and nothing here is
-implemented.** By this project's own rule a semantic change to a validation
-contract is reported before it is made, and this is the whole safety story of
-M4: today nothing above 200 nodes can execute for real, and M4's target is 1280.
+Written 2026-08-16 as part of M4-1, when nothing here was implemented. By this
+project's own rule a semantic change to a validation contract is reported before
+it is made, and this is the whole safety story of M4: nothing above 200 nodes
+could execute for real, and M4's target is 1280.
+
+**The operator approved §3 the same day and it landed at `9d797b80`. §5 is what
+was built, what deviated from the design, and what was deliberately left out.**
+§1 through §4 are left as they were written, before the decision, because the
+value of a report like this is that it can be read against what was then
+actually done.
 
 Everything below was compiled at HEAD against a configuration derived from
 `templates/configs/real_ecs_200.yaml` with `cluster.shards: 256` and
@@ -169,3 +175,71 @@ two-hour run fails at 90 minutes and leaves 1280 processes across eight hosts
 with no measured reclaim behind it.
 
 **This memo asks for a decision on §3, not for permission to implement it.**
+
+## §5 Approved and implemented, 2026-08-16
+
+The operator approved §3 and it landed at `9d797b80`. What was built is what
+§3 designed, with one deviation and one omission, both stated here rather than
+left to be discovered.
+
+**The deviation, in the narrow direction.** §3's clause list omits
+`runtime.sandbox_mode` while its own prose says every clause is copied from
+`is_exact_2000_local_full_flow_profile`, which has it. The prose won:
+`sandbox_mode == "container_namespace"` is a thirteenth clause, so the
+predicate is one clause stricter than the list above.
+
+**The omission: no catalog entry.** §3.2 item 4 recommended a separate
+`real.ecs.*` entry as the narrower move. It was not registered, because an
+entry nothing has ever executed is the placeholder the milestone rules forbid,
+and because §4 argues admitting the exception and taking the first 1280-node
+run are separate decisions. So **`catalog.json` stays at 99, `repository.all`
+at 92 and the M1 plan at 91**, and the executable boundary is unmoved: nothing
+can run 1280 through the Gate until M4-3 registers the entry it will actually
+exercise. The exception is reachable through the library - `build_cluster_plan`
+and `run_resource_preflight` with `profile_id="exact-1280"` - and not through
+the Gate.
+
+### §5.1 Compiled on the controller against the real fleet
+
+`templates/configs/scale_1280_native_ecs_optin.yaml` is the canonical template
+the new `ExecutionProfile("exact-1280", 1280, ...)` names.
+
+| | |
+|---|---|
+| semantic errors | **none** |
+| planned nodes | **1280** |
+| nodehosts x nodes | **8 x 160**, one nodehost per host = the fleet as provisioned |
+| per-AZ | 640 / 640 |
+| shards sharing a nodehost | **0 of 256** |
+| resource preflight | **PASS** under the ulimit `scripts/ecs_gate.py` already sets |
+
+Two numbers worth carrying to M4-3. `runtime_fd_limit` requires
+`nodes*8 + nodehosts*32` = **10,496** descriptors at this size, against that
+wrapper's 65536 - so the existing wrapper covers it and no controller change is
+needed. And the memory budget passes **per nodehost**, at 5120 MiB of 7900,
+which is the check this exception waives the cap around and never waives; it is
+also why the template carries `node_memory_limit_mb: 32`.
+
+A control matters here: run by hand outside a Gate run, the preflight also
+reports `docker_available` and `previous_cleanup_state` as FAIL. The same hand
+invocation at **exact-200**, a configuration that passes through the Gate every
+day, reports the identical two - so they are properties of invoking the
+preflight directly, not of this configuration.
+
+### §5.2 Narrowness is what was actually tested
+
+A bounded exception is only as good as its narrowness, so each clause is broken
+on its own: **thirteen parameterised cases, each of which must be refused**,
+plus a neighbouring node count (1285, with `target_nodes` moved to match, is
+refused) and both cross-exception directions (1280 wearing exact-2000's name and
+provider, and 2000 wearing this one's). The planner side is tested for the thing
+that makes this an operator act rather than a file: dropping `operator_opt_in`
+or `cost_acknowledged`, or asking from a scenario the exception does not name,
+each raises.
+
+**The first version of those tests proved nothing and passed.** They wrote the
+mutated configuration as JSON and read it back through `simple_yaml`, which
+refuses it - so every case was duly rejected with `CONFIG_PARSE_ERROR` while the
+guard was never exercised. They now mutate the normalized dict and call
+`validate_semantics` directly. Three mutations of the implementation were
+checked and all three detected.

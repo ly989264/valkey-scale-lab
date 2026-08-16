@@ -1667,18 +1667,75 @@ cost are written down in §10.2 and neither was taken: lowering the knob, or
 reading global role counts from the observers' `CLUSTER SHARDS` so the prefilter
 becomes complete. The second is the better change and wants its own evidence.
 
-**Reported and not made: the >200 real-execution exception.** See
-`project/docs/real_execution_above_200_exception_memo.md`. Compiled at HEAD, a
-real native 1280-node configuration collects **eight** validation errors, and
-three of them are the `total_nodes >= 1000` block rather than the above-200 rules
-- M4 is past exact-200 *and* past the 1000-node block, which is easy to miss.
-Neither existing escape can serve it: `is_scale_projection_profile` is dry-run
-only and `is_exact_2000_local_full_flow_profile` requires provider `docker`. The
-memo proposes a fourth named exception in the shape the third already has, lists
-the four further sites that must move with it - including `real.ecs.full-flow`'s
-`nodes` maximum of 200, which is the executable boundary - and argues that
-admitting the exception and taking the first 1280-node run are not the same
-decision. **Nothing in it is implemented.**
+**The >200 real-execution exception was reported, approved, and implemented at
+`9d797b80`.** Read `project/docs/real_execution_above_200_exception_memo.md`;
+§1-§4 are the report as written *before* the decision and §5 is what was built.
+Compiled at HEAD, a real native 1280-node configuration collected **eight**
+validation errors, three of them from the `total_nodes >= 1000` block rather than
+the above-200 rules - M4 is past exact-200 *and* past the 1000-node block, which
+is easy to miss. Neither existing escape could serve it:
+`is_scale_projection_profile` is dry-run only and
+`is_exact_2000_local_full_flow_profile` requires provider `docker`.
+
+`scale_1280_native_ecs_optin` is now the fourth named bounded exception, in the
+shape the third has. Every clause is copied from
+`is_exact_2000_local_full_flow_profile` except the node count, the profile name,
+and `provider`, which is **`ecs`** where that one is `docker` - so neither can
+serve the other's environment. **`allow_1000_nodes` stays false**: 1280 crosses
+1000, and every clause of that block is dry-run-only by construction, so
+admitting this through the 1000-node opt-in would make a real run reachable from
+a dry-run mechanism. It is admitted by name, at exactly the eight codes
+exact-2000 is admitted at and no others. The planner and resource predicates
+additionally require `operator_opt_in` and `cost_acknowledged`, which are
+arguments threaded from `lifecycle.py` and which no file can assert about itself
+- that is what makes it an operator act rather than a configuration.
+
+- **Compiled on the controller against the real `gce-m3b` manifest**: no
+  semantic errors, **1280 nodes over 8 nodehosts at 160 each**, 640/640 per AZ,
+  **0 of 256 shards** sharing a nodehost, and the resource preflight **PASS**.
+  Two numbers for M4-3: `runtime_fd_limit` needs **10,496** descriptors, against
+  the 65536 `scripts/ecs_gate.py` already sets, so no controller change is
+  needed; and the memory budget passes **per nodehost** at 5120 MiB of 7900,
+  which is why the template carries `node_memory_limit_mb: 32`. A control
+  matters - the same hand invocation at exact-200 reports the same two
+  non-blocking `docker_available` and `previous_cleanup_state` FAILs, so those
+  are properties of calling the preflight directly, not of this configuration.
+- **Narrowness is what was tested**: thirteen parameterised cases each break one
+  clause on its own and each must be refused, plus a neighbouring node count and
+  both cross-exception directions; the planner side is tested by dropping
+  `operator_opt_in`, dropping `cost_acknowledged`, and asking from a scenario the
+  exception does not name. Three mutations checked and detected. **The first
+  version of those tests proved nothing and passed** - they round-tripped the
+  configuration through JSON, which `simple_yaml` refuses, so every case was
+  rejected with `CONFIG_PARSE_ERROR` while the guard was never reached. They now
+  mutate the normalized dict and call `validate_semantics` directly.
+- **No catalog entry, deliberately**, so **catalog stays 99, `repository.all` 92
+  and the M1 plan 91**; the pytest tree is 857 → 875. Registering a `real.ecs.*`
+  entry nothing has executed is the placeholder the milestone rules forbid, and
+  memo §4 argues admitting the exception and taking the first 1280-node run are
+  separate decisions. **The executable boundary is unmoved**: `real.ecs.full-flow`
+  still declares `nodes` maximum 200, so nothing can run 1280 through the Gate
+  until M4-3 registers the entry it will actually exercise. The exception is
+  reachable through the library and not through the Gate.
+- **One deviation from the memo's literal clause list, in the narrow
+  direction**: the list omits `runtime.sandbox_mode` while its own prose says
+  every clause is copied from exact-2000, which has it. Included, so the
+  predicate is one clause stricter than §3 wrote down.
+- **Proven no-op on real runs**, because this touches `validate_semantics` and
+  `build_cluster_plan`, which every run passes through: `repository.all` 92/92,
+  and two consecutive real exact-200 at `9d797b80`, **PASS 1469.60 s** and **PASS
+  1453.99 s**, both 12/12 with `tool_errors` empty, fault lane 9/12/15 with nine
+  `REAL_PASS`, cleanup 40 rows, 200/200 journals, no `ERROR`, RTO 54.67 s and
+  52.77 s, zero residue on all eight hosts asked from outside. Both score 7/7,
+  5/5, 7/8, 4/6, 2/2 against the frozen baseline. Against **this session's own
+  pre-exception run** the delta is `fault_matrix` fully identical,
+  `management_command_log` SAME, and at field level **two instances of
+  `errors_observed_during_operation` and nothing else**.
+
+**M4-3 is the first 1280-node run and it needs the catalog entry above.** Memo
+§4 also argues the sequencing: run `native_cleanup_proof.py` at the new density
+*before* a full-flow run, so that a two-hour run failing at ninety minutes does
+not leave 1280 processes across eight hosts with no measured reclaim behind it.
 
 **The role census was built on approval, measured inert, and reverted**
 (`ccd69c39`, reverted at `78214e53`). Read slice map §12; it is the session's
