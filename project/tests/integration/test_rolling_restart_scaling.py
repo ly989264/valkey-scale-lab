@@ -585,3 +585,151 @@ def test_a_batch_whose_node_went_unread_mid_restart_says_so(
     assert "actual=MISSING" not in message
     assert excinfo.type is expected
     assert len(scopes) > 1, "the batch loop must have re-read the topology"
+
+
+class _Clock:
+    """A monotonic clock that only advances when the gate sleeps."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
+
+def _install_clock(monkeypatch: pytest.MonkeyPatch) -> _Clock:
+    clock = _Clock()
+    monkeypatch.setattr(docker_runtime.time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(docker_runtime.time, "sleep", clock.sleep)
+    return clock
+
+
+def _snapshot_rows(probe_nodes: list[dict[str, Any]], clean: bool) -> list[dict[str, Any]]:
+    """One reading per probed node.
+
+    `known_nodes` stays the cluster's own count however few nodes are probed,
+    because it is what each node reports about the whole cluster rather than a
+    property of the sample. Tying it to the sample size instead is what the
+    first version of this helper did, and it made the scoped probe unable to be
+    clean at all - so the gate could only ever end on the diagnostic, which is
+    the very thing under test.
+    """
+
+    health = {key: value for key, value in _clean_health(200).items() if key != "snapshots"}
+    if not clean:
+        health["cluster_state"] = "unknown"
+    return [
+        {"logical_id": node["logical_id"], "probe_status": "PASS", **health}
+        for node in probe_nodes
+    ]
+
+
+def test_the_health_gate_diagnostic_is_rate_limited_not_run_every_second(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A waiting gate used to run a whole-fleet `CLUSTER NODES` round a second.
+
+    Measured on a real exact-200 acceptance run,
+    `gate-20260815T174023Z-9bca9ac6`: one gate escalated **85 times over
+    116.8 s** and moved **19,150 `CLUSTER NODES` and 484.3 MB**, against 1,442
+    and 36.6 MB in the run taken beside it. §16 item 1 forbids the normal path
+    from periodically running whole-fleet `CLUSTER NODES`; a reply is 25.2 KB at
+    200 nodes and grows with node count, so the same event at 1280 nodes moves
+    about 17 GB through one controller.
+    """
+
+    nodes = _nodes(200)
+    clock = _install_clock(monkeypatch)
+    probed: list[tuple[float, int]] = []
+
+    def snapshots(probe_nodes: list[dict[str, Any]], *, timeout: float) -> list[dict[str, Any]]:
+        del timeout
+        probed.append((clock.now, len(probe_nodes)))
+        return _snapshot_rows(probe_nodes, clean=False)
+
+    monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", snapshots)
+
+    with pytest.raises(docker_runtime.DockerRuntimeError):
+        docker_runtime._management_matrix_wait_rolling_restart_health(
+            nodes, timeout=120.0, full_probe=False
+        )
+
+    whole_fleet = [when for when, size in probed if size == len(nodes)]
+    # One taken at once, then one per WHOLE_FLEET_RECHECK_SECONDS, then one on
+    # the way out. Left unlimited a 120s wait costs 120 of them.
+    assert len(whole_fleet) <= 11, "a 120s gate must not cost 120 whole-fleet rounds"
+    assert len(whole_fleet) >= 8
+    assert whole_fleet[0] == 0.0, "the first reading is still taken at once"
+    # And the failure still reports what the whole fleet looked like, freshly.
+    assert probed[-1][1] == len(nodes)
+
+
+def test_the_health_gate_still_ends_on_its_scoped_probe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rate limit is on the diagnostic, never on the decision.
+
+    The scoped probe is a subset of the diagnostic's nodes and every health
+    field is a min or a max over what was probed, so a scoped reading that is
+    not clean cannot become clean by probing more nodes at the same instant. All
+    the escalation ever added was a second reading a moment later, which the
+    next attempt takes anyway - so removing it from every attempt must not delay
+    the gate by even one poll.
+    """
+
+    nodes = _nodes(200)
+    clock = _install_clock(monkeypatch)
+    settles_at = 5.0
+
+    def snapshots(probe_nodes: list[dict[str, Any]], *, timeout: float) -> list[dict[str, Any]]:
+        del timeout
+        return _snapshot_rows(probe_nodes, clean=clock.now >= settles_at)
+
+    monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", snapshots)
+
+    _health, probe = docker_runtime._management_matrix_wait_rolling_restart_health(
+        nodes, timeout=120.0, full_probe=False
+    )
+
+    assert probe["status"] == "PASS"
+    assert clock.now == settles_at, "the gate ends when the scoped probe clears"
+    assert probe["sample_scope"] == "representative_by_az_and_required_nodes"
+    # Exactly one diagnostic - the immediate one. Unlimited it would be five,
+    # one per second of the wait.
+    assert probe["full_probe_count"] == len(nodes)
+
+
+def test_a_cluster_that_settles_at_the_deadline_still_passes_the_gate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rate limit must not be able to fail a gate that would have passed.
+
+    The in-loop diagnostic no longer runs every second, so a cluster settling
+    inside the last WHOLE_FLEET_RECHECK_SECONDS would time out where before a
+    diagnostic a second later ended the gate. The reading taken on the way out
+    is therefore decisive as well as diagnostic. Here the scoped probe never
+    clears at all and only the whole fleet does, which is the shape that has no
+    other way through.
+    """
+
+    nodes = _nodes(200)
+    clock = _install_clock(monkeypatch)
+    settles_at = 25.0
+
+    def snapshots(probe_nodes: list[dict[str, Any]], *, timeout: float) -> list[dict[str, Any]]:
+        del timeout
+        whole_fleet = len(probe_nodes) == len(nodes)
+        return _snapshot_rows(probe_nodes, clean=whole_fleet and clock.now >= settles_at)
+
+    monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", snapshots)
+
+    _health, probe = docker_runtime._management_matrix_wait_rolling_restart_health(
+        nodes, timeout=30.0, full_probe=False
+    )
+
+    assert probe["status"] == "PASS"
+    assert probe["sample_scope"] == "all_nodes_diagnostic"
+    assert probe["attempts"][-1]["sample_scope"] == "all_nodes_diagnostic"

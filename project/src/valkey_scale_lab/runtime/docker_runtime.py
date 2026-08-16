@@ -12024,6 +12024,7 @@ def _management_matrix_wait_rolling_restart_health(
     representative_probe_count = 0
     full_probe_count = 0
     retry_count = 0
+    last_diagnostic: float | None = None
     last = _management_matrix_health_from_process_snapshots([])
     last_scope = "all_nodes" if full_probe else "representative_by_az_and_required_nodes"
     attempt_summaries: list[dict[str, Any]] = []
@@ -12049,7 +12050,29 @@ def _management_matrix_wait_rolling_restart_health(
             last_scope = current_scope
             break
 
-        if not full_probe:
+        # The diagnostic round is `CLUSTER INFO` + `CLUSTER NODES` on every node,
+        # and it used to run on every non-clean attempt - so a gate that waited
+        # ran it once a second. Measured on a real exact-200 acceptance run
+        # (`gate-20260815T174023Z-9bca9ac6`): one gate escalated **85 times over
+        # 116.8 s**, 19,150 `CLUSTER NODES` and **484.3 MB** against 1,442 and
+        # 36.6 MB in the run beside it. §16 item 1 forbids the normal path from
+        # periodically running whole-fleet `CLUSTER NODES` and §14 calls the
+        # result O(N²) topology evidence; a reply is 25.2 KB at 200 nodes and
+        # grows with node count, so the same event at 1280 moves about 17 GB.
+        #
+        # It is rate-limited rather than removed because the first one is worth
+        # taking at once: a gate that fails quickly should still say what the
+        # whole fleet looked like. What it cannot do is decide the gate - the
+        # scoped probe above is a *subset* of these nodes and every field is a
+        # min or a max over what was probed, so a scoped result that is not
+        # clean cannot become clean by probing more nodes at the same instant.
+        # All the escalation ever added was a second reading a moment later,
+        # which the next attempt takes anyway.
+        if not full_probe and (
+            last_diagnostic is None
+            or time.monotonic() - last_diagnostic >= WHOLE_FLEET_RECHECK_SECONDS
+        ):
+            last_diagnostic = time.monotonic()
             diagnostic = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
             full_probe_count += len(diagnostic)
             last = _management_matrix_health_from_process_snapshots(diagnostic)
@@ -12067,6 +12090,29 @@ def _management_matrix_wait_rolling_restart_health(
                 break
         retry_count += 1
         time.sleep(1.0)
+    if not _management_matrix_clean_health(last, nodes) and not full_probe:
+        # About to fail, so pay for one last whole-fleet reading, and let it
+        # decide. Two reasons, and the second is the one that matters. Without
+        # it the message would carry whatever the scoped probe last saw rather
+        # than the fleet. And because the in-loop diagnostic no longer runs
+        # every second, a cluster that settled inside the final
+        # WHOLE_FLEET_RECHECK_SECONDS would now time out where before a
+        # diagnostic a second later would have ended the gate - so this reading
+        # is decisive as well as diagnostic, which leaves the rate limit unable
+        # to fail a gate that would have passed.
+        final = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, timeout)))
+        full_probe_count += len(final)
+        last = _management_matrix_health_from_process_snapshots(final)
+        last_scope = "all_nodes_diagnostic"
+        attempt_summaries.append(
+            {
+                "attempt": len(attempt_summaries) + 1,
+                "sample_scope": last_scope,
+                "probed_node_ids": [str(snapshot.get("logical_id", MISSING)) for snapshot in final],
+                "wall_ms": MISSING,
+                "health": {key: value for key, value in last.items() if key != "snapshots"},
+            }
+        )
     if not _management_matrix_clean_health(last, nodes):
         raise DockerRuntimeError(f"rolling restart health gate did not converge; scope={last_scope} health={last}")
     probe = {
