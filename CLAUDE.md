@@ -1738,6 +1738,93 @@ arguments threaded from `lifecycle.py` and which no file can assert about itself
 *before* a full-flow run, so that a two-hour run failing at ninety minutes does
 not leave 1280 processes across twelve hosts with no measured reclaim behind it.
 
+### Session M4-3, 2026-08-17: the entry is registered, reclaim is proven at M4's density, and the first 1280-node run found a wall
+
+Four commits, `7e53b2e7` through `bb92abc2`. Read
+`project/docs/m4_first_1280_run_map.md`: §2 is every quantity declared *before*
+running, §3 a placement defect the compile found, §4 the reclaim proof, §5 the
+run and the cluster-bus TCP wall, §6 what the next session inherits.
+**No baseline was frozen and none was touched.**
+
+- **`real.ecs.full-flow-1280` is registered**, declaring `nodes` with **minimum
+  and maximum both 1280** - a range would be wider than the exception it
+  exercises. `real.ecs.full-flow` keeps `maximum: 200` untouched, and the entry
+  is deliberately **not** in `real.ecs.full-suite`, which is M3's operator-invoked
+  set. **Measured: catalog 99 -> 100 and nothing else.** `repository.all` is
+  **92/92** and the M1 plan **91**, because a command entry joins neither - the
+  handover's "92 -> 93, 91 -> 92" is the pytest-entry rule and does not apply.
+- **The entry must assert the operator act, and the first attempt found out how.**
+  It failed in 0.21 s: `local_full_flow_v1.json`'s scale policy makes any run
+  above 200 nodes require operator opt-in and cost acknowledgement, and
+  `real.ecs.full-flow`'s argv carries neither. `ecs_gate.py` gained two
+  pass-through flags, off unless an entry asks, so exact-200's argv is
+  byte-identical to what every frozen baseline was taken under. Reported in map
+  §1.1 rather than slipped in: the distinction that survives is the run's
+  *configuration* asserting it against the *invocation* asserting it.
+- **A placement defect the compile found and no run had ever met** (§3). Every
+  declared constraint holds - 1280 nodes, 12 nodehosts at 106-107, 640/640 per
+  AZ, 0 of 256 shards colliding, every shard 3/2 - and yet az-a's 128 primaries
+  land on **2 of its 6 nodehosts, 64 each, with four holding none**, while az-b's
+  spread evenly. `_assign_within_az`'s grouped walk gives each shard's same-AZ
+  members consecutive nodehosts from a cursor advancing by the group size, and
+  the primary is always the group's first, so primaries land only on positions
+  congruent to 0 mod gcd(3, nodehosts_in_AZ). Six per AZ makes that `{0,3}`.
+  **General: it fires at any r>=2 whenever an AZ's nodehost count divides by 3,
+  and never fired before because every prior fleet was 4 per AZ.** Two
+  consequences: the rolling restart is **194 batches per operation, not the
+  handoff's 160** (42 of size 2), and the fault lane's sorted-first target is a
+  64-primary host, so `node_host_stop` and the three partition scenarios each
+  remove **25% of all primaries** against exact-200's 13%. Reported, not fixed -
+  spreading them moves `nodehost_density_plan` and the fault matrix's targets on
+  every future run. **Decide it before founding an M4 baseline class.**
+- **Reclaim is proven at 107 nodes per host**, which is the sequencing memo §4
+  asks for. `native_cleanup_proof.py` hardcoded `NODES_PER_HOST = 2` and now
+  takes `--nodes-per-host`. Release and abort both **1323 -> 0** on twelve real
+  hosts, the abort from a fresh process after the controller was **SIGKILLed**
+  with 1284 live. `terminate` reported `pid_count: 108` against
+  `state_pid_count: 107` on every nodehost - item 1.4's design at fifty times the
+  density it was built at.
+- **The run failed, and what it found is a property of the fleet shape rather
+  than a product defect.** All 1280 nodes started and `wait_nodes_ready` passed
+  (`observed_nodes: 1280`); cluster formation then took **152
+  `ConnectionRefusedError` in 0-1 ms** while the hosts logged **370 `TCP: out of
+  memory -- consider tuning tcp_mem`**. **The cluster bus is a full mesh**, so
+  per-host bus sockets are `nodes_per_host x (N-1) x 2` - **quadratic in the
+  fleet and only linear in the density**, which is why every density experiment
+  missed it. 6,766 at exact-200 on twelve hosts against **273,706** here, needing
+  **>= 2.09 GiB** at the kernel's own 8 KiB minimum against a stock `tcp_mem`
+  ceiling of **734 MiB**. A 4x jump in node count is a **16x** jump in per-host
+  socket memory at fixed host count.
+- **Fixed at `80d147d7`, approved before it was made.** `ecs_host_prepare.sh`
+  already reasoned about the mesh and tuned fds, backlog, port range and
+  conntrack; `tcp_mem` is the one it did not set, and is now **1.5/3/4 GiB**. A
+  ceiling, not an allocation - these hosts hold ~1.1 GiB of valkey RSS at this
+  density. **The per-socket minima are untouched**, so no other run's socket
+  behaviour moves. **Applied to eleven of twelve hosts.**
+- **`vslab-host-b-1` (`10.148.0.42`, instance `vslab-host-b-3mp4`) went down
+  during the run and is still down** - no ssh and no ICMP on either its internal
+  or its external address, while the other eleven show 14,100 s of uptime.
+  Probably the same cause rather than a second one, recorded as a reading because
+  the host cannot be inspected. **It cannot be recovered from the controller**:
+  that service account has *no compute scopes at all*, so `gcloud compute
+  instances describe` and any reset are refused. **Every real configuration needs
+  that host** - a native run places one nodehost per host and refuses otherwise,
+  and `real_ecs_200.yaml`'s eight nodehosts include its slot - so the fleet is
+  blocked for any real run until it is reset from the Console. When it returns it
+  needs `ecs_host_prepare.sh` re-applied and a reclaim.
+- **Three reporting defects, all found by running and all reported rather than
+  fixed**, because each is on `run_exact_gate`'s path and needs its own runs: a
+  Gate-plan refusal dies with `AdapterOwnershipError: has no adapter execution`,
+  discarding the `GateResult` that holds the reason and never writing a verdict
+  (map §1.2); a failing teardown's reclaim timeout **replaced** the formation
+  failure that caused it, so the Gate named the wrong error (§5.2); and together
+  they mean a failure at this scale will not name itself.
+
+**What is still unmeasured at 1280 nodes**, and it is §2's own list: 194/194
+batches, 60 cleanup rows, canary 256, ~21,900 management rows, the fault lane's
+9/12/15, RTO at r=4, and formation dwell. The run reached cluster formation in
+about eleven minutes and nothing beyond that has ever been observed at this size.
+
 ### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
 
 **The fleet was rebuilt to twelve hosts on 2026-08-17 and does not need to grow
