@@ -240,14 +240,154 @@ M4's first numbers are the shipped behaviour at shipped knobs on the fleet as
 provisioned. What this section buys is that the numbers are read correctly rather
 than mistaken for a property of scale.
 
-## §4 The reclaim proof at M4's own density
+## §4 The reclaim proof at M4's own density, and it passed
 
-*(Filled in from the run.)*
+Taken before any full-flow run, which is the sequencing
+`real_execution_above_200_exception_memo.md` §4 asks for, and taken at **107
+nodes per host** rather than the 2 every prior proof used.
 
-## §5 The runs
+`python3 scripts/native_cleanup_proof.py {release,abort} --fleet-id gce-m3b
+--nodes-per-host 107`, on the twelve real hosts:
 
-*(Filled in from the runs.)*
+| | release | abort |
+|---|---|---|
+| residue placed | **1323** | **1323** |
+| after cleanup | **0** | **0** |
+| `resources_remaining` / `errors` | `[]` / `[]` | - |
+| open control channels | 12 -> **0** | 12 -> 12 |
 
-## §6 What M4-2 and the next session inherit
+1323 is 12 hosts x (107 `valkey-server` + 1 non-Valkey process rooted in the run
+tree) + 24 run paths + 3 firewall rules. The **abort** run is the one that
+matters: the controller was **SIGKILLed** with 1284 processes live across twelve
+hosts and a nodehost isolated, and a *fresh* process reclaimed all of it.
 
-*(Filled in at the end.)*
+**One number is worth reading rather than skipping**: `terminate` reported
+`pid_count: 108` against `state_pid_count: 107` on every nodehost. The
+enumeration found the process `state.json` never knew about, which is item 1.4's
+whole design - it terminates what `/proc` says is running out of the run's tree
+and never a pid it was told about - now shown at fifty times the density it was
+built at.
+
+The twelve control channels the abort leaves are the known open item
+(`distributed_cleanup_slice_map.md` §8.2): daemonised ssh masters that survive
+`SIGKILL`, bounded by `ControlPersist=600`, and reported by the proof rather than
+counted in its verdict.
+
+## §5 The first attempt, and the wall it found
+
+`gate-20260817T063318Z-b1da53f1`, **FAIL at 661.73 s**. No baseline was frozen
+and none was touched.
+
+**How far it got.** The resource preflight passed. All twelve nodehosts claimed,
+the pinned bundle installed on each, **all 1280 nodes started**, and
+`wait_nodes_ready` passed - `state.json` records `observed_nodes: 1280` and 1280
+node records over 12 nodehosts. Cluster formation then issued CLUSTER MEET and
+**152 of them were refused with `ConnectionRefusedError` in 0-1 ms**.
+
+**Why, from the hosts rather than from the artifacts.** `dmesg` on the fleet
+carries **370 x `TCP: out of memory -- consider tuning tcp_mem`**, from 06:37:12
+to 06:40:23 - beginning about four minutes into the run and minutes before the
+failure, on the same host the refused MEETs were addressed to.
+
+**The arithmetic, which nobody had done and which the run's own evidence cannot
+show.** The Valkey cluster bus is a **full mesh**, so a host holds
+`nodes_per_host x (fleet_nodes - 1) x 2` bus sockets. That is quadratic in the
+fleet and only linear in the density, which is why every density experiment to
+date missed it:
+
+| shape | bus sockets per host | at the kernel's own 8 KiB minimum |
+|---|---|---|
+| exact-200 on twelve hosts | 6,766 | 53 MiB |
+| **1280 on twelve hosts (M4)** | **273,706** | **>= 2.09 GiB** |
+| 1280 on 26 hosts | 127,900 | >= 0.98 GiB |
+| 1280 on 52 hosts (the shipped-knob plan) | 63,950 | >= 0.49 GiB |
+
+Stock `net.ipv4.tcp_mem` on an 8 GB host is `93963 125285 187926` pages - a hard
+ceiling of **734 MiB**. So this shape wants at least **2.9x** what the kernel
+would allow, at the smallest per-socket buffers the kernel has. Nothing at 200
+nodes was ever within an order of magnitude of it.
+
+**This is a property of the fleet shape, not a product defect**, and it is the
+first thing this project has met that the 200-node cap structurally could not
+have exposed: the term is quadratic in fleet size, so a 4x jump in node count is
+a **16x** jump in per-host socket memory at fixed host count. It is also the
+answer to a question `m4_density_calibration.md` §4 correctly flagged as
+extrapolation - it measured CPU, memory and observation cadence at 4x density and
+found nothing, and socket memory is the term it did not measure.
+
+**The fix, approved before it was made** (`80d147d7`). `ecs_host_prepare.sh`
+already reasoned about the mesh - its sysctl block cites "~5,000 bus sockets per
+host at exact-200" and tunes `fs.file-max`, `somaxconn`, the local port range and
+conntrack - and `tcp_mem` is precisely the one it did not set. It is now
+`393216 786432 1048576`, or **1.5/3/4 GiB**. A ceiling and not an allocation:
+these hosts hold ~1.1 GiB of valkey RSS at this density, so ~3.9 GiB stays free.
+The per-socket **minima are deliberately untouched**, so no other run's socket
+behaviour moves.
+
+### §5.1 A host did not survive it, and that is where this stopped
+
+`vslab-host-b-1` (`10.148.0.42`, instance `vslab-host-b-3mp4`) answered the
+pre-run check at 06:25 with zero residue, stopped answering ssh during the run -
+its 120 s reclaim timeout is the error the Gate finally reported, having replaced
+the real one - and now answers **neither ssh nor ICMP, on either its internal or
+its external address**. The other eleven are up with 14,100 s of uptime, so none
+of them rebooted, and all eleven carry the new `tcp_mem`.
+
+**The likeliest reading is that this is one story and not two**: TCP memory
+exhaustion merely refused connections on the hosts that survived and took b-1's
+network stack down entirely. It is *not confirmed* - the host cannot be inspected
+- and it is recorded as a reading rather than a finding.
+
+It cannot be recovered from here: the controller's service account carries
+**no compute scopes at all** (`devstorage.read_only`, `logging.write`,
+`monitoring.write`, `service.management.readonly`, `servicecontrol`,
+`trace.append`), so `gcloud compute instances describe` and any reset are refused.
+Resetting it is a Console action.
+
+**A 1280-node run needs all twelve** - the plan places exactly one nodehost per
+host and a native run refuses otherwise - and so does `real_ecs_200.yaml`, whose
+eight nodehosts include b-1's slot. So the fleet is unusable for any real run
+until b-1 returns. When it does, it needs `ecs_host_prepare.sh` re-applied (it is
+the only host without the new `tcp_mem`) and a reclaim, since the failed run may
+have left processes on it.
+
+### §5.2 The error that was reported was not the error that happened
+
+The Gate reported `pre-run reclaim could not clear every host: vslab-host-b-1:
+command timed out after 120s`. The failure that actually ended the run was
+cluster formation's refused MEETs; the reclaim in the failure handler then timed
+out against a host that had stopped answering, and **its exception replaced the
+original**. `run_verdict.json` records `runtime_start: FAIL` with the reclaim
+message and `stages_not_run` for the rest, so the real cause survives only in the
+command audit (152 `ConnectionRefusedError` rows) and in the hosts' `dmesg`.
+
+Reported, not fixed - it is the same shape as §1.2 and belongs with it. Worth
+knowing for any later failure at this scale: **a teardown that fails on the way
+out will hide what failed on the way in.**
+
+## §6 What the next session inherits
+
+1. **The Gate entry exists and is exercised as far as the fleet allowed.**
+   `real.ecs.full-flow-1280`, catalog **100**, `repository.all` **92**, M1 plan
+   **91**. §1.1's two opt-in flags are required and are on the entry.
+2. **Reclaim is proven at M4's own density** (§4), release and abort, 1323 -> 0.
+   Re-run it with `--nodes-per-host 107 --fleet-id gce-m3b`.
+3. **`tcp_mem` is sized and applied on eleven of twelve hosts** (§5). b-1 needs
+   `ecs_host_prepare.sh` re-applied when it returns.
+4. **The declared quantities in §2 are still unmeasured against a run** - only
+   the plan-time ones were confirmed (1280 nodes, 12 nodehosts at 106-107,
+   640/640, 0 of 256 colliding, ports 7800-9079, preflight PASS). The run-time
+   ones - 194/194 batches, 60 cleanup rows, canary 256, ~21,900 management rows,
+   the fault lane's 9/12/15, RTO at r=4, formation dwell - are what the next
+   attempt measures.
+5. **The primary-placement defect (§3) is untouched and still fires.** It is the
+   likeliest first candidate for a follow-up item, and it should be decided
+   *before* an M4 baseline class is founded, because fixing it moves
+   `nodehost_density_plan` and the fault matrix's targets.
+6. **Two reporting defects were found and reported, not fixed** (§1.2, §5.2),
+   both on `run_exact_gate`'s path: a Gate-plan refusal dies with
+   `AdapterOwnershipError` and writes no verdict, and a failing teardown's
+   exception replaces the failure that caused it.
+7. **`m4_density_calibration.md` §5's duration estimate is not yet tested.** The
+   run reached cluster formation in about eleven minutes; nothing beyond that has
+   been observed at this size.
