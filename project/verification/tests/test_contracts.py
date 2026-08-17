@@ -275,6 +275,18 @@ def test_the_1280_entry_is_the_only_gate_boundary_that_admits_1280() -> None:
     plan = _full_flow_plan(catalog, "real.ecs.full-flow-1280", "1280", config)
     assert str(PROJECT_ROOT / config) in plan.tests[0].argv
     assert "scripts/ecs_gate.py" in plan.tests[0].argv
+    # Above 200 nodes the scenario's scale policy requires both, and the
+    # exception's planner and resource predicates require them again. The
+    # invocation asserts them; a configuration cannot assert them about itself.
+    assert "--operator-opt-in" in plan.tests[0].argv
+    assert "--cost-acknowledged" in plan.tests[0].argv
+    # And they stay off the entry that runs 30..200, whose argv is what every
+    # frozen real baseline was taken under.
+    exact_200 = _full_flow_plan(
+        catalog, "real.ecs.full-flow", "200", "templates/configs/real_ecs_200.yaml"
+    )
+    assert "--operator-opt-in" not in exact_200.tests[0].argv
+    assert "--cost-acknowledged" not in exact_200.tests[0].argv
 
     with pytest.raises(GateError, match="must be <= 200"):
         _full_flow_plan(catalog, "real.ecs.full-flow", "1280", config)

@@ -57,7 +57,57 @@ already registers, so it moves no count. Mutation-checked twice: widening the ne
 entry's maximum, and widening `real.ecs.full-flow`'s to admit 1280, each make it
 fail.
 
-### §1.1 The reclaim proof had to be told how dense to be
+### §1.1 The entry has to assert the operator act, and the first attempt found out how
+
+The entry as first written was `real.ecs.full-flow`'s argv with a wider node
+bound, and it **failed in 0.21 s without touching the fleet**. The reason is
+correct and is the whole point of the exception:
+`local_full_flow_v1.json`'s `scale_policy` sets
+`above_200_requires_operator_opt_in` and `above_200_requires_cost_acknowledgement`,
+so `GateOrchestrator._execution_permission_failure` refuses any plan above 200
+nodes whose request carries neither - and `real.ecs.full-flow`'s argv carries
+neither, correctly, because exact-200 is not above 200.
+
+So `scripts/ecs_gate.py` gained two pass-through flags, **off unless an entry
+asks for them**, and the 1280 entry asks for them. That keeps
+`real.ecs.full-flow`'s argv byte-identical to what every frozen real baseline was
+taken under, which the boundary test now asserts in both directions and which is
+mutation-checked both ways.
+
+**Reported rather than slipped in, because this is the safety surface the memo
+was written about.** `real_execution_above_200_exception_memo.md` §3.2 says
+`operator_opt_in` and `cost_acknowledged` are threaded arguments "which no file
+can assert about itself - that is what makes it an operator act rather than a
+configuration", and a catalog entry is a file. The distinction that survives is
+between the run's *configuration* asserting it and the *invocation* asserting it:
+the entry is part of the invocation, exactly as `--backend native_multi_ecs`
+already is, and a run reaches it only because an operator named the 1280-node
+test. What still cannot be self-asserted is what matters - no configuration can
+put itself past `is_exact_1280_native_ecs_profile`, and no node count but 1280
+can reach this runner.
+
+### §1.2 A Gate-plan refusal reports a traceback instead of a verdict
+
+Found by the same attempt and **reported, not fixed**. When
+`_execution_permission_failure` or `_contract_failure` refuses, every lifecycle
+step is marked skipped and `GateService.execute` returns a `GateResult` carrying
+the real reason - here `REQUEST_OPERATOR_OPT_IN_REQUIRED`, "explicit operator
+opt-in is required for this Gate plan". `run_exact_gate` then calls
+`adapter.execution_snapshot` unconditionally, which raises
+`AdapterOwnershipError: run_id '...' has no adapter execution`, because no step
+ever registered one. The `GateResult` is discarded on the way out and
+`_write_run_verdict` - the next line - never runs.
+
+So the operator is shown "has no adapter execution" for a run that was refused
+for a stated reason, and the refused run leaves **no `run_verdict.json` at all**.
+That is the same family as the admission defect closed in 2026-08-13's §12.2
+work: a run whose outcome was decided somewhere the reader cannot see. It is not
+this item's to close - it is on `run_exact_gate`'s path, which every real run
+passes through, so it needs its own change and its own two consecutive real runs
+behind it. It affects no passing run, which is why no acceptance to date has met
+it.
+
+### §1.3 The reclaim proof had to be told how dense to be
 
 `real_execution_above_200_exception_memo.md` §4 asks for the ownership proof at
 the new density *before* a full-flow run, so that a two-hour run failing at

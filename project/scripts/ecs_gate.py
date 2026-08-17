@@ -70,6 +70,16 @@ def main() -> int:
     parser.add_argument("--provenance-id", required=True)
     parser.add_argument("--artifacts-dir", required=True)
     parser.add_argument("--result-path", required=True)
+    # Off unless an entry asks for them, so exact-200's argv is byte-identical to
+    # what it has always been. `local_full_flow_v1.json`'s scale policy makes any
+    # run above 200 nodes require both, and the exact-1280 exception's planner
+    # and resource predicates require them again - they are threaded arguments
+    # rather than configuration fields precisely so that no file can assert them
+    # about itself. The invocation asserts them here, the way `--backend
+    # native_multi_ecs` is asserted: a run reaches this only because an operator
+    # named the 1280-node entry.
+    parser.add_argument("--operator-opt-in", action="store_true")
+    parser.add_argument("--cost-acknowledged", action="store_true")
     args = parser.parse_args()
 
     before, after = raise_file_descriptor_limit()
@@ -102,6 +112,10 @@ def main() -> int:
         "--result-path",
         args.result_path,
     ]
+    if args.operator_opt_in:
+        argv.append("--operator-opt-in")
+    if args.cost_acknowledged:
+        argv.append("--cost-acknowledged")
     # exec rather than spawn: the raised limit is inherited, the run keeps this
     # process's pid and process group, and the Gate's timeout and its
     # SIGTERM-to-the-group both reach the run itself rather than a wrapper.
