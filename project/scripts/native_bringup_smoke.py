@@ -254,6 +254,14 @@ def run_smoke(fleet_id: str, artifacts: Path, report: Report) -> Report:
             nodehost_by_id=nodehost_by_id,
             artifacts=artifacts,
             run_id=RUN_ID,
+            # This smoke plans one primary per shard and no replicas at all, so
+            # zero is what its own shape is - and `_process_config_text` says
+            # this decides one line and nothing else, the
+            # `cluster-allow-replica-migration no` pin that only appears at two
+            # replicas or more. The argument arrived with MR-1's multi-replica
+            # work and this caller was never updated, so the smoke has raised
+            # `TypeError` here since 2026-08-14 and nobody ran it to find out.
+            replicas_per_shard=0,
         ),
     )
 

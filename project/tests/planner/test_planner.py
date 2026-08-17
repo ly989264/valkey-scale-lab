@@ -542,12 +542,16 @@ def test_exact_1280_needs_the_operator_not_only_the_file() -> None:
         )
 
 
-def test_exact_1280_plans_eight_nodehosts_with_no_shard_colliding() -> None:
-    """The shape `m4_density_calibration.md` §1 compiled, now pinned.
+def test_exact_1280_plans_twelve_nodehosts_with_no_shard_colliding() -> None:
+    """The shape the fleet was rebuilt for, now pinned.
 
     One nodehost per host is what a native run places and refuses otherwise, so
-    eight nodehosts is eight hosts - the fleet as provisioned, with no quota
-    increase.
+    twelve nodehosts is twelve hosts. The fleet was rebuilt from eight to twelve
+    `c4a-standard-2` on 2026-08-17 to buy two things this shape then has: 107
+    nodes per host is **53.5 valkey-servers per vCPU**, inside the 50 per vCPU
+    `m4_density_calibration.md` §4 measured clean rather than the 80 that eight
+    hosts forced; and 107 x 64 MiB fits in 7911, so `node_memory_limit_mb` stays
+    at the 64 every prior measurement was taken under instead of dropping to 32.
     """
 
     import collections
@@ -565,8 +569,11 @@ def test_exact_1280_plans_eight_nodehosts_with_no_shard_colliding() -> None:
     )["nodes"]
 
     per_nodehost = collections.Counter(node["nodehost_id"] for node in nodes)
-    assert len(per_nodehost) == 8
-    assert set(per_nodehost.values()) == {160}
+    assert len(per_nodehost) == 12
+    # 1280 does not divide by 12, so the tail is one node lighter rather than
+    # the plan refusing or silently rounding the node count.
+    assert set(per_nodehost.values()) == {106, 107}
+    assert sum(per_nodehost.values()) == 1280
     assert collections.Counter(node["az_id"] for node in nodes) == {
         "az-a": 640,
         "az-b": 640,
