@@ -1820,10 +1820,65 @@ run and the cluster-bus TCP wall, §6 what the next session inherits.
   failure that caused it, so the Gate named the wrong error (§5.2); and together
   they mean a failure at this scale will not name itself.
 
+- **A second attempt, after the operator restarted the fleet, showed the fix
+  working and revealed the real wall.** Bring-up smoke **82/82** on all twelve
+  first. Measured live from outside the product: **223,622 sockets and 2.80 GiB of
+  kernel TCP memory** on one host - **3.9x the old 734 MiB ceiling**, so §5's
+  diagnosis is confirmed rather than inferred - and **zero** `TCP: out of memory`.
+  Then the host **OOM-killed Valkey**: 13 kills, nodes **107 -> 82**, killed
+  processes at **`anon-rss` 110 MB and 52 MB**. **Eight of twelve hosts wedged**
+  (no ssh, no ICMP) and needed a second operator restart. The first attempt failed
+  because the kernel throttled TCP; the second because it did not. Same wall, both
+  sides.
+- **`node_memory_limit_mb: 64` is a dataset cap and does not bound the process** -
+  that is the model every M4 plan has used and it is wrong at this fleet size. A
+  node holds per-peer cluster-bus buffers, so RSS grows with **fleet size**.
+- **So the mesh cost was measured rather than extrapolated**, which the operator
+  asked for. `scripts/mesh_cost_sampler.sh` (new) samples each host's valkey RSS
+  and `/proc/net/sockstat`; it has to run **outside the product**, because
+  nothing samples process RSS and kernel socket memory appears in no artifact.
+  Control: **exact-200 PASS 1685.75 s, 12/12 OK** on the twelve-host fleet.
+
+  | per host | N=200, 25/host | N=1280, 107/host |
+  |---|---|---|
+  | bus sockets | **10,800** (predicted 9,950 - **1%**) | **223,622** |
+  | kernel TCP peak | **11-58 MiB** | **2.80 GiB** |
+  | per-node RSS steady | **10.5 MB** | ~15 MB |
+  | per-node RSS peak | **12.5 MB** | **52-110 MB** |
+
+  **The socket arithmetic is right to 1% and the terms that bite are transients** -
+  kernel-queued gossip 49x, peak RSS 9x, steady RSS only 1.4x. **Steady state at
+  1280 on twelve hosts would fit** (~1.6 GB of RSS); cluster formation does not.
+- **And a live node says why: `cluster-link-sendbuf-limit` is `0` - unlimited.**
+  Valkey's purpose-built guard against exactly this memory is off, and
+  `_process_config_text` never sets it. `mem_cluster_links` is **2.09 KiB per
+  link** at N=200, so the steady cost is small; it is the unbounded formation peak
+  that kills the host. **Bounding it to ~25 MB per node would put 1280 nodes inside
+  twelve 8 GB hosts.** Reported, not changed - a new directive in every node config
+  moves `generated_valkey_configs_manifest` and every `node_configs` comparison, so
+  it needs approval and its own evidence. **It is the thing to try before
+  provisioning anything.**
+- **If hosts are bought instead** (map §7.3): 1280 fits **52 hosts** of this size,
+  is marginal at 26, and needs **24-32 GB** each at twelve. 52 is the shipped-knob
+  plan the quota refusal killed.
+- **The repo's `ecs_host_prepare.sh` is not what the fleet boots**, and this is a
+  standing hazard rather than a detail. The GCE **instance-metadata** startup
+  script rewrites `/etc/sysctl.d/90-valkey-scale-lab.conf` **nine seconds after
+  every boot** and carries no `tcp_mem`, so the committed change is *not* on the
+  hosts and any hand-applied tuning is reverted by the next boot. Verified three
+  ways (metadata grep, file mtime, journal). Making a host-preparation change stick
+  needs the metadata updated, which is an operator action.
+- **Three reporting defects, all reported and none fixed**, each on
+  `run_exact_gate`'s path: a Gate-plan refusal dies with `AdapterOwnershipError`
+  and writes no verdict; a failing teardown's exception **replaces** the failure
+  that caused it, so both attempts named the wrong error; and neither RSS nor
+  socket memory is in any artifact.
+
 **What is still unmeasured at 1280 nodes**, and it is §2's own list: 194/194
-batches, 60 cleanup rows, canary 256, ~21,900 management rows, the fault lane's
-9/12/15, RTO at r=4, and formation dwell. The run reached cluster formation in
-about eleven minutes and nothing beyond that has ever been observed at this size.
+batches, canary 256, ~21,900 management rows, the fault lane's 9/12/15, RTO at
+r=4, and formation dwell. **`cleanup_actions` = 60 rows in four kinds is now
+confirmed** - three separate cleanups measured it exactly as declared. Neither
+attempt got past cluster formation.
 
 ### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
 
