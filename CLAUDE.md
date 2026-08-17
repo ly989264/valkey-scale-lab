@@ -1085,7 +1085,10 @@ than against a provisioning problem. Read
 `project/docs/ecs_host_preparation_report.md`; it carries the derivation, every
 measurement, the Console runbook and what still cannot be validated.
 
-- **The fleet is eight `c4a-standard-2` GCE hosts, arm64, Ubuntu 26.04 LTS**,
+- **The fleet was eight `c4a-standard-2` GCE hosts, arm64, Ubuntu 26.04 LTS**
+  *(rebuilt to twelve on 2026-08-17 - see the M4-1 handoff; everything below is
+  the eight-host fleet as provisioned in August and stands as the record of how
+  a fleet host is made)*,
   four in each of two zones of `asia-southeast1`, plus a `c4-standard-4`
   controller in the same subnet. **All eight report `READY`, every required
   check passed, zero advised**, verified with `--bundle` and `--package` so the
@@ -1733,7 +1736,7 @@ arguments threaded from `lifecycle.py` and which no file can assert about itself
 **M4-3 is the first 1280-node run and it needs the catalog entry above.** Memo
 §4 also argues the sequencing: run `native_cleanup_proof.py` at the new density
 *before* a full-flow run, so that a two-hour run failing at ninety minutes does
-not leave 1280 processes across eight hosts with no measured reclaim behind it.
+not leave 1280 processes across twelve hosts with no measured reclaim behind it.
 
 ### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
 
@@ -2326,8 +2329,8 @@ same-AZ replicas. The predicate (`_primary_replica_nodehost_safe`) is stricter
 than its message: *every* member of a shard must be on a distinct nodehost.
 With `runtime.nodehosts_per_az: 4` the same config validates and plans - 8
 nodehosts, 6-7 nodes each, 0 of 10 shards colliding - so the smallest native
-multi-replica exact-50 needs **8 hosts, exactly the gce-m3b fleet as
-provisioned**, and its Docker form runs locally with 8 nodehost containers. 50
+multi-replica exact-50 needs **8 hosts, which the gce-m3b fleet has had
+throughout** (eight until 2026-08-17, twelve since), and its Docker form runs locally with 8 nodehost containers. 50
 nodes is under the 100 cap, so no exception profile is needed on either
 provider, and the existing `real.local.full-flow`/`real.ecs.full-flow` entries
 take the config as a parameter. A **40×4 = 200** shape also plans at shipped
@@ -2336,8 +2339,9 @@ knobs in the Gate's own capability context (measured through
 `cli plan` refuses every 200-node config including the unmodified `scale_200` -
 the bounded exception only applies in that context): 8 nodehosts, exactly 25
 nodes each, 0 of 40 shards colliding, and `_is_exact_200_bounded_exception`
-carries no shard-shape term - so the existing eight-host fleet holds a
-multi-replica exact-200 with no knob change. Two cautions: the changed knob moves
+carries no shard-shape term - so the fleet holds a multi-replica exact-200
+with no knob change; it did at eight hosts and does at twelve, because the
+nodehost count comes from the configuration rather than the host count. Two cautions: the changed knob moves
 `nodehost_density_plan`, every `nodehost_id`, the fault matrix's targets and
 the cleanup row count, so multi-replica runs are a **new baseline class**, not
 diffable against the frozen 1-replica baselines in those views; and while

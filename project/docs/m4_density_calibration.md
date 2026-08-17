@@ -143,6 +143,19 @@ Stated as narrowly as the evidence allows:
 
 ## §5 What M4 should plan for, compiled rather than guessed
 
+> **Superseded 2026-08-17 in its numbers, not in its method.** The fleet was
+> rebuilt from eight `c4a-standard-2` to **twelve**, using the 8 C4A vCPU the
+> quota was already paying for, once a quota audit showed Hyperdisk at 500/500
+> was the binding constraint and CPU was not. So M4 now plans **12 nodehosts at
+> 106-107 nodes each = 53.5 valkey-servers per vCPU**, inside the 50 this
+> calibration measured clean rather than the 80 that eight hosts forced, and
+> **`node_memory_limit_mb` stays at 64** instead of dropping to 32. The
+> rolling-restart geometry below is unchanged at 320 batches, because
+> `CLUSTER_ORCHESTRATION_PARALLELISM` caps concurrency at 8. Everything this
+> section says about *how* to reason still holds; the host count it assumed does
+> not. See CLAUDE.md's M4-3 handoff.
+
+
 **Rolling-restart geometry at the target**, through the real batcher: 1280 nodes
 on 8 nodehosts gives **161 batches per operation, 322 in total, at max
 concurrent 8**. Parallelism is capped by nodehost count, so eight hosts is the
