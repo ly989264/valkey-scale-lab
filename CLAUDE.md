@@ -1395,16 +1395,15 @@ at HEAD the same day, from a dry-run scale-projection config derived from
   — so the exact-2000 plan-time refusal below does not apply to 1280 and M4 is
   no longer blocked on the density arithmetic. One nodehost per host means
   **52 ECS hosts** against today's 8, which is the provisioning decision.
-- **What actually blocks a real 1280 run is the safety contract, three ways**,
+- **What used to block a real 1280 run was the safety contract, three ways**,
   all in `config/validation.py`: `REAL_EXECUTION_ABOVE_200_FORBIDDEN` (above
   200 must be dry-run), `WORKLOAD_ABOVE_200_FORBIDDEN`, and the ≥1000 block
   (`MISSING_1000_*`), which is dry-run-only by construction. The only
-  real-execution exceptions are exact-200 (`scale_200`'s bounded exception) and
+  real-execution exceptions were exact-200 (`scale_200`'s bounded exception) and
   exact-2000 — and the 2000 one requires `provider: docker`, so it could not
-  serve the fleet even at its own node count. Admitting a real native
-  exact-1280 is a semantic change to a validation contract; a bounded-exception
-  profile in the shape `scale_200` already has is the natural form, and by the
-  working rules it is reported before it is made.
+  serve the fleet even at its own node count. **Closed 2026-08-16**: reported in
+  `docs/real_execution_above_200_exception_memo.md`, approved, and implemented at
+  `9d797b80` as `scale_1280_native_ecs_optin`. See the M4-1 section.
 - **Placement, measured on the compiled plan:** no shard places two members on
   one nodehost (0 of 256), and `_replica_az` puts **all four replicas in the AZ
   opposite their primary** — every shard splits 1/4, so losing one AZ leaves
@@ -1499,15 +1498,14 @@ provisioned; only M4 itself provisions.
   two hours** - inside the 14400 s timeout, but it makes "several runs per rung"
   a real scheduling cost. Journals should be ~500 MB per run. 32 MiB/node is a
   declared second variable.
-- **Untouched by any of this**, and still the actual blockers:
-  `REAL_EXECUTION_ABOVE_200_FORBIDDEN` refuses every real run above 200 nodes and
-  is a validation-contract decision, not a quota one - compiling §1's table
-  needed a sanctioned scale-projection profile because of it; and the whole-fleet
-  probe cadence on the open list becomes 1280 queries/second from a 4-vCPU
-  controller at M4's size. A 200-node run reaches neither. *(The cadence half is
-  now done - see M4-1 below. The validation-contract half is designed and
-  reported in `docs/real_execution_above_200_exception_memo.md`, and is the
-  operator's.)*
+- **Untouched by this calibration, and both were the actual blockers at the
+  time**: `REAL_EXECUTION_ABOVE_200_FORBIDDEN` refused every real run above 200
+  nodes and is a validation-contract decision, not a quota one - compiling §1's
+  table needed a sanctioned scale-projection profile because of it; and the
+  whole-fleet probe cadence on the open list becomes 1280 queries/second from a
+  4-vCPU controller at M4's size. A 200-node run reaches neither. **Both are now
+  closed, and by M4-1** - the cadence in three commits, the validation contract
+  at `9d797b80` as `scale_1280_native_ecs_optin`. See the M4-1 section below.
 
 ### Session M4-1 is done, 2026-08-16: the whole-fleet observation cadence
 
@@ -1736,6 +1734,68 @@ arguments threaded from `lifecycle.py` and which no file can assert about itself
 §4 also argues the sequencing: run `native_cleanup_proof.py` at the new density
 *before* a full-flow run, so that a two-hour run failing at ninety minutes does
 not leave 1280 processes across eight hosts with no measured reclaim behind it.
+
+### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
+
+**The fleet does not need to grow. Measured 2026-08-17, not recalled.** All
+eight hosts of `gce-m3b` are up: 2 vCPU, **7911 MiB** total with ~7550
+available, **45 G** disk free, hard `nofile` **1,048,576**. The manifest
+declares eight hosts with a client `port_range` of **7000-32000** each.
+Against what a 1280-node run asks of them:
+
+| | needs | has |
+|---|---|---|
+| nodes per host | 160 | 2 vCPU, so **80 per vCPU** |
+| memory cap per host | 160 x 32 MiB = **5120 MiB** | 7911 MiB, preflight PASS |
+| client ports per host | 1280 (7800-9079) | 7000-32000 |
+| cluster-bus ports | 1280 (17800-19079) | same range |
+| host file descriptors | well under | 1,048,576 hard |
+| host disk | run tree, node logs | 45 G |
+
+**The controller does not need to grow either**: 4 vCPU, 15 GB RAM, **84 G**
+free, hard `nofile` 524,288, and `runtime_fd_limit` asks for **10,496** against
+the 65536 `scripts/ecs_gate.py` already raises to. Artifacts project to about
+1 GB per run (journals ~500 MB), so disk is dozens of runs deep.
+
+**So the answer to "does M4-3 need more GCEs" is no**, and the caveats are the
+measured ones rather than new: 80 nodes per vCPU is a **1.6x extrapolation**
+beyond the 50 per vCPU `m4_density_calibration.md` §4 measured clean, and
+32 MiB per node is a declared second changed variable. Neither is a reason to
+provision; both are reasons to read the first run's fault lane and cadence
+numbers carefully.
+
+**Three things compiled at this HEAD that M4-3 should not re-derive.**
+
+1. **The run path resolves `exact-1280` from the node count alone.**
+   `_full_flow_profile("local_full_flow", "local_full_flow", 1280)` returns the
+   profile with `config_template: templates/configs/scale_1280_native_ecs_optin.yaml`,
+   exactly as exact-200 resolves today - `ecs_gate.py` passes no `--profile` and
+   does not need to. **But `cli.py`'s `gate execute --profile` carries a
+   hardcoded `choices=["exact-50","exact-100","exact-200","exact-2000"]`**, so a
+   catalog entry that *does* pass the flag would be refused by argparse before
+   anything else ran. Shape the entry like `ecs_gate.py` and it never arises;
+   this is a latent inconsistency, not a blocker.
+2. **The scenario already admits it.** `local_full_flow_v1.json`'s
+   `scale_policy` is `min_nodes: 30, max_nodes: 2000, exact_requested_nodes:
+   true`, so 1280 is inside and nothing there changes.
+3. **The only thing standing between the exception and a Gate run is the
+   catalog entry**, because `real.ecs.full-flow` declares `nodes` maximum 200.
+   Registering one moves three counts that two contract tests pin: catalog
+   99, `repository.all` 92, M1 plan 91.
+
+**The duration to plan against.** `m4_density_calibration.md` §5 compiled 322
+batches at max concurrent 8 and about **93 minutes of management matrix**, so
+roughly a two-hour run - plus M4-1's measured **+6% to +11% at density**, so
+call it 2.2 hours against `real.ecs.full-flow`'s 14400 s timeout. That makes
+"several runs per rung" a real scheduling cost, which is MR-3 §6.2's warning and
+the failover work's both arriving at once.
+
+**What has never been observed at this size**, and it is the honest list: the
+fault lane's 9/12/15 at 1280 nodes and five-member shards; RTO at r=4 and this
+density together; formation dwell, which `m4_density_calibration.md` §4 names as
+the term that grows with node count *and* density and the one to watch first;
+and whether the health-gate escalation - fixed at `f26769b3` but never observed
+firing since - behaves at a size where one `CLUSTER NODES` reply is ~161 KB.
 
 **The role census was built on approval, measured inert, and reverted**
 (`ccd69c39`, reverted at `78214e53`). Read slice map §12; it is the session's
