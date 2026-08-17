@@ -1737,35 +1737,76 @@ not leave 1280 processes across eight hosts with no measured reclaim behind it.
 
 ### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
 
-**The fleet does not need to grow. Measured 2026-08-17, not recalled.** All
-eight hosts of `gce-m3b` are up: 2 vCPU, **7911 MiB** total with ~7550
-available, **45 G** disk free, hard `nofile` **1,048,576**. The manifest
-declares eight hosts with a client `port_range` of **7000-32000** each.
-Against what a 1280-node run asks of them:
+**The fleet was rebuilt to twelve hosts on 2026-08-17 and does not need to grow
+further.** The quota audit that prompted it: Hyperdisk Balanced was at
+**500/500** - 8 x 50 GB plus the controller's 100 - while **8 of 24 C4A vCPU sat
+idle**. Disk was the binding constraint, not CPU, so the rebuild traded disk per
+host for host count: twelve `c4a-standard-2` at 33 GB is 396 + 100 = 496 GB, and
+the hosts had been using 2.7 GB of 50.
 
-| | needs | has |
+What that buys, and it is why the rebuild was worth a teardown:
+
+| | eight hosts | **twelve hosts** |
 |---|---|---|
-| nodes per host | 160 | 2 vCPU, so **80 per vCPU** |
-| memory cap per host | 160 x 32 MiB = **5120 MiB** | 7911 MiB, preflight PASS |
-| client ports per host | 1280 (7800-9079) | 7000-32000 |
-| cluster-bus ports | 1280 (17800-19079) | same range |
-| host file descriptors | well under | 1,048,576 hard |
-| host disk | run tree, node logs | 45 G |
+| nodes per host at 1280 | 160 | **107** |
+| **valkey-servers per vCPU** | 80 | **53.5** - inside the 50 measured clean |
+| `node_memory_limit_mb` | had to drop to **32** | stays at **64**, as every prior run |
+| rolling-restart batches | 320 @ concurrency 8 | 320 @ 8 (the cap is 8) |
+| fault domains | 8 | 12 |
+| Hyperdisk | 500/500 | 496/500 |
+
+So an M4 run now moves **node count and shard shape and nothing else** - the
+"second changed variable" the earlier handoff declared is gone.
+
+Measured on the rebuilt fleet: 2 vCPU, **7911 MiB**, **31 G** usable of 33,
+hard `nofile` **1,048,576**, client `port_range` **7000-32000**. A 1280-node run
+needs 107 x 64 MiB = 6848 MiB per host, 1280 client ports (7800-9079) and 1280
+bus ports (17800-19079) - all inside. The controller is unchanged: 4 vCPU,
+84 G free, and `runtime_fd_limit`'s **10,496** against `ecs_gate.py`'s 65536.
 
 **The controller does not need to grow either**: 4 vCPU, 15 GB RAM, **84 G**
 free, hard `nofile` 524,288, and `runtime_fd_limit` asks for **10,496** against
 the 65536 `scripts/ecs_gate.py` already raises to. Artifacts project to about
 1 GB per run (journals ~500 MB), so disk is dozens of runs deep.
 
-**So the answer to "does M4-3 need more GCEs" is no**, and the caveats are the
-measured ones rather than new: 80 nodes per vCPU is a **1.6x extrapolation**
-beyond the 50 per vCPU `m4_density_calibration.md` §4 measured clean, and
-32 MiB per node is a declared second changed variable. Neither is a reason to
-provision; both are reasons to read the first run's fault lane and cadence
-numbers carefully.
+**So the answer to "does M4-3 need more GCEs" is no**, and after the rebuild
+both of the caveats that answer used to carry are gone: density is 53.5 per vCPU
+against the 50 measured clean rather than 80, and the memory limit stays at 64.
+
+**The rebuild was verified rather than assumed.** All twelve report READY from
+`ecs_host_verify.sh --bundle --package` with **0 advised**, their twelve ed25519
+host keys are **distinct** (the M3-A-1 defect where an image baked one key into a
+shared layer did not recur), and `native_bringup_smoke.py` answers **82/82**
+against them with zero residue afterwards.
+
+**The frozen baselines survived the rebuild, and that was the go/no-go.** Two
+real exact-200 on the twelve-host fleet, **PASS 1450.09 s** and **PASS
+1486.97 s**, both 12/12 with `tool_errors` empty, fault lane 9/12/15 with nine
+`REAL_PASS`, cleanup 40 rows, 200/200 journals, no `ERROR`, RTO 51.98 s and
+48.26 s, zero residue on all twelve. Against `real-exact-200-c58a762a` they score
+**`runtime_start` 6/7**, `cluster_form` 5/5, `management_matrix` 8/8 and 7/8,
+`fault_matrix` 4/6, `cleanup` 2/2 - one view moved and it is
+`nodehost_density_plan`. Reduced to paths, **exactly four differ and no path
+appears or disappears**: `fleet_manifest_sha256` and the three host addresses.
+`host_id`, `nodehost_id`, `logical_node_count` and `az_id` are identical.
+
+**That is why the new instances carry the old `host_id`s.** GCE generated names
+like `vslab-host-a-83zr`, but `host_id` is a manifest field nothing cross-checks
+against the machine, and `diff_stage_artifacts.py` compares it **literally** in
+`state_before_cluster` while rewriting every address to `<nodehost:ID>`. Reusing
+`vslab-host-{a,b}-1..6` is what kept the delta to four address-shaped fields
+instead of stranding two frozen baselines. `scripts/make_fleet_manifest.py` now
+exists so this is a command rather than archaeology - the previous generator
+lived only in a session scratchpad and was lost with it.
 
 **Three things compiled at this HEAD that M4-3 should not re-derive.**
 
+0. **`scale_1280_native_ecs_optin.yaml` is retuned for the twelve-host fleet**:
+   `nodehosts_per_az` 6, `max_logical_nodes_per_nodehost` 107,
+   `node_memory_limit_mb` **64**. Compiled on the controller against the new
+   manifest: 1280 nodes over **12 nodehosts at 106-107 each**, 640/640 per AZ,
+   **0 of 256 shards** colliding, resource preflight **PASS**. 1280 does not
+   divide by 12, so the tail is one node lighter rather than the plan refusing.
 1. **The run path resolves `exact-1280` from the node count alone.**
    `_full_flow_profile("local_full_flow", "local_full_flow", 1280)` returns the
    profile with `config_template: templates/configs/scale_1280_native_ecs_optin.yaml`,
