@@ -1880,6 +1880,24 @@ r=4, and formation dwell. **`cleanup_actions` = 60 rows in four kinds is now
 confirmed** - three separate cleanups measured it exactly as declared. Neither
 attempt got past cluster formation.
 
+**The knob was probed on the pinned build and it has no floor**, which is what
+makes the next item worth doing: `valkey-server 9.1.0` accepts
+`cluster-link-sendbuf-limit 65536` as readily as 1048576, so a per-link cap far
+below 1 MiB is available. Map §7.1 carries the budget - 8 KiB per link bounds a
+node's buffers to ~10 MB and puts 107 nodes plus the 2.87 GiB kernel term at
+~5.0 GB of 7911 MiB. **The risk it leaves is that Valkey frees a cluster link
+when the cap is reached**, and formation is exactly when buffers fill, so a cap
+low enough to fit the host may destabilise the convergence it protects. That is
+measurable, and it is the whole reason this needs its own item.
+
+**M4-4 is that item, on operator approval, and the correct state now is idle.**
+The fleet is whole, all twelve hosts verified clean from outside the product,
+`repository.all` **92/92**, and **exact-200 still passes on this fleet**
+(PASS 1685.75 s, 12/12 OK). Note the hosts carry **stock `tcp_mem`** - see §5.4 -
+so a 1280-node attempt needs the instance metadata updated, or the prepare script
+re-applied by hand to all twelve, first. The sendbuf cap does not remove that
+need: 2.87 GiB of kernel-queued gossip still exceeds the stock 734 MiB ceiling.
+
 ### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
 
 **The fleet was rebuilt to twelve hosts on 2026-08-17 and does not need to grow

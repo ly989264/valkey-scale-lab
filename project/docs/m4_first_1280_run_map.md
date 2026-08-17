@@ -516,6 +516,34 @@ exactly the memory that killed the 1280-node run, and this product's node config
 never sets it, so it is at the default of unbounded. `_process_config_text`
 writes fourteen directives and this is not one of them.
 
+**Probed on the pinned build, because whether it has a floor decides whether it
+can help at all.** A standalone `valkey-server 9.1.0` from the bundle
+(`redis_version: 7.2.4`), started on an unused port and shut down afterwards with
+no stray process left:
+
+    CONFIG GET cluster-link-sendbuf-limit          -> 0
+    CONFIG SET cluster-link-sendbuf-limit 1048576  -> OK
+    CONFIG SET cluster-link-sendbuf-limit 65536    -> OK   (read back 65536)
+
+**It is a per-link byte cap with no floor**, so a cap far below 1 MiB is accepted
+and the knob really can bound 107 nodes on an 8 GB host. Budget, from §7.2's
+measured peak of 52-110 MB per node at 1279 links - roughly 40-86 KiB per link
+with no cap:
+
+| per-link cap | buffer bound per node | 107 nodes + 2.87 GiB kernel | on 7911 MiB |
+|---|---|---|---|
+| 0 (today) | unbounded | measured 8-14 GB | **no** |
+| 64 KiB | 82 MB | ~9.9 GB | no |
+| 16 KiB | 20 MB | ~6.1 GB | tight |
+| 8 KiB | 10 MB | ~5.0 GB | **yes** |
+
+**The risk this leaves, and it is why the change needs real runs rather than
+reasoning:** when the cap is reached Valkey **frees the cluster link** and
+reconnects. That is a legitimate mechanism, but cluster formation is exactly when
+the buffers fill, so a cap low enough to fit the host may slow or destabilise the
+convergence it exists to protect. Prove it is a no-op at exact-200 before trying
+1280.
+
 ### §7.2 The measured scaling, and it is the transient that bites
 
 | per host | N=200, 25/host | N=1280, 107/host | ratio |
