@@ -2460,6 +2460,50 @@
       }
     },
     {
+      "test_id": "real.ecs.full-flow-1280",
+      "description": "Execute the exact multi-ECS native full flow on the operator's fleet at exactly 1280 nodes, the bounded exception's own size.",
+      "parameters": {
+        "nodes": {
+          "type": "integer",
+          "minimum": 1280,
+          "maximum": 1280,
+          "required": true
+        },
+        "config": {
+          "type": "path",
+          "required": true
+        }
+      },
+      "runner": {
+        "type": "command",
+        "argv": [
+          "/usr/bin/env",
+          "PYTHONPATH={gate.project_root}/src",
+          "python3",
+          "scripts/ecs_gate.py",
+          "--definition",
+          "{gate.project_root}/src/valkey_scale_lab/scenarios/definitions/local_full_flow_v1.json",
+          "--nodes",
+          "{param.nodes}",
+          "--config",
+          "{param.config}",
+          "--run-id",
+          "{gate.run_id}",
+          "--ownership-id",
+          "{gate.run_id}",
+          "--provenance-id",
+          "{gate.run_id}",
+          "--artifacts-dir",
+          "{gate.artifacts_dir}",
+          "--result-path",
+          "{gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 14400,
+        "result": "json"
+      }
+    },
+    {
       "test_id": "real.local.full-flow",
       "description": "Execute the exact local real full flow for 30 through 200 nodes.",
       "parameters": {

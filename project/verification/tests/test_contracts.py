@@ -76,9 +76,10 @@ def test_catalog_v2_loads_and_schema_document_is_current() -> None:
     )
 
     assert schema["properties"]["schema_version"]["const"] == "verification-catalog-v2"
-    assert len(catalog.tests) == 99
+    assert len(catalog.tests) == 100
     assert "real.local.full-flow" in catalog.tests
     assert "real.ecs.full-flow" in catalog.tests
+    assert "real.ecs.full-flow-1280" in catalog.tests
     assert "real.ecs.bringup" in catalog.tests
     assert "real.ecs.cleanup-ownership" in catalog.tests
     assert "real.local.m2-cluster-formation" in catalog.tests
@@ -242,6 +243,47 @@ def test_real_parameter_contract_validates_bounds_and_project_paths() -> None:
             selection_id="real.local.full-flow",
             cli_source=True,
         )
+
+
+def _full_flow_plan(catalog, test_id: str, nodes: str, config: str):
+    return build_plan(
+        select_test(catalog, test_id),
+        {test_id: {"nodes": nodes, "config": config}},
+        PROJECT_ROOT,
+        selection_kind="test",
+        selection_id=test_id,
+        cli_source=True,
+        invocation_id="gate-contract-test",
+    )
+
+
+def test_the_1280_entry_is_the_only_gate_boundary_that_admits_1280() -> None:
+    """The executable boundary of the fourth bounded exception, both ways.
+
+    `is_exact_1280_native_ecs_profile` admits a real 1280-node run through the
+    library; the Gate's own boundary is a test's declared bounds, and it is the
+    one an acceptance run crosses. `real.ecs.full-flow` must keep refusing 1280
+    so every exact-200 acceptance entry stays what it was, and the new entry
+    must refuse everything else, because the exception names a node count on
+    purpose and an entry admitting a range would be wider than the exception it
+    exists to exercise.
+    """
+
+    catalog = load_catalog(PROJECT_ROOT / "catalog.json")
+    config = "templates/configs/scale_1280_native_ecs_optin.yaml"
+
+    plan = _full_flow_plan(catalog, "real.ecs.full-flow-1280", "1280", config)
+    assert str(PROJECT_ROOT / config) in plan.tests[0].argv
+    assert "scripts/ecs_gate.py" in plan.tests[0].argv
+
+    with pytest.raises(GateError, match="must be <= 200"):
+        _full_flow_plan(catalog, "real.ecs.full-flow", "1280", config)
+
+    with pytest.raises(GateError, match="must be >= 1280"):
+        _full_flow_plan(catalog, "real.ecs.full-flow-1280", "1279", config)
+
+    with pytest.raises(GateError, match="must be <= 1280"):
+        _full_flow_plan(catalog, "real.ecs.full-flow-1280", "1281", config)
 
 
 @pytest.mark.parametrize("path", ["../outside", "/tmp/outside"])

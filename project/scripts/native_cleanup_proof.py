@@ -32,8 +32,15 @@ This is not item 1.5's bring-up smoke: no cluster is formed, no scenario runs, n
 Gate step is invoked, and the seam's operations are driven only as far as placing
 residue needs.
 
+`--nodes-per-host` is how dense the placed residue is, and it matters when the
+proof is cited: reclaim enumerates `/proc` by working directory and does not care
+how many it finds, but "reclaim works" at two processes a host is not evidence
+about a run that places a hundred. Take the proof at the density of the run it is
+meant to stand behind, and say which density it was taken at.
+
     python3 scripts/native_cleanup_proof.py release --fleet-id sim-a
     python3 scripts/native_cleanup_proof.py abort   --fleet-id sim-a
+    python3 scripts/native_cleanup_proof.py abort   --fleet-id gce-m3b --nodes-per-host 107
 """
 from __future__ import annotations
 
@@ -59,7 +66,13 @@ from valkey_scale_lab.runtime.native_backend import (  # noqa: E402
 from valkey_scale_lab.runtime.native_bundle import verify_native_bundle  # noqa: E402
 
 RUN_ID = "cleanup-proof-run"
-NODES_PER_HOST = 2
+#: What `--nodes-per-host` defaults to, and what every proof before 2026-08-17
+#: was taken at. Two is enough to prove the *shape* of reclaim - the enumeration
+#: walks `/proc` by working directory and does not care how many it finds - but
+#: it is not enough to prove reclaim at a density it has never seen. M4 places
+#: 106-107 nodes on each of twelve hosts, so a proof cited for M4 has to be taken
+#: at M4's own number and say so.
+DEFAULT_NODES_PER_HOST = 2
 
 
 def _fleet_dir(fleet_id: str) -> Path:
@@ -73,7 +86,7 @@ def _bundle_dir() -> Path:
     return roots[-1]
 
 
-def _plan(fleet_id: str) -> tuple[list[dict], list[dict]]:
+def _plan(fleet_id: str, nodes_per_host: int) -> tuple[list[dict], list[dict]]:
     """Nodehost and node records shaped the way the lifecycle shapes them."""
     inventory = load_host_inventory(_fleet_dir(fleet_id) / "inventory.json")
     nodehosts, nodes = [], []
@@ -91,11 +104,11 @@ def _plan(fleet_id: str) -> tuple[list[dict], list[dict]]:
                 "host_control_endpoint": dict(host.control_endpoint),
                 "host_data_address": host.data_address,
                 "host_client_address": host.client_address,
-                "logical_node_count": NODES_PER_HOST,
+                "logical_node_count": nodes_per_host,
             }
         )
         first_port = int(host.client_port_first)
-        for ordinal in range(NODES_PER_HOST):
+        for ordinal in range(nodes_per_host):
             logical_id = f"node-{index}{ordinal:02d}"
             data_dir = f"{run_state_root(RUN_ID)}/{logical_id}"
             nodes.append(
@@ -287,7 +300,7 @@ def _backend(fleet_id: str) -> NativeMultiEcsBackend:
 
 
 def cmd_stage(args: argparse.Namespace) -> int:
-    nodehosts, nodes = _plan(args.fleet_id)
+    nodehosts, nodes = _plan(args.fleet_id, args.nodes_per_host)
     place(_backend(args.fleet_id), nodehosts, nodes)
     print("STAGED", flush=True)
     time.sleep(3600)
@@ -295,7 +308,7 @@ def cmd_stage(args: argparse.Namespace) -> int:
 
 
 def cmd_release(args: argparse.Namespace) -> int:
-    nodehosts, nodes = _plan(args.fleet_id)
+    nodehosts, nodes = _plan(args.fleet_id, args.nodes_per_host)
     backend = _backend(args.fleet_id)
     place(backend, nodehosts, nodes)
     _report("residue placed", observe(args.fleet_id, nodehosts))
@@ -316,9 +329,10 @@ def cmd_release(args: argparse.Namespace) -> int:
 
 
 def cmd_abort(args: argparse.Namespace) -> int:
-    nodehosts, _nodes = _plan(args.fleet_id)
+    nodehosts, _nodes = _plan(args.fleet_id, args.nodes_per_host)
     child = subprocess.Popen(
-        [sys.executable, __file__, "stage", "--fleet-id", args.fleet_id],
+        [sys.executable, __file__, "stage", "--fleet-id", args.fleet_id,
+         "--nodes-per-host", str(args.nodes_per_host)],
         stdout=subprocess.PIPE, text=True,
     )
     assert child.stdout is not None
@@ -357,7 +371,7 @@ def cmd_stubborn(args: argparse.Namespace) -> int:
     refuses to go - so on every passing teardown it reports `alive_pid_count: 0`
     and proves nothing about itself. Here one process traps TERM and ignores it.
     """
-    nodehosts, nodes = _plan(args.fleet_id)
+    nodehosts, nodes = _plan(args.fleet_id, args.nodes_per_host)
     backend = _backend(args.fleet_id)
     place(backend, nodehosts, nodes)
     endpoint = nodehosts[0]["host_control_endpoint"]
@@ -426,6 +440,16 @@ def main() -> int:
     )
     parser.add_argument("--fleet-id", default="sim-a")
     parser.add_argument(
+        "--nodes-per-host",
+        type=int,
+        default=DEFAULT_NODES_PER_HOST,
+        help=(
+            "how many valkey-server processes to place on each host. The default "
+            "of 2 proves the shape of reclaim; cite a proof for a run only at "
+            "that run's own density (M4 places 106-107)"
+        ),
+    )
+    parser.add_argument(
         "--result-path",
         type=Path,
         help="write the Gate's {status, summary} result here and exit 0",
@@ -458,7 +482,8 @@ def main() -> int:
         "PASS" if code == 0 else "FAIL",
         f"native cleanup proof {args.command} on fleet {args.fleet_id}: "
         + (
-            f"zero managed residue on {hosts} hosts, checked from outside the product"
+            f"zero managed residue on {hosts} hosts at {args.nodes_per_host} "
+            "nodes per host, checked from outside the product"
             if code == 0
             else "managed residue remained after cleanup, or the proof staged none"
         ),
