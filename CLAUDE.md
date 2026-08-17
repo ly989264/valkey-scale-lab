@@ -1783,6 +1783,13 @@ numbers carefully.
    Registering one moves three counts that two contract tests pin: catalog
    99, `repository.all` 92, M1 plan 91.
 
+**Memo §4's sequencing advice needs one line of work first, and it is easy to
+miss.** `scripts/native_cleanup_proof.py` hardcodes **`NODES_PER_HOST = 2`**, so
+running it as-is proves reclaim at two nodes per host and says nothing about
+160. Either make that a parameter, or say plainly in M4-3's report that the
+reclaim proof was taken at the old density - what is not defensible is citing it
+as a proof at M4's.
+
 **The duration to plan against.** `m4_density_calibration.md` §5 compiled 322
 batches at max concurrent 8 and about **93 minutes of management matrix**, so
 roughly a two-hour run - plus M4-1's measured **+6% to +11% at density**, so
