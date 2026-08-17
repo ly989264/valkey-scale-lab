@@ -1898,6 +1898,133 @@ so a 1280-node attempt needs the instance metadata updated, or the prepare scrip
 re-applied by hand to all twelve, first. The sendbuf cap does not remove that
 need: 2.87 GiB of kernel-queued gossip still exceeds the stock 734 MiB ceiling.
 
+### Session M4-4 is done, 2026-08-17: the send buffers are bounded, and the knob is not the lever
+
+One commit, `39d44012`. Read `project/docs/cluster_link_sendbuf_bound_map.md`:
+§1 is the correction to the map's own budget table, §2 what was declared before
+running, §3 the `tcp_mem` hazard biting for real, §4 the exact-200 proof, §5 the
+1280 attempt and what it settles, §5.1 what aborting one costs.
+**No baseline was frozen and none was touched.**
+
+- **`cluster-link-sendbuf-limit 32768` is now in every node config**, from
+  `CLUSTER_LINK_SENDBUF_LIMIT_BYTES` in `docker_runtime.py`, unconditional unlike
+  the r>=2 topology pin beside it because the bus is a full mesh at every replica
+  count.
+- **`m4_first_1280_run_map.md` §7.1's budget table recommends a value that cannot
+  work, and this is the most transferable result here.** That table is memory
+  arithmetic; the constraint that binds first is a *message size*.
+  `freeClusterLinkOnBufferLimitReached` runs from `clusterCron` and **frees the
+  link** when the send queue exceeds the limit, so the floor for any cap is one
+  whole message. Compiled from the pinned build's own structs rather than counted:
+  `sizeof(clusterMsgDataGossip)` = **104**, `sizeof(clusterMsg)` = **4352**,
+  header **2256**, and a PING carries `floor(N * gossip_perc / 100)` entries - so
+  **4.25 KiB at 200 nodes and 15.20 KiB at 1280**. §7.1's recommended **8 KiB is
+  half a single message at 1280** and would have freed every link ten times a
+  second during the convergence it was meant to protect. 32 KiB is 2.05 of the
+  largest message and 7.5 of the smallest.
+- **The `tcp_mem` hazard is not theoretical and it bit before any run did.**
+  Read off all twelve hosts at the start: **eleven carried stock
+  93963/125285/187926** and only `10.148.0.42` carried the raised value - the one
+  host prepared by hand *after* its own boot. All twelve had rebooted ~70 minutes
+  earlier. Re-applied with the committed script, `rc=0` on each, value re-read off
+  every host. **Re-check this before every 1280 attempt**: the failure mode of
+  such an attempt is a reboot, and a reboot is what removes it.
+- **Proven a no-op at exact-200**: `repository.all` **92/92** on the Mac, pytest
+  tree **875 → 877**, catalog **100** and the M1 plan **91** unmoved. Two
+  consecutive real exact-200 at this commit, **PASS 1603.85 s** and **PASS
+  1419.83 s**, both 12/12 OK with `tool_errors` empty, fault lane **9/12/15** with
+  nine `REAL_PASS`, cleanup 40 rows, 200/200 journals, no `ERROR`, RTO 45.97 s and
+  50.48 s, zero residue on all twelve hosts asked from outside. Both score 5/7,
+  5/5, 7/8, 4/6, 2/2 against the frozen baseline (which calibrates 7/7, 5/5, 7/8,
+  6/6, 2/2 against itself), and **the two runs are identical to each other in
+  every view of every stage** - 7/7, 5/5, **8/8**, 6/6, 2/2.
+- **The declared delta held to the line, and one inherited prediction was wrong.**
+  Through the diff view's own normalisation, all 200 `node_configs` differ and the
+  entire difference is one added line with nothing removed and nothing else added.
+  **`generated_valkey_configs_manifest` does not move** - it embeds no config text,
+  only `io_threads_line_present`/`maxmemory_line_present`/`cluster_node_timeout_*`
+  - so the handover's "moves the manifest and all 200 node_configs" is half right.
+  The other differing `runtime_start` view is `nodehost_density_plan`, whose four
+  address-shaped paths are the twelve-host rebuild's.
+- **The cap never fired at exact-200 and that is a limitation, not a result.**
+  `total_cluster_links_buffer_limit_exceeded` is 0 in **all 2,950 readings the two
+  runs' own artifacts carry**, and `mem_cluster_links` is 426,656 bytes per node,
+  byte-identical to §7.1's measurement at an unlimited cap. **That counter is a
+  `CLUSTER INFO` field and is already in every run's evidence** - in
+  `fault_sequence.json`, `fault_command_log.jsonl` and `fault_results.json` - which
+  corrects the assumption that it needed new instrumentation.
+  `scripts/cluster_link_sendbuf_sampler.sh` (new) exists only for the window no
+  artifact covers: cluster formation.
+
+**The 1280 attempt, and it settles the question against the knob.**
+`gate-20260817T102918Z-1473cc96`, aborted from outside at ~3m15s by a watchdog,
+before the OOM killer fired anywhere. It got **further than either M4-3 attempt**:
+preflight PASS with `runtime_fd_limit` 10,624 as declared, **1280 of 1280 node
+configs carrying the directive**, all 1280 nodes started, and **684
+`cluster_meet` every one PASS with zero `TCP: out of memory` on any host** - so
+§3's re-application closed M4-3's first failure mode completely.
+
+**What replaced it is a term this knob does not touch.** At 3m05s, per host:
+valkey RSS **1701-2652 MB**, kernel TCP **2.1-3.1 GB** - already 77 % of the
+raised 4 GiB ceiling - with the socket count only **54-65 % of the mesh's
+273,706**, and load **38-59 on 2 vCPU**. `MemAvailable` on the worst host fell
+**3569 MB → 271 MB in one 45 s interval**.
+
+**And the risk §7.1 named is severe rather than hypothetical.** Over only **four
+sampled nodes per host**, links freed reached **33,094 and 34,567** on two hosts
+(1 on the mildest), and `mem_cluster_links` reached **31.5 MB per node** against
+426 KB at exact-200 - *with the cap in place*. So **both failure modes are present
+at 32 KiB simultaneously**: the bus thrashes in its tens of thousands of link
+frees *and* memory still exhausts. Lowering the cap worsens the first, raising it
+worsens the second, and a capped link's measured average occupancy is already
+~12.6 KB, so the demand is real rather than a tuning artefact.
+
+**So no value of `cluster-link-sendbuf-limit` fits 1280 nodes on twelve
+`c4a-standard-2`**, and §7.1's "bounding the peak to ~25 MB per node would put
+1280 inside twelve 8 GB hosts" is measured false. **`m4_first_1280_run_map.md`
+§7.3's provisioning table is the answer** - 52 hosts at shipped knobs, marginal at
+26 - now on evidence rather than by elimination. The directive stays on its own
+merits: a real bound on a real unbounded resource, a proven no-op at every scale
+this fleet runs, and it held the largest node to 67 MB where M4-3 measured 110.
+
+**Aborting a 1280-node run does not relieve the fleet, and that cost a host.**
+Killing the controller does not stop the fleet - the bus is peer-to-peer, so 1280
+unmanaged nodes carried on, and the heaviest link-freeing was sampled *after* the
+controller was dead. Four hosts then OOM-killed 4-6 processes each and
+**`10.148.0.47` stopped answering ssh and ICMP**. The correct sequence is **kill
+and immediately reclaim**, not kill and observe. Reclaim took eleven of twelve to
+zero, and `cleanup_actions` was **60 rows in four kinds** - the third independent
+confirmation - with the unreachable host's three rows `FAIL` carrying a stated
+reason and `resources_remaining` empty.
+
+**`10.148.0.47` needs an operator Console restart**; on return it needs
+`ecs_host_prepare.sh` re-applied and a reclaim. The other eleven are clean, carry
+the raised `tcp_mem`, and **exact-200 passes on this fleet at this commit**.
+
+**M4-5 is not this session's to name.** What is decided is that the next lever is
+not this knob. Two candidates, neither pursued and neither approved: the fleet
+(§7.3), and **`cluster-message-gossip-perc`**, a hidden config defaulting to 10
+that sets the gossip entries per PING and so scales message size, wire bytes *and*
+the kernel term together - lowering it to 2 would cut the 15.20 KiB message to
+4.9 KiB. It changes failure-detection semantics, so it needs its own approval and
+its own evidence. Added to the open list: nothing in a run's own evidence records
+process RSS or kernel socket memory, which is why §5's whole measurement came from
+outside the product again.
+
+**A third way `repository.all` is non-deterministic, found and not fixed** (map
+§6). It is **92/92 on the Mac** and **89/92 on the controller**, and only two of
+those three are the documented ones. The third is
+`product.unit.nodehost_density::test_resource_preflight_records_density_checks`,
+which **fails identically at the parent commit `b61f13b6`** - measured in a
+throwaway worktree, so it is not M4-4's. It asserts a 100-node preflight is
+`PASS`, which makes it depend on the memory of whatever machine runs it: the check
+reported `host_available_memory_mb: 3128` while the OS reported **14,224 MB
+available and 4,085 free**, because the controller held **10.4 GB of page cache**
+from the day's runs. So the product's "available" is free memory rather than
+`MemAvailable`, and a hermetic unit test fails on a machine that has recently done
+I/O. Whether the preflight should read `MemAvailable` is a semantic change to a
+safety check and is the operator's call.
+
 ### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
 
 **The fleet was rebuilt to twelve hosts on 2026-08-17 and does not need to grow
