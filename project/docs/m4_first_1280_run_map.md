@@ -5,12 +5,17 @@ the Gate, from the in-VPC controller. This is the first time this product has ru
 anything above 200 nodes for real, and the first time it has run a five-member
 shard at fleet width.
 
+**No 1280-node run has passed, and the reason is measured rather than guessed.**
+Two attempts were taken and both failed on the same wall from opposite sides:
+§5 is the first, §5.3 the second, and §7 the measurement that explains both and
+turns them into a provisioning answer. **No baseline was frozen and none was
+touched.**
+
 **Read §2 before reading any result.** Everything it declares was compiled at
 `17b2b798` against the real fleet manifest *before* a run was taken, which is the
 rule MR-2 and MR-3 established: a quantity predicted after the fact is not a
 prediction. §3 is a placement defect the compile found and no run had ever met;
-it is not this item's to fix and it changes how §5's fault-lane numbers must be
-read.
+it is not this item's to fix.
 
 ## §1 What stood between the exception and a Gate run, and why it was one entry
 
@@ -365,29 +370,208 @@ Reported, not fixed - it is the same shape as §1.2 and belongs with it. Worth
 knowing for any later failure at this scale: **a teardown that fails on the way
 out will hide what failed on the way in.**
 
+### §5.3 The second attempt: the fix worked, and it revealed the real wall
+
+`gate-20260817T074001Z-0f91160f`, terminated by hand at 861.84 s. The fleet was
+whole again (operator restart), b-1 prepared, **82/82** on the bring-up smoke
+across all twelve hosts, and zero residue confirmed from outside.
+
+**The `tcp_mem` fix did exactly what it was sized to do.** Measured live on one
+host during formation, from outside the product:
+
+| | |
+|---|---|
+| sockets on one host, peak | **223,622** (predicted 273,706 with the mesh still forming) |
+| kernel TCP memory, peak | **734,335 pages = 2.80 GiB** |
+| against the *old* ceiling | **3.9x** 734 MiB - so §5's diagnosis is confirmed, not inferred |
+| `TCP: out of memory` messages | **0** |
+
+**And then the host OOM-killed Valkey.** 13 `Out of memory: Killed process
+(valkey-server)` on one host, node count **107 -> 82**, and the killed processes
+carried **`anon-rss: 110152 kB` and `52232 kB`**.
+
+**That is the finding, and it invalidates the memory model every M4 plan has
+used.** `node_memory_limit_mb: 64` is a `maxmemory` **dataset** cap; it does not
+bound the process. A node holds per-peer cluster-bus link buffers, so its RSS
+grows with **fleet size**, not with its own data. Per host at 107 nodes:
+
+    ~2.8 GiB kernel TCP  +  107 x 50-110 MB of RSS  =  8-14 GiB  against 7911 MiB
+
+Load average was **77-84 on 2 vCPU** as well, which is the same mesh in a third
+resource: gossip is O(N) per node per second, so O(N^2) per fleet.
+
+**So 1280 nodes does not fit twelve `c4a-standard-2`, and no tuning makes it
+fit.** The first attempt failed because the kernel throttled TCP; the second
+failed because it did not. Both are the same wall.
+
+This is where `m4_density_calibration.md` §4's honest caveat comes due. It
+measured CPU, memory and observation cadence at 4x *density* and found nothing,
+and correctly said M4 raises node count and density together. What it could not
+see is that **the terms that bite are quadratic in node count and only linear in
+density**, so a 4x density experiment at fixed N=200 was blind to all three of
+them. The twelve-host rebuild inherited the same premise - "node count and shard
+shape are the only things that move" - and it is false in the one direction that
+matters.
+
+**A host does not merely fail, it wedges.** Eight of the twelve stopped answering
+ssh *and* ICMP during this run (.37 .38 .40 .41 .43 .44 .45 .46) and did not
+recover; the first attempt took one host the same way. That is what the OOM killer
+under this pressure does to a 2 GB-per-vCPU host, and it means an over-committed
+fleet costs an operator restart rather than a failed run. `cli gate cleanup` from
+`state.json` then reported 60 rows with the unreachable hosts' rows **`FAIL` with
+the ssh timeout as the stated reason and `pid_count: 0` against
+`state_pid_count: 107`** - which is the ownership machinery behaving correctly:
+it refused to claim it had cleaned what it could not see. Re-run after the restart:
+**60/60 PASS, `resources_remaining: []`.**
+
+### §5.4 The repo's copy of `ecs_host_prepare.sh` is not what the fleet boots
+
+Found while re-checking the hosts after the restart, and it is an operational
+hazard rather than a detail. `tcp_mem` was raised on eleven hosts, they were
+restarted, and afterwards **only the one host prepared by hand after its own boot
+still carried it**. The reason, checked three ways: the GCE **instance metadata**
+startup script contains no `tcp_mem` but does contain `ip_local_port_range`, so it
+is the pre-change script; it runs at every boot; and
+`/etc/sysctl.d/90-valkey-scale-lab.conf`'s mtime is **boot + 9 seconds**.
+
+`ecs_host_preparation_report.md` says delivery is a startup script rather than an
+image so that "there is still one definition". That is true, and the one
+definition lives in **instance metadata** - so editing the script in the
+repository changes nothing on a running fleet, and any hand-applied tuning is
+silently reverted by the next boot. Making a host-preparation change stick needs
+the metadata updated, which is an operator action.
+
 ## §6 What the next session inherits
 
-1. **The Gate entry exists and is exercised as far as the fleet allowed.**
+1. **The Gate entry exists and has been exercised twice.**
    `real.ecs.full-flow-1280`, catalog **100**, `repository.all` **92**, M1 plan
-   **91**. §1.1's two opt-in flags are required and are on the entry.
-2. **Reclaim is proven at M4's own density** (§4), release and abort, 1323 -> 0.
-   Re-run it with `--nodes-per-host 107 --fleet-id gce-m3b`.
-3. **`tcp_mem` is sized and applied on eleven of twelve hosts** (§5). b-1 needs
-   `ecs_host_prepare.sh` re-applied when it returns.
-4. **The declared quantities in §2 are still unmeasured against a run** - only
-   the plan-time ones were confirmed (1280 nodes, 12 nodehosts at 106-107,
-   640/640, 0 of 256 colliding, ports 7800-9079, preflight PASS). The run-time
-   ones - 194/194 batches, 60 cleanup rows, canary 256, ~21,900 management rows,
-   the fault lane's 9/12/15, RTO at r=4, formation dwell - are what the next
-   attempt measures.
-5. **The primary-placement defect (§3) is untouched and still fires.** It is the
-   likeliest first candidate for a follow-up item, and it should be decided
-   *before* an M4 baseline class is founded, because fixing it moves
-   `nodehost_density_plan` and the fault matrix's targets.
-6. **Two reporting defects were found and reported, not fixed** (§1.2, §5.2),
-   both on `run_exact_gate`'s path: a Gate-plan refusal dies with
-   `AdapterOwnershipError` and writes no verdict, and a failing teardown's
-   exception replaces the failure that caused it.
-7. **`m4_density_calibration.md` §5's duration estimate is not yet tested.** The
-   run reached cluster formation in about eleven minutes; nothing beyond that has
-   been observed at this size.
+   **91**. §1.1's two opt-in flags are required and are on it.
+2. **Reclaim is proven at M4's own density** (§4): release and abort, 1323 -> 0
+   on twelve real hosts, the abort after a `SIGKILL` with 1284 processes live.
+   Re-run with `--nodes-per-host 107 --fleet-id gce-m3b`.
+3. **The one change to try before provisioning anything is
+   `cluster-link-sendbuf-limit`** (§7.1, §7.3). It is `0` - unlimited - on the
+   pinned build, `_process_config_text` never sets it, and it bounds exactly the
+   memory that ended both attempts. Bounding the peak to ~25 MB per node would put
+   1280 nodes inside twelve 8 GB hosts. It is a new directive in every node
+   config, so it moves `generated_valkey_configs_manifest` and every
+   `node_configs` comparison in `runtime_start`: operator approval and its own
+   evidence.
+4. **If hosts are bought instead, the table is §7.3**: 1280 nodes fits **52
+   hosts** of this size, is marginal at 26, and needs **24-32 GB** per host at
+   twelve. The 52-host figure is the shipped-knob plan the quota refusal killed.
+5. **`tcp_mem` is committed in `ecs_host_prepare.sh` but is NOT on the fleet**
+   (§5.4). The GCE instance-metadata startup script rewrites
+   `/etc/sysctl.d/90-valkey-scale-lab.conf` nine seconds after every boot and
+   carries no `tcp_mem`, so the repo copy and the fleet have diverged. Making any
+   host-preparation change stick needs the metadata updated - an operator action -
+   and **that hazard applies to every future edit of that script**, not just this
+   one.
+6. **The declared run-time quantities in §2 are still unmeasured**: 194/194
+   batches, 60 cleanup rows, canary 256, ~21,900 management rows, the fault lane's
+   9/12/15, RTO at r=4, formation dwell. Only the plan-time ones are confirmed,
+   plus **60 cleanup rows in four kinds**, which three separate cleanups measured
+   exactly as declared.
+7. **The primary-placement defect (§3) is untouched and still fires**, and it
+   should be decided *before* an M4 baseline class is founded, because fixing it
+   moves `nodehost_density_plan` and the fault matrix's targets.
+8. **Three reporting defects, reported not fixed**, all on `run_exact_gate`'s
+   path: a Gate-plan refusal dies with `AdapterOwnershipError` and writes no
+   verdict (§1.2); a failing teardown's exception replaces the failure that caused
+   it (§5.2); and neither process RSS nor kernel socket memory appears in any
+   artifact, so §7's whole measurement had to come from outside the product (§7).
+9. **The fleet is healthy and exact-200 still passes on it** -
+   `gate-20260817T082549Z-ff271f54` **PASS 1685.75 s, 12/12 OK** - so nothing here
+   is a fleet regression. An over-committed 1280-node attempt, though, **wedges
+   hosts rather than merely failing**: one host the first time, eight the second,
+   each needing an operator restart.
+
+## §7 The mesh cost, measured instead of extrapolated
+
+The operator asked for the coefficient rather than a guess, at scales this
+hardware survives. Instrument: a sampler on the controller reading each host's
+`ps -eo rss,comm` and `/proc/net/sockstat` every 20 s - **from outside the
+product, because a run's evidence records neither term.** `node_memory_limit_mb`
+is a `maxmemory` dataset cap, nothing samples process RSS, and kernel socket
+memory appears in no artifact at all. That is the same evidence-parity gap as
+"neither backend records its observation volume".
+
+Control run: `gate-20260817T082549Z-ff271f54`, **exact-200 PASS 1685.75 s,
+`run_verdict` 12/12 OK, 200 nodes**, on the twelve-host fleet.
+
+### §7.1 What a live node says, which settles it
+
+Asked of a primary inside the running 200-node cluster:
+
+| | |
+|---|---|
+| `maxmemory` | 67108864 - the 64 MiB **dataset** cap |
+| `used_memory_human` | 3.92M |
+| `used_memory_rss_human` | **9.71M** - the process, 2.5x the dataset |
+| `mem_cluster_links` | **426656 = 417 KiB** for 199 peers = **2.09 KiB per link** |
+| **`cluster-link-sendbuf-limit`** | **0 - unlimited** |
+
+**The last line is the finding.** Valkey has a purpose-built guard against
+exactly the memory that killed the 1280-node run, and this product's node config
+never sets it, so it is at the default of unbounded. `_process_config_text`
+writes fourteen directives and this is not one of them.
+
+### §7.2 The measured scaling, and it is the transient that bites
+
+| per host | N=200, 25/host | N=1280, 107/host | ratio |
+|---|---|---|---|
+| bus sockets | **10,789-15,037** (predicted 9,950) | **223,622** (predicted 273,706) | ~21x |
+| kernel TCP memory, peak | **2,933-14,882 pages = 11-58 MiB** | **734,335 pages = 2.80 GiB** | ~49x |
+| per-node RSS, steady | **10.5-10.6 MB** | ~15 MB (the survivors) | 1.4x |
+| per-node RSS, peak | **10.6-12.5 MB** | **52-110 MB** (the OOM records) | ~9x |
+
+**The socket count is linear and the arithmetic was right to 1%** - 10,800
+measured against 9,950 predicted at N=200. But the two terms that actually blew
+the host are **transients, and they grow far faster than the steady state**:
+kernel-queued gossip 49x and peak per-node RSS 9x, while steady-state RSS moved
+1.4x.
+
+So the earlier reading - "1280 nodes cannot fit twelve 8 GB hosts" - is **too
+pessimistic about the steady state and right about the run**. Steady state at
+1280 on twelve hosts is about 15 MB x 107 = 1.6 GB of RSS plus a small link
+budget, which fits easily. What does not fit is cluster formation, where every
+node's send buffers grow without a bound because none is set, while the kernel
+simultaneously queues 2.8 GiB of gossip it was newly permitted to hold.
+
+**And the `tcp_mem` change is part of that mechanism, which is worth stating
+plainly.** Raising the ceiling from 734 MiB to 4 GiB let the kernel absorb
+2.80 GiB of backlog that it had previously refused. The first attempt failed
+because TCP was throttled; the second failed because it was not. Raising the
+ceiling was necessary - 734 MiB cannot hold a 1280-node mesh's traffic - but on a
+7911 MiB host it is not sufficient on its own, because the total is what the OOM
+killer sees.
+
+### §7.3 The provisioning table, and why it is the second-best answer
+
+Scaling the measured transients - kernel TCP with `nodes_per_host x N`, peak RSS
+per node with N alone - gives what 1280 nodes needs **at today's unbounded send
+buffers**:
+
+| hosts | nodes/host | kernel TCP peak | RSS peak | total | on 7911 MiB |
+|---|---|---|---|---|---|
+| 12 | 107 | 2.87 GB | ~11.8 GB | **~14.7 GB** | **no** |
+| 26 | 50 | 1.34 GB | ~5.5 GB | ~6.8 GB | marginal |
+| 52 | 25 | 0.67 GB | ~2.75 GB | ~3.4 GB | **yes** |
+
+So 1280 nodes fits the **52-host shipped-knob plan** - the one the quota refusal
+killed - and twelve hosts would need roughly **24-32 GB each** instead of 8.
+
+**But buying hosts is the second-best answer.** If
+`cluster-link-sendbuf-limit` bounded the peak to even 25 MB per node, twelve hosts
+would need 107 x 25 MB + 2.87 GB = **5.6 GB, inside 7911 MiB**. That is one
+directive in `_process_config_text`, and it is a change on every run's path - a
+new directive in every node config, so it moves `generated_valkey_configs_manifest`
+and every `node_configs` comparison in the `runtime_start` diff view. It needs
+operator approval and its own evidence, and it is **the thing to try before
+provisioning anything**.
+
+One number recorded rather than treated as a finding: the control's 1685.75 s is
+above this fleet's recent exact-200 range of 1450-1550 s. The likeliest cause is
+the sampler's own ssh traffic - ten hosts every 20 s for the whole run - and it is
+not established.
+
