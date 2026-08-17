@@ -481,6 +481,26 @@ vm.overcommit_memory = 1
 net.ipv4.ip_local_port_range = 10240 65535
 net.ipv4.tcp_tw_reuse = 1
 
+# The cluster bus is a full mesh, so a host holds
+# `nodes_per_host x (fleet_nodes - 1) x 2` bus sockets - quadratic in the fleet,
+# not in the density. At exact-200 on twelve hosts that is 6,766 sockets, about
+# 53 MiB, and nothing above was ever near the ceiling. At M4's 1280 nodes on
+# twelve hosts it is **273,706 sockets, at least 2.09 GiB** at the kernel's own
+# 4 KiB+4 KiB per-socket minimum.
+#
+# Stock `tcp_mem` is auto-sized from RAM: on these 8 GB hosts it is
+# 93963/125285/187926 pages, a hard ceiling of **734 MiB**. Measured
+# 2026-08-17, the first real 1280-node attempt died there - 370 kernel
+# "TCP: out of memory" messages beginning four minutes in, and cluster
+# formation taking 152 `ConnectionRefusedError` in 0-1 ms on CLUSTER MEET.
+#
+# 1.5/3/4 GiB in pages. It is a ceiling and not an allocation: the kernel
+# charges what the sockets actually hold, and these hosts carry only ~1.1 GiB
+# of valkey RSS at this density, so ~3.9 GiB stays free. Raising the *ceiling*
+# rather than the per-socket minima keeps every other run's socket behaviour
+# byte-identical.
+net.ipv4.tcp_mem = 393216 786432 1048576
+
 # The partition actuator installs plain filter rules and needs no connection
 # tracking, but a full conntrack table drops packets that look exactly like a
 # cluster-bus failure. Stock here is 262144.
