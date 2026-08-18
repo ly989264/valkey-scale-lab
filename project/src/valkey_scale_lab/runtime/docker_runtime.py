@@ -3397,12 +3397,27 @@ def _bounded_parallel(
     #
     # A fresh copy per item, taken here in the calling thread: one shared
     # `Context` cannot be entered by two threads at once.
-    try:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(copy_context().run, worker, item) for item in work]
-            return [future.result() for future in as_completed(futures, timeout=max(1.0, timeout))]
-    except FutureTimeoutError as exc:
-        raise DockerRuntimeError(f"{label} exceeded {timeout:.1f}s with parallelism={max_workers}") from exc
+    # `as_completed`'s own timeout is caught around `next()` alone, and never
+    # around `future.result()`. On Python 3.11+ `concurrent.futures.TimeoutError`
+    # *is* the builtin `TimeoutError`, which *is* `socket.timeout` - so a plain
+    # RESP read timeout inside a worker used to surface here and be reported as
+    # this pool's budget being blown. Measured 2026-08-18 on a real 1280-node
+    # run: it died at 448s claiming a 10225.7s budget was exceeded, while 1023 of
+    # its 1024 workers had already finished in 98s. A worker's own exception now
+    # propagates with its own type and message.
+    results: list[Any] = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(copy_context().run, worker, item) for item in work]
+        pending = as_completed(futures, timeout=max(1.0, timeout))
+        while True:
+            try:
+                future = next(pending)
+            except StopIteration:
+                break
+            except FutureTimeoutError as exc:
+                raise DockerRuntimeError(f"{label} exceeded {timeout:.1f}s with parallelism={max_workers}") from exc
+            results.append(future.result())
+    return results
 
 
 def _time_left(deadline: float, *, floor: float = 1.0) -> float:
@@ -5152,8 +5167,16 @@ def _configure_large_cluster_replicas_with_diagnostics(
         return round(max(time.monotonic() - stage_started, 0.0), 6)
 
     def replicate_command(replica: dict[str, Any], master_id: str, local_timeout: float) -> str:
-        if _process_node_is_replica_of(replica, master_id):
-            return "already_replica"
+        # A 5s probe in front of a command that retries for up to 120s. It exists
+        # only to skip work already done, so failing to answer it is not a reason
+        # to fail the run: fall through and let `_replicate_process_node` retry.
+        # Measured 2026-08-18: one node of 1024 missed this probe's 5s budget
+        # during 1280-node formation and ended the whole run.
+        try:
+            if _process_node_is_replica_of(replica, master_id):
+                return "already_replica"
+        except Exception:  # noqa: BLE001 - unreadable means "not known to be one"
+            pass
         _replicate_process_node(replica, master_id, timeout=local_timeout)
         return "replicate_command_sent"
 

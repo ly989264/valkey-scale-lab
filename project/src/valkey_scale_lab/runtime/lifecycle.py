@@ -23,6 +23,8 @@ and a second backend is a registry entry plus a `NodeBackend`.
 
 from __future__ import annotations
 
+import sys
+
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -470,7 +472,22 @@ def _create_process_scenario(
         )
         return state
     except Exception:
-        backend.reclaim_run(capability_id=capability_id, run_id=run_id)
+        # A teardown that fails on the way out must not hide what failed on the
+        # way in. `reclaim_run` raising here used to replace the original
+        # exception outright, because the bare `raise` below never executed -
+        # `m4_first_1280_run_map.md` §5.2. Measured twice on real 1280-node runs
+        # (2026-08-17 and 2026-08-18): both reported a reclaim ssh timeout as
+        # their primary failure while the real cause survived only in the command
+        # audit, and one of them was a convergence stall that took two further
+        # runs to name. The reclaim failure is still worth hearing, so it is
+        # chained as the original's `__context__` and printed, never raised.
+        try:
+            backend.reclaim_run(capability_id=capability_id, run_id=run_id)
+        except Exception as reclaim_error:  # noqa: BLE001
+            print(
+                f"WARNING: reclaim after failure did not clear every host: {reclaim_error!r}",
+                file=sys.stderr,
+            )
         raise
 
 

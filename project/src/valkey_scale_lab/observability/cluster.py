@@ -55,6 +55,31 @@ FULL_SLOT_BITMAP = bytes([0xFF]) * 2048
 # tighter rejects a healthy cluster. This is not scale-free and will need
 # re-measuring before 500 nodes.
 CONVERGENCE_NO_PROGRESS_SECONDS = 240.0
+# Re-measured at 1280 nodes on 2026-08-18, which is what the paragraph above
+# asked for. The dwell really is close to linear in node count - 14.3s at 30 and
+# 83.1s at 200 are 0.477 and 0.416 seconds per node - so the same 2.9x margin
+# gives 1.25s per node, and a fixed 240s is a bound for 192 nodes and no more.
+#
+# Measured directly, sampling `CLUSTER SHARDS` health across all 1280 nodes every
+# 20s while a real run formed: replicas leave the `loading` set steadily, 25 -> 7
+# over 225s, roughly one every 12.5s. Nothing was stuck and the cluster was `ok`
+# with 16384 slots and 1280 known nodes throughout - but as the tail empties the
+# gap between departures grows, and three 1280-node runs were failed by it with a
+# single replica still `loading`.
+#
+# Scaled, not simply raised, so the small scales keep the bound they were
+# measured under: the floor binds at and below 192 nodes, so exact-30 and
+# exact-50 are byte-for-byte unaffected. **exact-200 moves 240s -> 250s**, and
+# that is stated rather than fudged away - the bound only decides how long a run
+# waits before declaring a cluster stuck, so a longer one can never fail a run
+# that passes, nor change any artifact of one. It costs 10s only on a run that
+# was going to fail anyway.
+def convergence_no_progress_seconds(node_count: int) -> float:
+    """The no-progress bound for a cluster of this size, floored at the constant."""
+
+    return max(CONVERGENCE_NO_PROGRESS_SECONDS, 1.25 * max(0, int(node_count)))
+
+
 # The backstop, not the discriminator. Only reachable when the queue keeps moving
 # for this long, which at 2000 nodes could be legitimate, so it is generous: its
 # job is to bound the run, not to judge the cluster.
@@ -852,9 +877,9 @@ class FullClusterValidator:
         concurrency: int = 64,
         observer_count: int = 3,
         timeout: float = 5.0,
-        convergence_timeout: float = CONVERGENCE_TIMEOUT_SECONDS,
+        convergence_timeout: float | None = None,
         convergence_poll_seconds: float = CONVERGENCE_POLL_SECONDS,
-        no_progress_seconds: float = CONVERGENCE_NO_PROGRESS_SECONDS,
+        no_progress_seconds: float | None = None,
         connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
     ) -> None:
         self.light = LightClusterProbe(
@@ -869,9 +894,23 @@ class FullClusterValidator:
             timeout=timeout,
             connection_factory=connection_factory,
         )
-        self.convergence_timeout = convergence_timeout
+        # Both bounds default from the cluster's own size. An explicit value
+        # always wins, so every existing test and caller that states one is
+        # unaffected.
+        self.no_progress_seconds = (
+            convergence_no_progress_seconds(len(nodes))
+            if no_progress_seconds is None
+            else no_progress_seconds
+        )
+        # The backstop stays a backstop rather than becoming the discriminator:
+        # it has to sit clear of the no-progress bound, which at 1280 nodes is
+        # 1600s against this ceiling's historical 1800s.
+        self.convergence_timeout = (
+            max(CONVERGENCE_TIMEOUT_SECONDS, 3.0 * self.no_progress_seconds)
+            if convergence_timeout is None
+            else convergence_timeout
+        )
         self.convergence_poll_seconds = convergence_poll_seconds
-        self.no_progress_seconds = no_progress_seconds
 
     def run(self, **validation_options: Any) -> dict[str, Any]:
         """Validate the cluster, allowing a bounded wait for it to converge.

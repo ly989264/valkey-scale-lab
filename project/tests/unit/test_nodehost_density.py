@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,7 @@ from valkey_scale_lab.config.validation import load_effective_config, normalize_
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.planner.plan import build_cluster_plan, create_plan_file
 from valkey_scale_lab import resource
+from valkey_scale_lab.runtime import docker_runtime
 
 
 def test_global_config_supplies_density_defaults() -> None:
@@ -346,3 +348,112 @@ def test_a_shard_shape_that_cannot_be_separated_is_refused_by_name() -> None:
     assert "runtime.nodehosts_per_az is 2" in message
     assert "needs at least 3 nodehost(s) in each AZ" in message
     assert "a shard of 5 members over 2 AZ(s)" in message
+
+
+def test_bounded_parallel_does_not_report_a_worker_socket_timeout_as_its_own_budget() -> None:
+    """A worker's `TimeoutError` is not this pool's timeout, and on 3.11+ they are
+    the same class.
+
+    `concurrent.futures.TimeoutError is TimeoutError is socket.timeout`, so the
+    old `except FutureTimeoutError` around `future.result()` caught a plain RESP
+    read timeout and reported it as the parallelism budget being exceeded.
+    Measured on a real 1280-node run: it died at 448s claiming a 10225.7s budget
+    was blown, while 1023 of 1024 workers had finished in 98s.
+
+    On Python 3.9 (this workstation) those classes are distinct, so this test
+    passes trivially there and is only a live regression guard on 3.11+ - which
+    is the controllers, and is precisely why the workstation suite never caught
+    it. Mutation-check it on the controller, not here.
+    """
+
+    def worker(item: int) -> int:
+        if item == 3:
+            raise TimeoutError("timed out reading from 127.0.0.1:7801")
+        return item
+
+    with pytest.raises(TimeoutError, match="timed out reading from"):
+        docker_runtime._bounded_parallel(
+            range(8), worker, parallelism=4, timeout=600.0, label="probe"
+        )
+
+    # And the pool's own budget still reports as itself.
+    def slow(item: int) -> int:
+        time.sleep(5)
+        return item
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="exceeded .* with parallelism"):
+        docker_runtime._bounded_parallel(
+            range(4), slow, parallelism=1, timeout=1.0, label="slow probe"
+        )
+
+
+def test_bounded_parallel_returns_every_result_when_nothing_fails() -> None:
+    got = docker_runtime._bounded_parallel(
+        range(20), lambda i: i * 2, parallelism=4, timeout=60.0, label="ok"
+    )
+    assert sorted(got) == [i * 2 for i in range(20)]
+
+
+def test_convergence_no_progress_bound_scales_with_node_count() -> None:
+    """The 240s constant said in its own comment that it was not scale-free.
+
+    Re-measured at 1280 nodes: replicas leave `CLUSTER SHARDS`' `loading` set
+    steadily but with a lengthening tail, and three real runs were failed with a
+    single replica still loading. The dwell is close to linear in node count
+    (14.3s at 30, 83.1s at 200), so the same 2.9x margin the constant already
+    used gives 1.25s per node.
+    """
+    from valkey_scale_lab.observability.cluster import (
+        CONVERGENCE_NO_PROGRESS_SECONDS,
+        convergence_no_progress_seconds,
+    )
+
+    # The floor holds where the baselines were taken.
+    assert convergence_no_progress_seconds(30) == CONVERGENCE_NO_PROGRESS_SECONDS
+    assert convergence_no_progress_seconds(50) == CONVERGENCE_NO_PROGRESS_SECONDS
+    assert convergence_no_progress_seconds(192) == CONVERGENCE_NO_PROGRESS_SECONDS
+    # And it really does scale above it, which is the whole point.
+    assert convergence_no_progress_seconds(200) == 250.0
+    assert convergence_no_progress_seconds(1280) == 1600.0
+    # A bound below the 240s floor is never produced.
+    assert convergence_no_progress_seconds(0) == CONVERGENCE_NO_PROGRESS_SECONDS
+
+
+def test_a_failing_reclaim_does_not_replace_the_failure_that_caused_it() -> None:
+    """`m4_first_1280_run_map.md` §5.2, which cost two of four 1280-node runs.
+
+    The failure handler called `reclaim_run` and then `raise`; when the reclaim
+    raised, the bare `raise` never ran and its exception became the reported
+    cause. Both times the real failure survived only in the command audit, and
+    one of them was a convergence stall that took two further runs to name.
+
+    Asserted on the parsed tree rather than the text: every `except` handler that
+    reclaims must guard the reclaim and must end by re-raising the original.
+    """
+    import ast
+
+    tree = ast.parse(Path("src/valkey_scale_lab/runtime/lifecycle.py").read_text())
+    handlers = [
+        h
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Try)
+        for h in node.handlers
+        if any(
+            isinstance(c, ast.Call)
+            and isinstance(c.func, ast.Attribute)
+            and c.func.attr == "reclaim_run"
+            for c in ast.walk(h)
+        )
+    ]
+    assert handlers, "no failure handler reclaims; this test is guarding nothing"
+    for h in handlers:
+        # the reclaim is wrapped
+        guarded = [n for n in h.body if isinstance(n, ast.Try)]
+        assert guarded, "reclaim_run in a failure handler must be guarded"
+        assert any(g.handlers for g in guarded), "the guard must catch"
+        # and the original still propagates, as the last thing the handler does
+        last = h.body[-1]
+        assert isinstance(last, ast.Raise) and last.exc is None, (
+            "the failure handler must end in a bare `raise` so the original "
+            "exception is what propagates"
+        )
