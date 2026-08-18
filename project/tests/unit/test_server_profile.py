@@ -132,16 +132,12 @@ def test_the_topology_pin_appears_only_above_one_replica_per_shard() -> None:
         assert [line for line in text.splitlines() if line != pin] == baseline.splitlines()
 
 
-def test_one_replica_node_config_differs_from_the_frozen_baseline_by_the_sendbuf_line_alone() -> None:
+def test_one_replica_node_config_matches_the_frozen_baseline_byte_for_byte() -> None:
     """The `runtime_start` diff view compares this file, so it is compared here.
 
-    Until M4-4 this asserted byte identity with the frozen baseline, which is
-    what made MR-1's r=1 no-op proof checkable. `cluster-link-sendbuf-limit` is
-    the first directive added to every node's config since those baselines were
-    frozen, so byte identity is now false *by declaration*: the declared
-    `runtime_start` delta is one added line in every `node_configs/*.conf` and
-    nothing else. That is asserted here rather than dropped, so every other byte
-    of the generated config is still pinned to a real run's own file.
+    Byte identity was briefly false while `cluster-link-sendbuf-limit` was
+    emitted; removing that directive restores it, which is worth having - it is
+    what makes MR-1's r=1 no-op proof checkable against a real run's own file.
     """
 
     frozen = Path(
@@ -165,63 +161,6 @@ def test_one_replica_node_config_differs_from_the_frozen_baseline_by_the_sendbuf
     produced = docker_runtime._process_config_text(
         node, {"container_ip": "172.18.0.2"}, replicas_per_shard=1
     )
-    added = f"cluster-link-sendbuf-limit {docker_runtime.CLUSTER_LINK_SENDBUF_LIMIT_BYTES}"
-    assert produced.count(added) == 1
-    assert [line for line in produced.splitlines() if line != added] == expected.splitlines()
+    assert produced == expected
 
 
-def test_the_sendbuf_cap_exceeds_one_whole_cluster_bus_message_at_every_admitted_scale() -> None:
-    """The cap's floor is a message, not a memory budget, and this pins it.
-
-    `freeClusterLinkOnBufferLimitReached` frees the link when the send queue
-    exceeds the limit, so a cap below one message frees the link on the first
-    ping that ever queues - which is formation, at exactly the scale the cap
-    exists for. `m4_first_1280_run_map.md` §7.1's budget table recommends 8 KiB
-    on memory arithmetic alone and is below one message at 1280 nodes; this test
-    is what would have caught that.
-
-    The message size is the pinned build's own: a PING carries
-    `floor(N * gossip_perc / 100)` gossip entries of `sizeof(clusterMsgDataGossip)`
-    on a 2256-byte header, floored at `sizeof(clusterMsg)`. Both struct sizes are
-    compiled facts about valkey 9.1.0 and are stated as literals here, because a
-    test that recomputed them from the same assumption would assert nothing.
-    """
-
-    header_bytes = 2256
-    gossip_entry_bytes = 104
-    min_message_bytes = 4352  # sizeof(clusterMsg)
-    gossip_perc = 10  # cluster-message-gossip-perc, hidden config, default 10
-
-    def ping_bytes(nodes: int) -> int:
-        wanted = max(3, nodes * gossip_perc // 100)
-        return max(min_message_bytes, header_bytes + gossip_entry_bytes * wanted)
-
-    # 1280 is the largest node count any bounded exception admits, so it is the
-    # largest message this product can generate.
-    assert ping_bytes(200) == 4352
-    assert ping_bytes(1280) == 15568
-    for nodes in (30, 50, 200, 1280):
-        assert docker_runtime.CLUSTER_LINK_SENDBUF_LIMIT_BYTES > 2 * ping_bytes(nodes), nodes
-
-
-def test_the_sendbuf_cap_is_set_on_every_node_at_every_replica_count() -> None:
-    """Unconditional, unlike the topology pin: the bus is a full mesh at r=1 too."""
-
-    node = {
-        "run_id": "sendbuf-run",
-        "logical_id": "shard-0000-primary",
-        "client_port": 7400,
-        "cluster_bus_port": 17400,
-        "effective_io_threads": 1,
-        "effective_node_memory_limit_mb": 64,
-        "effective_cluster_node_timeout_ms": 30000,
-        "requested_cluster_node_timeout_ms": 30000,
-        "cluster_node_timeout_source": "global",
-    }
-    nodehost = {"container_ip": "172.18.0.2"}
-
-    for replicas in (0, 1, 2, 4):
-        lines = docker_runtime._process_config_text(
-            node, nodehost, replicas_per_shard=replicas
-        ).splitlines()
-        assert lines.count("cluster-link-sendbuf-limit 32768") == 1

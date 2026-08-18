@@ -122,27 +122,25 @@ RESHARD_DRAIN_BATCH_KEYS = 100
 RESHARD_DRAIN_MAX_BATCHES = 200
 CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS = 2.0
 PROCESS_FULL_SNAPSHOT_NODE_LIMIT = 200
-# The cluster bus is a full mesh, so a node holds one send queue per peer and
-# their total grows with the *fleet*, not with its own dataset. `maxmemory` is a
-# dataset cap and bounds none of it. Left at Valkey's default of 0 - unlimited -
-# those queues grew until the host OOM-killed the nodes on both 1280-node
-# attempts (`m4_first_1280_run_map.md` §5.3, §7.2: 52-110 MB RSS per node at
-# 1279 links, against 10.5 MB at 199).
+# `cluster-link-sendbuf-limit` is deliberately NOT set, and this records why so
+# it is not re-added on the same reasoning that first added it.
 #
-# The floor for the cap is one whole message, not a memory budget.
-# `freeClusterLinkOnBufferLimitReached` is called from `clusterCron` and frees
-# the link when `send_msg_queue_mem > limit`, so a cap below a single message
-# frees the link on the first ping that ever queues. Measured against the pinned
-# build's own structs (valkey 9.1.0, `cluster_legacy.h`): a PING carries
-# `floor(N * cluster-message-gossip-perc / 100)` gossip entries of 104 bytes on
-# a 2256-byte header, floored at `sizeof(clusterMsg)` = 4352 - so **4.25 KiB at
-# 200 nodes and 15.20 KiB at 1280**, before ping extensions.
+# It was set to 32 KiB to stop per-peer cluster-bus buffers OOM-killing 8 GB
+# hosts holding 107 nodes each. Measured 2026-08-18 on local Docker, the case is
+# gone: `mem_cluster_links` is **linear in node count at ~2.1 KB per node**
+# (102,912 B at N=50, 212,256 at 100, 426,656 at 200) and independent of
+# `cluster-node-timeout`, which puts a 1280-node node at ~2.7 MB and a 40-node
+# host at ~109 MB. On 16 GB hosts that is nothing.
 #
-# 32 KiB is therefore 2.05 of the largest message this product can generate and
-# 7.5 of the smallest. It clips the top of the measured distribution, which is
-# the part that killed the host, and cannot fire on a link merely holding one
-# queued ping at any scale the exception admits.
-CLUSTER_LINK_SENDBUF_LIMIT_BYTES = 32768
+# And the cap was doing harm at the scale it was written for: at N=1280 a gossip
+# packet is 15.6 KB, so 32 KiB holds two, and a third frees the link - forcing a
+# reconnect and a full topology resync, which is *more* bus work. A real
+# 1280-node run measured **33,000 link frees**.
+#
+# There is no value that both never bites and still prevents OOM at this shape:
+# bounding a node to ~200 MB over 2558 links needs ~80 KB/link, which is 40
+# nodes x 200 MB = 8 GB per host - an OOM either way. The cap is not the lever;
+# CPU headroom and `cluster-node-timeout` are.
 CONTAINER_STOP_TIMEOUT_SECONDS = 45
 CONTAINER_REMOVE_TIMEOUT_SECONDS = 60
 NETWORK_REMOVE_TIMEOUT_SECONDS = 45
@@ -1779,12 +1777,6 @@ def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any], *, repl
             f"cluster-announce-ip {nodehost['container_ip']}",
             f"cluster-announce-port {node['client_port']}",
             f"cluster-announce-bus-port {node['cluster_bus_port']}",
-            # Bounds the per-peer cluster-bus send queue; see the constant, which
-            # carries the derivation. Unconditional, unlike the topology pin
-            # below: the mesh is a full mesh at every replica count, so a bound
-            # that only applied above one replica would leave the shape every
-            # frozen baseline was taken at unbounded.
-            f"cluster-link-sendbuf-limit {CLUSTER_LINK_SENDBUF_LIMIT_BYTES}",
             "appendonly no",
             # The planned topology is fixed and the validator enforces it, so
             # migration is never wanted - stated directly rather than by tuning

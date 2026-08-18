@@ -55,6 +55,30 @@ network:
   virtual_az_mode: multi
   azs: [az-a, az-b]
 cluster:
+  # Scaled with the cluster, and measured rather than guessed.
+  #
+  # A node must ping any peer it has not heard from within `node_timeout/2`, so
+  # the forced heartbeat rate is (N-1)/(timeout/2) and gossip cost per node grows
+  # as N x message-size, i.e. N^2. Measured on local Docker 2026-08-18, bytes/s
+  # of cluster bus sent per node: 5,920 at N=50, 8,567 at N=100 and 30,915 at
+  # N=200 - nearly flat to 100, then a 3.6x jump, because below ~150 peers the
+  # random cron ping keeps everyone fresh and above it the forced rule binds.
+  #
+  # At N=1280 the forced rule dominates and 30000 puts a node at ~537 KB/s sent,
+  # ~44 MB/s per 40-node host, ~5.5 MB/s per vCPU - roughly 5x the per-core
+  # budget the only published 2000-node cluster ran on (valkey.io 1B RPS: one
+  # node per r7g.2xlarge with SIX dedicated cores). 120000 measures 3.4x cheaper
+  # at this size and lands about par.
+  #
+  # The two N=200 timeout points decompose the cost: 30% is timeout-independent
+  # random pinging and 70% is the forced rule, which is why 4x the timeout buys
+  # 2.1x at N=200 and more at N=1280 where the forced share is larger.
+  #
+  # **The cost is real and belongs to whoever reads a result taken here**: PFAIL
+  # detection, and therefore failover RTO, scale with this. Every prior fault
+  # lane number in this repository was taken at 30000 and its 45-50s RTO band
+  # does not apply to a run using this file.
+  cluster_node_timeout_ms: 120000
   shards: 256
   replicas_per_shard: 4
   port_base: 7800
