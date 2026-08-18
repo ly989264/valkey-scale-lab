@@ -3558,6 +3558,25 @@ def _cluster_meet_port(node: dict[str, Any]) -> int:
     return 6379
 
 
+def _retry_read(call: Callable[[], Any], *, what: str, attempts: int = 3, pause: float = 2.0) -> Any:
+    """Run an idempotent read, retrying a transient transport failure.
+
+    Only for reads. A mutation that times out has an *unknown* outcome rather
+    than a failed one - the server does not know the client left - so blind
+    retry is wrong there and the safe pattern is verify-then-retry.
+    """
+
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            return call()
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            if attempt + 1 < attempts:
+                time.sleep(pause)
+    raise DockerRuntimeError(f"{what} failed after {attempts} attempts: {last!r}")
+
+
 MEET_ATTEMPTS = 3
 
 
@@ -4547,10 +4566,26 @@ def _replicate_process_node(node: dict[str, Any], master_id: str, timeout: float
 
 
 def _wait_process_replica_of(node: dict[str, Any], master_id: str, timeout: float) -> None:
+    """Wait for a replica to confirm its primary, tolerating an unanswered probe.
+
+    `_process_node_is_replica_of` is a 5s `RespConnection` doing ROLE +
+    CLUSTER MYSLOTS, and calling it unguarded made a single slow answer end the
+    wait - and with it the run. This is the *next stage* of the pipeline whose
+    previous stage had exactly this defect, fanned over all 1024 replicas each
+    polling once a second, so it is the higher-count instance of the two.
+
+    A probe that does not answer is "not yet confirmed", not a failure: the loop
+    is already bounded by `deadline`, and the timeout below is what judges the
+    replica. Reads only, so retrying changes nothing on the node.
+    """
+
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        if _process_node_is_replica_of(node, master_id):
-            return
+        try:
+            if _process_node_is_replica_of(node, master_id):
+                return
+        except Exception:  # noqa: BLE001 - unanswered means "not yet", not "no"
+            pass
         time.sleep(1)
     raise DockerRuntimeError(f"{node['logical_id']} did not become replica of {master_id}")
 
@@ -11963,7 +11998,13 @@ def _management_matrix_wait_replica_sync_ready(
     *,
     timeout: float,
 ) -> dict[str, Any]:
-    primary_id = _node_command(primary, "CLUSTER", "MYID", timeout=10).strip()
+    # Outside the retry loop below, so a single unanswered MYID used to end the
+    # rolling restart. ~1,536 invocations at 1280 nodes; a read, so bounded retry
+    # is safe.
+    primary_id = _retry_read(
+        lambda: _node_command(primary, "CLUSTER", "MYID", timeout=10).strip(),
+        what=f"CLUSTER MYID on {primary['logical_id']}",
+    )
     deadline = time.monotonic() + timeout
     started = time.monotonic()
     last: dict[str, Any] = {}
@@ -11996,7 +12037,14 @@ def _management_matrix_wait_replica_sync_ready(
                     "status": "PASS",
                     "wait_ms": round(max(time.monotonic() - started, 0.0) * 1000.0, 6),
                 }
-        except (DockerRuntimeError, TypeError, ValueError):
+        # `OSError` matters and was missing: `TimeoutError` and
+        # `ConnectionRefusedError` subclass it, so a transport failure escaped a
+        # loop whose whole purpose is to retry. `ValkeyErrorReply` subclasses
+        # `DockerRuntimeError`, which is why error *replies* were already
+        # retried and only transport was not. The siblings
+        # (`_management_wait_node_role`, `_wait_cluster_predicate`,
+        # `_management_wait_clean_cluster`) all catch broadly; this now matches.
+        except (DockerRuntimeError, TypeError, ValueError, OSError):
             pass
         time.sleep(0.5)
     raise DockerRuntimeError(

@@ -494,3 +494,92 @@ def test_cluster_meet_retries_a_transient_failure() -> None:
         assert calls["n"] == docker_runtime.MEET_ATTEMPTS   # bounded, not infinite
     finally:
         docker_runtime._node_command = saved
+
+
+def test_replica_of_wait_tolerates_an_unanswered_probe() -> None:
+    """The next stage of the pipeline whose previous stage had this same defect.
+
+    `_process_node_is_replica_of` is a 5s probe; calling it unguarded made one
+    slow answer end the wait, and it is fanned over all 1024 replicas each
+    polling once a second. An unanswered probe is "not yet confirmed".
+    """
+    calls = {"n": 0}
+
+    def flaky(node, master_id):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise TimeoutError("timed out")
+        return True
+
+    saved = docker_runtime._process_node_is_replica_of
+    try:
+        docker_runtime._process_node_is_replica_of = flaky
+        docker_runtime._wait_process_replica_of({"logical_id": "r"}, "mid", timeout=30)
+        assert calls["n"] == 3
+
+        # and a probe that never answers still fails on the deadline, not early
+        calls["n"] = 0
+
+        def never(node, master_id):
+            calls["n"] += 1
+            raise TimeoutError("timed out")
+
+        docker_runtime._process_node_is_replica_of = never
+        with pytest.raises(docker_runtime.DockerRuntimeError, match="did not become replica"):
+            docker_runtime._wait_process_replica_of({"logical_id": "r"}, "mid", timeout=2)
+        assert calls["n"] >= 1
+    finally:
+        docker_runtime._process_node_is_replica_of = saved
+
+
+def test_retry_read_is_bounded_and_reads_only() -> None:
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] < 2:
+            raise TimeoutError("timed out")
+        return "ok"
+
+    assert docker_runtime._retry_read(flaky, what="probe", pause=0.0) == "ok"
+
+    calls["n"] = 0
+
+    def never():
+        calls["n"] += 1
+        raise TimeoutError("timed out")
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="probe failed after 3 attempts"):
+        docker_runtime._retry_read(never, what="probe", pause=0.0)
+    assert calls["n"] == 3
+
+
+def test_replica_sync_wait_retries_transport_not_only_error_replies() -> None:
+    """`TimeoutError` subclasses `OSError`, which the loop's except omitted.
+
+    So error *replies* were retried (ValkeyErrorReply subclasses
+    DockerRuntimeError) and transport failures were not - in a loop whose whole
+    purpose is to retry.
+
+    Asserted on the parsed handler, not on the source text: the first version of
+    this test searched the function source for "OSError" and passed even with the
+    except narrowed, because the explanatory comment above it says "OSError".
+    The mutation check is what caught that.
+    """
+    import ast
+    import inspect
+    import textwrap
+
+    assert issubclass(TimeoutError, OSError)  # the premise, on every version
+
+    fn = docker_runtime._management_matrix_wait_replica_sync_ready
+    tree = ast.parse(textwrap.dedent(inspect.getsource(fn)))
+    caught: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ExceptHandler) and node.type is not None:
+            names = node.type.elts if isinstance(node.type, ast.Tuple) else [node.type]
+            caught |= {n.id for n in names if isinstance(n, ast.Name)}
+    assert "OSError" in caught, (
+        "the retry loop must catch OSError; without it a socket timeout escapes "
+        f"a loop that exists to retry. caught={sorted(caught)}"
+    )
