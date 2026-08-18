@@ -67,18 +67,27 @@ cluster:
   # At N=1280 the forced rule dominates and 30000 puts a node at ~537 KB/s sent,
   # ~44 MB/s per 40-node host, ~5.5 MB/s per vCPU - roughly 5x the per-core
   # budget the only published 2000-node cluster ran on (valkey.io 1B RPS: one
-  # node per r7g.2xlarge with SIX dedicated cores). 120000 measures 3.4x cheaper
-  # at this size and lands about par.
+  # node per r7g.2xlarge with SIX dedicated cores).
   #
   # The two N=200 timeout points decompose the cost: 30% is timeout-independent
   # random pinging and 70% is the forced rule, which is why 4x the timeout buys
-  # 2.1x at N=200 and more at N=1280 where the forced share is larger.
+  # only 2.1x at N=200, and more at N=1280 where the forced share is larger.
+  # Extrapolated: 60000 is 1.9x cheaper (~2.9 MB/s per vCPU), 120000 is 3.4x.
   #
-  # **The cost is real and belongs to whoever reads a result taken here**: PFAIL
-  # detection, and therefore failover RTO, scale with this. Every prior fault
-  # lane number in this repository was taken at 30000 and its 45-50s RTO band
-  # does not apply to a run using this file.
-  cluster_node_timeout_ms: 120000
+  # **60000 and not 120000, and that ceiling was measured rather than chosen.**
+  # PFAIL detection - and therefore failover RTO - scales with this, and the
+  # Sentinel canary recovery deadline is a hardcoded 180s
+  # (`docker_runtime.py:9281`). Two real Docker exact-50 runs, 2026-08-18:
+  # **120000 FAILS** the fault lane, 1696 canary rounds with zero reads on the
+  # killed shard, because RTO would land near 190s; **60000 PASSES** with
+  # `cluster_recovery_latency_ms` **95,230 ms** against ~47,000 at 30000, fault
+  # lane 9/9 REAL_PASS. So 60000 is the largest value that leaves the deadline
+  # untouched, and taking more gossip relief means changing a fault-lane
+  # contract, not a config.
+  #
+  # Its cost still belongs to whoever reads a result taken here: this
+  # repository's 45-50s RTO band does not apply to a run using this file.
+  cluster_node_timeout_ms: 60000
   shards: 256
   replicas_per_shard: 4
   port_base: 7800
