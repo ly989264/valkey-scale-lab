@@ -3558,14 +3558,44 @@ def _cluster_meet_port(node: dict[str, Any]) -> int:
     return 6379
 
 
+MEET_ATTEMPTS = 3
+
+
 def _meet_node_pair(source: dict[str, Any], target: dict[str, Any]) -> None:
-    _node_command(
-        source,
-        "CLUSTER",
-        "MEET",
-        _cluster_meet_address(target),
-        _cluster_meet_port(target),
-        timeout=30,
+    """`CLUSTER MEET`, retried - every sibling in formation already is.
+
+    `_replicate_process_node` loops for up to 120s and `_wait_process_cluster_meet`
+    polls, but this issued one command and let a single failure end the run.
+    Measured 2026-08-18 on a real 1280-node run: **one MEET of 1024** did not
+    answer inside its 30s budget and failed the whole run, which is the third
+    instance of the same shape after the replicate pre-check and the pool's
+    exception handling. At 1280 nodes a node is servicing gossip from 1279 peers
+    while being met, so an occasional slow answer is the expected case rather
+    than a fault.
+
+    Safe to repeat: a node already known, or mid-handshake, accepts MEET again -
+    which is why the retry goes here rather than widening a timeout.
+    """
+
+    last: Exception | None = None
+    for attempt in range(MEET_ATTEMPTS):
+        try:
+            _node_command(
+                source,
+                "CLUSTER",
+                "MEET",
+                _cluster_meet_address(target),
+                _cluster_meet_port(target),
+                timeout=30,
+            )
+            return
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            if attempt + 1 < MEET_ATTEMPTS:
+                time.sleep(2)
+    raise DockerRuntimeError(
+        f"CLUSTER MEET {source['logical_id']} -> {target['logical_id']} failed "
+        f"after {MEET_ATTEMPTS} attempts: {last!r}"
     )
 
 

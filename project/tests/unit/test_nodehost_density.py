@@ -457,3 +457,40 @@ def test_a_failing_reclaim_does_not_replace_the_failure_that_caused_it() -> None
             "the failure handler must end in a bare `raise` so the original "
             "exception is what propagates"
         )
+
+
+def test_cluster_meet_retries_a_transient_failure() -> None:
+    """One MEET of 1024 timing out ended a real 1280-node run.
+
+    Every sibling in formation retries; this one issued a single command. MEET is
+    safe to repeat, so the retry belongs here rather than in a wider timeout.
+    """
+    calls = {"n": 0}
+
+    def flaky(node, *args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise TimeoutError("timed out")
+        return "OK"
+
+    src = {"logical_id": "shard-0000-primary", "nodehost_container_ip": "10.0.0.1", "client_port": 7800}
+    tgt = {"logical_id": "shard-0001-primary", "nodehost_container_ip": "10.0.0.2", "client_port": 7801}
+
+    saved = docker_runtime._node_command
+    try:
+        docker_runtime._node_command = flaky
+        docker_runtime._meet_node_pair(src, tgt)          # succeeds on the third try
+        assert calls["n"] == 3
+
+        calls["n"] = 0
+
+        def always(node, *args, **kwargs):
+            calls["n"] += 1
+            raise TimeoutError("timed out")
+
+        docker_runtime._node_command = always
+        with pytest.raises(docker_runtime.DockerRuntimeError, match="CLUSTER MEET .* failed after"):
+            docker_runtime._meet_node_pair(src, tgt)
+        assert calls["n"] == docker_runtime.MEET_ATTEMPTS   # bounded, not infinite
+    finally:
+        docker_runtime._node_command = saved
