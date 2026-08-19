@@ -9480,12 +9480,28 @@ def _run_scalable_primary_kill_failover(
         # deadline for this window, so this is a single observation. Giving it a
         # convergence wait of its own would nest two bounded waits and let the
         # fault window run to twice its intended bound.
+        #
+        # `transport_reread_attempts` is not that second wait. It re-reads only
+        # the nodes that produced no observation at all, gated on
+        # `transport_transient`, so a node answering with an unconverged role is
+        # never re-read and this cannot turn a still-converging cluster into a
+        # pass. It matters most here: this runs while the primary is dead and the
+        # fleet is gossiping the failure, which is when a 5s read is least likely
+        # to answer, and one unanswered node of 1,279 used to end the run. The
+        # killed node is excluded as `expected_unavailable`, so on a healthy run
+        # nothing is re-read and this costs nothing - measured across 91 retained
+        # runs, in every one of which every non-planned-down node answered first
+        # time. Those 91 bound the *cost* and are not evidence the gap does not
+        # happen: they are a survivor sample, because before this a run that hit
+        # a persistent gap here died and left no comparable record. The benefit
+        # case is the 1280-node history.
         return FullClusterValidator(
             inventory,
             concurrency=64,
             observer_count=3,
             timeout=5.0,
             convergence_timeout=0.0,
+            transport_reread_attempts=3,
         ).run(
             require_plan_roles=False,
             require_replica_connected=True,

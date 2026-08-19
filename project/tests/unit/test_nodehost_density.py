@@ -1095,3 +1095,164 @@ def test_replica_sync_wait_retries_transport_not_only_error_replies() -> None:
         "the retry loop must catch OSError; without it a socket timeout escapes "
         f"a loop that exists to retry. caught={sorted(caught)}"
     )
+
+
+def _reread_probe(outcomes_by_node, *, attempts, nodes=None, **kwargs):
+    """A light probe whose transport yields per-node outcomes in order."""
+
+    from valkey_scale_lab.observability.cluster import LightClusterProbe, NodeEndpoint
+
+    endpoints = nodes or [
+        NodeEndpoint(
+            logical_id=f"n{index}",
+            host="127.0.0.1",
+            port=7400 + index,
+            expected_role="primary",
+            expected_shard=f"shard-{index}",
+            az_id="az-a",
+            placement_id=f"p{index}",
+        )
+        for index in range(len(outcomes_by_node))
+    ]
+    calls: dict[str, int] = {}
+
+    probe = LightClusterProbe(
+        endpoints,
+        transport_reread_attempts=attempts,
+        transport_reread_pause=0.0,
+        **kwargs,
+    )
+
+    def observe(node):
+        index = calls.get(node.logical_id, 0)
+        calls[node.logical_id] = index + 1
+        outcomes = outcomes_by_node[node.logical_id]
+        outcome = outcomes[min(index, len(outcomes) - 1)]
+        if isinstance(outcome, BaseException):
+            return LightClusterProbe._failed_row(node, outcome, 0.0, 0.0)
+        return {"logical_id": node.logical_id, "status": "OK", "answer": outcome}
+
+    probe.observe_node = observe  # type: ignore[method-assign]
+    return probe, calls
+
+
+def test_a_transport_gap_is_reread_and_the_row_is_replaced() -> None:
+    """The F6 defect: one unanswered node of 1,279 ended a paid run.
+
+    The down-window validation runs while the primary is dead and the fleet is
+    gossiping the failure, which is when a 5s read is least likely to answer.
+    """
+
+    probe, calls = _reread_probe(
+        {"n0": [TimeoutError("timed out"), "second"], "n1": ["first"]},
+        attempts=3,
+    )
+    rows = probe._reread_transport_gaps(probe.collect(), ())
+    assert [row["status"] for row in rows] == ["OK", "OK"]
+    assert calls == {"n0": 2, "n1": 1}, "only the gapped node is asked again"
+
+
+def test_a_semantic_answer_is_never_reread() -> None:
+    """The gate that makes this a transport re-read and not a convergence wait.
+
+    A node answering with the wrong role is an observation - re-asking would only
+    delay the report by the whole budget - and `is_transient_transport_error` is
+    an allowlist that excludes `SemanticFailure`, so it is not eligible.
+    """
+
+    from valkey_scale_lab.observability.contracts import SemanticFailure
+
+    probe, calls = _reread_probe(
+        {"n0": [SemanticFailure("ROLE disagrees with CLUSTER MYSLOTS role")]},
+        attempts=3,
+    )
+    rows = probe._reread_transport_gaps(probe.collect(), ())
+    assert rows[0]["status"] == "FAIL"
+    assert rows[0]["transport_transient"] is False
+    assert calls == {"n0": 1}, "a semantic disagreement must not be re-read"
+
+
+def test_a_planned_down_node_is_never_reread() -> None:
+    """Load-bearing rather than tidy.
+
+    At the primary-kill down-window the killed node is in `self.nodes` and
+    refuses every connection. Without this exclusion every run would pay the
+    whole pause budget re-reading a node it deliberately stopped - measured
+    across 91 retained runs, the re-read otherwise never fires at all.
+    """
+
+    probe, calls = _reread_probe(
+        {"n0": [ConnectionRefusedError("refused")], "n1": ["fine"]},
+        attempts=3,
+    )
+    rows = probe._reread_transport_gaps(probe.collect(), {"n0"})
+    assert calls == {"n0": 1, "n1": 1}
+    assert rows[0]["status"] == "FAIL"
+
+
+def test_a_node_that_never_answers_still_fails_the_validation() -> None:
+    """The accept condition is unchanged: the budget is bounded and fails closed."""
+
+    probe, calls = _reread_probe({"n0": [TimeoutError("timed out")]}, attempts=3)
+    rows = probe._reread_transport_gaps(probe.collect(), ())
+    assert calls == {"n0": 3}
+    assert rows[0]["status"] == "FAIL"
+    assert rows[0]["transport_reread_attempt"] == 2
+
+
+def test_the_default_probe_never_rereads() -> None:
+    """Every existing caller keeps a single observation.
+
+    Only the one site that owns a one-shot raises this, so no frozen baseline's
+    path changes.
+    """
+
+    from valkey_scale_lab.observability.cluster import (
+        FullClusterValidator,
+        LightClusterProbe,
+        NodeEndpoint,
+    )
+
+    node = NodeEndpoint(
+        logical_id="n0",
+        host="127.0.0.1",
+        port=7400,
+        expected_role="primary",
+        expected_shard="s",
+        az_id="az-a",
+        placement_id="p",
+    )
+    assert LightClusterProbe([node]).transport_reread_attempts == 1
+    assert FullClusterValidator([node]).light.transport_reread_attempts == 1
+
+
+def test_run_applies_the_reread_before_validating() -> None:
+    """The wiring, so enabling the knob is not silently inert.
+
+    `run` is `validate(collect())`; the re-read sits between them, so a gap that
+    clears on a second ask must reach `validate` as an answer.
+    """
+
+    probe, calls = _reread_probe(
+        {"n0": [TimeoutError("timed out"), "second"]}, attempts=3
+    )
+    seen: list[list[dict[str, object]]] = []
+    probe.validate = lambda rows, **_k: seen.append(rows) or {"status": "OK"}  # type: ignore[method-assign]
+    probe.run()
+    assert calls == {"n0": 2}
+    assert seen[0][0]["status"] == "OK"
+
+
+def test_the_down_window_validation_enables_the_reread() -> None:
+    """The one enabled site, asserted structurally.
+
+    A transport re-read that is present but not switched on at the site the audit
+    named would pass every test above and change nothing on a real run.
+    """
+
+    source = Path(docker_runtime.__file__).read_text(encoding="utf-8")
+    marker = "def full_validation_while_target_down()"
+    assert marker in source
+    body = source[source.index(marker) : source.index(marker) + 2000]
+    assert "convergence_timeout=0.0" in body
+    assert "transport_reread_attempts=3" in body

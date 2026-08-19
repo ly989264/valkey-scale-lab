@@ -318,14 +318,22 @@ class LightClusterProbe:
         timeout: float = 3.0,
         connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
         connections: EndpointConnections | None = None,
+        transport_reread_attempts: int = 1,
+        transport_reread_pause: float = 2.0,
     ) -> None:
         if not nodes:
             raise ValueError("light cluster probe requires at least one node")
+        if transport_reread_attempts < 1:
+            raise ValueError("transport re-read attempts must be at least 1")
         if concurrency < 32 or concurrency > 64:
             raise ValueError("light cluster probe concurrency must be between 32 and 64")
         self.nodes = list(nodes)
         self.concurrency = concurrency
         self.timeout = timeout
+        # 1 means "ask once", which is what every existing caller gets. Only a
+        # caller that owns a one-shot observation raises it.
+        self.transport_reread_attempts = transport_reread_attempts
+        self.transport_reread_pause = transport_reread_pause
         self._connection_factory = connection_factory or (
             lambda endpoint, timeout: RespConnection(endpoint, timeout=timeout)
         )
@@ -624,8 +632,77 @@ class LightClusterProbe:
             ],
         }
 
+    def _reread_transport_gaps(
+        self,
+        rows: list[dict[str, Any]],
+        expected_unavailable: Iterable[str],
+    ) -> list[dict[str, Any]]:
+        """Ask again, but only the nodes that did not answer at all.
+
+        This is a transport re-read and deliberately not a second convergence
+        wait. The difference is the gate: a row is re-read only when it carries
+        `transport_transient`, and `is_transient_transport_error` is an allowlist
+        that excludes `SemanticFailure`. So a node that answered with the wrong
+        role, the wrong slots or a bad PING is *not* re-read - its answer will
+        not change and re-asking would only delay the report. Only a node that
+        produced no observation is asked again, which re-establishes a socket
+        rather than waiting for the cluster to become something else.
+
+        The accept condition is therefore unchanged: if the re-read still does
+        not answer, the row stays `FAIL` and `validate` raises exactly as it
+        always did. `failure_kind` is untouched - a timeout remains a §12.1
+        *semantic* observation - because this moves the retry axis only.
+
+        Planned-down nodes are excluded, and that exclusion is load-bearing
+        rather than tidy. At the primary-kill down-window the killed node is in
+        `self.nodes` and refuses every connection, so without it every single
+        run would pay the full pause budget re-reading a node it deliberately
+        stopped. Measured across 91 retained runs: with the exclusion the
+        re-read never fires at all.
+        """
+
+        unavailable = set(expected_unavailable)
+        pending = [
+            index
+            for index, row in enumerate(rows)
+            if row.get("transport_transient")
+            and row.get("logical_id") not in unavailable
+        ]
+        if not pending:
+            return rows
+        by_logical = {node.logical_id: node for node in self.nodes}
+        for attempt in range(1, self.transport_reread_attempts):
+            time.sleep(self.transport_reread_pause)
+            workers = min(self.concurrency, len(pending))
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = {
+                    executor.submit(
+                        self.observe_node, by_logical[str(rows[index]["logical_id"])]
+                    ): index
+                    for index in pending
+                }
+                for future in as_completed(futures):
+                    index = futures[future]
+                    fresh = future.result()
+                    fresh["transport_reread_attempt"] = attempt
+                    rows[index] = fresh
+            # Whatever a fresh connection found is the current truth, so a node
+            # that now answers - or that answers wrongly - leaves the set. Only
+            # one that still did not answer is worth asking again.
+            pending = [
+                index for index in pending if rows[index].get("transport_transient")
+            ]
+            if not pending:
+                break
+        return rows
+
     def run(self, **validation_options: Any) -> dict[str, Any]:
-        return self.validate(self.collect(), **validation_options)
+        rows = self.collect()
+        if self.transport_reread_attempts > 1:
+            rows = self._reread_transport_gaps(
+                rows, validation_options.get("expected_unavailable", ())
+            )
+        return self.validate(rows, **validation_options)
 
 
 def choose_topology_observers(
@@ -1039,12 +1116,14 @@ class FullClusterValidator:
         convergence_poll_seconds: float = CONVERGENCE_POLL_SECONDS,
         no_progress_seconds: float | None = None,
         connection_factory: Callable[[Endpoint, float], RespConnection] | None = None,
+        transport_reread_attempts: int = 1,
     ) -> None:
         self.light = LightClusterProbe(
             nodes,
             concurrency=concurrency,
             timeout=timeout,
             connection_factory=connection_factory,
+            transport_reread_attempts=transport_reread_attempts,
         )
         self.topology = TopologyObserver(
             nodes,
