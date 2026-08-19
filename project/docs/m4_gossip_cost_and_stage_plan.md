@@ -202,14 +202,91 @@ the correction matters:
   wrong transient-detector that shipped. Item 2 adds the one predicate on the
   *retry-eligibility* axis and leaves the *verdict* axis alone.
 
+## §6.2 What landed, 2026-08-19, and one citation that did not survive checking
+
+All four items are implemented. Stage 3 is prepared but **not executed** -
+`m4_paid_run_checklist.md` is the checklist, the declared quantities, and an audit
+§6 did not ask for.
+
+- **Item 1** restores `cluster-link-sendbuf-limit` at **1048576**. Two honesty
+  corrections to the way §6 argues for it, both found by checking rather than by
+  running:
+  - **§6's citation is wrong by a factor of 1024 and misattributes its own
+    rationale.** The upstream prose recommends a minimum of **1gb**, not 1 MB,
+    and says why: "so that cluster link buffer can fit in at least a single
+    PubSub message by default (`client-query-buffer-limit` default value is
+    1gb)". Redis and Valkey carry that comment byte-identically, and the
+    introducing change set the range to `0..ULLONG_MAX` with default 0, so there
+    is **no enforced minimum** anywhere - only prose. The value still stands on
+    the message-floor arithmetic, and the premise does not apply here at all:
+    this product issues **no PUBLISH on any path**, so a gossip PING is the
+    largest thing that can queue on the bus.
+  - **"~80x the measured average occupancy" is a censored statistic and is not
+    claimed.** The 12.6 KB figure was sampled while the 32 KiB cap was freeing
+    links 33,000 times, so every occupancy above 32 KiB had already been
+    truncated out of the distribution. The uncensored facts are 67x one whole
+    message at N=1280 and 45x at the scenario's 2000-node ceiling. So the effect
+    is stated as **a proven no-op at every scale that has a baseline, and an
+    unmeasured backstop at 1280** - where it may fire, which is the intended
+    behaviour rather than a regression.
+- **Item 2** adds `is_transient_transport_error` to `observability/contracts.py`.
+  `is_collection_failure` and §12.2's precedence are byte-untouched. Two
+  membership questions are recorded as **decisions rather than omissions**:
+  `EHOSTUNREACH`/`ENETUNREACH` are excluded (this product's own actuator uses
+  `DROP`, which times out, but a real network answering "no route" would
+  classify the other way), and `subprocess.TimeoutExpired` is excluded because it
+  is a Docker CLI transport failure rather than a RESP one - which matters to
+  any caller narrowed from a broad `except` to this predicate.
+- **Item 3** is substitution, and it changed twice during implementation:
+  - **The placement preference is the reverse of what was designed.** The
+    original plan was same-`placement_id` first. The placement is this product's
+    *fault domain* - `isolate_nodehost` isolates a whole one - so a node that
+    cannot be reached most often means its nodehost is dark, and preferring its
+    own placement dials the dead machine first. It now prefers a *different*
+    placement, then one already covered by another view, then its own last. The
+    orderings are equivalent in what they can return and differ only in how many
+    dead dials precede it.
+  - **The walk is capped at two substitutes per slot**, which the design said and
+    the first implementation did not do. Uncapped it offered every node in the
+    AZ - up to 640 at 1280 nodes - which at a 5s connect timeout is ~53 minutes
+    of serial dialling inside gates whose whole budget was one 5s dial, and it
+    would convert a transient into a false *permanent* "observers disagree",
+    since the views are compared for equality and that failure is not retryable.
+  - **Substitution is safe only because this layer never gates alone**, and that
+    invariant is now written where it is relied on: `FullClusterValidator` runs
+    the light probe over *every* node, so a dark nodehost fails layer one
+    whatever this layer chose. A topology-only gate with no light layer would
+    make substitution a fail-open hole.
+- **Item 4** is declared in `m4_paid_run_checklist.md` §1, with the margin against
+  the hardcoded 180s canary deadline rather than only the number.
+
+**Three mutation checks caught tests that proved nothing**, which is §9's pattern
+recurring three times in one session: an early-`return False` guard that was
+unreachable because the default already returned False; a cross-AZ test whose
+fixture had no spare node to be wrongly substituted, so widening the search
+passed it; and a placement-preference test that failed the *first* observer slot,
+where no placement has been used yet and every ordering rule is vacuous. All
+three now fail when the rule they guard is removed.
+
+**Three follow-ups this raised, none of them fixed** (see also
+`m4_paid_run_checklist.md` §7): `_retry_read` and `_meet_node_pair` still catch
+broad `except Exception`, so they retry error replies and semantic failures -
+contradicting the new predicate's own doctrine one screen away from where it is
+defined, and narrowing them needs the `subprocess.TimeoutExpired` decision above;
+`_failed_row` records only `is_collection_failure`'s answer, so no retry layer
+can tell a timed-out node from one that answered wrongly *off the row*; and
+`scripts/native_cleanup_proof.py` keeps a hand-copied shape of
+`_process_config_text` which does not carry the restored directive - harmless,
+because it only places residue, but it is silent drift.
+
 ## §7 The stage plan, and where it stands
 
 | stage | what | fleet cost | state |
 |---|---|---|---|
-| 0 | batch every code change | zero | §6 items outstanding |
+| 0 | batch every code change | zero | **done** (§6.2) |
 | 1 | measure the gossip law on local Docker | zero | **done** (§5.1, §5.2) |
 | 2 | prove the config changes at exact-50 on Docker | zero | **done** (§5.3) |
-| 3 | **one** paid 1280 run, everything batched | ~1 h of fleet | not started |
+| 3 | **one** paid 1280 run, everything batched | ~1 h of fleet | **prepared, not executed** - `m4_paid_run_checklist.md` |
 | 4 | acceptance pair + baseline-freeze decision | paid | not started |
 
 Stage 3's rule: full instrumentation from the first second, and it either passes
