@@ -2075,6 +2075,119 @@ Two arguments were tried and refuted on the way, and §6.1 records both, includi
 that quorum-tolerating observers would fail **open** on exactly the AZ partition
 the redundancy exists to catch.
 
+### Session M4-6 is done, 2026-08-19: the procedure's robustness and its report
+
+Nine commits, `bb137e80` through `1bb78154`. Scope was the operator's restated
+goal - **the procedure must complete a 1280-node run without me, and hand a
+readable report to a team on an internal network I cannot reach.** Read
+`project/docs/m4_paid_run_checklist.md`: §5.1 is the report command, §7 the
+un-retried-command audit, §7.1 what F9 settled, §7.2 F2 specified.
+
+**No fleet was touched.** Everything is local Docker at zero fleet cost, per the
+suspension. `repository.all` **92/92** throughout; catalog **100**, M1 plan **91**
+unmoved; the pytest tree **877 → 915**.
+
+- **The four approved §6 items landed** (`bb137e80`, `33b4be04`, `360fd8ce`,
+  `e46c16ce`). `cluster-link-sendbuf-limit` is back at **1048576**;
+  `is_transient_transport_error` is one named predicate on the *retry* axis with
+  `is_collection_failure` and §12.2 byte-untouched; `TopologyObserver`
+  substitutes within an AZ, capped at two, placement-diverse; the RTO band change
+  is declared.
+- **`m4_gossip_cost_and_stage_plan.md` §6's citation for 1 MB does not survive
+  checking.** Upstream recommends a minimum of **1gb**, not 1 MB - a factor of
+  1024 - and sizes it for one PubSub message. **This product issues no PUBLISH on
+  any path**, so the premise does not hold and the gossip message is the largest
+  thing that can queue. The value stands on message-floor arithmetic alone.
+  §6's "~80x the measured occupancy" is also **a censored statistic**: the 12.6 KB
+  figure was sampled while the 32 KiB cap truncated everything above it.
+- **Nine sites of the un-retried-read class are closed** (`bb6e3af4`, `034f3853`,
+  `1bb78154`) - the whole-fleet topology gate and the rolling restart's two
+  per-batch readings, the cluster health summary at six sites, `CLUSTER FORGET`,
+  seven `CLUSTER MYID` reads, three single-shot reads, and the three fault-probe
+  survivor reads. The prerequisite was that **the row could not say what kind of
+  failure it was**: `_failed_row` now records `transport_transient` *beside*
+  `failure_kind`, which stays exactly as it was.
+- **A Gate refusal used to write no verdict at all** (`30f7bdd9`).
+  `execution_snapshot` ran before `_write_run_verdict`, and a refused run never
+  registers an adapter execution, so it died with `AdapterOwnershipError` and
+  discarded the `GateResult` holding the reason. The worst shape a failure can
+  take for an operator who cannot attach a debugger.
+- **A correct run rendered a report that was ~90 % `MISSING`** (`6351d705`),
+  including `total_commands: 0` from a run that issued 4,528 commands. The gate's
+  analyzer and `report/render.py` were built against different vocabularies and
+  **shared three keys** - `run_id`, `created_at`, `status`.
+  `report/full_flow.py` is the adapter, reachable as
+  `cli report --kind full-flow --input <run>/runtime`. It is a **reader, not a
+  second analyzer**: every number is lifted from an artifact the run already
+  validated.
+
+- **Proven:** ten real Docker exact-50 across the session, every batch with two
+  consecutive runs at one commit plus an **isolating diff against the previous
+  commit's own run**. In every batch the entire delta was **four `stdout_tail`
+  values at identical row counts** - the rolling-restart health gate's retry
+  record, which `BASELINE.md` already names a per-run observation. No frozen
+  baseline was touched and none was re-frozen.
+
+**Three method failures worth more than the fixes, all caught rather than
+shipped.**
+
+1. **A wrapper that does work before delegating bypasses the seam.**
+   `_management_cluster_health_settled` was first written as a wrapper that
+   probed and then called the real function; three tests stub
+   `_management_cluster_health` and the wrapper stepped around the stub.
+   `settle` is now a *parameter* of that function and of
+   `_management_live_topology`, at the honest cost of widening six test stubs.
+2. **A mutation that never applied reports as "not detected".** Two of this
+   session's mutation checks silently did nothing - the replace target had a
+   comment inside it - and were reported as undetected until asserted. **Assert
+   the mutation applied before trusting its result.**
+3. **The report adapter nearly shipped a fabrication.** Its first draft attached
+   the single `failover_details` measurement to all nine fault scenarios - nine
+   identical outage numbers never measured. Each scenario now reports its own
+   duration and the outage fields state MISSING with a reason.
+
+**What M4-7 inherits, verified or compiled at `1bb78154` rather than
+remembered.**
+
+1. **F6 is one site and it is contract-protected.** The only
+   `convergence_timeout=0.0` in the product is `docker_runtime.py:9488`, the
+   primary-kill down-window validation, and the code states the contract three
+   lines above it: giving it a wait of its own *"would nest two bounded waits and
+   let the fault window run to twice its intended bound"*, and
+   `FullClusterValidator.run` answers a zero timeout with *"a caller that owns
+   the waiting asked for a single observation, so report what was seen as it was
+   seen."* Changing `validate_light`'s treatment of a failed row is a **§12.1
+   verdict-path change** *and* extends a **measured** fault window. It was
+   reported rather than made, per the working rule that a validation-contract
+   change is reported first.
+2. **F2 is specified from measurement in checklist §7.2**, not from the audit's
+   one-line summary. Counted from a real exact-50's own command log and scaled:
+   `SETSLOT` is **76 %** of mutations (~26,000 at 1280) and is safely idempotent
+   with an existing verify; `FORGET` is 14.5 % and **already absorbed** by its
+   convergence loop; `FAILOVER` is 7.5 % and is **verify-only - it must never be
+   re-issued**, because a second `CLUSTER FAILOVER` flips roles again. That last
+   one is the trap: it looks like `SETSLOT` and corrupts the topology if treated
+   like it. The chokepoint is `_management_log_node_command` at :7381.
+3. **`repository.all` is dominated by one check scanning generated output.**
+   Measured: `artifacts/` holds **626,829 files / 4.4 GB** against **698** in
+   every source root combined, and `assert_execution_axis_contract.py`'s
+   `SCAN_ROOTS` includes it. That is ~12 minutes of every 20-minute verification
+   cycle and it grows with every run taken on the machine; M4 runs are ~1 GB
+   each. MR-3 already recorded the *correctness* half - it can fail by chance on
+   a base64 histogram. Narrowing it is a validation-contract change and the
+   operator's call.
+4. **The execution-axis contract rejects a *filename*, which cost a full suite
+   run to discover.** A doc named for the milestone and the stage number joined
+   by an underscore matches `MILESTONE_STAGE_ID`, so the checklist is
+   `m4_paid_run_checklist.md`. Prose naming a stage in words is fine - the
+   pattern only fires when the milestone, a separator and the number are
+   contiguous. Check a new doc's *name* against that pattern, not only its text.
+5. **A gate run still does not produce a report by itself.** §5.1 carries the
+   command. Two absences are structural and will appear in every report: per-node
+   ready times, which the full-flow lifecycle does not record, and per-node
+   resource ranking, which is aggregated per sampler. Both are refused rather
+   than approximated.
+
 ### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
 
 **The fleet was rebuilt to twelve hosts on 2026-08-17 and does not need to grow
