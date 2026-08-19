@@ -110,7 +110,7 @@ from valkey_scale_lab.runtime.node_backend import (
 from valkey_scale_lab.runtime.teardown import cleanup_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
-from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
+from valkey_scale_lab.valkey.resp import Endpoint, RespConnection, RespProtocolError
 from valkey_scale_lab.workload import BENCHMARK_PROFILES, CANONICAL_WINDOWS, run_benchmark_workload, run_windowed_workload
 
 PROJECT = "valkey-scale-lab"
@@ -270,6 +270,27 @@ CUSTOM_VALKEY_CLI_SHA256_LABEL = "org.valkey-scale-lab.valkey.cli.sha256"
 
 class DockerRuntimeError(RuntimeError):
     pass
+
+
+class RespTransportError(DockerRuntimeError, RespProtocolError):
+    """This socket's RESP stream is unusable, so only a fresh one helps.
+
+    It inherits both deliberately. `DockerRuntimeError` keeps every existing
+    `except` on this transport catching exactly what it caught before, so the
+    change has no blast radius; `RespProtocolError` is what
+    `is_transient_transport_error` matches, which is the whole point - this
+    module has its own RESP parser, and it raised plain `DockerRuntimeError`
+    where `valkey/resp.py` raises `RespProtocolError` and `EOFError`. So the
+    predicate's own docstring line "the byte stream did not parse" was **false
+    on this transport**: a node closing the connection mid-reply classified
+    non-transient, and the management matrix restarts nodes as a matter of
+    course. `is_collection_failure` still answers False for it, so no §12.1
+    verdict moves - only the retry axis.
+
+    One class rather than three. Truncation, desync and a closed connection all
+    mean the same thing to every caller, none of which distinguishes them by
+    type; the message keeps the distinction for whoever reads the row.
+    """
 
 
 class ValkeyErrorReply(DockerRuntimeError):
@@ -5536,6 +5557,22 @@ def _encode_resp(*args: Any) -> bytes:
     return b"".join(parts)
 
 
+def _resp_length(fp: Any) -> int:
+    """A RESP length or integer, which is a stream read and can be garbled.
+
+    `int()` on a desynced line raises a bare `ValueError`, which is not even a
+    `DockerRuntimeError` - so it escaped every handler on this transport and was
+    invisible to the retry predicate. Same failure as a truncated line, so it
+    gets the same class.
+    """
+
+    raw = _read_resp_line(fp)
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise RespTransportError(f"invalid RESP length {raw!r}") from exc
+
+
 def _read_resp(fp: Any, *, decode_bulk: bool = True) -> Any:
     prefix = fp.read(1)
     if prefix == b"+":
@@ -5543,25 +5580,29 @@ def _read_resp(fp: Any, *, decode_bulk: bool = True) -> Any:
     if prefix == b"-":
         raise ValkeyErrorReply(_read_resp_line(fp).decode("utf-8", errors="replace"))
     if prefix == b":":
-        return int(_read_resp_line(fp))
+        return _resp_length(fp)
     if prefix == b"$":
-        size = int(_read_resp_line(fp))
+        size = _resp_length(fp)
         if size == -1:
             return None
         data = fp.read(size)
         if fp.read(2) != b"\r\n":
-            raise DockerRuntimeError("invalid RESP bulk string")
+            raise RespTransportError("invalid RESP bulk string")
         return data.decode("utf-8", errors="replace") if decode_bulk else data
     if prefix == b"*":
-        size = int(_read_resp_line(fp))
+        size = _resp_length(fp)
         return [_read_resp(fp, decode_bulk=decode_bulk) for _ in range(size)]
-    raise DockerRuntimeError(f"unknown RESP prefix {prefix!r}")
+    if prefix == b"":
+        # An empty read is the peer having closed, not a parse oddity, and the
+        # old message described it as one.
+        raise RespTransportError("connection closed before reply")
+    raise RespTransportError(f"unknown RESP prefix {prefix!r}")
 
 
 def _read_resp_line(fp: Any) -> bytes:
     line = fp.readline()
     if not line.endswith(b"\r\n"):
-        raise DockerRuntimeError("invalid RESP line")
+        raise RespTransportError("invalid RESP line")
     return line[:-2]
 
 
@@ -5580,6 +5621,7 @@ def _write_cluster_myslots_report(
         concurrency=64,
         observer_count=3,
         timeout=5.0,
+        transport_reread_attempts=3,
     ).run()
     light_by_logical = {
         str(row["logical_id"]): row
@@ -6243,6 +6285,7 @@ def write_observability_artifacts(
         concurrency=64,
         observer_count=3,
         timeout=5.0,
+        transport_reread_attempts=3,
     ).run()
     result = {
         "schema_version": "v1",
@@ -6325,6 +6368,7 @@ def write_telemetry_artifacts(
         concurrency=64,
         observer_count=3,
         timeout=5.0,
+        transport_reread_attempts=3,
     ).run()
     light_validation = complete_validation["light_validation"]
     light_by_logical = {
@@ -9012,6 +9056,7 @@ def _local_full_flow_run_management_sequence(
         concurrency=64,
         observer_count=3,
         timeout=5.0,
+        transport_reread_attempts=3,
     ).run(require_plan_roles=False)
     sentinel = SentinelLane(
         build_sentinel_nodes(
@@ -9657,6 +9702,7 @@ def _run_scalable_primary_kill_failover(
             concurrency=64,
             observer_count=3,
             timeout=5.0,
+            transport_reread_attempts=3,
         ).run(require_plan_roles=False)
         redundancy = redundancy_recovery(
             recovery_validation["light_validation"],
@@ -9788,6 +9834,7 @@ def _local_full_flow_run_fault_failover_sequence(
         concurrency=64,
         observer_count=3,
         timeout=5.0,
+        transport_reread_attempts=3,
     ).run(require_plan_roles=False)
     observed_roles = {
         str(row["logical_id"]): str(row["myslots"]["role"])

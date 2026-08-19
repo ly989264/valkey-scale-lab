@@ -863,7 +863,7 @@ def test_a_forget_row_that_never_waited_is_unchanged(monkeypatch) -> None:
     assert "retry_eligible" not in log[0]
 
 
-def _unguarded_reads() -> set[str]:
+def _unguarded_reads(*, management_scopes_only: bool = True) -> set[str]:
     """Management/fault reads that still issue a single un-retried RESP command.
 
     Structural, and asserted as a *set* so a newly added one fails by name. The
@@ -917,7 +917,9 @@ def _unguarded_reads() -> set[str]:
     for scope in tree.body:
         if not isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        if not scope.name.startswith(("_management", "_run_scalable")):
+        if management_scopes_only and not scope.name.startswith(
+            ("_management", "_run_scalable")
+        ):
             continue
         for inner in ast.walk(scope):
             if (
@@ -1474,3 +1476,138 @@ def test_the_mutation_policy_table_covers_every_kind_that_reaches_it() -> None:
     # parameter. A second one would mean a kind computed at runtime, which this
     # table cannot cover.
     assert len(non_literal) == 1, non_literal
+
+
+# The three module-wide exemptions, each for a *different* structural reason, so
+# the list is a judgement recorded once rather than one that grows per finding.
+MODULE_WIDE_UNRETRIED_READ_EXEMPTIONS = {
+    # The transport primitive itself. Retrying inside it would blind-retry every
+    # mutation that goes through it, which is the exact thing
+    # `_management_log_node_command`'s policy table exists to prevent.
+    "_node_command",
+    # A leaf read whose safety is positional, not intrinsic: all three callers
+    # wrap it in a bounded deadline loop that treats an unanswered probe as
+    # "not yet confirmed" rather than as a failure.
+    "_process_node_is_replica_of",
+    # M2 measurement only - gated by `_m2_measurement_enabled()` at its single
+    # call site and never reached on the full-flow path.
+    "_natural_probe_key_for_primary",
+}
+
+
+def test_every_unretried_read_in_the_module_is_a_named_exemption() -> None:
+    """The audit ledger, made executable beyond the management lane.
+
+    The narrower guard above only inspects `_management*` and `_run_scalable*`
+    scopes, so every other function in the module was exempt *by naming
+    convention* - which is not a decision anyone took. Widened, exactly three
+    remain, and each is listed with the reason it is safe. A fourth fails here by
+    name wherever it is written, which is what makes the §7 ledger a check rather
+    than prose.
+
+    Deliberately not widened to every read verb: `_wait_process_*` predicates are
+    un-retried by design because their enclosing loop is the retry, so an
+    AST-only rule that could not see that would produce an exemption list that
+    grows with every wait and stops meaning anything.
+    """
+
+    assert _unguarded_reads(management_scopes_only=False) == (
+        MODULE_WIDE_UNRETRIED_READ_EXEMPTIONS
+    ), _unguarded_reads(management_scopes_only=False)
+
+
+def _parse_failure(payload: bytes) -> Exception:
+    """What this module's own RESP parser raises for a broken stream."""
+
+    import io
+
+    try:
+        docker_runtime._read_resp(io.BytesIO(payload))
+    except Exception as exc:  # noqa: BLE001
+        return exc
+    raise AssertionError("stream did not fail")
+
+
+def test_every_parse_failure_on_this_transport_is_classified_transient() -> None:
+    """The gap that silently narrowed two landed fixes.
+
+    `docker_runtime` has its own RESP parser, separate from `valkey/resp.py`, and
+    it raised plain `DockerRuntimeError` where the predicate matches
+    `RespProtocolError`/`EOFError`. So a node closing the connection mid-reply
+    classified non-transient - and the management matrix restarts nodes as a
+    matter of course, which is exactly when a peer closes mid-reply.
+
+    The garbled-length case is the one a reading of the predicate would miss:
+    `int()` on a desynced line raised a bare `ValueError`, which was not even a
+    `DockerRuntimeError` and so escaped every handler on this transport.
+    """
+
+    from valkey_scale_lab.observability.contracts import is_transient_transport_error
+
+    cases = {
+        "closed connection": b"",
+        "truncated line": b":12",
+        "garbled length": b"$abc\r\n",
+        "truncated bulk": b"$2\r\nabXX",
+    }
+    for label, payload in cases.items():
+        exc = _parse_failure(payload)
+        assert isinstance(exc, docker_runtime.RespTransportError), label
+        assert is_transient_transport_error(exc) is True, label
+
+
+def test_the_new_class_moves_no_verdict_and_no_existing_handler() -> None:
+    """It inherits both on purpose, and both halves are load-bearing.
+
+    `DockerRuntimeError` keeps every existing `except` on this transport catching
+    what it caught before, so there is no blast radius. `RespProtocolError` is
+    what the retry predicate matches. And `is_collection_failure` must still
+    answer False, because a changed answer there would be a §12.1 verdict change
+    rather than a retry-eligibility one.
+    """
+
+    from valkey_scale_lab.observability.contracts import is_collection_failure
+
+    exc = _parse_failure(b"")
+    assert isinstance(exc, docker_runtime.DockerRuntimeError)
+    assert is_collection_failure(exc) is False
+
+
+def test_an_error_reply_is_not_a_transport_failure() -> None:
+    """The one stream failure that is an answer rather than a broken socket."""
+
+    from valkey_scale_lab.observability.contracts import is_transient_transport_error
+
+    exc = _parse_failure(b"-ERR no such key\r\n")
+    assert isinstance(exc, docker_runtime.ValkeyErrorReply)
+    assert not isinstance(exc, docker_runtime.RespTransportError)
+    assert is_transient_transport_error(exc) is False
+
+
+def test_every_full_cluster_validator_rereads_transport_gaps() -> None:
+    """All seven sites, not just the down-window one.
+
+    `FullClusterValidator.run` retries only `ConvergenceFailure`, so an
+    unanswered node raises `SemanticFailure` straight out of *every* site
+    regardless of its convergence timeout - the down-window was the worst
+    instance, not the only one. Measured across 140 retained runs and 1,360 light
+    validations, no site has ever seen an unexplained gap, so this costs nothing
+    on a passing run.
+    """
+
+    source = Path(docker_runtime.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    sites = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "FullClusterValidator"
+    ]
+    assert len(sites) == 7, len(sites)
+    without = [
+        site.lineno
+        for site in sites
+        if not any(kw.arg == "transport_reread_attempts" for kw in site.keywords)
+    ]
+    assert without == [], without
