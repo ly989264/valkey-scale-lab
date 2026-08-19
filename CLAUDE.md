@@ -2025,6 +2025,56 @@ from the day's runs. So the product's "available" is free memory rather than
 I/O. Whether the preflight should read `MemAvailable` is a semantic change to a
 safety check and is the operator's call.
 
+### Sessions M4-4 and M4-5, 2026-08-18: the fleet moved, and the cost curve was measured instead of run
+
+Seven commits, `39d44012` through `bc55f56f`. **Read
+`project/docs/m4_gossip_cost_and_stage_plan.md`** - §1 is the cost lesson that
+governs the rest, §5 what was measured for free, §6 the four approved items a
+next session must implement, §7 the stage plan. **No baseline was frozen or
+touched, and the correct state now is idle.**
+
+- **Five paid 1280-node runs were spent finding one defect each**, and the
+  Huawei fleet was then **suspended by the cloud provider for cost**. Everything
+  since is local Docker at zero fleet cost. The rule that leaves: state the
+  expected number of runs before the first, and when one fails audit the defect
+  *class* rather than relaunching - the same shape appeared at **four** sites.
+- **The provisioning question is answered.** A 1280-node cluster **forms and is
+  healthy** on 32 x (8 vCPU / 16 GB): `cluster_state ok`, 1280/1280 known, 256
+  primaries, gossip converged in ~56 s, **zero OOM**, kernel TCP 0-1 MB against
+  GCE's 2.1-3.1 GB. The GCE wall was 107 nodes on 2 vCPU, not the product.
+- **The gossip cost curve has a knee.** Bytes/s of cluster bus sent per node:
+  5,920 at N=50, 8,567 at N=100, **30,915 at N=200** - flat then 3.6x, because
+  below ~150 peers the random cron ping keeps everyone fresh and above it the
+  forced `node_timeout/2` rule binds. The message-size model
+  `2256 + 104*max(3, N/10)` is confirmed to 1-2% at all three scales.
+- **The timeout lever is 2.1x, not 4x** - measured, decomposing two N=200 points:
+  30% of gossip is timeout-independent random pinging. ~3.4x at N=1280.
+- **60 s is the measured ceiling and 120 s breaks the fault lane**: 120000 FAILS
+  (1696 canary rounds, zero reads on the killed shard) because the Sentinel
+  recovery deadline is a hardcoded 180 s at `docker_runtime.py:9281`; 60000
+  PASSES with RTO **95,230 ms** against ~47,000 at 30000. The 1280 config takes
+  60000; every other scale keeps 30000 and no frozen baseline moves.
+- **Six defects fixed**, four of them one shape - a single un-retried RESP
+  command in a 1024-way fan-out. Including: `concurrent.futures.TimeoutError`
+  **is** the builtin `TimeoutError` **is** `socket.timeout` on Python 3.11+, so a
+  worker's read timeout was reported as the thread pool's budget - **invisible on
+  the workstation**, which is Python 3.9, and mutation-checked on the controller.
+  And a failing teardown replaced the failure that caused it, costing two of the
+  five runs their diagnosis.
+- **`repository.all` 92/92** throughout; catalog 100, M1 plan 91 unmoved.
+
+**Why the 1B-RPS test does not contradict this**: it was a real 2,000-node mesh -
+larger than 1280 - on **one node per r7g.2xlarge with six dedicated cores**,
+~16,000 vCPU. This fleet is ~5x over that per-core gossip budget at 30 s and
+about 1.5-3x at 60 s. ElastiCache caps a Valkey cluster at 500 nodes.
+
+**§12.1 is deliberately NOT changed** - a transport timeout stays a semantic
+failure. What is added instead (item 2 of §6) is one `is_transient_transport_
+error` predicate on the *retry-eligibility* axis, leaving the verdict axis alone.
+Two arguments were tried and refuted on the way, and §6.1 records both, including
+that quorum-tolerating observers would fail **open** on exactly the AZ partition
+the redundancy exists to catch.
+
 ### What M4-3 inherits, measured or compiled at this HEAD rather than remembered
 
 **The fleet was rebuilt to twelve hosts on 2026-08-17 and does not need to grow
