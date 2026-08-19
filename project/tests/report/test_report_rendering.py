@@ -264,3 +264,77 @@ def test_an_absent_source_is_a_stated_reason_and_never_a_zero(tmp_path: _Path) -
         assert analysis[section]["status"] == "SKIPPED_WITH_REASON", section
         assert analysis[section]["reason"], section
     assert analysis["status"] == "MISSING"
+
+
+def test_the_html_summary_renders_values_rather_than_template_text(tmp_path) -> None:
+    """The summary strip is inside an f-string, so a doubled brace ships as text.
+
+    Written after exactly that: `{{status_class}}` renders the literal characters
+    instead of the value, and every figure in the strip read as template source in
+    the delivered report. Nothing else in the page would have looked wrong, so the
+    check is that no unexpanded interpolation survives anywhere in the document.
+    """
+
+    analysis = {
+        "schema_version": "v1",
+        "artifact_type": "analysis_summary",
+        "status": "PASS",
+        "source": {"capability_id": "local_full_flow"},
+        "run_metadata": {"run_id": "r"},
+        "findings": [],
+        "command_audit": {"total_commands": 4440, "failure_count": 4, "retry_count": 0},
+        "setup_aggregates": {},
+        "management_ops": {},
+        "workload_benchmark": {},
+        "fault_timeline": {},
+        "resource_analysis": {},
+        "missing_metrics": [],
+        "baseline_comparison": {"comparisons": []},
+    }
+    analysis_path = tmp_path / "analysis_summary.json"
+    analysis_path.write_text(json.dumps(analysis), encoding="utf-8")
+    render_report(analysis_path, tmp_path / "report", tmp_path / "report_index.json")
+    page = (tmp_path / "report" / "index.html").read_text(encoding="utf-8")
+
+    assert "{" not in page.split("<style>")[0] + page.split("</style>")[-1], (
+        "an unexpanded f-string interpolation reached the rendered page"
+    )
+    summary = page.split('<dl class="verdict">')[1].split("</dl>")[0]
+    assert ">PASS<" in summary
+    assert ">4440<" in summary
+    assert "local_full_flow" in summary
+
+
+def test_the_report_page_has_no_external_dependency(tmp_path) -> None:
+    """The whole point: a host with no internet must still render this report.
+
+    Fonts, styles and charts are local or system, so the page carries no scheme,
+    no protocol-relative reference and no CDN host.
+    """
+
+    analysis = {
+        "schema_version": "v1",
+        "artifact_type": "analysis_summary",
+        "status": "PASS",
+        "source": {"capability_id": "local_full_flow"},
+        "run_metadata": {"run_id": "r"},
+        "findings": [],
+        "command_audit": {},
+        "setup_aggregates": {},
+        "management_ops": {},
+        "workload_benchmark": {},
+        "fault_timeline": {},
+        "resource_analysis": {},
+        "missing_metrics": [],
+        "baseline_comparison": {"comparisons": []},
+    }
+    analysis_path = tmp_path / "analysis_summary.json"
+    analysis_path.write_text(json.dumps(analysis), encoding="utf-8")
+    render_report(analysis_path, tmp_path / "report", tmp_path / "report_index.json")
+    page = (tmp_path / "report" / "index.html").read_text(encoding="utf-8")
+
+    for forbidden in ("http:", "https:", "cdn.", "googleapis", "unpkg", "jsdelivr"):
+        assert forbidden not in page, forbidden
+    # A protocol-relative reference is the one an external-URL scan misses most
+    # easily, and the contract script rejects it too.
+    assert "//" not in page

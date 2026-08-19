@@ -1117,6 +1117,100 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     return path
 
 
+_REPORT_STYLESHEET = """\
+    :root {
+      --ground:#EEF1F5; --surface:#FFFFFF; --surface-alt:#F6F8FB;
+      --ink:#131A22; --ink-soft:#48535F; --ink-faint:#79838F;
+      --rule:#D3DAE3; --rule-soft:#E4E9EF;
+      --accent:#3A5A8C; --ok:#1F6B3A; --ok-bg:#E3F1E7;
+      --warn:#7A5A16; --warn-bg:#FBF1DC; --bad:#A32B22; --bad-bg:#FAE6E4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ground:#0D1218; --surface:#151C25; --surface-alt:#1A222C;
+        --ink:#E4E9EF; --ink-soft:#A7B2BE; --ink-faint:#78848F;
+        --rule:#2B3542; --rule-soft:#212A35;
+        --accent:#8FB0DF; --ok:#79C88F; --ok-bg:#16281C;
+        --warn:#D8B463; --warn-bg:#2A2214; --bad:#E8938A; --bad-bg:#2C1A18;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ground:#0D1218; --surface:#151C25; --surface-alt:#1A222C;
+      --ink:#E4E9EF; --ink-soft:#A7B2BE; --ink-faint:#78848F;
+      --rule:#2B3542; --rule-soft:#212A35;
+      --accent:#8FB0DF; --ok:#79C88F; --ok-bg:#16281C;
+      --warn:#D8B463; --warn-bg:#2A2214; --bad:#E8938A; --bad-bg:#2C1A18;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--ground); color: var(--ink);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+                   "Noto Sans CJK SC", "Source Han Sans SC", -apple-system,
+                   BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 16px; line-height: 1.78;
+      -webkit-font-smoothing: antialiased;
+    }
+    .sheet { max-width: 1120px; margin: 0 auto; padding: 40px 28px 88px; }
+    .masthead { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 28px; }
+    .eyebrow {
+      font-size: 12px; letter-spacing: .12em; color: var(--accent);
+      margin: 0 0 10px; display: flex; flex-wrap: wrap; gap: 6px 16px;
+    }
+    h1 { font-size: 30px; line-height: 1.3; margin: 0 0 10px; letter-spacing: .01em; }
+    .standfirst { color: var(--ink-soft); max-width: 60em; margin: 0; font-size: 15px; }
+    .verdict {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+      gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+      border-radius: 3px; overflow: hidden; margin: 0 0 34px;
+    }
+    .verdict > div { background: var(--surface); padding: 13px 15px 12px; }
+    .verdict dt { font-size: 11.5px; letter-spacing: .08em; color: var(--ink-faint); margin: 0 0 4px; }
+    .verdict dd {
+      margin: 0; font-size: 21px; font-weight: 600; letter-spacing: .01em;
+      font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .verdict dd.sm { font-size: 14px; font-weight: 500; word-break: break-all; }
+    .verdict dd.ok { color: var(--ok); }
+    .verdict dd.warn { color: var(--warn); }
+    .verdict dd.bad { color: var(--bad); }
+    h2 {
+      font-size: 20px; margin: 40px 0 6px; padding-top: 14px;
+      border-top: 1px solid var(--rule); letter-spacing: .01em;
+    }
+    p { margin: 0 0 12px; max-width: 60em; }
+    .note { color: var(--ink-faint); font-size: 14px; }
+    table {
+      border-collapse: collapse; width: 100%; margin: 14px 0 8px;
+      font-size: 14px; background: var(--surface);
+      display: block; overflow-x: auto; white-space: nowrap;
+      border: 1px solid var(--rule); border-radius: 3px;
+    }
+    thead th {
+      background: var(--surface-alt); color: var(--ink-faint);
+      font-size: 12px; letter-spacing: .06em; font-weight: 600;
+      border-bottom: 1px solid var(--rule);
+    }
+    th, td { border-bottom: 1px solid var(--rule-soft); padding: 8px 13px; text-align: left; }
+    tbody tr:last-child td { border-bottom: none; }
+    td { font-variant-numeric: tabular-nums; }
+    code {
+      background: var(--surface-alt); border: 1px solid var(--rule-soft);
+      border-radius: 3px; padding: 1px 5px; font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    img {
+      display: block; max-width: 100%; height: auto; margin: 14px 0 8px;
+      background: var(--surface); border: 1px solid var(--rule);
+      border-radius: 3px; padding: 8px;
+    }
+    footer {
+      margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--rule);
+      color: var(--ink-faint); font-size: 13px; max-width: 62em;
+    }
+"""
+
+
 def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
@@ -1256,25 +1350,37 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         )
         for item in system.get("abnormal_nodes_topN", [])[:10]
     ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无异常节点排序输入</td></tr>'
+    status_text = str(analysis.get("status", "MISSING"))
+    status_class = "ok" if status_text == "PASS" else ("bad" if status_text in {"FAIL", "ERROR"} else "warn")
     document = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>中文自动化可视化分析报告</title>
   <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #202124; }}
-    table {{ border-collapse: collapse; width: 100%; margin: 16px 0 24px; }}
-    th, td {{ border: 1px solid #d0d7de; padding: 8px; text-align: left; }}
-    th {{ background: #f6f8fa; }}
-    code {{ background: #f6f8fa; padding: 2px 4px; }}
+{_REPORT_STYLESHEET}
   </style>
 </head>
 <body>
-  <h1>中文自动化可视化分析报告</h1>
-  <p>状态: <code>{html.escape(str(analysis.get("status", "MISSING")))}</code></p>
-  <p>来源阶段: <code>{html.escape(str(analysis.get("source", {}).get("capability_id", "MISSING")))}</code></p>
+<div class="sheet">
+  <header class="masthead">
+    <p class="eyebrow">valkey-scale-lab<span>离线 artifact 渲染</span><span>不调用 LLM</span></p>
+    <h1>中文自动化可视化分析报告</h1>
+    <p class="standfirst">本报告由本地 artifact 自动生成，不调用 LLM、不访问外网、不依赖在线图表服务。所有结论来自 schema 化 JSON/JSONL、CSV 和本地 SVG 产物。</p>
+  </header>
+
+  <dl class="verdict">
+    <div><dt>运行状态</dt><dd class="{status_class}">{html.escape(status_text)}</dd></div>
+    <div><dt>来源阶段</dt><dd class="sm">{html.escape(str(analysis.get("source", {}).get("capability_id", "MISSING")))}</dd></div>
+    <div><dt>命令总数</dt><dd>{html.escape(str(command_audit.get("total_commands", "MISSING")))}</dd></div>
+    <div><dt>失败命令</dt><dd>{html.escape(str(command_audit.get("failure_count", "MISSING")))}</dd></div>
+    <div><dt>重试命令</dt><dd>{html.escape(str(command_audit.get("retry_count", "MISSING")))}</dd></div>
+    <div><dt>缺失指标</dt><dd>{len(analysis.get("missing_metrics", []))}</dd></div>
+  </dl>
+
   <h2>总览页</h2>
-  <p>本报告由本地 artifact 自动生成，不调用 LLM、不访问外网、不依赖在线图表服务。所有结论来自 schema 化 JSON/JSONL、CSV 和本地 SVG 产物。</p>
+  <p class="note">缺失项一律保留原因，不用估算值替代；下表每一行都可回溯到运行自身已校验的 artifact。</p>
   <h2>结论摘要</h2>
   <table><thead><tr><th>artifact 派生结论</th></tr></thead><tbody>{conclusion_rows}</tbody></table>
   <h2>运行元数据</h2>
@@ -1327,6 +1433,9 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <table><thead><tr><th>节点</th><th>RSS 汇总 bytes</th><th>FD 汇总</th><th>缺失数</th></tr></thead><tbody>{resource_node_rows}</tbody></table>
   <h2>图表</h2>
   <img src="metric_chart.svg" alt="ANALYSIS_REPORTING artifact metrics chart">
+
+  <footer>本页与同目录下的 CSV、SVG 均由本项目脚本离线生成，可在无外网环境中重复产出；每个数字都取自运行已写出并校验的 artifact，不做二次推算。</footer>
+</div>
 </body>
 </html>
 """
