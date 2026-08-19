@@ -132,12 +132,16 @@ def test_the_topology_pin_appears_only_above_one_replica_per_shard() -> None:
         assert [line for line in text.splitlines() if line != pin] == baseline.splitlines()
 
 
-def test_one_replica_node_config_matches_the_frozen_baseline_byte_for_byte() -> None:
+def test_one_replica_node_config_differs_from_the_frozen_baseline_by_the_sendbuf_line_alone() -> None:
     """The `runtime_start` diff view compares this file, so it is compared here.
 
-    Byte identity was briefly false while `cluster-link-sendbuf-limit` was
-    emitted; removing that directive restores it, which is worth having - it is
-    what makes MR-1's r=1 no-op proof checkable against a real run's own file.
+    `cluster-link-sendbuf-limit` is the only directive added to every node's
+    config since those baselines were frozen, so byte identity is false *by
+    declaration*: the declared `runtime_start` delta is one added line in every
+    `node_configs/*.conf` and nothing else. Asserting the shape of the delta,
+    rather than dropping the test, keeps every other byte of the generated
+    config pinned to a real run's own file - which is what makes MR-1's r=1
+    no-op proof checkable.
     """
 
     frozen = Path(
@@ -161,6 +165,63 @@ def test_one_replica_node_config_matches_the_frozen_baseline_byte_for_byte() -> 
     produced = docker_runtime._process_config_text(
         node, {"container_ip": "172.18.0.2"}, replicas_per_shard=1
     )
-    assert produced == expected
+    added = f"cluster-link-sendbuf-limit {docker_runtime.CLUSTER_LINK_SENDBUF_LIMIT_BYTES}"
+    assert produced.count(added) == 1
+    assert [line for line in produced.splitlines() if line != added] == expected.splitlines()
+
+
+def test_the_sendbuf_cap_exceeds_one_whole_cluster_bus_message_at_every_admitted_scale() -> None:
+    """The cap's floor is one message, not a memory budget, and this pins it.
+
+    `freeClusterLinkOnBufferLimitReached` frees the link when the send queue
+    exceeds the limit, so a cap below one message frees the link on the first
+    ping that ever queues - during formation, which is exactly the scale the cap
+    exists for. 39d44012's 32 KiB held two messages at N=1280 and a real run
+    measured 33,000 link frees; `m4_first_1280_run_map.md` §7.1 recommended
+    8 KiB, which is *half* a message there. This test is what would have caught
+    both.
+
+    The message size is the pinned build's own (valkey 9.1.0, `cluster_legacy.h`):
+    a PING carries `floor(N * cluster-message-gossip-perc / 100)` gossip entries
+    of `sizeof(clusterMsgDataGossip)` on a 2256-byte header. Both struct sizes
+    are compiled facts and are stated as literals, because a test that recomputed
+    them from the same assumption would assert nothing.
+
+    There is deliberately **no** `sizeof(clusterMsg)` floor here. An earlier
+    version of this test applied one at 4352 bytes; that floor is on the
+    *allocation* and `totlen` is trimmed, which the measured byte-per-message
+    figures in `m4_gossip_cost_and_stage_plan.md` §5.1 confirm to 1-2%. Applying
+    it would overstate the smallest message and so understate the headroom this
+    test is checking.
+    """
+
+    header_bytes = 2256
+    gossip_entry_bytes = 104
+    gossip_perc = 10  # cluster-message-gossip-perc, hidden config, default 10
+
+    def ping_bytes(nodes: int) -> int:
+        # `m4_gossip_cost_and_stage_plan.md` §5.1 measures a further ~33 bytes of
+        # ping extensions on top of this. They are left out deliberately: this is
+        # a *floor* on the message, and a floor that included an optional term
+        # would be checking a larger message than the build is guaranteed to
+        # send. At these margins it moves nothing - 33 bytes against 67x of
+        # headroom - and the measured-against-modelled agreement §5.1 reports is
+        # 1-2% with the extensions included.
+        wanted = max(3, nodes * gossip_perc // 100)
+        return header_bytes + gossip_entry_bytes * wanted
+
+    # 1280 is the largest node count any bounded exception admits
+    # (`scale_1280_native_ecs_optin`); 2000 is the scenario's own ceiling.
+    for nodes in (6, 30, 50, 100, 200, 1280, 2000):
+        message = ping_bytes(nodes)
+        assert docker_runtime.CLUSTER_LINK_SENDBUF_LIMIT_BYTES > message, (
+            f"the cap frees a link holding one {nodes}-node ping"
+        )
+
+    # A cap that merely clears one message would still free a link on the second,
+    # which is a reconnect during formation rather than a runaway peer. The
+    # measured average occupancy on a real 1280-node run was 12.6 KB, so require
+    # real headroom over a whole message at the largest admitted scale.
+    assert docker_runtime.CLUSTER_LINK_SENDBUF_LIMIT_BYTES >= 32 * ping_bytes(1280)
 
 

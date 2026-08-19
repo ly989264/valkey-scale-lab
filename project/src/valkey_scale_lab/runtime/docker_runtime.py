@@ -122,25 +122,56 @@ RESHARD_DRAIN_BATCH_KEYS = 100
 RESHARD_DRAIN_MAX_BATCHES = 200
 CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS = 2.0
 PROCESS_FULL_SNAPSHOT_NODE_LIMIT = 200
-# `cluster-link-sendbuf-limit` is deliberately NOT set, and this records why so
-# it is not re-added on the same reasoning that first added it.
+# The cluster bus is a full mesh, so a node holds one send queue per peer.
+# `maxmemory` is a dataset cap and bounds none of it, and Valkey's default for
+# this directive is 0 - unlimited.
 #
-# It was set to 32 KiB to stop per-peer cluster-bus buffers OOM-killing 8 GB
-# hosts holding 107 nodes each. Measured 2026-08-18 on local Docker, the case is
-# gone: `mem_cluster_links` is **linear in node count at ~2.1 KB per node**
-# (102,912 B at N=50, 212,256 at 100, 426,656 at 200) and independent of
-# `cluster-node-timeout`, which puts a 1280-node node at ~2.7 MB and a 40-node
-# host at ~109 MB. On 16 GB hosts that is nothing.
+# This value has now been wrong in both directions, and the comment records both
+# so it is not moved again on either argument alone.
 #
-# And the cap was doing harm at the scale it was written for: at N=1280 a gossip
-# packet is 15.6 KB, so 32 KiB holds two, and a third frees the link - forcing a
-# reconnect and a full topology resync, which is *more* bus work. A real
-# 1280-node run measured **33,000 link frees**.
+# **Too low.** 39d44012 set it to 32 KiB to stop per-peer buffers OOM-killing
+# 8 GB hosts holding 107 nodes. `freeClusterLinkOnBufferLimitReached` runs from
+# `clusterCron` ten times a second and *frees the link* when the send queue
+# exceeds the limit, so the floor for any cap is one whole message. A gossip
+# PING is `2256 + 104*max(3, N/10)` bytes plus ~33 of extensions - **15.6 KB at
+# N=1280** - so 32 KiB holds two and a third frees the link, forcing a reconnect
+# and a full topology resync. A real 1280-node run measured **33,000 link
+# frees** over four sampled nodes per host.
 #
-# There is no value that both never bites and still prevents OOM at this shape:
-# bounding a node to ~200 MB over 2558 links needs ~80 KB/link, which is 40
-# nodes x 200 MB = 8 GB per host - an OOM either way. The cap is not the lever;
-# CPU headroom and `cluster-node-timeout` are.
+# **Absent.** ac90e32a then removed the directive outright, on measurement that
+# `mem_cluster_links` is linear at ~2.1 KB per node (102,912 B at N=50, 212,256
+# at 100, 426,656 at 200) so a 1280-node node holds ~2.7 MB. That is steady-state
+# N<=200 Docker data extrapolated to 1280, which is the error this program exists
+# to stop making: the same M4-4 abort measured **31.5 MB of link memory per node
+# during 1280-node formation**, with the 32 KiB cap fighting it, 12x the
+# extrapolation.
+#
+# **What the cap can and cannot do.** It is per *link*, so no value gives a hard
+# per-host bound: at ~2,558 links per node even this one permits 2.6 GB/node in
+# principle. Its real job is narrower and worth having - stopping a *single*
+# stuck link running away while the other 2,557 stay healthy. CPU headroom and
+# `cluster-node-timeout` remain the levers for aggregate cost.
+#
+# **1 MiB, and what that is and is not claimed to be.** It is ~67x one whole
+# message at N=1280 and ~45x at the scenario's 2000-node ceiling, which are
+# uncensored facts about message size. It is *not* claimed to be 80x the
+# measured average link occupancy: that 12.6 KB figure was sampled while the
+# 32 KiB cap was freeing links 33,000 times, so every occupancy above 32 KiB had
+# already been truncated out of the distribution, and the true tail is unknown.
+#
+# So the honest statement of its effect is: **a proven no-op at every scale that
+# has a baseline** - `total_cluster_links_buffer_limit_exceeded` is 0 across all
+# 2,950 readings in two real exact-200 runs taken at 32 KiB, and 1 MiB is 32x
+# looser - and **an unmeasured backstop at 1280**, where it may well fire. Firing
+# there is the intended behaviour rather than a regression: one link running away
+# is exactly what this bounds.
+#
+# The upstream prose recommends a minimum of **1gb**, not 1 MB, and that number
+# is explicitly sized to fit one PubSub message (`client-query-buffer-limit`'s
+# own default). This product issues no PUBLISH on any path, so the gossip message
+# is the largest thing that can queue here and that recommendation's premise does
+# not hold; the floor that applies is the one derived above.
+CLUSTER_LINK_SENDBUF_LIMIT_BYTES = 1048576
 CONTAINER_STOP_TIMEOUT_SECONDS = 45
 CONTAINER_REMOVE_TIMEOUT_SECONDS = 60
 NETWORK_REMOVE_TIMEOUT_SECONDS = 45
@@ -1777,6 +1808,13 @@ def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any], *, repl
             f"cluster-announce-ip {nodehost['container_ip']}",
             f"cluster-announce-port {node['client_port']}",
             f"cluster-announce-bus-port {node['cluster_bus_port']}",
+            # Bounds a single peer's cluster-bus send queue; see the constant,
+            # which carries the derivation and the history of it being wrong in
+            # both directions. Unconditional, unlike the topology pin below: the
+            # bus is a full mesh at every replica count, so a bound that only
+            # applied above one replica would leave the shape every frozen
+            # baseline was taken at unbounded.
+            f"cluster-link-sendbuf-limit {CLUSTER_LINK_SENDBUF_LIMIT_BYTES}",
             "appendonly no",
             # The planned topology is fixed and the validator enforces it, so
             # migration is never wanted - stated directly rather than by tuning
