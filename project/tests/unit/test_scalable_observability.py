@@ -17,12 +17,14 @@ from typing import Any
 
 import pytest
 
+from valkey_scale_lab.observability import cluster as cluster_module
 from valkey_scale_lab.observability.cluster import (
     CONVERGENCE_NO_PROGRESS_SECONDS,
     EndpointConnections,
     FullClusterValidator,
     LightClusterProbe,
     NodeEndpoint,
+    TopologyObserver,
     cluster_shards_node_ids,
     normalize_cluster_shards,
     observation_complexity,
@@ -1865,6 +1867,373 @@ def test_exact_200_thirty_three_percent_affected_command_budget_is_role_info_onl
     assert sum(1 for _port, command in calls if command == ("ROLE",)) == 33
     assert sum(1 for _port, command in calls if command == ("CLUSTER", "INFO")) == 33
     assert all(command != ("CLUSTER", "COUNT-FAILURE-REPORTS") for _port, command in calls)
+
+
+def _topology_observer(
+    nodes: list[NodeEndpoint],
+    responses: dict[int, dict[tuple[Any, ...], Any]],
+    *,
+    failures: dict[int, Exception],
+    dialled: list[str],
+) -> TopologyObserver:
+    """A `TopologyObserver` whose named ports fail on connect."""
+
+    port_to_id = {node.port: node.logical_id for node in nodes}
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Any:
+        dialled.append(port_to_id[endpoint.port])
+        if endpoint.port in failures:
+            raise failures[endpoint.port]
+        return FakeConnection(responses[endpoint.port])
+
+    return TopologyObserver(nodes, observer_count=3, connection_factory=factory)
+
+
+def test_a_transiently_unreadable_observer_is_replaced_from_its_own_az() -> None:
+    """Substitution, not quorum, and not a cross-AZ fallback.
+
+    The fixture's observers are p0 (az-a), p1 (az-b) and r0 (az-b). Failing p0
+    must be answered by az-a's other node, r1 - never by an az-b node, which
+    would answer a question about the wrong part of the cluster.
+    """
+
+    nodes, responses = _cluster_fixture()
+    dialled: list[str] = []
+    observer = _topology_observer(
+        nodes,
+        responses,
+        failures={7000: TimeoutError("timed out")},
+        dialled=dialled,
+    )
+
+    result = observer.run()
+
+    assert result["status"] == "OK"
+    assert result["observer_count"] == 3
+    assert [view["logical_id"] for view in result["observers"]] == ["r1", "p1", "r0"]
+    # The substitute is in the failed observer's own AZ.
+    assert {view["az_id"] for view in result["observers"]} == {"az-a", "az-b"}
+    assert dialled[:2] == ["p0", "r1"]
+
+    # And the run says so, rather than looking like a clean three-observer read.
+    substitutions = result["observer_substitutions"]
+    assert len(substitutions) == 1
+    assert substitutions[0]["planned_logical_id"] == "p0"
+    assert substitutions[0]["substituted_logical_id"] == "r1"
+    assert substitutions[0]["az_id"] == "az-a"
+    assert substitutions[0]["attempts"][0]["logical_id"] == "p0"
+    assert "TimeoutError" in substitutions[0]["attempts"][0]["error"]
+    assert result["observers"][0]["planned_logical_id"] == "p0"
+
+
+def test_an_unreadable_az_fails_closed_rather_than_letting_the_others_concur() -> None:
+    """The whole point of substitution over quorum.
+
+    Under an AZ partition the observer that is lost is *correlated* with the
+    event the redundancy exists to catch, so tolerating a minority would record
+    "cannot see az-a" as "az-a concurs". Exhausting az-a must raise.
+    """
+
+    nodes, responses = _cluster_fixture()
+    dialled: list[str] = []
+    observer = _topology_observer(
+        nodes,
+        responses,
+        # Both az-a nodes: p0 (7000) and r1 (7003).
+        failures={
+            7000: TimeoutError("timed out"),
+            7003: ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused"),
+        },
+        dialled=dialled,
+    )
+
+    with pytest.raises(SemanticFailure) as caught:
+        observer.run()
+
+    message = str(caught.value)
+    assert "no readable CLUSTER SHARDS observer" in message
+    assert "az-a" in message
+    # It asked every node az-a had, and it never asked an az-b node in az-a's place.
+    assert dialled == ["p0", "r1"]
+
+
+def test_an_unreadable_az_is_not_covered_by_a_spare_node_in_another_az() -> None:
+    """The fail-open hole, stated where the fixture can actually express it.
+
+    The four-node fixture cannot: exhausting az-a there leaves no *unchosen*
+    node anywhere, so a cross-AZ fallback would raise for the right reason by
+    accident. Measured - a mutation widening `_substitutes_for` to any unchosen
+    node passed that test. This one gives az-b two spare nodes, so a cross-AZ
+    fallback would find one, answer, and report a healthy three-observer read of
+    a cluster half of which could not be reached.
+    """
+
+    nodes, responses = _cluster_fixture()
+    ids = [f"{index + 1:040x}" for index in range(4)]
+    spares = [
+        NodeEndpoint("r2", "127.0.0.1", 7004, "replica", "s0", "az-b", "h4"),
+        NodeEndpoint("r3", "127.0.0.1", 7005, "replica", "s1", "az-b", "h5"),
+    ]
+    for spare in spares:
+        responses[spare.port] = {("CLUSTER", "SHARDS"): _shards(ids)}
+    all_nodes = nodes + spares
+
+    dialled: list[str] = []
+    port_to_id = {node.port: node.logical_id for node in all_nodes}
+    failed_ports = {7000, 7003}  # p0 and r1, the whole of az-a
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Any:
+        dialled.append(port_to_id[endpoint.port])
+        if endpoint.port in failed_ports:
+            raise TimeoutError("timed out")
+        return FakeConnection(responses[endpoint.port])
+
+    observer = TopologyObserver(all_nodes, observer_count=3, connection_factory=factory)
+
+    with pytest.raises(SemanticFailure) as caught:
+        observer.run(expected_node_count=4)
+
+    assert "az-a" in str(caught.value)
+    # The spares exist and are readable; they were never asked, because they are
+    # in the wrong AZ to answer a question about az-a.
+    assert "r2" not in dialled
+    assert "r3" not in dialled
+
+
+def test_a_substitute_leaves_the_failed_placement_before_the_failed_az() -> None:
+    """The placement is the fault domain, so it is the least likely to answer.
+
+    `isolate_nodehost` isolates a whole `placement_id` and the preflight refuses
+    a shard whose members share one, so a node that cannot be reached most often
+    means its whole nodehost is gone. Preferring its own placement would dial
+    every node on a dead nodehost before trying a live one. Same-placement nodes
+    stay as a fallback, because a single node can also fail alone.
+    """
+
+    nodes, responses = _cluster_fixture()
+    ids = [f"{index + 1:040x}" for index in range(4)]
+    # az-a gains a sibling on p0's own placement, and one on a third placement.
+    extra = [
+        NodeEndpoint("p0b", "127.0.0.1", 7004, "replica", "s0", "az-a", "h0"),
+        NodeEndpoint("p0c", "127.0.0.1", 7005, "replica", "s1", "az-a", "h9"),
+    ]
+    for node in extra:
+        responses[node.port] = {("CLUSTER", "SHARDS"): _shards(ids)}
+    all_nodes = nodes + extra
+
+    dialled: list[str] = []
+    port_to_id = {node.port: node.logical_id for node in all_nodes}
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Any:
+        dialled.append(port_to_id[endpoint.port])
+        if endpoint.port == 7000:
+            raise TimeoutError("timed out")
+        return FakeConnection(responses[endpoint.port])
+
+    observer = TopologyObserver(all_nodes, observer_count=3, connection_factory=factory)
+    result = observer.run(expected_node_count=4)
+
+    substitution = result["observer_substitutions"][0]
+    assert substitution["planned_logical_id"] == "p0"
+    # r1 (az-a, h3) and p0c (az-a, h9) are both off p0's placement; p0b shares it
+    # and must not be tried before them.
+    assert substitution["substituted_logical_id"] in {"r1", "p0c"}
+    assert "p0b" not in dialled
+
+
+def test_the_substitution_walk_is_bounded_rather_than_the_whole_az() -> None:
+    """An uncapped walk is minutes of serial dialling, not a fallback.
+
+    Every node in an AZ is a candidate in principle - 640 of them at 1280 nodes -
+    and at a 5s connect timeout that is ~53 minutes for one slot, inside gates
+    whose whole budget used to be a single 5s dial. It also destroys
+    contemporaneity: the three views are compared for equality and "observers
+    disagree" is a *permanent* failure, so a long walk over a converging cluster
+    turns a transient into a false permanent disagreement.
+    """
+
+    ids = [f"{index + 1:040x}" for index in range(4)]
+    nodes, responses = _cluster_fixture()
+    # az-a gains twenty more nodes on twenty distinct placements.
+    spares = [
+        NodeEndpoint(f"a{n}", "127.0.0.1", 7100 + n, "replica", "s0", "az-a", f"ha{n}")
+        for n in range(20)
+    ]
+    for spare in spares:
+        responses[spare.port] = {("CLUSTER", "SHARDS"): _shards(ids)}
+    all_nodes = nodes + spares
+
+    dialled: list[str] = []
+    port_to_id = {node.port: node.logical_id for node in all_nodes}
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Any:
+        dialled.append(port_to_id[endpoint.port])
+        # Every az-a node is dark; az-b answers.
+        if endpoint.port == 7000 or endpoint.port == 7003 or endpoint.port >= 7100:
+            raise TimeoutError("timed out")
+        return FakeConnection(responses[endpoint.port])
+
+    observer = TopologyObserver(all_nodes, observer_count=3, connection_factory=factory)
+
+    with pytest.raises(SemanticFailure):
+        observer.run(expected_node_count=4)
+
+    # The planned observer plus at most MAX_OBSERVER_SUBSTITUTIONS replacements,
+    # not the twenty-two az-a nodes that exist.
+    assert len(dialled) == 1 + cluster_module.MAX_OBSERVER_SUBSTITUTIONS
+
+
+def test_a_substitute_prefers_a_placement_no_other_view_came_from() -> None:
+    """Substitution must not quietly collapse the spread it is replacing.
+
+    `choose_topology_observers` spreads across `az_id` and `placement_id`, so a
+    substitute landing on a placement another view already came from would leave
+    two of three views inside one fault domain - the redundancy still reporting
+    three observers while covering two.
+
+    The failing observer here is the *third* slot, deliberately. An earlier draft
+    failed the first one, where nothing has answered yet and the preference is
+    vacuous - measured, three separate mutations to the ordering all passed it.
+    """
+
+    ids = [f"{index + 1:040x}" for index in range(4)]
+    nodes, responses = _cluster_fixture()
+    # Observers are p0 (az-a, h0), p1 (az-b, h1), r0 (az-b, h2). r0 fails last,
+    # by which point h0 and h1 have answered. The three az-b candidates are
+    # listed worst-first, so a missing rule shows up as the wrong pick rather
+    # than as luck: h2 is r0's own dead placement, h1 is already covered by p1,
+    # and h8 is the only one that keeps three distinct fault domains.
+    spares = [
+        NodeEndpoint("sib", "127.0.0.1", 7104, "replica", "s0", "az-b", "h2"),
+        NodeEndpoint("dup", "127.0.0.1", 7105, "replica", "s1", "az-b", "h1"),
+        NodeEndpoint("fresh", "127.0.0.1", 7106, "replica", "s0", "az-b", "h8"),
+    ]
+    for spare in spares:
+        responses[spare.port] = {("CLUSTER", "SHARDS"): _shards(ids)}
+    all_nodes = nodes + spares
+
+    dialled: list[str] = []
+    port_to_id = {node.port: node.logical_id for node in all_nodes}
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Any:
+        dialled.append(port_to_id[endpoint.port])
+        if endpoint.port == 7002:  # r0
+            raise TimeoutError("timed out")
+        return FakeConnection(responses[endpoint.port])
+
+    observer = TopologyObserver(all_nodes, observer_count=3, connection_factory=factory)
+    result = observer.run(expected_node_count=4)
+
+    substitution = result["observer_substitutions"][0]
+    assert substitution["planned_logical_id"] == "r0"
+    assert substitution["substituted_logical_id"] == "fresh"
+    assert substitution["placement_id"] == "h8"
+
+    placements = [view["placement_id"] for view in result["observers"]]
+    assert sorted(placements) == ["h0", "h1", "h8"]
+    assert len(set(placements)) == 3
+    # r0's own placement is the fault domain that just failed; it is tried last,
+    # and here never, because a better candidate answered.
+    assert "sib" not in dialled
+    assert "dup" not in dialled
+
+
+def test_observers_that_disagree_are_a_disagreement_and_not_another_substitution() -> None:
+    """Substitution triggers on transport only, so it cannot paper over a split.
+
+    A substitute that answers with a *different* topology has been reached; that
+    is a real observation of two vantage points disagreeing, and asking a fourth
+    node until one agrees is exactly the fail-open behaviour this design refuses.
+    """
+
+    ids = [f"{index + 1:040x}" for index in range(4)]
+    nodes, responses = _cluster_fixture()
+    # r0's view disagrees: one shard reports a different node id.
+    divergent = _shards([ids[0], ids[1], ids[2], f"{99:040x}"])
+    responses[nodes[2].port][("CLUSTER", "SHARDS")] = divergent
+
+    dialled: list[str] = []
+    port_to_id = {node.port: node.logical_id for node in nodes}
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Any:
+        dialled.append(port_to_id[endpoint.port])
+        return FakeConnection(responses[endpoint.port])
+
+    observer = TopologyObserver(nodes, observer_count=3, connection_factory=factory)
+
+    with pytest.raises(SemanticFailure) as caught:
+        observer.run()
+
+    assert "disagree" in str(caught.value)
+    # Three dials, one per planned observer: nothing was substituted.
+    assert dialled == ["p0", "p1", "r0"]
+
+
+def test_one_node_cannot_answer_for_two_observer_slots() -> None:
+    """Otherwise three views could be three reads of the same node."""
+
+    ids = [f"{index + 1:040x}" for index in range(4)]
+    nodes, responses = _cluster_fixture()
+    spare = NodeEndpoint("spare", "127.0.0.1", 7106, "replica", "s0", "az-b", "h6")
+    responses[spare.port] = {("CLUSTER", "SHARDS"): _shards(ids)}
+    all_nodes = nodes + [spare]
+
+    dialled: list[str] = []
+    port_to_id = {node.port: node.logical_id for node in all_nodes}
+
+    def factory(endpoint: Endpoint, _timeout: float) -> Any:
+        dialled.append(port_to_id[endpoint.port])
+        # Both az-b planned observers fail, so both slots want an az-b substitute.
+        if endpoint.port in {7001, 7002}:
+            raise TimeoutError("timed out")
+        return FakeConnection(responses[endpoint.port])
+
+    observer = TopologyObserver(all_nodes, observer_count=3, connection_factory=factory)
+
+    # az-b offers exactly one readable spare, so the first slot takes it and the
+    # second has nothing left - which must fail closed rather than reuse it.
+    with pytest.raises(SemanticFailure):
+        observer.run(expected_node_count=4)
+
+    assert dialled.count("spare") == 1
+
+
+def test_a_non_transient_observer_failure_is_not_substituted() -> None:
+    """Substitution is for transport failures only.
+
+    Anything else - a parse fault, a bug, an error reply - is a real answer or a
+    real defect, and asking a different node would hide it behind a healthy view.
+    """
+
+    nodes, responses = _cluster_fixture()
+    dialled: list[str] = []
+    observer = _topology_observer(
+        nodes,
+        responses,
+        failures={7000: RespCommandError("ERR unknown command 'CLUSTER|SHARDS'")},
+        dialled=dialled,
+    )
+
+    with pytest.raises(SemanticFailure) as caught:
+        observer.run()
+
+    assert "p0 CLUSTER SHARDS failed" in str(caught.value)
+    assert dialled == ["p0"]
+
+
+def test_a_clean_read_records_no_substitution() -> None:
+    nodes, responses = _cluster_fixture()
+    dialled: list[str] = []
+    observer = _topology_observer(nodes, responses, failures={}, dialled=dialled)
+
+    result = observer.run()
+
+    assert result["observer_substitutions"] == []
+    assert [view["logical_id"] for view in result["observers"]] == ["p0", "p1", "r0"]
+    assert all(
+        view["planned_logical_id"] == view["logical_id"] for view in result["observers"]
+    )
+    assert dialled == ["p0", "p1", "r0"]
 
 
 def test_which_observation_failures_are_the_collectors_own() -> None:

@@ -13,6 +13,7 @@ from valkey_scale_lab.observability.contracts import (
     ConvergenceFailure,
     SemanticFailure,
     is_collection_failure,
+    is_transient_transport_error,
 )
 from valkey_scale_lab.valkey.resp import Endpoint, RespConnection
 
@@ -788,6 +789,13 @@ def _validate_slot_ranges(ranges: Iterable[tuple[int, int]]) -> None:
         raise SemanticFailure("CLUSTER SHARDS slot ranges do not cover 0..16383")
 
 
+# How many replacement observers one slot may dial before the AZ is declared
+# unreadable. See `TopologyObserver._substitutes_for` for why this is capped at
+# all: uncapped, one slot could dial every node in its AZ - 640 at 1280 nodes -
+# at a 5s connect timeout apiece.
+MAX_OBSERVER_SUBSTITUTIONS = 2
+
+
 class TopologyObserver:
     def __init__(
         self,
@@ -804,6 +812,77 @@ class TopologyObserver:
             lambda endpoint, timeout: RespConnection(endpoint, timeout=timeout)
         )
 
+    def _substitutes_for(
+        self,
+        observer: NodeEndpoint,
+        *,
+        available: Sequence[NodeEndpoint],
+        chosen: set[str],
+        used_placements: set[str],
+    ) -> list[NodeEndpoint]:
+        """Replacements for one observer, at most `MAX_OBSERVER_SUBSTITUTIONS`.
+
+        Never crosses the AZ. A substitute from another AZ would answer a
+        question about the wrong part of the cluster, which is the fail-open
+        behaviour this exists instead of.
+
+        Three orderings, applied in turn:
+
+        1. A placement no answering observer already occupies, and not the one
+           that just failed. This is the ordinary case and it is what preserves
+           the spread `choose_topology_observers` paid for - without it a
+           substitute could land on a placement another view already came from,
+           leaving two of three views inside one fault domain.
+        2. Any other placement in the AZ. Diversity is preferred, not required:
+           a reading from a doubled-up placement still beats no reading.
+        3. The failed observer's own placement, last. The placement is this
+           product's fault domain - `isolate_nodehost` isolates a whole
+           `placement_id` - so when a node cannot be reached, its own nodehost is
+           the *least* likely thing to answer, and dialling it first would spend
+           the budget on a machine that is probably dark. It is kept rather than
+           dropped because a single node can also fail alone.
+
+        **The list is capped, and the cap is the point.** An uncapped walk would
+        offer every node in the AZ - up to 640 at 1280 nodes - and at a 5s
+        connect timeout that is ~53 minutes of serial dialling inside gates whose
+        whole budget used to be one 5s dial. Two substitutes per slot bounds a
+        three-observer read at 9 dials, so the worst case grows from ~15s to
+        ~45s: enough to survive independent transients on two distinct fault
+        domains, and still far inside the 180s the fault lane allows itself.
+
+        The cap also protects contemporaneity. The three views are read serially
+        and compared for equality, and "observers disagree" is a permanent
+        `SemanticFailure` rather than a retryable one, so a long walk across a
+        converging cluster would turn a transient timeout into a false permanent
+        disagreement.
+
+        The residual is bounded and it fails **closed**, which is why the views
+        are not simply re-read from scratch after a substitution. A view taken up
+        to the cap's worth of time later on a moving cluster can only produce a
+        spurious disagreement - a run that would have passed fails, and says why
+        in `observer_substitutions` - never a false pass. It can only happen when
+        a transient has already occurred, and re-reading would add dials to a
+        cluster that is already showing distress. If a real run ever reports a
+        disagreement whose substitutions list is non-empty and whose views'
+        `monotonic` stamps straddle the walk, a one-shot re-read is the recorded
+        fix; until then it is speculative machinery.
+        """
+
+        def rank(node: NodeEndpoint) -> int:
+            if node.placement_id == observer.placement_id:
+                return 2
+            if node.placement_id in used_placements:
+                return 1
+            return 0
+
+        candidates = [
+            node
+            for node in available
+            if node.logical_id not in chosen and node.az_id == observer.az_id
+        ]
+        candidates.sort(key=rank)
+        return candidates[:MAX_OBSERVER_SUBSTITUTIONS]
+
     def run(
         self,
         *,
@@ -817,25 +896,92 @@ class TopologyObserver:
         observers = choose_topology_observers(
             available, count=min(max(len(self.observers), 3), 5)
         )
+        chosen = {observer.logical_id for observer in observers}
+        used_placements: set[str] = set()
+        substitutions: list[dict[str, Any]] = []
         for observer in observers:
-            try:
-                with self._connection_factory(
-                    Endpoint(observer.host, observer.port), self.timeout
-                ) as connection:
-                    raw = connection.execute("CLUSTER", "SHARDS")
-            except Exception as exc:
+            # A transiently unreachable observer is replaced by another node in
+            # the *same* AZ rather than tolerated, and the read is taken again.
+            # Tolerating it - a quorum of two agreeing views - would fail open on
+            # exactly the event this redundancy exists to catch:
+            # `choose_topology_observers` spreads across `az_id` and
+            # `placement_id`, so under an AZ partition the observer that is lost
+            # is the one correlated with the partition, and "cannot see AZ-b"
+            # would be recorded as "AZ-b concurs". Substitution keeps the
+            # question being asked of that AZ; only a *stated* answer counts.
+            #
+            # **The invariant this leans on**, so that whoever breaks it knows:
+            # a substitute reads whichever side of a *nodehost*-level partition
+            # it is on, and that is non-fatal only because this layer never gates
+            # alone. `FullClusterValidator` runs `LightClusterProbe` over **every**
+            # node, so an unreachable nodehost fails layer one whatever this layer
+            # chose, and this layer's own contract is agreement between vantage
+            # points rather than reachability. A topology-only gate with no light
+            # layer would turn substitution into a fail-open hole.
+            attempted: list[dict[str, str]] = []
+            candidates = [observer] + self._substitutes_for(
+                observer,
+                available=available,
+                chosen=chosen,
+                used_placements=used_placements,
+            )
+            raw: Any = None
+            answered: NodeEndpoint | None = None
+            for candidate in candidates:
+                try:
+                    with self._connection_factory(
+                        Endpoint(candidate.host, candidate.port), self.timeout
+                    ) as connection:
+                        raw = connection.execute("CLUSTER", "SHARDS")
+                except Exception as exc:
+                    if not is_transient_transport_error(exc):
+                        raise SemanticFailure(
+                            f"{candidate.logical_id} CLUSTER SHARDS failed: {exc}"
+                        ) from exc
+                    attempted.append(
+                        {
+                            "logical_id": candidate.logical_id,
+                            "error": f"{type(exc).__name__}: {exc}",
+                        }
+                    )
+                    chosen.add(candidate.logical_id)
+                    continue
+                answered = candidate
+                break
+            if answered is None:
+                # Every node this AZ and placement can offer was asked and none
+                # answered. That is the fail-closed case and it is a semantic
+                # observation: this part of the cluster cannot be read.
+                detail = "; ".join(
+                    f"{row['logical_id']} ({row['error']})" for row in attempted
+                )
                 raise SemanticFailure(
-                    f"{observer.logical_id} CLUSTER SHARDS failed: {exc}"
-                ) from exc
+                    f"no readable CLUSTER SHARDS observer in az={observer.az_id!r} "
+                    f"for planned observer {observer.logical_id} "
+                    f"after {len(attempted)} attempt(s): {detail}"
+                )
+            if answered is not observer:
+                substitutions.append(
+                    {
+                        "planned_logical_id": observer.logical_id,
+                        "substituted_logical_id": answered.logical_id,
+                        "az_id": answered.az_id,
+                        "placement_id": answered.placement_id,
+                        "attempts": attempted,
+                    }
+                )
+            chosen.add(answered.logical_id)
+            used_placements.add(answered.placement_id)
             normalized = normalize_cluster_shards(
                 raw,
                 allowed_unhealthy_node_ids=allowed_unhealthy_node_ids,
             )
             views.append(
                 {
-                    "logical_id": observer.logical_id,
-                    "az_id": observer.az_id,
-                    "placement_id": observer.placement_id,
+                    "logical_id": answered.logical_id,
+                    "az_id": answered.az_id,
+                    "placement_id": answered.placement_id,
+                    "planned_logical_id": observer.logical_id,
                     "wall_time": time.time(),
                     "monotonic": time.monotonic(),
                     "view": normalized,
@@ -863,6 +1009,10 @@ class TopologyObserver:
             "status": "OK",
             "observer_count": len(views),
             "observers": views,
+            # Always present, so a reader can tell "no observer had to be
+            # replaced" from "this artifact predates substitution". An empty
+            # list is the ordinary case.
+            "observer_substitutions": substitutions,
             "normalized_topology": baseline,
         }
 
