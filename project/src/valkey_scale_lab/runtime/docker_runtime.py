@@ -62,6 +62,7 @@ from valkey_scale_lab.observability.cluster import (
 from valkey_scale_lab.observability.contracts import (
     CollectionError,
     is_collection_failure,
+    is_transient_transport_error,
 )
 from valkey_scale_lab.observability.failover import (
     ActuatorRecorder,
@@ -7146,6 +7147,7 @@ def _management_log_forget_removed_node(
 ) -> dict[str, Any]:
     started = telemetry.now_unix_ms()
     command_id = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
+    retry_eligible = False
     try:
         stdout = _node_command(target, "CLUSTER", "FORGET", removed_id, timeout=30)
         stderr = ""
@@ -7154,6 +7156,14 @@ def _management_log_forget_removed_node(
         stdout = ""
         stderr = repr(exc)
         status = "PASS" if "unknown node" in stderr.lower() else "FAIL"
+        # A transport failure here is not this command's answer, and the caller
+        # is a convergence loop whose whole purpose is to re-issue this command
+        # every two seconds for up to 120s. Raising escaped that loop, so one
+        # slow survivor of 1279 ended the operation - and this is issued to every
+        # survivor on every round, which is 5,000+ commands per 1280-node run.
+        # The error *reply* case is already tolerated two lines up for the same
+        # reason: the loop, not this call, decides when the node is gone.
+        retry_eligible = is_transient_transport_error(exc)
     entry = {
         "schema_version": "v1",
         "capability_id": capability_id,
@@ -7169,8 +7179,12 @@ def _management_log_forget_removed_node(
         "stdout_tail": stdout[-500:],
         "stderr_tail": stderr[-500:],
     }
+    if retry_eligible:
+        # Recorded only on this branch, so a row that never had to wait is
+        # byte-identical to what it always was.
+        entry["retry_eligible"] = True
     command_log.append(entry)
-    if status == "FAIL":
+    if status == "FAIL" and not retry_eligible:
         raise DockerRuntimeError(
             "MANAGEMENT_MATRIX command failed cluster_forget_removed_node "
             f"target={target.get('logical_id')}: {stderr}"
@@ -7179,9 +7193,15 @@ def _management_log_forget_removed_node(
 
 
 def _management_cluster_nodes_contains(node: dict[str, Any], node_id: str) -> bool:
-    endpoint = Endpoint(str(node.get("host", "127.0.0.1")), int(node["client_port"]))
-    with RespConnection(endpoint, timeout=5.0) as connection:
-        known = cluster_shards_node_ids(connection.execute("CLUSTER", "SHARDS"))
+    # Had no `try` at any level, so a `socket.timeout` escaped as a raw `OSError`
+    # out of the forget convergence loop and out of the rejoin path. A read of
+    # whether one node still knows another is idempotent, so it is retried.
+    def read() -> set[str]:
+        endpoint = Endpoint(str(node.get("host", "127.0.0.1")), int(node["client_port"]))
+        with RespConnection(endpoint, timeout=5.0) as connection:
+            return cluster_shards_node_ids(connection.execute("CLUSTER", "SHARDS"))
+
+    known = _retry_read(read, what=f"CLUSTER SHARDS on {node.get('logical_id')}")
     return node_id in known
 
 
@@ -7726,8 +7746,15 @@ def _management_reshard_drain_slot(
     """
     moved = 0
     for _ in range(RESHARD_DRAIN_MAX_BATCHES):
-        keys = _node_response(
-            source, "CLUSTER", "GETKEYSINSLOT", slot, RESHARD_DRAIN_BATCH_KEYS, timeout=30
+        # Unguarded, this died *mid slot move* - the slot left IMPORTING on one
+        # node and MIGRATING on the other, which is the worst moment for the
+        # operation to end. The read is idempotent: it asks which keys are still
+        # in the slot, and the answer only shrinks as the drain proceeds.
+        keys = _retry_read(
+            lambda: _node_response(
+                source, "CLUSTER", "GETKEYSINSLOT", slot, RESHARD_DRAIN_BATCH_KEYS, timeout=30
+            ),
+            what=f"CLUSTER GETKEYSINSLOT {slot} on {source.get('logical_id')}",
         )
         batch = [str(key) for key in keys or []]
         if not batch:
@@ -7813,12 +7840,17 @@ def _management_reshard_verify_slot_writable(
 
 
 def _management_reshard_node_owns_slot(node: dict[str, Any], node_id: str, slot: int) -> bool:
-    response = _host_command_binary(
-        str(node.get("host", "127.0.0.1")),
-        int(node["client_port"]),
-        "CLUSTER",
-        "MYSLOTS",
-        timeout=5.0,
+    # Unguarded these raised a bare `socket.timeout` - not even a
+    # `DockerRuntimeError` - from inside slot-movement verification.
+    response = _retry_read(
+        lambda: _host_command_binary(
+            str(node.get("host", "127.0.0.1")),
+            int(node["client_port"]),
+            "CLUSTER",
+            "MYSLOTS",
+            timeout=5.0,
+        ),
+        what=f"CLUSTER MYSLOTS on {node.get('logical_id')}",
     )
     myslots = parse_myslots(response)
     return (
@@ -7828,12 +7860,15 @@ def _management_reshard_node_owns_slot(node: dict[str, Any], node_id: str, slot:
 
 
 def _management_reshard_primary_owned_slots(node: dict[str, Any], node_id: str) -> list[int]:
-    response = _host_command_binary(
-        str(node.get("host", "127.0.0.1")),
-        int(node["client_port"]),
-        "CLUSTER",
-        "MYSLOTS",
-        timeout=5.0,
+    response = _retry_read(
+        lambda: _host_command_binary(
+            str(node.get("host", "127.0.0.1")),
+            int(node["client_port"]),
+            "CLUSTER",
+            "MYSLOTS",
+            timeout=5.0,
+        ),
+        what=f"CLUSTER MYSLOTS on {node.get('logical_id')}",
     )
     myslots = parse_myslots(response)
     slots = [
@@ -7928,6 +7963,10 @@ def _management_live_topology(
                 # it, and defaulting to `semantic` keeps an unexplained failure a
                 # cluster failure rather than quietly excusing it as a tool error.
                 "kind": str(row.get("failure_kind") or "semantic"),
+                # Whether asking this node again is reasonable. Defaults to False
+                # for the same reason `kind` defaults to `semantic`: an
+                # unexplained failure is not quietly assumed to be worth a retry.
+                "transient": bool(row.get("transport_transient", False)),
             }
             continue
         fields = row["myslots"]
@@ -7975,12 +8014,76 @@ def _management_topology_gap_error(
     return CollectionError(f"{what} could not be observed: {detail}")
 
 
+TOPOLOGY_GAP_ATTEMPTS = 3
+TOPOLOGY_GAP_PAUSE_SECONDS = 2.0
+
+
+def _management_live_topology_settled(
+    nodes: list[dict[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, str]]]:
+    """`_management_live_topology`, with transport gaps asked again before believed.
+
+    Separate from the raising wrapper because the rolling restart takes the same
+    reading per batch and raises its own errors from it - at 1280 nodes that is
+    194 batches times two operations, so it is the second-highest-count instance
+    of this shape and must not have to re-implement the rule.
+
+    Returns exactly what `_management_live_topology` returns. What changed is
+    only *when* a gap is believed, never what counts as one.
+    """
+
+    if not nodes:
+        return {}, {}
+    topology, gaps = _management_live_topology(nodes)
+    for _attempt in range(TOPOLOGY_GAP_ATTEMPTS - 1):
+        if not gaps:
+            break
+        if not all(gap.get("transient") for gap in gaps.values()):
+            # A confirmed failure outranks any number of transport failures, so
+            # stop and let the caller state it - retrying here would spend time
+            # reaching the same verdict and make a real failure look flaky.
+            break
+        time.sleep(TOPOLOGY_GAP_PAUSE_SECONDS)
+        retried = [node for node in nodes if str(node["logical_id"]) in gaps]
+        again_topology, again_gaps = _management_live_topology(retried)
+        topology.update(again_topology)
+        gaps = again_gaps
+    return topology, gaps
+
+
 def _management_require_live_topology(
     nodes: list[dict[str, Any]], what: str
 ) -> dict[str, dict[str, Any]]:
-    """Live topology for stages that cannot proceed on a partial reading."""
+    """Live topology for stages that cannot proceed on a partial reading.
 
-    topology, gaps = _management_live_topology(nodes)
+    A gap here is fatal to the operation, and at fleet scale that made a single
+    slow node fatal to the run. This is the highest-count instance of the shape
+    that cost five paid 1280-node runs: eleven operations take this reading
+    before and after themselves, so a 1280-node run makes on the order of tens of
+    thousands of single node observations, **any one of which used to end the
+    operation**. A node servicing gossip from 1279 peers occasionally answers
+    slowly, so at that width the question is not whether one will but which.
+
+    **What this does not do is accept a partial reading.** The accept condition
+    is byte-identical: every node named must still have been read, and the error
+    raised when they have not is the same class with the same message. All that
+    changes is that a gap the probe itself classified as a transport failure is
+    *asked again* before it is believed, at most `TOPOLOGY_GAP_ATTEMPTS` times.
+
+    Two properties make that safe rather than merely convenient:
+
+    - **A non-transient gap is never retried.** A node that answered and
+      disagreed, or failed in a way the predicate cannot place, is a confirmed
+      observation and raises at once - retrying it would be the fail-open
+      direction, spending time to reach the same verdict while a real failure
+      looked intermittent.
+    - **Only the gapped nodes are re-probed**, not the fleet. At 1280 nodes with
+      one slow node that is one observation rather than another 1280, so the
+      retry cannot itself become the O(N) round the design budgets per operation
+      boundary.
+    """
+
+    topology, gaps = _management_live_topology_settled(nodes)
     error = _management_topology_gap_error(
         gaps, [str(node["logical_id"]) for node in nodes], what
     )
@@ -11529,7 +11632,7 @@ def _management_matrix_execute_process_rolling_restart(
     for batch_index, batch in enumerate(batches, start=1):
         targets = [nodes_by_id[str(entry["logical_node_id"])] for entry in batch]
         batch_scope = _management_rolling_restart_batch_scope(batch, nodes)
-        topology, gaps = _management_live_topology(batch_scope)
+        topology, gaps = _management_live_topology_settled(batch_scope)
         safe_by_id: dict[str, dict[str, Any]] = {}
         for entry, target in zip(batch, targets):
             logical_id = str(target["logical_id"])
@@ -11630,7 +11733,7 @@ def _management_matrix_execute_process_rolling_restart(
         # "No live primary in this shard" and "the shard's primary was not read"
         # are different findings, and only the first is the cluster's.
         post_restart_topology, post_restart_gaps = (
-            _management_live_topology(batch_scope)
+            _management_live_topology_settled(batch_scope)
             if any(entry["planned_role"] == "replica" for entry in batch)
             else ({}, {})
         )

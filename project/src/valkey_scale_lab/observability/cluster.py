@@ -383,6 +383,14 @@ class LightClusterProbe:
             "status": "FAIL",
             "error": f"{type(exc).__name__}: {exc}",
             "failure_kind": "tool" if is_collection_failure(exc) else "semantic",
+            # A second field, not a changed one. `failure_kind` is §12.1's
+            # verdict axis and stays exactly as it was - a timeout is still a
+            # *semantic* observation of a node that did not answer. This says
+            # whether asking again is reasonable, which is a different question
+            # and the only one a retry layer can act on: without it a caller
+            # reading this row cannot tell "timed out" from "answered wrongly",
+            # because both render as `semantic`.
+            "transport_transient": is_transient_transport_error(exc),
             "wall_time": wall_started,
             "monotonic": monotonic_started,
         }

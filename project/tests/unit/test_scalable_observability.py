@@ -2400,6 +2400,48 @@ def test_a_failed_light_probe_row_states_which_kind_it_was() -> None:
     assert "Can't assign requested address" in exhausted_row["error"]
 
 
+def test_a_failed_light_probe_row_also_states_whether_it_is_worth_asking_again() -> None:
+    """The two axes on one row, and they disagree on a timeout by design.
+
+    `failure_kind` is §12.1's verdict axis and is untouched: a node that timed
+    out was observed not to answer, which stays *semantic*. `transport_transient`
+    is the retry axis, and without it a caller reading this row cannot tell
+    "timed out" from "answered wrongly" - both render as `semantic` - which is
+    what made a single slow node out of 1280 fatal to a management operation.
+    """
+
+    nodes, _responses = _cluster_fixture()
+
+    def raiser(exc: Exception):
+        def factory(_endpoint: Endpoint, _timeout: float) -> Any:
+            raise exc
+        return factory
+
+    def row_for(exc: Exception) -> dict[str, Any]:
+        return LightClusterProbe(
+            nodes[:1], connection_factory=raiser(exc)
+        ).observe_node(nodes[0])
+
+    timed_out = row_for(TimeoutError("timed out"))
+    refused = row_for(ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused"))
+    wrong = row_for(SemanticFailure("ROLE disagrees"))
+    exhausted = row_for(OSError(errno.EADDRNOTAVAIL, "Can't assign requested address"))
+
+    # Worth asking again.
+    assert timed_out["transport_transient"] is True
+    assert refused["transport_transient"] is True
+
+    # Not worth asking again - and note the timeout and the wrong answer share a
+    # `failure_kind`, which is precisely why the second field has to exist.
+    assert wrong["transport_transient"] is False
+    assert timed_out["failure_kind"] == wrong["failure_kind"] == "semantic"
+
+    # Local resource exhaustion is the collector's own; re-entering a 1024-way
+    # fan-out that has run out of descriptors makes it worse.
+    assert exhausted["transport_transient"] is False
+    assert exhausted["failure_kind"] == "tool"
+
+
 def test_actuator_failure_is_a_collection_error() -> None:
     recorder = ActuatorRecorder(target="p0", action="kill")
     recorder.start()

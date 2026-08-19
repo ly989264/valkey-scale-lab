@@ -8,6 +8,7 @@ import pytest
 
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import load_effective_config, normalize_config
+from valkey_scale_lab.observability.cluster import MySlots
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.planner.plan import build_cluster_plan, create_plan_file
 from valkey_scale_lab import resource
@@ -634,6 +635,307 @@ def test_the_one_unretried_cluster_myid_read_is_reached_only_from_formation() ->
     assert callers and all(
         "management" not in name and "fault" not in name for name in callers
     ), callers
+
+
+def _topology_nodes(count: int = 3) -> list[dict[str, object]]:
+    return [
+        {
+            "logical_id": f"shard-{i:04d}-primary",
+            "shard_id": f"shard-{i:04d}",
+            "host": "127.0.0.1",
+            "client_port": 7400 + i,
+            "role": "primary",
+        }
+        for i in range(count)
+    ]
+
+
+def _install_probe_rows(monkeypatch, sequence) -> list[list[str]]:
+    """Serve `_light_probe_rows` from a scripted sequence, recording each scope."""
+
+    scopes: list[list[str]] = []
+    calls = {"n": 0}
+
+    def fake(nodes):
+        scopes.append([str(n["logical_id"]) for n in nodes])
+        rows = sequence[min(calls["n"], len(sequence) - 1)]
+        calls["n"] += 1
+        wanted = {str(n["logical_id"]) for n in nodes}
+        return [r for r in rows if r["logical_id"] in wanted]
+
+    monkeypatch.setattr(docker_runtime, "_light_probe_rows", fake)
+    monkeypatch.setattr(docker_runtime, "TOPOLOGY_GAP_PAUSE_SECONDS", 0.0)
+    return scopes
+
+
+def _ok_row(logical_id: str) -> dict[str, object]:
+    shard = logical_id.rsplit("-", 1)[0]
+    return {
+        "logical_id": logical_id,
+        "status": "OK",
+        # `role` here is the parsed ROLE reply the topology reader consults for
+        # link state, not a bare string.
+        "role": {"role": "primary", "replication_state": "connected"},
+        "myslots": MySlots(
+            node_id=f"id-{logical_id}",
+            shard_id=shard,
+            role="primary",
+            slot_owner_id=f"id-{logical_id}",
+            slot_count=0,
+            bitmap_encoding="raw",
+            bitmap=b"\x00" * 2048,
+        ),
+    }
+
+
+def _gap_row(logical_id: str, *, transient: bool) -> dict[str, object]:
+    return {
+        "logical_id": logical_id,
+        "status": "FAIL",
+        "error": "TimeoutError: timed out" if transient else "SemanticFailure: wrong role",
+        # Both render as `semantic` on the verdict axis, which is exactly why the
+        # retry layer cannot key on `failure_kind` and needs its own field.
+        "failure_kind": "semantic",
+        "transport_transient": transient,
+    }
+
+
+def test_a_transient_topology_gap_is_asked_again_before_it_ends_an_operation(monkeypatch) -> None:
+    """The highest-count instance of the shape that cost five paid runs.
+
+    Eleven management operations take this reading before and after themselves,
+    so at 1280 nodes a run makes tens of thousands of single node observations
+    through here, any one of which used to be fatal. A node servicing gossip
+    from 1279 peers occasionally answers slowly.
+    """
+
+    nodes = _topology_nodes(3)
+    ids = [str(n["logical_id"]) for n in nodes]
+    scopes = _install_probe_rows(
+        monkeypatch,
+        [
+            # First round: one node times out.
+            [_ok_row(ids[0]), _gap_row(ids[1], transient=True), _ok_row(ids[2])],
+            # Re-ask: it answers.
+            [_ok_row(ids[0]), _ok_row(ids[1]), _ok_row(ids[2])],
+        ],
+    )
+
+    topology = docker_runtime._management_require_live_topology(nodes, "probe")
+
+    assert set(topology) == set(ids)
+    # Only the gapped node was re-probed - at 1280 nodes re-reading the fleet
+    # would make the retry itself the O(N) round this must not become.
+    assert scopes == [ids, [ids[1]]]
+
+
+def test_a_topology_gap_that_never_clears_still_ends_the_operation(monkeypatch) -> None:
+    """The accept condition is unchanged: this re-asks, it does not tolerate."""
+
+    nodes = _topology_nodes(3)
+    ids = [str(n["logical_id"]) for n in nodes]
+    scopes = _install_probe_rows(
+        monkeypatch,
+        [[_ok_row(ids[0]), _gap_row(ids[1], transient=True), _ok_row(ids[2])]],
+    )
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="probe"):
+        docker_runtime._management_require_live_topology(nodes, "probe")
+
+    # Bounded, and every attempt after the first re-probes only the gap.
+    assert len(scopes) == docker_runtime.TOPOLOGY_GAP_ATTEMPTS
+    assert scopes[1:] == [[ids[1]]] * (docker_runtime.TOPOLOGY_GAP_ATTEMPTS - 1)
+
+
+def test_a_non_transient_topology_gap_is_not_retried_at_all(monkeypatch) -> None:
+    """A node that answered and disagreed is a confirmed failure.
+
+    Retrying it is the fail-open direction: it spends the budget reaching the
+    same verdict and makes a real failure look intermittent. This is the
+    property that keeps the re-ask safe, so it is asserted rather than assumed.
+    """
+
+    nodes = _topology_nodes(3)
+    ids = [str(n["logical_id"]) for n in nodes]
+    scopes = _install_probe_rows(
+        monkeypatch,
+        [[_ok_row(ids[0]), _gap_row(ids[1], transient=False), _ok_row(ids[2])]],
+    )
+
+    with pytest.raises(docker_runtime.DockerRuntimeError):
+        docker_runtime._management_require_live_topology(nodes, "probe")
+
+    assert scopes == [ids]
+
+
+def test_a_mixed_gap_set_is_not_retried_because_one_is_confirmed(monkeypatch) -> None:
+    """§12.2's precedence: a confirmed failure outranks any number of transports."""
+
+    nodes = _topology_nodes(3)
+    ids = [str(n["logical_id"]) for n in nodes]
+    scopes = _install_probe_rows(
+        monkeypatch,
+        [[_ok_row(ids[0]), _gap_row(ids[1], transient=True), _gap_row(ids[2], transient=False)]],
+    )
+
+    with pytest.raises(docker_runtime.DockerRuntimeError):
+        docker_runtime._management_require_live_topology(nodes, "probe")
+
+    assert scopes == [ids]
+
+
+def _forget_row(monkeypatch, exc):
+    """One `CLUSTER FORGET` attempt whose transport raises `exc`."""
+
+    log: list[dict[str, object]] = []
+
+    def boom(*_a, **_k):
+        raise exc
+
+    monkeypatch.setattr(docker_runtime, "_node_command", boom)
+    docker_runtime._management_log_forget_removed_node(
+        log,
+        telemetry=docker_runtime.TelemetryRun(
+            capability_id="c", scenario_name="s", run_id="r"
+        ),
+        capability_id="c",
+        parent_run_id="r",
+        operation_id="op",
+        target={"logical_id": "shard-0000-primary", "client_port": 7400},
+        removed_id="deadbeef",
+    )
+    return log
+
+
+def test_a_transient_forget_failure_stays_inside_the_convergence_loop(monkeypatch) -> None:
+    """It is issued to every survivor on every round of a 120s loop.
+
+    At 1280 nodes that is 1,279 survivors per removal operation times four
+    operations times a round every two seconds - over five thousand commands per
+    run - and a single transport failure used to raise straight out of the loop
+    that exists to re-issue exactly this command. The error *reply* case was
+    already tolerated for the same reason.
+    """
+
+    log = _forget_row(monkeypatch, TimeoutError("timed out"))
+
+    assert len(log) == 1
+    assert log[0]["status"] == "FAIL"
+    # The row says why it did not end the run, so a reader can see the loop
+    # absorbed it rather than that nothing happened.
+    assert log[0]["retry_eligible"] is True
+
+
+def test_a_non_transient_forget_failure_still_ends_the_operation(monkeypatch) -> None:
+    """Only transport is absorbed; a real refusal is still the cluster's answer."""
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="cluster_forget_removed_node"):
+        _forget_row(monkeypatch, RuntimeError("ERR something the server means"))
+
+
+def test_a_forget_row_that_never_waited_is_unchanged(monkeypatch) -> None:
+    """The new key appears only on the branch that needs it.
+
+    `management_command_log` is a diffed artifact and every frozen baseline was
+    taken before this field existed, so a run with no transient must produce
+    byte-identical rows.
+    """
+
+    log: list[dict[str, object]] = []
+    monkeypatch.setattr(docker_runtime, "_node_command", lambda *a, **k: "OK")
+    docker_runtime._management_log_forget_removed_node(
+        log,
+        telemetry=docker_runtime.TelemetryRun(capability_id="c", scenario_name="s", run_id="r"),
+        capability_id="c",
+        parent_run_id="r",
+        operation_id="op",
+        target={"logical_id": "shard-0000-primary", "client_port": 7400},
+        removed_id="deadbeef",
+    )
+    assert log[0]["status"] == "PASS"
+    assert "retry_eligible" not in log[0]
+
+
+def _unguarded_reads() -> set[str]:
+    """Management/fault reads that still issue a single un-retried RESP command.
+
+    Structural, and asserted as a *set* so a newly added one fails by name. The
+    four transports these cover are the ones the audit found: a bare
+    `RespConnection`, `_node_response`, `_host_command_binary`, and
+    `_node_command`. `_node_command`'s own reads are pinned separately by the
+    `CLUSTER MYID` test above.
+    """
+
+    tree = ast.parse(Path(docker_runtime.__file__).read_text(encoding="utf-8"))
+    transports = {"_node_response", "_host_command_binary", "RespConnection"}
+
+    def transport_calls(node: ast.AST) -> set[int]:
+        return {
+            id(inner)
+            for inner in ast.walk(node)
+            if isinstance(inner, ast.Call)
+            and isinstance(inner.func, ast.Name)
+            and inner.func.id in transports
+        }
+
+    # A nested `def` handed to `_retry_read` by name is as guarded as a lambda
+    # written inline; a multi-statement body cannot be a lambda, so both shapes
+    # occur and the guard has to see through both.
+    nested: dict[str, ast.AST] = {
+        inner.name: inner
+        for inner in ast.walk(tree)
+        if isinstance(inner, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+    retried: set[int] = set()
+    for node in ast.walk(tree):
+        # Guarded by `_retry_read`.
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "_retry_read"
+        ):
+            for argument in list(node.args) + [kw.value for kw in node.keywords]:
+                retried |= transport_calls(argument)
+                if isinstance(argument, ast.Name) and argument.id in nested:
+                    retried |= transport_calls(nested[argument.id])
+        # Or guarded by an enclosing `try` that handles the failure itself -
+        # `_management_wait_node_role` polls inside one, which is a different
+        # shape of the same protection and must not be reported as a defect.
+        if isinstance(node, ast.Try) and node.handlers:
+            for statement in node.body:
+                retried |= transport_calls(statement)
+
+    bare: set[str] = set()
+    for scope in tree.body:
+        if not isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not scope.name.startswith(("_management", "_run_scalable")):
+            continue
+        for inner in ast.walk(scope):
+            if (
+                isinstance(inner, ast.Call)
+                and isinstance(inner.func, ast.Name)
+                and inner.func.id in transports
+                and id(inner) not in retried
+            ):
+                bare.add(scope.name)
+    return bare
+
+
+def test_the_management_lane_has_no_unretried_single_shot_reads_left(
+) -> None:
+    """F4, F7 and F8 of the audit, and the guard against a fourth.
+
+    Each was one RESP command with no retry at any level, inside a lane that
+    issues it thousands of times per 1280-node run: `CLUSTER SHARDS` asking
+    whether a removed node is gone, `CLUSTER GETKEYSINSLOT` driving a slot
+    drain, and two `CLUSTER MYSLOTS` verifying slot ownership. The drain one
+    died *mid slot move*, leaving the slot IMPORTING on one node and MIGRATING
+    on the other.
+    """
+
+    assert _unguarded_reads() == set(), _unguarded_reads()
 
 
 def test_retry_read_is_bounded_and_reads_only() -> None:
