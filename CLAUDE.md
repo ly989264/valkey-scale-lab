@@ -2075,6 +2075,108 @@ Two arguments were tried and refuted on the way, and §6.1 records both, includi
 that quorum-tolerating observers would fail **open** on exactly the AZ partition
 the redundancy exists to catch.
 
+### The four M4-7 follow-up items are done, 2026-08-19
+
+Two commits, `10475348` and `713d96e8`. The operator approved all four open items
+at once and required each to be designed with the second model **before** any
+code; that discussion changed three of the four and is recorded in
+`project/docs/mutation_chokepoint_and_down_window_map.md` §6, which also carries
+what the discussion got wrong. No fleet, no baseline frozen or touched.
+
+- **The parse-failure vocabulary gap is closed, and the fix is none of the three
+  candidates the handoff listed.** `RespTransportError(DockerRuntimeError,
+  RespProtocolError)` - the first base keeps every existing `except` on this
+  transport catching what it caught, so zero blast radius; the second is what
+  `is_transient_transport_error` matches. Measured rather than reasoned:
+  `is_collection_failure` still answers **False**, so **no §12.1 verdict moves**
+  and this needed evidence rather than operator sign-off. There is no
+  `except RespProtocolError` or `except EOFError` anywhere, so no control flow
+  changes either. This mattered because the gap silently narrowed **two already
+  landed fixes** - the mutation chokepoint and the FORGET loop both gate on that
+  predicate.
+- **A fourth hole was found by asking what else the same argument covers**:
+  `int()` on a desynced length line raised a bare `ValueError` at three sites, not
+  even a `DockerRuntimeError`, so it escaped every handler *and* the predicate.
+  Taken in the same commit, because leaving it would make the commit's own claim
+  false on three lines.
+- **All seven `FullClusterValidator` sites now re-read transport gaps**, not just
+  the down-window. Measured across **140 retained runs and 1,360 light
+  validations at every site: zero unexplained gaps**, so it costs nothing on a
+  passing run - with the same survivor-sample caveat, which bounds cost and is not
+  evidence gaps do not happen. The structural half a measurement cannot see: a
+  transport gap raises `SemanticFailure`, which the convergence loop does **not**
+  retry, so a persisting gap pays the budget **once**, not once per attempt.
+- **The audit ledger is executable past the management lane.** The existing guard
+  inspected only `_management*`/`_run_scalable*` scopes, so everything else was
+  exempt **by naming convention**, which nobody decided. Widened module-wide,
+  exactly **three** un-retried reads remain, each with a *different* structural
+  reason: `_node_command` (the transport primitive - retrying inside it would
+  blind-retry every mutation), `_process_node_is_replica_of` (leaf read, all three
+  callers bound it), `_natural_probe_key_for_primary` (M2-gated). Deliberately not
+  widened to every read *verb*: the `_wait_process_*` predicates are un-retried by
+  design and an AST-only rule could not see that, so the exemption list would rot.
+- **`MIGRATE` carries `REPLACE`, argued in layers rather than at three
+  strengths.** (1) *Protocol*: `ASK` is issued by the source only for a key it
+  does **not** hold, so a both-copies key is never redirected and the target's
+  copy cannot be newer - this stands alone. (2) *Observability*: no consumer
+  compares the value of any key that can be mid-migration, because the one real
+  value comparison is the Sentinel canary and canaries are selected inside the
+  fault sequence, after all slot movement. (3) *Severity*: the data is benchmark
+  filler. Claim 2 corrects an earlier draft that said "nothing compares a value",
+  which is false. Issued **always**, not only on the retry, so the path the retry
+  depends on is the one every run exercises.
+
+- **Proven:** `repository.all` **92/92** at final HEAD; catalog **100**, M1 plan
+  **91** unmoved; pytest tree **930 → 936**. **Eighteen mutations, all detected**,
+  each asserted to have applied first - two again reported
+  `MUTATION-NOT-APPLICABLE` rather than passing, because their target strings were
+  not unique. Four real Docker exact-50, two per commit: **PASS 862.19 s /
+  846.86 s** at `10475348` and **PASS 943.22 s / 876.94 s** at `713d96e8`. All
+  four 12/12 OK, `fault_command_log` exactly 12 rows, 1,606 management rows, 21
+  cleanup rows with `resources_remaining` empty, no non-PASS row in either log,
+  zero artifacts containing `ERROR`, zero residue.
+- **Batch 1's isolating diff is empty** - 7/7, 5/5, 8/8, 6/6, 2/2 against its
+  predecessor - and **both same-commit pairs were fully identical to each other**.
+  Item 2's isolating diff is `management_matrix` 7/8 and reduces to **10 changed
+  lines, every one `+"REPLACE"`**, with row counts unmoved and the other seven
+  views `SAME`. All 18 migrate rows carry `REPLACE` before `KEYS` in both runs.
+
+**The technique worth carrying forward: rehearse a declared delta on a rewritten
+copy.** Before item 2's first run, a completed run was copied, its 18
+`cluster_migrate_keys` argvs rewritten to insert `REPLACE`, and the copy diffed.
+That converted a prediction into a measurement for **zero runs** - and it was
+*exact*, predicting the rendering's **5** insertion lines, which is the number
+reasoning was least able to supply. Both real runs then matched it, 5 and 5. It
+also caught a second measurement of mine that was too crude: comparing raw `argv`
+by kind said the shape was unchanged, because raw argv carries the seeded key
+names and never matches across runs at all.
+
+**A process failure, recorded because the rule it yields is general.** Item 2 was
+**committed with a red suite** - only the unit module and the mutation harness
+were run first, not `repository.all`, which the working rules require *before* a
+commit. `test_docker_runtime_contract.py:3969` pins the exact `MIGRATE` argv and
+the change breaks it by design. The declared-delta discipline had enumerated
+everything that **reads** the argv - artifacts, views, the classifier, both
+backends - and never asked what **asserts** it. Those are different populations
+and the second is one grep, across **all file types** rather than only `.py`; run
+afterwards it returns exactly one executable pin, the one that failed. Note also
+that this session's own new test passed throughout, because it asserts `REPLACE`
+is *present*: **a test written to guard a change cannot report what the change
+breaks elsewhere**, which is a complete check of the wrong scope rather than an
+incomplete check. Fixed and **amended into the same commit**, because this repo
+verifies each commit in its own worktree so the series bisects; the amend was
+verified to touch only the test file, so runs already started at the pre-amend
+commit exercise byte-identical product code.
+
+**What is still open**, unchanged from the M4-7 handoff except where these items
+closed it: the analysis summary's retry counters do not span the two command logs
+(`retry_count`/`retry_commands` derive from `retry_index` over
+`command_log.jsonl`, a third file); and `_retry_read` still catches a broad
+`except Exception`, so it retries error replies - now inconsistent with the
+chokepoint beside it, which makes the distinction. The `_read_resp` vocabulary
+gap, the other six validator sites, the `MIGRATE`/`REPLACE` decision and the §7
+ledger confirmation are **all closed by these two commits**.
+
 ### Session M4-7 is done, 2026-08-19: the two items M4-6 refused
 
 Two commits. Scope was exactly F6 and F2 from `m4_paid_run_checklist.md` §7 - both
@@ -3525,8 +3627,8 @@ exclusions one run at a time until the diff goes green.
   `management_sequence.json`, `management_command_log.jsonl`).
 
   **`management_matrix` diffs 6/8 against it now, and 6/8 is the pass mark** -
-  but the delta has **two declared components** since `313cacc9`, and a diff that
-  shows only one of them is as much a finding as one that shows a third:
+  but the delta has **three declared components** since `713d96e8`, and a diff
+  that shows only some of them is as much a finding as one that shows a fourth:
 
   1. `ded96fac` drains a slot's keys before reassigning it; the frozen baseline
      encodes the code that did not, so a correct run legitimately emits extra
@@ -3542,10 +3644,28 @@ exclusions one run at a time until the diff goes green.
      `owned_valkey_process_discard_prior_state` and gaining the RDB path in
      `argv`. A rename moves no rows, so the row count stays +14.
 
-  Together: **row count +14, three row kinds changed and 14 unchanged.** Check
-  that shape, not equality. The other six views must still be identical, and
-  `runtime_start` 7/7 and `cluster_form` 5/5 are unaffected. Both are intentional
-  behaviour fixes, not drift, which is why the baseline stays frozen anyway.
+  3. `713d96e8` migrates with `REPLACE`, so **every `cluster_migrate_keys` row
+     differs from the baseline in `argv`** - the four the baseline already had as
+     well as the fourteen added. Rehearsed before the run by rewriting a
+     completed run's argv and diffing the copy, then measured on two real runs:
+     the score does **not** move, and the rendering gains exactly **5** `REPLACE`
+     insertion lines against the frozen baseline. Against an immediately
+     preceding run the whole `management_matrix` delta is **10 lines, every one
+     `+"REPLACE"`**, with row counts unmoved.
+
+  Together: **row count +14, three row kinds changed and 14 unchanged, and every
+  migrate row carrying `REPLACE`.** Check that shape, not equality. The other six
+  views must still be identical, and `runtime_start` 7/7 and `cluster_form` 5/5
+  are unaffected. All three are intentional behaviour fixes, not drift, which is
+  why the baseline stays frozen anyway.
+
+  **This supersedes every earlier statement of this shape from `713d96e8`
+  forward.** Older documents - `simulated_ladder_slice_map.md` §6.2's table and
+  the handoff tables that quote "fourteen unchanged" - are accurate records of
+  *their own* runs and are deliberately not edited; a session comparing a run
+  taken at or after `713d96e8` must use the three-component shape above, or it
+  will read the migrate rows' `argv` as an undeclared fourth component, which is
+  the drift accusation the declared-shape discipline exists to prevent.
 
   **`fault_matrix` diffs 5/6 against it, and 5/6 is the pass mark**, for the
   same kind of reason: the baseline predates `85d5096a`, so its partition

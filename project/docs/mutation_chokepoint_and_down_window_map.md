@@ -367,3 +367,164 @@ deliberately not written: asserting
 passes trivially on 3.9 and would **fail** on 3.12, where that class *is* the
 builtin. The guarantee that no third producer of a pool timeout reaches a retry
 is held by the existing AST sweep, not by a type assertion.
+
+
+## §6 The four follow-up items, 2026-08-19
+
+The operator approved all four open items from §4 and the handoff, and required
+that each be designed with the second model before any code. That discussion is
+what shaped three of the four; where it changed the answer is recorded here
+rather than only the answer.
+
+### §6.1 The parse-failure vocabulary, and a fourth hole the same argument found
+
+`docker_runtime` has its **own** RESP parser, separate from `valkey/resp.py`.
+It raised plain `DockerRuntimeError` for truncation and for a peer closing
+mid-reply, where `resp.py` raises `RespProtocolError` and `EOFError` - the names
+`is_transient_transport_error` matches. So the predicate's own docstring line
+"the byte stream did not parse" was **false on this transport**, and both the
+mutation chokepoint (§3.2) and the landed FORGET fix gated on it.
+
+**The fix is a class inheriting both**, which none of the three candidates on the
+ledger proposed: retype the sites, widen the predicate, or unify the two clients.
+
+```python
+class RespTransportError(DockerRuntimeError, RespProtocolError):
+```
+
+Measured rather than argued - MRO clean, `is_transient_transport_error` True,
+`is_collection_failure` **False**, `isinstance(exc, DockerRuntimeError)` True. So
+every existing `except` on this transport catches exactly what it caught (zero
+blast radius), the predicate starts matching, and **no §12.1 verdict moves**,
+which is what made this an evidence-only change rather than one needing operator
+sign-off. Confirmed there is no `except RespProtocolError` or `except EOFError`
+anywhere, so no control flow changes either.
+
+**A fourth hole, found by asking what else the same argument covers**: `int()` on
+a desynced length line raised a bare `ValueError` at three sites - not even a
+`DockerRuntimeError`, so it escaped every handler on this transport *and* the
+predicate. Taken in the same commit, because leaving it would make the commit's
+own claim false on three lines. The empty-read message also said "unknown RESP
+prefix" where the truth is a closed connection.
+
+One class rather than three: truncation, desync and a closed socket mean the same
+thing to every caller, none of which distinguishes them by type, and the message
+keeps the distinction for whoever reads the row.
+
+### §6.2 Every `FullClusterValidator` site, not just the down-window
+
+`run()` retries only `ConvergenceFailure`, so an unanswered node raises
+`SemanticFailure` straight out of **all seven** sites regardless of convergence
+timeout. §4 reported this; the operator scoped it out at the time and approved it
+now.
+
+**Measured across 140 retained runs and 1,360 light validations at every site:
+zero unexplained gaps.** So uniform `transport_reread_attempts=3` costs nothing
+on a passing run. Same survivor-sample caveat as §2 - it bounds the cost, it is
+not evidence gaps do not happen.
+
+**The structural half the measurement cannot see**, and it answers the "site
+inside a convergence loop" worry directly: a transport gap makes `validate` raise
+`SemanticFailure`, which that loop does **not** retry, so a persisting gap pays
+the re-read budget **once** rather than once per attempt. Only pathological
+flapping across attempts could multiply it, and the measurement bounds that.
+
+### §6.3 The audit ledger, made executable past the management lane
+
+The existing AST guard only inspects `_management*` and `_run_scalable*` scopes,
+so every other function in the module was exempt **by naming convention** - which
+is not a decision anyone took. Widened module-wide, exactly **three** un-retried
+reads remain, each safe for a *different* structural reason:
+
+| exemption | why it is safe |
+|---|---|
+| `_node_command` | the transport primitive itself; retrying inside it would blind-retry every mutation that passes through it - the exact thing §3.2's policy table exists to prevent |
+| `_process_node_is_replica_of` | a leaf read whose safety is positional: all three callers bound it in a deadline loop that treats an unanswered probe as "not yet confirmed" |
+| `_natural_probe_key_for_primary` | gated by `_m2_measurement_enabled()` at its single call site; never on the full-flow path |
+
+**Deliberately not widened to every read verb.** The `_wait_process_*` predicates
+are un-retried by design because their enclosing loop is the retry, and an
+AST-only rule that could not see that would grow an exemption list until it meant
+nothing. The line that survives is *scope*, not verb - and the `_node_command`
+note is the load-bearing one, because it is what stops a later reader "fixing"
+the guard by wrapping the primitive.
+
+### §6.4 `MIGRATE` gains `REPLACE`, argued in layers
+
+The committed loop-continue had a sub-case it could not absorb: `MIGRATE` restores
+to the target then deletes locally, so a transport failure between those leaves
+the key on both nodes, and the re-issue meets `-BUSYKEY` - an error *reply*, which
+the policy correctly refuses to retry. The retry died at the failure it existed to
+absorb.
+
+**Three independent claims of decreasing logical priority, not one claim at three
+strengths.** Each matters only if the one above it fails:
+
+1. **Protocol.** `REPLACE` cannot clobber newer data. `ASK` is issued by the
+   source only for a key the source does **not** hold, so a key in the
+   both-copies state is served locally and no client is ever redirected to the
+   target for it. The target's copy is the one we restored, or older, never
+   newer. This is the correctness argument and it stands alone.
+2. **Observability.** Even if 1 had a hole, no consumer compares the value of any
+   key that can be mid-migration. The one real value comparison is the Sentinel
+   canary (`sentinel.py:562`), and canaries are selected inside the fault
+   sequence, after all slot movement.
+3. **Severity.** Even if a clobber were observed, the data is benchmark filler
+   with no consumer that could care.
+
+Claim 2 corrects an earlier draft that said "nothing in this product compares a
+value", which is false; what is true is narrower and rests on stage ordering.
+
+**Issued always, not only on the retry.** A retry-only option is a branch that
+never runs in a passing run and first executes at 1280 nodes under a gossip
+storm - the class of untested path this audit exists to remove.
+
+### §6.5 The delta was rehearsed, which turned a prediction into a measurement
+
+Before the first run: copy a completed run, rewrite its 18 `cluster_migrate_keys`
+argvs to insert `REPLACE`, diff the copy. Free, and it produced the exact
+rendering the real run would.
+
+**It also caught a second measurement of mine that was too crude.** Comparing raw
+argv by kind said the shape was unchanged with and without `REPLACE` - because
+raw argv carries the seeded key names and never matches across runs at all. The
+tool's own normalised rendering is authoritative and disagrees: those rows *do*
+match today and stop matching with `REPLACE`.
+
+Declared in advance from the rehearsal, then met by the real run:
+
+| quantity | declared | measured |
+|---|---|---|
+| score vs frozen baseline | unchanged | 6/7, 5/5, 6/8, 4/6, 2/2 |
+| `REPLACE` insertions in the rendering | 5 | **5** |
+| isolating vs predecessor | `management_matrix` 7/8, argv only | 7/8, **10 changed lines, every one `+"REPLACE"`** |
+| row counts | unmoved | 1606 / 1606, fault 12 / 12 |
+
+At kind level the inherited summary survives verbatim; the migrate *component*
+moves from "4 matching + 14 added" to "4 changed in argv only + 14 added".
+
+### §6.6 A process failure worth more than the item
+
+**Item 2 was committed with a red suite.** Only the unit module and the mutation
+harness were run first, not `repository.all`, which the working rules require
+*before* a commit. The failure was real: `test_docker_runtime_contract.py:3969`
+pins the exact `MIGRATE` argv, and the change breaks it by design.
+
+The shape is the transferable part. The declared-delta discipline enumerated
+everything that **reads** the argv - artifacts, views, the classifier, both
+backends - and never asked what **asserts** it. Those are different populations,
+and the second is one grep: `MIGRATE` across `tests/`, `schemas/`,
+`verification/` and fixtures in **all** file types, not only `.py`. Run
+afterwards, it returns exactly one executable pin, the one that failed.
+
+Note also that this session's own new test passed throughout, because it asserts
+`REPLACE` is present. **A test written to guard a change cannot report what the
+change breaks elsewhere** - a different failure from the others collected here,
+which were checks that could not distinguish their two cases; this one is a
+complete check of the wrong scope.
+
+Fixed by updating the pinned assertion with a comment recording why the position
+matters, and **amended into the same commit** rather than added as a follow-up,
+because this repo verifies each commit in its own worktree so the series
+bisects. Verified the amend touched only the test file, so runs already started
+at the pre-amend commit exercise byte-identical product code.
