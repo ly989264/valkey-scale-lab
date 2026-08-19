@@ -295,16 +295,27 @@ def run_exact_gate(
             result = GateService().execute(plan, request, adapter.adapter_bundle())
     finally:
         recorder.close()
+    # Written before anything that can raise, because a failing run's only
+    # machine-readable verdict used to be the Gate's own summary and an exit
+    # code - and `execution_snapshot` below *can* raise.
+    #
+    # A run the Gate refuses at plan time never registers an adapter execution,
+    # so taking the snapshot first died with
+    # `AdapterOwnershipError: run_id ... has no adapter execution`: the
+    # `GateResult` holding the actual reason was discarded and **no verdict was
+    # written at all** (`m4_first_1280_run_map.md` §1.2). The operator saw an
+    # ownership error about bookkeeping instead of the refusal, on a run that
+    # had already been paid for. A refusal now states itself.
+    _write_run_verdict(runtime_dir, run_id, scale, result)
+    if result.status is not GateStatus.PASS:
+        raise _gate_failure(result)
+    # Only an admitted run needs the snapshot, and only a run that executed has
+    # one - so it is taken after the verdict rather than in front of it.
     snapshot = adapter.execution_snapshot(
         run_id=run_id,
         ownership_id=ownership_id,
         provenance_id=provenance_id,
     )
-    # Written before the raise, because a failing run's only machine-readable
-    # verdict used to be the Gate's own summary and an exit code.
-    _write_run_verdict(runtime_dir, run_id, scale, result)
-    if result.status is not GateStatus.PASS:
-        raise _gate_failure(result)
     # Everything below can still refuse a run whose twelve stages passed, and
     # until roadmap item 1.8 none of it reached the run's own evidence: the
     # verdict above was already written as PASS and nothing went back to say the

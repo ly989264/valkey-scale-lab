@@ -366,6 +366,74 @@ def _run_exact_50(tmp_path: Path, product_digest: str) -> dict:
     )
 
 
+def test_a_gate_refusal_writes_its_verdict_and_names_itself(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A refused run must not die of bookkeeping about the refusal.
+
+    `m4_first_1280_run_map.md` §1.2: the execution snapshot was taken *before*
+    the verdict was written, and a run the Gate refuses at plan time never
+    registers an adapter execution - so the snapshot raised
+    `AdapterOwnershipError: run_id ... has no adapter execution`, the
+    `GateResult` carrying the real reason was discarded, and no
+    `run_verdict.json` was written at all.
+
+    That is the worst shape a failure can take for an operator who cannot attach
+    a debugger: a paid run ends with an error about ownership bookkeeping, and
+    the only machine-readable statement of what actually happened does not
+    exist. This asserts both halves - the verdict is on disk, and the exception
+    is the Gate's own failure rather than the snapshot's.
+    """
+
+    product_digest = "a" * 64
+    _stub_a_run_whose_stages_all_pass(monkeypatch, product_digest)
+
+    # The Gate refuses, exactly as a plan-time refusal does.
+    class _Refused:
+        """What the Gate returns when it declines a plan: no step ever ran.
+
+        `BLOCKED` is the Gate's own word for a run it refused to start, and the
+        verdict writer already keeps it rather than dressing it as one of
+        §12.2's three observed states.
+        """
+
+        status = GateStatus.BLOCKED
+        summary = "scale policy refused the requested node count"
+        primary_failure = None
+        cleanup_failure = None
+        step_results: list = []
+
+    monkeypatch.setattr(
+        exact_gate.GateService, "execute", lambda *_a, **_k: _Refused()
+    )
+
+    # And no adapter execution exists for the run, so the snapshot raises.
+    def no_execution(*_args: Any, **_kwargs: Any) -> Any:
+        raise exact_gate.AdapterOwnershipError(
+            "run_id 'exact-run-50' has no adapter execution"
+        )
+
+    monkeypatch.setattr(
+        exact_gate.ProductGateAdapter, "execution_snapshot", no_execution
+    )
+
+    with pytest.raises(Exception) as excinfo:
+        _run_exact_50(tmp_path, product_digest)
+    # The failure names the refusal, not the missing bookkeeping.
+    assert "has no adapter execution" not in str(excinfo.value)
+
+    # And the run said so in its own evidence, which is the half an operator on
+    # a network I cannot reach actually has.
+    verdict = json.loads(
+        (tmp_path / "scale-50/runtime/run_verdict.json").read_text(encoding="utf-8")
+    )
+    assert verdict["status"] == "BLOCKED"
+    assert verdict["gate_status"] == "BLOCKED"
+    # A refused run observed no stage, so it claims none.
+    assert verdict["checks"] == []
+
+
 def test_run_exact_gate_uses_compiled_service_then_canonical_admission(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
