@@ -1256,3 +1256,221 @@ def test_the_down_window_validation_enables_the_reread() -> None:
     body = source[source.index(marker) : source.index(marker) + 2000]
     assert "convergence_timeout=0.0" in body
     assert "transport_reread_attempts=3" in body
+def _mutation_row(monkeypatch, kind, outcomes, *, pause=None):
+    """One chokepoint mutation whose transport yields `outcomes` in order.
+
+    `outcomes` members are either an exception to raise or a string to return,
+    so a test can express "fails once then answers" as well as "always fails".
+    """
+
+    log: list[dict[str, object]] = []
+    calls: list[int] = []
+    remaining = list(outcomes)
+
+    def transport(*_a, **_k):
+        calls.append(1)
+        outcome = remaining.pop(0)
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return outcome
+
+    monkeypatch.setattr(docker_runtime, "_node_command", transport)
+    # Real pauses would make the suite sleep for the reissue budget.
+    monkeypatch.setattr(
+        docker_runtime, "MANAGEMENT_MUTATION_REISSUE_PAUSE_SECONDS", pause or 0.0
+    )
+    docker_runtime._management_log_node_command(
+        log,
+        telemetry=docker_runtime.TelemetryRun(
+            capability_id="c", scenario_name="s", run_id="r"
+        ),
+        capability_id="c",
+        parent_run_id="r",
+        operation_id="op",
+        command_kind=kind,
+        target={"logical_id": "shard-0000-primary", "client_port": 7400},
+        args=["CLUSTER", "SETSLOT", 0, "NODE", "deadbeef"],
+        timeout=30,
+    )
+    return log, len(calls)
+
+
+def test_setslot_transient_is_reissued_until_it_answers(monkeypatch) -> None:
+    """SETSLOT is three quarters of a 1280-node run's ~34,500 mutations.
+
+    Re-issuing `SETSLOT <slot> NODE <id>` with the same owner is a no-op, so an
+    unknown outcome can simply be repeated. It is issued to *every* primary in a
+    loop, so one slow node of 256 used to end the operation.
+    """
+
+    log, calls = _mutation_row(
+        monkeypatch, "cluster_setslot_node", [TimeoutError("timed out"), "OK"]
+    )
+    assert calls == 2
+    assert len(log) == 1, "a re-issue must not add a row"
+    assert log[0]["status"] == "PASS"
+    assert log[0]["attempt_count"] == 2
+
+
+def test_setslot_that_never_answers_still_ends_the_run(monkeypatch) -> None:
+    """`reissue` is bounded and fails closed.
+
+    Nothing downstream would notice that one primary never learned the new slot
+    owner - `_management_reshard_node_owns_slot` asks the *target* - so an
+    exhausted re-issue must still raise.
+    """
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="cluster_setslot_node"):
+        _mutation_row(
+            monkeypatch,
+            "cluster_setslot_node",
+            [TimeoutError("timed out")] * docker_runtime.MANAGEMENT_MUTATION_REISSUE_ATTEMPTS,
+        )
+
+
+def test_a_failover_is_never_reissued(monkeypatch) -> None:
+    """The trap this item exists for.
+
+    A second `CLUSTER FAILOVER` can start a second election, so a transport
+    failure must not be repeated. `_management_wait_node_role` follows all three
+    call sites and is the arbiter, so the chokepoint records the attempt and
+    returns.
+    """
+
+    log, calls = _mutation_row(
+        monkeypatch,
+        "cluster_failover_before_primary_restart",
+        [TimeoutError("timed out")],
+    )
+    assert calls == 1, "FAILOVER must be issued exactly once"
+    assert log[0]["status"] == "FAIL"
+    assert log[0]["retry_eligible"] is True
+    assert "attempt_count" not in log[0]
+
+
+def test_every_suppress_family_is_issued_exactly_once(monkeypatch) -> None:
+    """Verify-only applies to each family whose arbiter already follows it."""
+
+    for kind in (
+        "cluster_failover_takeover_before_primary_remove",
+        "cluster_failover_restore_primary_placement",
+        "cluster_replicate_restored_primary",
+        "cluster_replicate_restored_node",
+        "cluster_migrate_keys",
+    ):
+        log, calls = _mutation_row(monkeypatch, kind, [TimeoutError("timed out")])
+        assert calls == 1, kind
+        assert log[0]["retry_eligible"] is True, kind
+
+
+def test_an_error_reply_is_never_retried_or_suppressed(monkeypatch) -> None:
+    """A node that answered `-ERR` was reached and will say it again.
+
+    This is the axis `is_transient_transport_error` exists to separate: it is an
+    allowlist, so `ValkeyErrorReply` is excluded by default rather than by a
+    branch.
+    """
+
+    for kind in ("cluster_setslot_node", "cluster_failover_before_primary_restart"):
+        calls: list[int] = []
+
+        def transport(*_a, **_k):
+            calls.append(1)
+            raise docker_runtime.ValkeyErrorReply("ERR nope")
+
+        monkeypatch.setattr(docker_runtime, "_node_command", transport)
+        monkeypatch.setattr(
+            docker_runtime, "MANAGEMENT_MUTATION_REISSUE_PAUSE_SECONDS", 0.0
+        )
+        log: list[dict[str, object]] = []
+        with pytest.raises(docker_runtime.DockerRuntimeError):
+            docker_runtime._management_log_node_command(
+                log,
+                telemetry=docker_runtime.TelemetryRun(
+                    capability_id="c", scenario_name="s", run_id="r"
+                ),
+                capability_id="c",
+                parent_run_id="r",
+                operation_id="op",
+                command_kind=kind,
+                target={"logical_id": "shard-0000-primary", "client_port": 7400},
+                args=["CLUSTER", "SETSLOT", 0, "NODE", "deadbeef"],
+                timeout=30,
+            )
+        # The raise alone does not prove the doctrine: a re-issued error reply
+        # would still end up raising, so the count is what says the answer was
+        # believed the first time.
+        assert calls == [1], f"{kind} re-issued a command the node had answered"
+        assert "retry_eligible" not in log[0]
+
+
+def test_an_unnamed_mutation_kind_still_fails_closed(monkeypatch) -> None:
+    """Default is raise, so an eleventh kind inherits no policy."""
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="something_new"):
+        _mutation_row(monkeypatch, "something_new", [TimeoutError("timed out")])
+
+
+def test_a_mutation_row_that_never_failed_is_unchanged(monkeypatch) -> None:
+    """`management_command_log` is diffed and `fault_command_log`'s 12 is pinned.
+
+    A command that answered first time must write exactly the row it always
+    wrote, so neither new key may appear.
+    """
+
+    log, calls = _mutation_row(monkeypatch, "cluster_setslot_node", ["OK"])
+    assert calls == 1
+    assert log[0]["status"] == "PASS"
+    assert "attempt_count" not in log[0]
+    assert "retry_eligible" not in log[0]
+
+
+def test_the_mutation_policy_table_covers_every_kind_that_reaches_it() -> None:
+    """Structural, asserted as a set so an eleventh kind fails by name.
+
+    The chokepoint also serves the fault lane, so a kind added without a decided
+    policy would silently inherit `raise` at a site where that ends a paid run.
+    """
+
+    source = Path(docker_runtime.__file__).read_text(encoding="utf-8")
+    wrappers = {
+        "_management_log_node_command",
+        "_management_reshard_log_slot_command",
+    }
+    kinds: set[str] = set()
+    non_literal: list[int] = []
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        name = (
+            func.id
+            if isinstance(func, ast.Name)
+            else getattr(func, "attr", None)
+        )
+        if name not in wrappers:
+            continue
+        literals = [
+            kw.value.value
+            for kw in node.keywords
+            if kw.arg == "command_kind" and isinstance(kw.value, ast.Constant)
+        ]
+        literals += [
+            arg.value
+            for arg in node.args
+            if isinstance(arg, ast.Constant)
+            and isinstance(arg.value, str)
+            and arg.value.startswith("cluster_")
+        ]
+        if literals:
+            kinds.update(literals)
+        else:
+            non_literal.append(node.lineno)
+
+    assert kinds == set(docker_runtime._MANAGEMENT_MUTATION_TRANSPORT_POLICY), (
+        "a command_kind reaching the mutation chokepoint has no decided policy"
+    )
+    # The single non-literal call is the pass-through wrapper forwarding its own
+    # parameter. A second one would mean a kind computed at runtime, which this
+    # table cannot cover.
+    assert len(non_literal) == 1, non_literal

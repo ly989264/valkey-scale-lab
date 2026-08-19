@@ -7378,6 +7378,59 @@ def _management_topology_snapshot(
     }
 
 
+# Per-family transport-failure policy for the mutation chokepoint below.
+#
+# A mutation that times out has an *unknown* outcome rather than a failed one -
+# the server does not know the client left - so there is no single safe answer
+# and this is a table rather than a retry. Three treatments, and the one that
+# looks most like the others is the one that corrupts state if treated like
+# them.
+#
+# "reissue": issuing the command again sets the same state again, so an unknown
+#   outcome can simply be repeated. Bounded, and it still raises if every attempt
+#   fails. The exhaustion behaviour is the part that had to be decided, not the
+#   re-issue: `cluster_setslot_node` is issued to *every* primary in a loop while
+#   its follow-up `_management_reshard_node_owns_slot` asks only the new owner, so
+#   nothing downstream can see that one primary of 256 missed the assignment.
+#   `cluster_meet_restored_node` is filed here for a different reason - it does
+#   have an arbiter in `_wait_process_known` - but 2s of re-issue beats 120s of
+#   wait-then-raise and MEET is idempotent, which is `_meet_node_pair`'s own
+#   precedent in formation.
+#
+# "suppress": never re-issued. The verify that already follows every one of
+#   these calls is the arbiter, so a transport failure means "let the thing that
+#   reads the result decide". `CLUSTER FAILOVER` is why this exists: a second one
+#   can start a second election, so re-issuing it corrupts the topology the run
+#   exists to measure. Verified per site - all three FAILOVERs are followed by
+#   `_management_wait_node_role`, both REPLICATEs by `_wait_process_replica_of`,
+#   and `cluster_migrate_keys` sits in a drain loop that re-reads
+#   `CLUSTER GETKEYSINSLOT` every iteration, so the loop *is* the retry and the
+#   raise was the only thing stopping it doing its job.
+#
+# Anything not named raises, exactly as before, so an eleventh kind is
+# fail-closed rather than silently inheriting a policy.
+_MANAGEMENT_MUTATION_TRANSPORT_POLICY: dict[str, str] = {
+    # Setting the same flag or the same slot owner twice is a no-op.
+    "cluster_setslot_importing": "reissue",
+    "cluster_setslot_migrating": "reissue",
+    "cluster_setslot_node": "reissue",
+    # A node already known, or mid-handshake, accepts MEET again - the same
+    # argument `_meet_node_pair` already makes in formation.
+    "cluster_meet_restored_node": "reissue",
+    # Arbiter: _management_wait_node_role, which follows all three.
+    "cluster_failover_takeover_before_primary_remove": "suppress",
+    "cluster_failover_before_primary_restart": "suppress",
+    "cluster_failover_restore_primary_placement": "suppress",
+    # Arbiter: _wait_process_replica_of, which follows both.
+    "cluster_replicate_restored_primary": "suppress",
+    "cluster_replicate_restored_node": "suppress",
+    # Arbiter: the drain loop's own next CLUSTER GETKEYSINSLOT.
+    "cluster_migrate_keys": "suppress",
+}
+MANAGEMENT_MUTATION_REISSUE_ATTEMPTS = 3
+MANAGEMENT_MUTATION_REISSUE_PAUSE_SECONDS = 2.0
+
+
 def _management_log_node_command(
     command_log: list[dict[str, Any]],
     *,
@@ -7392,14 +7445,33 @@ def _management_log_node_command(
 ) -> dict[str, Any]:
     started = telemetry.now_unix_ms()
     command_id = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
-    try:
-        stdout = _node_command(target, *args, timeout=timeout)
-        status = "PASS"
-        stderr = ""
-    except Exception as exc:  # noqa: BLE001
-        stdout = ""
-        stderr = repr(exc)
-        status = "FAIL"
+    policy = _MANAGEMENT_MUTATION_TRANSPORT_POLICY.get(command_kind, "raise")
+    attempts = 0
+    retry_eligible = False
+    while True:
+        attempts += 1
+        try:
+            stdout = _node_command(target, *args, timeout=timeout)
+            status = "PASS"
+            stderr = ""
+            break
+        except Exception as exc:  # noqa: BLE001
+            stdout = ""
+            stderr = repr(exc)
+            status = "FAIL"
+            # An error *reply* is an answer, so it is never retried or
+            # suppressed - the node was reached and will say the same thing
+            # again. Only a transport failure has an unknown outcome.
+            transient = is_transient_transport_error(exc)
+            if (
+                transient
+                and policy == "reissue"
+                and attempts < MANAGEMENT_MUTATION_REISSUE_ATTEMPTS
+            ):
+                time.sleep(MANAGEMENT_MUTATION_REISSUE_PAUSE_SECONDS)
+                continue
+            retry_eligible = transient and policy == "suppress"
+            break
     entry = {
         "schema_version": "v1",
         "capability_id": capability_id,
@@ -7415,8 +7487,19 @@ def _management_log_node_command(
         "stdout_tail": stdout[-500:],
         "stderr_tail": stderr[-500:],
     }
+    if attempts > 1:
+        # Recorded only when a re-issue happened, so a command that answered
+        # first time writes exactly the row it always wrote. The count goes
+        # *inside* the row rather than adding one: this chokepoint also serves
+        # the fault lane's `cluster_replicate_restored_primary`, which is one of
+        # `fault_command_log`'s pinned twelve rows, so a row per attempt would
+        # break the 9/12/15 invariant the first time a transient fired in the
+        # fault window.
+        entry["attempt_count"] = attempts
+    if retry_eligible:
+        entry["retry_eligible"] = True
     command_log.append(entry)
-    if status == "FAIL":
+    if status == "FAIL" and not retry_eligible:
         raise DockerRuntimeError(f"MANAGEMENT_MATRIX command failed {command_kind} target={target.get('logical_id')}: {stderr}")
     return entry
 
