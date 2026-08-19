@@ -7905,7 +7905,21 @@ def _management_reshard_drain_slot(
             source,
             # Where the *source node* reaches the target: inventory the backend
             # supplies, the same value CLUSTER MEET is given.
-            ["MIGRATE", _cluster_meet_address(target), _cluster_meet_port(target), "", "0", "5000", "KEYS", *batch],
+            # REPLACE, because the retry above can meet a key that is on both
+            # nodes: MIGRATE restores to the target and then deletes locally, and
+            # a transport failure between those leaves both copies. Without it
+            # the re-issue meets -BUSYKEY, an error *reply*, which the policy
+            # correctly refuses to retry - so the loop-continue would die on its
+            # second attempt at exactly the failure it exists to absorb.
+            #
+            # It cannot clobber newer data, and that is the redirect protocol
+            # rather than luck: ASK is issued by the source only for a key it
+            # does *not* hold, so a key in the both-copies state is served
+            # locally and no client is ever redirected to the target for it. The
+            # target's copy is therefore the one we restored or older, never
+            # newer. Issued always rather than only on the retry, so the path the
+            # retry depends on is the one every run exercises.
+            ["MIGRATE", _cluster_meet_address(target), _cluster_meet_port(target), "", "0", "5000", "REPLACE", "KEYS", *batch],
             timeout=30,
         )
         moved += len(batch)

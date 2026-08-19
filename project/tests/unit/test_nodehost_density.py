@@ -1611,3 +1611,25 @@ def test_every_full_cluster_validator_rereads_transport_gaps() -> None:
         if not any(kw.arg == "transport_reread_attempts" for kw in site.keywords)
     ]
     assert without == [], without
+
+
+def test_the_slot_drain_migrates_with_replace() -> None:
+    """Without it the loop-continue dies on its second attempt.
+
+    MIGRATE restores to the target then deletes locally, so a transport failure
+    between those leaves the key on both nodes. The drain's next iteration
+    re-reads `GETKEYSINSLOT`, still sees it on the source, and re-issues - which
+    without REPLACE is `-BUSYKEY`, an error *reply*, which the chokepoint policy
+    correctly refuses to retry. So the retry path would fail at exactly the
+    failure it exists to absorb.
+
+    Position matters: REPLACE is an option of MIGRATE and must precede KEYS.
+    """
+
+    source = Path(docker_runtime.__file__).read_text(encoding="utf-8")
+    marker = '"MIGRATE", _cluster_meet_address(target)'
+    assert marker in source
+    argv_line = next(
+        line for line in source.splitlines() if marker in line
+    )
+    assert '"REPLACE", "KEYS"' in argv_line, argv_line

@@ -3966,8 +3966,14 @@ def test_reshard_drains_every_key_from_a_slot_before_reassigning_it(
     # It keeps going until the slot reports empty, not until its own key moved.
     assert moved == 3
     assert [row["command_kind"] for row in log] == ["cluster_migrate_keys"] * 2
+    # REPLACE precedes KEYS, because it is a MIGRATE option rather than a key.
+    # It is issued on every migrate, not only on a retry: without it a re-issued
+    # MIGRATE meets `-BUSYKEY` when a prior attempt left the key on both nodes,
+    # and an error reply is not retried - so the drain's own retry would die at
+    # the failure it exists to absorb.
     assert log[0]["argv"] == [
-        "MIGRATE", "172.18.0.5", "7401", "", "0", "5000", "KEYS", "{wl-a}:k", "{wl-b}:k",
+        "MIGRATE", "172.18.0.5", "7401", "", "0", "5000", "REPLACE", "KEYS",
+        "{wl-a}:k", "{wl-b}:k",
     ]
 
 
