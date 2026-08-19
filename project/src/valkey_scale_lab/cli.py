@@ -22,6 +22,7 @@ from valkey_scale_lab.gates.real import product_tree_digest, run_exact_gate
 from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import FinalReportError, ReportError, render_report
+from valkey_scale_lab.report.full_flow import build_renderable_analysis
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import CommandRecorder, command_recorder_context
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, execute_scenario
@@ -370,7 +371,28 @@ def _report(args: argparse.Namespace) -> int:
             if args.legacy_capability_alias
             else args.capability_id
         )
-        if args.kind == "final-report":
+        if args.kind == "full-flow":
+            # The renderable view of a full-flow gate run. `--kind summary` reads
+            # an analysis document; a gate run leaves *artifacts*, and the two
+            # vocabularies shared only three keys, so rendering a correct run
+            # produced a report whose every section said MISSING. This adapts
+            # one to the other and then renders through the same renderer.
+            if not args.input or not args.index_out:
+                print(
+                    "ERROR: report: --input and --index-out are required for full-flow reports",
+                    file=sys.stderr,
+                )
+                return 2
+            analysis = build_renderable_analysis(args.input)
+            out_dir = Path(args.out_dir)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            analysis_path = out_dir / "renderable_analysis.json"
+            analysis_path.write_text(
+                json.dumps(analysis, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            cli_compat.render_report(str(analysis_path), args.out_dir, args.index_out)
+        elif args.kind == "final-report":
             if not args.input:
                 print("ERROR: report: --input is required for final reports", file=sys.stderr)
                 return 2
@@ -643,7 +665,7 @@ def build_parser() -> argparse.ArgumentParser:
     analyze.set_defaults(func=_analyze)
 
     report = sub.add_parser("report", help="Render reports from artifacts.")
-    report.add_argument("--kind", choices=["summary", "final-report"], default="summary")
+    report.add_argument("--kind", choices=["summary", "final-report", "full-flow"], default="summary")
     report.add_argument("--analysis", help="Path to analysis_summary.json.")
     report.add_argument("--input", help="Input artifact capture directory for final reports.")
     report.add_argument("--out-dir", required=True, help="Directory for rendered reports.")

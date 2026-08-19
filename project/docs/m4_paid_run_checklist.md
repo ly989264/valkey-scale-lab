@@ -239,6 +239,50 @@ outside the product. Start these *before* the gate, not after a failure:
 - **`MemAvailable` per host.** On the failed GCE attempt it fell 3569 MB -> 271 MB
   in one 45 s interval, which no per-node metric showed.
 
+## §5.1 Producing the report, which the run does not do for you
+
+**A gate run leaves evidence, not a report.** It writes `analysis_summary.json`,
+`run_verdict.json` and ~40 other artifacts, all correct; it does not render
+anything a person reads. One command does that, and it must be run explicitly:
+
+```bash
+PYTHONPATH=src python3 -m valkey_scale_lab.cli report --kind full-flow \
+    --input  <run>/001-real.ecs.full-flow-1280/runtime \
+    --out-dir <run>/report \
+    --index-out <run>/report/report_index.json
+```
+
+It produces `report.md`, `index.html`, 22 CSVs and 11 SVGs, entirely offline -
+no LLM, no network, no hosted chart service - plus `renderable_analysis.json`,
+the intermediate document, so a reader can check any figure against the artifact
+it came from.
+
+**Why this needs saying rather than being obvious.** Until 2026-08-19 the same
+command produced a report that was ~90 % `MISSING` on a *correct* run, including
+`total_commands: 0` from a run that had issued 4,528. The gate's analyzer and the
+renderer were built against different vocabularies and shared exactly three keys
+(`run_id`, `created_at`, `status`), so nothing connected them.
+`report/full_flow.py` is that adapter. It is a **reader, not a second
+analyzer**: every number is lifted from an artifact the run already wrote and
+validated, because a report that recomputed its own figures could disagree with
+the evidence it summarises.
+
+**What it will and will not claim.** Where a source is absent the section states
+the reason and the renderer prints it - nothing is estimated and no absence is
+filled in with a zero. Two absences are structural at the time of writing and
+will appear in every report: per-node ready times (the full-flow lifecycle
+records no per-node ready timestamp, so "slowest nodes" is refused rather than
+approximated from a stage total), and per-node resource ranking (resource
+observation aggregates per sampler, not per node). `git_sha` and
+`valkey_version` are likewise recorded nowhere a full-flow run can reach them.
+
+**One thing to check when reading a fault report.** The nine fault scenarios each
+report their own duration, and their client-outage fields say `MISSING` with a
+reason. That is correct: `failover_details` is a *single* measurement taken by
+the primary-kill lane, and an earlier draft of the adapter copied it onto all
+nine rows - nine identical outage numbers that were never measured. If a future
+report ever shows nine identical values there, that regression is back.
+
 ## §6 If it fails
 
 - **Kill and reclaim in one move.** Killing the controller does not stop the
