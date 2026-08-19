@@ -1955,7 +1955,7 @@ def test_management_wait_clean_cluster_uses_light_health_on_success(
     ]
     health_calls: list[int] = []
 
-    def light_health(probed: list[dict]) -> dict[str, object]:
+    def light_health(probed: list[dict], **_kwargs: object) -> dict[str, object]:
         health_calls.append(len(probed))
         return {
             "cluster_state": "ok",
@@ -2025,7 +2025,7 @@ def test_management_forget_until_absent_uses_fixed_topology_observers(
     monkeypatch.setattr(
         docker_runtime,
         "_management_cluster_health",
-        lambda nodes: {
+        lambda nodes, **_kwargs: {
             "cluster_state": "ok",
             "known_nodes": len(nodes),
             "primary_count": sum(node["role"] == "primary" for node in nodes),
@@ -3609,7 +3609,7 @@ def test_remove_and_restore_separates_stop_from_start_across_the_forget_wait(
     monkeypatch.setattr(
         docker_runtime,
         "_management_live_topology",
-        lambda probe_nodes: (
+        lambda probe_nodes, **_kwargs: (
             {node["logical_id"]: {"role": node["role"]} for node in nodes},
             {},
         ),

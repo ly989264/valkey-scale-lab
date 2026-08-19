@@ -7255,7 +7255,10 @@ def _light_probe_rows(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _management_cluster_health(
-    nodes: list[dict[str, Any]], *, rows: list[dict[str, Any]] | None = None
+    nodes: list[dict[str, Any]],
+    *,
+    rows: list[dict[str, Any]] | None = None,
+    settle: bool = False,
 ) -> dict[str, Any]:
     if not nodes:
         return {
@@ -7268,7 +7271,13 @@ def _management_cluster_health(
             "slots_fail": 0,
             "snapshots": [],
         }
-    rows = _light_probe_rows(nodes) if rows is None else rows
+    if rows is None:
+        # `settle` re-asks a transport failure before believing it; see
+        # `_settled_probe_rows`. It is a parameter of *this* function rather than
+        # a wrapper around it so that the one seam every caller and every test
+        # already uses stays the seam - a wrapper that probed first would step
+        # around both.
+        rows = _settled_probe_rows(nodes) if settle else _light_probe_rows(nodes)
     snapshots: list[dict[str, Any]] = []
     for row in rows:
         if row.get("status") != "OK":
@@ -7517,7 +7526,7 @@ def _management_reshard_execute_operation(
     command_log: list[dict[str, Any]],
     backend: NodeBackend,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any] | None]:
-    before = _management_cluster_health(nodes)
+    before = _management_cluster_health_settled(nodes)
     if before["cluster_state"] != "ok" or before["slots_assigned"] != 16384:
         raise DockerRuntimeError(f"MANAGEMENT_MATRIX operation requires clean cluster before movement: {before}")
     started = time.monotonic()
@@ -7583,7 +7592,7 @@ def _management_reshard_execute_operation(
     else:
         raise DockerRuntimeError(f"unsupported MANAGEMENT_MATRIX operation {operation_name}")
 
-    after = _management_cluster_health(nodes)
+    after = _management_cluster_health_settled(nodes)
     counts_after = _management_reshard_primary_slot_counts(nodes)
     errors_by_type = _management_errors_by_type(command_log, operation_id)
     readable = _management_reshard_verify_keys_readable(nodes[0], seeded_keys, backend=backend)
@@ -7938,6 +7947,7 @@ def _management_live_topology(
     nodes: list[dict[str, Any]],
     *,
     rows: list[dict[str, Any]] | None = None,
+    settle: bool = False,
 ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, str]]]:
     """The live role and slots of every node that answered, and why the rest did not.
 
@@ -7952,7 +7962,10 @@ def _management_live_topology(
 
     if not nodes:
         return {}, {}
-    rows = _light_probe_rows(nodes) if rows is None else rows
+    if rows is None:
+        # See `_management_cluster_health` for why `settle` is a parameter here
+        # rather than a wrapper: this is the seam callers and tests already use.
+        rows = _settled_probe_rows(nodes) if settle else _light_probe_rows(nodes)
     result: dict[str, dict[str, Any]] = {}
     gaps: dict[str, dict[str, str]] = {}
     for row in rows:
@@ -8018,37 +8031,88 @@ TOPOLOGY_GAP_ATTEMPTS = 3
 TOPOLOGY_GAP_PAUSE_SECONDS = 2.0
 
 
+def _settled_probe_rows(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One layer-1 round, with transport failures asked again before believed.
+
+    The single place the re-ask rule lives, because three different readings are
+    derived from these rows and each of them used to be ended by one slow node:
+    the live topology, the cluster health summary, and the rolling restart's
+    per-batch reading. At 1280 nodes those together are tens of thousands of
+    single node observations per run.
+
+    Two properties make this safe rather than merely convenient, and both are
+    the same ones the topology gate asserts:
+
+    - **Only a transport failure is re-asked.** A node that answered and
+      disagreed is a confirmed observation; retrying it would be the fail-open
+      direction, spending the budget to reach the same verdict while a real
+      failure looked intermittent. One such row stops the whole re-ask, because
+      §12.2 puts a confirmed failure ahead of any number of transport failures.
+    - **Only the failed nodes are re-probed.** At 1280 nodes with one slow node
+      that is one observation rather than another 1280, so the re-ask cannot
+      itself become the O(N) round §14 budgets per operation boundary.
+
+    What is returned is a row per node exactly as `_light_probe_rows` returns
+    it. Nothing about what counts as a failure changes - only when it is
+    believed.
+    """
+
+    if not nodes:
+        return []
+    rows = {str(row["logical_id"]): row for row in _light_probe_rows(nodes)}
+    for _attempt in range(TOPOLOGY_GAP_ATTEMPTS - 1):
+        failed = {
+            logical_id: row
+            for logical_id, row in rows.items()
+            if row.get("status") != "OK"
+        }
+        if not failed:
+            break
+        if not all(row.get("transport_transient") for row in failed.values()):
+            break
+        time.sleep(TOPOLOGY_GAP_PAUSE_SECONDS)
+        retried = [node for node in nodes if str(node["logical_id"]) in failed]
+        for row in _light_probe_rows(retried):
+            rows[str(row["logical_id"])] = row
+    return [rows[str(node["logical_id"])] for node in nodes if str(node["logical_id"]) in rows]
+
+
 def _management_live_topology_settled(
     nodes: list[dict[str, Any]],
 ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, str]]]:
-    """`_management_live_topology`, with transport gaps asked again before believed.
+    """`_management_live_topology` over a settled round.
 
     Separate from the raising wrapper because the rolling restart takes the same
     reading per batch and raises its own errors from it - at 1280 nodes that is
     194 batches times two operations, so it is the second-highest-count instance
     of this shape and must not have to re-implement the rule.
-
-    Returns exactly what `_management_live_topology` returns. What changed is
-    only *when* a gap is believed, never what counts as one.
     """
 
     if not nodes:
         return {}, {}
-    topology, gaps = _management_live_topology(nodes)
-    for _attempt in range(TOPOLOGY_GAP_ATTEMPTS - 1):
-        if not gaps:
-            break
-        if not all(gap.get("transient") for gap in gaps.values()):
-            # A confirmed failure outranks any number of transport failures, so
-            # stop and let the caller state it - retrying here would spend time
-            # reaching the same verdict and make a real failure look flaky.
-            break
-        time.sleep(TOPOLOGY_GAP_PAUSE_SECONDS)
-        retried = [node for node in nodes if str(node["logical_id"]) in gaps]
-        again_topology, again_gaps = _management_live_topology(retried)
-        topology.update(again_topology)
-        gaps = again_gaps
-    return topology, gaps
+    return _management_live_topology(nodes, settle=True)
+
+
+def _management_cluster_health_settled(
+    nodes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """`_management_cluster_health` over a settled round.
+
+    `cluster_state` is `ok` only when *every* node answered, so one transport
+    failure out of 1280 made the whole summary `unknown`. That is fatal at the
+    sites that gate on it - the reshard's clean-cluster precondition and the
+    full-flow recovery verification both raise - and worse at the sites that do
+    not: an `after` reading feeds `pass_status`, so a transient wrote a **FAIL
+    for an operation that had succeeded**, which is a wrong claim in the
+    evidence rather than merely a stopped run.
+
+    Deliberately not used by `_management_topology_snapshot`, which states in as
+    many words that a snapshot is evidence rather than a gate and records a gap
+    per node. Re-asking there would hide an observation the snapshot exists to
+    keep.
+    """
+
+    return _management_cluster_health(nodes, settle=True)
 
 
 def _management_require_live_topology(
@@ -8282,7 +8346,7 @@ def write_full_flow_artifacts(
     topology_rows.extend(fault["topology"])
 
     with _timeline_span(setup_timeline, "recovery", "recovery", {"node_count": profile.requested_nodes}):
-        recovery_health = _management_cluster_health(nodes)
+        recovery_health = _management_cluster_health_settled(nodes)
         if recovery_health.get("cluster_state") != "ok" or recovery_health.get("known_nodes") != profile.requested_nodes:
             raise DockerRuntimeError(f"LOCAL_FULL_FLOW recovery verification failed: {recovery_health}")
         fault["summary"]["recovery_health"] = recovery_health
@@ -9962,7 +10026,20 @@ def _fault_actions(*record_groups: list[dict[str, Any]]) -> list[str]:
 def _local_full_flow_process_pause_probe(target: dict[str, Any], survivor: dict[str, Any], nodes: list[dict[str, Any]], *, backend: NodeBackend) -> dict[str, Any]:
     paused = backend.pause_node(target)
     try:
-        observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
+        # A read of the *survivor's* own view, which is idempotent and which the
+        # paused target has no part in - so a transport failure here is the
+        # retryable class rather than the fault's answer. Every exception on a
+        # fault probe is run-fatal (the probe records its row and re-raises), so
+        # unguarded this made one slow survivor end the run mid-fault.
+        #
+        # A shorter pause than `_retry_read`'s default because this runs *inside*
+        # the applied fault: three attempts one second apart bound the extra
+        # fault time at ~2s, and only when a transient has already happened.
+        observed = _retry_read(
+            lambda: _node_command(survivor, "CLUSTER", "INFO", timeout=30),
+            what=f"CLUSTER INFO on survivor {survivor.get('logical_id')}",
+            pause=1.0,
+        )
     finally:
         resumed = backend.resume_node(target)
         _management_wait_clean_cluster(nodes, timeout=180.0)
@@ -9974,7 +10051,11 @@ def _local_full_flow_process_pause_probe(target: dict[str, Any], survivor: dict[
 def _local_full_flow_nodehost_pause_probe(nodehost: dict[str, Any], survivor: dict[str, Any], nodes: list[dict[str, Any]], *, backend: NodeBackend) -> dict[str, Any]:
     paused = backend.pause_nodehost(nodehost)
     try:
-        observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
+        observed = _retry_read(
+            lambda: _node_command(survivor, "CLUSTER", "INFO", timeout=30),
+            what=f"CLUSTER INFO on survivor {survivor.get('logical_id')}",
+            pause=1.0,
+        )
     finally:
         resumed = backend.resume_nodehost(nodehost)
         _management_wait_clean_cluster(nodes, timeout=180.0)
@@ -9991,7 +10072,11 @@ def _local_full_flow_az_pause_probe(nodehosts: list[dict[str, Any]], survivor: d
         for nodehost in nodehosts:
             pause_records.extend(backend.pause_nodehost(nodehost))
             paused.append(nodehost)
-        observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
+        observed = _retry_read(
+            lambda: _node_command(survivor, "CLUSTER", "INFO", timeout=30),
+            what=f"CLUSTER INFO on survivor {survivor.get('logical_id')}",
+            pause=1.0,
+        )
     finally:
         for nodehost in reversed(paused):
             resume_records.extend(backend.resume_nodehost(nodehost))
@@ -11335,7 +11420,7 @@ def _management_matrix_execute_operation(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     node_count = len(nodes)
     capability_label = capability_id.split("_", 1)[0]
-    before = _management_cluster_health(nodes)
+    before = _management_cluster_health_settled(nodes)
     before_topology_snapshot = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "before_embedded", nodes, nodes)
     if before["cluster_state"] != "ok" or before["known_nodes"] != node_count or before["slots_assigned"] != 16384:
         raise DockerRuntimeError(f"{capability_label} operation requires clean exact {node_count}-node cluster before {operation_name}: {before}")
@@ -11385,7 +11470,7 @@ def _management_matrix_execute_operation(
     else:
         raise DockerRuntimeError(f"unsupported strict management operation {operation_name}")
     _management_wait_clean_cluster(nodes, timeout=180.0)
-    after = _management_cluster_health(nodes)
+    after = _management_cluster_health_settled(nodes)
     after_topology_snapshot = _management_topology_snapshot(telemetry, capability_id, run_id, operation_id, "after_embedded", nodes, nodes)
     slot_balance_after = _management_matrix_slot_balance(nodes)
     ended_ms = telemetry.now_unix_ms()
@@ -11586,7 +11671,7 @@ def _management_matrix_execute_process_rolling_restart(
 ) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
     node_count = len(nodes)
     capability_label = capability_id.split("_", 1)[0]
-    before = _management_cluster_health(nodes)
+    before = _management_cluster_health_settled(nodes)
     # The plan is built from these roles and the final check compares against
     # them, so a node missing from the baseline would be reported later as a
     # change it never made.

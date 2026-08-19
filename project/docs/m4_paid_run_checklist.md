@@ -345,6 +345,59 @@ exact-200 runs pass with every one of these live.
 | **F10** | fault-probe survivor reads | read | `CLUSTER INFO` at t=30 while a replica, nodehost or AZ is paused, plus the majority-side read and a single-attempt recovery PING. All run-fatal via S1. The *isolated*-side reads are correct by design and excluded - see `85d5096a`. |
 | **F11** | reshard seed/verify client commands, and one workload error flipping a non-event window | low | arguably availability-measurement-by-design. Operator call, not a defect. |
 
+### §7.2 F2 specified: the mutation chokepoint, and why it is its own item
+
+F2 is the only remaining item where **a wrong fix is worse than the bug**. F1,
+F3, F5 and F10 all re-*read* something, so getting them wrong costs a slow gate.
+F2 mutates cluster state: a `SETSLOT` re-issued against the wrong owner, or a
+`FAILOVER` issued twice, corrupts the topology the run exists to measure. That is
+`m4_gossip_cost_and_stage_plan.md` §8's own conclusion - *blind retry corrupts
+state; only verify-then-retry per command kind works* - and it is why this is
+specified here rather than implemented alongside the read fixes.
+
+**The exposure, counted from a real exact-50's own `management_command_log` and
+scaled by node count** (so it is measured at 50 and projected, not guessed):
+
+| family | share | ~count at 1280 | safe treatment |
+|---|---|---|---|
+| `cluster_setslot_*` | **76.0 %** | ~26,000 | **verify-then-retry** |
+| `cluster_forget_removed_node` | 14.5 % | ~5,000 | **already fixed** - absorbed by its convergence loop |
+| `cluster_failover_*` | 7.5 % | ~2,600 | **verify only, never re-issue** |
+| `cluster_migrate_keys` | 1.3 % | ~460 | **loop-continue** |
+| `cluster_meet` / `cluster_replicate` | 0.6 % | ~200 | idempotent; safe to re-issue |
+| total mutations | | **~34,500** | |
+
+**Each family's verify already exists**, which is what makes this tractable:
+
+- **`SETSLOT`** - `_management_reshard_node_owns_slot(node, node_id, slot)`.
+  Re-issuing `SETSLOT <slot> NODE <id>` with the *same* owner is idempotent, so
+  on a transport failure: ask whether the node already owns the slot; if it does
+  the mutation landed, record it; if not, re-issue. This one family is three
+  quarters of the exposure.
+- **`FAILOVER`** - `_management_wait_node_role`, which already follows every
+  call. **This is verify-only: it must never be re-issued.** A second
+  `CLUSTER FAILOVER` flips roles again, so a transport failure means *wait for
+  the expected role and believe that*, not *ask again*. Anyone implementing this
+  by pattern-matching the `SETSLOT` case will get it wrong.
+- **`MIGRATE`** - the drain loop already re-reads `CLUSTER GETKEYSINSLOT` each
+  iteration, so a loop-continue **is** verify-then-retry: keys that already moved
+  are absent from the next read. The raise is the only thing stopping the loop
+  from doing its own job.
+
+**Where it goes.** `_management_log_node_command` is the single chokepoint -
+`except Exception` -> FAIL row -> raise, with no reply/transport distinction. The
+policy belongs there, keyed on `command_kind`, with `is_transient_transport_error`
+deciding eligibility and the family deciding what "verify" means. A default of
+*raise* for any kind not named keeps an unrecognised mutation fail-closed.
+
+**What it must not become.** A generic retry at the chokepoint. The three
+policies above are genuinely different, and the one that looks most like the
+others - `FAILOVER` - is the one that corrupts state if treated like them.
+
+**Acceptance**: `repository.all` green, per-family regression tests each
+mutation-checked, and two consecutive real Docker exact-50 with the isolating
+diff showing no moved view - the same bar the read fixes met.
+
 **Suggested order for the rest**: F1 (one function, largest surface), F3
 (cheapest, and the loop that should have absorbed it already exists), then F2's
 per-family verify-then-retry as **its own item with its own evidence** - it is

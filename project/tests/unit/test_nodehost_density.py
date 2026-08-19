@@ -676,6 +676,13 @@ def _ok_row(logical_id: str) -> dict[str, object]:
         # `role` here is the parsed ROLE reply the topology reader consults for
         # link state, not a bare string.
         "role": {"role": "primary", "replication_state": "connected"},
+        "cluster_info": {
+            "cluster_state": "ok",
+            "cluster_known_nodes": "3",
+            "cluster_slots_assigned": "16384",
+            "cluster_slots_ok": "16384",
+            "cluster_slots_fail": "0",
+        },
         "myslots": MySlots(
             node_id=f"id-{logical_id}",
             shard_id=shard,
@@ -936,6 +943,105 @@ def test_the_management_lane_has_no_unretried_single_shot_reads_left(
     """
 
     assert _unguarded_reads() == set(), _unguarded_reads()
+
+
+def test_a_transient_makes_cluster_health_unknown_and_is_asked_again(monkeypatch) -> None:
+    """`cluster_state` is `ok` only when every node answered.
+
+    So one transport failure out of 1280 turned the whole summary `unknown`.
+    That is fatal where a caller gates on it - the reshard's clean-cluster
+    precondition and the recovery verification both raise - and worse where one
+    does not: an `after` reading feeds `pass_status`, so a transient wrote a
+    **FAIL for an operation that had succeeded**, which is a wrong claim left in
+    the evidence rather than a stopped run.
+    """
+
+    nodes = _topology_nodes(3)
+    ids = [str(n["logical_id"]) for n in nodes]
+    scopes = _install_probe_rows(
+        monkeypatch,
+        [
+            [_ok_row(ids[0]), _gap_row(ids[1], transient=True), _ok_row(ids[2])],
+            [_ok_row(ids[0]), _ok_row(ids[1]), _ok_row(ids[2])],
+        ],
+    )
+
+    health = docker_runtime._management_cluster_health_settled(nodes)
+
+    assert health["cluster_state"] == "ok"
+    assert scopes == [ids, [ids[1]]]
+
+
+def test_a_confirmed_bad_node_still_makes_cluster_health_unknown(monkeypatch) -> None:
+    """The re-ask must not turn a real failure into a clean cluster."""
+
+    nodes = _topology_nodes(3)
+    ids = [str(n["logical_id"]) for n in nodes]
+    scopes = _install_probe_rows(
+        monkeypatch,
+        [[_ok_row(ids[0]), _gap_row(ids[1], transient=False), _ok_row(ids[2])]],
+    )
+
+    health = docker_runtime._management_cluster_health_settled(nodes)
+
+    assert health["cluster_state"] == "unknown"
+    # Not retried at all: a node that answered and disagreed is confirmed.
+    assert scopes == [ids]
+
+
+def test_the_topology_snapshot_still_records_a_gap_rather_than_re_asking(monkeypatch) -> None:
+    """A snapshot is evidence, not a gate, and says so in its own comment.
+
+    Re-asking there would hide the per-node gap the snapshot exists to keep, so
+    the settled reading is deliberately not wired into it.
+    """
+
+    nodes = _topology_nodes(3)
+    ids = [str(n["logical_id"]) for n in nodes]
+    scopes = _install_probe_rows(
+        monkeypatch,
+        [[_ok_row(ids[0]), _gap_row(ids[1], transient=True), _ok_row(ids[2])]],
+    )
+
+    health = docker_runtime._management_cluster_health(nodes)
+
+    assert health["cluster_state"] == "unknown"
+    assert scopes == [ids]
+
+
+def test_a_fault_probe_survivor_read_is_retried_without_ending_the_run(monkeypatch) -> None:
+    """Every exception on a fault probe is run-fatal, so this was too.
+
+    The read is of the *survivor's* own view while a different node is paused -
+    idempotent, and nothing to do with the fault's answer. The pause is shorter
+    than `_retry_read`'s default because this runs inside the applied fault.
+    """
+
+    calls = {"n": 0}
+
+    def flaky(node, *args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] < 2:
+            raise TimeoutError("timed out")
+        return "cluster_state:ok\r\n"
+
+    class _Backend:
+        def pause_node(self, _target): return [{"action": "pause"}]
+        def resume_node(self, _target): return [{"action": "resume"}]
+
+    monkeypatch.setattr(docker_runtime, "_node_command", flaky)
+    monkeypatch.setattr(docker_runtime, "_management_wait_clean_cluster", lambda *a, **k: None)
+    monkeypatch.setattr(docker_runtime.time, "sleep", lambda _s: None)
+
+    result = docker_runtime._local_full_flow_process_pause_probe(
+        {"logical_id": "shard-0000-replica-00"},
+        {"logical_id": "shard-0000-primary", "client_port": 7400},
+        _topology_nodes(2),
+        backend=_Backend(),
+    )
+
+    assert "cluster_state:" in result["observed_cluster_info"]
+    assert calls["n"] == 2
 
 
 def test_retry_read_is_bounded_and_reads_only() -> None:

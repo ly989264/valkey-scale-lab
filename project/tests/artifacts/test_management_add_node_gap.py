@@ -15,7 +15,7 @@ def test_strict_add_replica_executes_a_live_management_mutation(monkeypatch) -> 
         "primary_count": 1,
         "replica_count": 1,
     }
-    monkeypatch.setattr(docker_runtime, "_management_cluster_health", lambda _nodes: dict(health))
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", lambda _nodes, **_kwargs: dict(health))
     monkeypatch.setattr(docker_runtime, "_management_topology_snapshot", lambda *args, **kwargs: {"snapshot_id": "snapshot"})
     monkeypatch.setattr(docker_runtime, "_management_matrix_slot_balance", lambda _nodes: {"status": "PASS"})
     monkeypatch.setattr(docker_runtime, "_management_wait_clean_cluster", lambda _nodes, timeout: None)

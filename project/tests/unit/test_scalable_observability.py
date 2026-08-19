@@ -3911,7 +3911,7 @@ def test_a_bounded_wait_does_not_spend_a_whole_fleet_round_every_second(monkeypa
     monkeypatch.setattr(time, "sleep", clock.sleep)
     probed: list[int] = []
 
-    def health(probe_nodes, *, rows=None):
+    def health(probe_nodes, *, rows=None, settle=False):
         probed.append(len(probe_nodes))
         return {
             "cluster_state": "ok",
@@ -3956,7 +3956,7 @@ def test_a_bounded_wait_still_ends_only_on_a_whole_fleet_round(monkeypatch) -> N
     fleet_clean_at = 5.0
     probed: list[tuple[float, int]] = []
 
-    def health(probe_nodes, *, rows=None):
+    def health(probe_nodes, *, rows=None, settle=False):
         probed.append((clock.now, len(probe_nodes)))
         whole_fleet = len(probe_nodes) == len(nodes)
         settled = clock.now >= fleet_clean_at
@@ -4009,7 +4009,7 @@ def test_the_partition_probes_clean_wait_uses_the_same_rule(monkeypatch) -> None
             rounds.append(clock.now)
             return {"status": "OK", "nodes_observed": self._count - 1}
 
-    def health(probe_nodes, *, rows=None):
+    def health(probe_nodes, *, rows=None, settle=False):
         return {
             "cluster_state": "ok",
             "known_nodes": len(nodes),

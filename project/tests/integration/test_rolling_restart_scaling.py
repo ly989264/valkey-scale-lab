@@ -97,13 +97,13 @@ def _run_restart(
 
     def live_topology(
         current: list[dict[str, Any]]
-    ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, str]]]:
+    , **_kwargs) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, str]]]:
         if topology_scopes is not None:
             topology_scopes.append([str(node["logical_id"]) for node in current])
         # Every node answered, so there are no gaps to report.
         return {node["logical_id"]: {"role": node["role"]} for node in current}, {}
 
-    monkeypatch.setattr(docker_runtime, "_management_cluster_health", lambda _nodes: _clean_health(node_count))
+    monkeypatch.setattr(docker_runtime, "_management_cluster_health", lambda _nodes, **_kwargs: _clean_health(node_count))
     monkeypatch.setattr(docker_runtime, "_management_live_topology", live_topology)
     monkeypatch.setattr(
         docker_runtime,
@@ -458,7 +458,7 @@ def test_an_unread_node_is_not_reported_as_a_changed_role(
     nodes = _nodes(6)
     missing = str(nodes[0]["logical_id"])
 
-    def live_topology(current):
+    def live_topology(current, **_kwargs):
         return (
             {
                 node["logical_id"]: {"role": node["role"]}
@@ -533,7 +533,7 @@ def test_a_batch_whose_node_went_unread_mid_restart_says_so(
     # shard-disjoint, so this node is a target of the first batch.
     unread = "shard-0000-replica"
 
-    def live_topology(current):
+    def live_topology(current, **_kwargs):
         scope = [str(node["logical_id"]) for node in current]
         scopes.append(scope)
         # The first reading is planning and must succeed. From the second on, the
@@ -551,7 +551,7 @@ def test_a_batch_whose_node_went_unread_mid_restart_says_so(
         )
 
     monkeypatch.setattr(
-        docker_runtime, "_management_cluster_health", lambda _n: _clean_health(node_count)
+        docker_runtime, "_management_cluster_health", lambda _n, **_kwargs: _clean_health(node_count)
     )
     monkeypatch.setattr(docker_runtime, "_management_live_topology", live_topology)
     monkeypatch.setattr(
