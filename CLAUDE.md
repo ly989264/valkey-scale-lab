@@ -2075,6 +2075,203 @@ Two arguments were tried and refuted on the way, and §6.1 records both, includi
 that quorum-tolerating observers would fail **open** on exactly the AZ partition
 the redundancy exists to catch.
 
+### Session M4-7 is done, 2026-08-19: the two items M4-6 refused
+
+Two commits. Scope was exactly F6 and F2 from `m4_paid_run_checklist.md` §7 - both
+deliberately refused last session, both now implemented, and each refusal
+addressed rather than overridden. Read
+`project/docs/mutation_chokepoint_and_down_window_map.md`: §1 is why each refusal
+was right and what changed the answer, §2 the measurement that was worthless and
+the requirement its correction found, §3 the two changes, §4 what was reported
+rather than fixed, §5 the proof and §5.1 what is vacuous on Python 3.9.
+
+**No fleet was touched** - the 32-host Huawei fleet is suspended for cost, so
+everything here is local Docker or hermetic. **No baseline was frozen, touched or
+re-frozen.**
+
+- **F6's refusal was correct about a convergence wait and does not reach a
+  transport re-read**, and the distinction rests on a property rather than a name.
+  `is_transient_transport_error` is an **allowlist** and `SemanticFailure` is
+  excluded by its default, so a node answering with the wrong role, the wrong
+  slots or a bad `PING` carries `transport_transient: False` and is never
+  re-read - only a node that produced **no observation at all** is asked again. So
+  the re-read cannot turn a still-converging cluster into a pass, which is what
+  the "would nest two bounded waits" objection exists to prevent. Opt-in, default
+  1, **one site sets it**, and the accept condition is byte-identical: a node that
+  still does not answer leaves its `FAIL` row and `validate` raises as before.
+  `failure_kind` is untouched, so a timeout stays a §12.1 *semantic* observation.
+- **The exposure was worse than F6's scope said, and that is reported rather than
+  fixed.** All **seven** `FullClusterValidator` call sites are fatal on one
+  transport transient, not just the `convergence_timeout=0.0` one: `run()` catches
+  `ConvergenceFailure` only, so a `SemanticFailure` from an unanswered node raises
+  straight out of every site regardless of its timeout. The down-window instance
+  is the worst because it runs while the primary is dead, not the only one.
+  Operator decision 2026-08-19: **report only, do not touch the other six.**
+- **A measurement here was worthless and its correction found a requirement that
+  would otherwise have shipped as a silent regression.** The first version counted
+  rows with `status != "OK"` in the down-window `light_validation.nodes` across 91
+  retained runs - 5,629 rows, zero non-OK - which is structurally guaranteed,
+  because `validate` returns only `observations` and the artifact **cannot**
+  contain a failed row. Re-derived correctly as
+  `nodes_expected - len(nodes_expected_unavailable) == nodes_observed`: **91 of
+  91**. The correction then showed that the **killed node is in `self.nodes` and
+  refuses every connection**, so without excluding `expected_unavailable` every
+  run would pay the whole pause budget re-reading a node the lane deliberately
+  stopped. That exclusion is mutation-checked.
+- **Those 91 runs bound the cost and are not evidence the gap does not happen.**
+  They are a **survivor sample** for this site: before the change, a run that hit a
+  persistent gap here died and left no comparable record. Quiet-run cost zero is
+  what the byte-identity argument needs; the benefit case is the 1280-node history.
+- **F6 cannot move a failover metric, and structurally rather than by
+  observation.** `wait_for_convergence` appends its last round *before* the
+  candidate check and returns `rounds` as-is, and the Sentinel ends on its own
+  clock from its own samples, so both `_derive_failover_timeline` inputs are closed
+  before `full_validation()` is called. The 180s deadline is tested only at the top
+  of the loop and the call sits in the branch that has already decided, so a slow
+  re-read cannot convert an already-converged wait into a deadline failure. What
+  *does* span it is restore-side and scenario wall clock - durations every diff
+  view normalises away, feeding no verdict.
+- **F2 is a per-family policy table keyed on `command_kind`, default raise.** Ten
+  kinds reach `_management_log_node_command` and the set is **closed** - re-derived
+  by an AST walk over the module rather than by grep, with a test asserting the
+  table's keys equal the literals found and that exactly one call passes a
+  non-literal (the pass-through wrapper). Four kinds `reissue`
+  (`setslot_importing`, `setslot_migrating`, `setslot_node`, `meet_restored_node`),
+  six `suppress` (three `failover_*`, two `replicate_*`, `migrate_keys`).
+  **`cluster_forget_removed_node` never reaches this function** - it has its own
+  sibling, already fixed - so §7.2's family list is right about the treatments and
+  wrong that FORGET arrives here.
+- **The part that needed deciding was exhaustion, not the re-issue.** `reissue`
+  **still raises when exhausted**, because `cluster_setslot_node` is issued to
+  *every* primary while its follow-up `_management_reshard_node_owns_slot` asks
+  only the new owner - so nothing downstream can see that one primary of 256
+  missed the assignment, and suppressing would let a run continue with a
+  stale-owner primary.
+- **`FAILOVER` is defused structurally rather than by care.** The chokepoint never
+  re-issues anything in the `suppress` set, so there is nothing to get wrong by
+  pattern-matching the `SETSLOT` case. Verified per site: all three `FAILOVER`
+  calls are followed by `_management_wait_node_role`, both `REPLICATE` calls by
+  `_wait_process_replica_of`, and `cluster_migrate_keys` sits in a drain loop that
+  re-reads `CLUSTER GETKEYSINSLOT` every iteration. Accepted consequence, stated
+  rather than hidden: `_management_wait_node_role` raises on its deadline and has
+  no "the role never changed" branch, so a genuinely *lost* `FAILOVER` stays
+  run-fatal - later, and with a vaguer message.
+- **The fault lane constrains the row design, and §7.2 does not say so.** Counted
+  from both frozen baselines, `fault_command_log.jsonl` is 12 rows and one of them
+  is `cluster_replicate_restored_primary`, which comes through this chokepoint. So
+  a row per attempt would break the pinned **9 / 12 / 15** the first time a
+  transient fired in the fault window. One row per command, always;
+  `attempt_count` only when a re-issue happened and `retry_eligible` only when a
+  raise was suppressed.
+
+**Two things reported and not fixed, each needing its own evidence.**
+
+- **`is_transient_transport_error` is written against a RESP vocabulary the F2
+  transport does not speak.** Every mutation reaches the network through
+  `_host_command`, which uses `docker_runtime`'s **own** `_read_resp` - and that
+  raises `DockerRuntimeError` for both truncation cases and for a peer closing
+  mid-reply (`fp.read(1)` returns `b""` → `unknown RESP prefix b''`), where
+  `valkey/resp.py` raises `RespProtocolError`/`EOFError`, which are the names the
+  predicate matches. So the predicate's docstring line "or the byte stream did not
+  parse" is **false on that path**, and **the same gap is already live in the
+  landed F3 fix**. F2 still covers the *measured* class (a slow node times out).
+  **F6 does not inherit it** - `LightClusterProbe` speaks `RespConnection` - so the
+  two items sit on opposite sides of that boundary and F6 is whole without it. Not
+  fixed because the product has two RESP clients with disjoint failure
+  vocabularies and `RespProtocolError` is a bare `RuntimeError`, so retyping
+  changes what every `except DockerRuntimeError` on that path catches.
+- **`MIGRATE` carries no `REPLACE`**, so a transport failure can leave a key on
+  both nodes and the re-issue then meets `-BUSYKEY`, an error *reply*, which the
+  policy correctly refuses to retry - that sub-case still raises. Still a strict
+  improvement: today a `MIGRATE` transient is **always** fatal. Adding `REPLACE`
+  changes argv, which `management_command_log` compares field by field, so it is
+  the operator's call.
+
+**Method, because two checks caught what the suite could not.** Ten mutations,
+**ten detected**, each with the mutation **asserted to have applied** before its
+result was trusted and the file asserted reverted after. Two earned it: one came
+back `MUTATION-NOT-APPLICABLE` because its target string occurs twice - `validate`
+carries the same `not in unavailable` clause - so the harness reported measuring
+nothing instead of passing; and one came back genuinely **NOT DETECTED**, because
+`test_an_error_reply_is_never_retried_or_suppressed` asserted only that the call
+raised, which stays true when an error reply is re-issued three times and raises
+at the end. It now asserts the **call count**. That is the third session running
+in which a test passed for the wrong reason and only the mutation check said so.
+
+- **Proven:** `./gate suite repository.all` **92/92** at final HEAD. Counts
+  unmoved - catalog **100**, M1 plan **91** - because both items' tests joined
+  `product.unit.nodehost_density`, a module the catalog already registers; the
+  pytest tree is **915 → 930**. Four real Docker exact-50, two per commit:
+  **PASS 904.17 s / 867.09 s** at `52ef2d9c` and **PASS 905.58 s / 888.16 s** at
+  `0b4f0881`. All four `run_verdict` 12/12 OK, `fault_command_log` **exactly 12
+  rows** with its kind census unchanged, 1,606 management rows, no non-PASS row in
+  either log, and **zero artifacts containing `ERROR`**. Against the frozen
+  baseline all four score **6/7, 5/5, 6/8, 4/6, 2/2**, identical to each other,
+  with calibration re-taken at this HEAD first (7/7, 5/5, 8/8, 6/6, 2/2).
+- **Both isolating diffs are empty**: F6 against the previous commit's own run and
+  F2 against F6's own run are each **7/7, 5/5, 8/8, 6/6, 2/2** - no differing
+  view. The only view that ever moves is `management_matrix` at 7/8, and **both
+  same-commit pairs show it too**, in each case as a single `stdout_tail` - the
+  health gate's retry record at identical row counts. Two runs of the same code
+  differ in it, so it is per-run, which is why the consecutive diff was taken
+  rather than assumed.
+- **The F2 quiet-run assertion, scoped so it cannot pass by accident**: of the
+  **1,154 rows** per run whose kind the policy table names, none carries
+  `attempt_count` or `retry_eligible`. It must be scoped that way - eleven
+  *legacy* rows carry `attempt_count: 1` by construction, and the unscoped check
+  reports a false positive, which it did on the first attempt.
+
+**`attempt_count` is reused rather than invented, and the checking of that is the
+transferable part.** It already exists in these logs, written as a hardcoded
+literal `1` by three other row builders (`actuator_kill_primary`,
+`owned_fault_probe` ×9, `scalable_stability_window`), typed
+`integer, minimum 1` in `command_log_entry.schema.json`. So this adds a value to
+an existing vocabulary and is the first to use its **range**. It also creates a
+third presence convention - legacy always, chokepoint only when ≥2, F3's
+`retry_eligible` only on the branch that needed it - which is written down in the
+map so a later reader does not "tidy" it and either break quiet-run byte-identity
+or churn three frozen baselines' row shapes. And `diff_stage_artifacts.py` lists
+`attempt_count` among the fields that "carry the claim", so a chokepoint row
+acquiring one **is** a diff finding, correctly, on a transient run only.
+
+**A working rule this session earned three times over: grep for the thing *and its
+aliases*.** Each time the named thing checked out and the adjacent one carried the
+answer. The predicate's docstring says a failed parse is transient, but the
+*transport* under it raises a different class. A field was checked while its
+sibling `retry_index` - which does have consumers - was not. And a claim that
+nothing reads the two command logs was wrong because `evidence/pipeline.py`
+**renames** `management_command_log.jsonl` to the stream kind `command_log`,
+which `analysis/validated.py` then consumes - so a literal grep in `analysis/`
+finds nothing and concludes the opposite of the truth. The surviving statement is
+field-level: no consumer of those two logs reads `attempt_count`,
+`retry_eligible` or `retry_index`, and `_normalize_command` is a passthrough.
+
+**What M4-8 inherits, verified or compiled at this HEAD rather than remembered.**
+
+1. **The `_read_resp` vocabulary gap is the highest-value open item**, because it
+   silently narrows two *landed* fixes - F2 here and F3 at `1bb78154`. Three
+   candidate repairs, in increasing blast radius: retype the local parser's three
+   raise sites to `valkey/resp.py`'s classes (audit every
+   `except DockerRuntimeError` on `_host_command` paths first - `RespProtocolError`
+   is a bare `RuntimeError`); widen the predicate (**wrong** - `DockerRuntimeError`
+   includes `ValkeyErrorReply`); or unify the two RESP clients, which is its own
+   item. **F6 is unaffected** - `LightClusterProbe` speaks `RespConnection`.
+2. **`MIGRATE` and `REPLACE`.** Adding it changes argv, a field the diff compares,
+   so it needs approval and its own evidence. Without it one retry sub-case meets
+   `-BUSYKEY` and still raises - no worse than today, where every `MIGRATE`
+   transient is fatal.
+3. **The other six `FullClusterValidator` sites** carry F6's defect and were left
+   by operator decision. The mechanism is in place: pass
+   `transport_reread_attempts` to any of them.
+4. **A chokepoint re-issue is invisible to the analysis summary's retry
+   counters**, because `retry_count`/`retry_commands` derive from `retry_index`
+   over `command_log.jsonl` - the command *audit*, a third file - while the
+   chokepoint writes the other two logs. A reporting gap, not a defect.
+5. **`_retry_read` still catches a broad `except Exception`**, so it retries error
+   replies, contradicting `is_transient_transport_error`'s doctrine. Carried
+   unchanged from §7.1 and now inconsistent with the chokepoint beside it, which
+   does make the distinction.
+
 ### Session M4-6 is done, 2026-08-19: the procedure's robustness and its report
 
 Nine commits, `bb137e80` through `1bb78154`. Scope was the operator's restated
