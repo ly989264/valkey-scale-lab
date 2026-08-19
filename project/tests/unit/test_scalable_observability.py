@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import ast
 import copy
 import errno
 import json
 import os
+import socket
 import subprocess
+import sys
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -33,6 +36,7 @@ from valkey_scale_lab.observability.contracts import (
     SemanticFailure,
     final_verdict,
     is_collection_failure,
+    is_transient_transport_error,
     run_check,
 )
 from valkey_scale_lab.observability.failover import (
@@ -64,7 +68,14 @@ from valkey_scale_lab.observability.sentinel import (
     slot_tags,
 )
 from valkey_scale_lab.observability.stability import StabilityWindow
-from valkey_scale_lab.valkey.resp import Endpoint, RespCommandError, read_response
+from valkey_scale_lab.runtime import docker_runtime
+from valkey_scale_lab.runtime.docker_runtime import ValkeyErrorReply
+from valkey_scale_lab.valkey.resp import (
+    Endpoint,
+    RespCommandError,
+    RespProtocolError,
+    read_response,
+)
 
 
 def _bitmap(start: int, end: int) -> bytes:
@@ -1880,6 +1891,120 @@ def test_which_observation_failures_are_the_collectors_own() -> None:
     # Unplaceable failures stay FAIL: calling a real failure a tool error is the
     # direction that loses a finding.
     assert is_collection_failure(RuntimeError("something else")) is False
+
+
+def test_which_failures_are_worth_asking_again() -> None:
+    """The retry-eligibility axis, which is deliberately not §12.1's axis.
+
+    The two predicates disagree on a timeout on purpose: a timed-out node was
+    observed to not answer (semantic, per §12.1) *and* asking again is
+    reasonable. This pins both halves together so a later change cannot quietly
+    collapse one axis into the other.
+    """
+
+    transient = [
+        TimeoutError("timed out"),
+        socket.timeout("timed out"),
+        ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused"),
+        ConnectionResetError(errno.ECONNRESET, "Connection reset by peer"),
+        BrokenPipeError(errno.EPIPE, "Broken pipe"),
+        EOFError("Valkey connection closed"),
+        RespProtocolError("truncated RESP line"),
+        RespProtocolError("truncated RESP bulk string"),
+    ]
+    for exc in transient:
+        assert is_transient_transport_error(exc) is True, type(exc).__name__
+
+    # An error *reply* means the node was reached and answered. Asking again
+    # neither changes the answer nor is safe for the mutations that produce it.
+    assert is_transient_transport_error(RespCommandError("ERR unknown node")) is False
+    assert is_transient_transport_error(ValkeyErrorReply("ERR node must be empty")) is False
+    assert is_transient_transport_error(SemanticFailure("ROLE disagrees")) is False
+
+    # Local resource exhaustion is the collector's own and is *not* retried:
+    # re-entering a 1024-way fan-out that has run out of file descriptors makes
+    # it worse. This is the one input the two predicates classify in opposite
+    # directions to a timeout, and it is the direction that matters.
+    exhausted = OSError(errno.EADDRNOTAVAIL, "Can't assign requested address")
+    assert is_collection_failure(exhausted) is True
+    assert is_transient_transport_error(exhausted) is False
+    assert is_transient_transport_error(OSError(errno.EMFILE, "Too many open files")) is False
+
+    # Unrecognised failures are not retried, mirroring `is_collection_failure`'s
+    # refusal to place what it cannot place.
+    assert is_transient_transport_error(RuntimeError("something else")) is False
+    assert is_transient_transport_error(CollectionError("cannot write evidence")) is False
+
+    # §12.1 stays exactly where it was. A timeout is still semantic.
+    assert is_collection_failure(TimeoutError("timed out")) is False
+
+
+def test_no_thread_pool_budget_timeout_can_reach_the_retry_predicate() -> None:
+    """The confusion that killed a real 1280-node run at 448s, pinned closed.
+
+    On Python 3.11+ `concurrent.futures.TimeoutError` *is* the builtin
+    `TimeoutError`, so `is_transient_transport_error` answers True for a thread
+    pool's budget being blown - which must never be retried, because the budget
+    is already spent. What makes that safe is a property of the call sites rather
+    than of the type: only two producers exist, `_bounded_parallel` converts what
+    its `as_completed` raises into a `DockerRuntimeError`, and the one
+    `Future.result(timeout=...)` sits in a management teardown that nothing
+    retries.
+
+    Both halves are asserted, because the first alone would be a statement about
+    the Python version rather than about this product. The sweep is over the
+    whole package and deliberately lists both producers by line, so that adding a
+    third - the way this could actually regress - fails here rather than in a
+    paid run.
+
+    Do **not** assert that a `FutureTimeoutError` is non-transient. That passes
+    on 3.9 and fails on 3.12, which is the version-divergent trap this whole test
+    exists to keep closed.
+
+    **This test is vacuous on Python 3.9**, where the two classes differ and the
+    first assertion holds for an uninteresting reason. The workstation is 3.9 and
+    the controller 3.12, so mutation-check it on the controller.
+    """
+
+    if sys.version_info >= (3, 11):
+        assert FutureTimeoutError is TimeoutError
+        assert is_transient_transport_error(FutureTimeoutError("budget")) is True
+
+    # Sweep the whole package, not one module: the claim is that no *third*
+    # producer of a futures timeout appears anywhere, and a single-module scan
+    # would have missed the second one - `Future.result(timeout=...)`, which
+    # raises through a different API than `as_completed`.
+    package = Path(docker_runtime.__file__).parent.parent
+    producers: list[str] = []
+    for path in sorted(package.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not any(keyword.arg == "timeout" for keyword in node.keywords):
+                continue
+            func = node.func
+            if isinstance(func, ast.Name) and func.id == "as_completed":
+                producers.append(f"{path.name} as_completed")
+            elif isinstance(func, ast.Attribute) and func.attr == "result":
+                producers.append(f"{path.name} .result")
+
+    # Identified by file and call kind rather than by line, so that editing the
+    # module above them does not fail this - only a genuinely new producer does.
+    assert sorted(producers) == [
+        "docker_runtime.py .result",
+        "docker_runtime.py as_completed",
+    ], producers
+
+    # And it converts what that raises, so the predicate never sees it.
+    def never_finishes(_item: int) -> None:
+        time.sleep(3.0)
+
+    with pytest.raises(docker_runtime.DockerRuntimeError) as caught:
+        docker_runtime._bounded_parallel(
+            [1, 2], never_finishes, parallelism=2, timeout=0.5, label="pool"
+        )
+    assert is_transient_transport_error(caught.value) is False
 
 
 def test_a_failed_light_probe_row_states_which_kind_it_was() -> None:

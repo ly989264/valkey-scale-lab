@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import errno
+import socket
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Iterable
+
+from ..valkey.resp import RespCommandError, RespProtocolError
 
 
 class CheckStatus(str, Enum):
@@ -75,6 +78,99 @@ def is_collection_failure(exc: BaseException) -> bool:
     if isinstance(exc, OSError) and exc.errno in _LOCAL_RESOURCE_ERRNOS:
         return True
     return False
+
+
+def is_transient_transport_error(exc: BaseException) -> bool:
+    """Whether a failure is worth *retrying*, which is a different axis to §12.1.
+
+    This answers "may the caller try again", and nothing else. It is for retry
+    and redundancy layers only. It does **not** decide a verdict: a run's
+    `failure_kind` still comes from `is_collection_failure`, and §12.2 still
+    puts `FAIL` ahead of `ERROR`. Both stay exactly as they were, deliberately -
+    a transport timeout remains a *semantic* observation of a cluster that did
+    not answer, because calling a confirmed cluster failure a tool error is the
+    direction that loses a finding. The two predicates disagree on a timeout on
+    purpose, and that is not an inconsistency: one asks what happened, the other
+    asks whether asking again is reasonable.
+
+    It exists because deciding which failures to retry *is* classification, and
+    this codebase has already run the alternative experiment: an ad-hoc
+    `except (DockerRuntimeError, TypeError, ValueError)` was a local and slightly
+    wrong transient-detector that shipped, omitting `OSError` - which
+    `TimeoutError` subclasses - so a retry loop retried error *replies* and let
+    transport failures through. One named predicate or N ad-hoc ones; this is the
+    one.
+
+    True for a transport failure - the socket timed out, was refused, was reset,
+    or the byte stream did not parse. False for an error *reply*: a node
+    answering `-ERR` was reached, so the observation succeeded and the answer
+    will not change on a second ask.
+
+    Every `RespProtocolError` counts, not only the truncation forms. Each member
+    of that class means this socket's stream did not parse - truncated, desynced,
+    or an unknown prefix - and none of them is an observation of cluster state;
+    the connection is unusable either way and the only useful response is a fresh
+    one. Every caller's retry is bounded, so a stream that is permanently
+    unparseable costs a few attempts rather than a run. Naming only the two
+    truncation sites was available and would also have been safe - an additive
+    `RespProtocolError` subclass, since nothing in the product catches that class
+    at all - and it was not taken because the wider set needs no new type and
+    excludes nothing that belongs.
+
+    Two exclusions are decisions rather than omissions, and both are narrow on
+    purpose:
+
+    - **`EHOSTUNREACH` / `ENETUNREACH`** are not here. A partition installed by
+      this product's own actuator uses `DROP`, which produces a timeout, so
+      in-product faults are covered; a real network answering "no route" is
+      classified non-transient. That is the safe direction - it fails a gate
+      rather than retrying into a partition - but it does mean one physical
+      event can classify two ways depending on how the path was cut. Adding
+      them is a decision to take on its own evidence.
+    - **`subprocess.TimeoutExpired`** is not here, because it is a Docker CLI
+      transport failure rather than a RESP one. Any caller narrowed from a broad
+      `except` to this predicate loses that coverage, so check the caller's
+      transport before narrowing it.
+
+    On the pool-timeout confusion, verified in source rather than assumed: on
+    Python 3.11+ `concurrent.futures.TimeoutError` *is* the builtin
+    `TimeoutError`, so matching `TimeoutError` here would also match a thread
+    pool's budget being blown - which is the confusion that killed a real
+    1280-node run at 448s.
+
+    **That exclusion is a property of the call sites, not of the type**, and on
+    3.11+ it is not expressible as a type at all. Two producers exist and
+    neither reaches a retry: `_bounded_parallel` is the only site that passes a
+    timeout to `as_completed` and it converts what that raises into a
+    `DockerRuntimeError` first, and `Future.result(timeout=...)` appears once,
+    in a management teardown that is not retried. Both are pinned by an AST
+    sweep over the whole package rather than by this docstring, because the
+    guarantee is that no *third* producer appears.
+
+    `socket.timeout` is named alongside `TimeoutError` because they are the same
+    class only from Python 3.10. The workstation is 3.9 and the controller 3.12,
+    so on the workstation that second name is doing real work and on the
+    controller it is redundant.
+    """
+
+    # An allowlist, so anything unrecognised is not retried. `RespCommandError`,
+    # `ValkeyErrorReply` and `SemanticFailure` are excluded by that default
+    # rather than by a branch of their own: each is a plain `RuntimeError` here,
+    # so an explicit early `return False` for them would be unreachable in
+    # effect and would read as a guard that was doing work. Verified: no
+    # exception class in this product mixes `SemanticFailure` with `OSError`.
+    return isinstance(
+        exc,
+        (
+            TimeoutError,
+            socket.timeout,
+            ConnectionRefusedError,
+            ConnectionResetError,
+            BrokenPipeError,
+            EOFError,
+            RespProtocolError,
+        ),
+    )
 
 
 @dataclass(frozen=True)
