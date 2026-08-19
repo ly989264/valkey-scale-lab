@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import time
 from pathlib import Path
 
@@ -530,6 +531,109 @@ def test_replica_of_wait_tolerates_an_unanswered_probe() -> None:
         assert calls["n"] >= 1
     finally:
         docker_runtime._process_node_is_replica_of = saved
+
+
+def _cluster_myid_reads() -> tuple[dict[int, str], set[int]]:
+    """Every `CLUSTER MYID` read in the runtime, and which are retried.
+
+    Structural rather than textual on purpose. The first version of a sibling
+    regression test searched a function's source for `"OSError"` and passed with
+    the fix reverted, because the explanatory comment above it said "OSError";
+    an AST walk cannot be satisfied by a comment.
+    """
+
+    tree = ast.parse(Path(docker_runtime.__file__).read_text(encoding="utf-8"))
+
+    def is_myid(node: ast.AST) -> bool:
+        if not isinstance(node, ast.Call):
+            return False
+        func = node.func
+        if not (isinstance(func, ast.Name) and func.id == "_node_command"):
+            return False
+        literals = [a.value for a in node.args if isinstance(a, ast.Constant)]
+        return "CLUSTER" in literals and "MYID" in literals
+
+    # The reads that sit inside a lambda handed to `_retry_read`.
+    retried: set[int] = set()
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "_retry_read"
+        ):
+            for argument in list(node.args) + [kw.value for kw in node.keywords]:
+                if isinstance(argument, ast.Lambda):
+                    retried.update(
+                        id(inner) for inner in ast.walk(argument) if is_myid(inner)
+                    )
+
+    # Each read, attributed to the module-level function that contains it -
+    # not the innermost, which for a fan-out is an anonymous nested worker whose
+    # name says nothing about which lane the read is on.
+    owner: dict[int, str] = {}
+    for scope in tree.body:
+        if not isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for inner in ast.walk(scope):
+            if is_myid(inner):
+                owner[id(inner)] = scope.name
+
+    return owner, retried
+
+
+def test_every_cluster_myid_read_in_the_management_and_fault_lanes_is_retried() -> None:
+    """The seventh instance of one shape, and the guard against an eighth.
+
+    A single un-retried RESP command inside a fan-out was found four times on
+    the formation path, each costing a real 1280-node run. These are the same
+    shape in the management and fault lanes: `CLUSTER MYID` read once, with the
+    answer then addressing every `SETSLOT`, `MIGRATE`, `FORGET` or `REPLICATE`
+    that follows - so a transient ends the operation before any of it runs.
+
+    Asserted as a *set of exceptions* rather than a count, so that a newly added
+    un-retried read fails here by name wherever it is written.
+    """
+
+    owner, retried = _cluster_myid_reads()
+    unretried = {name for node_id, name in owner.items() if node_id not in retried}
+
+    assert unretried == {"_cluster_node_ids_by_shard"}, unretried
+
+    # And the retried ones are the seven converted here plus the one `5082e4e8`
+    # already did, so removing a wrapper is caught rather than merely tolerated.
+    assert len(retried) == 8
+
+
+def test_the_one_unretried_cluster_myid_read_is_reached_only_from_formation() -> None:
+    """Why `_cluster_node_ids_by_shard` is exempted above, checked rather than asserted.
+
+    It is a genuine un-retried read inside a `_bounded_parallel` fan-out over
+    every primary - 256 of them at 1280 nodes - so the exemption is a statement
+    about *which lane it is on*, not about it being safe. It is reached only
+    from cluster formation and setup, which is a separately audited path, and
+    converting it would change a path every frozen baseline was taken on. This
+    test exists so the exemption stops holding the moment a management or fault
+    caller appears.
+    """
+
+    tree = ast.parse(Path(docker_runtime.__file__).read_text(encoding="utf-8"))
+    callers: set[str] = set()
+    for scope in ast.walk(tree):
+        if not isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if scope.name == "_cluster_node_ids_by_shard":
+            continue
+        for inner in ast.walk(scope):
+            if (
+                isinstance(inner, ast.Call)
+                and isinstance(inner.func, ast.Name)
+                and inner.func.id == "_cluster_node_ids_by_shard"
+            ):
+                callers.add(scope.name)
+
+    assert callers and all(
+        "management" not in name and "fault" not in name for name in callers
+    ), callers
 
 
 def test_retry_read_is_bounded_and_reads_only() -> None:

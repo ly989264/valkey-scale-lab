@@ -297,15 +297,41 @@ exact-200 runs pass with every one of these live.
 | **F6** | `FullClusterValidator` one-shots in the fault lane | read | worst instance is the primary-kill **down-window** validation, which runs while the primary is dead and the fleet is gossiping the failure - the moment a 5s read is most likely to be slow - and `validate_light` raises on one FAIL row while `run()` retries only `ConvergenceFailure`. Part of this fix belongs in `observability/cluster.py`. |
 | **F7** | reshard drain `GETKEYSINSLOT` | read | unguarded inside the batch loop; dies **mid-slot-move**, with the slot left `IMPORTING`/`MIGRATING`. |
 | **F8** | `_host_command_binary` MYSLOTS | read | no guard; raises a raw `socket.timeout`, not even a `DockerRuntimeError`. |
-| **F9** | seven unconverted `CLUSTER MYID` siblings | read | the same shape `5082e4e8` fixed, in seven more places - including the `removed_id` the whole FORGET fan-out depends on, and the `promoted_id` read **immediately after a failover on the just-promoted node**, the most churn-adjacent read in the file. Mechanical `_retry_read`. |
+| ~~**F9**~~ | ~~seven unconverted `CLUSTER MYID` siblings~~ | read | **DONE.** All seven wrapped in `_retry_read`, with an AST guard asserting the set of functions still holding an un-retried `CLUSTER MYID` is exactly `{"_cluster_node_ids_by_shard"}`, and a second test asserting that function has no management or fault caller. See §7.1. |
 | **F10** | fault-probe survivor reads | read | `CLUSTER INFO` at t=30 while a replica, nodehost or AZ is paused, plus the majority-side read and a single-attempt recovery PING. All run-fatal via S1. The *isolated*-side reads are correct by design and excluded - see `85d5096a`. |
 | **F11** | reshard seed/verify client commands, and one workload error flipping a non-event window | low | arguably availability-measurement-by-design. Operator call, not a defect. |
 
-**Suggested order if this becomes an item**: F1 (one function, largest surface),
-F3 (cheapest, and the loop that should have absorbed it already exists), F9
-(mechanical), then F2's per-family verify-then-retry as **its own item with its
-own evidence** - it is the open mutation question and blind retry there corrupts
-state.
+**Suggested order for the rest**: F1 (one function, largest surface), F3
+(cheapest, and the loop that should have absorbed it already exists), then F2's
+per-family verify-then-retry as **its own item with its own evidence** - it is
+the open mutation question and blind retry there corrupts state.
+
+### §7.1 F9 is done, and what it did and did not settle
+
+All seven `CLUSTER MYID` reads now go through `_retry_read`. Each was a read
+whose answer addresses every mutation that follows - the reshard's source and
+target ids, the `removed_id` every `CLUSTER FORGET` in a 120s convergence loop
+names, the `master_id` a rejoining node replicates from, and the `promoted_id`
+read on a just-promoted node while the fleet is still gossiping the role change.
+So a transient did not cost a command; it ended the operation before any of it
+ran.
+
+**What is guarded rather than merely fixed**: an AST walk asserts the set of
+functions still holding an un-retried `CLUSTER MYID` is exactly
+`{"_cluster_node_ids_by_shard"}`, so an eighth fails by name wherever it is
+written. That exemption is a statement about which lane the read is on, not
+about it being safe - it is a genuine un-retried read inside a fan-out over
+every primary, 256 of them at 1280 nodes - and a second test asserts none of its
+callers is a management or fault function, so the exemption stops holding the
+moment one appears. Converting it would change a path every frozen baseline was
+taken on, which is why it is on the formation ledger instead.
+
+**Not settled by it**: `_retry_read` still catches a broad `except Exception`,
+so it retries error replies as well as transport failures, contradicting
+`is_transient_transport_error`'s own doctrine. Narrowing it needs the
+`subprocess.TimeoutExpired` decision and changes every existing caller, so it is
+its own change. Harmless at these seven - `CLUSTER MYID` does not produce an
+error reply this product can generate.
 
 **F1 has a prerequisite that is easy to miss.** Retrying only the *gapped* nodes
 needs the row to say whether its failure was transport, and it does not:

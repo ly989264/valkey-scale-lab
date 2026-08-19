@@ -7504,8 +7504,18 @@ def _management_reshard_execute_operation(
     primaries = [node for node in nodes if node["role"] == "primary"]
     source = primaries[0]
     target = primaries[1]
-    source_id = _node_command(source, "CLUSTER", "MYID", timeout=30).strip()
-    target_id = _node_command(target, "CLUSTER", "MYID", timeout=30).strip()
+    # Both ids address every `SETSLOT` and `MIGRATE` below, so a transient here
+    # ends the operation before any of it runs. Retried rather than widened:
+    # `CLUSTER MYID` is a constant per node, so a second ask returns the same
+    # answer or the node is genuinely unreachable.
+    source_id = _retry_read(
+        lambda: _node_command(source, "CLUSTER", "MYID", timeout=30).strip(),
+        what=f"CLUSTER MYID on {source['logical_id']}",
+    )
+    target_id = _retry_read(
+        lambda: _node_command(target, "CLUSTER", "MYID", timeout=30).strip(),
+        what=f"CLUSTER MYID on {target['logical_id']}",
+    )
     source_slots = _management_reshard_primary_owned_slots(source, source_id)
     moved_slots: list[int] = []
     movements: list[dict[str, Any]] = []
@@ -7524,8 +7534,14 @@ def _management_reshard_execute_operation(
     elif operation_name == "rebalance_after_imbalance":
         setup_source = primaries[1]
         setup_target = primaries[0]
-        setup_source_id = _node_command(setup_source, "CLUSTER", "MYID", timeout=30).strip()
-        setup_target_id = _node_command(setup_target, "CLUSTER", "MYID", timeout=30).strip()
+        setup_source_id = _retry_read(
+            lambda: _node_command(setup_source, "CLUSTER", "MYID", timeout=30).strip(),
+            what=f"CLUSTER MYID on {setup_source['logical_id']}",
+        )
+        setup_target_id = _retry_read(
+            lambda: _node_command(setup_target, "CLUSTER", "MYID", timeout=30).strip(),
+            what=f"CLUSTER MYID on {setup_target['logical_id']}",
+        )
         setup_slots = _management_reshard_primary_owned_slots(setup_source, setup_source_id)
         imbalance_setup_slots = setup_slots[:20]
         _management_reshard_move_slots(backend, telemetry, capability_id, run_id, f"{operation_id}-setup", nodes, setup_source, setup_target, setup_source_id, setup_target_id, imbalance_setup_slots, command_log, seed_keys=False, movement_kind="create_imbalance")
@@ -9342,7 +9358,13 @@ def _run_scalable_primary_kill_failover(
             backend=backend,
         )
         sentinel.mark_restore_started(target_logical)
-        promoted_id = _node_command(promoted, "CLUSTER", "MYID", timeout=30).strip()
+        # The most churn-adjacent read in this file: the node was promoted
+        # moments ago and the fleet is still gossiping the role change, which is
+        # exactly when a single-attempt read is least likely to answer.
+        promoted_id = _retry_read(
+            lambda: _node_command(promoted, "CLUSTER", "MYID", timeout=30).strip(),
+            what=f"CLUSTER MYID on promoted {promoted['logical_id']}",
+        )
         _management_log_node_command(
             command_log,
             telemetry=TelemetryRun(
@@ -11417,7 +11439,13 @@ def _management_matrix_remove_and_restore_row(
         target = replicas[0] if operation_name == "remove_replica" else replicas[-1]
         safe_path = "owned_process_stop_then_cluster_forget_and_restore_replica"
         restore_as_replica = True
-    removed_id = _node_command(target, "CLUSTER", "MYID", timeout=30).strip()
+    # Every `CLUSTER FORGET` in the convergence loop below names this id, and it
+    # must be read while the node is still up - so a transient here costs the
+    # operation rather than one command.
+    removed_id = _retry_read(
+        lambda: _node_command(target, "CLUSTER", "MYID", timeout=30).strip(),
+        what=f"CLUSTER MYID on {target['logical_id']}",
+    )
     old_pid = target.get("pid", MISSING)
     _management_matrix_stop_process(target, capability_id, run_id, operation_id, command_log, command_kind="owned_valkey_process_stop", backend=backend)
     survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
@@ -12430,7 +12458,10 @@ def _management_matrix_rejoin_as_replica(
         nodes, f"rejoining {target['logical_id']} needs its shard's live primary"
     )
     primary = next(node for node in nodes if node["shard_id"] == target["shard_id"] and node["logical_id"] != target["logical_id"] and topology.get(node["logical_id"], {}).get("role") == "primary")
-    master_id = _node_command(primary, "CLUSTER", "MYID", timeout=30).strip()
+    master_id = _retry_read(
+        lambda: _node_command(primary, "CLUSTER", "MYID", timeout=30).strip(),
+        what=f"CLUSTER MYID on {primary['logical_id']}",
+    )
     _management_log_node_command(command_log, telemetry=telemetry, capability_id=capability_id, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_replicate_restored_node", target=target, args=["CLUSTER", "REPLICATE", master_id], timeout=60)
     _wait_process_replica_of(target, master_id, timeout=120.0)
 
