@@ -307,6 +307,22 @@ def run_exact_gate(
     # ownership error about bookkeeping instead of the refusal, on a run that
     # had already been paid for. A refusal now states itself.
     _write_run_verdict(runtime_dir, run_id, scale, result)
+    # A run left evidence and no report: rendering one was a separate command
+    # somebody had to remember to run afterwards. For an unattended run on a
+    # host the operator cannot reach, that is the difference between a result
+    # and nothing readable, so the run now renders its own.
+    #
+    # After the verdict rather than before it, because the renderer reads
+    # `run_verdict.json` - a report generated first would state a status the run
+    # had not yet decided. A failing run still gets one: a run that ended badly
+    # is when a readable report is worth most.
+    report_checks = _render_run_report(runtime_dir)
+    if report_checks:
+        # Rendering failed. Say so where the operator looks, by re-writing the
+        # verdict with the check attached - the same shape `_record_admission_refusal`
+        # uses, and for the same reason: a run whose report is missing must not
+        # look identical to one whose report is there.
+        _write_run_verdict(runtime_dir, run_id, scale, result, extra_checks=report_checks)
     if result.status is not GateStatus.PASS:
         raise _gate_failure(result)
     # Only an admitted run needs the snapshot, and only a run that executed has
@@ -339,6 +355,53 @@ def run_exact_gate(
         # pre-existing behaviour of leaving the stage verdict as it stood.
         _record_admission_refusal(runtime_dir, run_id, scale, result, error)
         raise
+
+
+
+def _render_run_report(runtime: Path) -> tuple[CheckResult, ...]:
+    """Render the run's own offline report, and never raise doing it.
+
+    Returns the checks to attach to the verdict: empty on success, so a run that
+    rendered its report writes exactly the verdict it always wrote and no frozen
+    baseline moves.
+
+    A rendering failure must not discard a run. At 1280 nodes a run is about two
+    hours of fleet time, and losing it to a formatting defect would be a worse
+    outcome than the missing report - so this reports `ERROR`, which is §12.1's
+    kind for the tool failing rather than the cluster, and leaves every stage
+    result standing. The report can be produced again from the same artifacts by
+    `cli report --kind full-flow`, because it derives from them and adds nothing.
+
+    Written inside the run's own tree, beside `command_audit/`, so that a copied
+    run directory carries its report with it.
+    """
+
+    from valkey_scale_lab.report.full_flow import build_renderable_analysis
+    from valkey_scale_lab.report.render import render_report
+
+    try:
+        out_dir = runtime / "report"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        analysis = build_renderable_analysis(runtime)
+        analysis_path = out_dir / "renderable_analysis.json"
+        analysis_path.write_text(
+            json.dumps(analysis, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        render_report(analysis_path, out_dir, out_dir / "report_index.json")
+    except Exception as error:  # noqa: BLE001 - a report must not cost a run
+        return (
+            CheckResult(
+                # Not "report": that is already the name of one of the twelve
+                # lifecycle stage checks, so a rendering failure would put two
+                # entries called `report` in one verdict - one OK from the stage,
+                # one ERROR from here - and nothing could tell them apart.
+                name="report_rendering",
+                status=CheckStatus.ERROR,
+                reason=f"run report rendering failed: {error!r}",
+            ),
+        )
+    return ()
 
 
 def _admit_exact_gate(

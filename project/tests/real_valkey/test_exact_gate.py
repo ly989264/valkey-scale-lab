@@ -805,3 +805,120 @@ def test_a_run_refused_after_its_stages_passed_says_so_in_its_own_verdict(
     # §12.1's kinds stay distinguishable: a refusal the tool could not read is an
     # ERROR and names itself in `tool_errors`; one it read and rejected is a FAIL.
     assert verdict["tool_errors"] == (["admission"] if expected_check == "ERROR" else [])
+
+
+def test_a_run_renders_its_own_report(tmp_path: Path) -> None:
+    """A run left evidence and no report until someone remembered a command.
+
+    For an unattended run on a host the operator cannot reach, that is the
+    difference between a result and nothing readable, so the run renders one
+    itself from artifacts it has already written and validated.
+    """
+
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    (runtime / "run_verdict.json").write_text(
+        json.dumps({"status": "PASS", "checks": []}), encoding="utf-8"
+    )
+    (runtime / "analysis_summary.json").write_text(
+        json.dumps({"status": "PASS", "source": {"capability_id": "local_full_flow"}}),
+        encoding="utf-8",
+    )
+
+    checks = exact_gate._render_run_report(runtime)
+
+    assert checks == (), "a successful render must add no check"
+    report = runtime / "report"
+    assert (report / "index.html").exists()
+    assert (report / "report.md").exists()
+    assert (report / "renderable_analysis.json").exists()
+    page = (report / "index.html").read_text(encoding="utf-8")
+    assert "中文自动化可视化分析报告" in page
+
+
+def test_a_report_failure_is_recorded_and_never_costs_the_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """At 1280 nodes a run is about two hours of fleet time.
+
+    Losing that to a formatting defect would be a worse outcome than the missing
+    report, so a rendering failure is reported as `ERROR` - §12.1's kind for the
+    tool failing rather than the cluster - and never raises.
+    """
+
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+
+    def boom(*_a: Any, **_k: Any) -> Any:
+        raise RuntimeError("renderer exploded")
+
+    import valkey_scale_lab.report.full_flow as full_flow
+
+    monkeypatch.setattr(full_flow, "build_renderable_analysis", boom)
+
+    checks = exact_gate._render_run_report(runtime)
+
+    assert len(checks) == 1
+    assert checks[0].status.value == "ERROR"
+    assert "renderer exploded" in checks[0].reason
+    # Deliberately not "report": the twelve lifecycle stage checks already
+    # include one by that name, so reusing it would put two indistinguishable
+    # entries in a failing run's verdict.
+    stage_check_names = {
+        "resource_preflight", "runtime_start", "cluster_form", "stabilize",
+        "baseline_workload", "management_matrix", "fault_matrix", "recovery",
+        "artifact_validation", "analysis", "report", "cleanup",
+    }
+    assert checks[0].name not in stage_check_names, checks[0].name
+    assert checks[0].name == "report_rendering"
+
+
+def test_the_report_lands_inside_the_run_directory(tmp_path: Path) -> None:
+    """So a copied run directory carries its report, the way `command_audit/` does.
+
+    Freezing a baseline copies a run directory; a report written elsewhere would
+    not survive that copy, and the run would again be evidence with nothing
+    readable beside it.
+    """
+
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    (runtime / "run_verdict.json").write_text(
+        json.dumps({"status": "PASS", "checks": []}), encoding="utf-8"
+    )
+
+    exact_gate._render_run_report(runtime)
+
+    assert (runtime / "report" / "index.html").exists()
+    assert not (tmp_path / "report").exists()
+
+
+def test_the_gate_path_actually_renders_the_report() -> None:
+    """The helper working proves nothing if nobody calls it.
+
+    This is the shape that already bit once this session: a re-read implemented,
+    tested and never switched on at the site that needed it. So the wiring is
+    asserted structurally, and the ordering with it - the renderer reads
+    `run_verdict.json`, so a report built before the verdict would state a status
+    the run had not yet decided.
+    """
+
+    import ast
+    import inspect
+
+    source = inspect.getsource(exact_gate)
+    tree = ast.parse(source)
+    gate = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "run_exact_gate"
+    )
+    calls = [
+        node.func.id
+        for node in ast.walk(gate)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    ]
+    assert "_render_run_report" in calls, "run_exact_gate never renders a report"
+    assert calls.index("_write_run_verdict") < calls.index("_render_run_report"), (
+        "the report must be rendered after the verdict it reads"
+    )
