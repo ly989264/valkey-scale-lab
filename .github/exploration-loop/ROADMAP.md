@@ -803,6 +803,129 @@ before Stage 4 raises the level. Deferred: a probe whose first line is a
 comment derives no Bash grant; a PR_READY branch left in place makes later
 rounds on that item INFRA until deleted (a livelock in `continuous`).
 
+## Stage 2c record — 2026-08-29
+
+Worker: Opus 5 subagent, on `fast-iter` at `cf345afc`, kernel
+`~/centos_ex/projects/VibeCoding/agent-loop` main at `fd98a3b`. Nothing under
+`project/src`, `loop_evidence/` or on GitHub was touched by this session;
+the only product change any round made lives on a kept `explore/` branch.
+Nothing was pushed. Kernel main is now **10 commits ahead of `origin/main`**.
+
+**Kernel, five commits, +213 lines under `agent_loop/` (121 of them code, the
+rest docstring and comment) plus 246 test lines; 74/74 hermetic tests.** Each
+was watched to fail with its fix reverted before it was committed.
+
+1. `bdbf47f` — *Keep the diff and the cost when the round's commit fails*
+   (the 2b review defect at `round.py:80-81`). Observed with a failing
+   `pre-commit` hook: the PR_READY commit raised out of `_worker_round`, so
+   `run_once` caught it as a plain infrastructure failure, wrote INFRA with
+   `cost: null`, and cleanup deleted both `explore/<item>` and the worktree
+   holding the worker's uncommitted diff. `_retain()` now marks the branch
+   kept *before* committing and, on failure, marks the worktree kept too and
+   returns the reason, so the round ends INFRA with the worker's cost
+   recorded and no evidence is lost. Mutation check: `None != 1.5`.
+2. `e50d587` — *Retain the diff when verify is what blocks the round* (2b
+   carried item). A BLOCKED that comes from verify (probe still failing,
+   verify command failed, protected path touched) now commits onto
+   `explore/<item>` and keeps the branch exactly as PR_READY does; a
+   worker-returned `blocked` has applied nothing and still deletes. Both
+   tested. Mutation check: `'explore/an-item' not found in ['main']`.
+3. `a5f1fd2` — *Keep a failing verify command's failing rows, not its tail*.
+   `verify.failing_lines()` keeps the lines carrying FAIL / ERROR / Error /
+   Traceback, bounded to 40 with a count of what it dropped, falling back to
+   the tail when nothing is marked. Tested against fake `./gate suite`
+   output — twelve PASS rows, one FAIL row, twelve more PASS rows, `Status:
+   FAIL` — whose last 800 characters contain no failing row at all.
+   Mutation check: the failing row absent from the reason.
+4. `747a7a6` — *Take a lock before the round picks anything*.
+   `agent-loop run` takes `<worktree_root>/.lock` (pid + timestamp) before
+   pick; refuses INFRA naming the holding pid while that process is alive;
+   takes over a lock whose holder is gone (a killed round would otherwise
+   wedge the loop for ever); refuses INFRA naming any worktree under the root
+   that this round did not create; released on every exit path and never
+   removed by the round that was refused. Four lock tests plus one round
+   test. Mutation check: PR_READY != INFRA.
+5. `9af3ba9` — *Note tool-version drift on the round's own ledger line*.
+   `ledger.drift()` compares this round's `tool_versions` with the last
+   recorded round's and names each tool that moved, including one that
+   appeared or disappeared; written to the line's declared `warning` field
+   and nowhere else — no new state, no notification, no effect on the
+   terminal state, because an upgrade is not a failure. Mutation check:
+   `records[1]['warning']` None.
+
+**Rounds.** Budget three, two spent; the third would have bought a copy of
+the second's line.
+
+- Round 1 (free, deliberate, launched while round 2's worker was running) —
+  `INFRA` in **0.044 s**, no worker spawned, the holder's lock left intact:
+  `ts 10:23:18Z · item null · sha cf345afc · INFRA · another round holds
+  .../worktrees/.lock (pid 42249 since 2026-08-29T10:22:30Z); wait for it or
+  remove the file · cost null · 0.044 s · warning null`. The lock exercised
+  against the real consumer, not only in tests.
+- Round 2 — `BLOCKED` at verify, **330.3 s, cost $0.79**, notification on
+  stdout and in `.agent-loop/notifications.log`: `ts 10:28:01Z · item
+  retry-read-catches-a-broad-exception · sha cf345afc · BLOCKED · verify
+  command './gate suite product.unit' failed (exit 1): [18/25] FAIL
+  product.unit.server_profile (0.32s) / product.unit.server_profile FAIL
+  0.32 8 tests, 0 failed, 0 errors, 1 skipped / Status: FAIL · cost 0.7935 ·
+  330.345 s · warning null`. Items 2, 3 and 5 all did their work in it: the
+  reason **names the failing check**, the branch **survived**, and the drift
+  field was correctly null.
+
+**The failing check, identified: `product.unit.server_profile`, and it is
+pre-existing and environmental, not the worker's fix.** Its 8 tests report
+0 failed, 0 errors, **1 skipped**, and `verification/runner.py:155-161`
+makes any skip a FAIL. The skip is
+`tests/unit/test_server_profile.py:151`, taken when
+`artifacts/baselines/exact-50-6b6f57fd/.../node_configs` is absent — and
+`project/artifacts/` is in `.gitignore`, so the frozen baseline exists in
+the operator's working tree and **in no fresh checkout or `git worktree`**.
+Measured three ways: `./gate suite product.unit` in the main working tree is
+**25/25 PASS**; `./gate test product.unit.server_profile` in a clean
+detached worktree of the same commit `cf345afc`, with no worker diff at all,
+**FAILs identically**; the worker's diff touches only `docker_runtime.py`
+and `test_docker_runtime_contract.py`. This is also, with near certainty,
+2b attempt 4's unrecoverable `24/25`.
+
+**Consequence: PR_READY is unreachable for every hermetic item until this is
+decided, so the two remaining rounds were not spent.** `./gate suite
+product.unit` cannot pass in the throwaway worktree a round verifies in, for
+any item and any worker. Two candidate fixes, both **operator DECIDEs** and
+neither taken here: make the frozen baseline reachable from a fresh checkout
+(the loop cannot invent it, and `project/artifacts/baselines` is a protected
+path), or change the Gate's skip-is-FAIL policy — a validation-contract
+change that CLAUDE.md's working rules say to report rather than make.
+
+**The worker's diff and the by-hand mutation check.** Branch
+`explore/retry-read-catches-a-broad-exception`, commit `8cfd4b00`,
+`agent-loop: retry-read-catches-a-broad-exception`, diffstat **2 files, +41**:
+`project/src/valkey_scale_lab/runtime/docker_runtime.py` +7 (two of them the
+fix: `_retry_read` re-raises when `is_transient_transport_error(exc)` is
+false) and `project/tests/integration/test_docker_runtime_contract.py` +34
+(two tests). Checked out at `8cfd4b00`, both tests pass; with the two-line
+fix removed **`test_retry_read_does_not_retry_an_error_reply` fails** with
+`DockerRuntimeError: probe failed after 3 attempts:
+RespCommandError('ERR unknown command')`, while
+`test_retry_read_still_retries_a_transient_transport_failure` keeps passing,
+so the pair is not a tautology; restored, 2 passed. **This is the mutation
+evidence 2b could not obtain, and it is the whole point of item 2.**
+
+- `deviation: spec said a docker-exact-50 round with the delta-shape check,
+  built none, because no docker-exact-50 item has a probe (Stage 1b), so
+  pick cannot select one; the delta-shape verify entry is written when an
+  item earns a probe.` Writing an unexercised `verify.docker-exact-50` entry
+  would have been a contract entry nothing had run.
+- `deviation: spec said one round reaching PR_READY, built one BLOCKED
+  round, because the hermetic verify command cannot pass in any worktree for
+  an environmental reason this stage identified and is not authorised to
+  fix.` The mutation check the goal exists to produce was done by hand on the
+  retained branch instead.
+- Left out: the two DECIDEs above; the 2b review's Stage 4 sandbox DECIDE
+  (a worker's `python3` still runs with the operator's `HOME`); the deferred
+  livelock — a kept `explore/` branch now also outlives BLOCKED, so a later
+  round on the same item at a new sha is INFRA until the branch is deleted,
+  which is Stage 3's to resolve when it pushes and deletes.
+
 ## Controller status
 
 - Operator authorisation 2026-08-29: run every stage without stopping between
@@ -810,7 +933,8 @@ rounds on that item INFRA until deleted (a livelock in `continuous`).
   fleet runs remain out of scope. Decisions taken by the controller are
   recorded in each stage record.
 - Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
-- Last completed cycles: 1b, 2a (kernel pushed) and 2b (kernel four commits
-  ahead of origin, unpushed; the permission DECIDE is taken and built). Current: 2c.
+- Last completed cycles: 1b, 2a (kernel pushed), 2b and 2c (kernel ten commits
+  ahead of origin, unpushed; two DECIDEs open from 2c, both about what a round
+  can verify). Current: 3.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
