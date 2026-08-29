@@ -1129,6 +1129,10 @@ Deferred (round 1, suggestion-class or below):
 
 ## Controller status
 
+- Controller decision 2026-08-29: Stage 4 runs 4b (modes, caps) before 4a
+  (drills), because the open-PR-cap drill needs the cap to exist. L2 is not
+  enabled on this consumer until the sandbox DECIDE (Stage 2b review) is taken.
+
 - Operator authorisation 2026-08-29: run every stage without stopping between
   them; stop only when the roadmap is done or a stage is blocked. Paid or
   fleet runs remain out of scope. Decisions taken by the controller are
