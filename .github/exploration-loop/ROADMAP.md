@@ -940,6 +940,153 @@ evidence 2b could not obtain, and it is the whole point of item 2.**
   livelock in `continuous`. Deliberate (the diff exists nowhere else) and
   carried to Stage 4.
 
+## Stage 3 record — 2026-08-29
+
+Worker: Opus 5 subagent, on `fast-iter` at `47cd29e9`, kernel
+`~/centos_ex/projects/VibeCoding/agent-loop` main at `34421a0` (= `origin/main`).
+Nothing under `project/src`, `loop_evidence/` or the disabled `milestone-loop`
+workflow was touched by this session; the only product change is the one the
+round itself produced, and it is on a pull request nobody merged. **Kernel main
+is three commits ahead of `origin/main`, unpushed** — pushing the kernel was
+not this session's to do. `fast-iter` is pushed.
+
+**Kernel, three commits, +671 lines under `agent_loop/` and +491 test lines;
+104/104 hermetic tests.** Each behaviour was watched to fail with its fix
+reverted before it was committed.
+
+1. `46bf6c3` — *Publish before cleanup* (2a deferred 3). An `scm/` package with
+   a `github` publisher (`git push --force-with-lease`, then `gh`; read-only
+   otherwise) and a `local-only` no-op that stays the **default**, so every
+   hermetic test and any consumer that has not opted in opens nothing. A new
+   `scm` config key selects one. On `PR_READY` the round pushes
+   `explore/<item>` and opens a pull request titled `agent-loop: <item>`
+   against the configured branch, **inside the workspace context manager**, so
+   the branch still exists. The body is deterministic and written by the kernel,
+   never by an agent: item id, statement, the worker's `reason`, the two
+   mutation-evidence fields, `git diff --stat` and the ledger line. A branch
+   that already has an open pull request gets **that one updated** rather than a
+   second one opened. The ledger line gains `pr_url`. Once origin holds the
+   branch the local copy is no longer the only one, so cleanup takes it — which
+   is also what retires the 2c deferred livelock, where a kept `explore/` branch
+   made every later round on that item `INFRA`. Mutation checks: with the
+   publish call removed the round test fails on the absent `pr_url`; with the
+   existing-pull-request branch removed the update test fails on `gh pr create
+   printed no URL`.
+2. `f9b65ad` — *One review comment, and no fix loop*. After publish the
+   `reviewer` role runs (adapter from `agents.reviewer`, sandbox `read-only`) on
+   a bundle carrying the backlog entry, the `base...head` diff and §0's finding
+   classes with their rules; it answers `findings: [{kind, location, claim,
+   citation}]` against a schema, and they become **exactly one** pull-request
+   comment carrying `<!-- agent-loop:review -->`. A re-run reads the existing
+   comments and posts none. The findings are **not** fed back to the worker.
+   `validate()` gains array support, which the list needs. A review that cannot
+   be run at all — no `reviewer` configured, a bundle over the cap, a `gh`
+   failure — is said so on the round's line and **never costs the round its pull
+   request**, since the change is already published. Mutation checks: with the
+   marker check removed a second comment is posted and two tests fail; with
+   array support removed three schema tests fail.
+3. `08794ae` — *Levels*. `levels.<cost_class>` is now `L1` or `L2`; `L3` is
+   still refused, and a class the config says nothing about is `L1`. L1 leaves
+   the pull request open and notifies `FYI`. L2 squash-merges through `gh pr
+   merge --squash` when the reviewer returned **no `contract` and no `defect`
+   finding**, nothing in the diff is protected and the verify step flagged
+   nothing; otherwise it leaves it open and notifies `DECIDE` — one line
+   carrying the item, the link and the question. Invariant 8 is read **twice**:
+   verify BLOCKs a protected path, and the merge guard reads
+   `VerifyOutcome.protected` again, so nothing rests on one function. A refused
+   squash-merge turns back into a `DECIDE`. **DECIDE expiry** is a constant
+   (24 h), not a config key: a later round on an item whose `DECIDE` pull
+   request is older than that and still open ends `BLOCKED` with that reason
+   **before any worker is spawned**, which is why the ledger line also carries
+   the round's `decision`. No new terminal state, and it fits in the twenty
+   lines the spec allowed. Mutation checks: with L1's early return removed three
+   decision tests fail; with the protected-path hold removed two more; with the
+   expiry condition always true the expiry test and the round test fail.
+4. Bullet 4 needed no code: the reviewer's findings reach the pull request and
+   the round's ledger line, and are read by the level decision. Nothing carries
+   them back to a worker, and there is no second worker invocation in the round.
+
+**Consumer, one commit, `b2229eb8`.** `.agent-loop/config.yaml` gains
+`scm: github` and a `reviewer: claude-code:sonnet` rung with its own caps;
+**`levels` stays `L1` on both cost classes**. `.github/workflows/agent-loop-ci.yml`
+is new: on `pull_request` into `fast-iter` from a head branch starting
+`explore/`, one job on `[self-hosted, macOS, valkey-verify]`, 60 min, checkout
+then `cd project && ./scripts/agent_loop_verify_hermetic.sh`; plus a `schedule`
+job, same runner and timeout, running `cd project && ./gate suite
+repository.all`. `permissions: contents: read` and nothing else. Checked for the
+bare word "phase": absent. The disabled `milestone-loop` workflow was not
+touched.
+
+**The round.** Budget two, one spent. The leftover local branch
+`explore/retry-read-catches-a-broad-exception` was deleted first so the round
+could recreate it.
+
+- `PR_READY`, **390.9 s, cost $0.57**, notification on stdout and in
+  `.agent-loop/notifications.log`, prefixed `FYI`. Ledger line: `ts 11:10:38Z ·
+  item retry-read-catches-a-broad-exception · sha b2229eb8 · PR_READY · probe
+  passes, ./scripts/agent_loop_verify_hermetic.sh passes, no protected path
+  touched; test ...::test_retry_read_does_not_retry_an_error_reply_only_a_transport_failure;
+  reverted "...removing the `if not is_transient_transport_error(exc): raise`
+  guard at docker_runtime.py:3632-3633..." observed "E ... DockerRuntimeError:
+  probe failed after 3 attempts: RespCommandError('ERR unknown command')" ·
+  https://github.com/ly989264/valkey-scale-lab/pull/94 · 0 finding(s), posted ·
+  level L1, so a person merges · cost 0.5731 · 390.922 s · warning null ·
+  pr_url .../pull/94 · decision FYI`.
+- **Pull request: https://github.com/ly989264/valkey-scale-lab/pull/94**, open,
+  `explore/retry-read-catches-a-broad-exception` -> `fast-iter`, two files,
+  +38: `project/src/valkey_scale_lab/runtime/docker_runtime.py` +7 and
+  `project/tests/integration/test_docker_runtime_contract.py` +31. This is the
+  hermetic verify passing in a throwaway worktree for the first time — the
+  wrapper committed at `8a20a7f3` is what unblocked it, and it is the same fix
+  the 2c round produced by hand.
+- **Reviewer findings as posted: none.** The comment reads `<!-- agent-loop:review -->
+  / ## Reviewer findings / No findings.` It is the only comment on the pull
+  request. A no-finding review is a legitimate answer on a 38-line diff whose
+  mutation evidence the kernel had already verified, but it is one data point
+  and says nothing yet about whether the reviewer role finds anything when there
+  is something to find.
+- The local `explore/` branch is gone and `origin` holds it, as designed.
+
+**CI result: it triggered, and it FAILED — for the reason Stage 2c already
+identified, in a second place.** Run
+https://github.com/ly989264/valkey-scale-lab/actions/runs/33249453424, 1 m 32 s
+on `valkey-local`: `hermetic verify` fail, `repository.all` correctly skipped
+(it is a `schedule`-only job). The failure is **24/25, `product.unit.server_profile`
+FAIL, 8 tests, 0 failed, 0 errors, 1 skipped** — the frozen exact-50 baseline is
+under `project/artifacts/`, which is gitignored, so it is in no fresh checkout;
+`agent_loop_verify_hermetic.sh` links it from the *main checkout* a `git
+worktree` shares, and a CI checkout has no main checkout to link from. **The
+loop's own verify passes and CI's does not, on the same command and the same
+machine.** This is not a Stage 3 defect and not fixable inside the spec's
+"nothing else in the workflow": it is the same operator `DECIDE` 2c raised —
+make the frozen baseline reachable from a fresh checkout (`project/artifacts/baselines`
+is a protected path), or change the Gate's skip-is-FAIL policy
+(`verification/runner.py:155-161`), which is a validation-contract change
+CLAUDE.md's working rules say to report rather than make. **Until one of them is
+taken, every explore/ pull request will carry a red check that means nothing
+about the diff.**
+
+**L2 must not be enabled on this consumer before the sandbox `DECIDE` from the
+Stage 2b review is answered**: the worker's `--allowedTools` allowlist bounds
+the shell, not the filesystem, so a worker's `python3` runs with the operator's
+`HOME` and can read `~/.ssh` and `~/.claude`. A human merge is what currently
+stands between that and a merged diff. The config comment beside `levels` says
+so too.
+
+- `deviation: spec said ~250 kernel lines, built 671 under agent_loop/ (about
+  520 of them statements, the rest docstring and comment), because three
+  deliverables each needed their own module — a two-publisher scm/ package with
+  a real forge client, a reviewer schema and bundle, and the level decision with
+  its expiry — and none of the three shares code with another.` No hunk was
+  found that no bullet asks for; the excess is volume, not scope.
+- Left out, each needing its own evidence and none of it anyone's current item:
+  the CI baseline `DECIDE` above; the `codex` adapter is untouched and unused as
+  a reviewer; a `local-only` consumer still runs no reviewer at all, because a
+  review with nowhere to post is not written anywhere; `gh pr merge --squash`
+  does not delete the remote branch, so L2 will leave `explore/` branches on
+  `origin`; and the L2 path has been exercised only against a fake `gh`, never
+  against GitHub, since this consumer is L1 by decision.
+
 ## Controller status
 
 - Operator authorisation 2026-08-29: run every stage without stopping between
@@ -949,6 +1096,7 @@ evidence 2b could not obtain, and it is the whole point of item 2.**
 - Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
 - Last completed cycles: 1b, 2a (kernel pushed), 2b and 2c (kernel ten commits
   ahead of origin, unpushed; two DECIDEs open from 2c, both about what a round
-  can verify). Current: 3.
+  can verify), and 3 (kernel three commits ahead of origin, unpushed; PR #94
+  open at L1; the 2c baseline DECIDE now also reddens CI). Current: 4a.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
