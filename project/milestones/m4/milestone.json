@@ -1,10 +1,10 @@
 {
   "id": "m4",
-  "goal": "Scale the proven native multi-ECS lifecycle through exact real 500-node, 1000-node, and 2000-node runs without weakening safety, evidence quality, or cleanup.",
+  "goal": "Take the exact 1280-node target - 256 primaries with four replicas each - on an operator-supplied fleet at any provider, unattended, without weakening exact scale, safety, evidence quality, or cleanup.",
   "criteria": [
     {
       "id": "scale.definition-and-preflight",
-      "statement": "Exact scale requests through 2000 compile without downscaling, while execution above 200 remains dry-run or explicitly guarded until real distributed execution is implemented.",
+      "statement": "Exact scale requests compile without downscaling, and a real execution above 200 nodes is reachable only through the named 1280-node exception with operator opt-in and cost acknowledgement.",
       "check": [
         {"id": "product.config.config_validation"},
         {"id": "product.planner.planner"},
@@ -13,28 +13,68 @@
       ]
     },
     {
-      "id": "scale.exact.500",
-      "statement": "A real native multi-ECS run requests and independently observes exactly 500 healthy Valkey nodes."
+      "id": "scale.fleet-and-placement",
+      "statement": "The target shape places one nodehost per fleet host and keeps every shard's five members on distinct nodehosts, spreading primaries evenly whatever the fleet size.",
+      "check": [
+        {"id": "product.unit.nodehost_density"},
+        {"id": "product.unit.nodehost_density_assertions"},
+        {"id": "product.unit.native_backend"}
+      ]
     },
     {
-      "id": "scale.exact.1000",
-      "statement": "A real native multi-ECS run requests and independently observes exactly 1000 healthy Valkey nodes."
-    },
-    {
-      "id": "scale.exact.2000",
-      "statement": "A real native multi-ECS run requests and independently observes exactly 2000 healthy Valkey nodes."
+      "id": "scale.exact.1280",
+      "statement": "A real native multi-host run requests and independently observes exactly 1280 healthy Valkey nodes on the operator's fleet.",
+      "check": [
+        {
+          "id": "real.ecs.full-flow-1280",
+          "parameters": {
+            "nodes": 1280,
+            "config": "templates/configs/scale_1280_native_ecs_optin.yaml"
+          }
+        }
+      ]
     },
     {
       "id": "scale.telemetry-and-transfer",
-      "statement": "Telemetry, command logs, process journals, and evidence transfer remain complete, bounded, and attributable at every required scale."
+      "statement": "Telemetry, command logs, process journals, and evidence transfer remain complete, bounded, and attributable at 1280 nodes.",
+      "check": [
+        {
+          "id": "real.ecs.full-flow-1280",
+          "parameters": {
+            "nodes": 1280,
+            "config": "templates/configs/scale_1280_native_ecs_optin.yaml"
+          }
+        }
+      ]
     },
     {
       "id": "scale.fault-safety-and-cleanup",
-      "statement": "Fault containment, recovery, restart, teardown, and deterministic cleanup remain bounded and ownership-safe at every required scale."
+      "statement": "Fault containment, recovery, restart, teardown, and deterministic cleanup remain bounded and ownership-safe at the run's own density.",
+      "check": [
+        {
+          "id": "real.ecs.cleanup-ownership",
+          "parameters": {
+            "fleet_id": "m4-fleet",
+            "mode": "release"
+          }
+        },
+        {
+          "id": "real.ecs.cleanup-ownership",
+          "parameters": {
+            "fleet_id": "m4-fleet",
+            "mode": "abort"
+          }
+        }
+      ]
     },
     {
-      "id": "scale.comparison-report",
-      "statement": "Validated reports compare every admitted scale with the 200-node baseline and the immediately preceding admitted scale."
+      "id": "scale.run-renders-its-own-report",
+      "statement": "A run renders a validated, entirely offline report from its own artifacts, pass or fail, without a second command.",
+      "check": [
+        {"id": "product.report.report_rendering"},
+        {"id": "product.report.zh_offline_report_gate"},
+        {"id": "product.report.final_report"}
+      ]
     }
   ]
 }
