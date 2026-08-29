@@ -1,0 +1,36 @@
+name: agent-loop CI
+
+# Plain CI for the exploration loop (.github/exploration-loop/ROADMAP.md §4,
+# Stage 3): the hermetic verify command on every explore/ pull request, and
+# repository.all once a night. It reads the repository and writes nothing.
+
+on:
+  pull_request:
+    branches:
+      - fast-iter
+  schedule:
+    - cron: "0 10 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  hermetic:
+    name: hermetic verify
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'explore/')
+    runs-on: [self-hosted, macOS, valkey-verify]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hermetic verify
+        run: cd project && ./scripts/agent_loop_verify_hermetic.sh
+
+  nightly:
+    name: repository.all
+    if: github.event_name == 'schedule'
+    runs-on: [self-hosted, macOS, valkey-verify]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: repository.all
+        run: cd project && ./gate suite repository.all
