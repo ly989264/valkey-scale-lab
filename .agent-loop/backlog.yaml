@@ -143,7 +143,7 @@ items:
           raise RespCommandError('ERR unknown command')
       try:
           _retry_read(error_reply, what='probe', attempts=3, pause=0)
-      except DockerRuntimeError:
+      except Exception:
           pass
       assert len(calls) == 1, f'an error reply was retried: {len(calls)} calls'
       EOF

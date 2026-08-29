@@ -606,6 +606,18 @@ was touched; no backlog item was fixed.
 Commits: `f1655a78` (probes), `0cd6561e` (script, test, registration),
 and the commit that adds this record.
 
+Review (Opus, scope-first): RETURN on one `defect` — probe 1 caught
+`DockerRuntimeError`, so a correct fix that re-raises a non-transient error
+on the first attempt (the reviewer applied that three-line patch and showed
+the probe still red) would never turn it green. Widened to `Exception` by the
+controller (one token, cited); probe re-run, exit 1. Verified: `project/src`
+untouched, all three probes real and non-proxy, both refusals correct, the
+agreement script catches a one-byte change, a missing item, an unclaimed
+CLAUDE.md bullet and a duplicate; counts 101 / 93 / 91. Deferred: probe 2
+passes under a fix that maps every rc 255 to `TransportError` (its `proof`
+closes that); probe 3's pytest argv is two modules, so a fix landing its test
+elsewhere stays red (its `proof` targets a listed module).
+
 ## Stage 2a record — 2026-08-29
 
 Worker: Opus subagent in `~/centos_ex/projects/VibeCoding/agent-loop`.
@@ -654,6 +666,6 @@ Deferred (suggestions):
   fleet runs remain out of scope. Decisions taken by the controller are
   recorded in each stage record.
 - Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
-- Last completed cycle: Stage 2a (kernel pushed). Stage 1b delivered, in review. Next: 2b.
+- Last completed cycles: 1b and 2a (kernel pushed). Current: 2b.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
