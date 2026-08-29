@@ -1,10 +1,18 @@
 schema_version: v1
 # M4's target shape, and the fourth named bounded exception in this repository.
 #
-# 256 shards x 4 replicas = 1280 nodes, on the eight `c4a-standard-2` hosts of
-# `gce-m3b`. `docs/real_execution_above_200_exception_memo.md` is why this file
+# 256 shards x 4 replicas = 1280 nodes, on **the operator's own fleet, at any
+# provider**. `docs/real_execution_above_200_exception_memo.md` is why this file
 # exists and what it is allowed to relax; read it before changing any line of
-# the safety or scale_profile blocks.
+# the safety or scale_profile blocks, and `docs/fleet_operator_runbook.md` for
+# how to point it at a fleet.
+#
+# Three lines below are the operator's and nothing else is:
+# `host_inventory_path`, `native_bundle_dir`, and `nodehosts_per_az`. None of
+# them is a clause of the guard, so setting them to a fleet you actually have
+# does not weaken the exception and does not need a code change - which is worth
+# saying explicitly, because the guard's whole design invites the opposite
+# assumption.
 #
 # `profile_name` is the whole of the guard. `is_exact_1280_native_ecs_profile`
 # keys on this exact string plus eleven other clauses, and every one of them has
@@ -31,17 +39,40 @@ runtime:
   sandbox_mode: container_namespace
   # Required to be present and false by the exception itself.
   dry_run: false
-  host_inventory_path: artifacts/host-fleets/gce-m3b/inventory.json
+  # Yours. `scripts/make_fleet_manifest.py` writes it; the fleet id in the path
+  # is the one you pass that script and nothing cross-checks it against any
+  # machine.
+  host_inventory_path: artifacts/host-fleets/m4-fleet/inventory.json
+  # Yours, and it must match the fleet's architecture rather than this name.
+  # `scripts/build_native_bundle.py` takes the architecture from the pinned image
+  # it reads, so building it on a host of the fleet's own architecture produces
+  # the bundle that fleet can run - and `ecs_host_verify.sh --bundle DIR` is what
+  # says whether this fleet's hosts can actually execute it, which is a better
+  # question than any glibc version floor.
   native_bundle_dir: artifacts/native-bundles/valkey-9.1.0-memtier-2.5.1-arm64
-  # Twelve nodehosts over two AZs, one nodehost per host, which is what a
-  # native run places and refuses otherwise. The fleet was rebuilt to twelve
-  # `c4a-standard-2` on 2026-08-17 precisely so this number could be twelve: at
-  # eight it was 160 nodes per host, or 80 valkey-servers per vCPU, against the
-  # 50 per vCPU `m4_density_calibration.md` §4 measured clean. Twelve puts it at
-  # 53.5, inside the measured regime, and it is what the C4A CPU quota pays for.
+  # Sixteen nodehosts per AZ, thirty-two hosts, one nodehost per host - which is
+  # what a native run places and refuses otherwise. The number is derived, not
+  # inherited: 1280 nodes at the 40 per host that 8 vCPU / 16 GB carries is 32
+  # hosts, and `m4_density_calibration.md` §4 measured 50 valkey-servers per vCPU
+  # clean, which 40 on 8 vCPU sits well inside.
+  #
+  # **Sixteen also avoids a trap, and 24 hosts is the one that looks safest.**
+  # An AZ nodehost count divisible by three used to cluster every primary onto a
+  # third of the nodehosts - fixed at 59fbab5a, so a divisible count now costs
+  # nothing, but a fleet rebuilt at 12 or 24 hosts before that commit is a
+  # different machine from one rebuilt after it.
+  #
+  # A 1280-node cluster is proven to form and stay healthy on 32 x (8 vCPU /
+  # 16 GB). The wall the earlier attempts hit was 107 nodes on 2 vCPU, which is
+  # not this shape.
   max_nodehosts: 64
-  nodehosts_per_az: 6
-  max_logical_nodes_per_nodehost: 107
+  nodehosts_per_az: 16
+  # 40, matching the derivation above, and the same number to pass
+  # `ecs_host_verify.sh --nodes-per-host`. It was 107 because that is what twelve
+  # 2-vCPU hosts had to hold; 107 was the OOM wall those runs found, never a
+  # target, and leaving it here would let a mis-sized fleet compile a plan it
+  # cannot run.
+  max_logical_nodes_per_nodehost: 40
 hosts:
   - host_id: local
     os: auto
@@ -92,12 +123,14 @@ cluster:
   replicas_per_shard: 4
   port_base: 7800
   cluster_bus_port_base: 17800
-  # 64, the same as every run to date - which is the second reason the fleet was
-  # rebuilt to twelve hosts. At eight this had to drop to 32 (160 x 64 MiB is
-  # 10240 MiB against 7900 of RAM) and that would have been a second changed
-  # variable underneath M4's headline result. At twelve, 107 x 64 MiB is
-  # 6848 MiB and the memory model is the one every prior measurement was taken
-  # under, so node count and shard shape are the only things that move.
+  # 64, the same as every run to date, so that node count and shard shape are the
+  # only things that move underneath M4's headline result. At 40 nodes a host
+  # that is 2560 MiB of dataset cap against 16 GB.
+  #
+  # It is a dataset cap and does not bound the process: a node holds per-peer bus
+  # buffers, so RSS grows with the *fleet* rather than with this number - 10.5 MB
+  # steady per node at 200 nodes against peaks of 52-110 MB at 1280. Sizing a
+  # host from this line alone underestimates it by an order of magnitude.
   node_memory_limit_mb: 64
 scale_profile:
   exact_1280_native_ecs_opt_in: true
