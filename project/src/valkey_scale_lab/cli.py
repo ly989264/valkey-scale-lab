@@ -23,6 +23,8 @@ from valkey_scale_lab.observability.contracts import CollectionError
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import FinalReportError, ReportError, render_report
 from valkey_scale_lab.report.full_flow import build_renderable_analysis
+from valkey_scale_lab.report.messages import DEFAULT_LANGUAGE as _REPORT_DEFAULT_LANGUAGE
+from valkey_scale_lab.report.messages import LANGUAGES as _REPORT_LANGUAGES
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import CommandRecorder, command_recorder_context
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, execute_scenario
@@ -383,7 +385,9 @@ def _report(args: argparse.Namespace) -> int:
                     file=sys.stderr,
                 )
                 return 2
-            analysis = build_renderable_analysis(args.input)
+            # The analysis is built in the language it will be read in, because
+            # the reason every absence states is written there rather than here.
+            analysis = build_renderable_analysis(args.input, lang=args.lang)
             out_dir = Path(args.out_dir)
             out_dir.mkdir(parents=True, exist_ok=True)
             analysis_path = out_dir / "renderable_analysis.json"
@@ -391,7 +395,7 @@ def _report(args: argparse.Namespace) -> int:
                 json.dumps(analysis, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
-            cli_compat.render_report(str(analysis_path), args.out_dir, args.index_out)
+            cli_compat.render_report(str(analysis_path), args.out_dir, args.index_out, lang=args.lang)
         elif args.kind == "final-report":
             if not args.input:
                 print("ERROR: report: --input is required for final reports", file=sys.stderr)
@@ -401,7 +405,7 @@ def _report(args: argparse.Namespace) -> int:
             if not args.analysis or not args.index_out:
                 print("ERROR: report: --analysis and --index-out are required for summary reports", file=sys.stderr)
                 return 2
-            cli_compat.render_report(args.analysis, args.out_dir, args.index_out)
+            cli_compat.render_report(args.analysis, args.out_dir, args.index_out, lang=args.lang)
     except (FinalReportError, ReportError, ValueError) as exc:
         print(f"ERROR: report: {exc}", file=sys.stderr)
         return 1
@@ -671,6 +675,12 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument("--out-dir", required=True, help="Directory for rendered reports.")
     report.add_argument("--index-out", help="Path for report_index.json.")
     report.add_argument("--capability-id", default="final_report")
+    report.add_argument(
+        "--lang",
+        choices=list(_REPORT_LANGUAGES),
+        default=_REPORT_DEFAULT_LANGUAGE,
+        help="Language to render the report in. Default keeps what every existing run produced.",
+    )
     report.add_argument("--phase", dest="legacy_capability_alias", help=argparse.SUPPRESS)
     report.set_defaults(func=_report)
 

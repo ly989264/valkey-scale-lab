@@ -108,7 +108,11 @@ def test_fault_safety_canonical_selection_rejects_profile_node_mismatch() -> Non
             ("input", "analysis"),
             {"capability_id": "P25", "run_id": "run-1"},
         ),
-        (cli_compat.summary_report, "render_report", lambda: cli_compat.render_report("analysis.json", "reports", "index.json"), ("analysis.json", "reports", "index.json"), {}),
+        # `lang` crosses the boundary from the day the report gained a second
+        # language: the wrapper forwards it always rather than only when it
+        # differs from the default, so what reaches the renderer is one shape
+        # rather than two.
+        (cli_compat.summary_report, "render_report", lambda: cli_compat.render_report("analysis.json", "reports", "index.json"), ("analysis.json", "reports", "index.json"), {"lang": "zh"}),
         (
             cli_compat.final_report,
             "build_final_report",

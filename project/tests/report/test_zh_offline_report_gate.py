@@ -11,7 +11,20 @@ from valkey_scale_lab.report.render import render_report
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_zh_offline_report_gate_accepts_canonical_layout(tmp_path: Path) -> None:
+import pytest
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_offline_report_gate_accepts_canonical_layout(tmp_path: Path, lang: str) -> None:
+    """The same contract, in either language.
+
+    The section list the contract checks used to be a second copy of the
+    renderer's own headings, so it could only ever have described one language.
+    It now reads the same catalog the renderer reads, and this asserts that both
+    sides of that catalog satisfy it - a report that is offline in Chinese and
+    not in English would be a report nobody could hand to half the room.
+    """
+
     analysis_path = tmp_path / "analysis_summary.json"
     reports_dir = tmp_path / "reports"
     analysis_path.write_text(
@@ -37,13 +50,15 @@ def test_zh_offline_report_gate_accepts_canonical_layout(tmp_path: Path) -> None
         ),
         encoding="utf-8",
     )
-    render_report(analysis_path, reports_dir, reports_dir / "report_index.json")
+    render_report(analysis_path, reports_dir, reports_dir / "report_index.json", lang=lang)
     result = subprocess.run(
         [
             sys.executable,
             str(ROOT / "scripts" / "assert_zh_offline_report_contract.py"),
             "--reports-dir",
             str(reports_dir),
+            "--lang",
+            lang,
         ],
         cwd=ROOT,
         text=True,

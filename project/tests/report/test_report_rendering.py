@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from valkey_scale_lab.report import render_report
 
 
@@ -338,3 +340,190 @@ def test_the_report_page_has_no_external_dependency(tmp_path) -> None:
     # A protocol-relative reference is the one an external-URL scan misses most
     # easily, and the contract script rejects it too.
     assert "//" not in page
+
+
+# --- the report says the same thing in two languages -----------------------
+
+
+def _cjk(text: str) -> bool:
+    return any("一" <= ch <= "鿿" for ch in text)
+
+
+def test_every_message_carries_both_languages_and_says_something() -> None:
+    """A key present in one language and absent in the other is the failure mode.
+
+    The catalog is the only place either language is written, so a key that
+    exists for one and not the other produces a report that is half translated
+    rather than one that fails to build - and half translated reads as a
+    rendering defect to whoever opens it.
+    """
+
+    from valkey_scale_lab.report import messages as messages_module
+
+    tables = {lang: messages_module.messages(lang) for lang in messages_module.LANGUAGES}
+    keys = {lang: set(table) for lang, table in tables.items()}
+    assert keys["zh"] == keys["en"], keys["zh"].symmetric_difference(keys["en"])
+    for lang, table in tables.items():
+        empty = sorted(key for key, value in table.items() if not value.strip())
+        assert empty == [], (lang, empty)
+
+    # Every named field of a zh template must exist in the en one, or the
+    # translation drops a number the reader was meant to see.
+    import string
+
+    for key in keys["zh"]:
+        fields = {
+            lang: {
+                name
+                for _, name, _, _ in string.Formatter().parse(tables[lang][key])
+                if name
+            }
+            for lang in tables
+        }
+        assert fields["zh"] == fields["en"], (key, fields)
+
+
+def test_an_unknown_language_is_refused_rather_than_defaulted() -> None:
+    """Defaulting would produce a report in a language nobody asked for.
+
+    The artifact carries no note of which was requested, so a reader could not
+    tell a silent fallback from a deliberate choice.
+    """
+
+    from valkey_scale_lab.report import messages as messages_module
+
+    with pytest.raises(messages_module.UnknownLanguage):
+        messages_module.messages("fr")
+
+
+def test_the_english_report_carries_no_chinese_anywhere(tmp_path: _Path) -> None:
+    """Including the reasons, which are written by the adapter rather than the renderer.
+
+    This is what the language has to reach two layers for: the prose an absence
+    states is produced where the absence is found, so rendering alone in English
+    would leave every `SKIPPED_WITH_REASON` in Chinese.
+    """
+
+    from valkey_scale_lab.report.full_flow import build_renderable_analysis
+    from valkey_scale_lab.report.render import render_report
+
+    runtime = _fake_run(tmp_path)
+    out = tmp_path / "en"
+    out.mkdir()
+    analysis = build_renderable_analysis(runtime, lang="en")
+    path = out / "renderable_analysis.json"
+    path.write_text(_json.dumps(analysis, ensure_ascii=False), encoding="utf-8")
+    render_report(path, out, out / "report_index.json", lang="en")
+
+    offenders = [
+        item.name
+        for item in sorted(out.rglob("*"))
+        if item.is_file() and _cjk(item.read_text(encoding="utf-8", errors="replace"))
+    ]
+    assert offenders == [], offenders
+
+
+def test_both_languages_report_the_same_numbers(tmp_path: _Path) -> None:
+    """The language chooses sentences and nothing else.
+
+    Same file names and byte-identical data exports, so two renderings of one run
+    are comparable rather than two separate reports. If a translation ever moved
+    a number, this is what would catch it.
+    """
+
+    from valkey_scale_lab.report.full_flow import build_renderable_analysis
+    from valkey_scale_lab.report.render import render_report
+
+    runtime = _fake_run(tmp_path)
+    rendered = {}
+    for lang in ("zh", "en"):
+        out = tmp_path / f"report-{lang}"
+        out.mkdir()
+        analysis = build_renderable_analysis(runtime, lang=lang)
+        path = out / "renderable_analysis.json"
+        path.write_text(_json.dumps(analysis, ensure_ascii=False), encoding="utf-8")
+        render_report(path, out, out / "report_index.json", lang=lang)
+        rendered[lang] = out
+
+    names = {
+        lang: sorted(item.relative_to(out).as_posix() for item in out.rglob("*") if item.is_file())
+        for lang, out in rendered.items()
+    }
+    assert names["zh"] == names["en"]
+
+    # The data-only exports carry no prose at all, so they must match byte for
+    # byte. `split_brain_windows.csv` and `fault_timeline_events.csv` do carry a
+    # reason column and are deliberately not in this list.
+    for name in ["metrics.csv", "command_slowest.csv", "management_ops_matrix.csv"]:
+        assert (rendered["zh"] / name).read_bytes() == (rendered["en"] / name).read_bytes(), name
+
+
+def test_rendering_an_analysis_in_the_other_language_is_refused(tmp_path: _Path) -> None:
+    """Half of the report would be translated and half would not.
+
+    The reasons live in the analysis; the headings live in the renderer. Mixing
+    them produces a page that looks broken rather than one that says what it is.
+    """
+
+    from valkey_scale_lab.report.full_flow import build_renderable_analysis
+    from valkey_scale_lab.report.render import ReportError, render_report
+
+    runtime = _fake_run(tmp_path)
+    out = tmp_path / "mixed"
+    out.mkdir()
+    path = out / "renderable_analysis.json"
+    path.write_text(
+        _json.dumps(build_renderable_analysis(runtime, lang="en"), ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ReportError, match="build the analysis in the language"):
+        render_report(path, out, out / "report_index.json", lang="zh")
+
+
+def test_an_analysis_from_before_the_language_field_still_renders(tmp_path: _Path) -> None:
+    """Every run taken before this change has no `language`, and must stay renderable.
+
+    Refusing it would make old runs unrenderable for a field they could not have
+    carried, which is a worse outcome than rendering them as asked.
+    """
+
+    from valkey_scale_lab.report.full_flow import build_renderable_analysis
+    from valkey_scale_lab.report.render import render_report
+
+    runtime = _fake_run(tmp_path)
+    out = tmp_path / "legacy"
+    out.mkdir()
+    analysis = build_renderable_analysis(runtime, lang="zh")
+    analysis.pop("language")
+    path = out / "renderable_analysis.json"
+    path.write_text(_json.dumps(analysis, ensure_ascii=False), encoding="utf-8")
+
+    render_report(path, out, out / "report_index.json", lang="zh")
+    assert (out / "report.md").is_file()
+
+
+def test_the_gate_renders_a_report_in_every_language_it_knows() -> None:
+    """A mechanism implemented, tested, and not switched on is the shape to guard against.
+
+    Asserted on the call site rather than on the helper, because the helper
+    working proves nothing about the run producing both.
+    """
+
+    import ast
+    from pathlib import Path as _P
+
+    from valkey_scale_lab.gates import real as gates_real
+
+    source = _P(gates_real.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    function = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_render_run_report"
+    )
+    loops = [node for node in ast.walk(function) if isinstance(node, ast.For)]
+    assert loops, "the gate renders one language and not every one"
+    assert any(
+        isinstance(loop.iter, ast.Name) and loop.iter.id == "LANGUAGES" for loop in loops
+    ), "the gate must iterate the catalog's languages rather than a list of its own"

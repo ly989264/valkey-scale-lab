@@ -377,18 +377,26 @@ def _render_run_report(runtime: Path) -> tuple[CheckResult, ...]:
     """
 
     from valkey_scale_lab.report.full_flow import build_renderable_analysis
+    from valkey_scale_lab.report.messages import LANGUAGES, report_dirname
     from valkey_scale_lab.report.render import render_report
 
     try:
-        out_dir = runtime / "report"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        analysis = build_renderable_analysis(runtime)
-        analysis_path = out_dir / "renderable_analysis.json"
-        analysis_path.write_text(
-            json.dumps(analysis, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        render_report(analysis_path, out_dir, out_dir / "report_index.json")
+        for lang in LANGUAGES:
+            # One directory per language, side by side, and the run renders every
+            # one it knows. An unattended run is handed to whoever is there to
+            # read it, and which language that is cannot be decided from here -
+            # so both are produced rather than one chosen. `report/` stays the
+            # Chinese one, because every frozen run and every document that names
+            # a report path names that directory.
+            out_dir = runtime / report_dirname("report", lang)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            analysis = build_renderable_analysis(runtime, lang=lang)
+            analysis_path = out_dir / "renderable_analysis.json"
+            analysis_path.write_text(
+                json.dumps(analysis, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            render_report(analysis_path, out_dir, out_dir / "report_index.json", lang=lang)
     except Exception as error:  # noqa: BLE001 - a report must not cost a run
         return (
             CheckResult(

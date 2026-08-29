@@ -6,9 +6,10 @@ import json
 import shutil
 from hashlib import sha256
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.report.messages import DEFAULT_LANGUAGE, messages
 
 CAPABILITY_ID = "analysis_reporting"
 RUN_ID = "analysis_reporting-analysis-20260628"
@@ -19,7 +20,22 @@ class ReportError(RuntimeError):
     pass
 
 
-def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str | Path) -> dict[str, Any]:
+def render_report(
+    analysis_path: str | Path,
+    out_dir: str | Path,
+    index_out: str | Path,
+    *,
+    lang: str = DEFAULT_LANGUAGE,
+) -> dict[str, Any]:
+    """Render one analysis into one report directory, in one language.
+
+    `lang` selects the sentences and nothing else: the same analysis produces the
+    same numbers, the same file names and the same CSV columns whichever language
+    is asked for, so two renderings of one run differ only in what a reader
+    reads. That is what makes them comparable rather than two separate reports.
+    """
+
+    msg = messages(lang)
     analysis_file = Path(analysis_path)
     try:
         analysis = json.loads(analysis_file.read_text(encoding="utf-8"))
@@ -27,6 +43,18 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         raise ReportError(f"analysis artifact does not exist: {analysis_file}") from exc
     except json.JSONDecodeError as exc:
         raise ReportError(f"analysis artifact is invalid JSON: {analysis_file}: {exc}") from exc
+
+    # An analysis carries prose - the reason every absence states - so rendering
+    # one language's analysis in another produces a half-translated report. That
+    # is refused rather than produced. An analysis with no `language` predates
+    # the field and is rendered as asked, because refusing it would make old runs
+    # unrenderable for a check they could not have satisfied.
+    declared = analysis.get("language")
+    if declared is not None and declared != lang:
+        raise ReportError(
+            f"analysis was built in {declared!r} and the report was asked for in {lang!r}: "
+            "build the analysis in the language you want to read"
+        )
 
     report_dir = Path(out_dir)
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -51,7 +79,7 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_management_detail_csv(report_dir / "management_reshard_rebalance.csv", analysis.get("management_ops", {}).get("reshard_rebalance_summary", [])),
         _write_workload_windows_csv(report_dir / "workload_benchmark_windows.csv", analysis.get("workload_benchmark", {})),
         _write_workload_profile_csv(report_dir / "workload_profile_summary.csv", analysis.get("workload_benchmark", {})),
-        _write_fault_timeline_events_csv(report_dir / "fault_timeline_events.csv", analysis.get("fault_timeline", {})),
+        _write_fault_timeline_events_csv(report_dir / "fault_timeline_events.csv", analysis.get("fault_timeline", {}), msg),
         _write_fault_timeline_summary_csv(report_dir / "fault_timeline_summary.csv", analysis.get("fault_timeline", {})),
         _write_failover_latency_distribution_csv(report_dir / "failover_latency_distribution.csv", analysis.get("fault_timeline", {})),
         _write_split_brain_windows_csv(report_dir / "split_brain_windows.csv", analysis.get("fault_timeline", {})),
@@ -59,18 +87,18 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_resource_analysis_window_csv(report_dir / "resource_analysis_by_window.csv", analysis.get("resource_analysis", {})),
         _write_resource_analysis_node_csv(report_dir / "resource_analysis_abnormal_nodes.csv", analysis.get("resource_analysis", {})),
         _write_chart(report_dir / "metric_chart.svg", metrics),
-        _write_setup_waterfall_svg(report_dir / "setup_waterfall.svg", analysis.get("setup_aggregates", {})),
-        _write_command_latency_svg(report_dir / "command_latency.svg", analysis.get("command_audit", {})),
-        _write_management_duration_svg(report_dir / "management_operation_duration.svg", analysis.get("management_ops", {})),
-        _write_management_topology_svg(report_dir / "management_topology_diff.svg", analysis.get("management_ops", {})),
-        _write_workload_svg(report_dir / "workload_qps_p99_error.svg", analysis.get("workload_benchmark", {})),
-        _write_fault_timeline_svg(report_dir / "fault_timeline.svg", analysis.get("fault_timeline", {})),
-        _write_fault_distribution_svg(report_dir / "failover_latency_distribution.svg", analysis.get("fault_timeline", {})),
-        _write_split_brain_svg(report_dir / "split_brain_window.svg", analysis.get("fault_timeline", {})),
-        _write_fault_workload_svg(report_dir / "fault_workload_impact.svg", analysis.get("fault_timeline", {})),
-        _write_resource_analysis_svg(report_dir / "resource_trends.svg", analysis.get("resource_analysis", {})),
-        _write_markdown(report_dir / "report.md", analysis),
-        _write_html(report_dir / "index.html", analysis),
+        _write_setup_waterfall_svg(report_dir / "setup_waterfall.svg", analysis.get("setup_aggregates", {}), msg),
+        _write_command_latency_svg(report_dir / "command_latency.svg", analysis.get("command_audit", {}), msg),
+        _write_management_duration_svg(report_dir / "management_operation_duration.svg", analysis.get("management_ops", {}), msg),
+        _write_management_topology_svg(report_dir / "management_topology_diff.svg", analysis.get("management_ops", {}), msg),
+        _write_workload_svg(report_dir / "workload_qps_p99_error.svg", analysis.get("workload_benchmark", {}), msg),
+        _write_fault_timeline_svg(report_dir / "fault_timeline.svg", analysis.get("fault_timeline", {}), msg),
+        _write_fault_distribution_svg(report_dir / "failover_latency_distribution.svg", analysis.get("fault_timeline", {}), msg),
+        _write_split_brain_svg(report_dir / "split_brain_window.svg", analysis.get("fault_timeline", {}), msg),
+        _write_fault_workload_svg(report_dir / "fault_workload_impact.svg", analysis.get("fault_timeline", {}), msg),
+        _write_resource_analysis_svg(report_dir / "resource_trends.svg", analysis.get("resource_analysis", {}), msg),
+        _write_markdown(report_dir / "report.md", analysis, msg),
+        _write_html(report_dir / "index.html", analysis, msg),
     ]
     canonical = _write_canonical_layout(report_dir, generated)
 
@@ -432,13 +460,13 @@ def _write_workload_profile_csv(path: Path, workload: dict[str, Any]) -> Path:
     return path
 
 
-def _write_fault_timeline_events_csv(path: Path, fault: dict[str, Any]) -> Path:
+def _write_fault_timeline_events_csv(path: Path, fault: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = fault.get("event_completeness", []) if isinstance(fault, dict) else []
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["sample_id", "observed_event_count", "missing_events", "status"])
         writer.writeheader()
         if not rows:
-            writer.writerow({"sample_id": "SKIPPED_WITH_REASON", "observed_event_count": 0, "missing_events": fault.get("reason", "无故障 timeline 输入") if isinstance(fault, dict) else "无故障 timeline 输入", "status": fault.get("status", "SKIPPED_WITH_REASON") if isinstance(fault, dict) else "SKIPPED_WITH_REASON"})
+            writer.writerow({"sample_id": "SKIPPED_WITH_REASON", "observed_event_count": 0, "missing_events": fault.get("reason", msg["empty.fault_timeline_csv"]) if isinstance(fault, dict) else msg["empty.fault_timeline_csv"], "status": fault.get("status", "SKIPPED_WITH_REASON") if isinstance(fault, dict) else "SKIPPED_WITH_REASON"})
         for row in rows:
             writer.writerow({
                 "sample_id": row.get("sample_id", "MISSING"),
@@ -614,7 +642,7 @@ def _conclusion_summary(analysis: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _conclusion_lines(analysis: dict[str, Any]) -> list[str]:
+def _conclusion_lines(analysis: dict[str, Any], msg: Mapping[str, str]) -> list[str]:
     summary = _conclusion_summary(analysis)
     slow_setup = summary.get("slowest_setup_stage", {})
     slow_node = summary.get("slowest_node", {})
@@ -623,15 +651,46 @@ def _conclusion_lines(analysis: dict[str, Any]) -> list[str]:
     worst_workload = summary.get("worst_workload_window", {})
     top_resource = summary.get("top_resource_node", {})
     return [
-        f"- 主要启动耗时: {slow_setup.get('metric', 'MISSING')} = {slow_setup.get('value_ms', 'MISSING')} ms。",
-        f"- 最慢节点: {slow_node.get('logical_id', slow_node.get('node_id', 'MISSING'))}，ready_ms={slow_node.get('node_ready_ms', 'MISSING')}。",
-        f"- 最慢命令: {slow_command.get('command_id', 'MISSING')} {slow_command.get('command_kind', 'MISSING')} = {slow_command.get('duration_ms', 'MISSING')} ms。",
-        f"- 最慢管理操作: {slow_mgmt.get('operation_name', 'MISSING')} = {slow_mgmt.get('operation_duration_ms', 'MISSING')} ms。",
-        f"- Workload 瓶颈窗口: {worst_workload.get('profile', 'MISSING')} {worst_workload.get('window_name', 'MISSING')}，p99={worst_workload.get('latency_p99_ms', 'MISSING')} ms，错误率={worst_workload.get('error_rate', 'MISSING')}。",
-        f"- Failover p95={summary.get('failover_latency_p95_ms', 'MISSING')} ms；split-brain max={summary.get('split_brain_window_max_ms', 'MISSING')} ms。",
-        f"- 资源异常节点: {top_resource.get('node_id', 'MISSING')}，rss_sum={_metric_field(top_resource.get('metrics', {}) if isinstance(top_resource, dict) else {}, 'process_rss_bytes_max_sum', 'max') or 'MISSING'} bytes。",
-        f"- Cleanup 状态: {summary.get('cleanup_status', 'MISSING')}，剩余资源={summary.get('cleanup_resources_remaining', 'MISSING')}。",
-        f"- 缺失指标数量: {summary.get('missing_metric_count', 0)}；缺失项保留原因，不用估算值替代。",
+        msg["concl.setup"].format(
+            metric=slow_setup.get("metric", "MISSING"), value=slow_setup.get("value_ms", "MISSING")
+        ),
+        msg["concl.node"].format(
+            node=slow_node.get("logical_id", slow_node.get("node_id", "MISSING")),
+            ready=slow_node.get("node_ready_ms", "MISSING"),
+        ),
+        msg["concl.command"].format(
+            command=slow_command.get("command_id", "MISSING"),
+            kind=slow_command.get("command_kind", "MISSING"),
+            value=slow_command.get("duration_ms", "MISSING"),
+        ),
+        msg["concl.management"].format(
+            operation=slow_mgmt.get("operation_name", "MISSING"),
+            value=slow_mgmt.get("operation_duration_ms", "MISSING"),
+        ),
+        msg["concl.workload"].format(
+            profile=worst_workload.get("profile", "MISSING"),
+            window=worst_workload.get("window_name", "MISSING"),
+            p99=worst_workload.get("latency_p99_ms", "MISSING"),
+            error_rate=worst_workload.get("error_rate", "MISSING"),
+        ),
+        msg["concl.failover"].format(
+            p95=summary.get("failover_latency_p95_ms", "MISSING"),
+            split_brain=summary.get("split_brain_window_max_ms", "MISSING"),
+        ),
+        msg["concl.resource"].format(
+            node=top_resource.get("node_id", "MISSING"),
+            rss=_metric_field(
+                top_resource.get("metrics", {}) if isinstance(top_resource, dict) else {},
+                "process_rss_bytes_max_sum",
+                "max",
+            )
+            or "MISSING",
+        ),
+        msg["concl.cleanup"].format(
+            status=summary.get("cleanup_status", "MISSING"),
+            remaining=summary.get("cleanup_resources_remaining", "MISSING"),
+        ),
+        msg["concl.missing"].format(count=summary.get("missing_metric_count", 0)),
     ]
 
 
@@ -681,7 +740,7 @@ def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
     return path
 
 
-def _write_setup_waterfall_svg(path: Path, setup: dict[str, Any]) -> Path:
+def _write_setup_waterfall_svg(path: Path, setup: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = [item for item in setup.get("stage_duration_ranking", []) if isinstance(item.get("value_ms"), (int, float))]
     max_value = max([float(item["value_ms"]) for item in rows] + [1.0])
     y = 42
@@ -695,12 +754,12 @@ def _write_setup_waterfall_svg(path: Path, setup: dict[str, Any]) -> Path:
         parts.append(f'<text x="{220 + max(width, 2)}" y="{y + 14}" font-size="12">{value:.3f} ms</text>')
         y += 32
     if not rows:
-        parts.append('<text x="12" y="56" font-size="13">setup_telemetry.json 未提供可绘制的数值阶段耗时。</text>')
+        parts.append(f'<text x="12" y="56" font-size="13">{html.escape(msg["empty.setup_svg"])}</text>')
     height = max(y + 20, 100)
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="720" height="{height}" viewBox="0 0 720 {height}">\n'
         '<rect width="100%" height="100%" fill="#ffffff"/>\n'
-        '<text x="12" y="24" font-size="16" font-weight="700">集群拉起瀑布图</text>\n'
+        f'<text x="12" y="24" font-size="16" font-weight="700">{html.escape(msg["sec.setup_waterfall"])}</text>\n'
         + "\n".join(parts)
         + "\n</svg>\n"
     )
@@ -708,7 +767,7 @@ def _write_setup_waterfall_svg(path: Path, setup: dict[str, Any]) -> Path:
     return path
 
 
-def _write_command_latency_svg(path: Path, audit: dict[str, Any]) -> Path:
+def _write_command_latency_svg(path: Path, audit: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = [item for item in audit.get("slowest_commands_topN", []) if isinstance(item.get("duration_ms"), (int, float))]
     max_value = max([float(item["duration_ms"]) for item in rows] + [1.0])
     y = 42
@@ -723,12 +782,12 @@ def _write_command_latency_svg(path: Path, audit: dict[str, Any]) -> Path:
         parts.append(f'<text x="{240 + max(width, 2)}" y="{y + 14}" font-size="12">{value:.3f} ms</text>')
         y += 32
     if not rows:
-        parts.append('<text x="12" y="56" font-size="13">command_log.jsonl 未提供可绘制的命令耗时。</text>')
+        parts.append(f'<text x="12" y="56" font-size="13">{html.escape(msg["empty.command_svg"])}</text>')
     height = max(y + 20, 100)
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="760" height="{height}" viewBox="0 0 760 {height}">\n'
         '<rect width="100%" height="100%" fill="#ffffff"/>\n'
-        '<text x="12" y="24" font-size="16" font-weight="700">命令耗时分布</text>\n'
+        f'<text x="12" y="24" font-size="16" font-weight="700">{html.escape(msg["svg.command_latency"])}</text>\n'
         + "\n".join(parts)
         + "\n</svg>\n"
     )
@@ -736,7 +795,7 @@ def _write_command_latency_svg(path: Path, audit: dict[str, Any]) -> Path:
     return path
 
 
-def _write_management_duration_svg(path: Path, management: dict[str, Any]) -> Path:
+def _write_management_duration_svg(path: Path, management: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = [item for item in management.get("duration_ranking_topN", []) if isinstance(item.get("operation_duration_ms"), (int, float))]
     max_value = max([float(item["operation_duration_ms"]) for item in rows] + [1.0])
     y = 42
@@ -750,12 +809,12 @@ def _write_management_duration_svg(path: Path, management: dict[str, Any]) -> Pa
         parts.append(f'<text x="{260 + max(width, 2)}" y="{y + 14}" font-size="12">{value:.3f} ms</text>')
         y += 32
     if not rows:
-        parts.append('<text x="12" y="56" font-size="13">management_operation_results.jsonl 未提供可绘制的管理操作耗时。</text>')
+        parts.append(f'<text x="12" y="56" font-size="13">{html.escape(msg["empty.management_svg"])}</text>')
     height = max(y + 20, 100)
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="820" height="{height}" viewBox="0 0 820 {height}">\n'
         '<rect width="100%" height="100%" fill="#ffffff"/>\n'
-        '<text x="12" y="24" font-size="16" font-weight="700">管理操作耗时排序</text>\n'
+        f'<text x="12" y="24" font-size="16" font-weight="700">{html.escape(msg["svg.management_duration"])}</text>\n'
         + "\n".join(parts)
         + "\n</svg>\n"
     )
@@ -763,7 +822,7 @@ def _write_management_duration_svg(path: Path, management: dict[str, Any]) -> Pa
     return path
 
 
-def _write_management_topology_svg(path: Path, management: dict[str, Any]) -> Path:
+def _write_management_topology_svg(path: Path, management: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = management.get("topology_diff_summary", []) if isinstance(management, dict) else []
     y = 42
     parts: list[str] = []
@@ -777,12 +836,12 @@ def _write_management_topology_svg(path: Path, management: dict[str, Any]) -> Pa
         parts.append(f'<text x="{350 + width}" y="{y + 14}" font-size="12">moved_ranges={html.escape(str(moved))}</text>')
         y += 32
     if not rows:
-        parts.append('<text x="12" y="56" font-size="13">management_topology_diffs.jsonl 未提供 topology diff。</text>')
+        parts.append(f'<text x="12" y="56" font-size="13">{html.escape(msg["empty.topology_svg"])}</text>')
     height = max(y + 20, 100)
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="820" height="{height}" viewBox="0 0 820 {height}">\n'
         '<rect width="100%" height="100%" fill="#ffffff"/>\n'
-        '<text x="12" y="24" font-size="16" font-weight="700">管理 topology diff 摘要</text>\n'
+        f'<text x="12" y="24" font-size="16" font-weight="700">{html.escape(msg["sec.topology_diff"])}</text>\n'
         + "\n".join(parts)
         + "\n</svg>\n"
     )
@@ -790,19 +849,19 @@ def _write_management_topology_svg(path: Path, management: dict[str, Any]) -> Pa
     return path
 
 
-def _write_workload_svg(path: Path, workload: dict[str, Any]) -> Path:
+def _write_workload_svg(path: Path, workload: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = [row for row in workload.get("windows", []) if isinstance(row, dict)] if isinstance(workload, dict) else []
     plot_rows = rows[:12]
     width = 760
     height = 120 + max(len(plot_rows), 1) * 28
     max_qps = max([float(row.get("achieved_qps", 0) or 0) for row in plot_rows if isinstance(row.get("achieved_qps"), (int, float))] or [1.0])
     parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" role="img" aria-label="Workload QPS p99 错误率">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" role="img" aria-label="{html.escape(msg["svg.workload_aria"])}">',
         '<rect width="100%" height="100%" fill="white"/>',
-        '<text x="20" y="28" font-size="16" font-family="sans-serif">Workload QPS / p99 / 错误率</text>',
+        f'<text x="20" y="28" font-size="16" font-family="sans-serif">{html.escape(msg["svg.workload_title"])}</text>',
     ]
     if not plot_rows:
-        parts.append('<text x="20" y="64" font-size="13" font-family="sans-serif">SKIPPED_WITH_REASON: 无 workload benchmark 行</text>')
+        parts.append(f'<text x="20" y="64" font-size="13" font-family="sans-serif">SKIPPED_WITH_REASON: {html.escape(msg["empty.workload_rows"])}</text>')
     for idx, row in enumerate(plot_rows):
         y = 58 + idx * 28
         qps = row.get("achieved_qps", 0)
@@ -812,22 +871,22 @@ def _write_workload_svg(path: Path, workload: dict[str, Any]) -> Path:
         error = html.escape(str(row.get("error_rate", "MISSING")))
         parts.append(f'<text x="20" y="{y + 14}" font-size="12" font-family="sans-serif">{label}</text>')
         parts.append(f'<rect x="190" y="{y}" width="{bar}" height="18" fill="#2f80ed"/>')
-        parts.append(f'<text x="{200 + bar}" y="{y + 14}" font-size="12" font-family="sans-serif">QPS={html.escape(str(qps))} p99={p99} 错误率={error}</text>')
+        parts.append(f'<text x="{200 + bar}" y="{y + 14}" font-size="12" font-family="sans-serif">{html.escape(msg["svg.workload_bar"].format(qps=str(qps), p99=p99, error_rate=error))}</text>')
     parts.append("</svg>")
     path.write_text("\n".join(parts), encoding="utf-8")
     return path
 
 
-def _write_fault_timeline_svg(path: Path, fault: dict[str, Any]) -> Path:
+def _write_fault_timeline_svg(path: Path, fault: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = fault.get("event_completeness", []) if isinstance(fault, dict) else []
     y = 52
     parts = [
         '<svg xmlns="http://www.w3.org/2000/svg" width="820" height="360" viewBox="0 0 820 360">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="16" y="28" font-size="16" font-weight="700">故障 Timeline</text>',
+        f'<text x="16" y="28" font-size="16" font-weight="700">{html.escape(msg["sec.fault_timeline"])}</text>',
     ]
     if not rows:
-        parts.append('<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: 无 fault_timeline_events.jsonl 输入</text>')
+        parts.append(f'<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: {html.escape(msg["empty.fault_events"])}</text>')
     for row in rows[:8]:
         sample_id = html.escape(str(row.get("sample_id", "MISSING")))
         count = int(row.get("observed_event_count", 0) or 0)
@@ -840,7 +899,7 @@ def _write_fault_timeline_svg(path: Path, fault: dict[str, Any]) -> Path:
     return path
 
 
-def _write_fault_distribution_svg(path: Path, fault: dict[str, Any]) -> Path:
+def _write_fault_distribution_svg(path: Path, fault: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = [(name, fault.get(name, {})) for name in ["failover_latency", "promotion_latency", "client_unavailability", "workload_recovery"]] if isinstance(fault, dict) else []
     values = [float(item.get("p95_ms")) for _, item in rows if isinstance(item.get("p95_ms"), (int, float))]
     max_value = max(values or [1.0])
@@ -848,7 +907,7 @@ def _write_fault_distribution_svg(path: Path, fault: dict[str, Any]) -> Path:
     parts = [
         '<svg xmlns="http://www.w3.org/2000/svg" width="820" height="240" viewBox="0 0 820 240">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="16" y="28" font-size="16" font-weight="700">Failover 延迟分布</text>',
+        f'<text x="16" y="28" font-size="16" font-weight="700">{html.escape(msg["sec.failover_distribution"])}</text>',
     ]
     for name, item in rows:
         value = item.get("p95_ms", "MISSING")
@@ -862,14 +921,14 @@ def _write_fault_distribution_svg(path: Path, fault: dict[str, Any]) -> Path:
     return path
 
 
-def _write_split_brain_svg(path: Path, fault: dict[str, Any]) -> Path:
+def _write_split_brain_svg(path: Path, fault: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = [(name, fault.get(name, {})) for name in ["split_brain_window", "cluster_down_window"]] if isinstance(fault, dict) else []
     max_value = max([float(item.get("max_ms")) for _, item in rows if isinstance(item.get("max_ms"), (int, float))] or [1.0])
     y = 56
     parts = [
         '<svg xmlns="http://www.w3.org/2000/svg" width="760" height="170" viewBox="0 0 760 170">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="16" y="28" font-size="16" font-weight="700">Split-brain 窗口</text>',
+        f'<text x="16" y="28" font-size="16" font-weight="700">{html.escape(msg["sec.split_brain"])}</text>',
     ]
     for name, item in rows:
         value = item.get("max_ms", "MISSING")
@@ -883,7 +942,7 @@ def _write_split_brain_svg(path: Path, fault: dict[str, Any]) -> Path:
     return path
 
 
-def _write_fault_workload_svg(path: Path, fault: dict[str, Any]) -> Path:
+def _write_fault_workload_svg(path: Path, fault: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = fault.get("rows", []) if isinstance(fault, dict) else []
     max_value = max([
         float(row.get("metrics", {}).get("client_unavailability_ms"))
@@ -894,10 +953,10 @@ def _write_fault_workload_svg(path: Path, fault: dict[str, Any]) -> Path:
     parts = [
         '<svg xmlns="http://www.w3.org/2000/svg" width="840" height="320" viewBox="0 0 840 320">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="16" y="28" font-size="16" font-weight="700">故障期间 Workload 影响</text>',
+        f'<text x="16" y="28" font-size="16" font-weight="700">{html.escape(msg["sec.fault_workload"])}</text>',
     ]
     if not rows:
-        parts.append('<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: 无 fault workload impact 输入</text>')
+        parts.append(f'<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: {html.escape(msg["empty.fault_workload"])}</text>')
     for row in rows[:8]:
         metrics = row.get("metrics", {}) if isinstance(row, dict) else {}
         value = metrics.get("client_unavailability_ms", "MISSING")
@@ -912,7 +971,7 @@ def _write_fault_workload_svg(path: Path, fault: dict[str, Any]) -> Path:
     return path
 
 
-def _write_resource_analysis_svg(path: Path, system: dict[str, Any]) -> Path:
+def _write_resource_analysis_svg(path: Path, system: dict[str, Any], msg: Mapping[str, str]) -> Path:
     rows = system.get("per_window", []) if isinstance(system, dict) else []
     plot_rows = rows[:10]
     max_value = max([
@@ -924,10 +983,10 @@ def _write_resource_analysis_svg(path: Path, system: dict[str, Any]) -> Path:
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="860" height="{height}" viewBox="0 0 860 {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="16" y="28" font-size="16" font-weight="700">资源观测趋势</text>',
+        f'<text x="16" y="28" font-size="16" font-weight="700">{html.escape(msg["sec.resource_trends"])}</text>',
     ]
     if not plot_rows:
-        parts.append('<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: 无 resource_observation.json 输入</text>')
+        parts.append(f'<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: {html.escape(msg["empty.resource_observation"])}</text>')
     y = 56
     for row in plot_rows:
         metrics = row.get("metrics", {}) if isinstance(row, dict) else {}
@@ -944,7 +1003,7 @@ def _write_resource_analysis_svg(path: Path, system: dict[str, Any]) -> Path:
     return path
 
 
-def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
+def _write_markdown(path: Path, analysis: dict[str, Any], msg: Mapping[str, str]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
     command_audit = analysis.get("command_audit", {})
@@ -953,20 +1012,20 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     fault = analysis.get("fault_timeline", {})
     system = analysis.get("resource_analysis", {})
     lines = [
-        "# 中文自动化可视化分析报告",
+        f"# {msg['doc.title']}",
         "",
-        f"状态: {analysis.get('status', 'MISSING')}",
-        f"来源阶段: {analysis.get('source', {}).get('capability_id', 'MISSING')}",
+        f"{msg['doc.status']}: {analysis.get('status', 'MISSING')}",
+        f"{msg['doc.source_stage']}: {analysis.get('source', {}).get('capability_id', 'MISSING')}",
         "",
-        "## 总览页",
+        f"## {msg['sec.overview']}",
         "",
-        "本报告由本地 artifact 自动生成，不调用 LLM、不访问外网、不依赖在线图表服务。所有结论来自 schema 化 JSON/JSONL、CSV 和本地 SVG 产物。",
+        msg["doc.standfirst"],
         "",
-        "## 结论摘要",
+        f"## {msg['sec.conclusions']}",
         "",
-        *_conclusion_lines(analysis),
+        *_conclusion_lines(analysis, msg),
         "",
-        "## 运行元数据",
+        f"## {msg['sec.run_metadata']}",
         "",
         f"- run_id: {_metadata_value(metadata, 'run_id')}",
         f"- created_at: {_metadata_value(metadata, 'created_at')}",
@@ -974,22 +1033,22 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
         f"- valkey_version: {_metadata_value(metadata, 'valkey_version')}",
         f"- artifact_root: {_metadata_value(metadata, 'artifact_root')}",
         "",
-        "## 分析发现",
+        f"## {msg['sec.findings']}",
         "",
     ]
     for finding in analysis.get("findings", []):
         lines.append(f"- {finding.get('name', 'finding')}: {finding.get('status', 'MISSING')}")
-    lines.extend(["", "## 集群拉起瀑布图", ""])
+    lines.extend(["", f"## {msg['sec.setup_waterfall']}", ""])
     if setup.get("stage_duration_ranking"):
-        lines.append("![集群拉起瀑布图](setup_waterfall.svg)")
+        lines.append(f"![{msg['sec.setup_waterfall']}](setup_waterfall.svg)")
     else:
-        lines.append(f"- {setup.get('status', 'SKIPPED_WITH_REASON')}: {setup.get('reason', '未提供 setup telemetry')}")
-    lines.extend(["", "## 阶段耗时排序", ""])
+        lines.append(f"- {setup.get('status', 'SKIPPED_WITH_REASON')}: {setup.get('reason', msg['empty.setup_telemetry'])}")
+    lines.extend(["", f"## {msg['sec.stage_durations']}", ""])
     for item in setup.get("stage_duration_ranking", [])[:10]:
         lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('value_ms', 'MISSING')} ms")
     if not setup.get("stage_duration_ranking"):
-        lines.append("- SKIPPED_WITH_REASON: 无可排序的阶段耗时")
-    lines.extend(["", "## 慢节点 TopN", ""])
+        lines.append(f"- SKIPPED_WITH_REASON: {msg['empty.stage_durations']}")
+    lines.extend(["", f"## {msg['sec.slow_nodes']}", ""])
     slow_nodes = setup.get("slowest_nodes_topN", [])
     if slow_nodes:
         for item in slow_nodes[:10]:
@@ -998,79 +1057,84 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             elif isinstance(item, dict):
                 lines.append(f"- {item.get('logical_id', 'MISSING')}: {item.get('node_ready_ms', 'MISSING')} ms, role={item.get('node_role', 'MISSING')}")
     else:
-        lines.append("- SKIPPED_WITH_REASON: 无慢节点样本")
-    lines.extend(["", "## 慢命令 TopN", ""])
+        lines.append(f"- SKIPPED_WITH_REASON: {msg['empty.slow_nodes']}")
+    lines.extend(["", f"## {msg['sec.slow_commands']}", ""])
     if command_audit.get("slowest_commands_topN"):
-        lines.append("![命令耗时分布](command_latency.svg)")
+        lines.append(f"![{msg['svg.command_latency']}](command_latency.svg)")
         for item in command_audit.get("slowest_commands_topN", [])[:10]:
             lines.append(f"- {item.get('command_id', 'MISSING')} {item.get('command_kind', 'MISSING')}: {item.get('duration_ms', 'MISSING')} ms status={item.get('status', 'MISSING')}")
     else:
-        lines.append(f"- {command_audit.get('status', 'SKIPPED_WITH_REASON')}: {command_audit.get('reason', '无 command log 样本')}")
-    lines.extend(["", "## 失败命令", ""])
+        lines.append(f"- {command_audit.get('status', 'SKIPPED_WITH_REASON')}: {command_audit.get('reason', msg['empty.command_log'])}")
+    lines.extend(["", f"## {msg['sec.failed_commands']}", ""])
     failures = command_audit.get("failed_commands", [])
     if failures:
         for item in failures[:10]:
             lines.append(f"- {item.get('command_id', 'MISSING')} {item.get('command_kind', 'MISSING')}: {item.get('error_type', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 重试命令", ""])
+    lines.extend(["", f"## {msg['sec.retry_commands']}", ""])
     retries = command_audit.get("retry_commands", [])
     if retries:
         for item in retries[:10]:
             lines.append(f"- {item.get('command_id', 'MISSING')} {item.get('command_kind', 'MISSING')}: retry_index={item.get('retry_index', 0)} status={item.get('status', 'MISSING')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 命令审计覆盖", ""])
+    lines.extend(["", f"## {msg['sec.command_coverage']}", ""])
     lines.append(f"- total_commands: {command_audit.get('total_commands', 0)}")
     for kind, count in sorted(command_audit.get("by_command_kind", {}).items()):
         lines.append(f"- {kind}: {count}")
-    lines.extend(["", "## 管理操作矩阵", ""])
+    lines.extend(["", f"## {msg['sec.management_matrix']}", ""])
     if management.get("duration_ranking_topN"):
-        lines.append("![管理操作耗时排序](management_operation_duration.svg)")
+        lines.append(f"![{msg['svg.management_duration']}](management_operation_duration.svg)")
         for item in management.get("duration_ranking_topN", [])[:11]:
             lines.append(f"- {item.get('operation_name', 'MISSING')}: {item.get('operation_duration_ms', 'MISSING')} ms status={item.get('operation_status', 'MISSING')} commands={item.get('command_count', 0)}")
     else:
-        lines.append(f"- {management.get('status', 'SKIPPED_WITH_REASON')}: {management.get('reason', '无管理操作样本')}")
-    lines.extend(["", "## 管理 topology diff 摘要", ""])
+        lines.append(f"- {management.get('status', 'SKIPPED_WITH_REASON')}: {management.get('reason', msg['empty.management'])}")
+    lines.extend(["", f"## {msg['sec.topology_diff']}", ""])
     if management.get("topology_diff_summary"):
-        lines.append("![管理 topology diff 摘要](management_topology_diff.svg)")
+        lines.append(f"![{msg['sec.topology_diff']}](management_topology_diff.svg)")
         for item in management.get("topology_diff_summary", [])[:10]:
             lines.append(f"- {item.get('operation_id', 'MISSING')}: known_nodes_delta={item.get('known_nodes_delta', 'MISSING')}, moved_slot_ranges={item.get('moved_slot_range_count', 'MISSING')}")
     else:
-        lines.append("- SKIPPED_WITH_REASON: 无 topology diff 样本")
-    lines.extend(["", "## Workload 基准压测", ""])
+        lines.append(f"- SKIPPED_WITH_REASON: {msg['empty.topology']}")
+    lines.extend(["", f"## {msg['sec.workload']}", ""])
     if workload.get("windows"):
         lines.append("![Workload QPS p99 error](workload_qps_p99_error.svg)")
-        lines.append(f"- 覆盖 profile: {', '.join(str(item) for item in workload.get('profiles_covered', []))}")
-        lines.append(f"- 全 slot 覆盖: {workload.get('full_slot_covered', 'MISSING')}。该值来自 workload_windows.json 的 hash_slot_coverage，用于确认基准压测不是只走固定 hash tag。")
+        lines.append(msg["workload.coverage_md"].format(profiles=", ".join(str(item) for item in workload.get("profiles_covered", []))))
+        lines.append(msg["workload.slot_coverage_md"].format(covered=workload.get("full_slot_covered", "MISSING")))
         for item in workload.get("windows", [])[:12]:
             lines.append(
-                f"- {item.get('profile', 'MISSING')} {item.get('window_name', 'MISSING')}: "
-                f"实际 QPS={item.get('achieved_qps', 'MISSING')}，p99 延迟 ms={item.get('latency_p99_ms', 'MISSING')}，错误率={item.get('error_rate', 'MISSING')}"
+                msg["workload.window_md"].format(
+                    profile=item.get("profile", "MISSING"),
+                    window=item.get("window_name", "MISSING"),
+                    qps=item.get("achieved_qps", "MISSING"),
+                    p99=item.get("latency_p99_ms", "MISSING"),
+                    error_rate=item.get("error_rate", "MISSING"),
+                )
             )
     else:
-        lines.append(f"- {workload.get('status', 'SKIPPED_WITH_REASON')}: {workload.get('reason', '无 workload benchmark 样本')}")
-    lines.extend(["", "## 故障 Timeline", ""])
+        lines.append(f"- {workload.get('status', 'SKIPPED_WITH_REASON')}: {workload.get('reason', msg['empty.workload'])}")
+    lines.extend(["", f"## {msg['sec.fault_timeline']}", ""])
     if fault.get("event_completeness"):
-        lines.append("![故障 Timeline](fault_timeline.svg)")
+        lines.append(f"![{msg['sec.fault_timeline']}](fault_timeline.svg)")
         for item in fault.get("event_completeness", [])[:10]:
             missing_events = ", ".join(str(name) for name in item.get("missing_events", [])) or "none"
             lines.append(f"- {item.get('sample_id', 'MISSING')}: observed={item.get('observed_event_count', 0)}/12, missing={missing_events}")
     else:
-        lines.append(f"- {fault.get('status', 'SKIPPED_WITH_REASON')}: {fault.get('reason', '无 fault timeline artifact')}")
-    lines.extend(["", "## Failover 延迟分布", ""])
-    lines.append("![Failover 延迟分布](failover_latency_distribution.svg)")
+        lines.append(f"- {fault.get('status', 'SKIPPED_WITH_REASON')}: {fault.get('reason', msg['empty.fault_timeline_artifact'])}")
+    lines.extend(["", f"## {msg['sec.failover_distribution']}", ""])
+    lines.append(f"![{msg['sec.failover_distribution']}](failover_latency_distribution.svg)")
     for name in ["failover_latency", "promotion_latency", "client_unavailability", "workload_recovery"]:
         item = fault.get(name, {}) if isinstance(fault, dict) else {}
         lines.append(f"- {name}: p50={item.get('p50_ms', 'MISSING')} ms, p95={item.get('p95_ms', 'MISSING')} ms, max={item.get('max_ms', 'MISSING')} ms, status={item.get('status', 'MISSING')}")
-    lines.extend(["", "## Split-brain 窗口", ""])
-    lines.append("![Split-brain 窗口](split_brain_window.svg)")
+    lines.extend(["", f"## {msg['sec.split_brain']}", ""])
+    lines.append(f"![{msg['sec.split_brain']}](split_brain_window.svg)")
     for name in ["split_brain_window", "cluster_down_window"]:
         item = fault.get(name, {}) if isinstance(fault, dict) else {}
         lines.append(f"- {name}: p95={item.get('p95_ms', 'MISSING')} ms, max={item.get('max_ms', 'MISSING')} ms, status={item.get('status', 'MISSING')}")
-    lines.extend(["", "## 故障期间 Workload 影响", ""])
+    lines.extend(["", f"## {msg['sec.fault_workload']}", ""])
     if fault.get("rows"):
-        lines.append("![故障期间 Workload 影响](fault_workload_impact.svg)")
+        lines.append(f"![{msg['sec.fault_workload']}](fault_workload_impact.svg)")
         for row in fault.get("rows", [])[:10]:
             metrics = row.get("metrics", {}) if isinstance(row, dict) else {}
             lines.append(
@@ -1079,10 +1143,10 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
                 f"workload_recovery_ms={_display_metric(metrics.get('workload_recovery_ms'))}, status={row.get('status', 'MISSING')}"
             )
     else:
-        lines.append(f"- {fault.get('status', 'SKIPPED_WITH_REASON')}: {fault.get('reason', '无故障期间 workload impact 输入')}")
-    lines.extend(["", "## 资源观测趋势", ""])
+        lines.append(f"- {fault.get('status', 'SKIPPED_WITH_REASON')}: {fault.get('reason', msg['empty.fault_workload_input'])}")
+    lines.extend(["", f"## {msg['sec.resource_trends']}", ""])
     if system.get("per_window"):
-        lines.append("![资源观测趋势](resource_trends.svg)")
+        lines.append(f"![{msg['sec.resource_trends']}](resource_trends.svg)")
         for item in system.get("per_window", [])[:10]:
             metrics = item.get("metrics", {}) if isinstance(item, dict) else {}
             lines.append(
@@ -1092,8 +1156,8 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
                 f"missing_count={item.get('missing_count', 0)}"
             )
     else:
-        lines.append(f"- {system.get('status', 'SKIPPED_WITH_REASON')}: {system.get('reason', '无 resource analysis 输入')}")
-    lines.extend(["", "## 资源异常节点 TopN", ""])
+        lines.append(f"- {system.get('status', 'SKIPPED_WITH_REASON')}: {system.get('reason', msg['empty.resource_analysis'])}")
+    lines.extend(["", f"## {msg['sec.resource_nodes']}", ""])
     if system.get("abnormal_nodes_topN"):
         for item in system.get("abnormal_nodes_topN", [])[:10]:
             metrics = item.get("metrics", {}) if isinstance(item, dict) else {}
@@ -1104,15 +1168,15 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
                 f"missing_count={item.get('missing_count', 0)}"
             )
     else:
-        lines.append("- SKIPPED_WITH_REASON: 无异常节点排序输入")
-    lines.extend(["", "## 缺失指标", ""])
+        lines.append(f"- SKIPPED_WITH_REASON: {msg['empty.resource_nodes']}")
+    lines.extend(["", f"## {msg['sec.missing_metrics']}", ""])
     missing = analysis.get("missing_metrics", [])
     if missing:
         for item in missing:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_lifecycle_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- fault_timeline_events.csv", "- fault_timeline_summary.csv", "- failover_latency_distribution.csv", "- split_brain_windows.csv", "- fault_workload_impact.csv", "- resource_analysis_by_window.csv", "- resource_analysis_abnormal_nodes.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg", "- fault_timeline.svg", "- failover_latency_distribution.svg", "- split_brain_window.svg", "- fault_workload_impact.svg", "- resource_trends.svg"])
+    lines.extend(["", f"## {msg['sec.generated_files']}", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_lifecycle_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- fault_timeline_events.csv", "- fault_timeline_summary.csv", "- failover_latency_distribution.csv", "- split_brain_windows.csv", "- fault_workload_impact.csv", "- resource_analysis_by_window.csv", "- resource_analysis_abnormal_nodes.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg", "- fault_timeline.svg", "- failover_latency_distribution.svg", "- split_brain_window.svg", "- fault_workload_impact.svg", "- resource_trends.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -1211,7 +1275,7 @@ _REPORT_STYLESHEET = """\
 """
 
 
-def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
+def _write_html(path: Path, analysis: dict[str, Any], msg: Mapping[str, str]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
     command_audit = analysis.get("command_audit", {})
@@ -1243,12 +1307,12 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     ) or '<tr><td colspan="3">none</td></tr>'
     conclusion_rows = "\n".join(
         "<tr><td>{}</td></tr>".format(html.escape(line.lstrip("- ")))
-        for line in _conclusion_lines(analysis)
+        for line in _conclusion_lines(analysis, msg)
     )
     setup_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td></tr>".format(html.escape(str(item.get("metric", "MISSING"))), html.escape(str(item.get("value_ms", "MISSING"))))
         for item in setup.get("stage_duration_ranking", [])[:12]
-    ) or '<tr><td colspan="2">SKIPPED_WITH_REASON: 无可排序的阶段耗时</td></tr>'
+    ) or f'<tr><td colspan="2">SKIPPED_WITH_REASON: {html.escape(msg["empty.stage_durations"])}</td></tr>'
     slow_node_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("logical_id", item.get("status", "MISSING")))),
@@ -1258,14 +1322,14 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         )
         for item in setup.get("slowest_nodes_topN", [])[:10]
         if isinstance(item, dict)
-    ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无慢节点样本</td></tr>'
-    slow_command_rows = _command_html_rows(command_audit.get("slowest_commands_topN", [])) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无慢命令样本</td></tr>'
+    ) or f'<tr><td colspan="4">SKIPPED_WITH_REASON: {html.escape(msg["empty.slow_nodes"])}</td></tr>'
+    slow_command_rows = _command_html_rows(command_audit.get("slowest_commands_topN", [])) or f'<tr><td colspan="5">SKIPPED_WITH_REASON: {html.escape(msg["empty.slow_commands"])}</td></tr>'
     failed_command_rows = _command_html_rows(command_audit.get("failed_commands", [])) or '<tr><td colspan="5">none</td></tr>'
     retry_command_rows = _command_html_rows(command_audit.get("retry_commands", [])) or '<tr><td colspan="5">none</td></tr>'
     command_coverage_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td></tr>".format(html.escape(str(kind)), html.escape(str(count)))
         for kind, count in sorted(command_audit.get("by_command_kind", {}).items())
-    ) or '<tr><td colspan="2">SKIPPED_WITH_REASON: 无 command log 样本</td></tr>'
+    ) or f'<tr><td colspan="2">SKIPPED_WITH_REASON: {html.escape(msg["empty.command_log"])}</td></tr>'
     management_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("operation_name", "MISSING"))),
@@ -1274,7 +1338,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
             html.escape(str(item.get("command_count", 0))),
         )
         for item in management.get("duration_ranking_topN", [])[:11]
-    ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无管理操作样本</td></tr>'
+    ) or f'<tr><td colspan="4">SKIPPED_WITH_REASON: {html.escape(msg["empty.management"])}</td></tr>'
     topology_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("operation_id", "MISSING"))),
@@ -1283,7 +1347,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
             html.escape(str(item.get("status", "MISSING"))),
         )
         for item in management.get("topology_diff_summary", [])[:10]
-    ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无 topology diff 样本</td></tr>'
+    ) or f'<tr><td colspan="4">SKIPPED_WITH_REASON: {html.escape(msg["empty.topology"])}</td></tr>'
     workload_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("profile", "MISSING"))),
@@ -1293,7 +1357,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
             html.escape(str(item.get("error_rate", "MISSING"))),
         )
         for item in workload.get("windows", [])[:12]
-    ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无 workload benchmark 样本</td></tr>'
+    ) or f'<tr><td colspan="5">SKIPPED_WITH_REASON: {html.escape(msg["empty.workload"])}</td></tr>'
     fault_event_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("sample_id", "MISSING"))),
@@ -1301,7 +1365,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
             html.escape(", ".join(str(name) for name in item.get("missing_events", [])) or "none"),
         )
         for item in fault.get("event_completeness", [])[:10]
-    ) or '<tr><td colspan="3">SKIPPED_WITH_REASON: 无 fault timeline 样本</td></tr>'
+    ) or f'<tr><td colspan="3">SKIPPED_WITH_REASON: {html.escape(msg["empty.fault_timeline_samples"])}</td></tr>'
     fault_distribution_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(name),
@@ -1330,7 +1394,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
             html.escape(str(row.get("status", "MISSING"))),
         )
         for row in fault.get("rows", [])[:10]
-    ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无故障期间 workload impact 输入</td></tr>'
+    ) or f'<tr><td colspan="5">SKIPPED_WITH_REASON: {html.escape(msg["empty.fault_workload_input"])}</td></tr>'
     resource_observation_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("window", "MISSING"))),
@@ -1340,7 +1404,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
             html.escape(str(item.get("missing_count", 0))),
         )
         for item in system.get("per_window", [])[:10]
-    ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无 resource analysis 输入</td></tr>'
+    ) or f'<tr><td colspan="5">SKIPPED_WITH_REASON: {html.escape(msg["empty.resource_analysis"])}</td></tr>'
     resource_node_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("node_id", "MISSING"))),
@@ -1349,15 +1413,15 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
             html.escape(str(item.get("missing_count", 0))),
         )
         for item in system.get("abnormal_nodes_topN", [])[:10]
-    ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无异常节点排序输入</td></tr>'
+    ) or f'<tr><td colspan="4">SKIPPED_WITH_REASON: {html.escape(msg["empty.resource_nodes"])}</td></tr>'
     status_text = str(analysis.get("status", "MISSING"))
     status_class = "ok" if status_text == "PASS" else ("bad" if status_text in {"FAIL", "ERROR"} else "warn")
     document = f"""<!doctype html>
-<html lang="zh-CN">
+<html lang="{msg['doc.html_lang']}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>中文自动化可视化分析报告</title>
+  <title>{html.escape(msg['doc.title'])}</title>
   <style>
 {_REPORT_STYLESHEET}
   </style>
@@ -1365,76 +1429,76 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
 <body>
 <div class="sheet">
   <header class="masthead">
-    <p class="eyebrow">valkey-scale-lab<span>离线 artifact 渲染</span><span>不调用 LLM</span></p>
-    <h1>中文自动化可视化分析报告</h1>
-    <p class="standfirst">本报告由本地 artifact 自动生成，不调用 LLM、不访问外网、不依赖在线图表服务。所有结论来自 schema 化 JSON/JSONL、CSV 和本地 SVG 产物。</p>
+    <p class="eyebrow">valkey-scale-lab<span>{html.escape(msg['doc.eyebrow_offline'])}</span><span>{html.escape(msg['doc.eyebrow_no_llm'])}</span></p>
+    <h1>{html.escape(msg['doc.title'])}</h1>
+    <p class="standfirst">{html.escape(msg['doc.standfirst'])}</p>
   </header>
 
   <dl class="verdict">
-    <div><dt>运行状态</dt><dd class="{status_class}">{html.escape(status_text)}</dd></div>
-    <div><dt>来源阶段</dt><dd class="sm">{html.escape(str(analysis.get("source", {}).get("capability_id", "MISSING")))}</dd></div>
-    <div><dt>命令总数</dt><dd>{html.escape(str(command_audit.get("total_commands", "MISSING")))}</dd></div>
-    <div><dt>失败命令</dt><dd>{html.escape(str(command_audit.get("failure_count", "MISSING")))}</dd></div>
-    <div><dt>重试命令</dt><dd>{html.escape(str(command_audit.get("retry_count", "MISSING")))}</dd></div>
-    <div><dt>缺失指标</dt><dd>{len(analysis.get("missing_metrics", []))}</dd></div>
+    <div><dt>{html.escape(msg['verdict.run_status'])}</dt><dd class="{status_class}">{html.escape(status_text)}</dd></div>
+    <div><dt>{html.escape(msg['doc.source_stage'])}</dt><dd class="sm">{html.escape(str(analysis.get("source", {}).get("capability_id", "MISSING")))}</dd></div>
+    <div><dt>{html.escape(msg['verdict.total_commands'])}</dt><dd>{html.escape(str(command_audit.get("total_commands", "MISSING")))}</dd></div>
+    <div><dt>{html.escape(msg['verdict.failed_commands'])}</dt><dd>{html.escape(str(command_audit.get("failure_count", "MISSING")))}</dd></div>
+    <div><dt>{html.escape(msg['verdict.retry_commands'])}</dt><dd>{html.escape(str(command_audit.get("retry_count", "MISSING")))}</dd></div>
+    <div><dt>{html.escape(msg['verdict.missing_metrics'])}</dt><dd>{len(analysis.get("missing_metrics", []))}</dd></div>
   </dl>
 
-  <h2>总览页</h2>
-  <p class="note">缺失项一律保留原因，不用估算值替代；下表每一行都可回溯到运行自身已校验的 artifact。</p>
-  <h2>结论摘要</h2>
-  <table><thead><tr><th>artifact 派生结论</th></tr></thead><tbody>{conclusion_rows}</tbody></table>
-  <h2>运行元数据</h2>
-  <table><thead><tr><th>字段</th><th>值</th></tr></thead><tbody>{metadata_rows}</tbody></table>
-  <h2>分析发现</h2>
+  <h2>{html.escape(msg['sec.overview'])}</h2>
+  <p class="note">{html.escape(msg['doc.note'])}</p>
+  <h2>{html.escape(msg['sec.conclusions'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.conclusion'])}</th></tr></thead><tbody>{conclusion_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.run_metadata'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.field'])}</th><th>{html.escape(msg['col.value'])}</th></tr></thead><tbody>{metadata_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.findings'])}</h2>
   <table><thead><tr><th>Name</th><th>Status</th></tr></thead><tbody>{finding_rows}</tbody></table>
-  <h2>缺失指标</h2>
-  <table><thead><tr><th>指标</th><th>状态</th><th>原因</th></tr></thead><tbody>{missing_rows}</tbody></table>
-  <h2>集群拉起瀑布图</h2>
-  <img src="setup_waterfall.svg" alt="集群拉起瀑布图">
-  <h2>阶段耗时排序</h2>
-  <table><thead><tr><th>阶段指标</th><th>耗时 ms</th></tr></thead><tbody>{setup_rows}</tbody></table>
-  <h2>慢节点 TopN</h2>
-  <table><thead><tr><th>节点</th><th>ready ms</th><th>角色</th><th>状态</th></tr></thead><tbody>{slow_node_rows}</tbody></table>
-  <h2>慢命令 TopN</h2>
-  <img src="command_latency.svg" alt="命令耗时分布">
-  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody>{slow_command_rows}</tbody></table>
-  <h2>失败命令</h2>
-  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody>{failed_command_rows}</tbody></table>
-  <h2>重试命令</h2>
-  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody>{retry_command_rows}</tbody></table>
-  <h2>命令审计覆盖</h2>
-  <table><thead><tr><th>命令类型</th><th>数量</th></tr></thead><tbody>{command_coverage_rows}</tbody></table>
-  <h2>管理操作矩阵</h2>
-  <img src="management_operation_duration.svg" alt="管理操作耗时排序">
-  <table><thead><tr><th>操作</th><th>耗时 ms</th><th>状态</th><th>命令数</th></tr></thead><tbody>{management_rows}</tbody></table>
-  <h2>管理 topology diff 摘要</h2>
-  <img src="management_topology_diff.svg" alt="管理 topology diff 摘要">
-  <table><thead><tr><th>操作</th><th>known_nodes_delta</th><th>moved_slot_ranges</th><th>状态</th></tr></thead><tbody>{topology_rows}</tbody></table>
-  <h2>Workload 基准压测</h2>
-  <p>覆盖 profile: <code>{html.escape(", ".join(str(item) for item in workload.get("profiles_covered", [])))}</code>；全 slot 覆盖: <code>{html.escape(str(workload.get("full_slot_covered", "MISSING")))}</code>。该结论来自本地 workload artifact，不依赖 LLM 或外网。</p>
-  <img src="workload_qps_p99_error.svg" alt="Workload QPS p99 错误率对比">
-  <table><thead><tr><th>压测 profile</th><th>采集窗口</th><th>实际 QPS</th><th>p99 延迟 ms</th><th>错误率</th></tr></thead><tbody>{workload_rows}</tbody></table>
-  <h2>故障 Timeline</h2>
-  <img src="fault_timeline.svg" alt="故障 Timeline">
-  <table><thead><tr><th>样本</th><th>观察事件数</th><th>缺失事件</th></tr></thead><tbody>{fault_event_rows}</tbody></table>
-  <h2>Failover 延迟分布</h2>
-  <img src="failover_latency_distribution.svg" alt="Failover 延迟分布">
-  <table><thead><tr><th>指标</th><th>p50 ms</th><th>p95 ms</th><th>max ms</th><th>状态</th></tr></thead><tbody>{fault_distribution_rows}</tbody></table>
-  <h2>Split-brain 窗口</h2>
-  <img src="split_brain_window.svg" alt="Split-brain 窗口">
-  <table><thead><tr><th>指标</th><th>p95 ms</th><th>max ms</th><th>状态</th></tr></thead><tbody>{split_brain_rows}</tbody></table>
-  <h2>故障期间 Workload 影响</h2>
-  <img src="fault_workload_impact.svg" alt="故障期间 Workload 影响">
-  <table><thead><tr><th>故障类型</th><th>样本</th><th>客户端不可用 ms</th><th>workload 恢复 ms</th><th>状态</th></tr></thead><tbody>{fault_workload_rows}</tbody></table>
-  <h2>资源观测趋势</h2>
-  <img src="resource_trends.svg" alt="资源观测趋势">
-  <table><thead><tr><th>窗口</th><th>样本数</th><th>RSS 汇总 bytes</th><th>FD 汇总</th><th>缺失数</th></tr></thead><tbody>{resource_observation_rows}</tbody></table>
-  <h2>资源异常节点 TopN</h2>
-  <table><thead><tr><th>节点</th><th>RSS 汇总 bytes</th><th>FD 汇总</th><th>缺失数</th></tr></thead><tbody>{resource_node_rows}</tbody></table>
-  <h2>图表</h2>
-  <img src="metric_chart.svg" alt="ANALYSIS_REPORTING artifact metrics chart">
+  <h2>{html.escape(msg['sec.missing_metrics'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.metric'])}</th><th>{html.escape(msg['col.status'])}</th><th>{html.escape(msg['col.reason'])}</th></tr></thead><tbody>{missing_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.setup_waterfall'])}</h2>
+  <img src="setup_waterfall.svg" alt="{html.escape(msg['sec.setup_waterfall'])}">
+  <h2>{html.escape(msg['sec.stage_durations'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.stage_metric'])}</th><th>{html.escape(msg['col.duration_ms'])}</th></tr></thead><tbody>{setup_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.slow_nodes'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.node'])}</th><th>ready ms</th><th>{html.escape(msg['col.role'])}</th><th>{html.escape(msg['col.status'])}</th></tr></thead><tbody>{slow_node_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.slow_commands'])}</h2>
+  <img src="command_latency.svg" alt="{html.escape(msg['svg.command_latency'])}">
+  <table><thead><tr><th>{html.escape(msg['col.command'])}</th><th>{html.escape(msg['col.operation'])}</th><th>{html.escape(msg['col.kind'])}</th><th>{html.escape(msg['col.duration_ms'])}</th><th>{html.escape(msg['col.status'])}</th></tr></thead><tbody>{slow_command_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.failed_commands'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.command'])}</th><th>{html.escape(msg['col.operation'])}</th><th>{html.escape(msg['col.kind'])}</th><th>{html.escape(msg['col.duration_ms'])}</th><th>{html.escape(msg['col.status'])}</th></tr></thead><tbody>{failed_command_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.retry_commands'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.command'])}</th><th>{html.escape(msg['col.operation'])}</th><th>{html.escape(msg['col.kind'])}</th><th>{html.escape(msg['col.duration_ms'])}</th><th>{html.escape(msg['col.status'])}</th></tr></thead><tbody>{retry_command_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.command_coverage'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.command_kind'])}</th><th>{html.escape(msg['col.count'])}</th></tr></thead><tbody>{command_coverage_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.management_matrix'])}</h2>
+  <img src="management_operation_duration.svg" alt="{html.escape(msg['svg.management_duration'])}">
+  <table><thead><tr><th>{html.escape(msg['col.operation'])}</th><th>{html.escape(msg['col.duration_ms'])}</th><th>{html.escape(msg['col.status'])}</th><th>{html.escape(msg['col.command_count'])}</th></tr></thead><tbody>{management_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.topology_diff'])}</h2>
+  <img src="management_topology_diff.svg" alt="{html.escape(msg['sec.topology_diff'])}">
+  <table><thead><tr><th>{html.escape(msg['col.operation'])}</th><th>known_nodes_delta</th><th>moved_slot_ranges</th><th>{html.escape(msg['col.status'])}</th></tr></thead><tbody>{topology_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.workload'])}</h2>
+  <p>{msg['workload.coverage_html'].format(profiles=html.escape(", ".join(str(item) for item in workload.get("profiles_covered", []))), covered=html.escape(str(workload.get("full_slot_covered", "MISSING"))))}</p>
+  <img src="workload_qps_p99_error.svg" alt="{html.escape(msg['img.workload_alt'])}">
+  <table><thead><tr><th>{html.escape(msg['col.workload_profile'])}</th><th>{html.escape(msg['col.window'])}</th><th>{html.escape(msg['col.achieved_qps'])}</th><th>{html.escape(msg['col.p99_ms'])}</th><th>{html.escape(msg['col.error_rate'])}</th></tr></thead><tbody>{workload_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.fault_timeline'])}</h2>
+  <img src="fault_timeline.svg" alt="{html.escape(msg['sec.fault_timeline'])}">
+  <table><thead><tr><th>{html.escape(msg['col.sample'])}</th><th>{html.escape(msg['col.observed_events'])}</th><th>{html.escape(msg['col.missing_events'])}</th></tr></thead><tbody>{fault_event_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.failover_distribution'])}</h2>
+  <img src="failover_latency_distribution.svg" alt="{html.escape(msg['sec.failover_distribution'])}">
+  <table><thead><tr><th>{html.escape(msg['col.metric'])}</th><th>p50 ms</th><th>p95 ms</th><th>max ms</th><th>{html.escape(msg['col.status'])}</th></tr></thead><tbody>{fault_distribution_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.split_brain'])}</h2>
+  <img src="split_brain_window.svg" alt="{html.escape(msg['sec.split_brain'])}">
+  <table><thead><tr><th>{html.escape(msg['col.metric'])}</th><th>p95 ms</th><th>max ms</th><th>{html.escape(msg['col.status'])}</th></tr></thead><tbody>{split_brain_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.fault_workload'])}</h2>
+  <img src="fault_workload_impact.svg" alt="{html.escape(msg['sec.fault_workload'])}">
+  <table><thead><tr><th>{html.escape(msg['col.fault_type'])}</th><th>{html.escape(msg['col.sample'])}</th><th>{html.escape(msg['col.client_unavailable_ms'])}</th><th>{html.escape(msg['col.workload_recovery_ms'])}</th><th>{html.escape(msg['col.status'])}</th></tr></thead><tbody>{fault_workload_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.resource_trends'])}</h2>
+  <img src="resource_trends.svg" alt="{html.escape(msg['sec.resource_trends'])}">
+  <table><thead><tr><th>{html.escape(msg['col.resource_window'])}</th><th>{html.escape(msg['col.samples'])}</th><th>{html.escape(msg['col.rss_sum'])}</th><th>{html.escape(msg['col.fd_sum'])}</th><th>{html.escape(msg['col.missing_count'])}</th></tr></thead><tbody>{resource_observation_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.resource_nodes'])}</h2>
+  <table><thead><tr><th>{html.escape(msg['col.node'])}</th><th>{html.escape(msg['col.rss_sum'])}</th><th>{html.escape(msg['col.fd_sum'])}</th><th>{html.escape(msg['col.missing_count'])}</th></tr></thead><tbody>{resource_node_rows}</tbody></table>
+  <h2>{html.escape(msg['sec.charts'])}</h2>
+  <img src="metric_chart.svg" alt="{html.escape(msg['img.metric_chart_alt'])}">
 
-  <footer>本页与同目录下的 CSV、SVG 均由本项目脚本离线生成，可在无外网环境中重复产出；每个数字都取自运行已写出并校验的 artifact，不做二次推算。</footer>
+  <footer>{html.escape(msg['doc.footer'])}</footer>
 </div>
 </body>
 </html>

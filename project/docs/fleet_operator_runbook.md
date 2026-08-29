@@ -212,12 +212,32 @@ window under a 1800-second ceiling, and that bound has not been measured above
 ## §8 The report
 
 When the run ends - **pass or fail** - it renders its own report into the run's
-tree at `runtime/report/`: 40 files, an `index.html`, a Markdown summary, 22
-CSVs and 11 SVGs. It is entirely offline. A contract check rejects any external
-URL, CDN reference, or bare `//` in it, so it opens on a machine with no internet
-and nothing is fetched from anywhere.
+tree, in **every language it knows**, one directory each:
 
-Copy the directory off and open `index.html`.
+| directory | language |
+|---|---|
+| `runtime/report/` | Chinese |
+| `runtime/report-en/` | English |
+
+Each is 40 files: an `index.html`, a Markdown summary, 22 CSVs and 11 SVGs. Both
+are entirely offline - the same contract check rejects any external URL, CDN
+reference, or bare `//` in either - so they open on a machine with no internet and
+nothing is fetched from anywhere.
+
+Copy the directory you want off the host and open `index.html`.
+
+**The two say the same thing.** The language chooses sentences and nothing else:
+same file names, same figures, and the data-only CSV exports are byte-identical
+between them, so a Chinese reader and an English reader are looking at one result
+rather than two reports. What is not translated is what was never prose - node
+ids, command kinds, metric names and statuses stay as the run recorded them.
+
+To render one again from the same artifacts, or to render only one:
+
+```bash
+python3 -m valkey_scale_lab.cli report --kind full-flow --lang en \
+  --input <run>/runtime --out-dir <somewhere> --index-out <somewhere>/report_index.json
+```
 
 The report is a reader, not a second analyzer: **every number in it is lifted
 from an artifact the run already validated**, because a report that recomputed

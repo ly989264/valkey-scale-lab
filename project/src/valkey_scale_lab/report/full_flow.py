@@ -26,7 +26,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
+
+from valkey_scale_lab.report.messages import DEFAULT_LANGUAGE, messages
 
 MISSING = "MISSING"
 _SKIPPED = "SKIPPED_WITH_REASON"
@@ -65,13 +67,13 @@ def _number(value: Any) -> float | None:
     return float(value)
 
 
-def _setup_aggregates(runtime: Path) -> dict[str, Any]:
+def _setup_aggregates(runtime: Path, msg: Mapping[str, str]) -> dict[str, Any]:
     """Stage durations, from the run's own timing breakdown."""
 
     breakdown = _load(runtime, "runtime_timing_breakdown_local_full_flow.json")
     timings = (breakdown or {}).get("timings")
     if not isinstance(timings, list) or not timings:
-        return _skipped("runtime_timing_breakdown 未提供 timings")
+        return _skipped(msg["reason.no_timings"])
     rows: list[dict[str, Any]] = []
     for row in timings:
         if not isinstance(row, dict):
@@ -98,19 +100,19 @@ def _setup_aggregates(runtime: Path) -> dict[str, Any]:
         "slowest_nodes_topN": [
             {
                 "status": _SKIPPED,
-                "reason": "full-flow 生命周期未记录单节点 ready 时间，不用阶段总时长估算",
+                "reason": msg["reason.no_per_node_ready"],
             }
         ],
     }
 
 
-def _command_audit(runtime: Path) -> dict[str, Any]:
+def _command_audit(runtime: Path, msg: Mapping[str, str]) -> dict[str, Any]:
     """The command audit, which already answers most of this question itself."""
 
     summary = _load(runtime, "command_audit/command_audit_summary.json")
     rows = _load_lines(runtime, "command_audit/command_log.jsonl")
     if summary is None and not rows:
-        return _skipped("未找到 command_audit 产物")
+        return _skipped(msg["reason.no_command_audit"])
 
     timed = [row for row in rows if _number(row.get("duration_ms")) is not None]
     slowest = sorted(timed, key=lambda row: float(row["duration_ms"]), reverse=True)[:20]
@@ -135,13 +137,13 @@ def _command_audit(runtime: Path) -> dict[str, Any]:
     }
 
 
-def _management_ops(runtime: Path) -> dict[str, Any]:
+def _management_ops(runtime: Path, msg: Mapping[str, str]) -> dict[str, Any]:
     """The management matrix, whose records already use the renderer's vocabulary."""
 
     sequence = _load(runtime, "management_sequence.json")
     operations = ((sequence or {}).get("result") or {}).get("operations")
     if not isinstance(operations, list) or not operations:
-        return _skipped("management_sequence 未提供 operations")
+        return _skipped(msg["reason.no_management_ops"])
 
     ranking = sorted(
         (
@@ -188,10 +190,10 @@ def _management_ops(runtime: Path) -> dict[str, Any]:
     }
 
 
-def _workload_benchmark(runtime: Path) -> dict[str, Any]:
+def _workload_benchmark(runtime: Path, msg: Mapping[str, str]) -> dict[str, Any]:
     windows = (_load(runtime, "workload_windows.json") or {}).get("windows")
     if not isinstance(windows, list) or not windows:
-        return _skipped("workload_windows 未提供窗口")
+        return _skipped(msg["reason.no_workload_windows"])
     rows = [
         {
             "profile": row.get("profile", row.get("coverage_id", MISSING)),
@@ -221,7 +223,7 @@ def _workload_benchmark(runtime: Path) -> dict[str, Any]:
     }
 
 
-def _latency_point(value: Any) -> dict[str, Any]:
+def _latency_point(value: Any, msg: Mapping[str, str]) -> dict[str, Any]:
     """One measured latency as the renderer's distribution shape.
 
     A single run measures one failover, so p50, p95 and max are that one value.
@@ -232,7 +234,7 @@ def _latency_point(value: Any) -> dict[str, Any]:
 
     number = _number(value)
     if number is None:
-        return {"status": MISSING, "reason": "该延迟未被观测", "sample_count": 0}
+        return {"status": MISSING, "reason": msg["reason.latency_not_observed"], "sample_count": 0}
     return {
         "p50_ms": number,
         "p95_ms": number,
@@ -242,10 +244,10 @@ def _latency_point(value: Any) -> dict[str, Any]:
     }
 
 
-def _fault_timeline(runtime: Path) -> dict[str, Any]:
+def _fault_timeline(runtime: Path, msg: Mapping[str, str]) -> dict[str, Any]:
     sequence = _load(runtime, "fault_sequence.json")
     if sequence is None:
-        return _skipped("未找到 fault_sequence.json")
+        return _skipped(msg["reason.no_fault_sequence"])
     results = sequence.get("fault_results") or []
     failover = sequence.get("failover_details") or {}
     # Each scenario reports its *own* duration and nothing else. The failover
@@ -257,7 +259,7 @@ def _fault_timeline(runtime: Path) -> dict[str, Any]:
     # field says so with a reason.
     unmeasured = {
         "status": MISSING,
-        "reason": "该故障场景不测量客户端不可用窗口；见 Failover 延迟分布",
+        "reason": msg["reason.no_client_outage_measure"],
     }
     rows = [
         {
@@ -275,24 +277,24 @@ def _fault_timeline(runtime: Path) -> dict[str, Any]:
     ]
     return {
         "status": "PASS" if results else _SKIPPED,
-        "reason": "" if results else "fault_sequence 未记录场景",
+        "reason": "" if results else msg["reason.no_fault_scenarios"],
         "scenario_count": len(results),
         "rows": rows,
-        "failover_latency": _latency_point(failover.get("cluster_recovery_latency_ms")),
-        "promotion_latency": _latency_point(failover.get("pfail_to_promotion_ms")),
-        "client_unavailability": _latency_point(failover.get("client_unavailable_to_recovered_ms")),
-        "workload_recovery": _latency_point(failover.get("read_unavailability_ms")),
+        "failover_latency": _latency_point(failover.get("cluster_recovery_latency_ms"), msg),
+        "promotion_latency": _latency_point(failover.get("pfail_to_promotion_ms"), msg),
+        "client_unavailability": _latency_point(failover.get("client_unavailable_to_recovered_ms"), msg),
+        "workload_recovery": _latency_point(failover.get("read_unavailability_ms"), msg),
         # The full-flow fault lane observes no split brain and no cluster-down
         # window; §7.3 forbids the writes that would measure the second. Stated
         # absent with the reason rather than reported as zero, which would be a
         # claim nobody made.
         "split_brain_window": {
             "status": MISSING,
-            "reason": "full-flow 故障通道不制造脑裂，未观测该窗口",
+            "reason": msg["reason.no_split_brain"],
         },
         "cluster_down_window": {
             "status": MISSING,
-            "reason": "full-flow 故障通道未观测 cluster-down 窗口",
+            "reason": msg["reason.no_cluster_down"],
         },
         "detection_ms": failover.get("process_gone_to_pfail_ms", MISSING),
         "failover_success": failover.get("failover_success", MISSING),
@@ -301,11 +303,11 @@ def _fault_timeline(runtime: Path) -> dict[str, Any]:
     }
 
 
-def _resource_analysis(runtime: Path) -> dict[str, Any]:
+def _resource_analysis(runtime: Path, msg: Mapping[str, str]) -> dict[str, Any]:
     observation = _load(runtime, "scalable_stability_observation.json")
     analyses = (observation or {}).get("resource_analyses")
     if not isinstance(analyses, list) or not analyses:
-        return _skipped("scalable_stability_observation 未提供 resource_analyses")
+        return _skipped(msg["reason.no_resource_analyses"])
     per_window: list[dict[str, Any]] = []
     for entry in analyses:
         if not isinstance(entry, dict):
@@ -328,7 +330,7 @@ def _resource_analysis(runtime: Path) -> dict[str, Any]:
         "abnormal_nodes_topN": [
             {
                 "status": _SKIPPED,
-                "reason": "资源观测按 sampler 聚合，未保留单节点序列，不做估算排名",
+                "reason": msg["reason.no_per_node_resource"],
             }
         ],
     }
@@ -359,9 +361,22 @@ def _findings(runtime: Path, analysis: dict[str, Any]) -> list[dict[str, Any]]:
     return findings
 
 
-def build_renderable_analysis(runtime_dir: str | Path) -> dict[str, Any]:
-    """The run's evidence in the vocabulary `report/render.py` consumes."""
+def build_renderable_analysis(
+    runtime_dir: str | Path, *, lang: str = DEFAULT_LANGUAGE
+) -> dict[str, Any]:
+    """The run's evidence in the vocabulary `report/render.py` consumes.
 
+    `lang` reaches this layer and not only the renderer, because the reasons an
+    absence carries are written here and are prose a person reads. Storing a key
+    and resolving it later would leave `renderable_analysis.json` - an artifact a
+    run keeps - unreadable to anyone opening it, which is the opposite of what
+    every absence-with-a-reason in this product is for.
+
+    Nothing else moves with the language: the same run yields the same numbers,
+    the same field names and the same statuses in either.
+    """
+
+    msg = messages(lang)
     runtime = Path(runtime_dir)
     analysis = _load(runtime, "analysis_summary.json") or {}
     verdict = _load(runtime, "run_verdict.json") or {}
@@ -371,6 +386,11 @@ def build_renderable_analysis(runtime_dir: str | Path) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "artifact_type": "local_full_flow_renderable_analysis",
+        # Recorded so the renderer can refuse a mismatch. The reasons below are
+        # prose in one language, and a report rendered in the other would come
+        # out half translated - which reads as a rendering defect rather than as
+        # what it is.
+        "language": lang,
         "status": verdict.get("status") or analysis.get("status", MISSING),
         "run_id": analysis.get("run_id", MISSING),
         "created_at": analysis.get("created_at", MISSING),
@@ -387,19 +407,19 @@ def build_renderable_analysis(runtime_dir: str | Path) -> dict[str, Any]:
             # Neither is recorded by a full-flow run today. Named with the reason
             # rather than omitted, so the gap is visible in the report instead of
             # looking like a renderer fault.
-            "git_sha": {"status": MISSING, "reason": "full-flow 运行未记录 git_sha"},
+            "git_sha": {"status": MISSING, "reason": msg["reason.no_git_sha"]},
             "valkey_version": {
                 "status": MISSING,
-                "reason": "full-flow 运行未在 analysis 中记录 valkey 版本，见 generated_valkey_configs_manifest",
+                "reason": msg["reason.no_valkey_version"],
             },
         },
         "findings": _findings(runtime, analysis),
-        "setup_aggregates": _setup_aggregates(runtime),
-        "command_audit": _command_audit(runtime),
-        "management_ops": _management_ops(runtime),
-        "workload_benchmark": _workload_benchmark(runtime),
-        "fault_timeline": _fault_timeline(runtime),
-        "resource_analysis": _resource_analysis(runtime),
+        "setup_aggregates": _setup_aggregates(runtime, msg),
+        "command_audit": _command_audit(runtime, msg),
+        "management_ops": _management_ops(runtime, msg),
+        "workload_benchmark": _workload_benchmark(runtime, msg),
+        "fault_timeline": _fault_timeline(runtime, msg),
+        "resource_analysis": _resource_analysis(runtime, msg),
         "metrics": [
             {
                 "name": row.get("metric_name", MISSING),
@@ -412,7 +432,7 @@ def build_renderable_analysis(runtime_dir: str | Path) -> dict[str, Any]:
         "missing_metrics": analysis.get("missing_evidence", []),
         "baseline_comparison": {
             "status": _SKIPPED,
-            "reason": "本报告不与冻结基线比较；差异比对由 diff_stage_artifacts.py 负责",
+            "reason": msg["reason.no_baseline"],
         },
         "cleanup": {
             "status": cleanup.get("status", MISSING),

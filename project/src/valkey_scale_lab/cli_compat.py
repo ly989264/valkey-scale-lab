@@ -180,8 +180,10 @@ def render_report(
     analysis_path: str | Path,
     out_dir: str | Path,
     index_out: str | Path,
+    *,
+    lang: str = summary_report.DEFAULT_LANGUAGE,
 ) -> dict[str, Any]:
-    return summary_report.render_report(analysis_path, out_dir, index_out)
+    return summary_report.render_report(analysis_path, out_dir, index_out, lang=lang)
 
 
 def build_final_report(
