@@ -360,3 +360,56 @@ ran and saw fail; admission still rejects a passing probe.
 - Continuous mode without back-pressure is meta-runs v4/v5 again.
 - Two agent CLIs: the adapter contract must not depend on stdout framing.
 - A loop is only as honest as its probes — watched to fail before admission, at L3 too.
+
+## Stage 0 record — 2026-08-29
+
+Session 1 of §6. Operator-approved item by item; nothing here was done without a
+yes. Labels, branches, milestones, history, the `valkey-local` runner service and
+its launchd plist were not touched.
+
+### Decisions
+
+- **Target branch for the exploration loop: `fast-iter`.** The default branch
+  `codex/valkey-scale-lab-loop` stays where it is, per the 2026-08-13 decision;
+  no merge is proposed.
+- **New kernel repository: `ly989264/agent-loop`, public** — created empty, no
+  README, no first commit. Public rather than private because
+  `valkey-scale-lab` itself is public.
+- **Runner `valkey-local` keeps running** as a launchd service. With the
+  workflow disabled it has nothing to pick up.
+
+### What was changed on the remote
+
+| Item | Before | After | URL |
+|---|---|---|---|
+| `milestone-loop` workflow | `active` | `disabled_manually` | https://github.com/ly989264/valkey-scale-lab/actions/workflows/milestone-loop.yml |
+| `MILESTONE_LOOP_AUTO_MERGE` | `true` (2026-07-19) | `false` | https://github.com/ly989264/valkey-scale-lab/settings/variables/actions |
+| PR #90 | open, `contract-change` + `milestone-loop:work-item` | closed, commented | https://github.com/ly989264/valkey-scale-lab/pull/90 |
+| PR #92 | open, `milestone-loop:work-item` | closed, commented | https://github.com/ly989264/valkey-scale-lab/pull/92 |
+| Control Issue #3 (`m1 control`) | open | closed, commented | https://github.com/ly989264/valkey-scale-lab/issues/3 |
+| Control Issue #7 (`m2 control`) | open | closed, commented | https://github.com/ly989264/valkey-scale-lab/issues/7 |
+| `ly989264/agent-loop` | did not exist | created, public, empty | https://github.com/ly989264/agent-loop |
+
+The workflow was disabled **first**, before any PR or Issue was touched, because
+it triggers on `pull_request` including `labeled`/`unlabeled`.
+
+### Corrections to §1 "Live hazard", from reading the remote
+
+- **The workflow has no `schedule` trigger.** It fires on `pull_request`
+  (opened, synchronize, reopened, labeled, unlabeled, closed) and
+  `workflow_dispatch`. Its last run was 2026-08-03.
+- **The `candidate` job has no label gate**: its only condition is
+  `event_name == 'pull_request' && action != 'closed'`. Any PR activity queued a
+  `runs-on: [self-hosted, macOS, valkey-verify]` job with
+  `timeout-minutes: 360`. That, not a timer, was the hazard.
+- **23 open Issues carried a `milestone-loop:*` label, not two.** #3 and #7 are
+  the Control Issues and were closed; the other 21 are `milestone-loop:work-item`
+  (most also `milestone-loop:completed`) and were **left open** — closing them
+  was offered and declined as out of Stage 0's scope: #91 #89 #87 #85 #81 #75
+  #69 #61 #59 #57 #55 #54 #52 #49 #48 #42 #36 #32 #27 #10 #8.
+- **PR #93 `fast-iter` -> `codex/valkey-scale-lab-loop` is open**, 100 commits,
+  since 2026-08-07. It is a live path to the merge the 2026-08-13 decision
+  forbids. It was reported and **not touched**; it is not a Stage 0 item.
+- The `valkey-real` Environment still exists and was left alone.
+
+Stage 1 is a separate operator decision. The state between stages is idle.
