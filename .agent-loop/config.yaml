@@ -40,6 +40,14 @@ agents:
     - claude-code:sonnet
 
 caps:
+  # Stage 4b: continuous-mode caps, keyed by name rather than role. Values are
+  # exactly the kernel's own defaults (agent-loop README.md "Config keys");
+  # not yet tuned for this consumer.
+  open_prs: 3
+  non_progress_rounds: 5
+  poll_s: 30
+  idle_s: 900
+  round_wall_s: 3600
   worker:
     wall_s: 1800
     silence_s: 300
