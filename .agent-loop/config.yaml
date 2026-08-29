@@ -26,7 +26,9 @@ protected_paths:
 verify:
   hermetic:
     cwd: project
-    command: ./gate suite product.unit
+    # Links the main checkout's frozen baselines into the worktree first;
+    # see the script's header. Runs ./gate suite product.unit unchanged.
+    command: ./scripts/agent_loop_verify_hermetic.sh
 
 # A list is an escalation ladder. Stage 2a runs the first rung only.
 agents:
