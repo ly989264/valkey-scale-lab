@@ -6,9 +6,15 @@
 # frozen exact-50 baseline is absent. Link the main checkout's read-only
 # baselines into this tree, then run the suite unchanged. Run from project/.
 set -eu
-common_dir=$(git rev-parse --git-common-dir)
-case "$common_dir" in /*) ;; *) common_dir="$(pwd)/$common_dir" ;; esac
-main_baselines="$(dirname "$common_dir")/project/artifacts/baselines"
+# AGENT_LOOP_BASELINES names the baselines directory explicitly (a CI checkout
+# is not a worktree and shares nothing); otherwise use the main checkout's.
+if [ -n "${AGENT_LOOP_BASELINES:-}" ]; then
+  main_baselines="$AGENT_LOOP_BASELINES"
+else
+  common_dir=$(git rev-parse --git-common-dir)
+  case "$common_dir" in /*) ;; *) common_dir="$(pwd)/$common_dir" ;; esac
+  main_baselines="$(dirname "$common_dir")/project/artifacts/baselines"
+fi
 if [ ! -e artifacts/baselines ] && [ -d "$main_baselines" ]; then
   mkdir -p artifacts
   ln -s "$main_baselines" artifacts/baselines
