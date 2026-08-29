@@ -37,12 +37,18 @@ better only at refusing to fake it.
 - Readiness not machine-checkable (M2 promotion item selected before its evidence existed).
 - Scope: a milestone-closing autopilot including real runs — where the lease, Environment and 5-day jobs came from.
 
-### Live hazard (as of 2026-08-29)
+### Live hazard (as of 2026-08-29) — RESOLVED by Stage 0, same day
 
 On the remote, `milestone-loop.yml` is active on the default branch, runner
 `valkey-local` is online as a launchd service, `MILESTONE_LOOP_AUTO_MERGE=true`,
 Control Issues #3/#7 open, PRs #90/#92 labelled work-items. The `.disabled`
-rename exists only on unpushed `fast-iter`. Stage 0 neutralises this.
+rename exists only on unpushed `fast-iter`.
+**Stage 0 neutralised it the same day: the paragraph above describes the
+remote before 2026-08-29 and no longer holds.** The workflow is
+`disabled_manually`, `MILESTONE_LOOP_AUTO_MERGE=false`, and every PR and
+Issue is closed. The text is kept unedited as the record of what was found;
+the Stage 0 record at the end of this file has the after-state and three ways
+this paragraph was wrong.
 
 ## 2. Reframing
 
