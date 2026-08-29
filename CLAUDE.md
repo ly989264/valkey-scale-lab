@@ -248,7 +248,10 @@ with no single diff ever showing it.
   in `catalog.json` moves three numbers, not one**; adding tests to a module the
   catalog already registers moves none - which is why M4's placement work and its
   milestone rewrite moved only the tree, and attaching an already-registered entry
-  to a Criterion moves nothing at all. `repository.all` is **90-91/92 on the
+  to a Criterion moves nothing at all. **Those same two contract tests also pin
+  each milestone's `definition_status` and the exact ordered list its Criteria
+  expand to**, so changing a milestone's composition fails `gate.contracts`
+  without moving any of the three counts - which is how M4's rewrite was caught. `repository.all` is **90-91/92 on the
   in-VPC controller** - the absent Docker daemon, and a checker that can fail by
   chance on run output.
 

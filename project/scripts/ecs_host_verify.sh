@@ -52,16 +52,16 @@ while [ $# -gt 0 ]; do
         --nodes-per-host=*) NODES_PER_HOST="${1#--nodes-per-host=}"; shift ;;
         --fleet-nodes) FLEET_NODES="${2:-}"; shift 2 ;;
         --fleet-nodes=*) FLEET_NODES="${1#--fleet-nodes=}"; shift ;;
-        -h|--help) sed -n '2,35p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,32p' "$0"; exit 0 ;;
         *) echo "unknown argument: $1" >&2; exit 64 ;;
     esac
 done
 case "${NODES_PER_HOST}" in
-    ''|*[!0-9]*) echo "--nodes-per-host must be a positive integer" >&2; exit 64 ;;
+    ''|*[!0-9]*|0) echo "--nodes-per-host must be a positive integer" >&2; exit 64 ;;
 esac
 case "${FLEET_NODES}" in
     '') : ;;
-    *[!0-9]*) echo "--fleet-nodes must be a positive integer" >&2; exit 64 ;;
+    *[!0-9]*|0) echo "--fleet-nodes must be a positive integer" >&2; exit 64 ;;
 esac
 
 # Constants read off the implementation rather than chosen here.
@@ -563,7 +563,10 @@ if [ -z "${_tcp_mem}" ]; then
 elif [ -z "${FLEET_NODES}" ]; then
     note "cluster bus memory" "net.ipv4.tcp_mem=${_tcp_mem}; pass --fleet-nodes to have it checked"
 else
+    # Defaulted, because a kernel that prints something other than three fields
+    # would otherwise reach the arithmetic below with an empty value.
     _have_pages="$(printf '%s\n' "${_tcp_mem}" | awk '{print $3}')"
+    case "${_have_pages}" in ''|*[!0-9]*) _have_pages=0 ;; esac
     # Integer arithmetic only: this runs under /bin/sh on a fleet host.
     _want_pages="$(awk -v n="${NODES_PER_HOST}" -v f="${FLEET_NODES}" \
         'BEGIN { if (f < 2) { print 0 } else { print int((2 * n * (f - 1) * 8192 + 4095) / 4096) } }')"

@@ -319,6 +319,11 @@ def _assign_within_az(
     `min_fault_domains` now states - and keeps the per-nodehost counts within
     one of each other, because the cursor never rewinds.
 
+    Chosen only where the positional assignment fails, rather than always, so
+    that a plan which can be made the way it always was still is: that is what
+    makes this change nothing at all on the one-replica shape every existing
+    run and both frozen baselines were taken at.
+
     Which member of a shard takes which nodehost of that shard's block is a
     second question, and taking them in order answers it badly. The cursor
     advances by the shard's member count, so the *first* member of every shard
@@ -336,11 +341,6 @@ def _assign_within_az(
     exactly what the in-order walk produced** - only which member sits where
     changes - and the primaries come out within one of each other at every
     nodehost count measured.
-
-    Chosen only where the positional assignment fails, rather than always, so
-    that a plan which can be made the way it always was still is: that is what
-    makes this change nothing at all on the one-replica shape every existing
-    run and both frozen baselines were taken at.
     """
 
     positional = [

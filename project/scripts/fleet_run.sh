@@ -22,6 +22,9 @@
 #   sh scripts/fleet_run.sh watch
 #   sh scripts/fleet_run.sh abort
 #
+# Paths passed to `--config` are relative to the project root, which is where this
+# runs from whatever directory you type it in.
+#
 # `start` is the whole procedure. `preflight` is it without the launch, for a
 # fleet you have just built and want to check before paying for anything.
 #
@@ -30,6 +33,10 @@
 set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Everything below - the configuration path, the manifest path it names, and the
+# Gate's own `cwd` - is relative to the project root, so the wrapper works the same
+# whatever directory it was typed in.
+cd "${ROOT}"
 STATE_DIR="${ROOT}/artifacts/fleet-runs"
 MARKER="${STATE_DIR}/launched_at"
 LAUNCH_LOG="${STATE_DIR}/launch.log"
@@ -39,7 +46,7 @@ SSH_OPTS="-o ConnectTimeout=15 -o BatchMode=yes"
 NODES=1280
 
 die()  { echo "fleet_run: $*" >&2; exit 1; }
-usage() { sed -n '2,30p' "$0"; exit 64; }
+usage() { sed -n '2,31p' "$0"; exit 64; }
 step() { printf '\n=== %s\n' "$*"; }
 
 # Everything the run needs is already stated in the configuration, so it is read
@@ -170,8 +177,11 @@ run_start() {
     setsid nohup "${ROOT}/gate" test "${TEST_ID}" \
         --param "nodes=${NODES}" --param "config=${config}" \
         >> "${LAUNCH_LOG}" 2>&1 < /dev/null &
-    echo "$!" > "${STATE_DIR}/launcher.pid"
-    echo "launched, launcher pid $(cat "${STATE_DIR}/launcher.pid")"
+    # No pid is recorded here on purpose. `$!` is the pid of the `setsid` that
+    # forks and exits, and the launcher `execv`s besides, so a recorded pid would
+    # be dead within a second and would read as a finished run. `watch` and
+    # `abort` find the process by what it actually is.
+    echo "launched"
     echo "log: ${LAUNCH_LOG}"
     echo
     echo "Watch it with: sh scripts/fleet_run.sh watch"

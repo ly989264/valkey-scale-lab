@@ -29,17 +29,27 @@ procedure names a provider.
 | network | one private network all 32 hosts share, and a controller on it | see §6 |
 | ports | 7800-32000 reachable host to host | the run's client and cluster-bus range |
 
-Two host settings are not defaults anywhere and one of them has already killed a
-run:
+Two host settings are worth checking rather than assuming:
 
-- **`net.ipv4.tcp_mem` must be raised.** The cluster bus is a full mesh, so what
-  a host's kernel holds is quadratic in the *fleet* and only linear in that
-  host's density. At 40 nodes a host in a 1280-node fleet that is 102,320
-  sockets and about **799 MiB** at the kernel's own per-socket minimum, against a
-  stock ceiling on a 16 GB host of well under that. The first real 1280-node
-  attempt died exactly here: 370 kernel `TCP: out of memory` messages beginning
-  four minutes in, and cluster formation failing with 152 connection refusals in
-  0-1 ms.
+- **`net.ipv4.tcp_mem` is the one that has already killed a run.** The cluster
+  bus is a full mesh, so what a host's kernel holds is quadratic in the *fleet*
+  and only linear in that host's density - which is why every density experiment
+  missed it. At 40 nodes a host in a 1280-node fleet that is 102,320 sockets and
+  about **799 MiB** at the kernel's own per-socket minimum.
+
+  Stock `tcp_mem` is auto-sized from RAM, so on a 16 GB host it is around 1.4 GiB
+  and **the shape in this table probably clears it untuned**. That is said plainly
+  rather than left out, because the failure was not at this shape: the first real
+  1280-node attempt ran 107 nodes on each of twelve **8 GB** hosts, which needs
+  2.09 GiB against that machine's stock ceiling of 734 MiB. It died with 370
+  kernel `TCP: out of memory` messages beginning four minutes in and cluster
+  formation failing with 152 connection refusals in 0-1 ms.
+
+  So run the check rather than reasoning about your machine: §5 computes the
+  requirement from the fleet you declared and reads the value back off the host.
+  It binds as soon as you go denser, larger, or smaller-memoried than this table.
+  `ecs_host_prepare.sh` raises the ceiling to 4 GiB, which is a ceiling and not an
+  allocation.
 - **`ulimit -n` must be large.** A node wants 10,032 descriptors and the
   controller holds O(N) connections at once.
 
