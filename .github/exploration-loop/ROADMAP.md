@@ -527,6 +527,85 @@ Deferred (suggestions, not acted on):
 6. `report-run-id-identical-in-every-run`: `M2_RUN_ID_ENV` overrides
    `_run_id`, so "identical" holds only with M2 measurement disabled.
 
+## Stage 1b record — 2026-08-29
+
+Worker: Fable 5, interactive session, on `fast-iter` at `66009427` plus the
+Stage 1a commits. Nothing under `project/src`, `loop_evidence/` or on GitHub
+was touched; no backlog item was fixed.
+
+- Probes and proofs, on the five `hermetic` entries. Three received both
+  fields; every probe was run from `project/` on the current tree and exited
+  1, in the order below. Each is a check of the defect against the product
+  API, not a grep.
+  1. `retry-read-catches-a-broad-exception` — hands `_retry_read` a callable
+     raising `RespCommandError` with `attempts=3, pause=0` and asserts one
+     call. **exit 1**: `AssertionError: an error reply was retried: 3 calls`.
+     Proof: a test beside it asserting one call on an error reply and three on
+     `socket.timeout`; mutation check reverts the narrowing.
+  2. `ssh-failure-is-not-classified-in-the-transport` — stubs
+     `subprocess.run` in `host_transport` with rc 255 and ssh's own
+     `No route to host` on stderr, asserts `MultiplexedSshTransport.run`
+     raises `TransportError`. **exit 1**: `ssh failure returned as
+     CommandResult rc 255: ssh: connect to host 10.0.0.1 port 22: No route to
+     host`. Proof: a `test_native_backend.py` test for that case beside one
+     where a remote command's own 255 is still returned as a `CommandResult`.
+  3. `process-runtime-state-call-site-is-unreached-by-the-suite` — wraps the
+     real `_process_runtime_state` with a caller-frame recorder, runs the two
+     modules that reach `_create_process_scenario` in-process, and exits 0
+     only if the real function was called from `lifecycle.py`. **exit 1**:
+     `real _process_runtime_state reached from lifecycle.py at lines [],
+     pytest rc 0` (172 tests pass; the only route stubs it with
+     `lambda *_args, **_kwargs` at `test_docker_runtime_contract.py:1202`).
+     Proof: a test driving that path with the real signature; mutation check
+     adds a wrong keyword at `lifecycle.py:324`.
+- Two hermetic entries were left without a probe, both `selectable` as they
+  were:
+  - `state-nodehost-drops-remote-bundle-dir`: the statement names no defect
+    to fix - the key is dropped *and nothing needs it*. The only probe that
+    fails today asserts the key is present, which prescribes restoring it, a
+    direction the statement does not ask for and one Stage 1a's deferred
+    item 5 already notes would move `state.json` in every frozen baseline.
+    A probe that would be honest to the statement passes today, and a
+    passing probe is rejected, not adjusted.
+  - `preflight-validates-the-profile-template-not-the-run-document`: an
+    operator decision (`selectable: false` since Stage 1a). Neither outcome
+    is "open" in a way an exit code can encode, so no probe.
+- No `docker-exact-50` entry received a probe: each needs a real exact-50
+  run, and none of those completes under 5 minutes. The four `needs-fleet`
+  entries stay `selectable: false` with no probe.
+- `project/scripts/assert_backlog_matches_claude_md.py` (97 lines): reads
+  CLAUDE.md `### What is still open` up to the next heading, joins each
+  bullet's hard wraps with single spaces, and requires every backlog
+  `statement` to be byte-identical to one bullet, every bullet claimed
+  exactly once, and `source.item_count`, the item count and the bullet count
+  to agree. Observed: exit 0, `backlog matches CLAUDE.md: 21 open items`;
+  exit 1 with two named disagreements when one statement in a copy of the
+  backlog is changed by a single byte. Focused test:
+  `project/tests/repository/test_backlog_matches_claude_md.py` (4 tests:
+  checked-in pair, hard-wrap join stopping at the next heading, one-byte
+  drift, count mismatch).
+- Registration: `repository.backlog_matches_claude_md` in `catalog.json` and
+  in `repository.all` only. Counts: catalog **100 -> 101**, `repository.all`
+  **92 -> 93**, M1 plan **91, unchanged** (it draws from `product.*` suites,
+  which the new entry does not join). The one pinned number in
+  `verification/tests/test_contracts.py` moved with it; `gate.contracts`
+  23/23.
+- `./gate suite repository.all` on the final tree: **93/93 PASS**, run directory
+  `project/artifacts/gate-runs/gate-20260829T082241Z-fcbc79c5/` (entry 093 is
+  `repository.backlog_matches_claude_md`). Run once; no checker failed by
+  chance.
+- Neither new file contains the word the execution-axis contract forbids;
+  the filename matches no milestone-stage pattern.
+- Deviations: `deviation: spec said a probe and proof on each hermetic
+  entry, built them on three of five, because the other two have no probe
+  that fails today without prescribing a fix the statement does not name`.
+  The backlog's header comment and `stage: '1a'` were updated to `1b`, since
+  the header said no probe fields existed yet and would have been false.
+- Left out: nothing else.
+
+Commits: `f1655a78` (probes), `0cd6561e` (script, test, registration),
+and the commit that adds this record.
+
 ## Controller status
 
 - Operator authorisation 2026-08-29: run every stage without stopping between
