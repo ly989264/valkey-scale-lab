@@ -116,9 +116,16 @@ approval, never as a next step.
 
 **Operator decision, 2026-08-13: there is no merge to
 `origin/codex/valkey-scale-lab-loop`; M4 is developed on `fast-iter`.** Do not
-re-raise it. Nothing is pushed. M3's acceptance is therefore green on `fast-iter`
-rather than on a merged default branch, which is the operator's call and recorded
-rather than argued.
+re-raise it. M3's acceptance is therefore green on `fast-iter` rather than on a
+merged default branch, which is the operator's call and recorded rather than
+argued.
+
+**`fast-iter` is pushed to `origin` and tracks it, since 2026-08-29.** The
+"nothing is pushed" that used to sit here is no longer true and was removed rather
+than reinterpreted. The no-merge half of the decision is untouched: the branch
+exists on the remote and is 241 commits ahead of
+`origin/codex/valkey-scale-lab-loop`, which is where it stays until the operator
+says otherwise.
 
 ### The fleets, and what is available
 
