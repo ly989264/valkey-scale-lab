@@ -606,6 +606,47 @@ was touched; no backlog item was fixed.
 Commits: `f1655a78` (probes), `0cd6561e` (script, test, registration),
 and the commit that adds this record.
 
+## Stage 2a record — 2026-08-29
+
+Worker: Opus subagent in `~/centos_ex/projects/VibeCoding/agent-loop`.
+Reviewer: Opus subagent, scope-first, two rounds. Kernel pushed to
+`origin/main` at `d2d8c5b` (19 commits).
+
+- Built as specified: package + `pyproject.toml` (stdlib + PyYAML), CLI
+  `run --mode once` / `status`, ten-key config loader refusing unknown keys,
+  `examples/valkey_scale_lab.config.yaml`, probe-based pick in file order
+  skipping BLOCKED-at-sha, `git worktree add -b explore/<item>` removed on
+  every exit path, adapter contract exactly as §3 with `claude-code`,
+  `codex`, `shell`; env stripping, byte-cap refusal and one repair
+  kernel-side; verify = probe exits 0 + cost-class command + protected paths
+  (tracked, untracked and committed); JSONL ledger with the eight fields;
+  four terminal states, one notification each via stdout/file/macos,
+  deduplicated by (item, state, sha). 59 hermetic tests.
+- Review round 1: 5 `contract` (drift plumbing belonged to 2c; three
+  consumer env prefixes inside the kernel; `--detach` where `-b` suffices;
+  an undeclared ledger field; dead code) and 4 `defect` with measured
+  failing cases (protected-path check blind to untracked/committed files;
+  caps not firing inside `readline`; `BrokenPipeError` escaping `run_once`
+  with no terminal state; worktree created outside `try/finally`). All nine
+  fixed in nine commits; round 2 re-measured each and passed.
+- Deviation, accepted: probes run in the `cwd` of their cost class's verify
+  entry, because the ten keys allow no separate probe directory and invariant
+  1 forbids a consumer path in the kernel.
+- Size: ~1,000 code lines of kernel against ~400 expected. The reviewer
+  attributes the excess to verbosity of required behaviour (per-key
+  validation, one dataclass per concept), not to features; ~25 lines of
+  beyond-spec code were found and removed.
+- Controller: `.agent-loop/config.yaml` installed in this repository from
+  the kernel's example, unchanged (data only).
+
+Deferred (suggestions):
+1. `config.py` per-value assertions could be a table.
+2. A child that stays alive without reading its bundle is still not bounded
+   by the budget (`adapters/base.py:96-103`, measured 60 s); unreachable with
+   the shipped adapters, which read stdin immediately. Belongs with 2b/2c.
+3. Cleanup deletes `explore/<item>`; Stage 3 must push before cleanup or skip
+   the deletion on `PR_READY`. **Carried into the Stage 3 spec.**
+
 ## Controller status
 
 - Operator authorisation 2026-08-29: run every stage without stopping between
@@ -613,6 +654,6 @@ and the commit that adds this record.
   fleet runs remain out of scope. Decisions taken by the controller are
   recorded in each stage record.
 - Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
-- Last completed cycle: Stage 1a. Current: Stage 1b.
+- Last completed cycle: Stage 2a (kernel pushed). Stage 1b delivered, in review. Next: 2b.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
