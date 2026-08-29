@@ -659,6 +659,101 @@ Deferred (suggestions):
 3. Cleanup deletes `explore/<item>`; Stage 3 must push before cleanup or skip
    the deletion on `PR_READY`. **Carried into the Stage 3 spec.**
 
+## Stage 2b record — 2026-08-29
+
+Worker: Fable 5, interactive session, on `fast-iter` at `b872744f`, kernel
+`~/centos_ex/projects/VibeCoding/agent-loop` main at `d2d8c5b`. Nothing under
+`project/src`, `loop_evidence/` or on GitHub was touched by this session; the
+only product change any round made lived in the round's worktree and was
+removed with it. Nothing was pushed.
+
+- Pre-run fix (2a deferred item 3): kernel `2582ffa`. On `PR_READY` the round
+  marks its workspace `keep_branch`; cleanup still removes the worktree and
+  temp dir and skips only the `explore/<item>` branch. Every other state
+  deletes it as before. One worktree test; the round test now pins that a
+  second round on the same item while the branch exists ends `INFRA` (from
+  `git worktree add -b` refusing the existing branch), and the dedup test
+  clears the branch between its two rounds. 60/60.
+- Item picked, all three attempts: `retry-read-catches-a-broad-exception`
+  (first failing probe in file order; probes 2 and 3 were run and also fail,
+  as Stage 1b measured).
+- Attempt 1 — `INFRA` at stage 3 (worker), 22.5 s, cost null:
+  `claude -p --model sonnet-5` answered `api_error_status 404: There's an
+  issue with the selected model (sonnet-5)`. The kernel classified it
+  `refused` -> `INFRA`, wrote the ledger line and one notification, so the
+  kernel was right and the data wrong. Consumer fix `e2bdbab0`:
+  `.agent-loop/config.yaml` names `claude-code:sonnet` / `claude-code:opus`,
+  the aliases `claude --help` lists. Kernel `183455c` corrects the example
+  config the consumer's was copied from.
+- Attempt 2 — `INFRA` at stage 3 (worker), 319.4 s, cost null: `worker
+  returned timeout:` with an empty tail. The 300 s `silence_s` cap fired,
+  and it always would: `claude -p --output-format json` prints nothing until
+  the agent finishes, so the silence cap could only ever kill a healthy
+  worker. Measured beside it: `./gate suite product.unit` takes 53 s, so the
+  cap's value was not the defect. Kernel `ab33ae8`: the `claude-code` adapter
+  runs `--output-format stream-json --verbose` (one line per event; measured
+  with a one-word prompt: `system`, `rate_limit_event`, `assistant`, then the
+  `result` envelope with `total_cost_usd`, `is_error`, `result`) and takes
+  its answer from the last `type: result` line; `TAIL_LINE_BYTES` 4 000 ->
+  64 000 because that envelope carries `modelUsage` and would otherwise be
+  cut and read as malformed. One hermetic test with a fake `claude` on PATH.
+  61/61.
+- Attempt 3 — `BLOCKED`, 406.0 s, cost $1.50, notification received on stdout
+  and as the last line of `.agent-loop/notifications.log`. The worker
+  (Sonnet, real `claude -p`) reported: `_retry_read` (`docker_runtime.py:3613`)
+  re-raises when `is_transient_transport_error(exc)` is false, matching the
+  chokepoint at `:7509`; two tests added to
+  `tests/integration/test_docker_runtime_contract.py` (one call on
+  `RespCommandError`, three then `DockerRuntimeError` on `socket.timeout`);
+  14 other call sites checked. Then: its Bash tool refused every `python3`,
+  `./gate` and `pytest` invocation with "This command requires approval",
+  reproduced three ways, so it could not run the suite or the mutation check
+  and answered `status: blocked` rather than invent an observed failure line.
+  That is the correct worker behaviour and the round's finding: the adapter's
+  `worktree-write` sandbox maps to `--permission-mode acceptEdits`, which in
+  `-p` mode allows edits and denies every Bash command, so no worker can ever
+  produce the mutation evidence the schema requires. **Not fixed here**: the
+  three-attempt budget was spent and a fix without a run to watch is exactly
+  what this stage exists to avoid. The candidate is one adapter change - a
+  per-consumer allowlist (`--allowedTools 'Bash(python3:*)' ...`) is data
+  the ten config keys do not carry, and `bypassPermissions` widens the
+  sandbox to everything; which one is a `DECIDE`, carried into 2c.
+- Ledger lines (`.agent-loop/ledger.jsonl`, untracked, reasons abbreviated):
+  1. `ts 09:32:03Z · item retry-read-catches-a-broad-exception · sha b872744f
+     · INFRA · worker returned refused: ... api_error_status 404 ... (sonnet-5)
+     · cost null · 22.518 s`
+  2. `ts 09:38:07Z · same item · sha e2bdbab0 · INFRA · worker returned
+     timeout: · cost null · 319.438 s`
+  3. `ts 09:47:15Z · same item · sha e2bdbab0 · BLOCKED · worker blocked: The
+     fix and its test are written and applied to the working tree ... could
+     not run the mutation check ... · cost 1.5047 · 406.024 s`
+  Every line carries `tool_versions` {claude 2.1.251, git 2.50.1, python3
+  3.9.6}. The two files are loop state and stay untracked.
+- Mutation check on the worker's diff: **not possible**, and reported as
+  such. `BLOCKED` deletes the branch by design, and the worker's changes were
+  uncommitted in the worktree, so `worktree remove --force` dropped them;
+  verified afterwards that no `explore/*` branch, no worktree and no trace of
+  the worker's test exist in the main tree. That second half is itself a
+  defect in the pre-run fix - a kept branch would have pointed at the base
+  sha. Kernel `7fd4ca3`: on `PR_READY` the round runs `git add -A` and
+  commits `agent-loop: <item>` with a fixed identity before cleanup; the
+  round test now shows the worker's file on the kept branch. Mutation check
+  on that change: with the `commit_all` call reverted the test failed on
+  `'agent-loop: an-item' not found in 'initial ...'`; restored, 61/61.
+- Explore branch: none survives (`BLOCKED`); diffstat n/a.
+- Kernel commits on main, unpushed: `2582ffa`, `183455c`, `ab33ae8`,
+  `7fd4ca3` (main is 4 ahead of `origin/main` at `d2d8c5b`). Consumer commit
+  on `fast-iter`: `e2bdbab0`, plus the one adding this record.
+- Deviations: `deviation: spec said one round reaching PR_READY or BLOCKED
+  with the worker's mutation evidence verified by hand, built a BLOCKED round
+  whose evidence could not be verified, because the worker was denied the
+  commands that produce it and the diff did not survive BLOCKED cleanup`.
+  Kernel size: four commits, ~90 lines, against "the retention fix plus what
+  the run exposes"; each is one observed failure.
+- Left out: the adapter permission fix (above, `DECIDE`); a `claude -p`
+  worker also prints a `rate_limit_event` line, which the tail keeps and
+  nothing reads.
+
 ## Controller status
 
 - Operator authorisation 2026-08-29: run every stage without stopping between
@@ -666,6 +761,7 @@ Deferred (suggestions):
   fleet runs remain out of scope. Decisions taken by the controller are
   recorded in each stage record.
 - Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
-- Last completed cycles: 1b and 2a (kernel pushed). Current: 2b.
+- Last completed cycles: 1b, 2a (kernel pushed) and 2b (kernel four commits
+  ahead of origin, unpushed; adapter permission mode is a DECIDE). Current: 2c.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
