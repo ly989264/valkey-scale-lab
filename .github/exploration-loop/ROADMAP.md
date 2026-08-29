@@ -411,11 +411,27 @@ it triggers on `pull_request` including `labeled`/`unlabeled`.
   `milestone-loop:*` label any more.** Every Issue keeps its labels, and all ten
   `milestone-loop:*` label definitions still exist in the repository — nothing
   was deleted, only closed.
-- **Two Issues stay open and are not milestone-loop work items**: #80
-  `[TODO] Add representative multi-primary failover coverage to LOCAL_FULL_FLOW`
-  (`enhancement`, `m2`) and #73 `[M2 decision] Restore formation discovery v2
-  candidate screen` (no labels). Neither carries a `milestone-loop:*` label, so
-  neither was in scope; both are product questions rather than loop plumbing.
+- **#80 and #73 carried no `milestone-loop:*` label and were closed too**, on
+  the operator's instruction, so **the repository now has no open Issue and no
+  open PR at all**. Neither was loop plumbing, and closing did not resolve
+  either, so both are restated here:
+  - **#80** (2026-07-29, `enhancement`, `m2`) — *Add representative
+    multi-primary failover coverage to `LOCAL_FULL_FLOW`.* The canonical fault
+    matrix has a single-primary `primary_failover` scenario only, while
+    simultaneous loss of one / 10 % / 33 % of primaries is a supported fault
+    that the separate M2 campaign exercises and the full lifecycle never
+    proves. It asks for one bounded representative multi-primary owned-process
+    `SIGKILL` scenario at the default configuration — no baseline/candidate
+    comparison inside the lifecycle — failing closed unless targets, affected
+    shards, recovery, convergence and cleanup are all proven, with the existing
+    single-primary scenario untouched. **This is open product work**, and a
+    candidate for `.agent-loop/backlog.yaml` in Stage 1, where it would need a
+    probe watched to fail before admission.
+  - **#73** (2026-07-27, no labels) — an M2 decision request to widen the
+    formation-discovery screen after `tree_meet_addslotsrange` p16 lost to the
+    baseline at exact-50 (73.20 s against 53.74 s, +36.2 %). Overtaken: M3 is
+    closed and M4 is in progress. Re-raise it as a backlog item if the matrix
+    change is still wanted.
 - **PR #93 `fast-iter` -> `codex/valkey-scale-lab-loop` was open**, 100 commits,
   since 2026-08-07 - a live path to the merge the 2026-08-13 decision forbids.
   Reported, then closed on the operator's instruction in the same session.
