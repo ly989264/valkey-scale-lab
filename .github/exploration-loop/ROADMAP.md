@@ -1127,6 +1127,155 @@ Deferred (round 1, suggestion-class or below):
   `origin`; and the L2 path has been exercised only against a fake `gh`, never
   against GitHub, since this consumer is L1 by decision.
 
+## Stage 4b record — 2026-08-29
+
+Worker: Sonnet 5 subagent, on `fast-iter` at `170698e8`, kernel
+`~/centos_ex/projects/VibeCoding/agent-loop` main at `004a430` (= `origin/main`,
+105 tests). Controller decision 2026-08-29 (recorded below, restated here):
+Stage 4 runs 4b before 4a, because the open-PR-cap drill 4a will write needs
+the cap to exist first. No live round was run; nothing under `project/src`,
+`loop_evidence/` or GitHub was touched; the kernel was not pushed.
+
+**Kernel, six commits, 15 files changed, +1,104/-32 across `agent_loop/`,
+`README.md` and `tests/`; 140/140 hermetic tests (105 before this stage).**
+Kernel main is now
+six commits ahead of `origin/main`, unpushed. Each behaviour below was watched
+to fail under a real mutation before its commit, not just written and trusted.
+
+1. `0551878` — *Ledger and scm plumbing for observing a pull request's fate.*
+   Three ledger fields (`diff_stat`, `pr_state`, `notified_at`), four ledger
+   functions (`epoch`, `open_pull_requests`, `reopened_since`, `note_pr_state`),
+   and `Publisher.state()` - the raw `OPEN`/`MERGED`/`CLOSED` string
+   `GitHubPublisher.is_open` already asked `gh` for, now exposed instead of
+   collapsed to a bool. `note_pr_state` writes `state: PR_READY` with no
+   `duration_s`, so a round line and an observation line are told apart by
+   `duration_s`, not a fifth state value.
+2. `8fb05eb` — *A PR_READY round records its own diff-stat and merge outcome.*
+   `_publish` now returns a `PublishResult` (was a four-tuple) carrying
+   `diff_stat` (already computed for the pull-request body, now also written
+   to the ledger) and `pr_state` (`MERGED` when this round's own L2 merge just
+   succeeded - the round already knows, no poll needed). `notified_at` is
+   captured right after `notify.notify` runs, with `ts` fixed just before it,
+   so the gap metrics reads is never negative. Asserted against a real
+   PR_READY round and a real L2 merge in `test_round.py`; the notify/append
+   reorder itself has no mutation that catches it (both happen within
+   microseconds either way), which is recorded rather than claimed otherwise.
+3. `772fae8` — *Five continuous-mode caps, keyed by name beside the per-role
+   budgets.* `open_prs` (3), `non_progress_rounds` (5), `poll_s` (30), `idle_s`
+   (900), `round_wall_s` (3600) - all defaulted, so no existing config needs
+   editing to keep loading; each must be a positive integer or the key is
+   named in the refusal.
+4. `aac40cd` — *`continuous`/`schedule`/`until`: triggers, back-pressure,
+   pause/resume, metrics* (`agent_loop/modes.py`, ~200 lines by the docstring/
+   comment-stripped count). `once` is unchanged; every other mode drives it as
+   a subprocess of `agent-loop run --mode once` per round - no daemon, and it
+   is what makes `caps.round_wall_s` real: a round still going at the cap is
+   `SIGKILL`ed by process group (so a verify command it started, not only the
+   round process itself, goes with it) and the ledger gets an `INFRA` line
+   naming the cap, since the round itself never wrote one. `schedule` needed
+   nothing of its own; it is `once` under cron's name, wired as one dispatch
+   branch in the next commit. `run_continuous` idles while a `.paused` flag
+   file sits under `worktree_root` (`paused`/`pause`/`resume`); waits while
+   the ledger shows `caps.open_prs` `PR_READY` items still open; runs one
+   bounded round; updates `until`'s prs/hours/cost counters and stops if met;
+   hands the round's state to `_after_round` (counts consecutive
+   `NO_ITEM`/`INFRA`, backs off `caps.idle_s` with one FYI and resets at
+   `non_progress_rounds` - its own function precisely so a test can drive the
+   boundary directly rather than running the whole loop to reach a round
+   count); then blocks in `_wait_for_trigger` until the backlog's mtime
+   changes (naming a reopened BLOCKED item when the ledger shows one older
+   than the edit - the same physical trigger as a plain backlog edit, not a
+   second poll, so it cannot busy-loop), a `scm: github` known-open pull
+   request turns out merged or closed (`ledger.note_pr_state` records it), or
+   `caps.idle_s` elapses. `metrics_report` reads the ledger alone: rounds by
+   state; PRs opened/merged; the plumbing share (`diff_stat` lines under
+   `.agent-loop/`); median `ts`-to-`notified_at`; cost per merged PR - text, no
+   chart, no new file. Mutation checks: `round.wait(timeout=cap*1000)` (i.e.
+   the cap ignored) leaves `PR_READY` where `INFRA` was expected; the
+   non-progress boundary off by one (`<=` for `<`) leaves the counter at the
+   cap instead of reset - both caught, both restored, verified clean.
+5. `5db0166` — *Wire it into the CLI.* `run --mode` gains `continuous`,
+   `schedule` (the alias) and `until` (`--until-prs`/`--until-hours`/
+   `--until-cost`, refused before any round runs if none is given);
+   `pause`/`resume`/`metrics` subcommands; `status` gains a `paused` line.
+   Every command now reports a bad config rather than raising - `status`
+   needed its two loads (config, then backlog) split out of one shared `try`
+   to keep that true for a bad backlog too.
+6. `1b17d90` — README: one paragraph each for modes, back-pressure, pause/
+   resume and metrics, the exact `continuous`/`until` invocations, and the caps
+   table row for the five new keys.
+
+**Item 6, the 2c deferred kept-worktree livelock, retired with no new code.**
+An uncommittable diff (a `pre-commit` hook refusing the round's commit) leaves
+its worktree under `worktree_root`; the lock's foreign-worktree check then
+refuses every later round, at any item, until a person removes it - a stop in
+`once`, feared as a livelock in `continuous`. `LivelockRetirementTest`
+(`test_modes.py`) runs a real hook-refused round, then two lock-refused ones,
+against the actual kernel: the first hook failure notifies (a distinct
+`(item, state, sha)`); the two lock refusals that follow share one
+`(None, INFRA, sha)` and only the first of *those* notifies; both are ordinary
+`INFRA` rounds to `_after_round`'s counter, no special case. That is the
+existing `(item, state, sha)` dedup plus the ordinary non-progress counter
+this stage already built - zero incremental lines, comfortably inside the
+roadmap's ≤10-line bar for retiring it. "raise hermetic to L2" from the
+session-9 prompt's text is explicitly **not** taken here, by the controller's
+Stage 4 note below: L2 stays withheld pending the Stage 2b review's sandbox
+`DECIDE`, unrelated to whether 4a or 4b runs first.
+
+**Consumer, one commit on `fast-iter`, `3a7095a4`, not pushed.**
+`.agent-loop/config.yaml` gains the five new `caps` keys at exactly the
+kernel's own defaults, not yet tuned for this consumer; `levels` is untouched
+(`hermetic: L1`, `docker-exact-50: L1`). Verified by loading the real file
+through `agent_loop.config.load` directly: all five fields read back at their
+defaults and `levels` is unchanged.
+
+**The command that would start `continuous` on this consumer** (not run):
+
+```
+agent-loop run --config /Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/.agent-loop/config.yaml --mode continuous
+```
+
+or, run from the consumer's own root with the kernel installed
+(`python3 -m pip install -e .` in the kernel checkout):
+
+```
+cd /Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab && agent-loop run --config .agent-loop/config.yaml --mode continuous
+```
+
+`until` would be the same invocation with `--mode until` and at least one of
+`--until-prs`/`--until-hours`/`--until-cost`.
+
+- `deviation: spec said ~200 kernel lines, built +1,104/-32 across 15 files -
+  agent_loop/ledger.py, agent_loop/scm/*, agent_loop/round.py,
+  agent_loop/config.py, agent_loop/modes.py (~175 code / ~28 comment lines by
+  itself), agent_loop/cli.py and README.md, because Stage 4b's session-9 text
+  bundles five differently-shaped deliverables - three modes plus four
+  triggers, two back-pressure caps, pause/resume, and metrics reading five
+  distinct numbers honestly off the ledger - and metrics being honest (never
+  fabricated, never recomputed) needed diff_stat/pr_state/notified_at threaded
+  through round.py and a new Publisher.state(), which round.py and scm/ had to
+  carry since modes.py cannot invent evidence a round did not record. No hunk
+  in the diff is unrequired by a stage-6 bullet; the excess is volume across
+  more files than one commit's worth, not scope beyond the six items.
+- `deviation: "raise hermetic to L2" (session-9 prompt) is explicitly not
+  done, because item 8 of this stage's own instructions says to add ONLY the
+  new caps sub-keys and not touch levels, and the Stage 3 record and the
+  controller note below both tie L2 to the still-open sandbox DECIDE, not to
+  which half of Stage 4 ran first.` Recorded once here as the controller's
+  call, not re-litigated in the consumer commit message beyond a pointer to
+  it.
+- Left out, each needing its own evidence: the sandbox DECIDE itself (worker
+  `python3` still runs with the operator's `HOME`); `round_wall_s`'s only
+  enforcement mechanism (a subprocess per round) has not been measured against
+  a real `claude-code` worker, only a fake `shell` adapter and a deliberately
+  slow verify command; the trigger poll's `gh pr view` call is exercised only
+  against a fake `gh`, never GitHub, matching Stage 3's own L2 caveat; metrics'
+  plumbing-share parser reads `git diff --stat` lines by the `|` column and
+  has not been checked against a diff whose filename itself contains `|`;
+  4a's five drills (idempotent re-run, malformed-then-repair-then-INFRA,
+  BLOCKED-notifies-once, killed-worker-leaves-nothing, wedged-Docker-is-INFRA)
+  are unbuilt and are 4a's, next.
+
 ## Controller status
 
 - Controller decision 2026-08-29: Stage 4 runs 4b (modes, caps) before 4a
@@ -1140,8 +1289,10 @@ Deferred (round 1, suggestion-class or below):
 - Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
 - Last completed cycles: 1b, 2a (kernel pushed), 2b and 2c (kernel ten commits
   ahead of origin, unpushed; two DECIDEs open from 2c, both about what a round
-  can verify), and 3 (kernel three commits ahead of origin, unpushed; PR #94
-  open at L1 with a green check; one new DECIDE, the nightly that cannot fire).
-  Current: 4a.
+  can verify), 3 (kernel three commits ahead of origin, unpushed; PR #94
+  open at L1 with a green check; one new DECIDE, the nightly that cannot fire),
+  and 4b (kernel six more commits ahead of origin, unpushed, none of the 2c/3
+  DECIDEs touched; consumer's `.agent-loop/config.yaml` gained the five new
+  caps, `levels` untouched). Current: 4a.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
