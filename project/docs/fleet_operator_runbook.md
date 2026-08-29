@@ -147,6 +147,11 @@ Three checks in an order where each one's failure is cheaper than the next one's
    way the backend will ask, by running the command shapes the backend runs. It
    reads `net.ipv4.tcp_mem` back off the host and **refuses** if the fleet you
    declared will not fit in it.
+
+   `fleet_run.sh` derives `--fleet-nodes` from the configuration and always passes
+   it. **Running `ecs_host_verify.sh` by hand without it does not refuse** - one
+   host cannot know how large the fleet will be, so without that number the value
+   is printed and not judged. If you check a host by hand, pass it.
 2. **The bring-up smoke**, which drives the seam end to end against your fleet
    before any cluster exists. Without it, a first failure has a dozen
    unexercised command shapes in its search space.

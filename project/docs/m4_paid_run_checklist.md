@@ -1,5 +1,13 @@
 # M4 Stage 3: the one paid 1280-node run, and what is declared before it
 
+**Superseded as a procedure by `fleet_operator_runbook.md`**, which executes this
+document's §4 order rather than asking for it to be remembered, and which covers a
+fleet at any provider rather than the one that was expected then. What is still only
+here is the *reasoning*: §1's declaration that the RTO band changes, §2's compiled
+fleet shape, and §3's list of what has never been observed at this size. Read §2.3's
+"none of these exists" as the record it is - the configuration it asks for was
+written at 80f8312c.
+
 Written 2026-08-19 at the head of the M4-5 commit series. This is the
 **preparation** for `m4_gossip_cost_and_stage_plan.md` §7's stage 3. Nothing here
 has been executed and no fleet exists: the 32-host Huawei fleet was suspended by

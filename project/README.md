@@ -15,6 +15,13 @@ Product code does not load tests, verification policy, or milestones. Tests use
 product APIs directly. The executable verification catalog is separate from
 the milestone roadmap and owns every registered pytest path and command.
 
+## Running a real fleet
+
+`docs/fleet_operator_runbook.md` is the whole procedure for taking a 1280-node run
+on a fleet you supply at any provider: the host contract, the bundle, the manifest,
+the preflight, the launch, and the report. It expects no prior knowledge of this
+repository. `scripts/fleet_run.sh` executes it in order.
+
 ## Custom Valkey Image
 
 Build the pinned Valkey 9.1.0 image before any real run:

@@ -89,6 +89,28 @@ READY`, on `fast-iter`. **M4 is in progress and its goal is one target, not a
 ladder: 256 primaries with 4 replicas each, 1280 valkey-servers.** The
 multi-replica prerequisite program (MR-1 through MR-3) is done.
 
+**M4's definition is now `READY` and its acceptance is FAIL, and both are
+correct.** Six Criteria, every one with Checks. The four that do not need a fleet
+are green - exact-scale compilation and the named exception, the target shape's
+placement, and the run's own report rendering. The three that do are the 1280-node
+observation, its evidence at that scale, and reclaim on the operator's fleet, and
+they are what keeps it red. READY is computed from whether every Criterion has a
+Check and says nothing about passing.
+
+**`./gate milestone m4` on a controller with a live manifest spends money.** Two
+of its Checks carry `--operator-opt-in` and `--cost-acknowledged` in their own
+argv. This is deliberate - the acceptance *is* the run - and it is stated in
+`milestones/m4/README.md` and `docs/fleet_operator_runbook.md` §11.
+
+**The procedure is executable rather than remembered, and it is
+provider-neutral.** `docs/fleet_operator_runbook.md` is the whole thing for an
+operator with no help and no fleet; `scripts/fleet_run.sh preflight|start|watch|abort`
+runs it in order and refuses at the first failure. `templates/configs/scale_1280_native_ecs_optin.yaml`
+now names a 32-host fleet the operator supplies - three lines are theirs
+(`host_inventory_path`, `native_bundle_dir`, `nodehosts_per_az`) and **none of them
+is a clause of the guard**, so retargeting a fleet is a data edit and not a code
+change. `profile_name` still is the guard and must not be touched.
+
 **The correct state between items is idle.** Each item begins on operator
 approval, never as a next step.
 
@@ -120,6 +142,11 @@ rather than argued.
   fleet size and only linear in density - which is why every density experiment
   missed it. 10,800 sockets at N=200/25-per-host against **223,622** at
   N=1280/107-per-host, and 2.80 GiB of kernel TCP memory against 11-58 MiB.
+  `ecs_host_verify.sh --nodes-per-host N --fleet-nodes M` now derives the ceiling
+  from `2 * N * (M - 1)` sockets at 4 KiB + 4 KiB and **refuses** a host whose
+  `net.ipv4.tcp_mem` cannot hold it, so the checklist line that said to read the
+  value back by hand is a check rather than a habit. It refuses only when
+  `--fleet-nodes` is given, because one host cannot know the fleet.
 - **`node_memory_limit_mb` is a dataset cap and does not bound the process.** A
   node holds per-peer bus buffers, so RSS grows with **fleet size**: 10.5 MB
   steady per node at 200, peaks of 52-110 MB at 1280.
@@ -217,9 +244,11 @@ with no single diff ever showing it.
   ceiling. It is **not scale-free** and must be re-measured before 500 nodes and
   on any new backend. exact-200 has formed in 10.9-205.8 s across environments.
 - **Counts**: `repository.all` **92**, catalog **100**, M1 plan **91**, pytest
-  tree **941**. Two contract tests pin the first three, so **registering a test
+  tree **957**. Two contract tests pin the first three, so **registering a test
   in `catalog.json` moves three numbers, not one**; adding tests to a module the
-  catalog already registers moves none. `repository.all` is **90-91/92 on the
+  catalog already registers moves none - which is why M4's placement work and its
+  milestone rewrite moved only the tree, and attaching an already-registered entry
+  to a Criterion moves nothing at all. `repository.all` is **90-91/92 on the
   in-VPC controller** - the absent Docker daemon, and a checker that can fail by
   chance on run output.
 
@@ -343,16 +372,8 @@ None of these is anyone's current item; each needs its own evidence.
 - The 92/92 suite does not reach `_process_runtime_state`'s call site with its
   real signature: a wrong keyword there passed the whole hermetic suite and was
   caught by three real runs in ten seconds each.
-- A **Gate-plan refusal** and a **failing teardown** both still misreport - see
-  `m4_first_1280_run_map.md` §5.2. Read the run's own log, not only the Gate's
-  error.
 
 **Placement, at r>=2 only**
-- `_assign_within_az` clusters primaries onto a subset of nodehosts whenever an
-  AZ's nodehost count divides by 3 - at twelve hosts, 128 primaries land on 2 of
-  6 nodehosts. It changes the rolling restart's batch count and makes the fault
-  lane's target a 64-primary host. **Decide it before founding an M4 baseline
-  class.**
 - The planner and the runtime order nodes differently, so they assign different
   ports to the same logical node. Unobservable at one replica; the validator is
   the one that matches the runtime.
