@@ -23,6 +23,9 @@
 #   sh ecs_host_verify.sh                    # host readiness
 #   sh ecs_host_verify.sh --bundle DIR       # ... and can this host run that bundle
 #   sh ecs_host_verify.sh --package DIR      # ... and does the resource agent import here
+#   sh ecs_host_verify.sh --nodes-per-host N # ... at that density rather than 25
+#   sh ecs_host_verify.sh --fleet-nodes N    # ... and can its kernel hold this fleet's
+#                                            #     cluster bus (see the tcp_mem check)
 #
 # Exit code 0 when every REQUIRED check passed, 1 otherwise. ADVISED failures
 # never change the exit code: they degrade a run's evidence or its headroom, and
@@ -32,22 +35,39 @@ set -u
 
 BUNDLE_DIR=""
 PACKAGE_DIR=""
+# The density this host is being asked about. It was a constant, which made every
+# answer below about a 25-node host whatever the run intended to place.
+NODES_PER_HOST=25
+# How many nodes the whole cluster will have. Absent by default because this
+# script runs on one host and cannot know it; supplied, it is what turns the
+# cluster-bus check from a reading into a refusal.
+FLEET_NODES=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --bundle) BUNDLE_DIR="${2:-}"; shift 2 ;;
         --bundle=*) BUNDLE_DIR="${1#--bundle=}"; shift ;;
         --package) PACKAGE_DIR="${2:-}"; shift 2 ;;
         --package=*) PACKAGE_DIR="${1#--package=}"; shift ;;
-        -h|--help) sed -n '2,32p' "$0"; exit 0 ;;
+        --nodes-per-host) NODES_PER_HOST="${2:-}"; shift 2 ;;
+        --nodes-per-host=*) NODES_PER_HOST="${1#--nodes-per-host=}"; shift ;;
+        --fleet-nodes) FLEET_NODES="${2:-}"; shift 2 ;;
+        --fleet-nodes=*) FLEET_NODES="${1#--fleet-nodes=}"; shift ;;
+        -h|--help) sed -n '2,35p' "$0"; exit 0 ;;
         *) echo "unknown argument: $1" >&2; exit 64 ;;
     esac
 done
+case "${NODES_PER_HOST}" in
+    ''|*[!0-9]*) echo "--nodes-per-host must be a positive integer" >&2; exit 64 ;;
+esac
+case "${FLEET_NODES}" in
+    '') : ;;
+    *[!0-9]*) echo "--fleet-nodes must be a positive integer" >&2; exit 64 ;;
+esac
 
 # Constants read off the implementation rather than chosen here.
 NATIVE_INSTALL_ROOT="/opt/valkey-scale-lab/bundles"   # native_backend.py
 RUN_STATE_ROOT="/tmp/valkey-scale-lab"                # native_backend.py
 BUNDLE_DROP_ROOT="/tmp"                               # native_backend.py
-NODES_PER_HOST=25                                     # max_logical_nodes_per_nodehost
 FDS_PER_NODE=413                                      # measured, native exact-200
 
 REQUIRED_FAIL=0
@@ -519,6 +539,42 @@ check_sysctl() {
 }
 check_sysctl "listen backlog" net.core.somaxconn 4096
 check_sysctl "file-max"       fs.file-max        2097152
+
+# The cluster bus is a full mesh, so what a host's kernel must hold is quadratic
+# in the *fleet* and only linear in this host's density - which is why every
+# density experiment missed it and why one host cannot answer it alone. Each of
+# this host's nodes keeps a link to every other node in the cluster and a link is
+# two sockets, so the host carries `2 * nodes_per_host * (fleet_nodes - 1)` of
+# them, each charged at least the kernel's own 4 KiB + 4 KiB. Measured
+# 2026-08-17 at 107 nodes on each of twelve hosts: 273,706 sockets and at least
+# 2.09 GiB, against a stock ceiling on an 8 GB host of 93963/125285/187926 pages
+# - 734 MiB. The first real 1280-node attempt died exactly there, with 370 kernel
+# "TCP: out of memory" messages beginning four minutes in and cluster formation
+# taking 152 `ConnectionRefusedError` in 0-1 ms on CLUSTER MEET.
+#
+# `ecs_host_prepare.sh` writes 393216/786432/1048576 - 1.5/3/4 GiB - and that is
+# a ceiling rather than an allocation. But the fleet boots from whatever its
+# provider's startup mechanism holds, not from the committed script, so the value
+# has to be read back off the host rather than assumed to have been applied. That
+# is this check.
+_tcp_mem="$(sysctl -n net.ipv4.tcp_mem 2>/dev/null)"
+if [ -z "${_tcp_mem}" ]; then
+    note "cluster bus memory" "net.ipv4.tcp_mem not exposed here"
+elif [ -z "${FLEET_NODES}" ]; then
+    note "cluster bus memory" "net.ipv4.tcp_mem=${_tcp_mem}; pass --fleet-nodes to have it checked"
+else
+    _have_pages="$(printf '%s\n' "${_tcp_mem}" | awk '{print $3}')"
+    # Integer arithmetic only: this runs under /bin/sh on a fleet host.
+    _want_pages="$(awk -v n="${NODES_PER_HOST}" -v f="${FLEET_NODES}" \
+        'BEGIN { if (f < 2) { print 0 } else { print int((2 * n * (f - 1) * 8192 + 4095) / 4096) } }')"
+    _have_mib=$((_have_pages / 256))
+    _want_mib=$((_want_pages / 256))
+    if [ "${_have_pages:-0}" -ge "${_want_pages}" ] 2>/dev/null; then
+        pass "cluster bus memory" "tcp_mem max ${_have_pages} pages (${_have_mib} MiB) >= ${_want_pages} (${_want_mib} MiB)"
+    else
+        fail "cluster bus memory" "tcp_mem max ${_have_pages} pages (${_have_mib} MiB); ${NODES_PER_HOST} nodes in a ${FLEET_NODES}-node fleet need >= ${_want_pages} (${_want_mib} MiB)"
+    fi
+fi
 _oc="$(sysctl -n vm.overcommit_memory 2>/dev/null)"
 case "${_oc}" in
     1) pass "overcommit" "vm.overcommit_memory=1" ;;
