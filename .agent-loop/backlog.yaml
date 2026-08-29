@@ -24,8 +24,12 @@
 # The fleet is SUSPENDED, so every needs-fleet entry is selectable: false. One
 # hermetic entry is also selectable: false, and it says why in `notes`.
 #
-# No probe or proof fields yet - those are Stage 1b, a separate operator
-# decision. Nothing here is registered in catalog.json, so no count moves.
+# Stage 1b added `probe` and `proof` to three hermetic entries. A `probe` is a
+# command run from project/ that exits non-zero while the item is open; each
+# was watched to exit 1 on the tree at the Stage 1b commit. `proof` names the
+# test that shows it fixed. Two hermetic entries carry neither, and the Stage 1b
+# record in ROADMAP.md says why. scripts/assert_backlog_matches_claude_md.py is
+# the check that this file and CLAUDE.md still agree.
 
 schema_version: v1
 source:
@@ -33,7 +37,7 @@ source:
   section: 'Where the work stands > What is still open'
   item_count: 21
 created_at: '2026-08-29'
-stage: '1a'
+stage: '1b'
 
 items:
 
@@ -129,6 +133,21 @@ items:
       - project/src/valkey_scale_lab/runtime/docker_runtime.py:3625
       - project/src/valkey_scale_lab/runtime/docker_runtime.py:7509
     design_doc: "docs/scalable_cluster_observability_design.md §13"
+    probe: |
+      PYTHONPATH=src python3 - <<'EOF'
+      from valkey_scale_lab.runtime.docker_runtime import _retry_read, DockerRuntimeError
+      from valkey_scale_lab.valkey.resp import RespCommandError
+      calls = []
+      def error_reply():
+          calls.append(1)
+          raise RespCommandError('ERR unknown command')
+      try:
+          _retry_read(error_reply, what='probe', attempts=3, pause=0)
+      except DockerRuntimeError:
+          pass
+      assert len(calls) == 1, f'an error reply was retried: {len(calls)} calls'
+      EOF
+    proof: "A test in tests/integration/test_docker_runtime_contract.py that hands `_retry_read` a callable raising `RespCommandError` and asserts one call, and one raising `socket.timeout` and asserts three; the mutation check reverts the narrowing to `is_transient_transport_error` and watches the first assertion fail."
     cost_class_reason: "`_retry_read` takes a callable, so a test can hand it one that raises an error reply and one that raises a transport failure without any runtime."
     notes: "Confirmed. `_retry_read` (docker_runtime.py:3613) catches bare `except Exception` at :3622 and retries anything; the mutation chokepoint beside it calls `is_transient_transport_error` at docker_runtime.py:7509 and re-issues only a transport failure."
 
@@ -141,6 +160,25 @@ items:
       - project/src/valkey_scale_lab/runtime/host_transport.py:207
       - project/src/valkey_scale_lab/runtime/host_transport.py:228
     design_doc: "docs/scalable_cluster_observability_design.md §13, §15"
+    probe: |
+      PYTHONPATH=src python3 - <<'EOF'
+      import subprocess
+      from valkey_scale_lab.runtime import host_transport
+      from valkey_scale_lab.runtime.host_transport import MultiplexedSshTransport, TransportError
+      def unreachable(argv, **kwargs):
+          return subprocess.CompletedProcess(argv, 255, '', 'ssh: connect to host 10.0.0.1 port 22: No route to host')
+      host_transport.subprocess.run = unreachable
+      endpoint = {'user': 'root', 'address': '10.0.0.1', 'port': 22, 'private_key_path': '/dev/null', 'known_hosts_path': '/dev/null'}
+      transport = MultiplexedSshTransport()
+      try:
+          result = transport.run(endpoint, ['true'], timeout=5)
+      except TransportError:
+          raise SystemExit(0)
+      finally:
+          transport.close()
+      raise SystemExit(f'ssh failure returned as CommandResult rc {result.returncode}: {result.stderr.strip()}')
+      EOF
+    proof: "A test in tests/unit/test_native_backend.py that stubs `subprocess.run` with rc 255 and ssh's own `connect to host ... No route to host` on stderr and asserts `MultiplexedSshTransport.run` raises `TransportError`, beside one where a remote command exits 255 with no ssh diagnostic and asserts a `CommandResult` rc 255 is returned; the mutation check reverts the classification and watches the first fail."
     cost_class_reason: "tests/unit/test_native_backend.py already constructs `MultiplexedSshTransport` and a `FakeTransport`, so a stubbed `subprocess.run` reaches this classification without a host."
     notes: "Name mismatch worth knowing before writing a probe: `HostTransport` is the Protocol at host_transport.py:68 and declares no body. The behaviour described lives in `MultiplexedSshTransport.run`, host_transport.py:207, which returns `completed.returncode` unexamined at :228 - ssh's own 255 for an unreachable host and a remote command's 255 are the same value there. Only a timeout and an `OSError` become `TransportError`."
 
@@ -300,6 +338,23 @@ items:
       - project/src/valkey_scale_lab/runtime/lifecycle.py:380
       - project/src/valkey_scale_lab/runtime/docker_runtime.py:2255
     design_doc: "none in the observability design; the binding rule is CLAUDE.md \"Working rules\", run the mutation check"
+    probe: |
+      PYTHONPATH=src python3 - <<'EOF'
+      import functools, sys, pytest
+      from valkey_scale_lab.runtime import docker_runtime
+      real = docker_runtime._process_runtime_state
+      reached = []
+      @functools.wraps(real)
+      def tracked(*args, **kwargs):
+          if sys._getframe(1).f_code.co_filename.endswith("lifecycle.py"):
+              reached.append(sys._getframe(1).f_lineno)
+          return real(*args, **kwargs)
+      docker_runtime._process_runtime_state = tracked
+      rc = pytest.main(["-q", "-p", "no:cacheprovider", "tests/integration/test_docker_runtime_contract.py", "tests/cli/test_compatibility_wrappers.py"])
+      print(f"real _process_runtime_state reached from lifecycle.py at lines {sorted(set(reached))}, pytest rc {rc}")
+      sys.exit(0 if reached and rc == 0 else 1)
+      EOF
+    proof: "A test in tests/integration/test_docker_runtime_contract.py that drives `_create_process_scenario` to lifecycle.py:324 and :380 with the real `_process_runtime_state` (or a wrapper that binds `inspect.signature` of the real one) instead of the `lambda *_args, **_kwargs` stub at test_docker_runtime_contract.py:1202; the mutation check adds a wrong keyword at the call site and watches that test fail."
     cost_class_reason: "The gap is test coverage of a call site, and a test that calls `_process_runtime_state` with the real signature needs no runtime."
     notes: "Confirmed. `_process_runtime_state` is defined at docker_runtime.py:2255 and called only from lifecycle.py:324 and :380, both inside the real bring-up path. The count CLAUDE.md quotes has moved on: `repository.all` is 92 as of M3-A-3, not 92/92 as an unchanged figure - the statement's point is the unreached call site, not the number."
 
