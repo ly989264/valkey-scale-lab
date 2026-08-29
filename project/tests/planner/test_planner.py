@@ -542,16 +542,21 @@ def test_exact_1280_needs_the_operator_not_only_the_file() -> None:
         )
 
 
-def test_exact_1280_plans_twelve_nodehosts_with_no_shard_colliding() -> None:
-    """The shape the fleet was rebuilt for, now pinned.
+def test_exact_1280_plans_one_nodehost_per_host_with_no_shard_colliding() -> None:
+    """M4's target shape, pinned, and every number in it derived.
 
     One nodehost per host is what a native run places and refuses otherwise, so
-    twelve nodehosts is twelve hosts. The fleet was rebuilt from eight to twelve
-    `c4a-standard-2` on 2026-08-17 to buy two things this shape then has: 107
-    nodes per host is **53.5 valkey-servers per vCPU**, inside the 50 per vCPU
-    `m4_density_calibration.md` §4 measured clean rather than the 80 that eight
-    hosts forced; and 107 x 64 MiB fits in 7911, so `node_memory_limit_mb` stays
-    at the 64 every prior measurement was taken under instead of dropping to 32.
+    32 nodehosts is 32 hosts - 1280 nodes at the 40 a host that 8 vCPU / 16 GB
+    carries. 40 on 8 vCPU is 5 valkey-servers per vCPU, well inside the 50 per
+    vCPU `m4_density_calibration.md` §4 measured clean, and 40 x 64 MiB is
+    2560 MiB, so `node_memory_limit_mb` stays at the 64 every prior measurement
+    was taken under.
+
+    This replaces the twelve-nodehost pin. That shape was 107 nodes on each of
+    twelve 2-vCPU hosts, which is where the 1280-node wall was actually measured;
+    it was never a target, and the fleet it described no longer exists.
+
+    It divides exactly, so unlike the twelve-host shape there is no lighter tail.
     """
 
     import collections
@@ -569,10 +574,8 @@ def test_exact_1280_plans_twelve_nodehosts_with_no_shard_colliding() -> None:
     )["nodes"]
 
     per_nodehost = collections.Counter(node["nodehost_id"] for node in nodes)
-    assert len(per_nodehost) == 12
-    # 1280 does not divide by 12, so the tail is one node lighter rather than
-    # the plan refusing or silently rounding the node count.
-    assert set(per_nodehost.values()) == {106, 107}
+    assert len(per_nodehost) == 32
+    assert set(per_nodehost.values()) == {40}
     assert sum(per_nodehost.values()) == 1280
     assert collections.Counter(node["az_id"] for node in nodes) == {
         "az-a": 640,
