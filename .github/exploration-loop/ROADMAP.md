@@ -1371,6 +1371,119 @@ list (`cli._load`/`_status`'s split, `pause` not stopping the paused-loop on
 left-outs above, each with one line naming it, per the reviewer's instruction
 - none of the three has a fix here.
 
+## Stage 4a record — 2026-08-29
+
+Worker: Opus 5 subagent, on `fast-iter` at `3a7095a4`, kernel
+`~/centos_ex/projects/VibeCoding/agent-loop` main at `aa581f9` (= `origin/main`,
+147 tests). Run after 4b by the controller's Stage 4 decision. No live round was
+run against this consumer; nothing under `project/`, `loop_evidence/` or on
+GitHub was touched, and the only change here is this record. Kernel main is now
+**seven commits ahead of `origin/main`, unpushed**, at `d196727`.
+
+**Kernel: one module, `tests/test_drills.py` (six drills, ~330 lines), and one
+one-line fix the first drill exposed. 153/153 hermetic tests, up from 147.**
+A drill drives `agent_loop.cli.main` against a throwaway consumer repository
+with a fake agent behind the `shell` adapter — the whole CLI path, not one
+function — and asserts what an operator sees: the exit code, the ledger, the
+notification log, and what is left on disk. Where a unit test already covers
+the behaviour the drill still runs it end to end once and asserts nothing the
+unit test already asserts. `tests/support.py` already had the temp consumer,
+the fake `gh` and the script writer; nothing was added to it.
+
+Each drill was watched to fail under a one-line mutation of the kernel before
+its commit, and the mutation was then restored:
+
+| # | Drill | Mutation | What failed |
+|---|---|---|---|
+| 1 | `7a4cf4c` repeat dispatch is a no-op | `ledger.already_notified` returns `False` at its first line | the third round notifies again: notification count 3, expected 2 |
+| 2 | `a6fdd38` malformed → one repair → INFRA | `invoke_with_one_repair` returns its first result before the repair | the fake agent's recorded call count is 1, expected 2 |
+| 3 | `7878711` BLOCKED notifies once, is skipped | `pick.run_probes` ignores its skip set | round 2 picks `an-item`, expected `another-item` |
+| 4 | `9574949` a killed worker leaves nothing | `adapters/base._terminate` calls `process.terminate()` instead of `os.killpg` | the worker's `sleep 60` grandchild outlives the round; the drill names its pid |
+| 6 | `fcdce92` open-PR cap sleeps | `modes._wait_while_open_prs_at_cap` returns `False` at its first line | rounds run under a reached cap: ledger `[PR_READY, NO_ITEM, NO_ITEM]`, expected `[PR_READY]` |
+| 7 | `d196727` foreign worktree livelock | `lock.hold`'s foreign-worktree check removed | the round reaches PR_READY and exits 0, expected exit 2 |
+
+Numbering follows §4 Stage 4a's own list, so there is no drill 5; see the
+deviation below.
+
+**Kernel fix, `24edc22`, its own commit: a notification's reason is flattened
+onto its one line.** Observed while writing drill 1 and not before: two
+notifications had gone out (PR_READY, then INFRA) and
+`.agent-loop/notifications.log` held **three lines**. The INFRA reason is
+git's own refusal — `cannot create worktree for an-item: Preparing worktree
+(new branch 'explore/an-item')` / `fatal: a branch named 'explore/an-item'
+already exists` — and the file target writes one line per notification, so one
+notification was recorded as two and anyone counting lines reads a
+notification that never happened. Invariant 3 is about what is emitted; this
+is about what is readable afterwards. `notify.line()` is the one place every
+target's text is built, so stdout, file and osascript all gain it; no word is
+dropped. Watched to fail with the flattening reverted (the same 3 ≠ 2), and
+the whole suite is green either side of it.
+
+**What each drill pins, beyond its headline.**
+
+1. **Repeat dispatch.** With `scm: local-only` the PR_READY round opens
+   nothing, so the diff stays on `explore/an-item`; the second run finds that
+   branch and ends INFRA, the third repeats it in silence. Asserted: one
+   explore/ branch, the **same commit count on it before and after**, and one
+   INFRA notification covering two INFRA rounds.
+2. **One repair.** The call count is the point: a round with no repair and a
+   round with three both end INFRA, so the terminal state alone cannot tell
+   them apart. Also asserted: an empty worktree root and no branch, because a
+   worker that never answered applied nothing worth keeping.
+3. **BLOCKED, and what re-admits it.** Two open items; round 2 picking
+   `another-item` is what proves round 1's item was skipped rather than merely
+   not chosen; round 3 is NO_ITEM. **The two kinds of backlog edit do not do
+   the same thing, and the drill asserts both**: touching the file (mtime) is a
+   continuous-mode trigger and nothing more — the round it fires still ends
+   NO_ITEM, because `pick` skips what is BLOCKED *at this sha* and an
+   uncommitted edit moves no sha. Committing the edit moves it and the item is
+   picked again. The session prompt's "editing the backlog (mtime) re-admits
+   it" is therefore true only of a committed edit; that is design (§3's "skip
+   BLOCKED-at-this-sha"), not a defect, and it is now written down.
+4. **The killed worker.** The fake agent starts a child of its own and writes
+   both pids where cleanup cannot reach them, then outlives
+   `caps.worker.wall_s` (2 s). Both pids are gone within five seconds, the
+   worktree root is empty — tree and lock file both — no explore/ branch, and
+   with the agent replaced by one that answers, **the next round reaches
+   PR_READY**, which is what says the round was killed and not the loop. The
+   grandchild is the part a wall cap can miss.
+6. **The open-PR cap.** `caps.open_prs: 1`, `scm: github`, a fake `gh`, and a
+   seeded PR_READY ledger line whose pull request `gh` reports `OPEN`:
+   `run --mode until --until-hours 0.0002` runs **zero rounds** and writes no
+   notification. Flipping the fake `gh` to `MERGED` makes the same invocation
+   record what the poll observed and then run a round. 4b tests the wait
+   itself; this runs it once through the CLI, so what an operator would type is
+   what is asserted.
+7. **The carried livelock, documented and not fixed.** A worktree under
+   `worktree_root` the loop did not create — made by hand here, exactly as an
+   uncommittable diff or an interactive session leaves one — makes every
+   `run --mode once` end INFRA. Asserted: the reason names the tree and the
+   remedy (`is not this round's`, `git worktree remove`), `once` returns rather
+   than looping, the second round is exactly as stuck, the tree is still there
+   afterwards, and **the repeated INFRA is deduplicated into silence after the
+   first line**. That last one is why it is a livelock and not an alarm: the
+   loop keeps burning rounds and stops saying so.
+
+- `deviation: spec said a wedged-Docker drill, built none, because the kernel
+  has no Docker path to wedge; the drill is written when the docker-exact-50
+  verify entry exists.` Stage 2a excluded Docker from the kernel and no
+  `docker-exact-50` backlog item carries a probe (Stage 1b: none completes
+  under five minutes), so there is nothing in the kernel that creates a Docker
+  network, and a stub that wedged one would be testing the stub. No Docker stub
+  was built, per this stage's instruction.
+- Size: six drills in one module against "~6 drill tests in one module", plus
+  one one-line kernel fix with its own commit. No helper was needed in
+  `tests/support.py`.
+- Left out, each needing its own evidence: the sandbox `DECIDE` from the Stage
+  2b review is still open and untouched, as are 2c's baseline `DECIDE` and
+  Stage 3's nightly one; `hermetic` stays L1 on this consumer; the drills use
+  the `shell` adapter and a fake `gh` throughout, so no drill exercises
+  `claude-code` or a real forge; drill 6's cap wait is driven by `until-hours`
+  rather than by `pause`, which 4b covers directly; and the foreign-worktree
+  livelock is asserted, not fixed — a round that cleaned up a worktree it did
+  not create would be undoing the very scoping `recovery.py` contributed, and
+  that is a `DECIDE`, not a drill.
+
 ## Controller status
 
 - Controller decision 2026-08-29: Stage 4 runs 4b (modes, caps) before 4a
@@ -1386,8 +1499,11 @@ left-outs above, each with one line naming it, per the reviewer's instruction
   ahead of origin, unpushed; two DECIDEs open from 2c, both about what a round
   can verify), 3 (kernel three commits ahead of origin, unpushed; PR #94
   open at L1 with a green check; one new DECIDE, the nightly that cannot fire),
-  and 4b (kernel six more commits ahead of origin, unpushed, none of the 2c/3
+  4b (kernel six more commits ahead of origin, unpushed, none of the 2c/3
   DECIDEs touched; consumer's `.agent-loop/config.yaml` gained the five new
-  caps, `levels` untouched). Current: 4a.
+  caps, `levels` untouched), and 4a (six drills plus the one-line notification
+  fix one of them exposed; kernel seven more commits ahead of origin, still
+  unpushed; no consumer change but this record).
+  Current: 5 (deferred) — roadmap stages 0–4 complete.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
