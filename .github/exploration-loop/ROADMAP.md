@@ -809,7 +809,10 @@ Worker: Opus 5 subagent, on `fast-iter` at `cf345afc`, kernel
 `~/centos_ex/projects/VibeCoding/agent-loop` main at `fd98a3b`. Nothing under
 `project/src`, `loop_evidence/` or on GitHub was touched by this session;
 the only product change any round made lives on a kept `explore/` branch.
-Nothing was pushed. Kernel main is now **10 commits ahead of `origin/main`**.
+Nothing was pushed. Kernel main is now **12 commits ahead of `origin/main`**,
+the last two being review round 1's two defects: `3016a7d` (fixture, above)
+and `34421a0` (`round.py`'s docstring still said "lock-free pick" after the
+lock went in).
 
 **Kernel, five commits, +213 lines under `agent_loop/` (121 of them code, the
 rest docstring and comment) plus 246 test lines; 74/74 hermetic tests.** Each
@@ -834,9 +837,15 @@ was watched to fail with its fix reverted before it was committed.
    `verify.failing_lines()` keeps the lines carrying FAIL / ERROR / Error /
    Traceback, bounded to 40 with a count of what it dropped, falling back to
    the tail when nothing is marked. Tested against fake `./gate suite`
-   output — twelve PASS rows, one FAIL row, twelve more PASS rows, `Status:
-   FAIL` — whose last 800 characters contain no failing row at all.
-   Mutation check: the failing row absent from the reason.
+   output — twelve PASS rows, one FAIL row, **forty** more PASS rows,
+   `Status: FAIL` — which puts the failing row 2 279 bytes above the end, out
+   of reach of the tail. Mutation check: with `output[-800:]` restored the
+   reason is fourteen passing rows and `Status: FAIL`, and the assertion that
+   it names `product.unit.docker_runtime_contract` fails. **Corrected after
+   review round 1** (`3016a7d`): the first fixture left only 748 bytes after
+   the FAIL row, so the tail still contained it and that assertion passed
+   under mutation - only `assertNotIn("PASS")` failed. The sentences this
+   replaces described a measurement that had not been made.
 4. `747a7a6` — *Take a lock before the round picks anything*.
    `agent-loop run` takes `<worktree_root>/.lock` (pid + timestamp) before
    pick; refuses INFRA naming the holding pid while that process is alive;
@@ -924,7 +933,12 @@ evidence 2b could not obtain, and it is the whole point of item 2.**
   (a worker's `python3` still runs with the operator's `HOME`); the deferred
   livelock — a kept `explore/` branch now also outlives BLOCKED, so a later
   round on the same item at a new sha is INFRA until the branch is deleted,
-  which is Stage 3's to resolve when it pushes and deletes.
+  which is Stage 3's to resolve when it pushes and deletes. **Worse for the
+  worktree item 1 keeps**: an uncommittable diff leaves a worktree under the
+  root, and the lock's foreign-worktree check then refuses *every* later
+  round on *any* item until a person removes it - a stop in `once`, a
+  livelock in `continuous`. Deliberate (the diff exists nowhere else) and
+  carried to Stage 4.
 
 ## Controller status
 
