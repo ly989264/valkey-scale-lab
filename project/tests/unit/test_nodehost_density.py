@@ -1633,3 +1633,114 @@ def test_the_slot_drain_migrates_with_replace() -> None:
         line for line in source.splitlines() if marker in line
     )
     assert '"REPLACE", "KEYS"' in argv_line, argv_line
+
+
+def _az_a_placement(*, shards: int, replicas: int, nodehosts_per_az: int) -> tuple[list[int], list[int]]:
+    """Primaries and total logical nodes on each of az-a's nodehosts, run-path.
+
+    The run path rather than the planner, because the two order their nodes
+    differently into the same `_assign_within_az` and it is the run path that
+    writes `nodehost_density_plan.json` and therefore describes what happened.
+    """
+
+    base = load_effective_config("templates/configs/scale_200.yaml")
+    config = dict(base)
+    config["cluster"] = dict(base["cluster"], shards=shards, replicas_per_shard=replicas)
+    config["runtime"] = dict(
+        base["runtime"],
+        nodehosts_per_az=nodehosts_per_az,
+        max_logical_nodes_per_nodehost=10000,
+        max_nodehosts=512,
+    )
+    nodes = docker_runtime._node_specs(config, "cap", "scenario", run_id="placement")
+    plan = build_nodehost_density_plan(config=config, nodes=nodes, run_id="placement", assign=True)
+    az_a = sorted(
+        str(nodehost["nodehost_id"]) for nodehost in plan["nodehosts"] if nodehost["az_id"] == "az-a"
+    )
+    primaries = {nodehost_id: 0 for nodehost_id in az_a}
+    logical = {nodehost_id: 0 for nodehost_id in az_a}
+    for node in nodes:
+        nodehost_id = str(node["nodehost_id"])
+        if nodehost_id not in logical:
+            continue
+        logical[nodehost_id] += 1
+        if node["role"] == "primary":
+            primaries[nodehost_id] += 1
+    return [primaries[key] for key in az_a], [logical[key] for key in az_a]
+
+
+@pytest.mark.parametrize("nodehosts_per_az", [4, 6, 8, 10, 12, 13, 16])
+def test_primaries_do_not_cluster_onto_a_third_of_the_nodehosts(nodehosts_per_az: int) -> None:
+    """The AZ nodehost count used to decide how many nodehosts held a primary.
+
+    At two or more replicas the grouped walk advances its cursor by the shard's
+    member count, so taking each shard's members in order put the *first* one -
+    the primary - on nodehost `k * members` modulo the AZ's nodehost count. That
+    walks `count / gcd(members, count)` of them: at M4's 256 shards of four
+    replicas, three members per AZ, **six nodehosts per AZ held all 128 primaries
+    on two** and twelve held them on four, while eight, ten, thirteen and sixteen
+    were even. It is why a twelve-host fleet gave the fault lane a target holding
+    a quarter of the cluster's primaries and cost the rolling restart 34 extra
+    batches, and why a fleet size divisible by three was silently the worse buy.
+
+    Divisible-by-three counts are the ones that expose it; 16 passes either way
+    and on its own would prove nothing.
+    """
+
+    primaries, _ = _az_a_placement(shards=256, replicas=4, nodehosts_per_az=nodehosts_per_az)
+
+    assert len(primaries) == nodehosts_per_az
+    assert sum(primaries) == 128, primaries
+    assert min(primaries) > 0, primaries
+    assert max(primaries) - min(primaries) <= 1, primaries
+
+
+@pytest.mark.parametrize(
+    ("nodehosts_per_az", "expected"),
+    [(4, {160}), (6, {106, 107}), (8, {80}), (10, {64}), (12, {53, 54}), (13, {49, 50}), (16, {40})],
+)
+def test_choosing_the_primary_moves_no_nodehost_total(
+    nodehosts_per_az: int, expected: set[int]
+) -> None:
+    """The block a shard occupies is the cursor's, and the choice does not move it.
+
+    This is the invariant that makes the fix free rather than a trade: only which
+    *member* of a shard takes which nodehost of that shard's own block is decided,
+    so the per-nodehost logical-node totals are exactly the ones the in-order walk
+    produced. The numbers here were measured before the change and must not move
+    after it - a placement that spread the primaries by unbalancing the nodehosts
+    would refuse plans that used to compile, because `max_logical_nodes_per_nodehost`
+    is checked per nodehost.
+    """
+
+    _, logical = _az_a_placement(shards=256, replicas=4, nodehosts_per_az=nodehosts_per_az)
+
+    assert set(logical) == expected, logical
+    assert sum(logical) == 640, logical
+
+
+def test_one_replica_placement_is_still_positional() -> None:
+    """The shape every existing run and both frozen Docker baselines were taken at.
+
+    At one replica per shard no shard has two members in one AZ, so the positional
+    round-robin is accepted and the grouped walk - the only thing that changed -
+    never runs. Asserted as the placement itself rather than as a branch, because
+    what must not move is the artifact.
+    """
+
+    base = load_effective_config("templates/configs/scale_200.yaml")
+    nodes = docker_runtime._node_specs(base, "cap", "scenario", run_id="placement")
+    plan = build_nodehost_density_plan(config=base, nodes=nodes, run_id="placement", assign=True)
+    az_nodehosts = {
+        az: [str(item["nodehost_id"]) for item in plan["nodehosts"] if item["az_id"] == az]
+        for az in {str(item["az_id"]) for item in plan["nodehosts"]}
+    }
+
+    for az, ordered in az_nodehosts.items():
+        hosted = sorted(
+            (node for node in nodes if str(node["az_id"]) == az),
+            key=lambda node: int(node["ordinal"]),
+        )
+        assert [str(node["nodehost_id"]) for node in hosted] == [
+            ordered[offset % len(ordered)] for offset in range(len(hosted))
+        ], az

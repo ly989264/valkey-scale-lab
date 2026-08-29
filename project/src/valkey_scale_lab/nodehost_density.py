@@ -319,6 +319,24 @@ def _assign_within_az(
     `min_fault_domains` now states - and keeps the per-nodehost counts within
     one of each other, because the cursor never rewinds.
 
+    Which member of a shard takes which nodehost of that shard's block is a
+    second question, and taking them in order answers it badly. The cursor
+    advances by the shard's member count, so the *first* member of every shard
+    - the primary, where this AZ holds it - lands on nodehost `k * members`
+    modulo the AZ's nodehost count, and that walks only `count / gcd` of them.
+    Measured at 256 shards of four replicas: six nodehosts per AZ put all 128 of
+    an AZ's primaries on **two** of them and four held none, and twelve put them
+    on four. It is invisible at one replica because the positional assignment
+    above is taken there, and it is why an AZ nodehost count divisible by three
+    used to be a worse fleet than one that was not.
+
+    The primary is therefore given the least-primary-loaded nodehost of its own
+    block, and its replicas take what is left in order. The block is the
+    cursor's and is not moved by that choice, so **every per-nodehost total is
+    exactly what the in-order walk produced** - only which member sits where
+    changes - and the primaries come out within one of each other at every
+    nodehost count measured.
+
     Chosen only where the positional assignment fails, rather than always, so
     that a plan which can be made the way it always was still is: that is what
     makes this change nothing at all on the one-replica shape every existing
@@ -335,11 +353,41 @@ def _assign_within_az(
     for index, node in enumerate(ordered):
         by_shard.setdefault(str(node.get("shard_id")), []).append(index)
     grouped: list[dict[str, Any] | None] = [None] * len(ordered)
+    primaries_placed: dict[str, int] = {}
     cursor = 0
     for indexes in by_shard.values():
-        for offset, index in enumerate(indexes):
-            grouped[index] = az_nodehosts[(cursor + offset) % len(az_nodehosts)]
-        cursor += len(indexes)
+        span = len(indexes)
+        block = [
+            az_nodehosts[(cursor + offset) % len(az_nodehosts)] for offset in range(span)
+        ]
+        cursor += span
+        offsets = list(range(span))
+        primary_at = next(
+            (
+                position
+                for position, index in enumerate(indexes)
+                if str(ordered[index].get("role")) == "primary"
+            ),
+            None,
+        )
+        if primary_at is not None:
+            # Which nodehost of this shard's own block the primary takes. The
+            # block is chosen by the cursor and is not moved by this, so every
+            # per-nodehost total is exactly what the unchosen walk produced;
+            # only which member sits where is decided here.
+            chosen = min(
+                offsets,
+                key=lambda offset: (
+                    primaries_placed.get(str(block[offset]["nodehost_id"]), 0),
+                    offset,
+                ),
+            )
+            offsets.remove(chosen)
+            offsets.insert(primary_at, chosen)
+            nodehost_id = str(block[chosen]["nodehost_id"])
+            primaries_placed[nodehost_id] = primaries_placed.get(nodehost_id, 0) + 1
+        for position, index in enumerate(indexes):
+            grouped[index] = block[offsets[position]]
     return [target for target in grouped if target is not None]
 
 
