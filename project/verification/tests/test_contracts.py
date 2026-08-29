@@ -331,7 +331,12 @@ def test_milestone_schema_and_current_definitions_are_valid() -> None:
     assert milestones["m2"].definition_status == "READY"
     # Every M3 criterion carries an executable check from roadmap item 1.7.
     assert milestones["m3"].definition_status == "READY"
-    assert milestones["m4"].definition_status == "DEFINED"
+    # M4 became READY when its Criteria were restated as the 1280-node target and
+    # the registered exact-1280 entry was attached to one of them. READY is about
+    # whether every Criterion has a Check and says nothing about passing: three of
+    # M4's six need a fleet, so `./gate milestone m4` is FAIL until the run is
+    # taken. Both statements are true at once and this asserts only the first.
+    assert milestones["m4"].definition_status == "READY"
 
 
 def test_milestone_rejects_duplicate_criteria_empty_check_and_directory_mismatch(
@@ -453,11 +458,26 @@ def test_m2_m3_and_m4_attach_only_executable_checks() -> None:
         "real.ecs.cleanup-ownership",
         "real.ecs.cleanup-ownership",
     ]
+    # M4's six criteria in order. `real.ecs.full-flow-1280` appears twice because
+    # the Gate shares nothing between checks: once for the observation of 1280
+    # healthy nodes and once for that run's evidence, which is the same shape M3
+    # uses for exact-50 above. The two `real.ecs.cleanup-ownership` are release and
+    # abort on the operator's own fleet.
     assert [selected.test.test_id for selected in select_milestone(catalog, m4)] == [
         "product.config.config_validation",
         "product.planner.planner",
         "product.scenarios.definition_contract",
         "product.scenarios.gate_plan_compiler",
+        "product.unit.nodehost_density",
+        "product.unit.nodehost_density_assertions",
+        "product.unit.native_backend",
+        "real.ecs.full-flow-1280",
+        "real.ecs.full-flow-1280",
+        "real.ecs.cleanup-ownership",
+        "real.ecs.cleanup-ownership",
+        "product.report.report_rendering",
+        "product.report.zh_offline_report_gate",
+        "product.report.final_report",
     ]
 
 
