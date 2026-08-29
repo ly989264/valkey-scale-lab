@@ -99,11 +99,11 @@ items:
     selectable: true
     sites:
       - project/src/valkey_scale_lab/runtime/lifecycle.py:462
-      - project/src/valkey_scale_lab/runtime/lifecycle.py:473
+      - project/src/valkey_scale_lab/runtime/lifecycle.py:474
       - project/src/valkey_scale_lab/gates/real.py:880
     design_doc: "docs/scalable_cluster_observability_design.md §12.1, §13 items 3-4"
     cost_class_reason: "A Docker exact-30 or exact-50 run can be made to fail on purpose, which is the cheapest vehicle that reaches the failure path; the class it matters for is fleet formation failure, which cannot be reached without hosts."
-    notes: "Confirmed. `_write_host_evidence` is the last statement of the success path at lifecycle.py:462; the `except Exception` at lifecycle.py:473 re-raises after `reclaim_run` and collects nothing. Its own docstring states the gap and points at cross_host_evidence_slice_map.md §10.2. `lifecycle_timeline.json` is written by gates/real.py:880 with a hardcoded `\"status\": \"PASS\"` after the run completes."
+    notes: "Confirmed. `_write_host_evidence` is the last statement of the success path at lifecycle.py:462; the `except Exception` at lifecycle.py:474 re-raises after `reclaim_run` and collects nothing. Its own docstring states the gap and points at cross_host_evidence_slice_map.md §10.2. `lifecycle_timeline.json` is written by gates/real.py:880 with a hardcoded `\"status\": \"PASS\"` after the run completes."
 
   - id: actuator-record-keeps-no-signalled-count
     group: "Reporting and evidence"
@@ -126,11 +126,11 @@ items:
     cost_class: hermetic
     selectable: true
     sites:
-      - project/src/valkey_scale_lab/runtime/docker_runtime.py:3622
-      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7503
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:3625
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7509
     design_doc: "docs/scalable_cluster_observability_design.md §13"
     cost_class_reason: "`_retry_read` takes a callable, so a test can hand it one that raises an error reply and one that raises a transport failure without any runtime."
-    notes: "Confirmed. `_retry_read` (docker_runtime.py:3613) catches bare `except Exception` at :3622 and retries anything; the mutation chokepoint beside it calls `is_transient_transport_error` at docker_runtime.py:7503 and re-issues only a transport failure."
+    notes: "Confirmed. `_retry_read` (docker_runtime.py:3613) catches bare `except Exception` at :3622 and retries anything; the mutation chokepoint beside it calls `is_transient_transport_error` at docker_runtime.py:7509 and re-issues only a transport failure."
 
   - id: ssh-failure-is-not-classified-in-the-transport
     group: "Retry and classification"
@@ -152,10 +152,10 @@ items:
     sites:
       - project/src/valkey_scale_lab/runtime/docker_runtime.py:7911
       - project/src/valkey_scale_lab/runtime/docker_runtime.py:7920
-      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7503
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7509
     design_doc: "docs/scalable_cluster_observability_design.md §13"
     cost_class_reason: "The path is inside `management_matrix`, whose declared delta shape (6/8, +14 rows, REPLACE on every migrate row) has to be re-checked against the frozen exact-50 baseline after any change here."
-    notes: "Confirmed, and the `REPLACE` half is already in source: docker_runtime.py:7920 issues MIGRATE with REPLACE on every batch, always rather than only on a retry. What remains open is the policy: an error reply is never retried at docker_runtime.py:7503, so a -BUSYKEY reply would still raise if REPLACE ever failed to prevent it."
+    notes: "Confirmed, and the `REPLACE` half is already in source: docker_runtime.py:7920 issues MIGRATE with REPLACE on every batch, always rather than only on a retry. What remains open is the policy: an error reply is never retried at docker_runtime.py:7509, so a -BUSYKEY reply would still raise if REPLACE ever failed to prevent it."
 
   # --- Runtime and cleanup ---
 
@@ -246,7 +246,7 @@ items:
     sites:
       - project/src/valkey_scale_lab/runtime/docker_runtime.py:12542
       - project/src/valkey_scale_lab/runtime/docker_runtime.py:12605
-      - project/src/valkey_scale_lab/runtime/docker_runtime.py:12626
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:12637
     design_doc: "docs/scalable_cluster_observability_design.md §16 item 1, §14"
     cost_class_reason: "Seeing the inversion needs both an exact-30 or exact-50 run and an exact-200 one; exact-50 is the entry cost and exact-200 is what the explanation has to be checked against."
     notes: "Site confirmed: `_management_matrix_wait_rolling_restart_health` (docker_runtime.py:12542), whose in-loop whole-fleet diagnostic is rate-limited at :12605 and whose decisive final reading is at :12626. The rate limit is why an escalation is now cheap; why it fires at small scale and not at exact-200 is what is unexplained."

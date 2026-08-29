@@ -490,6 +490,43 @@ it triggers on `pull_request` including `labeled`/`unlabeled`.
 
 Stage 1 is a separate operator decision. The state between stages is idle.
 
+## Stage 1a record — 2026-08-29
+
+Worker: interactive session (Opus), stopped by the controller after it had
+finished; its output was kept rather than regenerated. Reviewer: Opus
+subagent, scope-first.
+
+- 21 items in `.agent-loop/backlog.yaml`, statements byte-identical to
+  CLAUDE.md after joining hard wraps; CLAUDE.md order and groups (6/3/5/6/1).
+- Cost classes: 12 docker-exact-50, 5 hermetic, 4 needs-fleet; 5
+  `selectable: false` (the 4 needs-fleet, plus the preflight-document item
+  CLAUDE.md marks as the operator's call). Invariant 5 holds.
+- Three places CLAUDE.md no longer matches source, recorded in `notes`, both
+  sides left as they are, all three verified true by the reviewer: process
+  RSS is recorded (`resources.py:244`); the management chokepoint records
+  `attempt_count` (`docker_runtime.py:7542`); planner/runtime ordering
+  diverges at every replica count (48/50 ordinals at 25x1).
+- Review: RETURN on four `defect`s, all cited `file:line` sites one to eleven
+  lines before the thing described. Corrected by the controller directly
+  (mechanical, cited) rather than re-dispatched. Two header slips the worker
+  declared were fixed the same way.
+- Decision by the controller: closed Issue #80 (multi-primary failover
+  coverage) is not added; it is feature work, not an open defect in the list.
+- Left out: nothing.
+
+Deferred (suggestions, not acted on):
+1. Two more sites land on a comment rather than the statement
+   (`docker_runtime.py:7920` -> `:7922`; `native_backend.py:1207` -> `:1208`).
+2. `cost_class_reason` (21x) and 18 confirmation-only `notes` exceed the
+   bullets; judged as classification evidence, not design.
+3. Header lines 11-12 prescribe Stage 1b's normalisation.
+4. `analysis-retry-counters-see-only-the-command-audit`: a reader-side fix
+   would be hermetic.
+5. `state-nodehost-drops-remote-bundle-dir`: restoring the key moves
+   `state.json` in every frozen baseline, which is a docker-exact-50 re-proof.
+6. `report-run-id-identical-in-every-run`: `M2_RUN_ID_ENV` overrides
+   `_run_id`, so "identical" holds only with M2 measurement disabled.
+
 ## Controller status
 
 - Operator authorisation 2026-08-29: run every stage without stopping between
@@ -497,6 +534,6 @@ Stage 1 is a separate operator decision. The state between stages is idle.
   fleet runs remain out of scope. Decisions taken by the controller are
   recorded in each stage record.
 - Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
-- Last completed cycle: Stage 0. Current: Stage 1a review.
+- Last completed cycle: Stage 1a. Current: Stage 1b.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
