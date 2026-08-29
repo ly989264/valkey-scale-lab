@@ -5,7 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Repository boundaries
 
 - `project/` is the active, runnable `valkey-scale-lab` product. Run product commands from this directory.
-- `.github/milestone-loop/` is the active GitHub automation control plane; it remains separate from the product.
+- `.github/milestone-loop/` is a **retired** control plane, kept for reference. Its
+  workflow is disabled locally and `disabled_manually` on the remote as of
+  2026-08-29; do not re-enable it. `.github/exploration-loop/ROADMAP.md` is the
+  successor plan and its Stage 0 record holds the remote's current state. Both
+  remain separate from the product.
 - `loop_evidence/` is an immutable historical archive. Do not modify it or make product code/tests depend on it.
 - Product code must not import the verification runner, tests, milestone definitions, or controller state. Tests call product APIs directly; verification and milestones consume the product from outside.
 
@@ -475,8 +479,12 @@ None of these is anyone's current item; each needs its own evidence.
 - Docker Desktop wedges occasionally. If `docker network create` returns an id
   that `docker network ls` does not show, it needs a restart; that is not a bug
   in this repo.
-- The milestone-loop controller is disabled on purpose
-  (`.github/workflows/milestone-loop.yml.disabled`). Leave it off.
+- The milestone-loop controller is disabled on purpose, in two independent
+  places: the file is renamed `.github/workflows/milestone-loop.yml.disabled`
+  on `fast-iter`, and the workflow is `disabled_manually` on the remote, where
+  the un-renamed file still sits on the default branch. `MILESTONE_LOOP_AUTO_MERGE`
+  is `false` and no Issue or PR is open. Leave all of it off; `gh workflow enable`
+  would undo the remote half in one command.
 - **`scripts/ecs_gate.py` `execv`s into the CLI**, so once a run starts nothing on
   the controller matches `ecs_gate.py` any more - watch for
   `valkey_scale_lab.cli gate execute` instead. A watcher that greps the wrapper
