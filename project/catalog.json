@@ -403,7 +403,8 @@
         "product.unit.simulated_host_manifest",
         "product.unit.valkey_probe_lib",
         "product.unit.workload_benchmark",
-        "product.unit.workload_key_generator"
+        "product.unit.workload_key_generator",
+        "repository.backlog_matches_claude_md"
       ]
     },
     {
@@ -2661,6 +2662,27 @@
         "cwd": "{gate.project_root}",
         "timeout_seconds": 14400,
         "result": "json"
+      }
+    },
+    {
+      "test_id": "repository.backlog_matches_claude_md",
+      "description": "Exploration-loop backlog statements are byte-identical to CLAUDE.md's open items and the counts match.",
+      "parameters": {},
+      "runner": {
+        "type": "pytest",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/repository/test_backlog_matches_claude_md.py",
+          "--junitxml={gate.result_path}"
+        ],
+        "cwd": "{gate.project_root}",
+        "timeout_seconds": 300,
+        "result": "junit"
       }
     }
   ]

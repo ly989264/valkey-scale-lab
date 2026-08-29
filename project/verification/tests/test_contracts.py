@@ -76,7 +76,7 @@ def test_catalog_v2_loads_and_schema_document_is_current() -> None:
     )
 
     assert schema["properties"]["schema_version"]["const"] == "verification-catalog-v2"
-    assert len(catalog.tests) == 100
+    assert len(catalog.tests) == 101
     assert "real.local.full-flow" in catalog.tests
     assert "real.ecs.full-flow" in catalog.tests
     assert "real.ecs.full-flow-1280" in catalog.tests
