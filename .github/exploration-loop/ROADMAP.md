@@ -754,6 +754,38 @@ removed with it. Nothing was pushed.
   worker also prints a `rate_limit_event` line, which the tail keeps and
   nothing reads.
 
+**Continuation, same day.** Controller decision on the `DECIDE`: no
+`bypassPermissions`. Kernel `fd98a3b`: `allowed_tools()` in
+`adapters/base.py` derives `Bash(<program>:*)` from the cost class's verify
+command and the picked item's probe - the program each starts with, leading
+`NAME=value` assignments included - plus `Read`, `Edit`, `Write`; `build()`
+passes the list to the adapter and the `claude-code` adapter appends it under
+`--allowedTools` for `worktree-write`; nothing consumer-specific in the
+kernel, no new config key, codex adapter untouched; one hermetic test with a
+fake `claude` asserts the exact argv; 62/62. Argv used on this consumer:
+`claude -p --output-format stream-json --verbose --model sonnet
+--permission-mode acceptEdits --allowedTools
+"Bash(./gate:*),Bash(PYTHONPATH=src python3:*),Read,Edit,Write"`.
+
+Attempt 4 (the last) - `BLOCKED` at stage 4 (verify), 504.6 s, cost $1.04,
+notification received on stdout and in `.agent-loop/notifications.log`.
+The worker was denied nothing and answered `done`; the kernel's verify
+found the probe passing and then `./gate suite product.unit` failing:
+`24/25 passed, Status: FAIL`. Which entry failed is **not recoverable**:
+the ledger keeps the last 800 characters of the command's output, which
+are six `PASS` rows and the summary, and the gate's run directory
+(`.agent-loop/worktrees/<item>/project/artifacts/gate-runs/gate-20260829T095947Z-2f7ea13b`)
+was inside the worktree that `BLOCKED` cleanup removed - together with the
+worker's diff, so no by-hand mutation check and no diffstat, as in
+attempt 3. Ledger line: `ts 10:00:43Z · retry-read-catches-a-broad-exception
+· sha 8aa3f13a · BLOCKED · verify command './gate suite product.unit' failed
+(exit 1): ... 24/25 passed Status: FAIL · cost 1.0406 · 504.634 s`. No
+`explore/*` branch survives. Not fixed (budget spent), for 2c: a `BLOCKED`
+that comes from verify destroys the two things needed to act on it - the
+diff and the failing check's name; keeping the branch on that state too, and
+keeping the verify command's failing rows rather than its tail, are the
+candidates.
+
 ## Controller status
 
 - Operator authorisation 2026-08-29: run every stage without stopping between
@@ -762,6 +794,6 @@ removed with it. Nothing was pushed.
   recorded in each stage record.
 - Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
 - Last completed cycles: 1b, 2a (kernel pushed) and 2b (kernel four commits
-  ahead of origin, unpushed; adapter permission mode is a DECIDE). Current: 2c.
+  ahead of origin, unpushed; the permission DECIDE is taken and built). Current: 2c.
 - Resume instruction for any session: read this block and the last stage
   record, then continue with the next cycle of §4.
