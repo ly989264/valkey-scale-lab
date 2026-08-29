@@ -786,6 +786,23 @@ diff and the failing check's name; keeping the branch on that state too, and
 keeping the verify command's failing rows rather than its tail, are the
 candidates.
 
+Review (Opus, scope-first) of the five kernel commits and the config fix:
+RETURN on one `defect` — `round.py:80-81`: a `git commit` that fails on
+PR_READY (a hook, `commit.gpgsign`) ends the round INFRA, `cost: null`, and
+deletes the branch the fix exists to keep; three lines at the site, carried
+into Stage 2c's first item. No `contract`: every hunk maps to an observed
+failure or the controller decision. Measured: silence cap now measures gaps
+between stream events; `allowed_tools()` never emits `Bash(*)`, and Claude
+Code refuses unlisted parts of compound commands; `--allowedTools` with
+`acceptEdits` really permits the listed Bash in `-p` mode. Security note
+for the operator, **a DECIDE before L2 or continuous mode**: the allowlist
+bounds the shell, not the filesystem — a worker's `python3` runs with the
+operator's `HOME` and can read `~/.ssh`, `~/.claude`; env stripping removes
+variables, not access. Fine at L1 with a human merge; needs an OS sandbox
+before Stage 4 raises the level. Deferred: a probe whose first line is a
+comment derives no Bash grant; a PR_READY branch left in place makes later
+rounds on that item INFRA until deleted (a livelock in `continuous`).
+
 ## Controller status
 
 - Operator authorisation 2026-08-29: run every stage without stopping between
