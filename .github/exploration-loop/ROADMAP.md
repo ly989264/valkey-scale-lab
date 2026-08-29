@@ -388,6 +388,7 @@ its launchd plist were not touched.
 | PR #92 | open, `milestone-loop:work-item` | closed, commented | https://github.com/ly989264/valkey-scale-lab/pull/92 |
 | Control Issue #3 (`m1 control`) | open | closed, commented | https://github.com/ly989264/valkey-scale-lab/issues/3 |
 | Control Issue #7 (`m2 control`) | open | closed, commented | https://github.com/ly989264/valkey-scale-lab/issues/7 |
+| PR #93 | open, `fast-iter` -> default branch, 100 commits | closed, commented; **branch retained** | https://github.com/ly989264/valkey-scale-lab/pull/93 |
 | `ly989264/agent-loop` | did not exist | created, public, empty | https://github.com/ly989264/agent-loop |
 
 The workflow was disabled **first**, before any PR or Issue was touched, because
@@ -407,9 +408,15 @@ it triggers on `pull_request` including `labeled`/`unlabeled`.
   (most also `milestone-loop:completed`) and were **left open** — closing them
   was offered and declined as out of Stage 0's scope: #91 #89 #87 #85 #81 #75
   #69 #61 #59 #57 #55 #54 #52 #49 #48 #42 #36 #32 #27 #10 #8.
-- **PR #93 `fast-iter` -> `codex/valkey-scale-lab-loop` is open**, 100 commits,
-  since 2026-08-07. It is a live path to the merge the 2026-08-13 decision
-  forbids. It was reported and **not touched**; it is not a Stage 0 item.
+- **PR #93 `fast-iter` -> `codex/valkey-scale-lab-loop` was open**, 100 commits,
+  since 2026-08-07 - a live path to the merge the 2026-08-13 decision forbids.
+  Reported, then closed on the operator's instruction in the same session.
+  **`fast-iter` is kept: it is the branch this project is developed on.**
+  Closing a pull request never deletes its head branch - GitHub deletes a head
+  branch only on *merge*, and only when `delete_branch_on_merge` is set, which
+  this repository has as `false`. No `--delete-branch` was passed. Verified
+  before and after: `fast-iter` is at `6556ac7f` on `origin` either side of the
+  close, and the closed PR still names it as its head.
 - The `valkey-real` Environment still exists and was left alone.
 
 Stage 1 is a separate operator decision. The state between stages is idle.
