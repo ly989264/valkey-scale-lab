@@ -251,7 +251,7 @@ with no single diff ever showing it.
   ceiling. It is **not scale-free** and must be re-measured before 500 nodes and
   on any new backend. exact-200 has formed in 10.9-205.8 s across environments.
 - **Counts**: `repository.all` **92**, catalog **100**, M1 plan **91**, pytest
-  tree **957**. Two contract tests pin the first three, so **registering a test
+  tree **965**. Two contract tests pin the first three, so **registering a test
   in `catalog.json` moves three numbers, not one**; adding tests to a module the
   catalog already registers moves none - which is why M4's placement work and its
   milestone rewrite moved only the tree, and attaching an already-registered entry
@@ -308,6 +308,20 @@ only place either language is written; the `zh` side is copied verbatim from wha
 the renderer used to emit, so a Chinese report is **byte-identical** to what every
 frozen run carries - checked against a real one, 35 of 35 files. Same file names,
 same figures, byte-identical data-only CSVs across the two.
+
+**Re-check that identity after any renderer change, and the suite will not do it
+for you.** Render a retained run's own `renderable_analysis.json` at the new HEAD
+and diff every file against the report beside it:
+
+```bash
+python3 -c "from valkey_scale_lab.report.render import render_report; \
+  render_report('<run>/runtime/report/renderable_analysis.json', '/tmp/zh', '/tmp/zh/report_index.json', lang='zh')"
+diff -r <run>/runtime/report /tmp/zh
+```
+
+It is what caught two keys folded into near-neighbours during the English work -
+the workload image alt losing 对比 and the resource table's first column becoming
+采集窗口 - both of which read as translation and were regression.
 
 **`lang` reaches the adapter as well as the renderer**, because the reason an
 absence states is written in `full_flow.py` and is prose a person reads. The
