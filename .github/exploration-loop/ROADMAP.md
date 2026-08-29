@@ -4,6 +4,38 @@ Status: proposal, 2026-08-29. Companion page: https://claude.ai/code/artifact/7a
 Decisions of 2026-08-29 folded in: continuous modes, plugin agents, autonomy
 levels with named human critical points, extraction into a separate project.
 
+## 0. Invariants and review rules
+
+**Invariants.** Frozen. Workers and reviewers cite them; nobody edits them
+inside a stage. Changing one is a `DECIDE` for the operator and the only way
+the design moves.
+
+1. The kernel lives in `agent-loop` and is generic; this repository holds data only (`.agent-loop/config.yaml`, `.agent-loop/backlog.yaml`).
+2. No backlog item is admitted without a probe watched to fail on the current tree.
+3. Exactly four terminal states: `PR_READY`, `BLOCKED`, `NO_ITEM`, `INFRA`; every one emits one notification, deduplicated by `(item, state, sha)`.
+4. No loop state on GitHub except the PR itself; no labels, markers or control issues.
+5. The loop never launches a paid or fleet run; `needs-fleet` items are never selectable.
+6. Adapter contract: `run(role, bundle, schema, sandbox, budget) -> AgentResult`; env stripping, bounded context and the single repair live kernel-side.
+7. Continuous mode has back-pressure caps (open PRs, non-progress rounds, per-round wall/tokens/one Docker run).
+8. Protected-path and delta-shape holds never auto-merge at any level.
+
+**Stage discipline.** A stage does what its bullets say and stops. If the
+spec cannot be done as written, the worker records
+`deviation: spec said X, built Y, because Z` in the stage record and stops;
+an undeclared deviation in the diff is a contract finding.
+
+**Review rules.** The reviewer sees the stage spec and the diff, not the
+worker's reasoning; the worker sees only classified findings. Each finding is
+one of:
+
+- `contract` - violates a ROADMAP.md line or an invariant; must cite it.
+- `defect` - the stage's deliverable does not do what the stage says; must show the failing case.
+- `suggestion` - anything else; written to the stage record's deferred list, never acted on in the stage.
+
+A finding without a citation or a failing case is a `suggestion`. Only
+`contract` and `defect` send work back. Two review rounds per stage; a third
+goes to the operator with both positions.
+
 ## 1. What came before, in four generations
 
 | Generation | Mechanism | Produced | Retired because |
