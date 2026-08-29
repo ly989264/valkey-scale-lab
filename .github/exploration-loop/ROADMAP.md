@@ -36,6 +36,13 @@ A finding without a citation or a failing case is a `suggestion`. Only
 `contract` and `defect` send work back. Two review rounds per stage; a third
 goes to the operator with both positions.
 
+**Scope first.** The reviewer's first question is whether any hunk in the
+diff is required by no stage bullet; each such hunk is
+`contract: built beyond spec` and comes back as *remove*. Each stage states
+an expected size; a diff well past it is a deviation. A finding that would
+grow the diff is a `suggestion` by definition - a review can only move the
+code toward the spec.
+
 ## 1. What came before, in four generations
 
 | Generation | Mechanism | Produced | Retired because |
@@ -482,3 +489,14 @@ it triggers on `pull_request` including `labeled`/`unlabeled`.
 - The `valkey-real` Environment still exists and was left alone.
 
 Stage 1 is a separate operator decision. The state between stages is idle.
+
+## Controller status
+
+- Operator authorisation 2026-08-29: run every stage without stopping between
+  them; stop only when the roadmap is done or a stage is blocked. Paid or
+  fleet runs remain out of scope. Decisions taken by the controller are
+  recorded in each stage record.
+- Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
+- Last completed cycle: Stage 0. Current: Stage 1a review.
+- Resume instruction for any session: read this block and the last stage
+  record, then continue with the next cycle of §4.

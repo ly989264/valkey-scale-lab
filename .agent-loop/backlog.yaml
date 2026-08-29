@@ -1,0 +1,319 @@
+# Exploration-loop backlog for valkey-scale-lab.
+#
+# Stage 1a of .github/exploration-loop/ROADMAP.md §6. One entry per item of
+# CLAUDE.md "Where the work stands" > "What is still open", in CLAUDE.md's own
+# order: 6 reporting and evidence, 3 retry and classification, 5 runtime and
+# cleanup, 6 observation and analysis, 1 placement. Twenty-one, none added and
+# none dropped.
+#
+# `statement` is CLAUDE.md's bullet verbatim, with its hard line wrapping joined
+# by single spaces and nothing else changed. That join is the only normalisation,
+# and it is what Stage 1b's assert_backlog_matches_claude_md.py should apply
+# before comparing.
+#
+# `sites` are file:line at commit 66009427; lines move, the symbols named in
+# `notes` do not.
+#
+# `cost_class` is the cheapest vehicle that can actually prove a change to the
+# item, not the cost of noticing it:
+#   hermetic         tests alone, no runtime
+#   docker-exact-50  a real local Docker exact-50 run and a delta-shape diff
+#                    against project/artifacts/baselines/exact-50-6b6f57fd/
+#   needs-fleet      hosts the 32-host fleet would have supplied
+#
+# The fleet is SUSPENDED, so every needs-fleet entry is selectable: false. One
+# hermetic entry is also selectable: false, and it says why in `notes`.
+#
+# No probe or proof fields yet - those are Stage 1b, a separate operator
+# decision. Nothing here is registered in catalog.json, so no count moves.
+
+schema_version: v1
+source:
+  document: CLAUDE.md
+  section: 'Where the work stands > What is still open'
+  item_count: 21
+created_at: '2026-08-29'
+stage: '1a'
+
+items:
+
+  # --- Reporting and evidence ---
+
+  - id: report-run-id-identical-in-every-run
+    group: "Reporting and evidence"
+    statement: "The report's `run_id` is configuration-derived and **identical in every run**, so two reports cannot be told apart by it - only `artifact_root` distinguishes them. Changing it moves a field every frozen baseline carries."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:13716
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:118
+      - project/src/valkey_scale_lab/analysis/summary.py:161
+      - project/src/valkey_scale_lab/report/full_flow.py:395
+    design_doc: "docs/scalable_cluster_observability_design.md §17"
+    cost_class_reason: "The value is a field of analysis_summary.json, which both frozen Docker baselines carry, so a change has to be re-proved by an exact-50 run and a delta-shape diff."
+    notes: "Confirmed against source and evidence. `_run_id` returns f\"{capability_id}-{scenario}-{RUN_DATE}\" with RUN_DATE frozen at \"20260628\", and both frozen exact-50 runs carry run_id `local_full_flow-local_full_flow-20260628` in analysis_summary.json. The report falls back to a second hardcoded constant, report/render.py:15, when no analysis run_id is present. Changing it is a protected-path change under ROADMAP §3 critical point 2."
+
+  - id: analysis-retry-counters-see-only-the-command-audit
+    group: "Reporting and evidence"
+    statement: "The analysis summary's retry counters derive from `retry_index` over `command_log.jsonl` - the command *audit* - so a management or fault re-issue is **invisible** to them."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/analysis/summary.py:761
+      - project/src/valkey_scale_lab/runtime/command_recorder.py:229
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7542
+    design_doc: "docs/scalable_cluster_observability_design.md §13"
+    cost_class_reason: "The counters are fields of analysis_summary.json and the rows they read come from a real management run, so the change is only observable on an exact-50 run with a delta-shape diff."
+    notes: "Refinement, not a contradiction. The management mutation chokepoint does record a re-issue, as `attempt_count` inside the existing row (docker_runtime.py:7542) rather than as an extra row, deliberately, so that `fault_command_log`'s pinned twelve rows do not move. The counters at summary.py:761 read only `retry_index` and `status == \"RETRY\"`, so the fix may be a reader change rather than a producer change."
+
+  - id: evidence-parity-observation-volume-and-ssh-audit
+    group: "Reporting and evidence"
+    statement: "Neither backend records its observation volume in its own evidence, and a native run's command audit records **no ssh at all**, which is an evidence-parity gap between two backends meant to be comparable."
+    cost_class: needs-fleet
+    selectable: false
+    sites:
+      - project/src/valkey_scale_lab/runtime/native_backend.py:444
+      - project/src/valkey_scale_lab/runtime/host_transport.py:207
+      - project/src/valkey_scale_lab/management_matrix.py:388
+    design_doc: "docs/scalable_cluster_observability_design.md §15, §16 item 15"
+    cost_class_reason: "The artifact that has to change is a native run's command audit, and there is no native run without hosts. The 32-host fleet is suspended."
+    notes: "Confirmed by reading source: native_backend.py contains no reference to command_log at all, and `_record` (native_backend.py:444) carries the remote argv rather than the ssh invocation that carried it, so the transport never appears in the audit. Neither backend records how many observation commands it issued."
+
+  - id: run-evidence-records-no-kernel-socket-memory
+    group: "Reporting and evidence"
+    statement: "Nothing in a run's evidence records process RSS or kernel socket memory, which is why every measurement of the 1280-node wall came from outside the product."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/observability/resources.py:244
+      - project/scripts/mesh_cost_sampler.sh:20
+      - project/scripts/ecs_host_verify.sh:560
+    design_doc: "docs/scalable_cluster_observability_design.md §11.3, §11.4"
+    cost_class_reason: "A host sampler already runs on a Docker run, so adding a socket-memory field and its analysis consumer is provable at exact-50; it changes scalable_stability_observation.json, which the frozen baselines carry."
+    notes: "CLAUDE.md no longer matches source on half of this statement, and neither is edited here. **Process RSS is recorded**: resources.py:244 collects per-process `rss_bytes`, §11.3 requires it, and the frozen exact-50 baseline carries `resource_analyses[].analysis.processes.<logical_id>.rss_bytes_max` and `process_totals.rss_bytes_max_sum` in scalable_stability_observation.json. **Kernel socket memory is genuinely absent**: `sockstat` and `tcp_mem` appear only in scripts/mesh_cost_sampler.sh and scripts/ecs_host_verify.sh, which are outside the product's evidence, which is what \"came from outside the product\" describes."
+
+  - id: failing-run-collects-no-journals-or-timeline
+    group: "Reporting and evidence"
+    statement: "A failing run collects **no node journals** and writes no lifecycle timeline. The failures it would help most are cluster-formation ones, which is the class M4 produces."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/lifecycle.py:462
+      - project/src/valkey_scale_lab/runtime/lifecycle.py:473
+      - project/src/valkey_scale_lab/gates/real.py:880
+    design_doc: "docs/scalable_cluster_observability_design.md §12.1, §13 items 3-4"
+    cost_class_reason: "A Docker exact-30 or exact-50 run can be made to fail on purpose, which is the cheapest vehicle that reaches the failure path; the class it matters for is fleet formation failure, which cannot be reached without hosts."
+    notes: "Confirmed. `_write_host_evidence` is the last statement of the success path at lifecycle.py:462; the `except Exception` at lifecycle.py:473 re-raises after `reclaim_run` and collects nothing. Its own docstring states the gap and points at cross_host_evidence_slice_map.md §10.2. `lifecycle_timeline.json` is written by gates/real.py:880 with a hardcoded `\"status\": \"PASS\"` after the run completes."
+
+  - id: actuator-record-keeps-no-signalled-count
+    group: "Reporting and evidence"
+    statement: "No run can answer whether the fault actuator signalled anything: the record keeps the action string, not the `signalled` count."
+    cost_class: needs-fleet
+    selectable: false
+    sites:
+      - project/src/valkey_scale_lab/runtime/native_backend.py:1116
+      - project/src/valkey_scale_lab/runtime/native_backend.py:1126
+      - project/src/valkey_scale_lab/runtime/native_backend.py:472
+    design_doc: "docs/scalable_cluster_observability_design.md §9.1"
+    cost_class_reason: "The count exists only on the native actuator's whole-host signal path, which needs hosts. The Docker sibling pauses a cgroup and has no count to keep."
+    notes: "Confirmed with one refinement. `_signal_run_processes` builds a script that prints its `signalled` count (native_backend.py:1116-1127) and `_fault_record` (native_backend.py:472) keeps `action` and `result` as strings; the count therefore survives only as untyped text inside `stdout_tail`, never as a field a reader can consume."
+
+  # --- Retry and classification ---
+
+  - id: retry-read-catches-a-broad-exception
+    group: "Retry and classification"
+    statement: "`_retry_read` still catches a broad `except Exception`, so it retries error replies - now inconsistent with the mutation chokepoint beside it, which makes the distinction."
+    cost_class: hermetic
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:3622
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7503
+    design_doc: "docs/scalable_cluster_observability_design.md §13"
+    cost_class_reason: "`_retry_read` takes a callable, so a test can hand it one that raises an error reply and one that raises a transport failure without any runtime."
+    notes: "Confirmed. `_retry_read` (docker_runtime.py:3613) catches bare `except Exception` at :3622 and retries anything; the mutation chokepoint beside it calls `is_transient_transport_error` at docker_runtime.py:7503 and re-issues only a transport failure."
+
+  - id: ssh-failure-is-not-classified-in-the-transport
+    group: "Retry and classification"
+    statement: "`HostTransport.run` returns every ssh failure as `CommandResult` rc 255, including an unreachable host, so a transport failure is not classified there."
+    cost_class: hermetic
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/host_transport.py:207
+      - project/src/valkey_scale_lab/runtime/host_transport.py:228
+    design_doc: "docs/scalable_cluster_observability_design.md §13, §15"
+    cost_class_reason: "tests/unit/test_native_backend.py already constructs `MultiplexedSshTransport` and a `FakeTransport`, so a stubbed `subprocess.run` reaches this classification without a host."
+    notes: "Name mismatch worth knowing before writing a probe: `HostTransport` is the Protocol at host_transport.py:68 and declares no body. The behaviour described lives in `MultiplexedSshTransport.run`, host_transport.py:207, which returns `completed.returncode` unexamined at :228 - ssh's own 255 for an unreachable host and a remote command's 255 are the same value there. Only a timeout and an `OSError` become `TransportError`."
+
+  - id: migrate-retry-still-raises-on-busykey
+    group: "Retry and classification"
+    statement: "`MIGRATE` retry meets `-BUSYKEY` in the dual-residence sub-case and still raises; `REPLACE` is issued but that reply is an answer, not a transport failure."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7911
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7920
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:7503
+    design_doc: "docs/scalable_cluster_observability_design.md §13"
+    cost_class_reason: "The path is inside `management_matrix`, whose declared delta shape (6/8, +14 rows, REPLACE on every migrate row) has to be re-checked against the frozen exact-50 baseline after any change here."
+    notes: "Confirmed, and the `REPLACE` half is already in source: docker_runtime.py:7920 issues MIGRATE with REPLACE on every batch, always rather than only on a retry. What remains open is the policy: an error reply is never retried at docker_runtime.py:7503, so a -BUSYKEY reply would still raise if REPLACE ever failed to prevent it."
+
+  # --- Runtime and cleanup ---
+
+  - id: aborted-controller-leaves-unattributable-ssh-masters
+    group: "Runtime and cleanup"
+    statement: "An **aborted controller's ssh masters** survive `SIGKILL` and cannot be reclaimed by anything afterwards - nothing on either side says which run a session belongs to. Bounded by `ControlPersist=600`."
+    cost_class: needs-fleet
+    selectable: false
+    sites:
+      - project/src/valkey_scale_lab/runtime/host_transport.py:132
+      - project/src/valkey_scale_lab/runtime/host_transport.py:160
+      - project/src/valkey_scale_lab/runtime/host_transport.py:185
+    design_doc: "docs/scalable_cluster_observability_design.md §15"
+    cost_class_reason: "Only a native run opens ssh masters, and only a fleet can be left holding them after a controller is killed."
+    notes: "Confirmed. The control root is `mkdtemp(prefix=\"vslab-cm-\")` at host_transport.py:132 and each socket is numbered `m000`, `m001` at :160 - neither carries a run id, so nothing found afterwards on either side can say which run a session belongs to. `ControlPersist=600` at :185 is the bound."
+
+  - id: no-fault-path-checks-ownership
+    group: "Runtime and cleanup"
+    statement: "**No fault path checks ownership.** Accepted by the operator 2026-08-10; the run mark on the actuator's rules records whose a rule is without making `isolate_nodehost` refuse a host that is not this run's."
+    cost_class: needs-fleet
+    selectable: false
+    sites:
+      - project/src/valkey_scale_lab/runtime/native_backend.py:35
+      - project/src/valkey_scale_lab/runtime/native_backend.py:1172
+      - project/src/valkey_scale_lab/runtime/native_backend.py:1207
+    design_doc: "docs/scalable_cluster_observability_design.md §9.1"
+    cost_class_reason: "The actuator being asked to refuse is the native one, on a host the run does not own; nothing local can stand in for that."
+    notes: "Confirmed, and it is an absence the operator accepted on 2026-08-10 rather than a defect found since. native_backend.py:35-41 states it in the module docstring. `fault_rule_tag` marks the run on the rules (native_backend.py:1207) so cleanup can find them, and `isolate_nodehost` (native_backend.py:1172) still isolates whatever host it is given. Selectable stays false while it is an accepted absence, independently of the fleet."
+
+  - id: docker-cleanup-terminates-by-stale-state-pids
+    group: "Runtime and cleanup"
+    statement: "The Docker backend still terminates by pids from `state.json`, which are stale by cleanup time; `docker rm -f` is the real backstop. Correct there, and the native backend was fixed instead."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:2708
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:2942
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:2569
+    design_doc: "docs/scalable_cluster_observability_design.md §15"
+    cost_class_reason: "It is the cleanup stage of a Docker run; the frozen baselines score it 2/2 and a change has to keep that."
+    notes: "Confirmed. `terminate_nodehost` inside `_release_process_run` reads `_cleanup_valid_pids(hosted_nodes)` from `state[\"nodes\"]` at docker_runtime.py:2708-2712 and signals those pids; `docker rm -f` at :2569 is what actually ends them. CLAUDE.md records this as correct-where-it-is and notes the native backend was fixed instead, so the open part is the asymmetry, not a Docker failure."
+
+  - id: state-nodehost-drops-remote-bundle-dir
+    group: "Runtime and cleanup"
+    statement: "`_state_nodehost` drops `remote_bundle_dir`; nothing needs it now that the path is derived."
+    cost_class: hermetic
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:2224
+      - project/src/valkey_scale_lab/runtime/native_backend.py:136
+    design_doc: "docs/scalable_cluster_observability_design.md §17"
+    cost_class_reason: "`_state_nodehost` is a pure dict transform; adding or not adding a key is decided by reading it."
+    notes: "Confirmed, and it is a recorded design choice rather than a live defect. `_state_nodehost` (docker_runtime.py:2224) records eight fields plus a conditional `host_control_endpoint`; `run_bundle_glob` (native_backend.py:136) derives the bundle path from the run id instead, deliberately, so cleanup enumerates from the host rather than trusting what it was told. Adding the key back would move `state.json` in every frozen baseline for no consumer."
+
+  - id: sampler-spec-duplicated-in-the-docker-backend
+    group: "Runtime and cleanup"
+    statement: "`SamplerSpec` in `node_backend.py` duplicates the Docker backend's private `_AgentSamplerSpec`."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/node_backend.py:73
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:8837
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:8884
+    design_doc: "docs/scalable_cluster_observability_design.md §11.1"
+    cost_class_reason: "node_backend.py:73's own docstring says collapsing the two is a change on a real Docker run's path and belongs to an item willing to re-prove that path."
+    notes: "Confirmed. `SamplerSpec` is a frozen dataclass at node_backend.py:73; `_AgentSamplerSpec` at docker_runtime.py:8837 is a plain class holding the same two attributes and is constructed at :8884."
+
+  # --- Observation and analysis ---
+
+  - id: resource-timeline-correlation-compares-unrelated-clocks
+    group: "Observation and analysis"
+    statement: "The resource-to-timeline correlation compares two unrelated monotonic clocks, so a run's `network_error_or_drop_overlap_count: 0` means no overlap is *expressible*, not that none was observed."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/observability/resources.py:456
+      - project/src/valkey_scale_lab/observability/resources.py:434
+      - project/src/valkey_scale_lab/observability/resources.py:783
+    design_doc: "docs/scalable_cluster_observability_design.md §11.4"
+    cost_class_reason: "Making the two clocks comparable needs a real sampler running in a nodehost beside a real timeline, which is an exact-50 run."
+    notes: "Confirmed. `_event_overlaps` (resources.py:456) compares a timeline event's `monotonic` (read by `_timeline_monotonic`, resources.py:434) against sample-window bounds produced by the sampler's own `time.monotonic`, and the sampler runs as a separate agent process inside a nodehost. §11.4 requires network errors and drops to have their overlap with the fault timeline as their analysis consumer, so the field cannot simply be dropped."
+
+  - id: health-gate-escalation-inverts-with-scale
+    group: "Observation and analysis"
+    statement: "**Why the rolling-restart health-gate escalation inverts with scale** is unexplained: it fires at exact-30 and exact-50 and never at exact-200, where more nodes should mean more chances to find something unhealthy."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:12542
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:12605
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:12626
+    design_doc: "docs/scalable_cluster_observability_design.md §16 item 1, §14"
+    cost_class_reason: "Seeing the inversion needs both an exact-30 or exact-50 run and an exact-200 one; exact-50 is the entry cost and exact-200 is what the explanation has to be checked against."
+    notes: "Site confirmed: `_management_matrix_wait_rolling_restart_health` (docker_runtime.py:12542), whose in-loop whole-fleet diagnostic is rate-limited at :12605 and whose decisive final reading is at :12626. The rate limit is why an escalation is now cheap; why it fires at small scale and not at exact-200 is what is unexplained."
+
+  - id: topology-propagation-and-first-fail-need-a-second-vantage
+    group: "Observation and analysis"
+    statement: "Topology propagation is **not measured at all**, and `first_fail` is declared unmeasurable rather than fixed - both need a second vantage point."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:9267
+      - project/docs/failover_timeline_slice_map.md:229
+      - project/src/valkey_scale_lab/observer/failover_timeline.py:1348
+    design_doc: "docs/scalable_cluster_observability_design.md §7.6, §9.2"
+    cost_class_reason: "A second observer can be stood up beside a local exact-50 cluster; nothing about the missing vantage needs a fleet."
+    notes: "Confirmed. `_FAILOVER_UNMEASURABLE_POINTS` (docker_runtime.py:9267) declares `first_fail_at_ms` and `first_cluster_ok_at_ms` with reasons rather than filling them, and names §9.2's confinement to the affected shard's survivors as the cause. Topology propagation is named as not measured in failover_timeline_slice_map.md:229 and appears nowhere in src/."
+
+  - id: rolling-restart-handoff-reuses-one-latency-for-two-fields
+    group: "Observation and analysis"
+    statement: "The rolling-restart handoff path assigns one value to both `promotion_latency_ms` and `cluster_recovery_latency_ms`."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:12346
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:12347
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:9785
+    design_doc: "docs/scalable_cluster_observability_design.md §9.4"
+    cost_class_reason: "The site runs only inside a real rolling restart, and both fields are read into full_flow_result.json, so exact-50 plus a delta-shape diff is the vehicle."
+    notes: "Confirmed. docker_runtime.py:12346-12347 assign the same `promotion_ms` to `promotion_latency_ms` and `cluster_recovery_latency_ms`. The failover lane beside it keeps them apart - :9785 takes `cluster_recovery_latency_ms` from `convergence_confirmed_ms` - so the handoff path is the outlier, not the convention."
+
+  - id: preflight-validates-the-profile-template-not-the-run-document
+    group: "Observation and analysis"
+    statement: "Whether the preflight should validate the document the run uses rather than the profile's template - a safety guard reads that document, so it is the operator's call."
+    cost_class: hermetic
+    selectable: false
+    sites:
+      - project/src/valkey_scale_lab/runtime/lifecycle.py:159
+      - project/src/valkey_scale_lab/runtime/lifecycle.py:178
+      - project/src/valkey_scale_lab/resource.py:387
+    design_doc: "none in the observability design; the binding documents are docs/fleet_operator_runbook.md §11 and milestones/m4/README.md"
+    cost_class_reason: "The preflight is a pure function over a loaded document, so which document it reads is decided and tested without a runtime."
+    notes: "Confirmed, and it is explicitly the operator's call, so selectable is false regardless of cost. lifecycle.py:159 and :178 pass `management_profile.config_template` / `full_flow_profile.config_template` while passing the run's own fleet separately, and resource.py:126-133 records why. The safety guard that reads the document is the named-exception check `_is_exact_1280_native_ecs_exception` (resource.py:387), which reads `profile_name` off the config it was given."
+
+  - id: process-runtime-state-call-site-is-unreached-by-the-suite
+    group: "Observation and analysis"
+    statement: "The 92/92 suite does not reach `_process_runtime_state`'s call site with its real signature: a wrong keyword there passed the whole hermetic suite and was caught by three real runs in ten seconds each."
+    cost_class: hermetic
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/runtime/lifecycle.py:324
+      - project/src/valkey_scale_lab/runtime/lifecycle.py:380
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:2255
+    design_doc: "none in the observability design; the binding rule is CLAUDE.md \"Working rules\", run the mutation check"
+    cost_class_reason: "The gap is test coverage of a call site, and a test that calls `_process_runtime_state` with the real signature needs no runtime."
+    notes: "Confirmed. `_process_runtime_state` is defined at docker_runtime.py:2255 and called only from lifecycle.py:324 and :380, both inside the real bring-up path. The count CLAUDE.md quotes has moved on: `repository.all` is 92 as of M3-A-3, not 92/92 as an unchanged figure - the statement's point is the unreached call site, not the number."
+
+  # --- Placement, at r>=2 only ---
+
+  - id: planner-and-runtime-order-nodes-differently
+    group: "Placement, at r>=2 only"
+    statement: "The planner and the runtime order nodes differently, so they assign different ports to the same logical node. Unobservable at one replica; the validator is the one that matches the runtime."
+    cost_class: docker-exact-50
+    selectable: true
+    sites:
+      - project/src/valkey_scale_lab/planner/plan.py:132
+      - project/src/valkey_scale_lab/runtime/docker_runtime.py:3127
+      - project/src/valkey_scale_lab/planner/plan.py:442
+    design_doc: "docs/multi_replica_mr1_slice_map.md §5 finding 5; docs/multi_replica_support_map.md §7.1"
+    cost_class_reason: "Making the two agree moves `cluster_plan.json`'s ports at one replica, so it has to be re-proved against the frozen exact-50 baseline; a multi-replica run is a new baseline class the item cannot assume."
+    notes: "Confirmed, with a nuance a probe must not get wrong. The orderings differ at **every** replica count, not only at r>=2: the planner interleaves each primary with its replicas (plan.py:132-159) while `_node_specs` blocks every primary before every replica (docker_runtime.py:3127-3139), and computing both for 25 shards at one replica gives 48 of 50 logical ids a different ordinal, and so a different `client_port`. \"Unobservable at one replica\" means no consumer compares the two there, which is what multi_replica_mr1_slice_map.md §5 says: at one replica nothing observes it."
