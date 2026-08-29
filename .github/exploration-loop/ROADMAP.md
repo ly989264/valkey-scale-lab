@@ -389,6 +389,7 @@ its launchd plist were not touched.
 | Control Issue #3 (`m1 control`) | open | closed, commented | https://github.com/ly989264/valkey-scale-lab/issues/3 |
 | Control Issue #7 (`m2 control`) | open | closed, commented | https://github.com/ly989264/valkey-scale-lab/issues/7 |
 | PR #93 | open, `fast-iter` -> default branch, 100 commits | closed, commented; **branch retained** | https://github.com/ly989264/valkey-scale-lab/pull/93 |
+| 21 `milestone-loop:work-item` Issues | open | closed, commented; labels kept | #91 #89 #87 #85 #81 #75 #69 #61 #59 #57 #55 #54 #52 #49 #48 #42 #36 #32 #27 #10 #8 |
 | `ly989264/agent-loop` | did not exist | created, public, empty | https://github.com/ly989264/agent-loop |
 
 The workflow was disabled **first**, before any PR or Issue was touched, because
@@ -404,10 +405,17 @@ it triggers on `pull_request` including `labeled`/`unlabeled`.
   `runs-on: [self-hosted, macOS, valkey-verify]` job with
   `timeout-minutes: 360`. That, not a timer, was the hazard.
 - **23 open Issues carried a `milestone-loop:*` label, not two.** #3 and #7 are
-  the Control Issues and were closed; the other 21 are `milestone-loop:work-item`
-  (most also `milestone-loop:completed`) and were **left open** — closing them
-  was offered and declined as out of Stage 0's scope: #91 #89 #87 #85 #81 #75
-  #69 #61 #59 #57 #55 #54 #52 #49 #48 #42 #36 #32 #27 #10 #8.
+  the Control Issues; the other 21 are `milestone-loop:work-item`, most also
+  `milestone-loop:completed`. All 23 were closed, on the operator's instruction,
+  after the first pass had left the 21 open. **No open Issue carries a
+  `milestone-loop:*` label any more.** Every Issue keeps its labels, and all ten
+  `milestone-loop:*` label definitions still exist in the repository — nothing
+  was deleted, only closed.
+- **Two Issues stay open and are not milestone-loop work items**: #80
+  `[TODO] Add representative multi-primary failover coverage to LOCAL_FULL_FLOW`
+  (`enhancement`, `m2`) and #73 `[M2 decision] Restore formation discovery v2
+  candidate screen` (no labels). Neither carries a `milestone-loop:*` label, so
+  neither was in scope; both are product questions rather than loop plumbing.
 - **PR #93 `fast-iter` -> `codex/valkey-scale-lab-loop` was open**, 100 commits,
   since 2026-08-07 - a live path to the merge the 2026-08-13 decision forbids.
   Reported, then closed on the operator's instruction in the same session.
