@@ -1486,24 +1486,30 @@ the whole suite is green either side of it.
 
 ## Controller status
 
-- Controller decision 2026-08-29: Stage 4 runs 4b (modes, caps) before 4a
-  (drills), because the open-PR-cap drill needs the cap to exist. L2 is not
-  enabled on this consumer until the sandbox DECIDE (Stage 2b review) is taken.
-
-- Operator authorisation 2026-08-29: run every stage without stopping between
-  them; stop only when the roadmap is done or a stage is blocked. Paid or
-  fleet runs remain out of scope. Decisions taken by the controller are
-  recorded in each stage record.
-- Kernel checkout: `~/centos_ex/projects/VibeCoding/agent-loop`.
-- Last completed cycles: 1b, 2a (kernel pushed), 2b and 2c (kernel ten commits
-  ahead of origin, unpushed; two DECIDEs open from 2c, both about what a round
-  can verify), 3 (kernel three commits ahead of origin, unpushed; PR #94
-  open at L1 with a green check; one new DECIDE, the nightly that cannot fire),
-  4b (kernel six more commits ahead of origin, unpushed, none of the 2c/3
-  DECIDEs touched; consumer's `.agent-loop/config.yaml` gained the five new
-  caps, `levels` untouched), and 4a (six drills plus the one-line notification
-  fix one of them exposed; kernel seven more commits ahead of origin, still
-  unpushed; no consumer change but this record).
-  Current: 5 (deferred) — roadmap stages 0–4 complete.
+- **Stages 0–4 complete, 2026-08-29**, every stage reviewed scope-first (two
+  rounds max) and recorded above. Stage 5 (second consumer, L3) is deferred
+  until another repository wants the kernel.
+- Kernel: `ly989264/agent-loop` main; checkout
+  `~/centos_ex/projects/VibeCoding/agent-loop`. Consumer data in this repo:
+  `.agent-loop/config.yaml` (L1, `scm: github`), `.agent-loop/backlog.yaml`,
+  `project/scripts/agent_loop_verify_hermetic.sh`,
+  `.github/workflows/agent-loop-ci.yml`.
+- Operator DECIDEs open, none of which the loop may take:
+  1. Merge PR #94 (the loop's first product change; green check, no reviewer
+     findings, mutation evidence in the body).
+  2. Nightly `repository.all`: `schedule` fires only from the default branch;
+     make `fast-iter` the default or run it from launchd.
+  3. An OS sandbox before L2 or `continuous` on this consumer: the worker
+     allowlist bounds the shell, not the filesystem.
+  4. `product.unit.server_profile` depends on the gitignored baseline (Stage
+     2c); the wrapper links it, the product finding stands.
+  5. Two hermetic items have no admissible probe (Stage 1b); twelve
+     docker-exact-50 items have none, so no docker round can be picked.
+- Controller decisions taken on the operator's authorisation: #80 not added
+  to the backlog; `--allowedTools` derived from config instead of
+  `bypassPermissions`; the baseline-linking wrapper and `AGENT_LOOP_BASELINES`
+  CI variable; 4b before 4a; L2 withheld.
 - Resume instruction for any session: read this block and the last stage
-  record, then continue with the next cycle of §4.
+  record; the next step is whichever DECIDE the operator takes, then
+  `agent-loop run --config .agent-loop/config.yaml --mode once` from this
+  repository's root.
