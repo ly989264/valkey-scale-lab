@@ -1205,22 +1205,25 @@ to fail under a real mutation before its commit, not just written and trusted.
    resume and metrics, the exact `continuous`/`until` invocations, and the caps
    table row for the five new keys.
 
-**Item 6, the 2c deferred kept-worktree livelock, retired with no new code.**
-An uncommittable diff (a `pre-commit` hook refusing the round's commit) leaves
-its worktree under `worktree_root`; the lock's foreign-worktree check then
-refuses every later round, at any item, until a person removes it - a stop in
-`once`, feared as a livelock in `continuous`. `LivelockRetirementTest`
-(`test_modes.py`) runs a real hook-refused round, then two lock-refused ones,
-against the actual kernel: the first hook failure notifies (a distinct
-`(item, state, sha)`); the two lock refusals that follow share one
-`(None, INFRA, sha)` and only the first of *those* notifies; both are ordinary
-`INFRA` rounds to `_after_round`'s counter, no special case. That is the
-existing `(item, state, sha)` dedup plus the ordinary non-progress counter
-this stage already built - zero incremental lines, comfortably inside the
-roadmap's ≤10-line bar for retiring it. "raise hermetic to L2" from the
-session-9 prompt's text is explicitly **not** taken here, by the controller's
-Stage 4 note below: L2 stays withheld pending the Stage 2b review's sandbox
-`DECIDE`, unrelated to whether 4a or 4b runs first.
+**Item 6, the 2c deferred kept-worktree livelock: NOT retired - corrected
+below, and by review round 1.** The paragraph that stood here claimed
+retirement; it was wrong and is struck rather than silently edited, per
+review round 1's finding. An uncommittable diff (a `pre-commit` hook refusing
+the round's commit) leaves its worktree under `worktree_root`; the lock's
+foreign-worktree check then refuses every later round, at any item, forever,
+until a person removes it by hand. `KeptWorktreeLivelockTest` (renamed from
+`LivelockRetirementTest`, `test_modes.py`) now runs a hook-refused round, then
+*three* lock-refused ones, and asserts the fourth is exactly as stuck as the
+second: notifications do dedup - the first hook failure notifies (a distinct
+`(item, state, sha)`), the lock refusals that follow share one
+`(None, INFRA, sha)` and only the first of those notifies - and the stuck
+condition is ordinary non-progress to `_after_round`'s counter, both true and
+neither of them recovery. The loop burns a round every cycle and periodically
+backs off and says so, forever, on any item, until a person runs
+`git worktree remove` by hand. "raise hermetic to L2" from the session-9
+prompt's text is explicitly **not** taken here, by the controller's Stage 4
+note below: L2 stays withheld pending the Stage 2b review's sandbox `DECIDE`,
+unrelated to whether 4a or 4b runs first.
 
 **Consumer, one commit on `fast-iter`, `3a7095a4`, not pushed.**
 `.agent-loop/config.yaml` gains the five new `caps` keys at exactly the
@@ -1254,9 +1257,13 @@ cd /Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab && agent-loop r
   distinct numbers honestly off the ledger - and metrics being honest (never
   fabricated, never recomputed) needed diff_stat/pr_state/notified_at threaded
   through round.py and a new Publisher.state(), which round.py and scm/ had to
-  carry since modes.py cannot invent evidence a round did not record. No hunk
-  in the diff is unrequired by a stage-6 bullet; the excess is volume across
-  more files than one commit's worth, not scope beyond the six items.
+  carry since modes.py cannot invent evidence a round did not record. The
+  excess is volume across more files than one commit's worth.` **Corrected by
+  review round 1: one hunk *was* unrequired by any stage-6 bullet** -
+  `_bounded_round`/`_round_result`, a subprocess-per-round design nothing in
+  the spec asked for, at `modes.py:73-113`. Removed; see the review round 1
+  section below. The "no hunk is unrequired" half of this sentence is what was
+  wrong, not the line-count accounting, which stands.
 - `deviation: "raise hermetic to L2" (session-9 prompt) is explicitly not
   done, because item 8 of this stage's own instructions says to add ONLY the
   new caps sub-keys and not touch levels, and the Stage 3 record and the
@@ -1265,16 +1272,104 @@ cd /Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab && agent-loop r
   call, not re-litigated in the consumer commit message beyond a pointer to
   it.
 - Left out, each needing its own evidence: the sandbox DECIDE itself (worker
-  `python3` still runs with the operator's `HOME`); `round_wall_s`'s only
-  enforcement mechanism (a subprocess per round) has not been measured against
-  a real `claude-code` worker, only a fake `shell` adapter and a deliberately
-  slow verify command; the trigger poll's `gh pr view` call is exercised only
-  against a fake `gh`, never GitHub, matching Stage 3's own L2 caveat; metrics'
-  plumbing-share parser reads `git diff --stat` lines by the `|` column and
-  has not been checked against a diff whose filename itself contains `|`;
-  4a's five drills (idempotent re-run, malformed-then-repair-then-INFRA,
+  `python3` still runs with the operator's `HOME`); the trigger poll's
+  `gh pr view` call is exercised only against a fake `gh`, never GitHub,
+  matching Stage 3's own L2 caveat; metrics' plumbing-share parser reads
+  `git diff --stat` lines by the `|` column and has not been checked against a
+  diff whose filename itself contains `|`; a per-round tokens cap (invariant 7
+  names it beside wall time and one Docker run) was never added - only
+  `round_wall_s` was, and per-role `max_tokens` already existed; 4a's five
+  drills (idempotent re-run, malformed-then-repair-then-INFRA,
   BLOCKED-notifies-once, killed-worker-leaves-nothing, wedged-Docker-is-INFRA)
-  are unbuilt and are 4a's, next.
+  are unbuilt and are 4a's, next. Also deferred, not acted on in review round
+  1 (the reviewer's own call): the `cli._load`/`_status` split as it stands;
+  `pause` does not stop `run_continuous`'s own paused-loop from ignoring
+  `stop` (an explicit human override, by design - see the review round 1
+  section's `_wait_while_open_prs_at_cap` note).
+
+### Stage 4b, review round 1 — 2026-08-29
+
+Two `contract` findings and five `defect` findings, one commit each on kernel
+`main` (unpushed), plus one commit correcting this record's item 6 on
+`fast-iter` (unpushed). Kernel main is `aa581f9`, eight commits past the
+Stage 4b record above's `1b17d90` (six original + two: a doc fix and the
+livelock-test rename are not separately numbered findings but ride along, see
+below). **147/147 hermetic tests, up from 140.**
+
+1. `37f7ad3` **contract** - `PublishResult` (`round.py:53-64`) duplicated
+   every field `Result` already had, minus `state` (always `PR_READY` there)
+   and `cost` (already a parameter). Removed; `_publish` returns `Result`
+   directly. 14/14 `test_round.py` unmodified and still green.
+2. `225c528` **contract** - no bullet asked for a subprocess per round
+   (`modes.py:73-113`, `_bounded_round`/`_round_result`). `caps.round_wall_s`
+   is now enforced *inside* `round.run_once` with `signal.alarm`
+   (`_round_wall_handler`, ~16 lines): the alarm's `InfraError` takes the same
+   path any other one does. This is what the record above should have built
+   the first time; it also resolves, without separate commits, two `defect`
+   findings the reviewer named as consequences of the subprocess design:
+   - a killed round left its worktree behind, wedging every later round on
+     any item on the foreign-worktree check (`workspace()`'s own `finally`
+     now removes it, since the alarm's exception propagates through the
+     normal cleanup path);
+   - the driver notified the killed round itself, bypassing
+     `already_notified` (there is no longer a second notifier - only
+     `notify.py`'s ordinary one-per-`(item, state, sha)` path runs).
+   New test: `test_round.py`'s
+   `test_a_round_over_its_wall_cap_ends_infra_in_process_and_cleans_up` - a
+   verify command outliving `round_wall_s=1`, `INFRA` naming the cap, empty
+   `worktrees/`, no `explore/` branch, and the *next* round on the same item
+   reaches `PR_READY` - not stuck. Mutation: multiplying the alarm deadline by
+   100 leaves `PR_READY` where `INFRA` was expected; caught, restored.
+3. `6a1f88e` **defect** - the `open_prs` wait (`modes.py:177-179` in the
+   pre-review file) read `ledger.open_pull_requests()` - a snapshot nothing
+   refreshed - and checked nothing but the pause flag, so `until`'s stop
+   conditions were never evaluated while waiting. Measured: 12 iterations,
+   zero `gh pr view` calls, `until-hours` never checked. `_poll_open_pull_requests`
+   (one `gh pr view` per known-open PR, shared with `_wait_for_trigger`'s
+   existing poll) plus `_wait_while_open_prs_at_cap` (poll, recheck, check
+   paused, check `stop` - every cycle) replace the stale inline loop. Two new
+   tests: a PR the fake `gh` reports `MERGED` clears the cap on the first
+   poll, no `idle_s` wait; a PR that stays `OPEN` still lets `until-hours` end
+   the wait. Mutation: dropping the `stop` check turns the second test into
+   an infinite loop under a still-`OPEN` PR - caught by the hang itself,
+   restored.
+4. `ee99311` **defect** - the non-progress back-off printed
+   `notify.notify(state="IDLE", ...)` (`modes.py:134-138` in the pre-review
+   file), a fifth token in the state column invariant 3 names four states
+   for. New `notify.fyi()`: `"FYI    <text>"`, no item/state/sha column, no
+   `(item, state, sha)` dedup of its own - the caller (the non-progress
+   counter) decides when it is worth saying. `test_notify.py` covers it
+   directly; the existing back-off test now also asserts the line starts
+   `FYI` and never says `IDLE`.
+5. `3fb3b22` **defect** - the plumbing share and `prs_opened`
+   (`modes.py:225,236,186` in the pre-review file) counted PR_READY *rounds*
+   that touched a `pr_url`, not distinct pull requests - a re-publish (item
+   goes BLOCKED, gets fixed, republishes) inflated both. `metrics_report` now
+   keys by `pr_url` first (latest round per URL wins - its `diff_stat` and
+   `cost` are what the pull request currently looks like); `run_continuous`
+   gains `_count_opened(outcome, opened_pr_urls)`, its own function so the
+   boundary is tested directly rather than by running two full rounds.
+   Mutation: dropping the "already counted" guard makes a re-publish count
+   again; caught, restored.
+6. `ecef181` - README's modes paragraph still described the removed
+   subprocess design after commit 2; corrected to match (`round.run_once`
+   in-process, `signal.alarm`). Not a numbered finding; a direct consequence
+   of #2 left stale otherwise.
+7. `aa581f9` **defect (record)** - item 6 above (this record) claimed the 2c
+   kept-worktree livelock was "retired with no new code." It is not: a round
+   the loop runs on its own never clears a foreign worktree it did not
+   create, so every later round on any item stays INFRA forever, notification
+   dedup and non-progress counting notwithstanding - neither is recovery.
+   `LivelockRetirementTest` renamed `KeptWorktreeLivelockTest`, a fourth
+   round added and asserted exactly as stuck as the second, and the kept
+   worktree's continued existence asserted at the end. This ROADMAP record's
+   own item-6 paragraph is corrected above rather than only in the kernel.
+
+Left out of review round 1 itself: the reviewer's "deferred, not to act on"
+list (`cli._load`/`_status`'s split, `pause` not stopping the paused-loop on
+`stop`, the missing per-round tokens cap) is folded into this stage's own
+left-outs above, each with one line naming it, per the reviewer's instruction
+- none of the three has a fix here.
 
 ## Controller status
 
