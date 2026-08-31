@@ -1680,8 +1680,11 @@ line. Restored: **exit 0**. The worktree was removed afterwards.
      findings, mutation evidence in the body).
   2. Nightly `repository.all`: `schedule` fires only from the default branch;
      make `fast-iter` the default or run it from launchd.
-  3. An OS sandbox before L2 or `continuous` on this consumer: the worker
-     allowlist bounds the shell, not the filesystem.
+  3. An OS sandbox before L2 or `continuous` on any consumer: the worker
+     allowlist bounds the shell, not the filesystem. On minikv it is wider
+     still - `Bash(docker:*)` plus a build container that bind-mounts
+     `/Users/allgood/centos_ex` read-write as root reaches every repo on this
+     machine (Stage 5a review).
   4. `product.unit.server_profile` depends on the gitignored baseline (Stage
      2c); the wrapper links it, the product finding stands.
   5. Two hermetic items have no admissible probe (Stage 1b); twelve
