@@ -1662,14 +1662,164 @@ line. Restored: **exit 0**. The worktree was removed afterwards.
   isolation on both the fixed and the unfixed tree - a pre-existing timing
   flake, not this change.
 
+## Stage 5b record — 2026-08-31
+
+Worker: Fable 5 subagent. Kernel `~/centos_ex/projects/VibeCoding/agent-loop`
+main, six commits on Stage 5a's `be01543`, **175 tests** (154 + 21), Python
+3.9, **nothing pushed anywhere**. The only consumer data changed is minikv's
+`.agent-loop/config.yaml` (`36bee72` on its `main`, unpushed). **Neither
+backlog was touched** — not minikv's, not this repository's — and **L3 is
+enabled on no consumer.** Nothing under `project/` or `loop_evidence/`.
+
+| # | Commit | What |
+|---|---|---|
+| 1 | `a28d01f` | The planner's output schema, its count capped in the schema itself |
+| 2 | `571b722` | `levels.planner` is where L3 lives; `plan_sources` names what a planner may read |
+| 3 | `ef6f97c` | The planner's bundle: backlog, ledger tail, source globs |
+| 4 | `601a92c` | `agent-loop plan`: ask, run each probe, admit what fails |
+| 5 | `25f9e59` | `levels.planner: L3` appends admitted proposals to `backlog.yaml` |
+| 6 | `250fd6d` | README |
+
+**`agent-loop plan --config <path>`** runs the `planner` role through the path
+every other role takes — the adapter from `agents.planner`, a read-only
+sandbox, the stripped environment, the bounded bundle that refuses rather than
+truncates, exactly one repair. Nothing about the planner is special-cased in
+`adapters/`. Its bundle is **consumer data only**: the backlog as ids,
+statements, cost classes and `selectable`; the ledger's last 20 lines, four
+fields each; and the files any `plan_sources` glob names, 8 KB per file and
+marked `truncated` when cut.
+
+**One new config key and one new value in an existing map.** `plan_sources` is
+a list of file globs and nothing else. `levels` is keyed by cost class and the
+planner is a *role*, so L3 lives under the reserved key `levels.planner`, which
+no cost class may take and which cannot be L2 — there is no pull request for a
+role to merge. Every cost class keeps "only L1 and L2 are implemented", word
+for word.
+
+**Admission is invariant 2 and nothing else.** The kernel runs each proposal's
+probe itself, from that cost class's own verify `cwd` — the rule `pick` and
+`verify` already use — and a probe that exits 0 is **rejected**, recorded with
+its exit and output tail. A proposal whose id or statement matches a backlog
+item is a duplicate and never spends a probe, including a duplicate of one the
+same run has just admitted. Below L3 the whole of admission is
+`<worktree_root>/proposals.yaml`; at L3 the admitted ones are also appended to
+`backlog.yaml` as text, so every existing entry and comment survives byte for
+byte and the file still loads through `backlog.load`.
+
+**A plan run is not a round, so it writes no ledger line** — judged, not
+assumed. It picks no item, opens no pull request and cannot end in one of the
+four terminal states; `NO_ITEM` would be read as a round by `blocked_at`,
+`already_notified` and `metrics` alike. It emits exactly one `notify.fyi`, the
+operator line that already exists for things that are not round outcomes, and
+`proposals.yaml` is its durable record. A test asserts the ledger stays empty.
+
+Mutation checks, each watched to fail: `maxItems` removed → the six-proposal
+case returns `None`; the exit-0 rejection removed → a passing probe is admitted;
+the duplicate guard removed → the duplicate test errors; appending regardless
+of level → the below-L3 test fails; an L3 that appends nothing → the L3 test
+fails.
+
+### The real plan run against minikv
+
+`agent-loop plan --config <minikv>/.agent-loop/config.yaml`, planner
+`claude-code:sonnet`, `plan_sources: [docs/*.md]`, 12 min 20 s wall.
+**One proposal, one admitted, none rejected.** minikv's `backlog.yaml` was not
+touched; `levels.planner` is absent, so nothing could have been.
+
+The proposal — `hdel-double-counts-a-field-repeated-in-one-call`,
+`cost_class: hermetic`, sites `hash_module.cc:270`, `:295`,
+`hash_commands.cc:111`: `HashModule::DeleteFields` loops over the raw `HDEL`
+argument vector against one snapshot taken before the write batch, so a
+repeated field is counted once per argument rather than once per distinct
+field, and every sibling multi-argument mutator in the codebase
+(`SADD`/`SREM`, `ZADD`/`ZREM`, `XDEL`, `GEOADD`, `DEL`) dedupes its list first
+while `HDEL` never got that treatment.
+
+**The defect is real.** Checked by hand in a throwaway worktree at minikv's
+`main` with Stage 5a item 1's one-line `#include <algorithm>` restored so the
+tree builds: `HSET h a 1` → `integer: 1`, `HSET h b 1` → `integer: 1`,
+**`HDEL h a a b` → `integer: 3`** on a hash that only ever had two distinct
+fields. The worktree was removed afterwards; `git worktree list` is clean and
+minikv's `main` is unchanged.
+
+**The probe, though, has not once failed for the item's own reason** — and this
+is the finding of the run:
+
+- On minikv's real tree, which is where the kernel ran it: **exit 1**, and the
+  output tail is `geo_module.cc:307:10: error: 'sort' is not a member of
+  'std'`. Stage 5a's item 1 is still unmerged, so the build step at the head of
+  the probe fails and *any* build-based probe on this tree exits non-zero.
+- On a tree where that include is restored: **exit 143**. The probe ends with
+  `pkill -f 'minikv_server --db_path /tmp/probe_hdel_dup'`, and that pattern
+  matches the `sh -lc` wrapper carrying the same string — **the probe kills its
+  own shell**, the exact trap this repository's own notes record.
+- With only that `pkill -f` narrowed to `pkill -x minikv_server` and nothing
+  else changed: **exit 1**, and now for the item's reason — the `HDEL` answers
+  `integer: 3` and the `grep -q 'integer: 2'` finds nothing.
+
+So admission behaved exactly as specified and still admitted a proposal on two
+consecutive wrong reasons. **Non-zero is the rule invariant 2 gives, and
+non-zero does not mean "failed for the stated reason".** The kernel cannot tell
+the three apart, and neither can `proposals.yaml` — which is why the exit and
+the output tail are recorded beside every verdict, and why a person reads them
+before anything is appended to a backlog.
+
+**One over-claim in the statement, found by reading the site**: it says
+`after.size -= removed` at `hash_module.cc:295` "can even underflow" the stored
+field count. It cannot — the branch immediately above (`removed >= before.size`)
+tombstones the key instead, which the by-hand run confirms (`EXISTS h` → 0
+after the duplicate `HDEL`). The count is wrong; the underflow is guarded.
+
+The planner also **read `.agent-loop/config.yaml` itself** — it runs read-only
+with `cwd` at the consumer root — and so reproduced the `docker exec
+relaxed_fermat` convention and the `$(pwd | sed ...)` path mapping exactly,
+which the bundle never told it. That is worth knowing before anyone concludes
+the bundle alone taught it.
+
+### Deviations and left-outs
+
+- `deviation: the stage expected ~150 kernel lines; the kernel diff is 362
+  insertions (schemas +37, config +23, context +83, plan.py +212, cli +11)
+  against 382 in tests and 34 in README, because six deliverables were asked
+  for and the smallest honest form of each is what is there.` Nothing in the
+  diff is required by no bullet; the largest single block is `plan.py`, of
+  which roughly half is the module and function docstrings this kernel writes
+  everywhere.
+- `deviation: a proposal naming a cost class with no verify entry is rejected
+  rather than probed, which no bullet asks for, because the cwd rule the stage
+  does ask for ("same cwd rules as verify/probes") has no answer for such a
+  class and the alternative is a crash.` Five lines, recorded as a rejection
+  like any other.
+- **The ledger records nothing about a plan run.** Judged above rather than
+  built around: no `plan` record kind was added and `NO_ITEM` was not reused.
+  If the operator wants plan runs in `metrics`, that is a decision about what a
+  ledger line means and belongs to a stage of its own.
+- Left out: **a probe that times out is admitted.** `run_command` returns 124
+  for its 600 s cap, which is non-zero, so a hanging probe reads as a failing
+  one. Recorded honestly in `probe_observed` — exit 124 and "command exceeded
+  its 600s timeout" — but not distinguished, and the run above shows why that
+  matters.
+- Left out: **the bundle carries no probe from the existing backlog**, only ids
+  and statements, exactly as the stage specifies. A planner therefore cannot
+  copy a consumer's command convention from the backlog; on minikv it got there
+  by reading the config directly instead.
+- Left out: the planner ran under `--permission-mode plan` and its `proof` text
+  claims commands it says it ran by hand. Nothing in the kernel can check that
+  claim, and nothing in it should — only the kernel's own probe run is evidence.
+- Left out: **no round was run on the admitted proposal**, and it is not in any
+  backlog. `agent-loop plan` was exercised once, against a consumer at L1.
+
 ## Controller status
 
-- **Stages 0–4 complete, 2026-08-29; Stage 5a complete, 2026-08-31**, every
-  stage reviewed scope-first (two rounds max) and recorded above. **Current: 5b
-  (L3 planner)**, not started. 5a pointed the kernel at a second consumer
-  (`~/centos_ex/projects/VibeCoding/minikv`, C++17 on RocksDB) with two data
-  files, took one round to PR_READY, and found one valkey-shaped kernel bug
-  (`agent-loop` `be01543`).
+- **Roadmap complete: stages 0–5 done; L3 exists, enabled nowhere.** Stages
+  0–4 closed 2026-08-29, Stage 5a and 5b on 2026-08-31, every stage reviewed
+  scope-first (two rounds max) and recorded above. 5a pointed the kernel at a
+  second consumer (`~/centos_ex/projects/VibeCoding/minikv`, C++17 on RocksDB)
+  with two data files, took one round to PR_READY, and found one valkey-shaped
+  kernel bug (`agent-loop` `be01543`). 5b added `agent-loop plan` and the
+  `levels.planner: L3` append path; **every consumer stays below L3**, so a
+  plan run writes `proposals.yaml` and a person reads it. There is no next
+  stage: further work is a new operator decision, not a continuation.
 - Kernel: `ly989264/agent-loop` main; checkout
   `~/centos_ex/projects/VibeCoding/agent-loop`. Consumer data in this repo:
   `.agent-loop/config.yaml` (L1, `scm: github`), `.agent-loop/backlog.yaml`,
