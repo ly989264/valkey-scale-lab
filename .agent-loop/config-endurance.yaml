@@ -1,0 +1,82 @@
+# Endurance-run configuration (2026-08-31): identical to config.yaml except
+# scm is local-only (no pushes, no PRs), rounds sleep caps.idle_s between
+# triggers for token efficiency, and each round has a hard wall. Launched by
+# the controller as the first live long-loop run:
+#   agent-loop run --config .agent-loop/config-endurance.yaml \
+#     --mode until --until-hours 8 --until-cost 5
+# agent-loop configuration for valkey-scale-lab.
+#
+# Install as <valkey_scale_lab>/.agent-loop/config.yaml. Every path in it is
+# relative to the repository root, which the kernel takes to be the parent of
+# the .agent-loop directory this file sits in.
+
+branch: fast-iter
+backlog: .agent-loop/backlog.yaml
+worktree_root: .agent-loop/worktrees
+ledger: .agent-loop/ledger.jsonl
+
+# ROADMAP.md §3 critical point 2: a diff touching any of these is never merged
+# by the loop. The verify step turns one into BLOCKED with the paths named.
+protected_paths:
+  - project/schemas
+  - project/docs/scalable_cluster_observability_design.md
+  - project/artifacts/baselines
+  - project/catalog.json
+  - project/verification
+
+# One command per cost class. `cwd` is where this project's own commands run,
+# and the probes of items in that class run there too. A cost class with no
+# entry here cannot be verified, so a round that picks one ends INFRA rather
+# than guessing: docker-exact-50's exact-50 run and delta-shape diff are
+# Stage 2c and are deliberately absent.
+verify:
+  hermetic:
+    cwd: project
+    # Links the main checkout's frozen baselines into the worktree first;
+    # see the script's header. Runs ./gate suite product.unit unchanged.
+    command: ./scripts/agent_loop_verify_hermetic.sh
+
+# A list is an escalation ladder; the first rung is the one that runs. The
+# reviewer reads the published diff read-only and posts one PR comment.
+agents:
+  worker:
+    - claude-code:sonnet
+    - claude-code:opus
+  reviewer:
+    - claude-code:sonnet
+
+caps:
+  # Stage 4b: continuous-mode caps, keyed by name rather than role. Values are
+  # exactly the kernel's own defaults (agent-loop README.md "Config keys");
+  # not yet tuned for this consumer.
+  open_prs: 3
+  non_progress_rounds: 5
+  poll_s: 60
+  idle_s: 1800
+  round_wall_s: 1200
+  worker:
+    wall_s: 1800
+    silence_s: 300
+    max_tokens: 200000
+  reviewer:
+    wall_s: 1800
+    silence_s: 300
+    max_tokens: 200000
+
+notify:
+  - stdout
+  - target: file
+    path: .agent-loop/notifications.log
+  - macos
+
+# On PR_READY the round pushes explore/<item> to origin and opens (or updates)
+# its pull request against `branch`, before anything is cleaned up.
+scm: local-only
+
+# L1: the loop opens the pull request and a person merges it. L2 would let the
+# loop merge, and must not be enabled here before the sandbox DECIDE recorded
+# in the Stage 2b review - a worker's python3 still runs with the operator's
+# HOME and can read ~/.ssh and ~/.claude.
+levels:
+  hermetic: L1
+  docker-exact-50: L1
