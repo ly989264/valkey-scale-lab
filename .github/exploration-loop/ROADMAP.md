@@ -1484,11 +1484,192 @@ the whole suite is green either side of it.
   not create would be undoing the very scoping `recovery.py` contributed, and
   that is a `DECIDE`, not a drill.
 
+## Stage 5a record — 2026-08-31
+
+Worker: Fable 5 subagent. Second consumer:
+`~/centos_ex/projects/VibeCoding/minikv`, a C++17 Redis-like prototype on
+RocksDB (CMake, vendored googletest, 23 gtest binaries), on its `main` at
+`e8e0be7`. Kernel `~/centos_ex/projects/VibeCoding/agent-loop` main at
+`d196727` (= `origin/main`), 153 tests. Nothing was pushed anywhere; nothing
+under `project/`, `loop_evidence/` or this repository's `.agent-loop/` was
+touched.
+
+**The kernel was pointed at minikv with exactly two files and no consumer
+script.** `minikv/.agent-loop/config.yaml` (`branch: main`, `scm: local-only`,
+`levels: {hermetic: L1}`, worker `[claude-code:sonnet, claude-code:opus]`,
+reviewer `claude-code:sonnet`, caps copied from this repository's values
+unchanged) and `minikv/.agent-loop/backlog.yaml` (3 items). Committed on
+minikv's `main` as `451ce31`, one commit ahead of its `origin/main`, unpushed.
+No new config key was needed for a C++ consumer.
+
+**minikv's build and test is authoritatively a Linux Docker container, not the
+macOS host** (`AGENTS.md` "Platform Rules", `README.md` "Platform Note"), so
+every command in both files is
+`docker exec relaxed_fermat sh -lc "cd $(pwd | sed 's@^/Users/allgood/centos_ex@/workspace@') && ..."`.
+The `$(pwd)` runs host-side and the workspace is mounted at `/workspace`, so
+the one string is correct in the main checkout and in
+`.agent-loop/worktrees/<item>` alike without the kernel knowing either path.
+`allowed_tools` derived `Bash(docker:*)` from it with nothing hardcoded.
+
+- **verify, cost class `hermetic`, `cwd: .`:** `./tools/build_linux.sh --jobs 10`
+  in that container - the entrypoint `AGENTS.md` "Validation Rules" calls
+  authoritative. It builds every target and runs the 23 test binaries.
+  **46.5 s from scratch in a fresh worktree; 28 s incremental**, so no
+  build-only variant was needed.
+- **protected paths, all three derived from minikv's own documents:**
+  `third_party` (AGENTS.md: the RocksDB bundle is refreshed through the
+  supported tool flow "rather than editing bundled headers or libraries by
+  hand"), `docs/adr` (ADR 0001 "freezes the current minikv implementation
+  boundaries"), `tools/build_linux.sh` (it is the verify command, so the loop
+  must not be able to edit what judges it).
+
+**Three backlog items, each probe run and watched to fail before it was written
+down.** Every probe checks the defect through the product - the build itself,
+or minikv's own committed `tools/resp_cli.py` against a server started from the
+tree's own build - and none greps for a comment. Item 1 breaks the build, so
+while it is open probes 2 and 3 exit non-zero for *its* reason; each entry's
+`probe_observed` records both exits, and both were also run on the same tree
+plus item 1's one-line fix to see each fail for the reason it names.
+
+1. `geo-module-lost-the-algorithm-include-it-still-needs` -
+   `src/types/geo/geo_module.cc:307` calls `std::sort`, and commit `f075f55`
+   ("style(geo): remove empty anonymous namespace from geo module") deleted
+   eight includes including `<algorithm>` while that call stayed. **`main` does
+   not compile.** Probe = the build: **exit 2**, `geo_module.cc:307:10: error:
+   'sort' is not a member of 'std'; did you mean 'qsort'?`; **exit 0** with the
+   include restored.
+2. `null-replies-use-resp3-which-the-repos-own-client-cannot-read` -
+   `resp_parser.cc:149` `EncodeNull()` returns the RESP3 `_\r\n`, the server
+   never negotiates RESP3 and has no `HELLO`, and `tools/resp_cli.py:78` - the
+   client `docs/build.md` names for exercising `minikv_server` - raises
+   `unsupported RESP prefix` on it and leaves the connection out of frame.
+   Probe = `resp_cli.py GET <absent key>`: **exit 1** on the current tree
+   (item 1's compile error), **exit 2** with item 1's include restored,
+   `client_error: unsupported RESP prefix: b'_'`. Measured on eleven commands
+   (GET, LPOP, RPOP, ZSCORE, SPOP, SRANDMEMBER, GEODIST, GEOPOS, ZRANK,
+   JSON.GET, XREAD). `tests/network_test/reply_encode_test.cc:30` pins
+   `_\r\n`, so which side moves is open and the statement does not decide it.
+3. `stream-ids-reject-the-bare-millisecond-form` -
+   `stream_common.cc:112` `ParseStreamId` requires `ms-seq`, so
+   `XREAD STREAMS k 0` answers `ERR ... requires valid id`, as do `XADD k 5`,
+   `XRANGE k 1 3` and `XDEL k 1`, against ADR 0001's "intentionally Redis-like
+   for the implemented subset". Probe = `XADD` then `XREAD STREAMS k 0`:
+   **exit 1** on the current tree, **exit 1** with item 1's include restored
+   and this time from the product - `XADD` answers `1-1` and the `XREAD`
+   answers the error. `0-0` returns the entry, so only the bare form is
+   refused.
+
+Six further behaviours were measured against minikv's docs and found correct,
+so no item was written for them: emptied collections leave no key of any of the
+five types, re-typing after `DEL` and after expiry, the geo sidecar after `DEL`
+and after `ZREM`, `GEOSEARCH`'s `FROMMEMBER`/`BYBOX`/`COUNT`/`DESC`/`WITH*` and
+its out-of-range refusals, `max_request_bytes` answering `ERR request too large`
+before closing exactly as `docs/layers/network.md` says, and every error string
+being a literal, so nothing user-supplied can be injected into a RESP frame.
+
+### The kernel bug, which is the point of this stage
+
+**One valkey-specific assumption was hit, and it stopped the loop dead.**
+
+`agent-loop` **`be01543`** - *A kept `explore/` branch blocks its item; it does
+not wedge the loop as INFRA*. `round.py:_worker_round` +14, `worktree.py`
+`branch_exists()` +6, README +3, two tests changed and one added.
+
+Observed, not reasoned: round 1 reached PR_READY and kept
+`explore/<item>`, because `local-only` opens no pull request and the branch is
+the whole deliverable. Round 2 then died inside `git worktree add -b` with
+`fatal: a branch named 'explore/...' already exists`, reported as **INFRA**.
+INFRA is not skipped at the current sha and `pick` takes the first failing probe
+in file order, so **every later round chose that same item and items 2 and 3
+could never be dispatched at all**. Two things were wrong: nothing about the
+machine had failed - the previous round's own result was waiting for a person -
+and INFRA is the one state that cannot get out of its own way. The round now
+returns **BLOCKED** naming the branch and what to do with it, which `pick`
+already skips through `ledger.blocked_at`.
+
+**`scm: github` could never show it**: `_publish` sets `keep_branch = False`
+once origin holds a copy, so the next round's worktree add always succeeds.
+This is exactly the shape Stage 5 exists to find - a kernel behaviour that was
+correct only because the first consumer used the other publisher.
+
+Mutation check: with the check removed, drill 1 returns to
+`['PR_READY', 'INFRA', 'INFRA']` and the new two-item drill dispatches
+`an-item` three times and never reaches `another-item`; restored, 3 passed.
+**154/154 kernel tests** (153 + the new drill). Kernel main is 1 commit ahead of
+`origin/main`, unpushed.
+
+Two more github-shaped assumptions were *reasoned about and not fixed*, having
+produced no failing case in this stage - scope-first makes each a suggestion:
+`ledger.open_pull_requests` keys on `pr_url`, so invariant 7's open-PR cap
+counts nothing under `local-only` (harmless here: with the fix, a consumer whose
+items are all PR_READY reaches NO_ITEM); and `ledger.tool_versions` records
+`git` and `python3` rather than a consumer's toolchain, which is arguably right
+since those are the kernel's own tools and not minikv's.
+
+### Rounds
+
+Budget three, three spent.
+
+- **Round 1 - `PR_READY`, 132.2 s, $0.2618**, diffstat `1 file changed, 1
+  insertion(+)`. `ts 2026-08-31T02:12:38Z · item
+  geo-module-lost-the-algorithm-include-it-still-needs · sha 451ce3148f8d ·
+  PR_READY · probe passes, ...build_linux.sh --jobs 10 passes, no protected
+  path touched; test src/types/geo/geo_module.cc; reverted '...touch
+  src/types/geo/geo_module.cc && ./tools/build_linux.sh --skip-tests --jobs 10'
+  observed 'src/types/geo/geo_module.cc:307:10: error: 'sort' is not a member
+  of 'std'; did you mean 'qsort'?'; publisher 'local-only' opens no pull
+  request; the branch stays local · warning null`. The worker found the
+  mutation evidence itself, by touching the file and rebuilding - a C++
+  consumer has no test to revert, and the build is the test.
+- **Round 2 - `INFRA`**, the bug above: `cannot create worktree for ...: fatal:
+  a branch named 'explore/...' already exists`.
+- **Round 3, after the fix - `BLOCKED` in 9.6 s, cost null**, no worker
+  spawned: `explore/geo-module-lost-the-algorithm-include-it-still-needs
+  already holds a previous round's result; merge or delete it before this item
+  is run again`. Asked directly afterwards (read-only, no round spent), `pick`
+  now skips that item at this sha and would choose item 2 - the loop moves on.
+
+### The diff, and the by-hand mutation check
+
+Branch `explore/geo-module-lost-the-algorithm-include-it-still-needs`, commit
+`33cf56c`, kept locally, **1 file, +1 line**: `#include <algorithm>` restored to
+`src/types/geo/geo_module.cc`'s include block, in alphabetical position. The
+worktree is gone, `git worktree list` is clean, minikv's `main` is unchanged.
+
+Checked out at `33cf56c` in a separate worktree: `./tools/build_linux.sh`
+**exit 0**, all 23 test binaries pass. Include deleted: **exit 2**,
+`geo_module.cc:307:10: error: 'sort' is not a member of 'std'` at the same
+line. Restored: **exit 0**. The worktree was removed afterwards.
+
+### Deviations and left-outs
+
+- `deviation: spec said the round's Step 1 skips items recorded BLOCKED at the
+  current sha (§3 "One round", README "The round"); it now also refuses an item
+  whose explore/ branch a previous round left behind, as BLOCKED, because
+  without that a local-only consumer's loop cannot reach its second item.`
+  README was updated with it.
+- `deviation: the controller-status block had no line reading "Current:", so
+  the Stage 5 bullet was rewritten rather than a line edited.`
+- The backlog entries carry a `probe_observed` field the kernel does not read;
+  it is the admission record and nothing consumes it.
+- Left out: **Stage 5b, the L3 planner, is not started** - this stage is 5a.
+  minikv was not pushed and no PR was opened there; item 1's fix was not merged
+  onto minikv's `main`, since L1 makes that the operator's. Because it is not
+  merged, items 2 and 3 keep failing for item 1's reason, so no round was spent
+  on them. `tests/test_modes.py::OpenPrsBackpressureTest::test_a_poll_that_
+  finds_the_pr_merged_clears_the_cap_without_a_full_idle_wait` failed once
+  under full-suite load (`1.088 not less than 1`) and passed six times in
+  isolation on both the fixed and the unfixed tree - a pre-existing timing
+  flake, not this change.
+
 ## Controller status
 
-- **Stages 0–4 complete, 2026-08-29**, every stage reviewed scope-first (two
-  rounds max) and recorded above. Stage 5 (second consumer, L3) is deferred
-  until another repository wants the kernel.
+- **Stages 0–4 complete, 2026-08-29; Stage 5a complete, 2026-08-31**, every
+  stage reviewed scope-first (two rounds max) and recorded above. **Current: 5b
+  (L3 planner)**, not started. 5a pointed the kernel at a second consumer
+  (`~/centos_ex/projects/VibeCoding/minikv`, C++17 on RocksDB) with two data
+  files, took one round to PR_READY, and found one valkey-shaped kernel bug
+  (`agent-loop` `be01543`).
 - Kernel: `ly989264/agent-loop` main; checkout
   `~/centos_ex/projects/VibeCoding/agent-loop`. Consumer data in this repo:
   `.agent-loop/config.yaml` (L1, `scm: github`), `.agent-loop/backlog.yaml`,
