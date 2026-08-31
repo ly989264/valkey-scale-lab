@@ -1665,7 +1665,7 @@ line. Restored: **exit 0**. The worktree was removed afterwards.
 ## Stage 5b record — 2026-08-31
 
 Worker: Fable 5 subagent. Kernel `~/centos_ex/projects/VibeCoding/agent-loop`
-main, six commits on Stage 5a's `be01543`, **175 tests** (154 + 21), Python
+main, eight commits on Stage 5a's `be01543`, **178 tests** (154 + 24), Python
 3.9, **nothing pushed anywhere**. The only consumer data changed is minikv's
 `.agent-loop/config.yaml` (`36bee72` on its `main`, unpushed). **Neither
 backlog was touched** — not minikv's, not this repository's — and **L3 is
@@ -1679,6 +1679,8 @@ enabled on no consumer.** Nothing under `project/` or `loop_evidence/`.
 | 4 | `601a92c` | `agent-loop plan`: ask, run each probe, admit what fails |
 | 5 | `25f9e59` | `levels.planner: L3` appends admitted proposals to `backlog.yaml` |
 | 6 | `250fd6d` | README |
+| 7 | `0494eac` | An empty backlog is a flow sequence, and a block entry cannot follow it (review round 1, defect) |
+| 8 | `f600c38` | A needs-fleet proposal is appended unselectable, per invariant 5 (review round 1, contract) |
 
 **`agent-loop plan --config <path>`** runs the `planner` role through the path
 every other role takes — the adapter from `agents.planner`, a read-only
@@ -1717,7 +1719,9 @@ Mutation checks, each watched to fail: `maxItems` removed → the six-proposal
 case returns `None`; the exit-0 rejection removed → a passing probe is admitted;
 the duplicate guard removed → the duplicate test errors; appending regardless
 of level → the below-L3 test fails; an L3 that appends nothing → the L3 test
-fails.
+fails; the old indent guess restored → the
+bootstrap test errors inside `backlog.load` and the refusal test fails;
+`selectable: True` restored → the needs-fleet test fails.
 
 ### The real plan run against minikv
 
@@ -1761,8 +1765,10 @@ So admission behaved exactly as specified and still admitted a proposal on two
 consecutive wrong reasons. **Non-zero is the rule invariant 2 gives, and
 non-zero does not mean "failed for the stated reason".** The kernel cannot tell
 the three apart, and neither can `proposals.yaml` — which is why the exit and
-the output tail are recorded beside every verdict, and why a person reads them
-before anything is appended to a backlog.
+the output tail are recorded beside every verdict. **Below L3 a person reads
+them; at L3 nobody does** — the append happens in the same run, unread, on the
+strength of a non-zero exit alone. That is not an argument that L3 is safe; it
+is the reason L3 is enabled on no consumer.
 
 **One over-claim in the statement, found by reading the site**: it says
 `after.size -= removed` at `hash_module.cc:295` "can even underflow" the stored
@@ -1806,6 +1812,21 @@ the bundle alone taught it.
 - Left out: the planner ran under `--permission-mode plan` and its `proof` text
   claims commands it says it ran by hand. Nothing in the kernel can check that
   claim, and nothing in it should — only the kernel's own probe run is evidence.
+- Left out: **a plan run executes model-authored shell, unreviewed, at the
+  consumer root.** Every proposal's probe is a string the planner wrote and the
+  kernel runs it to judge it — that is what invariant 2 asks for, but it means
+  `agent-loop plan` has the same reach the worker has and the same absence of
+  an OS sandbox. Invariant 5 is *told* to the planner in its bundle and
+  *enforced* only where an item is appended, so between those two points a
+  fleet-shaped probe would still be run. **Controller-status DECIDE 3 (an OS
+  sandbox before L2 or `continuous`) covers plan runs too**, and on minikv the
+  same `Bash(docker:*)` container reaches the whole of
+  `/Users/allgood/centos_ex` read-write as root.
+- Deferred suggestions, neither acted on in this stage: `PLAN_SOURCE_FILES` is
+  40 and a glob matching more files silently contributes only the first 40 —
+  unlike a file's own excerpt, which says `truncated`; and `proposals.yaml` is
+  rewritten whole on every plan run, so the previous run's verdicts are gone
+  (documented in the file's own docstring, and nothing reads it back).
 - Left out: **no round was run on the admitted proposal**, and it is not in any
   backlog. `agent-loop plan` was exercised once, against a consumer at L1.
 
@@ -1818,7 +1839,8 @@ the bundle alone taught it.
   with two data files, took one round to PR_READY, and found one valkey-shaped
   kernel bug (`agent-loop` `be01543`). 5b added `agent-loop plan` and the
   `levels.planner: L3` append path; **every consumer stays below L3**, so a
-  plan run writes `proposals.yaml` and a person reads it. There is no next
+  plan run writes `proposals.yaml` for a person to read rather than appending
+  it unread, which is what L3 would do. There is no next
   stage: further work is a new operator decision, not a continuation.
 - Kernel: `ly989264/agent-loop` main; checkout
   `~/centos_ex/projects/VibeCoding/agent-loop`. Consumer data in this repo:
