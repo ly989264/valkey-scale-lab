@@ -10,8 +10,12 @@ set -eu
 # is not a worktree and shares nothing); otherwise use the main checkout's.
 if [ -n "${AGENT_LOOP_BASELINES:-}" ]; then
   main_baselines="$AGENT_LOOP_BASELINES"
+elif ! common_dir=$(git rev-parse --git-common-dir 2>/dev/null); then
+  # Inside the Stage 6 jail the worktree's .git file points outside the mount,
+  # so git cannot answer. Run the suite without the baselines rather than die
+  # at this line: server_profile will report its skip honestly (24/25).
+  main_baselines=""
 else
-  common_dir=$(git rev-parse --git-common-dir)
   case "$common_dir" in /*) ;; *) common_dir="$(pwd)/$common_dir" ;; esac
   main_baselines="$(dirname "$common_dir")/project/artifacts/baselines"
 fi

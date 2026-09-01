@@ -2097,6 +2097,18 @@ flake Stage 5a recorded, on a neighbouring test of the same class.
   whether `./gate` works there is untested - there was no authenticated round to
   test it with.
 
+Review (Opus, scope-first): PASS, no contract or defect. Measured: the canary
+table both ways; the kill path with a control (`docker kill` is load-bearing -
+without it the container outlives the client); credential values never in
+argv, and the env blocklist still governs what `credentials_env` may forward.
+The jail is workable for a real worker - Edit/Write and the derived
+`PYTHONPATH=src python3` grant run inside it - but git is dead there and the
+valkey verify wrapper exited 128 at `git rev-parse` before doing anything;
+the wrapper now degrades to a baseline-less run inside the jail (data-side
+fix by the controller). Deferred: the codex jail refusal has no test; a
+killed *loop* orphans its `agent-loop-<hex>` container (parity with pre-jail
+behaviour); jailed workers lose git ergonomics, a spurious-blocked risk.
+
 ## Controller status
 
 - **Stage 6 built; jailed rounds proven on both consumers; L2/continuous
