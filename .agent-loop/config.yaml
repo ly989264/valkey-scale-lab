@@ -74,3 +74,30 @@ scm: github
 levels:
   hermetic: L1
   docker-exact-50: L1
+
+# Stage 6: the worker role's adapter command, and any probe `agent-loop plan`
+# runs, execute inside `docker run --rm` on this image with the round's worktree
+# as the only mount, at /workspace, and no docker socket. Proved on 2026-09-01
+# by a jailed round: the canary reported /workspace(rw) as the only non-virtual
+# mount and /Users, ~/.ssh, ~/.claude and /var/run/docker.sock all absent; the
+# same canary run without this key saw every one of them.
+#
+# Build the image (it is data, not kernel):
+#   docker build -t agent-loop-jail-valkey:local .agent-loop/jail
+#
+# READ BEFORE THE NEXT ROUND: `claude` inside a container is "Not logged in"
+# unless one of the variables below is set on this host, and neither is - this
+# machine keeps its Claude Code credential in the macOS Keychain, which cannot
+# be forwarded into a container by name, and the file form of that credential
+# carries a refresh token, which is account access rather than model access.
+# So while this key is present and no token is exported, a round's worker ends
+# INFRA. Export ANTHROPIC_API_KEY (or CLAUDE_CODE_OAUTH_TOKEN from `claude
+# setup-token`), or comment this block out to go back to a host-side worker at
+# L1. This is the operator DECIDE recorded in the Stage 6 record of
+# .github/exploration-loop/ROADMAP.md.
+jail:
+  image: agent-loop-jail-valkey:local
+  credentials_env:
+    - ANTHROPIC_API_KEY
+    - CLAUDE_CODE_OAUTH_TOKEN
+  memory: 4g
