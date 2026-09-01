@@ -1846,9 +1846,257 @@ the bundle alone taught it.
 - Left out: **no round was run on the admitted proposal**, and it is not in any
   backlog. `agent-loop plan` was exercised once, against a consumer at L1.
 
+## Stage 6 record — 2026-09-01
+
+Worker: Fable 5 subagent. Kernel `~/centos_ex/projects/VibeCoding/agent-loop`
+main, four commits on Stage 5b's `f600c38`, **197 tests** (178 + 19), Python
+3.9, **nothing pushed anywhere**. Consumer data changed on both consumers, each
+committed on its own branch and unpushed: this repository's `fast-iter`
+(`2e9e13af`, plus the commit adding this record) and minikv's `main`
+(`eea9a94`). Nothing under `project/` or `loop_evidence/` was touched, and no
+`explore/*` branch on either consumer was created, deleted or moved.
+
+### What the key is
+
+One optional config key, `jail`, with three sub-keys and no consumer name in
+the kernel:
+
+| Sub-key | Required | What it is |
+|---|---|---|
+| `image` | yes | the container image the jailed command runs in |
+| `credentials_env` | no | host environment variable *names* forwarded into the container |
+| `memory` | no | the container memory cap, e.g. `4g` |
+
+`credentials_env` exists because bullet 4 asks for the narrowest credential
+path; `memory` because bullet 2 asks for a memory or pids limit and a number in
+the kernel would be a guess about a consumer. The pids cap (2048) is a kernel
+constant: no consumer asked for a value, and one there is not consumer-specific.
+A consumer with no `jail` key behaves exactly as before - a test pins that.
+
+### What enters the jail, exactly
+
+```
+docker run --rm --init --name agent-loop-<12 hex> \
+  --workdir /workspace --volume <tree>:/workspace \
+  --pids-limit 2048 --memory <memory> \
+  --env GIT_ASKPASS=/usr/bin/false --env GIT_CONFIG_COUNT=2 \
+  --env GIT_CONFIG_GLOBAL=/dev/null --env GIT_CONFIG_KEY_0=credential.helper \
+  --env GIT_CONFIG_KEY_1=credential.interactive --env GIT_CONFIG_NOSYSTEM=1 \
+  --env GIT_CONFIG_VALUE_0= --env GIT_CONFIG_VALUE_1=false \
+  --env GIT_TERMINAL_PROMPT=0 --env NO_COLOR=1 \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  [--env <each credentials_env name the host actually sets>] \
+  <image> <the argv that would have run on the host>
+```
+
+- **Mounts: exactly one**, read-write, and it is the working directory. For a
+  worker it is the round's worktree; for an `agent-loop plan` probe it is the
+  consumer root, because that is where a plan run's probes already run. No host
+  `HOME`, no docker socket, no second mount, no `--privileged`, no `--user`.
+- **Environment: `PINNED` from `environment.py` and nothing else of the host's.**
+  The host's `PATH`, `HOME` and `TMPDIR` are deliberately *not* forwarded - they
+  name macOS paths that would shadow the image's own toolchain - so the jailed
+  environment is narrower than the stripped one, not wider.
+- **Credentials: by name only.** Each `credentials_env` entry is passed as
+  `--env NAME`, so the value is taken from the loop's own environment and never
+  appears in an argv anything can read off `ps`. A name the host does not set is
+  not passed at all. **Nothing is mounted for credentials.**
+- **Network is the daemon's default**, because an agent CLI has to reach its
+  API. The jail is a filesystem and process boundary, not a network one.
+- **The caps still bound it.** `docker run` is a client: killing its process
+  group leaves the container running. A timed-out or killed jailed command is
+  now also ended with `docker kill <name>`, which is why every container is
+  named. Watched to fail with that call reverted.
+- **What stays host-side**: the verify commands and the backlog's own probes
+  (operator-authored data), and the reviewer, which reads a published diff
+  read-only. Only what a model wrote, or what runs a model, is jailed.
+
+### Credentials: the escape hatch was taken, and this is the DECIDE
+
+**Nothing acceptable lets `claude -p` authenticate inside a container on this
+host**, so per the stage's own instruction that bullet stopped and the stage
+continued with the `shell` adapter jailed. Measured, not assumed:
+
+- `ANTHROPIC_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN` are unset in the
+  environment and named in no shell profile.
+- `~/.claude/.credentials.json` **does not exist**: Claude Code on macOS keeps
+  its credential in the Keychain, and a Keychain item cannot be forwarded to a
+  Linux container by name or mounted as a file.
+- Run for real: `docker run --rm -i agent-loop-jail-valkey:local claude -p`
+  answers `"result": "Not logged in · Please run /login"`,
+  `terminal_reason: api_error`.
+- The one file form that would work is a written-out Claude Code credential,
+  which carries a **refresh token** - account access, not model access - so it
+  is outside what the stage calls acceptable. It was not created and the
+  Keychain was not read.
+
+**DECIDE for the operator, and it is the only thing between here and a jailed
+model round:** export `ANTHROPIC_API_KEY`, or run `claude setup-token` and
+export `CLAUDE_CODE_OAUTH_TOKEN`. Both names are already in both consumers'
+`credentials_env`, so nothing else changes. **Until one is set, a round on
+either consumer now ends `INFRA` at the worker**, because the `jail` key is
+present and `claude` in the container is not logged in; both config files say so
+in a block above the key, and commenting the block out restores today's
+host-side L1 behaviour exactly.
+
+### The two live jailed rounds
+
+Both were run with a **jailed `shell` worker** - a canary committed as consumer
+data (`.agent-loop/jail/canary.py` in each repository, baked into each jail
+image). It reads the bundle, reports what it can reach, changes nothing and
+answers `blocked`, which is a real terminal state the round records. It is the
+fallback the stage names, and it proves containment without a model.
+
+**valkey-scale-lab**, sha `116eb1f3`, scratch config, scratch ledger, scratch
+worktree root. Three rounds were needed to find a runnable item and each is a
+real ledger line:
+
+```
+BLOCKED ssh-failure-is-not-classified-in-the-transport ... already holds a
+        previous round's result; merge or delete it before this item is run again
+BLOCKED process-runtime-state-call-site-is-unreached-by-the-suite ... same
+NO_ITEM -   all selectable probes pass
+```
+
+Both still-failing hermetic items hold a kept `explore/` branch with an
+unmerged fix, and every other selectable probe now passes - `retry-read` because
+its fix is merged as `9e175022`. So the round that proves the jail was run on
+**a scratch backlog entry copied byte for byte from
+`ssh-failure-is-not-classified-in-the-transport` except for its id**, which gets
+its own scratch branch and leaves the real one alone. Ledger line, and the whole
+of the jail evidence:
+
+```
+ts 2026-09-01T03:00:29Z · item stage6-jail-proof-ssh-failure-is-not-classified
+· sha 116eb1f3 · BLOCKED · 4.506 s · cost null · worker blocked: jail canary,
+no fix attempted: cwd=/workspace; uname=Linux 321fa0002213 6.12.76-linuxkit;
+reachable={"/Users": false, "/Users/allgood/.ssh": false,
+"/Users/allgood/centos_ex": false, "/root/.claude": false, "/root/.ssh": false,
+"/run/docker.sock": false, "/var/run/docker.sock": false}; non-virtual
+mounts=/workspace(rw),/etc/resolv.conf(rw),/etc/hostname(rw),/etc/hosts(rw);
+worktree writable=True
+```
+
+**The same canary, the same item, the same kernel, with the `jail` key removed**
+- because a canary that reports "absent" everywhere proves nothing until it is
+seen to report "present":
+
+```
+worker blocked: jail canary ... cwd=/Users/allgood/centos_ex/projects/
+VibeCoding/valkey_scale_lab/.agent-loop-stage6/worktrees/stage6-jail-proof-...;
+uname=Darwin AllGood-Mac-mini.local 25.5.0; reachable={"/Users": true,
+"/Users/allgood/.claude": true, "/Users/allgood/.ssh": true,
+"/Users/allgood/centos_ex": true, "/var/run/docker.sock": true}
+```
+
+That pair is the stage's finding: **`~/.ssh`, `~/.claude`, every repository on
+the machine and the docker socket were all reachable by every worker this loop
+has ever run, and none of them is reachable now.**
+
+**minikv**, `main` at `36bee72`, scratch config, scratch ledger, scratch
+worktree root, its real backlog:
+
+```
+ts 2026-09-01T03:01:34Z · geo-module-lost-the-algorithm-include-it-still-needs
+· sha 36bee72b · BLOCKED · 9.866 s · explore/geo-... already holds a previous
+round's result
+ts 2026-09-01T03:01:46Z · null-replies-use-resp3-which-the-repos-own-client-
+cannot-read · sha 36bee72b · BLOCKED · 6.966 s · cost null · worker blocked:
+jail canary, no fix attempted: cwd=/workspace; uname=Linux 6104e175fd95
+6.12.76-linuxkit; reachable={"/Users": false, "/Users/allgood/.ssh": false,
+"/Users/allgood/centos_ex": false, "/root/.claude": false, "/root/.ssh": true,
+"/run/docker.sock": false, "/var/run/docker.sock": false}; non-virtual
+mounts=/workspace(rw),/etc/resolv.conf(rw),/etc/hostname(rw),/etc/hosts(rw);
+worktree writable=True
+```
+
+Item 1's branch is kept and unmerged, so the first round is the branch guard and
+the second reaches item 2, whose probe still fails. minikv's jail image is
+**its own toolchain image** - the one `relaxed_fermat` runs - plus the canary,
+which is exactly bullet 8b's condition: the same image, but given the worktree
+and nothing else. `docker exec relaxed_fermat` bind-mounts
+`/Users/allgood/centos_ex` read-write as root and is not a jail;
+`/Users/allgood/centos_ex: false` above is the difference, measured.
+
+`/root/.ssh: true` in that line is the **image's own** directory, not the
+host's: it holds a `known_hosts` and no key. Worth stating plainly - the jail
+bounds what the *host* hands the container, and what a consumer's chosen image
+already carries is that consumer's business.
+
+### Kernel commits, all on main, unpushed
+
+| Commit | What |
+|---|---|
+| `caa36eb` | the `jail` key and `agent_loop/jail.py`: the argv, the container name, `docker kill`, and the jailed `run_command` |
+| `a433cb2` | the worker's adapter command runs in the jail; `bounded_run` takes an `on_kill` so a timed-out container dies with its client; the codex adapter refuses a jail rather than silently escaping one |
+| `d6418aa` | `agent-loop plan`'s model-authored probes go in the jail too |
+| `0dd414d` | README: the jail section |
+
+Tests: 178 -> 197. Nineteen: four on the key's shape, nine on the argv (one
+mount and one only, no socket, no host `HOME`, the exact env list, a credential
+the host does not set, the workdir, unique names), two on a whole jailed round
+through `round.run_once` with a fake `docker` on `PATH` that records its argv,
+one on the kill path, two on plan-run probes, and both no-jail-key cases.
+Hermetic: no image is pulled and no daemon is spoken to.
+
+### Deviations
+
+- `deviation: spec bullet 2 said the container's env is "the stripped
+  environment plus what credentials need"; built PINNED plus the named
+  credentials, because the host's PATH, HOME and TMPDIR are macOS paths that
+  would shadow the image's own toolchain inside a Linux container.` The result
+  is narrower than the spec's, never wider.
+- `deviation: spec bullet 8 said one jailed round each with the consumer's
+  configured worker; both live rounds ran a jailed shell canary, because bullet
+  4's escape hatch fired - claude cannot authenticate in a container on this
+  host.` The kernel path exercised is the same one a claude-code worker takes.
+- `deviation: spec bullet 8a said one jailed round on a still-failing probe item
+  against the same backlog; the round ran against a one-entry scratch backlog
+  whose only difference from the real item is its id, because both still-failing
+  items hold kept explore/ branches the round refuses to run over and every
+  other selectable probe now passes.` Three real rounds are recorded above
+  showing that, and no explore/ branch was touched.
+- `deviation: the stage expected ~200 kernel lines; the kernel diff is 265
+  insertions against 340 in tests and 71 in README.` `jail.py` is 156 of them,
+  about a third of it the module and function docstrings this kernel writes
+  everywhere.
+
+### Left-outs
+
+- **`--allowedTools` is not widened inside the jail**, per bullet 6: the grant
+  is still derived from the cost class's verify command and the picked item's
+  probe, zero code, two independent limits. One consequence, reasoned rather
+  than observed (no model round ran): **a consumer whose verify command reaches
+  into a *different* container derives `Bash(docker:*)`, which means nothing
+  inside the jail, where there is no docker.** minikv is that consumer; a jailed
+  model worker there could edit but not build. The remedy is a data one and it
+  is in the README, not a kernel change.
+- **The codex adapter refuses a jail** rather than running unjailed: it hands
+  the CLI host paths (`--output-schema`, `--output-last-message`, `--cd`) that
+  no mount carries. A jailed codex worker would need a different mechanism.
+- **A git worktree's `.git` is a file pointing outside the mount**, so git
+  commands fail inside the jail. The round is unaffected - the kernel commits
+  the worker's diff host-side - but a worker cannot run `git diff` on its own
+  work.
+- **A plan run's jail mounts the consumer root read-write**, not a worktree,
+  because that is where its probes already run. It bounds the rest of the
+  machine, not the consumer's own repository.
+- **The reviewer is not jailed.** It is read-only over a published diff; bullet
+  2 names the worker.
+- **No network toggle.** Neither consumer needs the container offline and the
+  agent CLI needs it online; a key nothing uses is a key to get wrong.
+- minikv's jail image is `linux/amd64` on this arm64 host and runs under
+  emulation, because its toolchain image is. Fine for the canary; a real build
+  in it has not been timed.
+- The valkey jail image carries `claude` 2.1.252, python3, git, `pytest==8.4.2`
+  and pyyaml, but **`pip install -e project/` has not been run inside it**, so
+  whether `./gate` works there is untested - there was no authenticated round to
+  test it with.
+
 ## Controller status
 
-- **Roadmap complete: stages 0–5 done; L3 exists, enabled nowhere.** Stages
+- **Stage 6 built; jailed rounds proven on both consumers; L2/continuous
+  awaiting the operator's final switch.** Stages
   0–4 closed 2026-08-29, Stage 5a and 5b on 2026-08-31, every stage reviewed
   scope-first (two rounds max) and recorded above. 5a pointed the kernel at a
   second consumer (`~/centos_ex/projects/VibeCoding/minikv`, C++17 on RocksDB)
@@ -1856,11 +2104,14 @@ the bundle alone taught it.
   kernel bug (`agent-loop` `be01543`). 5b added `agent-loop plan` and the
   `levels.planner: L3` append path; **every consumer stays below L3**, so a
   plan run writes `proposals.yaml` for a person to read rather than appending
-  it unread, which is what L3 would do. There is no next
-  stage: further work is a new operator decision, not a continuation.
+  it unread, which is what L3 would do. Stage 6 was the operator's decision
+  of 2026-09-01 and is done: a `jail` key, and a jailed round watched to hold
+  on each consumer. There is no next stage; further work is a new operator
+  decision, not a continuation.
 - Kernel: `ly989264/agent-loop` main; checkout
   `~/centos_ex/projects/VibeCoding/agent-loop`. Consumer data in this repo:
-  `.agent-loop/config.yaml` (L1, `scm: github`), `.agent-loop/backlog.yaml`,
+  `.agent-loop/config.yaml` (L1, `scm: github`, `jail:`),
+  `.agent-loop/backlog.yaml`, `.agent-loop/jail/` (Dockerfile and canary),
   `project/scripts/agent_loop_verify_hermetic.sh`,
   `.github/workflows/agent-loop-ci.yml`.
 - Operator DECIDEs open, none of which the loop may take:
@@ -1868,11 +2119,17 @@ the bundle alone taught it.
      findings, mutation evidence in the body).
   2. Nightly `repository.all`: `schedule` fires only from the default branch;
      make `fast-iter` the default or run it from launchd.
-  3. An OS sandbox before L2 or `continuous` on any consumer: the worker
-     allowlist bounds the shell, not the filesystem. On minikv it is wider
-     still - `Bash(docker:*)` plus a build container that bind-mounts
-     `/Users/allgood/centos_ex` read-write as root reaches every repo on this
-     machine (Stage 5a review).
+  3. **Answered by Stage 6, and replaced by one question.** The OS sandbox
+     exists: a jailed worker reaches its worktree and nothing else, measured
+     on both consumers. What is left is a credential - `claude` inside a
+     container is "Not logged in", and this host's Claude Code credential is
+     a Keychain item that cannot be forwarded by name. Export
+     `ANTHROPIC_API_KEY`, or `claude setup-token` and export
+     `CLAUDE_CODE_OAUTH_TOKEN`; both names are already in both consumers'
+     `credentials_env`. **Until one is set, a round's worker ends `INFRA`,
+     because the `jail` key is now present in both configs.** Raising
+     `hermetic` to L2 or running `continuous` is a separate say-so after one
+     jailed model round each.
   4. `product.unit.server_profile` depends on the gitignored baseline (Stage
      2c); the wrapper links it, the product finding stands.
   5. Two hermetic items have no admissible probe (Stage 1b); twelve
