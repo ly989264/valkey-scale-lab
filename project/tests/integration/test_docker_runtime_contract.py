@@ -4,6 +4,7 @@ import errno
 import inspect
 import json
 import shutil
+import socket
 import subprocess
 import threading
 from pathlib import Path
@@ -17,6 +18,7 @@ from valkey_scale_lab.runtime.command_recorder import classify_command_kind
 from valkey_scale_lab.runtime import docker_runtime, teardown
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, shared_monotonic
+from valkey_scale_lab.valkey.resp import RespCommandError
 
 
 def test_cached_production_image_supports_m2_shell_kill_and_proc_probe() -> None:
@@ -5070,3 +5072,32 @@ def test_cluster_form_large_branch_at_four_replicas(monkeypatch: pytest.MonkeyPa
     assert backend.operations == ["run_cluster_admin"]
     argv = backend.cluster_admin[0]
     assert argv[2:-1] == [f"172.18.0.{2 + idx % 2}:{7400 + idx}" for idx in range(10)]
+
+
+def test_retry_read_does_not_retry_an_error_reply_only_a_transport_failure() -> None:
+    """An error *reply* was reached and answered - retrying it is pointless.
+
+    `_retry_read` must narrow on `is_transient_transport_error`, the same
+    predicate the management mutation chokepoint uses beside it, rather than a
+    bare `except Exception` that cannot tell the two apart.
+    """
+
+    calls = []
+
+    def error_reply() -> None:
+        calls.append(1)
+        raise RespCommandError("ERR unknown command")
+
+    with pytest.raises(RespCommandError):
+        docker_runtime._retry_read(error_reply, what="probe", attempts=3, pause=0)
+    assert len(calls) == 1
+
+    calls.clear()
+
+    def transport_timeout() -> None:
+        calls.append(1)
+        raise socket.timeout("timed out")
+
+    with pytest.raises(DockerRuntimeError):
+        docker_runtime._retry_read(transport_timeout, what="probe", attempts=3, pause=0)
+    assert len(calls) == 3

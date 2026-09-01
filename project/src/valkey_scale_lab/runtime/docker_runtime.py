@@ -3616,6 +3616,11 @@ def _retry_read(call: Callable[[], Any], *, what: str, attempts: int = 3, pause:
     Only for reads. A mutation that times out has an *unknown* outcome rather
     than a failed one - the server does not know the client left - so blind
     retry is wrong there and the safe pattern is verify-then-retry.
+
+    Narrowed to `is_transient_transport_error`, the same predicate the mutation
+    chokepoint uses: an error *reply* was reached and answered, so retrying it
+    is pointless and only a transport failure has an unknown outcome worth
+    asking again.
     """
 
     last: Exception | None = None
@@ -3624,6 +3629,8 @@ def _retry_read(call: Callable[[], Any], *, what: str, attempts: int = 3, pause:
             return call()
         except Exception as exc:  # noqa: BLE001
             last = exc
+            if not is_transient_transport_error(exc):
+                raise
             if attempt + 1 < attempts:
                 time.sleep(pause)
     raise DockerRuntimeError(f"{what} failed after {attempts} attempts: {last!r}")
