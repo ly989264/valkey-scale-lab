@@ -2038,6 +2038,10 @@ the host does not set, the workdir, unique names), two on a whole jailed round
 through `round.run_once` with a fake `docker` on `PATH` that records its argv,
 one on the kill path, two on plan-run probes, and both no-jail-key cases.
 Hermetic: no image is pulled and no daemon is spoken to.
+`tests/test_modes.py::WaitForTriggerTest::test_a_merged_known_open_pr_is_polled_
+and_recorded_without_sleeping` failed once under full-suite load and passed on
+the next full run and three times in isolation - the same pre-existing timing
+flake Stage 5a recorded, on a neighbouring test of the same class.
 
 ### Deviations
 
