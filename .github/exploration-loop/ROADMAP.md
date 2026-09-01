@@ -241,6 +241,22 @@ When a second project wants it. 1–2 sessions, Opus 5.
 - Point `agent-loop` at another repository with only `config.yaml` + `backlog.yaml`; fix whatever leaked from valkey-scale-lab into the kernel.
 - L3: planner role proposing backlog items from failing checks and the open list, each with a probe it watched fail.
 
+
+### Stage 6 - container-jailed worker (operator decision 2026-09-01, DECIDE 3 taken: option 1)
+
+The worker role (and the model-authored probes a plan run executes) run inside
+a Linux container that mounts ONLY the round's worktree read-write; no host
+HOME, no docker socket, no other mounts. The verify step stays host-side - its
+commands are operator-authored data. One new config key, `jail`, per consumer:
+the image, and nothing valkey- or minikv-specific in the kernel. The consumer
+without a `jail` key keeps today's behaviour and today's L1-only rule; a
+consumer with one may be raised to `levels: {hermetic: L2}` and run
+`continuous`, on the operator's explicit say-so after one jailed live round
+each. Model credentials enter the jail as the narrowest thing that works and
+the record must state exactly what enters. Escape hatch: if credentials cannot
+enter the jail without carrying more than model access, stop and report - that
+is a DECIDE, not a workaround to invent.
+
 ### Never, at any level
 - Launching paid or fleet runs.
 - Admitting a backlog item without a watched-to-fail probe.
